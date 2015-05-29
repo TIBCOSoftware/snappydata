@@ -31,6 +31,15 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(this)
 
+  object operations extends Serializable {
+
+    implicit def snappyOperationsOnDF(df: DataFrame): SnappyOperations = {
+      SnappyOperations(self, df)
+    }
+
+  }
+
+
   override def cacheTable(tableName: String): Unit = {
     if (catalog.sampleTables.contains(tableName))
       throw new Exception("cacheTable is disabled for sampleTable: " + tableName)
@@ -43,7 +52,6 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
                               formatter: (RDD[T], StructType) => RDD[Row],
                               schema: StructType,
                               transform: DataFrame => DataFrame = null): Unit = {
-    var batchId = 1
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
       val row = formatter(rdd, schema)
@@ -54,46 +62,48 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
         transform(rDF)
       } else rDF
 
-      val rddId = rdd.id
-      val useCompression = conf.useCompression
-      val columnBatchSize = conf.columnBatchSize
-
-      val sampleTables = (catalog.sampleTables.filter {
-        case (name, df) => sampleTab.contains(name)
-      } map { case (name, df) =>
-        (name, df.samplingOptions, df.schema, df.queryExecution.analyzed.output,
-          cacheManager.lookupCachedData(df.logicalPlan).getOrElse(sys.error(
-            s"SnappyContext.saveStream: failed to lookup cached plan for " +
-              s"sampling table ${name}")).cachedRepresentation)
-      }).toArray
-
-      // TODO: this iterates rows multiple times
-      val rdds = sampleTables.map { case (name, samplingOptions, schema, output, relation) => {
-        (relation, tDF.mapPartitions(rowIterator => {
-          val sampler = StratifiedSampler(samplingOptions, schema)
-          rowIterator.flatMap { row =>
-            if (sampler.append(row)) Iterator(InMemoryAppendableRelation.appendRows(sampler.iterator,
-              name, sampler.schema, output, useCompression, columnBatchSize))
-            else Iterator.empty
-          }
-        }))
-      }
-      }
-
-      //      val unionRDD = new UnionRDD(this.sparkContext, rdds.map(_._2))
-      //      if (unionRDD.count() > 0) {
-      // add to list in InMemoryAppendableRelation
-      rdds.foreach { case (relation, rdd) => {
-        val cached = rdd.persist(StorageLevel.MEMORY_AND_DISK)
-        if (cached.count() > 0) {
-          relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
-        }
-      }
-      }
+      collectSamples(tDF, sampleTab)
 
     })
   }
 
+  def collectSamples(tDF: DataFrame, sampleTab: Seq[String]): Unit = {
+    val useCompression = conf.useCompression
+    val columnBatchSize = conf.columnBatchSize
+
+    val sampleTables = (catalog.sampleTables.filter {
+      case (name, df) => sampleTab.contains(name)
+    } map { case (name, df) =>
+      (name, df.samplingOptions, df.schema, df.queryExecution.analyzed.output,
+        cacheManager.lookupCachedData(df.logicalPlan).getOrElse(sys.error(
+          s"SnappyContext.saveStream: failed to lookup cached plan for " +
+            s"sampling table ${name}")).cachedRepresentation)
+    }).toSeq
+
+    // TODO: this iterates rows multiple times
+    val rdds = sampleTables.map { case (name, samplingOptions, schema, output, relation) => {
+      (relation, tDF.mapPartitions(rowIterator => {
+        val sampler = StratifiedSampler(samplingOptions, schema)
+        rowIterator.flatMap { row =>
+          if (sampler.append(row)) Iterator(InMemoryAppendableRelation.appendRows(sampler.iterator,
+            name, sampler.schema, output, useCompression, columnBatchSize))
+          else Iterator.empty
+        }
+      }))
+    }
+    }
+
+    //      val unionRDD = new UnionRDD(this.sparkContext, rdds.map(_._2))
+    //      if (unionRDD.count() > 0) {
+    // add to list in InMemoryAppendableRelation
+    rdds.foreach { case (relation, rdd) => {
+      val cached = rdd.persist(StorageLevel.MEMORY_AND_DISK)
+      if (cached.count() > 0) {
+        relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
+      }
+    }
+    }
+  }
 
   def registerSampleTable(streamTable: DataFrame, tableName: String, samplingOptions: Map[String, String]): DataFrame = {
     catalog.registerSampleTable(streamTable.schema, tableName, samplingOptions)
@@ -136,8 +146,17 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
 
 //end of SnappyContext
 
+private[sql] case class SnappyOperations(context: SnappyContext, df: DataFrame) {
 
-class SnappyCacheManager(sqlContext: SnappyContext) extends execution.CacheManager(sqlContext) {
+  def insertIntoSampleTable(sampleTableName: String) = context.collectSamples(df, Seq(sampleTableName))
+
+  def updateAllSnappyTables(sampleTableNames: Seq[String]) = context.collectSamples(df, sampleTableNames)
+
+}
+
+
+
+private[sql] class SnappyCacheManager(sqlContext: SnappyContext) extends execution.CacheManager(sqlContext) {
   /**
    * Caches the data produced by the logical representation of the given schema rdd.  Unlike
    * `RDD.cache()`, the default storage level is set to be `MEMORY_AND_DISK` because recomputing
