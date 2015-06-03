@@ -17,7 +17,9 @@ import scala.collection.mutable
  *
  * Created by soubhikc on 5/13/15.
  */
-class SnappyStoreCatalog(context: SnappyContext, override val conf: CatalystConf) extends SimpleCatalog(conf) with Logging {
+class SnappyStoreCatalog(context: SnappyContext,
+                         override val conf: CatalystConf)
+  extends SimpleCatalog(conf) with Logging {
 
   protected val currentDatabase: String = "snappydata"
 
@@ -31,45 +33,56 @@ class SnappyStoreCatalog(context: SnappyContext, override val conf: CatalystConf
 
   val topkTables = new mutable.HashMap[String, TopKDataFrame]()
 
-  override def unregisterAllTables(): Unit = {}
+  override def unregisterAllTables(): Unit = {
+    throw new NotImplementedError()
+  }
 
-  override def unregisterTable(tableIdentifier: Seq[String]): Unit = ???
+  override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
+    throw new NotImplementedError()
+  }
 
-  override def lookupRelation(tableIdentifier: Seq[String], alias: Option[String]): LogicalPlan = {
+  override def lookupRelation(tableIdentifier: Seq[String],
+                              alias: Option[String]): LogicalPlan = {
     val tableIdent = processTableIdentifier(tableIdentifier)
-    val databaseName = tableIdent.lift(tableIdent.size - 2).getOrElse(
-      currentDatabase)
+    //val databaseName = tableIdent.lift(tableIdent.size - 2).getOrElse(
+    //  currentDatabase)
     val tblName = tableIdent.last
 
-    sampleTables.getOrElse(tblName, {throw new AnalysisException(s"sample table $tblName not found" )}).logicalPlan
+    sampleTables.getOrElse(tblName, {
+      throw new AnalysisException(
+        s"sample table $tblName not found")
+    }).logicalPlan
     //SnappystoreRelation(databaseName, tblName, alias)(context)
   }
 
-  override def registerTable(tableIdentifier: Seq[String], plan: LogicalPlan): Unit = ???
+  override def registerTable(tableIdentifier: Seq[String],
+                             plan: LogicalPlan): Unit = {
+    throw new NotImplementedError()
+  }
 
-
-  def registerSampleTable(schema: StructType, tableName: String, samplingOptions: Map[String, String]): DataFrame = {
-    //val accessPlan = DummyRDD(schema.toAttributes)(context)
-
-    //val relation = LogicalRelation(new sources.InMemoryAppendableRelation(schema)(context))
-
-    val options = if(samplingOptions.get("name").isDefined) {
+  def registerSampleTable(schema: StructType, tableName: String,
+                          samplingOptions: Map[String, String]): DataFrame = {
+    val options = if (samplingOptions.get("name").isDefined) {
       samplingOptions
     }
     else {
       samplingOptions + ("name" -> tableName)
     }
 
-    options.getOrElse("name", {throw new Exception(s"${tableName} name not inserted")})
+    options.getOrElse("name", {
+      throw new Exception(s"$tableName name not inserted")
+    })
 
-    val rDD: LogicalRDD = LogicalRDD(schema.toAttributes, CachedRDD()(context))(context)
+    val rDD: LogicalRDD = LogicalRDD(schema.toAttributes,
+      CachedRDD()(context))(context)
     val sampleTab = SampleDataFrame(context, rDD, options)
     sampleTables.put(tableName, sampleTab)
     context.cacheManager.cacheQuery(sampleTab, Some(tableName))
     sampleTab
   }
 
-  def registerTopKTable(schema: StructType, tableName: String, aggOptions: Map[String, String]): DataFrame = {
+  def registerTopKTable(schema: StructType, tableName: String,
+                        aggOptions: Map[String, String]): DataFrame = {
     val accessPlan = DummyRDD(schema.toAttributes)(context)
     val topkTab = TopKDataFrame(context, accessPlan, aggOptions)
     topkTables.put(tableName, topkTab)
@@ -78,18 +91,24 @@ class SnappyStoreCatalog(context: SnappyContext, override val conf: CatalystConf
 
   def getStreamTable(tableName: Seq[String]): LogicalPlan =
     streamTables.getOrElse(tableName, {
-      throw new Exception("Stream table " + tableName + " not found")
+      throw new Exception(s"Stream table $tableName not found")
     })._1
 
   /**
    * Returns tuples of (tableName, isTemporary) for all tables in the given database.
    * isTemporary is a Boolean value indicates if a table is a temporary or not.
    */
-  override def getTables(databaseName: Option[String]): Seq[(String, Boolean)] = ???
+  override def getTables(dbName: Option[String]): Seq[(String, Boolean)] = {
+    throw new NotImplementedError()
+  }
 
-  override def refreshTable(databaseName: String, tableName: String): Unit = ???
+  override def refreshTable(dbName: String, tableName: String): Unit = {
+    throw new NotImplementedError()
+  }
 
-  override def tableExists(tableIdentifier: Seq[String]): Boolean = ???
+  override def tableExists(tableIdentifier: Seq[String]): Boolean = {
+    throw new NotImplementedError()
+  }
 }
 
 class SampleDataFrame(@transient sqlContext: SnappyContext,
@@ -101,15 +120,16 @@ class SampleDataFrame(@transient sqlContext: SnappyContext,
     this(incoming.sqlContext.asInstanceOf[SnappyContext], {
       incoming.logicalPlan
     }, {
-      val df: SampleDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].catalog.sampleTables.find(p =>
-        p._2.logicalPlan.sameResult(incoming.logicalPlan)
-      ).get._2
+      val df: SampleDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].
+        catalog.sampleTables.find(p => p._2.logicalPlan.sameResult(
+        incoming.logicalPlan)).get._2
       df.samplingOptions
     })
   }
 
-  def stratifiedSample(): DataFrame = ???
-
+  def stratifiedSample(): DataFrame = {
+    throw new NotImplementedError()
+  }
 }
 
 object SampleDataFrame {
@@ -119,11 +139,11 @@ object SampleDataFrame {
     new SampleDataFrame(df)
   }
 
-  def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan, samplingOptions: Map[String, String]): SampleDataFrame = {
+  def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan,
+            samplingOptions: Map[String, String]): SampleDataFrame = {
     new SampleDataFrame(sqlContext, logicalPlan, samplingOptions)
   }
 }
-
 
 class TopKDataFrame(@transient override val sqlContext: SnappyContext,
                     logicalPlan: LogicalPlan,
@@ -134,16 +154,16 @@ class TopKDataFrame(@transient override val sqlContext: SnappyContext,
     this(incoming.sqlContext.asInstanceOf[SnappyContext], {
       incoming.logicalPlan
     }, {
-      val df: TopKDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].catalog.sampleTables.find(p =>
-        p._2.logicalPlan.sameResult(incoming.logicalPlan)
-      ).get._2
+      val df: TopKDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].
+        catalog.sampleTables.find(p => p._2.logicalPlan.sameResult(
+        incoming.logicalPlan)).get._2
       df.aggOptions
     })
   }
 
-
-  def createApproxTopKFreq(): DataFrame = ???
-
+  def createApproxTopKFreq(): DataFrame = {
+    throw new NotImplementedError()
+  }
 }
 
 object TopKDataFrame {
@@ -153,8 +173,8 @@ object TopKDataFrame {
     new TopKDataFrame(df)
   }
 
-  def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan, aggOptions: Map[String, String]): TopKDataFrame = {
+  def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan,
+            aggOptions: Map[String, String]): TopKDataFrame = {
     new TopKDataFrame(sqlContext, logicalPlan, aggOptions)
   }
-
 }

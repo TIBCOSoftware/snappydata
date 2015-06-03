@@ -7,19 +7,19 @@ import org.apache.spark.sql.execution.LogicalRDD
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
- * Created by soubhikc on 5/13/15.
- */
+*  Created by soubhikc on 5/13/15.
+*/
 class CachedRDD()(sqlContext: SQLContext)
   extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    val numbrd = SparkEnv.get.blockManager.getPeers(false).zipWithIndex
+    val numberedPeers = SparkEnv.get.blockManager.getPeers(false).zipWithIndex
 
-    if (numbrd.length == 0) {
+    if (numberedPeers.isEmpty) {
       return Array.empty[Partition]
     }
 
-    val partitions = numbrd.map {
+    val partitions = numberedPeers.map {
       case (bid, idx) => new CachedBlockPartition(idx, bid.host)
     }
 
@@ -33,7 +33,8 @@ class CachedRDD()(sqlContext: SQLContext)
     new Iterator[Row] {
       override def hasNext: Boolean = false
 
-      override def next(): Row = throw new NoSuchElementException("next on empty iterator")
+      override def next(): Row =
+        throw new NoSuchElementException("next on empty iterator")
     }
   }
 
@@ -53,8 +54,9 @@ private[spark] class CachedBlockPartition(val idx: Int, val host: String)
   val index = idx
 }
 
-class DummyRDD(output: Seq[Attribute])(sqlContext: SQLContext) extends LogicalRDD(output, null)(sqlContext) {
-  private val id: Int = sqlContext.sparkContext.newRddId();
+class DummyRDD(output: Seq[Attribute])(sqlContext: SQLContext)
+  extends LogicalRDD(output, null)(sqlContext) {
+  private val id: Int = sqlContext.sparkContext.newRddId()
 
   override def sameResult(plan: LogicalPlan): Boolean = plan match {
     case DummyRDD(otherID) => id == otherID

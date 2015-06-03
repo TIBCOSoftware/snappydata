@@ -77,48 +77,53 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
       (name, df.samplingOptions, df.schema, df.queryExecution.analyzed.output,
         cacheManager.lookupCachedData(df.logicalPlan).getOrElse(sys.error(
           s"SnappyContext.saveStream: failed to lookup cached plan for " +
-            s"sampling table ${name}")).cachedRepresentation)
+            s"sampling table $name")).cachedRepresentation)
     }).toSeq
 
     // TODO: this iterates rows multiple times
-    val rdds = sampleTables.map { case (name, samplingOptions, schema, output, relation) => {
-      (relation, tDF.mapPartitions(rowIterator => {
-        val sampler = StratifiedSampler(samplingOptions, schema)
-        rowIterator.flatMap { row =>
-          if (sampler.append(row)) Iterator(InMemoryAppendableRelation.appendRows(sampler.iterator,
-            name, sampler.schema, output, useCompression, columnBatchSize))
-          else Iterator.empty
-        }
-      }))
-    }
+    val rdds = sampleTables.map {
+      case (name, samplingOptions, schema, output, relation) =>
+        (relation, tDF.mapPartitions(rowIterator => {
+          val sampler = StratifiedSampler(samplingOptions, schema,
+            cached = true)
+          // create a new holder for set of CachedBatches
+          val batches = InMemoryAppendableRelation(useCompression,
+            columnBatchSize, name, sampler.schema, output)
+          sampler.append(rowIterator, (), batches.appendRow, batches.endRows)
+          batches.forceEndOfBatch().iterator
+        }))
     }
 
     //      val unionRDD = new UnionRDD(this.sparkContext, rdds.map(_._2))
     //      if (unionRDD.count() > 0) {
     // add to list in InMemoryAppendableRelation
-    rdds.foreach { case (relation, rdd) => {
+    rdds.foreach { case (relation, rdd) =>
       val cached = rdd.persist(StorageLevel.MEMORY_AND_DISK)
       if (cached.count() > 0) {
         relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
       }
     }
-    }
   }
 
-  def registerSampleTable(streamTable: DataFrame, tableName: String, samplingOptions: Map[String, String]): DataFrame = {
+  def registerSampleTable(streamTable: DataFrame, tableName: String,
+                          samplingOptions: Map[String, String]): DataFrame = {
     catalog.registerSampleTable(streamTable.schema, tableName, samplingOptions)
   }
 
-  def registerTopKTable(streamTable: DataFrame, tableName: String, topkOptions: Map[String, String]): DataFrame = {
+  def registerTopKTable(streamTable: DataFrame, tableName: String,
+                        topkOptions: Map[String, String]): DataFrame = {
     catalog.registerTopKTable(streamTable.schema, tableName, topkOptions)
   }
 
-  def registerSampleTable(tableName: String, schema: StructType, samplingOptions: Map[String, String]): DataFrame = {
+  def registerSampleTable(tableName: String, schema: StructType,
+                          samplingOptions: Map[String, String]): DataFrame = {
     catalog.registerSampleTable(schema, tableName, samplingOptions)
   }
 
-  def registerTopKTable(streamTableName: String, tableName: String, topkOptions: Map[String, String]): DataFrame = {
-    catalog.registerTopKTable(catalog.getStreamTable(Seq(streamTableName)).schema, tableName, topkOptions)
+  def registerTopKTable(streamTableName: String, tableName: String,
+                        topkOptions: Map[String, String]): DataFrame = {
+    catalog.registerTopKTable(catalog.getStreamTable(
+      Seq(streamTableName)).schema, tableName, topkOptions)
   }
 
   @transient
@@ -155,7 +160,6 @@ private[sql] case class SnappyOperations(context: SnappyContext, df: DataFrame) 
 }
 
 
-
 private[sql] class SnappyCacheManager(sqlContext: SnappyContext) extends execution.CacheManager(sqlContext) {
   /**
    * Caches the data produced by the logical representation of the given schema rdd.  Unlike
@@ -181,7 +185,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext) extends executi
     }
 
     val planToCache = query.queryExecution.analyzed
-    val alreadyCached = lookupCachedData(planToCache);
+    val alreadyCached = lookupCachedData(planToCache)
     if (alreadyCached.nonEmpty) {
       logWarning("Asked to cache already cached data.")
       return
