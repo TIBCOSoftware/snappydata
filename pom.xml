@@ -21,13 +21,13 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.apache.spark</groupId>
-    <artifactId>snappy-spark-parent_2.11</artifactId>
+    <artifactId>snappy-spark-parent_2.10</artifactId>
     <version>1.4.0-SNAPSHOT.2</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
   <groupId>io.snappydata</groupId>
-  <artifactId>spark-snappydata_2.11</artifactId>
+  <artifactId>spark-snappydata_2.10</artifactId>
   <packaging>jar</packaging>
   <name>Snappy Project AQP</name>
   <url>http://snappydata.io/</url>
