@@ -3,13 +3,13 @@ package org.apache.spark.sql
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.LogicalRDD
+import org.apache.spark.sql.execution.{StratifiedSampler, LogicalRDD}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
 *  Created by soubhikc on 5/13/15.
 */
-class CachedRDD()(sqlContext: SQLContext)
+class CachedRDD(name: String)(sqlContext: SQLContext)
   extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
@@ -30,11 +30,13 @@ class CachedRDD()(sqlContext: SQLContext)
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
     assert(blockManager.blockManagerId.host equals part.host)
-    new Iterator[Row] {
-      override def hasNext: Boolean = false
+    StratifiedSampler(name).map(_.iterator).getOrElse {
+      new Iterator[Row] {
+        override def hasNext: Boolean = false
 
-      override def next(): Row =
-        throw new NoSuchElementException("next on empty iterator")
+        override def next(): Row =
+          throw new NoSuchElementException("next on empty iterator")
+      }
     }
   }
 
@@ -44,8 +46,8 @@ class CachedRDD()(sqlContext: SQLContext)
 }
 
 object CachedRDD {
-  def apply()(sqlContext: SQLContext): CachedRDD = {
-    new CachedRDD()(sqlContext)
+  def apply(name: String)(sqlContext: SQLContext): CachedRDD = {
+    new CachedRDD(name)(sqlContext)
   }
 }
 

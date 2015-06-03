@@ -23,7 +23,7 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   protected val currentDatabase: String = "snappydata"
 
-  val streamTables = new mutable.HashMap[Seq[String], (LogicalPlan, DStream[_])]()
+  val streamTables = new mutable.HashMap[String, (LogicalPlan, DStream[_])]()
 
   /**
    * This logicalPlan will be on SampleDataFrame#logicalPlan which will know how to
@@ -74,7 +74,7 @@ class SnappyStoreCatalog(context: SnappyContext,
     })
 
     val rDD: LogicalRDD = LogicalRDD(schema.toAttributes,
-      CachedRDD()(context))(context)
+      CachedRDD(tableName)(context))(context)
     val sampleTab = SampleDataFrame(context, rDD, options)
     sampleTables.put(tableName, sampleTab)
     context.cacheManager.cacheQuery(sampleTab, Some(tableName))
@@ -89,10 +89,15 @@ class SnappyStoreCatalog(context: SnappyContext,
     topkTab
   }
 
-  def getStreamTable(tableName: Seq[String]): LogicalPlan =
+  def getStreamTable(tableName: String): LogicalPlan =
     streamTables.getOrElse(tableName, {
       throw new Exception(s"Stream table $tableName not found")
     })._1
+
+  def getOrAddStreamTable(tableName: String, schema: StructType, samplingOptions: Map[String, String]): LogicalPlan =
+    streamTables.get(tableName).map(_._1).getOrElse({
+      registerSampleTable(schema, tableName, samplingOptions).logicalPlan
+    })
 
   /**
    * Returns tuples of (tableName, isTemporary) for all tables in the given database.

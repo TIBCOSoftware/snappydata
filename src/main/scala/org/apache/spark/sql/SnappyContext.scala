@@ -5,9 +5,13 @@ package org.apache.spark.sql
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.OverrideCatalog
-import org.apache.spark.sql.columnar.InMemoryAppendableRelation
-import org.apache.spark.sql.execution.{CachedData, StratifiedSampler}
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.planning.PhysicalOperation
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
+import org.apache.spark.sql.execution.{CachedData, SparkPlan, StratifiedSampler}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.storage.StorageLevel._
@@ -15,6 +19,7 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.reflect.ClassTag
+import scala.reflect.runtime.{universe => u}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -37,8 +42,11 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
       SnappyOperations(self, df)
     }
 
-  }
+    implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]): SnappyDStreamOperations[T] = {
+      SnappyDStreamOperations(self, ds)
+    }
 
+  }
 
   override def cacheTable(tableName: String): Unit = {
     if (catalog.sampleTables.contains(tableName))
@@ -120,17 +128,28 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     catalog.registerSampleTable(schema, tableName, samplingOptions)
   }
 
-  def registerTopKTable(streamTableName: String, tableName: String,
-                        topkOptions: Map[String, String]): DataFrame = {
-    catalog.registerTopKTable(catalog.getStreamTable(
-      Seq(streamTableName)).schema, tableName, topkOptions)
+  def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String, samplingOptions: Map[String, String]): DataFrame = {
+    if (u.typeOf[A] =:= u.typeOf[Nothing]) {
+      throw new Exception("Type of case class object not mentioned. Mention type information for e.g. registerSampleTableOn[<class>] ")
+    }
+    SparkPlan.currentContext.set(self)
+    val schemaExtract = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+    registerSampleTableOn(tableName, schemaExtract, samplingOptions)
+  }
+
+
+  def registerSampleTableOn(tableName: String, schema: StructType, samplingOptions: Map[String, String]): DataFrame = {
+    catalog.registerSampleTable(schema, tableName, samplingOptions)
+  }
+
+  def registerTopKTable(streamTableName: String, tableName: String, topkOptions: Map[String, String]): DataFrame = {
+    catalog.registerTopKTable(catalog.getStreamTable(streamTableName).schema, tableName, topkOptions)
   }
 
   @transient
   override protected[sql] val planner = new SparkPlanner {
     val snappyContext = self
 
-    /*
     override def strategies: Seq[Strategy] = Seq(
       AppendableInMemoryScans) ++ super.strategies
 
@@ -141,11 +160,10 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
             projectList,
             filters,
             identity[Seq[Expression]], // All filters still need to be evaluated.
-            InMemoryMutableColumnarTableScan(_, filters, mem)) :: Nil
+            InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
         case _ => Nil
       }
     }
-    */
   }
 }
 
@@ -153,12 +171,24 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
 
 private[sql] case class SnappyOperations(context: SnappyContext, df: DataFrame) {
 
-  def insertIntoSampleTable(sampleTableName: String) = context.collectSamples(df, Seq(sampleTableName))
+  def insertIntoSampleTables(sampleTableName: String*) = context.collectSamples(df, sampleTableName)
 
-  def updateAllSnappyTables(sampleTableNames: Seq[String]) = context.collectSamples(df, sampleTableNames)
-
+  def createAndInsertIntoSampleTables(in: Tuple2[String, Map[String, String]]*) = {
+    in.map {
+      case (tableName, options) => context.catalog.getOrAddStreamTable(tableName, df.schema, options)
+    }
+    context.collectSamples(df, in.map(_._1))
+  }
 }
 
+private[sql] case class SnappyDStreamOperations[T: ClassTag](context: SnappyContext, ds: DStream[T]) {
+
+  def saveStream(sampleTab: Seq[String],
+                 formatter: (RDD[T], StructType) => RDD[Row],
+                 schema: StructType,
+                 transform: DataFrame => DataFrame = null): Unit = context.saveStream(ds, sampleTab, formatter, schema, transform)
+
+}
 
 private[sql] class SnappyCacheManager(sqlContext: SnappyContext) extends execution.CacheManager(sqlContext) {
   /**
@@ -204,4 +234,3 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext) extends executi
 }
 
 // end of CacheManager
-

@@ -25,13 +25,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import org.apache.spark._
 import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{CachedRDD, Row}
 import org.apache.spark.storage.StorageLevel
 
 import scala.collection.mutable.ArrayBuffer
@@ -54,6 +54,7 @@ private[sql] class InMemoryAppendableRelation(override val output: Seq[Attribute
       _bstats: Accumulable[ArrayBuffer[Row], Row])
   with MultiInstanceRelation {
 
+  private[sql] val reservoirRDD = new CachedRDD(tableName.get)(child.sqlContext)
   private val bufferLock = new ReentrantReadWriteLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */
@@ -208,5 +209,24 @@ private[sql] object InMemoryAppendableRelation {
     val converter = CatalystTypeConverters.createToCatalystConverter(schema)
     new CachedBatchHolder(columnBuilders, converter,
       0, batchSize, new ArrayBuffer[CachedBatch](1))
+  }
+}
+
+private[sql] class InMemoryAppendableColumnarTableScan
+(
+  override val attributes: Seq[Attribute],
+  override val predicates: Seq[Expression],
+  override val relation: InMemoryAppendableRelation)
+  extends InMemoryColumnarTableScan(attributes, predicates, relation) {
+
+  protected override def doExecute(): RDD[Row] = {
+    new UnionRDD[Row](this.sparkContext, Seq(super.doExecute(),
+      relation.asInstanceOf[InMemoryAppendableRelation].reservoirRDD))
+  }
+}
+
+private[sql] object InMemoryAppendableColumnarTableScan {
+  def apply(attributes: Seq[Attribute], predicates: Seq[Expression], relation: InMemoryAppendableRelation): SparkPlan = {
+    new InMemoryAppendableColumnarTableScan(attributes, predicates, relation)
   }
 }
