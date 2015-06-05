@@ -200,14 +200,14 @@ private[sql] class SnappyParser(
       tableCols.? ~ (OPTIONS ~> options)) ^^ {
       case streamname ~ cols ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-        CreateStream(streamname, userColumns, opts)
+        CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
     (CREATE ~> (SAMPLED ~> (TABLE ~> ident)) ~
       (OPTIONS ~> options)) ^^ {
       case samplename ~ opts =>
-        CreateSampledTable(samplename, opts)
+        CreateSampledTable(samplename, new CaseInsensitiveMap(opts))
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
