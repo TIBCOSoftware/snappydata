@@ -1,8 +1,13 @@
 package org.apache.spark.sql.columnar
 
 /**
-*  Created by soubhikc on 5/22/15.
-*/
+ * A version of Spark's InMemoryRelation where new rows can be appended.
+ * Append creates new CachedBatches like a normal buildBuffers as required,
+ * all of which are tracked in driver as separate RDD[CachedBatch] and a
+ * union over all existing is used for a query execution.
+ *
+ * Created by Soubhik on 5/22/15.
+ */
 
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -36,17 +41,18 @@ import org.apache.spark.storage.StorageLevel
 
 import scala.collection.mutable.ArrayBuffer
 
-private[sql] class InMemoryAppendableRelation(override val output: Seq[Attribute],
-                                              override val useCompression: Boolean,
-                                              override val batchSize: Int,
-                                              override val storageLevel: StorageLevel,
-                                              override val child: SparkPlan,
-                                              override val tableName: Option[String])(
-                                               private var _ccb: RDD[CachedBatch] = null,
-                                               private var _stats: Statistics = null,
-                                               private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
-                                               private var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
-                                               new ArrayBuffer[RDD[CachedBatch]]())
+private[sql] class InMemoryAppendableRelation
+(override val output: Seq[Attribute],
+ override val useCompression: Boolean,
+ override val batchSize: Int,
+ override val storageLevel: StorageLevel,
+ override val child: SparkPlan,
+ override val tableName: Option[String])(
+  private var _ccb: RDD[CachedBatch] = null,
+  private var _stats: Statistics = null,
+  private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
+  private var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
+  new ArrayBuffer[RDD[CachedBatch]]())
   extends InMemoryRelation(output, useCompression, batchSize,
     storageLevel, child, tableName)(
       _ccb: RDD[CachedBatch],
@@ -86,7 +92,8 @@ private[sql] class InMemoryAppendableRelation(override val output: Seq[Attribute
   }
 
   override def recache(): Unit = {
-    sys.error(s"InMemoryAppendableRelation: unexpected call to recache for $tableName")
+    sys.error(
+      s"InMemoryAppendableRelation: unexpected call to recache for $tableName")
   }
 
   override def withOutput(newOutput: Seq[Attribute]): InMemoryAppendableRelation = {
@@ -226,7 +233,8 @@ private[sql] class InMemoryAppendableColumnarTableScan
 }
 
 private[sql] object InMemoryAppendableColumnarTableScan {
-  def apply(attributes: Seq[Attribute], predicates: Seq[Expression], relation: InMemoryAppendableRelation): SparkPlan = {
+  def apply(attributes: Seq[Attribute], predicates: Seq[Expression],
+            relation: InMemoryAppendableRelation): SparkPlan = {
     new InMemoryAppendableColumnarTableScan(attributes, predicates, relation)
   }
 }

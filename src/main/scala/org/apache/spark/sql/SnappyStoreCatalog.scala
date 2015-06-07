@@ -9,6 +9,7 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, sql}
 
 import scala.collection.mutable
+import scala.language.implicitConversions
 
 
 /**

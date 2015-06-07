@@ -7,37 +7,32 @@ import org.apache.spark.sql.execution.{StratifiedSampler, LogicalRDD}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
-*  Created by soubhikc on 5/13/15.
-*/
+ * Encapsulates an RDD over all the cached samples for a sampled table.
+ *
+ * Created by Soubhik on 5/13/15.
+ */
 class CachedRDD(name: String)(sqlContext: SQLContext)
   extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    val numberedPeers = SparkEnv.get.blockManager.getPeers(false).zipWithIndex
+    val master = SparkEnv.get.blockManager.master
+    val numberedPeers = master.getMemoryStatus.zipWithIndex
 
-    if (numberedPeers.isEmpty) {
-      return Array.empty[Partition]
+    if (numberedPeers.nonEmpty) {
+      numberedPeers.map {
+        case (bid, idx) => new CachedBlockPartition(null, idx, bid._1.host)
+      }.toArray[Partition]
     }
-
-    val partitions = numberedPeers.map {
-      case (bid, idx) => new CachedBlockPartition(idx, bid.host)
+    else {
+      Array.empty[Partition]
     }
-
-    partitions.toArray[Partition]
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
     assert(blockManager.blockManagerId.host equals part.host)
-    StratifiedSampler(name).map(_.iterator).getOrElse {
-      new Iterator[Row] {
-        override def hasNext: Boolean = false
-
-        override def next(): Row =
-          throw new NoSuchElementException("next on empty iterator")
-      }
-    }
+    StratifiedSampler(name).map(_.iterator).getOrElse(Iterator[Row]())
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -51,9 +46,10 @@ object CachedRDD {
   }
 }
 
-private[spark] class CachedBlockPartition(val idx: Int, val host: String)
-  extends Partition {
+class CachedBlockPartition(val parent: Partition, val idx: Int,
+                           val host: String) extends Partition {
   val index = idx
+  override def toString = s"CachedBlockPartition($idx, $host)"
 }
 
 class DummyRDD(output: Seq[Attribute])(sqlContext: SQLContext)
