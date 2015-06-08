@@ -4,6 +4,7 @@ import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.LogicalRDD
+import org.apache.spark.sql.sources.{StreamRelation, LogicalRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, sql}
@@ -24,7 +25,12 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   protected val currentDatabase: String = "snappydata"
 
-  val streamTables = new mutable.HashMap[String, (LogicalPlan, DStream[_])]()
+  // Stores all stream tables and their logicalPlan.
+  // logicalPlan holds the dstream, schema and the options
+  val streamTables = new mutable.HashMap[String, LogicalPlan]()
+
+  // This keeps the stream table to Sample Table mapping
+  val streamToSampleTblMap =  new mutable.HashMap[String, Seq[String]]()
 
   /**
    * This logicalPlan will be on SampleDataFrame#logicalPlan which will know how to
@@ -93,10 +99,24 @@ class SnappyStoreCatalog(context: SnappyContext,
   def getStreamTable(tableName: String): LogicalPlan =
     streamTables.getOrElse(tableName, {
       throw new Exception(s"Stream table $tableName not found")
-    })._1
+    })
+
+
+  def getStreamTableRelation[T](tableName: String): StreamRelation[T] = {
+    val plan : LogicalPlan = streamTables.getOrElse(tableName,
+      throw new IllegalStateException("Plan for stream not found"))
+
+    plan match {
+      case LogicalRelation(streamrelation) => streamrelation match {
+        case sr: StreamRelation[T] => sr
+        case _ => throw new IllegalStateException("StreamRelation was expected")
+      }
+      case _ => throw new IllegalStateException("StreamRelation was expected")
+    }
+  }
 
   def getOrAddStreamTable(tableName: String, schema: StructType, samplingOptions: Map[String, String]): LogicalPlan =
-    streamTables.get(tableName).map(_._1).getOrElse({
+    streamTables.get(tableName).getOrElse({
       registerSampleTable(schema, tableName, samplingOptions).logicalPlan
     })
 

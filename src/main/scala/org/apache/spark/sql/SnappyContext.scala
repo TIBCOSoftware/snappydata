@@ -9,6 +9,11 @@ import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.{CachedData, SparkPlan, StratifiedSampler}
+import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
+import org.apache.spark.sql.columnar.InMemoryAppendableRelation
+import org.apache.spark.sql.execution.{CachedData, StratifiedSampler}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.storage.StorageLevel._
@@ -16,6 +21,8 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.language.implicitConversions
+import scala.collection.mutable
+
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
 
@@ -27,6 +34,9 @@ import scala.reflect.runtime.{universe => u}
  */
 class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
   self =>
+
+  @transient
+  override protected[sql] val ddlParser = new SnappyParser(sqlParser.parse(_))
 
   @transient
   override protected[sql] lazy val catalog =
@@ -46,6 +56,8 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
       SnappyDStreamOperations(self, ds)
     }
   }
+
+
 
   override def cacheTable(tableName: String): Unit = {
     if (catalog.sampleTables.contains(tableName))
@@ -154,7 +166,7 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
-      AppendableInMemoryScans) ++ super.strategies
+      AppendableInMemoryScans, StreamStrategy) ++ super.strategies
 
     object AppendableInMemoryScans extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
@@ -170,7 +182,78 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     }
 
   }
+
 }
+
+private[sql] class SnappyParser(
+                              parseQuery: String => LogicalPlan) extends DDLParser (parseQuery){
+
+  override protected lazy val ddl: Parser[LogicalPlan] = createTable | describeTable | refreshTable  |
+    createStream | createSampled | strmctxt
+
+  protected val STREAM = Keyword("STREAM")
+  protected val SAMPLED = Keyword("SAMPLED")
+  protected val STRM = Keyword("STREAMING")
+  protected val CTXT = Keyword("CONTEXT")
+  protected val START = Keyword("START")
+  protected val STOP = Keyword("STOP")
+  protected val INIT = Keyword("INIT")
+
+
+  protected lazy val createStream: Parser[LogicalPlan] =
+    (CREATE ~> (STREAM ~> (TABLE ~> ident)) ~
+      tableCols.? ~ (OPTIONS ~> options)) ^^ {
+      case streamname ~ cols ~ opts =>
+        val userColumns = cols.flatMap(fields => Some(StructType(fields)))
+        CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
+    }
+
+  protected lazy val createSampled: Parser[LogicalPlan] =
+    (CREATE ~> (SAMPLED ~> (TABLE ~> ident)) ~
+      (OPTIONS ~> options)) ^^ {
+      case samplename ~ opts =>
+        CreateSampledTable(samplename, new CaseInsensitiveMap(opts))
+    }
+
+  protected lazy val strmctxt: Parser[LogicalPlan] =
+    (STRM ~> CTXT ~> (
+      INIT ^^^ 0 |
+        START ^^^ 1 |
+        STOP ^^^ 2) ~ numericLit.?) ^^ {
+      case action ~ batchInterval =>
+        if (batchInterval.isDefined)
+          StreamingCtxtActions(action, Some(batchInterval.get.toInt))
+        else
+          StreamingCtxtActions(action, None)
+
+    }
+}
+
+private[sql] case class CreateStream(streamName: String,
+                                     userColumns: Option[StructType],
+                                     options: Map[String, String]) extends LogicalPlan with Command {
+  override def output: Seq[Attribute] = Seq.empty
+
+  /** Returns a Seq of the children of this node */
+  override def children: Seq[LogicalPlan] = Seq.empty
+}
+
+private[sql] case class CreateSampledTable(streamName: String,
+                                           options: Map[String, String]) extends LogicalPlan with Command {
+  override def output: Seq[Attribute] = Seq.empty
+
+  /** Returns a Seq of the children of this node */
+  override def children: Seq[LogicalPlan] = Seq.empty
+}
+
+private[sql] case class StreamingCtxtActions(action: Int,
+                                             batchInterval : Option[Int]) extends LogicalPlan with Command {
+  override def output: Seq[Attribute] = Seq.empty
+
+  /** Returns a Seq of the children of this node */
+  override def children: Seq[LogicalPlan] = Seq.empty
+}
+
 
 //end of SnappyContext
 
@@ -201,7 +284,6 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag]
 
 private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   extends execution.CacheManager(sqlContext) {
-
   /**
    * Caches the data produced by the logical representation of the given schema rdd.  Unlike
    * `RDD.cache()`, the default storage level is set to be `MEMORY_AND_DISK` because recomputing
