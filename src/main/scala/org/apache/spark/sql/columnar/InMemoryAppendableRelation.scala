@@ -60,7 +60,7 @@ private[sql] class InMemoryAppendableRelation
       _bstats: Accumulable[ArrayBuffer[Row], Row])
   with MultiInstanceRelation {
 
-  private[sql] val reservoirRDD = new CachedRDD(tableName.get)(child.sqlContext)
+  private[sql] val reservoirRDD = CachedRDD(tableName.get, schema)(child.sqlContext)
   private val bufferLock = new ReentrantReadWriteLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */

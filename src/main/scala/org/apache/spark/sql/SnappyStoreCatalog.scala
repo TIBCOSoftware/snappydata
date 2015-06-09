@@ -81,7 +81,7 @@ class SnappyStoreCatalog(context: SnappyContext,
     })
 
     val rDD: LogicalRDD = LogicalRDD(schema.toAttributes,
-      CachedRDD(tableName)(context))(context)
+      CachedRDD(tableName, schema)(context))(context)
     val sampleTab = SampleDataFrame(context, rDD, options)
     sampleTables.put(tableName, sampleTab)
     context.cacheManager.cacheQuery(sampleTab, Some(tableName))
@@ -133,7 +133,7 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   override def tableExists(tableIdentifier: Seq[String]): Boolean = {
-    throw new NotImplementedError()
+    streamTables.isDefinedAt(tableIdentifier.last)
   }
 }
 

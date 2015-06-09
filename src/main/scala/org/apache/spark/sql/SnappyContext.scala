@@ -58,7 +58,6 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
   }
 
 
-
   override def cacheTable(tableName: String): Unit = {
     if (catalog.sampleTables.contains(tableName))
       throw new Exception("cacheTable is disabled for sampleTable: " + tableName)
@@ -186,9 +185,9 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
 }
 
 private[sql] class SnappyParser(
-                              parseQuery: String => LogicalPlan) extends DDLParser (parseQuery){
+                                 parseQuery: String => LogicalPlan) extends DDLParser(parseQuery) {
 
-  override protected lazy val ddl: Parser[LogicalPlan] = createTable | describeTable | refreshTable  |
+  override protected lazy val ddl: Parser[LogicalPlan] = createTable | describeTable | refreshTable |
     createStream | createSampled | strmctxt
 
   protected val STREAM = Keyword("STREAM")
@@ -247,7 +246,7 @@ private[sql] case class CreateSampledTable(streamName: String,
 }
 
 private[sql] case class StreamingCtxtActions(action: Int,
-                                             batchInterval : Option[Int]) extends LogicalPlan with Command {
+                                             batchInterval: Option[Int]) extends LogicalPlan with Command {
   override def output: Seq[Attribute] = Seq.empty
 
   /** Returns a Seq of the children of this node */
@@ -284,6 +283,7 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag]
 
 private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   extends execution.CacheManager(sqlContext) {
+
   /**
    * Caches the data produced by the logical representation of the given schema rdd.  Unlike
    * `RDD.cache()`, the default storage level is set to be `MEMORY_AND_DISK` because recomputing
@@ -314,7 +314,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     }
 
     cachedData +=
-      CachedData(
+      new CachedData(
         planToCache,
         columnar.InMemoryAppendableRelation(
           sqlContext.conf.useCompression,

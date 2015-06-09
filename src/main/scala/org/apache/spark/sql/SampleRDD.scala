@@ -1,9 +1,11 @@
 package org.apache.spark.sql
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{StratifiedSampler, LogicalRDD}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -11,7 +13,7 @@ import org.apache.spark.{Partition, SparkEnv, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-class CachedRDD(name: String)(sqlContext: SQLContext)
+class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
   extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
@@ -32,7 +34,7 @@ class CachedRDD(name: String)(sqlContext: SQLContext)
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
     assert(blockManager.blockManagerId.host equals part.host)
-    StratifiedSampler(name).map(_.iterator).getOrElse(Iterator[Row]())
+    StratifiedSampler(name).map(_.iterator(CatalystTypeConverters.createToCatalystConverter(schema))).getOrElse(Iterator[Row]())
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -41,14 +43,15 @@ class CachedRDD(name: String)(sqlContext: SQLContext)
 }
 
 object CachedRDD {
-  def apply(name: String)(sqlContext: SQLContext): CachedRDD = {
-    new CachedRDD(name)(sqlContext)
+  def apply(name: String, schema: StructType)(sqlContext: SQLContext): CachedRDD = {
+    new CachedRDD(name, schema)(sqlContext)
   }
 }
 
 class CachedBlockPartition(val parent: Partition, val idx: Int,
                            val host: String) extends Partition {
   val index = idx
+
   override def toString = s"CachedBlockPartition($idx, $host)"
 }
 
