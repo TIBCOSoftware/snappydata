@@ -139,9 +139,11 @@ private[sql] class InMemoryAppendableRelation
 
 private[sql] object InMemoryAppendableRelation {
 
-  final class CachedBatchHolder(val columnBuilders: Array[ColumnBuilder],
+  final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
                                 var rowCount: Int, val batchSize: Int,
                                 val batches: ArrayBuffer[CachedBatch]) {
+
+    var columnBuilders = getColumnBuilders
 
     /**
      * Append a single row to the current CachedBatch (creating a new one
@@ -150,7 +152,6 @@ private[sql] object InMemoryAppendableRelation {
     def appendRow(u: Unit, row: Row): Unit = {
       val rowLength = row.length
       if (rowLength > 0) {
-        val columnBuilders = this.columnBuilders
         // Added for SPARK-6082. This assertion can be useful for scenarios when
         // something like Hive TRANSFORM is used. The external data generation
         // script used in TRANSFORM may result malformed rows, causing
@@ -173,6 +174,7 @@ private[sql] object InMemoryAppendableRelation {
           _.columnStats.collectedStatistics): _*)
         // TODO: somehow push into global batchStats
         batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
+        columnBuilders = getColumnBuilders
       }
     }
 
@@ -203,7 +205,7 @@ private[sql] object InMemoryAppendableRelation {
             tableName: String,
             schema: StructType,
             output: Seq[Attribute]): CachedBatchHolder = {
-    val columnBuilders = output.map { attribute =>
+    def columnBuilders = output.map { attribute =>
       val columnType = ColumnType(attribute.dataType)
       val initialBufferSize = columnType.defaultSize * batchSize
       ColumnBuilder(attribute.dataType, initialBufferSize,
