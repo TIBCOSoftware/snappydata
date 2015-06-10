@@ -338,14 +338,6 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
         System.arraycopy(r.values, 0, newRow, 0, lastIndex)
         newRow(lastIndex) = LONG_ONE
         new GenericMutableRow(newRow)
-      case r: SpecificMutableRow =>
-        val lastIndex = r.length
-        val newRow = new Array[MutableValue](lastIndex + 1)
-        System.arraycopy(r.values, 0, newRow, 0, lastIndex)
-        val w = new MutableDouble
-        w.value = 1.0
-        newRow(lastIndex) = w
-        new SpecificMutableRow(newRow)
       case _ =>
         val lastIndex = row.length
         val newRow = new GenericMutableRow(lastIndex + 1)
