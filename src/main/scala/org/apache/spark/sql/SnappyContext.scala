@@ -12,7 +12,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.{CachedData, SparkPlan, StratifiedSampler}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{DoubleType, StructType}
+import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -269,7 +269,7 @@ case class StratifiedSample(options: Map[String, Any],
    * rows seen for a stratum to the number of samples picked.
    */
   override val output = child.output :+ AttributeReference(WEIGHTAGE_COLUMN_NAME,
-    DoubleType, nullable = false)()
+    LongType, nullable = false)()
 }
 
 //end of SnappyContext

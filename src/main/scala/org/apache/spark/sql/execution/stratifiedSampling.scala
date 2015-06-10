@@ -104,7 +104,7 @@ object StratifiedSampler {
   final val BUFSIZE = 1000
   final val EMPTY_RESERVOIR = Array.empty[MutableRow]
   final val EMPTY_ROW = new GenericMutableRow(Array[Any]())
-  final val DOUBLE_ONE = Double.box(1.0)
+  final val LONG_ONE = Long.box(1)
 
   implicit class StringExtensions(val s: String) extends AnyVal {
     def ci = new {
@@ -336,7 +336,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
         val lastIndex = r.length
         val newRow = new Array[Any](lastIndex + 1)
         System.arraycopy(r.values, 0, newRow, 0, lastIndex)
-        newRow(lastIndex) = DOUBLE_ONE
+        newRow(lastIndex) = LONG_ONE
         new GenericMutableRow(newRow)
       case r: SpecificMutableRow =>
         val lastIndex = r.length
@@ -354,7 +354,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
           newRow(index) = row(index)
           index += 1
         } while (index < lastIndex)
-        newRow(lastIndex) = DOUBLE_ONE
+        newRow(lastIndex) = LONG_ONE
         newRow
     }
   }
@@ -463,7 +463,11 @@ final class StrataReservoir(var totalSamples: Int, var batchTotalSize: Int,
     val reservoir = self.reservoir
     val nsamples = self.reservoirSize
     if (nsamples > 0) {
-      val ratio = Double.box(self.batchTotalSize.asInstanceOf[Double] / nsamples)
+      // combine the two integers into a long
+      // higher order is number of samples (which is expected to remain mostly
+      //   constant will result in less change)
+      val ratio = (nsamples.asInstanceOf[Long] << 32L) |
+        self.batchTotalSize.asInstanceOf[Long]
       val lastIndex = columns - 1
       var pos = 0
       while (pos < nsamples) {
