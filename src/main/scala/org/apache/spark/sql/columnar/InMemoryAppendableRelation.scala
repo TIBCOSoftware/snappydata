@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import org.apache.spark._
 import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
@@ -60,7 +59,8 @@ private[sql] class InMemoryAppendableRelation
       _bstats: Accumulable[ArrayBuffer[Row], Row])
   with MultiInstanceRelation {
 
-  private[sql] val reservoirRDD = CachedRDD(tableName.get, schema)(child.sqlContext)
+  private[sql] val reservoirRDD = new CachedRDD(tableName.get, schema)(
+    child.sqlContext)
   private val bufferLock = new ReentrantReadWriteLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */
@@ -140,8 +140,7 @@ private[sql] class InMemoryAppendableRelation
 private[sql] object InMemoryAppendableRelation {
 
   final class CachedBatchHolder(val columnBuilders: Array[ColumnBuilder],
-                                val converter: Any => Any, var rowCount: Int,
-                                val batchSize: Int,
+                                var rowCount: Int, val batchSize: Int,
                                 val batches: ArrayBuffer[CachedBatch]) {
 
     /**
@@ -160,11 +159,9 @@ private[sql] object InMemoryAppendableRelation {
           s"mismatch, expected ${columnBuilders.length} columns, " +
           s"but got $rowLength. Row content: $row")
 
-        val catalystRow = converter(row).asInstanceOf[Row]
-
         var i = 0
         while (i < rowLength) {
-          columnBuilders(i).appendFrom(catalystRow, i)
+          columnBuilders(i).appendFrom(row, i)
           i += 1
         }
         rowCount += 1
@@ -213,9 +210,8 @@ private[sql] object InMemoryAppendableRelation {
         attribute.name, useCompression)
     }.toArray
 
-    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-    new CachedBatchHolder(columnBuilders, converter,
-      0, batchSize, new ArrayBuffer[CachedBatch](1))
+    new CachedBatchHolder(columnBuilders, 0, batchSize,
+      new ArrayBuffer[CachedBatch](1))
   }
 }
 

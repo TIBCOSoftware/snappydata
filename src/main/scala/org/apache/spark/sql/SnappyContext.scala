@@ -1,28 +1,23 @@
 package org.apache.spark.sql
 
+import java.util.concurrent.atomic.AtomicReference
+
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.OverrideCatalog
-import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan, UnaryNode}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.{CachedData, SparkPlan, StratifiedSampler}
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
-import org.apache.spark.sql.columnar.InMemoryAppendableRelation
-import org.apache.spark.sql.execution.{CachedData, StratifiedSampler}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{DoubleType, StructType}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.storage.StorageLevel._
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.language.implicitConversions
-import scala.collection.mutable
-
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
 
@@ -32,11 +27,13 @@ import scala.reflect.runtime.{universe => u}
  *
  * Created by Soubhik on 5/13/15.
  */
-class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
+class SnappyContext private(sc: SparkContext)
+  extends SQLContext(sc) with Serializable {
+
   self =>
 
   @transient
-  override protected[sql] val ddlParser = new SnappyParser(sqlParser.parse(_))
+  override protected[sql] val ddlParser = new SnappyParser(sqlParser.parse)
 
   @transient
   override protected[sql] lazy val catalog =
@@ -44,26 +41,6 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(this)
-
-  object operations extends Serializable {
-
-    implicit def snappyOperationsOnDF(df: DataFrame): SnappyOperations = {
-      SnappyOperations(self, df)
-    }
-
-    implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]):
-    SnappyDStreamOperations[T] = {
-      SnappyDStreamOperations(self, ds)
-    }
-  }
-
-
-  override def cacheTable(tableName: String): Unit = {
-    if (catalog.sampleTables.contains(tableName))
-      throw new Exception("cacheTable is disabled for sampleTable: " + tableName)
-
-    super.cacheTable(tableName)
-  }
 
   def saveStream[T: ClassTag](stream: DStream[T],
                               sampleTab: Seq[String],
@@ -92,7 +69,8 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     val sampleTables = (catalog.sampleTables.filter {
       case (name, df) => sampleTab.contains(name)
     } map { case (name, df) =>
-      (name, df.samplingOptions, df.schema, df.queryExecution.analyzed.output,
+      val sample = df.logicalPlan
+      (name, sample.options, sample.schema, sample.output,
         cacheManager.lookupCachedData(df.logicalPlan).getOrElse(sys.error(
           s"SnappyContext.saveStream: failed to lookup cached plan for " +
             s"sampling table $name")).cachedRepresentation)
@@ -106,8 +84,10 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
             cached = true)
           // create a new holder for set of CachedBatches
           val batches = InMemoryAppendableRelation(useCompression,
-            columnBatchSize, name, sampler.schema, output)
-          sampler.append(rowIterator, (), batches.appendRow, batches.endRows)
+            columnBatchSize, name, schema, output)
+          sampler.append(rowIterator,
+            CatalystTypeConverters.createToCatalystConverter(schema),
+            (), batches.appendRow, batches.endRows)
           batches.forceEndOfBatch().iterator
         }))
     }
@@ -123,23 +103,13 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     }
   }
 
-  def registerSampleTable(streamTable: DataFrame, tableName: String,
-                          samplingOptions: Map[String, String]): DataFrame = {
-    catalog.registerSampleTable(streamTable.schema, tableName, samplingOptions)
-  }
-
-  def registerTopKTable(streamTable: DataFrame, tableName: String,
-                        topkOptions: Map[String, String]): DataFrame = {
-    catalog.registerTopKTable(streamTable.schema, tableName, topkOptions)
-  }
-
   def registerSampleTable(tableName: String, schema: StructType,
-                          samplingOptions: Map[String, String]): DataFrame = {
+                          samplingOptions: Map[String, Any]): DataFrame = {
     catalog.registerSampleTable(schema, tableName, samplingOptions)
   }
 
   def registerSampleTableOn[A <: Product : u.TypeTag]
-  (tableName: String, samplingOptions: Map[String, String]): DataFrame = {
+  (tableName: String, samplingOptions: Map[String, Any]): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
         "Mention type information for e.g. registerSampleTableOn[<class>]")
@@ -147,12 +117,7 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     SparkPlan.currentContext.set(self)
     val schemaExtract = ScalaReflection.schemaFor[A].dataType
       .asInstanceOf[StructType]
-    registerSampleTableOn(tableName, schemaExtract, samplingOptions)
-  }
-
-  def registerSampleTableOn(tableName: String, schema: StructType,
-                            samplingOptions: Map[String, String]): DataFrame = {
-    catalog.registerSampleTable(schema, tableName, samplingOptions)
+    registerSampleTable(tableName, schemaExtract, samplingOptions)
   }
 
   def registerTopKTable(streamTableName: String, tableName: String,
@@ -165,10 +130,12 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
-      AppendableInMemoryScans, StreamStrategy) ++ super.strategies
+      SnappyStrategies, StreamStrategy) ++ super.strategies
 
-    object AppendableInMemoryScans extends Strategy {
+    object SnappyStrategies extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+        case s@StratifiedSample(options, child) =>
+          execution.StratifiedSample(options, planLater(child), s.output) :: Nil
         case PhysicalOperation(projectList, filters,
         mem: columnar.InMemoryAppendableRelation) =>
           pruneFilterProject(
@@ -181,14 +148,14 @@ class SnappyContext(sc: SparkContext) extends SQLContext(sc) with Serializable {
     }
 
   }
-
 }
 
-private[sql] class SnappyParser(
-                                 parseQuery: String => LogicalPlan) extends DDLParser(parseQuery) {
+private[sql] class SnappyParser(parseQuery: String => LogicalPlan)
+  extends DDLParser(parseQuery) {
 
-  override protected lazy val ddl: Parser[LogicalPlan] = createTable | describeTable | refreshTable |
-    createStream | createSampled | strmctxt
+  override protected lazy val ddl: Parser[LogicalPlan] =
+    createTable | describeTable | refreshTable |
+      createStream | createSampled | strmctxt
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -230,7 +197,9 @@ private[sql] class SnappyParser(
 
 private[sql] case class CreateStream(streamName: String,
                                      userColumns: Option[StructType],
-                                     options: Map[String, String]) extends LogicalPlan with Command {
+                                     options: Map[String, String])
+  extends LogicalPlan with Command {
+
   override def output: Seq[Attribute] = Seq.empty
 
   /** Returns a Seq of the children of this node */
@@ -238,7 +207,9 @@ private[sql] case class CreateStream(streamName: String,
 }
 
 private[sql] case class CreateSampledTable(streamName: String,
-                                           options: Map[String, String]) extends LogicalPlan with Command {
+                                           options: Map[String, String])
+  extends LogicalPlan with Command {
+
   override def output: Seq[Attribute] = Seq.empty
 
   /** Returns a Seq of the children of this node */
@@ -246,7 +217,9 @@ private[sql] case class CreateSampledTable(streamName: String,
 }
 
 private[sql] case class StreamingCtxtActions(action: Int,
-                                             batchInterval: Option[Int]) extends LogicalPlan with Command {
+                                             batchInterval: Option[Int])
+  extends LogicalPlan with Command {
+
   override def output: Seq[Attribute] = Seq.empty
 
   /** Returns a Seq of the children of this node */
@@ -254,9 +227,77 @@ private[sql] case class StreamingCtxtActions(action: Int,
 }
 
 
+object snappy extends Serializable {
+
+  implicit def snappyOperationsOnDataFrame(df: DataFrame): SnappyOperations = {
+    df.sqlContext match {
+      case sc: SnappyContext => SnappyOperations(sc, df)
+      case sc => throw new AnalysisException("Extended snappy operations " +
+        s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+    }
+  }
+
+  implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]):
+  SnappyDStreamOperations[T] = SnappyDStreamOperations(SnappyContext(
+    ds.context.sparkContext), ds)
+}
+
+object SnappyContext {
+
+  private val atomicContext = new AtomicReference[SnappyContext]()
+
+  def apply(sc: SparkContext,
+            init: SnappyContext => SnappyContext = identity): SnappyContext = {
+    val context = atomicContext.get
+    if (context != null) {
+      context
+    }
+    else {
+      atomicContext.compareAndSet(null, init(new SnappyContext(sc)))
+      atomicContext.get
+    }
+  }
+}
+
+case class StratifiedSample(options: Map[String, Any],
+                            override val child: LogicalPlan) extends UnaryNode {
+
+  final val WEIGHTAGE_COLUMN_NAME = "__STRATIFIED_SAMPLER_WEIGHTAGE"
+
+  /**
+   * StratifiedSample will add one additional column for the ratio of total
+   * rows seen for a stratum to the number of samples picked.
+   */
+  override val output = child.output :+ AttributeReference(WEIGHTAGE_COLUMN_NAME,
+    DoubleType, nullable = false)()
+}
+
 //end of SnappyContext
 
+class SampleDataFrame(@transient override val sqlContext: SnappyContext,
+                      @transient override val logicalPlan: StratifiedSample)
+  extends DataFrame(sqlContext, logicalPlan) with Serializable {
+
+  // TODO: concurrency of the catalog?
+
+  def registerSampleTable(tableName: String): Unit =
+    sqlContext.catalog.registerSampleTable(schema, tableName,
+      logicalPlan.options, Some(this))
+
+  override def registerTempTable(tableName: String): Unit =
+    registerSampleTable(tableName)
+}
+
 private[sql] case class SnappyOperations(context: SnappyContext, df: DataFrame) {
+
+  /**
+   * Creates stratified sampled data from given DataFrame
+   * {{{
+   *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
+   * }}}
+   */
+  def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
+    new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan))
 
   def insertIntoSampleTables(sampleTableName: String*) =
     context.collectSamples(df, sampleTableName)
@@ -285,43 +326,32 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   extends execution.CacheManager(sqlContext) {
 
   /**
-   * Caches the data produced by the logical representation of the given schema rdd.  Unlike
-   * `RDD.cache()`, the default storage level is set to be `MEMORY_AND_DISK` because recomputing
-   * the in-memory columnar representation of the underlying table is expensive.
+   * Caches the data produced by the logical representation of the given
+   * schema rdd. Unlike `RDD.cache()`, the default storage level is set to be
+   * `MEMORY_AND_DISK` because recomputing the in-memory columnar representation
+   * of the underlying table is expensive.
    */
   override private[sql] def cacheQuery
   (query: DataFrame, tableName: Option[String] = None,
-   storageLevel: StorageLevel = MEMORY_AND_DISK): Unit = writeLock {
+   storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = writeLock {
 
-    val snappyTable = {
-      if (sqlContext.catalog.sampleTables.contains {
-        tableName.getOrElse({
-          ""
-        })
-      }) true
-      else false
+    query.logicalPlan match {
+      case plan@StratifiedSample(options, childPlan) =>
+        val alreadyCached = lookupCachedData(plan)
+        if (alreadyCached.nonEmpty) {
+          logWarning("SnappyCacheManager: asked to cache already cached data.")
+        }
+        else {
+          cachedData += CachedData(plan,
+            columnar.InMemoryAppendableRelation(
+              sqlContext.conf.useCompression,
+              sqlContext.conf.columnBatchSize,
+              storageLevel,
+              query.queryExecution.executedPlan,
+              tableName))
+        }
+      case _ => super.cacheQuery(query, tableName, storageLevel)
     }
-
-    if (!snappyTable) {
-      super.cacheQuery(query, tableName, storageLevel)
-    }
-
-    val planToCache = query.queryExecution.analyzed
-    val alreadyCached = lookupCachedData(planToCache)
-    if (alreadyCached.nonEmpty) {
-      logWarning("Asked to cache already cached data.")
-      return
-    }
-
-    cachedData +=
-      new CachedData(
-        planToCache,
-        columnar.InMemoryAppendableRelation(
-          sqlContext.conf.useCompression,
-          sqlContext.conf.columnBatchSize,
-          storageLevel,
-          query.queryExecution.executedPlan,
-          tableName))
   }
 }
 

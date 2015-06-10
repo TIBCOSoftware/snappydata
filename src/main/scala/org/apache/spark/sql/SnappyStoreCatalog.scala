@@ -4,20 +4,18 @@ import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.LogicalRDD
-import org.apache.spark.sql.sources.{StreamRelation, LogicalRelation}
+import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, sql}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-
 /**
  * Catalog primarily tracking stream/topK tables and returning LogicalPlan to materialize
  * these entities.
  *
- * Created by soubhikc on 5/13/15.
+ * Created by Soubhik on 5/13/15.
  */
 class SnappyStoreCatalog(context: SnappyContext,
                          override val conf: CatalystConf)
@@ -68,8 +66,9 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def registerSampleTable(schema: StructType, tableName: String,
-                          samplingOptions: Map[String, String]): DataFrame = {
-    val options = if (samplingOptions.get("name").isDefined) {
+                          samplingOptions: Map[String, Any],
+                          df: Option[SampleDataFrame] = None): DataFrame = {
+    val options = if (samplingOptions.contains("name")) {
       samplingOptions
     }
     else {
@@ -80,16 +79,19 @@ class SnappyStoreCatalog(context: SnappyContext,
       throw new Exception(s"$tableName name not inserted")
     })
 
-    val rDD: LogicalRDD = LogicalRDD(schema.toAttributes,
-      CachedRDD(tableName, schema)(context))(context)
-    val sampleTab = SampleDataFrame(context, rDD, options)
-    sampleTables.put(tableName, sampleTab)
-    context.cacheManager.cacheQuery(sampleTab, Some(tableName))
-    sampleTab
+    val sample = df.getOrElse {
+      val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
+        new CachedRDD(tableName, schema)(context))(context)
+      val newDF = new SampleDataFrame(context, StratifiedSample(options, plan))
+      context.cacheManager.cacheQuery(newDF, Some(tableName))
+      newDF
+    }
+    sampleTables.put(tableName, sample)
+    sample
   }
 
   def registerTopKTable(schema: StructType, tableName: String,
-                        aggOptions: Map[String, String]): DataFrame = {
+                        aggOptions: Map[String, Any]): DataFrame = {
     val accessPlan = DummyRDD(schema.toAttributes)(context)
     val topkTab = TopKDataFrame(context, accessPlan, aggOptions)
     topkTables.put(tableName, topkTab)
@@ -115,10 +117,10 @@ class SnappyStoreCatalog(context: SnappyContext,
     }
   }
 
-  def getOrAddStreamTable(tableName: String, schema: StructType, samplingOptions: Map[String, String]): LogicalPlan =
-    streamTables.get(tableName).getOrElse({
-      registerSampleTable(schema, tableName, samplingOptions).logicalPlan
-    })
+  def getOrAddStreamTable(tableName: String, schema: StructType,
+                          samplingOptions: Map[String, Any]): LogicalPlan =
+    streamTables.getOrElse(tableName, registerSampleTable(schema, tableName,
+      samplingOptions).logicalPlan)
 
   /**
    * Returns tuples of (tableName, isTemporary) for all tables in the given database.
@@ -137,43 +139,9 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 }
 
-class SampleDataFrame(@transient sqlContext: SnappyContext,
-                      logicalPlan: LogicalPlan,
-                      val samplingOptions: Map[String, String])
-  extends sql.DataFrame(sqlContext, logicalPlan) {
-
-  def this(incoming: DataFrame) {
-    this(incoming.sqlContext.asInstanceOf[SnappyContext], {
-      incoming.logicalPlan
-    }, {
-      val df: SampleDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].
-        catalog.sampleTables.find(p => p._2.logicalPlan.sameResult(
-        incoming.logicalPlan)).get._2
-      df.samplingOptions
-    })
-  }
-
-  def stratifiedSample(): DataFrame = {
-    throw new NotImplementedError()
-  }
-}
-
-object SampleDataFrame {
-
-  implicit def dataFrameToSampleDataFrame(df: DataFrame): SampleDataFrame = {
-    assert(df.sqlContext.isInstanceOf[SnappyContext])
-    new SampleDataFrame(df)
-  }
-
-  def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan,
-            samplingOptions: Map[String, String]): SampleDataFrame = {
-    new SampleDataFrame(sqlContext, logicalPlan, samplingOptions)
-  }
-}
-
 class TopKDataFrame(@transient override val sqlContext: SnappyContext,
                     logicalPlan: LogicalPlan,
-                    val aggOptions: Map[String, String])
+                    val aggOptions: Map[String, Any])
   extends sql.DataFrame(sqlContext, logicalPlan) {
 
   def this(incoming: DataFrame) {
@@ -200,7 +168,7 @@ object TopKDataFrame {
   }
 
   def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan,
-            aggOptions: Map[String, String]): TopKDataFrame = {
+            aggOptions: Map[String, Any]): TopKDataFrame = {
     new TopKDataFrame(sqlContext, logicalPlan, aggOptions)
   }
 }

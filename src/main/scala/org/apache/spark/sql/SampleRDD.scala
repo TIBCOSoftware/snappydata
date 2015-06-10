@@ -1,10 +1,9 @@
 package org.apache.spark.sql
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.{StratifiedSampler, LogicalRDD}
+import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSampler}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
@@ -34,17 +33,11 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
     assert(blockManager.blockManagerId.host equals part.host)
-    StratifiedSampler(name).map(_.iterator(CatalystTypeConverters.createToCatalystConverter(schema))).getOrElse(Iterator[Row]())
+    StratifiedSampler(name).map(_.iterator).getOrElse(Iterator[Row]())
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     Seq(split.asInstanceOf[CachedBlockPartition].host)
-  }
-}
-
-object CachedRDD {
-  def apply(name: String, schema: StructType)(sqlContext: SQLContext): CachedRDD = {
-    new CachedRDD(name, schema)(sqlContext)
   }
 }
 
