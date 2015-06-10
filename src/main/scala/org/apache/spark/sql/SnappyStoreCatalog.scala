@@ -81,7 +81,7 @@ class SnappyStoreCatalog(context: SnappyContext,
 
     val sample = df.getOrElse {
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
-        new CachedRDD(tableName, schema)(context))(context)
+        new DummyRDD(context))(context)
       val newDF = new SampleDataFrame(context, StratifiedSample(options, plan))
       context.cacheManager.cacheQuery(newDF, Some(tableName))
       newDF
@@ -92,10 +92,10 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   def registerTopKTable(schema: StructType, tableName: String,
                         aggOptions: Map[String, Any]): DataFrame = {
-    val accessPlan = DummyRDD(schema.toAttributes)(context)
-    val topkTab = TopKDataFrame(context, accessPlan, aggOptions)
-    topkTables.put(tableName, topkTab)
-    topkTab
+//    val accessPlan = DummyRDD(schema.toAttributes)(context)
+//    val topkTab = TopKDataFrame(context, accessPlan, aggOptions)
+//    topkTables.put(tableName, topkTab)
+    null
   }
 
   def getStreamTable(tableName: String): LogicalPlan =

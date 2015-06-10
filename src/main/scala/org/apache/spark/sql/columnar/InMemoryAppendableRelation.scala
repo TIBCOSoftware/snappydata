@@ -223,8 +223,45 @@ private[sql] class InMemoryAppendableColumnarTableScan
   extends InMemoryColumnarTableScan(attributes, predicates, relation) {
 
   protected override def doExecute(): RDD[Row] = {
-    new UnionRDD[Row](this.sparkContext, Seq(super.doExecute(),
-      relation.asInstanceOf[InMemoryAppendableRelation].reservoirRDD))
+
+    val reservoirRows: RDD[Row] = relation.asInstanceOf[InMemoryAppendableRelation].reservoirRDD.mapPartitions { rowIterator =>
+
+      // Find the ordinals and data types of the requested columns.  If none are requested, use the
+      // narrowest (the field with minimum default element size).
+      val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
+        val (narrowestOrdinal, narrowestDataType) =
+          relation.output.zipWithIndex.map { case (a, ordinal) =>
+            ordinal -> a.dataType
+          } minBy { case (_, dataType) =>
+            ColumnType(dataType).defaultSize
+          }
+        Seq(narrowestOrdinal) -> Seq(narrowestDataType)
+      } else {
+        attributes.map { a =>
+          relation.output.indexWhere(_.exprId == a.exprId) -> a.dataType
+        }.unzip
+      }
+
+      val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
+
+      new Iterator[Row] {
+
+        val lookupCols = requestedColumnIndices.zipWithIndex
+        override def hasNext: Boolean = rowIterator.hasNext
+
+        override def next() = {
+          val row = rowIterator.next()
+
+          lookupCols.map { case (colIdx, i) =>
+            nextRow(i) = row(colIdx)
+          }
+
+          nextRow
+        }
+      }
+    }
+
+    new UnionRDD[Row](this.sparkContext, Seq(super.doExecute(), reservoirRows))
   }
 }
 

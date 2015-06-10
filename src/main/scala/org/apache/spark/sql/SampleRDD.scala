@@ -48,20 +48,17 @@ class CachedBlockPartition(val parent: Partition, val idx: Int,
   override def toString = s"CachedBlockPartition($idx, $host)"
 }
 
-class DummyRDD(output: Seq[Attribute])(sqlContext: SQLContext)
-  extends LogicalRDD(output, null)(sqlContext) {
-  private val id: Int = sqlContext.sparkContext.newRddId()
+class DummyRDD(sqlContext: SQLContext)
+  extends RDD[Row](sqlContext.sparkContext, Nil) {
+  /**
+     * :: DeveloperApi ::
+     * Implemented by subclasses to compute a given partition.
+     */
+  override def compute(split: Partition, context: TaskContext): Iterator[Row] = Iterator.empty
 
-  override def sameResult(plan: LogicalPlan): Boolean = plan match {
-    case DummyRDD(otherID) => id == otherID
-    case _ => false
-  }
-}
-
-object DummyRDD {
-  def apply(output: Seq[Attribute])(sqlContext: SQLContext): DummyRDD = {
-    new DummyRDD(output)(sqlContext)
-  }
-
-  def unapply(dumb: DummyRDD): Option[Int] = Some(dumb.id)
+  /**
+   * Implemented by subclasses to return the set of partitions in this RDD. This method will only
+   * be called once, so it is safe to implement a time-consuming computation in it.
+   */
+  override protected def getPartitions: Array[Partition] = Array.empty
 }
