@@ -1,9 +1,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSampler}
+import org.apache.spark.sql.execution.StratifiedSampler
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
@@ -50,15 +48,17 @@ class CachedBlockPartition(val parent: Partition, val idx: Int,
 
 class DummyRDD(sqlContext: SQLContext)
   extends RDD[Row](sqlContext.sparkContext, Nil) {
-  /**
-     * :: DeveloperApi ::
-     * Implemented by subclasses to compute a given partition.
-     */
-  override def compute(split: Partition, context: TaskContext): Iterator[Row] = Iterator.empty
 
   /**
-   * Implemented by subclasses to return the set of partitions in this RDD. This method will only
-   * be called once, so it is safe to implement a time-consuming computation in it.
+   * Implemented by subclasses to compute a given partition.
+   */
+  override def compute(split: Partition, context: TaskContext): Iterator[Row] =
+    Iterator.empty
+
+  /**
+   * Implemented by subclasses to return the set of partitions in this RDD.
+   * This method will only be called once, so it is safe to implement
+   * a time-consuming computation in it.
    */
   override protected def getPartitions: Array[Partition] = Array.empty
 }

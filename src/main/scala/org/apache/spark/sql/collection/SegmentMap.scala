@@ -26,6 +26,8 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def iterator: Iterator[(K, V)]
 
+  def valuesIterator: Iterator[V]
+
   def size: Int
 
   def isEmpty: Boolean

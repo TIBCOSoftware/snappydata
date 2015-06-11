@@ -149,7 +149,7 @@ private[sql] object InMemoryAppendableRelation {
      * Append a single row to the current CachedBatch (creating a new one
      * if not present or has exceeded its capacity)
      */
-    def appendRow(u: Unit, row: Row): Unit = {
+    private def appendRow_(newBuilders: Boolean, row: Row): Unit = {
       val rowLength = row.length
       if (rowLength > 0) {
         // Added for SPARK-6082. This assertion can be useful for scenarios when
@@ -174,9 +174,11 @@ private[sql] object InMemoryAppendableRelation {
           _.columnStats.collectedStatistics): _*)
         // TODO: somehow push into global batchStats
         batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
-        columnBuilders = getColumnBuilders
+        if (newBuilders) columnBuilders = getColumnBuilders
       }
     }
+
+    def appendRow(u: Unit, row: Row): Unit = appendRow_(newBuilders = true, row)
 
     // empty for now
     def endRows(u: Unit): Unit = {}
@@ -186,7 +188,7 @@ private[sql] object InMemoryAppendableRelation {
         // setting rowCount to batchSize temporarily will automatically
         // force creation of a new batch in appendRow
         rowCount = batchSize
-        appendRow((), EmptyRow)
+        appendRow_(newBuilders = false, EmptyRow)
       }
       this.batches
     }

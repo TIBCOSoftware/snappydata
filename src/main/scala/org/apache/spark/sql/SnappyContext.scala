@@ -80,8 +80,8 @@ class SnappyContext private(sc: SparkContext)
     val rdds = sampleTables.map {
       case (name, samplingOptions, schema, output, relation) =>
         (relation, tDF.mapPartitions(rowIterator => {
-          val sampler = StratifiedSampler(samplingOptions, "", schema,
-            cached = true)
+          val sampler = StratifiedSampler(samplingOptions, nameSuffix = "",
+            columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
           val batches = InMemoryAppendableRelation(useCompression,
             columnBatchSize, name, schema, output)

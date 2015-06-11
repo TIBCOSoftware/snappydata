@@ -248,7 +248,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     }
   }
 
-  def readLock[U](f: (Array[M]) => U): U = {
+  def readLock[U](f: Array[M] => U): U = {
     val segments = wrapRefArray(_segments)
     segments.foreach(_.readLock.lock())
     try {

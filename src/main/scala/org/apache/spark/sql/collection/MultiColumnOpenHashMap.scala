@@ -30,7 +30,7 @@ import scala.reflect.ClassTag
  *
  * Under the hood, it uses our MultiColumnOpenHashSet implementation.
  */
-private[spark] class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
+private[spark] final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   val columns: Array[Int],
   val types: Array[DataType],
   val numColumns: Int,
@@ -294,7 +294,7 @@ private[spark] class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: C
     }
   }
 
-  final def valuesIterator: Iterator[V] = new Iterator[V] {
+  override def valuesIterator: Iterator[V] = new Iterator[V] {
     var pos = -1
     var nextV: V = computeNextV()
 
