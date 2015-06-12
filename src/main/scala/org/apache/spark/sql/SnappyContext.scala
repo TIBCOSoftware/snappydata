@@ -11,6 +11,9 @@ import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan, UnaryN
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.{ExtractPythonUdfs, CachedData, SparkPlan, StratifiedSampler}
+import org.apache.spark.sql.columnar._
+import org.apache.spark.sql.execution.LogicalRDD
+import org.apache.spark.sql.execution.{CachedData, SparkPlan, StratifiedSampler}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -37,7 +40,7 @@ class SnappyContext (sc: SparkContext)
 
   @transient
   override protected[sql] lazy val catalog =
-    new SnappyStoreCatalog(this, conf) with OverrideCatalog
+    new SnappyStoreCatalog(this, conf)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(this)
@@ -103,13 +106,66 @@ class SnappyContext (sc: SparkContext)
     }
   }
 
+  def appendToCache(df: DataFrame, tableName: String): Unit = {
+    val useCompression = conf.useCompression
+    val columnBatchSize = conf.columnBatchSize
+
+    val relation = cacheManager.lookupCachedData(catalog.lookupRelation(Seq(tableName))).getOrElse {
+      val lookup = catalog.lookupRelation(Seq(tableName))
+      cacheManager.cacheQuery(
+        DataFrame(this, lookup),
+        Some(tableName), StorageLevel.MEMORY_AND_DISK)
+
+      cacheManager.lookupCachedData(lookup).getOrElse {
+        sys.error(s"couldn't cache table $tableName")
+      }
+    }
+
+    val (schema, output) = (df.schema, df.logicalPlan.output)
+
+    val cached = df.mapPartitions { rowIterator =>
+
+      val batches = InMemoryAppendableRelation(useCompression,
+        columnBatchSize, tableName, schema, output)
+
+      val converter = CatalystTypeConverters.createToCatalystConverter(schema);
+
+      rowIterator foreach  { r =>
+        batches.appendRow((), converter(r).asInstanceOf[Row])
+      }
+
+      batches.forceEndOfBatch().iterator
+
+    }.persist(StorageLevel.MEMORY_AND_DISK)
+
+    // trigger an Action to materialize 'cached' batch
+    if (cached.count() > 0) {
+      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
+    }
+  }
+
+  def registerTable[A <: Product : u.TypeTag](tableName: String) = {
+    if (u.typeOf[A] =:= u.typeOf[Nothing]) {
+      sys.error("Type of case class object not mentioned. " +
+        "Mention type information for e.g. registerSampleTableOn[<class>]")
+    }
+
+    SparkPlan.currentContext.set(self)
+    val schema = ScalaReflection.schemaFor[A].dataType
+      .asInstanceOf[StructType]
+
+    val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
+      new DummyRDD(this))(this)
+
+    catalog.registerTable(Seq(tableName), plan)
+  }
+
   def registerSampleTable(tableName: String, schema: StructType,
                           samplingOptions: Map[String, Any]): DataFrame = {
     catalog.registerSampleTable(schema, tableName, samplingOptions)
   }
 
-  def registerSampleTableOn[A <: Product : u.TypeTag]
-  (tableName: String, samplingOptions: Map[String, Any]): DataFrame = {
+  def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String, samplingOptions: Map[String, Any]): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
         "Mention type information for e.g. registerSampleTableOn[<class>]")
@@ -300,6 +356,10 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
 
   override def registerTempTable(tableName: String): Unit =
     registerSampleTable(tableName)
+
+  def appendToCache(tableName: String): Unit =
+    sqlContext.appendToCache(this, tableName)
+
 }
 
 private[sql] case class SnappyOperations(context: SnappyContext, df: DataFrame) {
@@ -313,9 +373,21 @@ private[sql] case class SnappyOperations(context: SnappyContext, df: DataFrame) 
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
     new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan))
 
+  /**
+   * Table must be registered using #registerSampleTable.
+   */
   def insertIntoSampleTables(sampleTableName: String*) =
     context.collectSamples(df, sampleTableName)
 
+  /**
+  * Append to an existing cache table. Automatically uses #cacheQuery if not done already.
+  */
+  def appendToCache(tableName: String): Unit =
+    context.appendToCache(df, tableName)
+
+  /**
+  * Insert into existing sample table or create one if neccessary.
+  */
   def createAndInsertIntoSampleTables(in: (String, Map[String, String])*) = {
     in.map {
       case (tableName, options) => context.catalog.getOrAddStreamTable(
@@ -349,24 +421,21 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   (query: DataFrame, tableName: Option[String] = None,
    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = writeLock {
 
-    query.logicalPlan match {
-      case plan@StratifiedSample(options, childPlan) =>
-        val alreadyCached = lookupCachedData(plan)
-        if (alreadyCached.nonEmpty) {
-          logWarning("SnappyCacheManager: asked to cache already cached data.")
-        }
-        else {
-          cachedData += CachedData(plan,
-            columnar.InMemoryAppendableRelation(
-              sqlContext.conf.useCompression,
-              sqlContext.conf.columnBatchSize,
-              storageLevel,
-              query.queryExecution.executedPlan,
-              tableName))
-        }
-      case _ => super.cacheQuery(query, tableName, storageLevel)
+    val alreadyCached = lookupCachedData(query.logicalPlan)
+    if (alreadyCached.nonEmpty) {
+      logWarning("SnappyCacheManager: asked to cache already cached data.")
+    }
+    else {
+      cachedData += CachedData(query.logicalPlan,
+        columnar.InMemoryAppendableRelation(
+          sqlContext.conf.useCompression,
+          sqlContext.conf.columnBatchSize,
+          storageLevel,
+          query.queryExecution.executedPlan,
+          tableName))
     }
   }
+
 }
 
 // end of CacheManager

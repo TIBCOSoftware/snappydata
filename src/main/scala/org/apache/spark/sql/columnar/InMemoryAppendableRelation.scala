@@ -250,14 +250,13 @@ private[sql] class InMemoryAppendableColumnarTableScan
 
       new Iterator[Row] {
 
-        val lookupCols = requestedColumnIndices.zipWithIndex
         override def hasNext: Boolean = rowIterator.hasNext
 
         override def next() = {
           val row = rowIterator.next()
 
-          lookupCols.map { case (colIdx, i) =>
-            nextRow(i) = row(colIdx)
+          requestedColumnIndices.indices.foreach { i =>
+            nextRow(i) = row(requestedColumnIndices(i))
           }
 
           nextRow

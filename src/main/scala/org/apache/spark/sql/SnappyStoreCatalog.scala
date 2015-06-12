@@ -53,16 +53,12 @@ class SnappyStoreCatalog(context: SnappyContext,
     //  currentDatabase)
     val tblName = tableIdent.last
 
-    sampleTables.getOrElse(tblName, {
-      throw new AnalysisException(
-        s"sample table $tblName not found")
-    }).logicalPlan
-    //SnappystoreRelation(databaseName, tblName, alias)(context)
-  }
+    sampleTables.get(tblName).map(_.logicalPlan).getOrElse {
+      tables.getOrElse(tblName,
+        sys.error(s"Table Not Found: $tblName"))
+    }
 
-  override def registerTable(tableIdentifier: Seq[String],
-                             plan: LogicalPlan): Unit = {
-    throw new NotImplementedError()
+    //SnappystoreRelation(databaseName, tblName, alias)(context)
   }
 
   def registerSampleTable(schema: StructType, tableName: String,
