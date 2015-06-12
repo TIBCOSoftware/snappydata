@@ -4,13 +4,13 @@ import java.util.concurrent.atomic.AtomicReference
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.OverrideCatalog
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, OverrideCatalog}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan, UnaryNode}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
-import org.apache.spark.sql.execution.{CachedData, SparkPlan, StratifiedSampler}
+import org.apache.spark.sql.execution.{ExtractPythonUdfs, CachedData, SparkPlan, StratifiedSampler}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -27,7 +27,7 @@ import scala.reflect.runtime.{universe => u}
  *
  * Created by Soubhik on 5/13/15.
  */
-class SnappyContext private(sc: SparkContext)
+class SnappyContext (sc: SparkContext)
   extends SQLContext(sc) with Serializable {
 
   self =>
@@ -125,6 +125,22 @@ class SnappyContext private(sc: SparkContext)
     catalog.registerTopKTable(catalog.getStreamTable(streamTableName).schema,
       tableName, topkOptions)
   }
+
+  @transient
+  override protected[sql] lazy val analyzer: Analyzer =
+    new Analyzer(catalog, functionRegistry, conf) {
+      override val extendedResolutionRules =
+        ExtractPythonUdfs ::
+          sources.PreInsertCastAndRename ::
+          WeightageRule ::
+          Nil
+
+      override val extendedCheckRules = Seq(
+        sources.PreWriteCheck(catalog)
+      )
+    }
+
+
 
   @transient override protected[sql] val planner = new SparkPlanner {
     val snappyContext = self
@@ -262,14 +278,12 @@ object SnappyContext {
 case class StratifiedSample(options: Map[String, Any],
                             override val child: LogicalPlan) extends UnaryNode {
 
-  final val WEIGHTAGE_COLUMN_NAME = "__STRATIFIED_SAMPLER_WEIGHTAGE"
-
   /**
    * StratifiedSample will add one additional column for the ratio of total
    * rows seen for a stratum to the number of samples picked.
    */
-  override val output = child.output :+ AttributeReference(WEIGHTAGE_COLUMN_NAME,
-    LongType, nullable = false)()
+  override val output = child.output :+ AttributeReference(
+    StratifiedSampler.WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
 }
 
 //end of SnappyContext
