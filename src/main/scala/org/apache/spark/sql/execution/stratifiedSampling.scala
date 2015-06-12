@@ -109,6 +109,8 @@ object StratifiedSampler {
   final val EMPTY_ROW = new GenericMutableRow(Array[Any]())
   final val LONG_ONE = Long.box(1)
 
+  final val WEIGHTAGE_COLUMN_NAME = "__STRATIFIED_SAMPLER_WEIGHTAGE"
+
   implicit class StringExtensions(val s: String) extends AnyVal {
     def ci = new {
       def unapply(other: String) = s.equalsIgnoreCase(other)
