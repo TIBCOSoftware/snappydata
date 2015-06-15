@@ -54,8 +54,7 @@ case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression 
 
   override def dataType: DataType = children.head.dataType
 
-  /** Coalesce is nullable if all of its children are nullable, or if it has no children. */
-  override def nullable: Boolean = !children.exists(!_.nullable)
+  override def nullable: Boolean = true
 
   // Coalesce is foldable if all children are foldable.
   override def foldable: Boolean = !children.exists(!_.foldable)
