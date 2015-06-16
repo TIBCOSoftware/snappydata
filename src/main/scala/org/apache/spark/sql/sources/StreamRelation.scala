@@ -44,7 +44,8 @@ private[sql] class StreamSource extends SchemaRelationProvider {
     // Load the format function using reflection
     val formatFunction = loadFormatClass(OptsUtil.getOption(
       OptsUtil.FORMAT, options)).newInstance() match {
-      case f: UserDefinedInterpreter[String] => f.formatter()_
+      case f: UserDefinedInterpreter[_] =>
+        f.asInstanceOf[UserDefinedInterpreter[String]].formatter()_
       case f => throw new AnalysisException(s"Incorrect format function $f")
     }
 

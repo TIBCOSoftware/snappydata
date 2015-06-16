@@ -228,10 +228,11 @@ private[sql] class InMemoryAppendableColumnarTableScan
 
   protected override def doExecute(): RDD[Row] = {
 
-    val reservoirRows: RDD[Row] = relation.asInstanceOf[InMemoryAppendableRelation].reservoirRDD.mapPartitions { rowIterator =>
+    val reservoirRows: RDD[Row] = relation.reservoirRDD.mapPartitions { rows =>
 
-      // Find the ordinals and data types of the requested columns.  If none are requested, use the
-      // narrowest (the field with minimum default element size).
+      // Find the ordinals and data types of the requested columns.
+      // If none are requested, use the narrowest (the field with
+      // minimum default element size).
       val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
         val (narrowestOrdinal, narrowestDataType) =
           relation.output.zipWithIndex.map { case (a, ordinal) =>
@@ -250,10 +251,10 @@ private[sql] class InMemoryAppendableColumnarTableScan
 
       new Iterator[Row] {
 
-        override def hasNext: Boolean = rowIterator.hasNext
+        override def hasNext: Boolean = rows.hasNext
 
         override def next() = {
-          val row = rowIterator.next()
+          val row = rows.next()
 
           requestedColumnIndices.indices.foreach { i =>
             nextRow(i) = row(requestedColumnIndices(i))

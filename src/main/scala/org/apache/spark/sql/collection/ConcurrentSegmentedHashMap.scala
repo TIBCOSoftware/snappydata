@@ -19,7 +19,7 @@ package org.apache.spark.sql.collection
 
 import java.util.concurrent.atomic.AtomicLong
 
-import scala.collection.mutable
+import scala.collection.{GenTraversableOnce, mutable}
 import scala.reflect.ClassTag
 import scala.util.Random
 
@@ -232,18 +232,25 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
 
   def foldSegments[U](init: U)(f: (U, M) => U): U = _segments.foldLeft(init)(f)
 
-  def foldRead[U](init: U)(f: (K, V, U) => U): U = {
+  /**
+   * No synchronization in this method so use with care.
+   * Use it only if you know what you are doing.
+   */
+  def flatMap[U](f: M => GenTraversableOnce[U]): Iterator[U] =
+    _segments.iterator.flatMap(f)
+
+  def foldValuesRead[U](init: U)(f: (V, U) => U): U = {
     _segments.foldLeft(init) { (v, seg) =>
       SegmentMap.lock(seg.readLock()) {
-        seg.fold(v)(f)
+        seg.foldValues(v)(f)
       }
     }
   }
 
-  def foldWrite[U](init: U)(f: (K, V, U) => U): U = {
+  def foldEntriesRead[U](init: U)(f: (K, V, U) => U): U = {
     _segments.foldLeft(init) { (v, seg) =>
-      SegmentMap.lock(seg.writeLock()) {
-        seg.fold(v)(f)
+      SegmentMap.lock(seg.readLock()) {
+        seg.foldEntries(v)(f)
       }
     }
   }
@@ -281,7 +288,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val size = this.size
     if (size <= Int.MaxValue) {
       val buffer = new mutable.ArrayBuffer[(K, V)](size.toInt)
-      foldRead[Unit]() { (k, v, u) => buffer += ((k, v)) }
+      foldEntriesRead[Unit]() { (k, v, u) => buffer += ((k, v)) }
       buffer
     }
     else {
@@ -294,7 +301,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val size = this.size
     if (size <= Int.MaxValue) {
       val buffer = new mutable.ArrayBuffer[V](size.toInt)
-      foldRead[Unit]() { (k, v, u) => buffer += v }
+      foldValuesRead[Unit]() { (v, u) => buffer += v }
       buffer
     }
     else {

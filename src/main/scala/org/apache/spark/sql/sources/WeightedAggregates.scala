@@ -1,12 +1,11 @@
 package org.apache.spark.sql.sources
 
-import org.apache.spark.sql.StratifiedSample
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.trees
-import org.apache.spark.sql.execution.StratifiedSampler
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SampleDataFrame, StratifiedSample}
 
 object WeightageRule extends Rule[LogicalPlan] {
   // Transform the plan to changed the aggregates to weighted aggregates. The hidden column is
@@ -21,9 +20,9 @@ object WeightageRule extends Rule[LogicalPlan] {
         case Some(stratifiedSample) =>
           stratifiedSample.asInstanceOf[StratifiedSample].output.
             find(p => {
-            p.name == StratifiedSampler.WEIGHTAGE_COLUMN_NAME
-          }).
-            getOrElse(throw new IllegalStateException("Hidden column for ratio not found."))
+            p.name == SampleDataFrame.WEIGHTAGE_COLUMN_NAME
+          }).getOrElse(throw new IllegalStateException(
+            "Hidden column for ratio not found."))
         // The aggregate is not on a StratifiedSample. No transformations needed.
         case _ => return aggr
       }
@@ -99,17 +98,19 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
 
   override def toString: String = s"MapColumnToWeight($child)"
 
-  override def eval(input: Row): Any = {
+  override def eval(input: Row): Double = {
     val evalE = child.eval(input)
-    if (evalE == null) {
-      0
-    } else {
+    if (evalE != null) {
       val value = evalE.asInstanceOf[Long]
       val left = (value >> 32) & 0xffffffffL
       val right = value & 0xffffffffL
 
-      if (left == 0) 0
-      else right.toDouble / left
+      if (left != 0) right.toDouble / left
+      else {
+        0.0
+      }
+    } else {
+      0.0
     }
   }
 }

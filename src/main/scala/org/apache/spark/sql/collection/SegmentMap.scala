@@ -17,12 +17,13 @@
 
 package org.apache.spark.sql.collection
 
-import java.util.concurrent.locks.Lock
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
-  def fold[U](init: U)(f: (K, V, U) => U): U
+  def foldValues[U](init: U)(f: (V, U) => U): U
+
+  def foldEntries[U](init: U)(f: (K, V, U) => U): U
 
   def iterator: Iterator[(K, V)]
 
@@ -70,6 +71,17 @@ object SegmentMap {
       f
     } finally {
       lock.unlock()
+    }
+  }
+}
+
+object Utils {
+
+  def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
+    var index = start
+    while (index < endP1) {
+      a(index) = v
+      index += 1
     }
   }
 }

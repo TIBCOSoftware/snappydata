@@ -44,12 +44,13 @@ import scala.util.hashing.MurmurHash3
  * which is guaranteed to explore all spaces for each key
  * (see http://en.wikipedia.org/wiki/Quadratic_probing).
  */
-final class MultiColumnOpenHashSet(val columns: Array[Int],
-                                   val expressions: Array[Expression],
-                                   val types: Array[DataType],
-                                   val numColumns: Int,
-                                   val initialCapacity: Int,
-                                   val loadFactor: Double) extends Serializable {
+final class MultiColumnOpenHashSet(var columns: Array[Int],
+                                   var types: Array[DataType],
+                                   var numColumns: Int,
+                                   var initialCapacity: Int,
+                                   var loadFactor: Double)
+  extends Iterable[SpecificMutableRow]
+  with Serializable {
 
   require(initialCapacity <= (1 << 29),
     "Can't make capacity bigger than 2^29 elements")
@@ -60,49 +61,83 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
   import MultiColumnOpenHashSet._
 
   def this(columns: Array[Int], types: Array[DataType], initialCapacity: Int) =
-    this(columns, null, types, columns.length, initialCapacity, 0.7)
+    this(columns, types, columns.length, initialCapacity, 0.7)
 
   def this(columns: Array[Int], types: Array[DataType]) =
     this(columns, types, 64)
 
-  def this(expressions: Array[Expression], types: Array[DataType],
-           initialCapacity: Int) =
-    this(null, expressions, types, expressions.length, initialCapacity, 0.7)
+  // for serialization
+  def this() = this(Array.emptyIntArray, Array.empty, 0, 1, 0.1)
 
-  def this(expressions: Array[Expression], types: Array[DataType]) =
-    this(expressions, types, 64)
+  private var _columnHandler: ColumnHandler = _
+  private var _projectionColumnHandler: ColumnHandler = _
 
-  private val columnHandler: ColumnHandler =
-    newColumnHandler(columns, types, numColumns)
-
-  private var _capacity = SegmentMap.nextPowerOf2(initialCapacity)
-  private var _mask = _capacity - 1
+  private var _capacity, _mask, _growThreshold = 0
   private var _size = 0
-  private var _growThreshold = (loadFactor * _capacity).toInt
+
+  initColumnHandlersAndCapacity(SegmentMap.nextPowerOf2(initialCapacity))
+
+  private[sql] def getColumnHandler(r: Row) =
+    if (r.length == numColumns) _projectionColumnHandler else _columnHandler
+
+  private[sql] def getColumnHandler(r: SpecificMutableRow) =
+    if (r.length == numColumns) _projectionColumnHandler else _columnHandler
 
   private var _bitset = new BitSet(_capacity)
 
   def getBitSet: BitSet = _bitset
 
   private var _data: Array[Any] = _
-  _data = columnHandler.initDataContainer(_capacity)
+  _data = _columnHandler.initDataContainer(_capacity)
+
+  private def initColumnHandlersAndCapacity(capacity: Int) = {
+    _columnHandler = newColumnHandler(columns, types, numColumns)
+    _projectionColumnHandler = newColumnHandler((0 until numColumns).toArray,
+      types, numColumns)
+    _capacity = capacity
+    _mask = capacity - 1
+    _growThreshold = (loadFactor * capacity).toInt
+  }
 
   /** Number of elements in the set. */
-  def size: Int = _size
+  override def size: Int = _size
+
+  override def isEmpty: Boolean = _size == 0
+
+  override def nonEmpty: Boolean = _size != 0
 
   /** The capacity of the set (i.e. size of the underlying array). */
   def capacity: Int = _capacity
 
   /** Return true if this set contains the specified element. */
-  def contains(row: Row): Boolean =
-    getPos(row, columnHandler.hash(row)) != INVALID_POS
+  def contains(row: Row): Boolean = {
+    val columnHandler = getColumnHandler(row)
+    getPos(row, columnHandler.hash(row), columnHandler) != INVALID_POS
+  }
+
+  /** Return true if this set contains the specified projected row. */
+  def contains(row: SpecificMutableRow): Boolean = {
+    val columnHandler = getColumnHandler(row)
+    getPos(row, columnHandler.hash(row), columnHandler) != INVALID_POS
+  }
 
   /**
-   * Add an element to the set. If the set is over capacity after the insertion,
-   * grow the set and rehash all elements.
+   * Add projected columns from a row to the set. If the set is over capacity
+   * after the insertion, grow the set and rehash all elements.
    */
   def add(row: Row) {
-    addWithoutResize(row, columnHandler.hash(row))
+    val columnHandler = getColumnHandler(row)
+    addWithoutResize(row, columnHandler.hash(row), columnHandler)
+    rehashIfNeeded(row, grow, move)
+  }
+
+  /**
+   * Add a projected row to the set. If the set is over capacity after
+   * the insertion, grow the set and rehash all elements.
+   */
+  def add(row: SpecificMutableRow) {
+    val columnHandler = getColumnHandler(row)
+    addWithoutResize(row, columnHandler.hash(row), columnHandler)
     rehashIfNeeded(row, grow, move)
   }
 
@@ -116,19 +151,19 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
    * @return The position where the key is placed, plus the highest order bit
    *         is set if the key does not exists previously.
    */
-  def addWithoutResize(row: Row, hash: Int): Int = {
-    val colHandler = this.columnHandler
+  private[sql] def addWithoutResize(row: Row, hash: Int,
+                                    columnHandler: ColumnHandler): Int = {
     var pos = hash & _mask
     var delta = 1
     val data = _data
     while (true) {
       if (!_bitset.get(pos)) {
         // This is a new key.
-        colHandler.setValue(data, pos, row)
+        columnHandler.setValue(data, pos, row)
         _bitset.set(pos)
         _size += 1
         return pos | NONEXISTENCE_MASK
-      } else if (colHandler.equals(data, pos, row)) {
+      } else if (columnHandler.equals(data, pos, row)) {
         // Found an existing key.
         return pos
       } else {
@@ -156,13 +191,14 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
     }
   }
 
-  def getHash(row: Row): Int = columnHandler.hash(row)
+  def getHash(row: Row, columnHandler: ColumnHandler): Int =
+    columnHandler.hash(row)
 
   /**
    * Return the position of the element in the underlying array,
    * or INVALID_POS if it is not found.
    */
-  def getPos(row: Row, hash: Int): Int = {
+  def getPos(row: Row, hash: Int, columnHandler: ColumnHandler): Int = {
     var pos = hash & _mask
     var delta = 1
     val data = _data
@@ -180,39 +216,69 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
     throw new RuntimeException("Should never reach here.")
   }
 
-  def newEmptyValueAsRow(): SpecificMutableRow = columnHandler.newMutableRow()
+  def newEmptyValueAsRow() = _columnHandler.newMutableRow()
 
   /**
    * Return the value at the specified position as a Row,
    * filling into the given MutableRow.
    */
   def fillValueAsRow(pos: Int, row: SpecificMutableRow) =
-    columnHandler.fillValue(_data, pos, row)
+    _columnHandler.fillValue(_data, pos, row)
 
-  /*
-  /** Set the value at the specified position. */
-  def setValue(pos: Int, row: Row) =
-    columnHandler.setValue(_data, pos, row)
-  */
+  override def iterator: Iterator[SpecificMutableRow] =
+    new Iterator[SpecificMutableRow] {
 
-  def iterator: Iterator[Row] = new Iterator[Row] {
-    var currentRow: SpecificMutableRow = newEmptyValueAsRow()
-    var pos = nextPos(0)
+      final val bitset = _bitset
+      var pos = bitset.nextSetBit(0)
 
-    override def hasNext: Boolean = pos != INVALID_POS
+      override def hasNext: Boolean = pos != INVALID_POS
 
-    override def next(): Row = {
-      columnHandler.fillValue(_data, pos, currentRow)
-      pos = nextPos(pos + 1)
-      currentRow
+      override def next(): SpecificMutableRow = {
+        val row = newEmptyValueAsRow()
+        _columnHandler.fillValue(_data, pos, row)
+        pos = bitset.nextSetBit(pos + 1)
+        row
+      }
     }
+
+  def iteratorRowReuse: Iterator[SpecificMutableRow] =
+    new Iterator[SpecificMutableRow] {
+
+      final val bitset = _bitset
+      final val currentRow = newEmptyValueAsRow()
+      var pos = bitset.nextSetBit(0)
+
+      override def hasNext: Boolean = pos != INVALID_POS
+
+      override def next(): SpecificMutableRow = {
+        _columnHandler.fillValue(_data, pos, currentRow)
+        pos = bitset.nextSetBit(pos + 1)
+        currentRow
+      }
+    }
+
+  def clear(): Unit = {
+    _data = _columnHandler.initDataContainer(_capacity)
+    _bitset = new BitSet(_bitset.capacity)
+    _size = 0
   }
 
-  /**
-   * Return the next position with an element stored, starting
-   * from the given position inclusively.
-   */
-  def nextPos(fromPos: Int): Int = _bitset.nextSetBit(fromPos)
+  /** Copy this set to given set clearing it if it is not empty */
+  def copyTo(other: MultiColumnOpenHashSet): Unit = {
+    val capacity = this.capacity
+    if (capacity == other.capacity) {
+      // do direct array copies
+      _data.indices.foreach { index =>
+        System.arraycopy(_data(index), 0, other._data(index), 0, capacity)
+      }
+      other._bitset = getBitSet.copyTo(other.getBitSet)
+      other._size = size
+    }
+    else {
+      if (other.nonEmpty) other.clear()
+      foreach(other.add)
+    }
+  }
 
   /**
    * Double the table's size and re-hash everything. We are not really using k,
@@ -230,16 +296,16 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
                      moveFunc: (Int, Int) => Unit) {
     val newCapacity = _capacity * 2
     allocateFunc(newCapacity)
-    val colHandler = this.columnHandler
+    val columnHandler = this._columnHandler
     val newBitset = new BitSet(newCapacity)
-    val newData = colHandler.initDataContainer(newCapacity)
+    val newData = columnHandler.initDataContainer(newCapacity)
     val newMask = newCapacity - 1
     val data = _data
 
     var oldPos = 0
     while (oldPos < capacity) {
       if (_bitset.get(oldPos)) {
-        var newPos = colHandler.hash(data, oldPos) & newMask
+        var newPos = columnHandler.hash(data, oldPos) & newMask
         var i = 1
         var keepGoing = true
         // No need to check for equality here when we insert so this has
@@ -247,7 +313,7 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
         while (keepGoing) {
           if (!newBitset.get(newPos)) {
             // Inserting the key at newPos
-            colHandler.copyValue(data, oldPos, newData, newPos)
+            columnHandler.copyValue(data, oldPos, newData, newPos)
             newBitset.set(newPos)
             moveFunc(oldPos, newPos)
             keepGoing = false
@@ -269,7 +335,7 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
   }
 }
 
-private[spark] object MultiColumnOpenHashSet {
+private[sql] object MultiColumnOpenHashSet {
 
   val INVALID_POS = -1
   val NONEXISTENCE_MASK = 0x80000000
@@ -282,6 +348,12 @@ private[spark] object MultiColumnOpenHashSet {
    */
   abstract sealed class ColumnHandler extends Serializable {
 
+    val columns: Array[Int]
+
+    val numColumns: Int = columns.length
+
+    def getMutableValue(index: Int): MutableValue
+
     def initDataContainer(capacity: Int): Array[Any]
 
     def hash(row: Row): Int
@@ -290,14 +362,21 @@ private[spark] object MultiColumnOpenHashSet {
 
     def equals(data: Array[Any], pos: Int, row: Row): Boolean
 
-    def newMutableRow(): SpecificMutableRow
-
     def fillValue(data: Array[Any], pos: Int, row: SpecificMutableRow): Unit
 
     def setValue(data: Array[Any], pos: Int, row: Row): Unit
 
     def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
                   newPos: Int): Unit
+
+    final def newMutableRow(): SpecificMutableRow = {
+      val ncols = numColumns
+      val row = new Array[MutableValue](ncols)
+      (0 until ncols).foreach { i =>
+        row(i) = getMutableValue(i)
+      }
+      new SpecificMutableRow(row)
+    }
 
     final def hashInt(i: Int): Int = {
       MurmurHash3.finalizeHash(MurmurHash3.mixLast(
@@ -314,8 +393,7 @@ private[spark] object MultiColumnOpenHashSet {
                        numColumns: Int) = {
     if (numColumns == 1) {
       val col = columns(0)
-      val ctype = types(0)
-      ctype match {
+      types(0) match {
         case LongType => new LongHandler(col)
         case IntegerType => new IntHandler(col)
         case DoubleType => new DoubleHandler(col)
@@ -333,6 +411,11 @@ private[spark] object MultiColumnOpenHashSet {
   }
 
   final class LongHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableLong
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Long](capacity))
     }
@@ -348,9 +431,6 @@ private[spark] object MultiColumnOpenHashSet {
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Long]](pos) == row.getLong(col)
 
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableLong))
-
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
       row.setLong(0, data(0).asInstanceOf[Array[Long]](pos))
@@ -364,39 +444,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Long]](pos)
   }
 
-  final class LongExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Long](capacity))
-    }
-
-    override def hash(row: Row): Int = {
-      hashLong(expr.eval(row).asInstanceOf[Long])
-    }
-
-    override def hash(data: Array[Any], pos: Int): Int = {
-      hashLong(data(0).asInstanceOf[Array[Long]](pos))
-    }
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Long]](pos) == expr.eval(row).asInstanceOf[Long]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableLong))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setLong(0, data(0).asInstanceOf[Array[Long]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Long]](pos) = expr.eval(row).asInstanceOf[Long]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Long]](newPos) =
-        data(0).asInstanceOf[Array[Long]](pos)
-  }
-
   final class IntHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableInt
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Int](capacity))
     }
@@ -408,9 +461,6 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Int]](pos) == row.getInt(col)
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableInt))
 
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
@@ -425,36 +475,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Int]](pos)
   }
 
-  final class IntExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Int](capacity))
-    }
-
-    override def hash(row: Row): Int = hashInt(expr.eval(row).asInstanceOf[Int])
-
-    override def hash(data: Array[Any], pos: Int): Int =
-      hashInt(data(0).asInstanceOf[Array[Int]](pos))
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Int]](pos) == expr.eval(row).asInstanceOf[Int]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableInt))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setInt(0, data(0).asInstanceOf[Array[Int]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Int]](pos) = expr.eval(row).asInstanceOf[Int]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Int]](newPos) =
-        data(0).asInstanceOf[Array[Int]](pos)
-  }
-
   final class DoubleHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableDouble
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Double](capacity))
     }
@@ -471,9 +497,6 @@ private[spark] object MultiColumnOpenHashSet {
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Double]](pos) == row.getDouble(col)
 
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableDouble))
-
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
       row.setDouble(0, data(0).asInstanceOf[Array[Double]](pos))
@@ -487,43 +510,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Double]](pos)
   }
 
-  final class DoubleExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Double](capacity))
-    }
-
-    override def hash(row: Row): Int = {
-      hashLong(java.lang.Double.doubleToRawLongBits(
-        expr.eval(row).asInstanceOf[Double]))
-    }
-
-    override def hash(data: Array[Any], pos: Int): Int = {
-      hashLong(java.lang.Double.doubleToRawLongBits(
-        data(0).asInstanceOf[Array[Double]](pos)))
-    }
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Double]](pos) == expr.eval(
-        row).asInstanceOf[Double]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableDouble))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setDouble(0, data(0).asInstanceOf[Array[Double]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Double]](pos) = expr.eval(
-        row).asInstanceOf[Double]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Double]](newPos) =
-        data(0).asInstanceOf[Array[Double]](pos)
-  }
-
   final class FloatHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableFloat
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Float](capacity))
     }
@@ -536,9 +528,6 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Float]](pos) == row.getFloat(col)
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableFloat))
 
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
@@ -553,40 +542,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Float]](pos)
   }
 
-  final class FloatExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Float](capacity))
-    }
-
-    override def hash(row: Row): Int =
-      hashInt(java.lang.Float.floatToRawIntBits(
-        expr.eval(row).asInstanceOf[Float]))
-
-    override def hash(data: Array[Any], pos: Int): Int = hashInt(java.lang
-      .Float.floatToRawIntBits(data(0).asInstanceOf[Array[Float]](pos)))
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Float]](pos) == expr.eval(
-        row).asInstanceOf[Float]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableFloat))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setFloat(0, data(0).asInstanceOf[Array[Float]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Float]](pos) = expr.eval(
-        row).asInstanceOf[Float]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Float]](newPos) =
-        data(0).asInstanceOf[Array[Float]](pos)
-  }
-
   final class BooleanHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableBoolean
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Boolean](capacity))
     }
@@ -598,9 +559,6 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Boolean]](pos) == row.getBoolean(col)
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableBoolean))
 
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
@@ -615,39 +573,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Boolean]](pos)
   }
 
-  final class BooleanExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Boolean](capacity))
-    }
-
-    override def hash(row: Row): Int =
-      if (expr.eval(row).asInstanceOf[Boolean]) 1 else 0
-
-    override def hash(data: Array[Any], pos: Int): Int =
-      if (data(0).asInstanceOf[Array[Boolean]](pos)) 1 else 0
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Boolean]](pos) == expr.eval(
-        row).asInstanceOf[Boolean]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableBoolean))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setBoolean(0, data(0).asInstanceOf[Array[Boolean]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Boolean]](pos) = expr.eval(
-        row).asInstanceOf[Boolean]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Boolean]](newPos) =
-        data(0).asInstanceOf[Array[Boolean]](pos)
-  }
-
   final class ByteHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableByte
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Byte](capacity))
     }
@@ -659,9 +590,6 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Byte]](pos) == row.getByte(col)
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableByte))
 
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
@@ -676,36 +604,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Byte]](pos)
   }
 
-  final class ByteExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Byte](capacity))
-    }
-
-    override def hash(row: Row): Int = expr.eval(row).asInstanceOf[Byte]
-
-    override def hash(data: Array[Any], pos: Int): Int =
-      data(0).asInstanceOf[Array[Byte]](pos)
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Byte]](pos) == expr.eval(row).asInstanceOf[Byte]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableByte))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setByte(0, data(0).asInstanceOf[Array[Byte]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Byte]](pos) = expr.eval(row).asInstanceOf[Byte]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Byte]](newPos) =
-        data(0).asInstanceOf[Array[Byte]](pos)
-  }
-
   final class ShortHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableShort
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Short](capacity))
     }
@@ -717,9 +621,6 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Short]](pos) == row.getShort(col)
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableShort))
 
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
@@ -734,38 +635,12 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Short]](pos)
   }
 
-  final class ShortExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Short](capacity))
-    }
-
-    override def hash(row: Row): Int = expr.eval(row).asInstanceOf[Short]
-
-    override def hash(data: Array[Any], pos: Int): Int =
-      data(0).asInstanceOf[Array[Short]](pos)
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Short]](pos) == expr.eval(
-        row).asInstanceOf[Short]
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableShort))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.setShort(0, data(0).asInstanceOf[Array[Short]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Short]](pos) = expr.eval(
-        row).asInstanceOf[Short]
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Short]](newPos) =
-        data(0).asInstanceOf[Array[Short]](pos)
-  }
-
   final class SingleColumnHandler(val col: Int) extends ColumnHandler {
+
+    override val columns = Array[Int](col)
+
+    override def getMutableValue(index: Int): MutableValue = new MutableAny
+
     override def initDataContainer(capacity: Int): Array[Any] = {
       Array[Any](new Array[Any](capacity))
     }
@@ -777,9 +652,6 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Any]](pos).equals(row(col))
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableAny))
 
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) =
@@ -794,48 +666,34 @@ private[spark] object MultiColumnOpenHashSet {
         data(0).asInstanceOf[Array[Any]](pos)
   }
 
-  final class SingleColumnExprHandler(val expr: Expression) extends ColumnHandler {
-    override def initDataContainer(capacity: Int): Array[Any] = {
-      Array[Any](new Array[Any](capacity))
-    }
-
-    override def hash(row: Row): Int = hashInt(expr.eval(row).##)
-
-    override def hash(data: Array[Any], pos: Int): Int =
-      hashInt(data(0).asInstanceOf[Array[Any]](pos).##)
-
-    override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
-      data(0).asInstanceOf[Array[Any]](pos).equals(expr.eval(row))
-
-    override def newMutableRow(): SpecificMutableRow =
-      new SpecificMutableRow(Array[MutableValue](new MutableAny))
-
-    override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
-      row.update(0, data(0).asInstanceOf[Array[Any]](pos))
-
-    override def setValue(data: Array[Any], pos: Int, row: Row) =
-      data(0).asInstanceOf[Array[Any]](pos) = expr.eval(row)
-
-    override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Any]](newPos) =
-        data(0).asInstanceOf[Array[Any]](pos)
-  }
-
   // TODO: can generate code using quasi-quotes and lose all the
   // single column implementations above.
   // See children of CodeGenerator like GenerateProjection/GenerateOrdering
   // for examples of using quasi-quotes with Toolbox to generate code.
   // Note that it is an expensive operation so should only be done when
   // this is known to be used for things like Sampled tables or GROUP BY.
-  final class MultiColumnHandler(val cols: Array[Int],
-                                 val ncols: Int,
+  final class MultiColumnHandler(override val columns: Array[Int],
+                                 override val numColumns: Int,
                                  val types: Array[DataType])
     extends ColumnHandler {
 
+    override def getMutableValue(index: Int): MutableValue = {
+      types(index) match {
+        case LongType => new MutableLong
+        case IntegerType => new MutableInt
+        case DoubleType => new MutableDouble
+        case FloatType => new MutableFloat
+        case BooleanType => new MutableBoolean
+        case ByteType => new MutableByte
+        case ShortType => new MutableShort
+        // use INT for DATE -- see comment in SpecificMutableRow constructor
+        case DateType => new MutableInt
+        case _ => new MutableAny
+      }
+    }
+
     override def initDataContainer(capacity: Int): Array[Any] = {
-      val ncols = this.ncols
+      val ncols = this.numColumns
       val data = new Array[Any](ncols)
       var i = 0
       while (i < ncols) {
@@ -857,8 +715,8 @@ private[spark] object MultiColumnOpenHashSet {
     }
 
     override def hash(row: Row): Int = {
-      val cols = this.cols
-      val ncols = this.ncols
+      val cols = this.columns
+      val ncols = this.numColumns
       val types = this.types
       var h = MurmurHash3.arraySeed
       var i = 0
@@ -890,7 +748,7 @@ private[spark] object MultiColumnOpenHashSet {
     }
 
     override def hash(data: Array[Any], pos: Int): Int = {
-      val ncols = this.ncols
+      val ncols = this.numColumns
       val types = this.types
       var h = MurmurHash3.arraySeed
       var i = 0
@@ -926,8 +784,8 @@ private[spark] object MultiColumnOpenHashSet {
     }
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean = {
-      val cols = this.cols
-      val ncols = this.ncols
+      val cols = this.columns
+      val ncols = this.numColumns
       val types = this.types
       var i = 0
       while (i < ncols) {
@@ -965,40 +823,9 @@ private[spark] object MultiColumnOpenHashSet {
       true
     }
 
-    override def newMutableRow(): SpecificMutableRow = {
-      val ncols = this.ncols
-      val row = new Array[MutableValue](ncols)
-      var i = 0
-      while (i < ncols) {
-        types(i) match {
-          case LongType =>
-            row(i) = new MutableLong
-          case IntegerType =>
-            row(i) = new MutableInt
-          case DoubleType =>
-            row(i) = new MutableDouble
-          case FloatType =>
-            row(i) = new MutableFloat
-          case BooleanType =>
-            row(i) = new MutableBoolean
-          case ByteType =>
-            row(i) = new MutableByte
-          case ShortType =>
-            row(i) = new MutableShort
-          case DateType =>
-            // use INT for DATE -- see comment in SpecificMutableRow constructor
-            row(i) = new MutableInt
-          case _ =>
-            row(i) = new MutableAny
-        }
-        i += 1
-      }
-      new SpecificMutableRow(row)
-    }
-
     override def fillValue(data: Array[Any], pos: Int,
                            row: SpecificMutableRow) = {
-      val ncols = this.ncols
+      val ncols = this.numColumns
       val types = this.types
       var i = 0
       while (i < ncols) {
@@ -1027,8 +854,8 @@ private[spark] object MultiColumnOpenHashSet {
     }
 
     override def setValue(data: Array[Any], pos: Int, row: Row) = {
-      val cols = this.cols
-      val ncols = this.ncols
+      val cols = this.columns
+      val ncols = this.numColumns
       val types = this.types
       var i = 0
       while (i < ncols) {
@@ -1058,7 +885,7 @@ private[spark] object MultiColumnOpenHashSet {
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
                            newPos: Int) = {
-      val ncols = this.ncols
+      val ncols = this.numColumns
       val types = this.types
       var i = 0
       while (i < ncols) {

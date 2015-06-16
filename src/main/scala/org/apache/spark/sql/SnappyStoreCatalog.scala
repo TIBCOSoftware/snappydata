@@ -24,19 +24,19 @@ class SnappyStoreCatalog(context: SnappyContext,
   protected val currentDatabase: String = "snappydata"
 
   // Stores all stream tables and their logicalPlan.
-  // logicalPlan holds the dstream, schema and the options
+  // logicalPlan holds the DStream, schema and the options
   val streamTables = new mutable.HashMap[String, LogicalPlan]()
 
   // This keeps the stream table to Sample Table mapping
-  val streamToSampleTblMap =  new mutable.HashMap[String, Seq[String]]()
+  val streamToSampleTblMap = new mutable.HashMap[String, Seq[String]]()
 
   /**
-   * This logicalPlan will be on SampleDataFrame#logicalPlan which will know how to
-   * parallely iterate over the RDD and sample for this qcs.
+   * This logicalPlan will be on SampleDataFrame#logicalPlan which will know
+   * how to iterate over the RDD in parallel and sample for this qcs.
    */
   val sampleTables = new mutable.HashMap[String, SampleDataFrame]()
 
-  val topkTables = new mutable.HashMap[String, TopKDataFrame]()
+  val topKTables = new mutable.HashMap[String, TopKDataFrame]()
 
   override def unregisterAllTables(): Unit = {
     throw new NotImplementedError()
@@ -57,28 +57,26 @@ class SnappyStoreCatalog(context: SnappyContext,
       tables.getOrElse(tblName,
         sys.error(s"Table Not Found: $tblName"))
     }
-
-    //SnappystoreRelation(databaseName, tblName, alias)(context)
   }
 
   def registerSampleTable(schema: StructType, tableName: String,
                           samplingOptions: Map[String, Any],
-                          df: Option[SampleDataFrame] = None): DataFrame = {
-    val options = if (samplingOptions.contains("name")) {
-      samplingOptions
-    }
-    else {
-      samplingOptions + ("name" -> tableName)
-    }
+                          df: Option[SampleDataFrame] = None): SampleDataFrame =
+  {
+    // add or overwrite existing name attribute
+    val nameOption = "name"
+    val options = samplingOptions.filterKeys(!_.equalsIgnoreCase(nameOption)) +
+      (nameOption -> tableName)
 
-    options.getOrElse("name", {
-      throw new Exception(s"$tableName name not inserted")
-    })
-
+    // update the options in any provided StratifiedSample LogicalPlan
+    df foreach (_.logicalPlan.options = options)
+    // create new StratifiedSample LogicalPlan if none was passed
+    // (currently for streaming case)
     val sample = df.getOrElse {
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
         new DummyRDD(context))(context)
-      val newDF = new SampleDataFrame(context, StratifiedSample(options, plan))
+      val newDF = new SampleDataFrame(context,
+        StratifiedSample(options, plan)())
       context.cacheManager.cacheQuery(newDF, Some(tableName))
       newDF
     }
@@ -88,9 +86,9 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   def registerTopKTable(schema: StructType, tableName: String,
                         aggOptions: Map[String, Any]): DataFrame = {
-//    val accessPlan = DummyRDD(schema.toAttributes)(context)
-//    val topkTab = TopKDataFrame(context, accessPlan, aggOptions)
-//    topkTables.put(tableName, topkTab)
+    //val accessPlan = DummyRDD(schema.toAttributes)(context)
+    //val topKTab = TopKDataFrame(context, accessPlan, aggOptions)
+    //topKTables.put(tableName, topKTab)
     null
   }
 
@@ -101,7 +99,7 @@ class SnappyStoreCatalog(context: SnappyContext,
 
 
   def getStreamTableRelation[T](tableName: String): StreamRelation[T] = {
-    val plan : LogicalPlan = streamTables.getOrElse(tableName,
+    val plan: LogicalPlan = streamTables.getOrElse(tableName,
       throw new IllegalStateException("Plan for stream not found"))
 
     plan match {
@@ -114,14 +112,10 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def getOrAddStreamTable(tableName: String, schema: StructType,
-                          samplingOptions: Map[String, Any]): LogicalPlan =
+                          samplingOptions: Map[String, Any]) =
     streamTables.getOrElse(tableName, registerSampleTable(schema, tableName,
       samplingOptions).logicalPlan)
 
-  /**
-   * Returns tuples of (tableName, isTemporary) for all tables in the given database.
-   * isTemporary is a Boolean value indicates if a table is a temporary or not.
-   */
   override def getTables(dbName: Option[String]): Seq[(String, Boolean)] = {
     throw new NotImplementedError()
   }
