@@ -7,7 +7,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext}
+import org.apache.spark.streaming.Duration
 import org.apache.spark.util.Utils
 
 /**
@@ -76,18 +76,6 @@ private[sql] class StreamSource extends SchemaRelationProvider {
   }
 }
 
-// This is needed to initialize the streaming context when running via sql.
-// TODO: there should be only one streaming context in the SnappyContext.
-object StreamingCtxtHolder {
-  var sQLContext: Option[SQLContext] = None
-  var duration: Option[Int] = None
-
-  lazy val streamingContext: StreamingContext = {
-    val ctxt = sQLContext.getOrElse(throw new IllegalStateException())
-    val seconds = duration.getOrElse(throw new IllegalStateException())
-    new StreamingContext(ctxt.sparkContext, Seconds(seconds))
-  }
-}
 
 object OptsUtil {
 
@@ -146,8 +134,10 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
     action match {
       case 0 =>
-        StreamingCtxtHolder.sQLContext = Some(sqlContext)
-        StreamingCtxtHolder.duration = batchInterval
+        import org.apache.spark.sql.snappy._
+
+        sqlContext.sparkContext.getOrCreateStreamingContext(
+          batchInterval.getOrElse(throw new IllegalStateException()))
 
       case 1 =>
         // Register sampling of all the streams

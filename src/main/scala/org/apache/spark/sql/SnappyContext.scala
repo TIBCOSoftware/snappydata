@@ -14,7 +14,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.Time
+import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.language.implicitConversions
@@ -298,6 +298,25 @@ private[sql] case class StreamingCtxtActions(action: Int,
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
+private object StreamingCtxtHolder {
+
+  private val atomicContext = new AtomicReference[StreamingContext]()
+
+  def streamingContext = atomicContext.get()
+
+  def apply(sparkCtxt: SparkContext,
+            duration: Int): StreamingContext = {
+    val context = atomicContext.get
+    if (context != null) {
+      context
+    }
+    else {
+      atomicContext.compareAndSet(null, new StreamingContext(sparkCtxt, Seconds(duration)))
+      atomicContext.get
+    }
+  }
+}
+
 
 object snappy extends Serializable {
 
@@ -312,6 +331,12 @@ object snappy extends Serializable {
   implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]):
   SnappyDStreamOperations[T] = SnappyDStreamOperations(SnappyContext(
     ds.context.sparkContext), ds)
+
+  implicit class SparkContextOperations(val s: SparkContext) {
+       def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
+         StreamingCtxtHolder(s, batchInterval)
+       }
+  }
 }
 
 object SnappyContext {
