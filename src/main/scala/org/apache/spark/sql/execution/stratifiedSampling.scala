@@ -1,7 +1,7 @@
 package org.apache.spark.sql.execution
 
 import java.util.Random
-import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import org.apache.spark.rdd.RDD
@@ -14,13 +14,11 @@ import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 
-final class SamplePartition(val parent: Partition, val idx: Int,
-                            val host: String)
+final class SamplePartition(val parent: Partition, override val index: Int,
+                            val host: String, var isLastHostPartition: Boolean)
   extends Partition with Serializable {
 
-  override val index = idx
-
-  override def toString = s"SamplePartition($idx, $host)"
+  override def toString = s"SamplePartition($index, $host)"
 }
 
 final class StratifiedSampledRDD(@transient parent: RDD[Row],
@@ -30,7 +28,6 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
                                  schema: StructType)
   extends RDD[Row](parent) with Serializable {
 
-  val parentPartitions = parent.partitions
   var hostPartitions: Map[String, Array[Int]] = _
 
   override def getPartitions: Array[Partition] = {
@@ -44,18 +41,24 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
       //  2) if no parent preference then in round-robin
       // So number of partitions assigned to each executor are known and wait
       // on each executor accordingly to drain the remaining cache.
+      val parentPartitions = parent.partitions
       val partitions = parentPartitions.indices.map { index =>
         val ppart = parentPartitions(index)
         val plocs = firstParent[Row].preferredLocations(ppart)
         // get the first preferred location in the peers, else if none
         // found then use default round-robin policy among peers
         plocs.collectFirst { case host if peers contains host =>
-          new SamplePartition(ppart, index, host)
+          new SamplePartition(ppart, index, host, isLastHostPartition = false)
         }.getOrElse(new SamplePartition(ppart, index,
-          numberedPeers(index % npeers)))
+          numberedPeers(index % npeers), isLastHostPartition = false))
       }
-      hostPartitions = partitions.groupBy(_.host).map {
-        case (k, v) => (k, v.map(_.idx).sorted.toArray)
+      val partitionOrdering = Ordering[Int].on[SamplePartition](_.index)
+      hostPartitions = partitions.groupBy(_.host).map { case (k, v) =>
+        val sortedPartitions = v.sorted(partitionOrdering)
+        // mark the last partition in each host as the last one that should
+        // also be necessarily scheduled on that host
+        sortedPartitions.last.isLastHostPartition = true
+        (k, sortedPartitions.map(_.index).toArray)
       }
       partitions.toArray[Partition]
     }
@@ -69,19 +72,39 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
                        context: TaskContext): Iterator[Row] = {
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[SamplePartition]
-    assert(blockManager.blockManagerId.host equals part.host)
-    val hostParts = hostPartitions(part.host)
+    val thisHost = blockManager.blockManagerId.host
     // use -ve cacheBatchSize to indicate that no additional batching is to be
     // done but still pass the value through for size increases
     val sampler = StratifiedSampler(options, qcs, "_rdd_" + id, -cacheBatchSize,
       schema, cached = true)
-    val numSamplers = hostParts.length
-    // TODO: need to fix numSamplers mechanism for node/partition failures
-    sampler.numSamplers.compareAndSet(0, numSamplers)
-    sampler.sample(firstParent[Row].iterator(part.parent, context),
-      // if we are the last partition on this host, then wait for all
-      // others to finish and then drain the remaining cache
-      part.idx == hostParts(numSamplers - 1))
+    val numSamplers = hostPartitions(part.host).length
+
+    if (part.host != thisHost) {
+      // if this is the last partition then it has to be necessarily scheduled
+      // on specified host
+      if (part.isLastHostPartition) {
+        throw new IllegalStateException(
+          s"Expected to execute on ${part.host} but is on $thisHost")
+      }
+      else {
+        // this has been scheduled from some other target node so increment
+        // the number of expected samplers but don't fail
+        if (!sampler.numSamplers.compareAndSet(0, numSamplers + 1)) {
+          sampler.numSamplers.incrementAndGet()
+        }
+      }
+    }
+    else {
+      sampler.numSamplers.compareAndSet(0, numSamplers)
+    }
+    if (part.isLastHostPartition) {
+      // If we are the last partition on this host, then wait for all
+      // others to finish and then drain the remaining cache. The flag is
+      // persistent so that any other stray additional partitions will also
+      // do the flush.
+      sampler.setFlushStatus(true)
+    }
+    sampler.sample(firstParent[Row].iterator(part.parent, context))
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -177,8 +200,9 @@ object StratifiedSampler {
         }
     }
 
-    val qcs = if (qcsi.isEmpty)
-      SampleDataFrame.resolveQCS(options, schema.fieldNames) else qcsi
+    val qcs =
+      if (qcsi.isEmpty) SampleDataFrame.resolveQCS(options, schema.fieldNames)
+      else qcsi
     val name = nm + nameSuffix
     if (cached && name.nonEmpty) {
       lookupOrAdd(qcs, name, fraction, strataSize, cacheBatchSize,
@@ -357,7 +381,11 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   def append[U](rows: Iterator[Row], processSelected: Any => Any,
                 init: U, processFlush: (U, Row) => U, endBatch: U => U): U
 
-  def sample(items: Iterator[Row], flush: Boolean): Iterator[Row]
+  def sample(items: Iterator[Row]): Iterator[Row]
+
+  protected final val flushStatus = new AtomicBoolean
+
+  def setFlushStatus(doFlush: Boolean) = flushStatus.set(doFlush)
 
   def iterator: Iterator[Row] = {
     val sampleBuffer = new mutable.ArrayBuffer[Row](BUFSIZE)
@@ -406,10 +434,14 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
     v
   }
 
-  protected def waitForSamplers(waitUntil: Int): Unit =
+  protected def waitForSamplers(waitUntil: Int, maxTime: Long): Unit = {
+    val startTime = System.currentTimeMillis
     numSamplers.synchronized {
-      while (numSamplers.get > waitUntil) numSamplers.wait(500)
+      while (numSamplers.get > waitUntil && (maxTime <= 0 ||
+        (System.currentTimeMillis - startTime) <= maxTime))
+        numSamplers.wait(200)
     }
+  }
 }
 
 // TODO: optimize by having metadata as multiple columns like key;
@@ -786,7 +818,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     } else init
   }
 
-  override def sample(items: Iterator[Row], flush: Boolean): Iterator[Row] = {
+  override def sample(items: Iterator[Row]): Iterator[Row] = {
     // break up input into batches of "batchSize" and bulk sample each batch
     val batchSize = BUFSIZE
     val sampleBuffer = new mutable.ArrayBuffer[Row](math.min(batchSize,
@@ -817,13 +849,13 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         if (numSamplers.decrementAndGet() == 1) numSamplers.synchronized {
           numSamplers.notifyAll()
         }
-        // remove sampler used only for DataFrame => DataFrame transformation
-        if (flush) removeSampler(name)
         (GenerateFlatIterator.TERMINATE, true)
       }
-      else if (flush) {
+      else if (flushStatus.get) {
         // wait for all other partitions to flush the cache
-        waitForSamplers(1)
+        waitForSamplers(1, 3000)
+        // remove sampler used only for DataFrame => DataFrame transformation
+        removeSampler(name)
         (sampleIterator(batchIter, doFlush = true), true)
       }
       else (sampleIterator(batchIter, doFlush = false), true)
@@ -889,7 +921,7 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
     init
   }
 
-  override def sample(items: Iterator[Row], flush: Boolean): Iterator[Row] = {
+  override def sample(items: Iterator[Row]): Iterator[Row] = {
     // break up into batches of some size
     val batchSize = BUFSIZE
     val buffer = new mutable.ArrayBuffer[Row](batchSize)
@@ -907,11 +939,11 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
       append[Unit](buffer.iterator, null, (), null, null)
     }
 
-    if (flush) {
+    if (flushStatus.get) {
       // iterate over all the strata reservoirs for marked partition
-      waitForSamplers(1)
+      waitForSamplers(1, 3000)
       // remove sampler used only for DataFrame => DataFrame transformation
-      if (flush) removeSampler(name)
+      removeSampler(name)
       // at this point we don't have a problem with concurrency
       val columns = schema.length
       stratas.flatMap(_.valuesIterator.flatMap(_.iterator(reservoirSize,

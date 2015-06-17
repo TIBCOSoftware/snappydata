@@ -19,7 +19,7 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
-        case (bid, idx) => new CachedBlockPartition(null, idx, bid._1.host)
+        case (bid, idx) => new CachedBlockPartition(idx, bid._1.host)
       }.toArray[Partition]
     }
     else {
@@ -30,7 +30,11 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
   override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
-    assert(blockManager.blockManagerId.host equals part.host)
+    val thisHost = blockManager.blockManagerId.host
+    if (part.host != thisHost) {
+      throw new IllegalStateException(
+        s"Expected to execute on ${part.host} but is on $thisHost")
+    }
     StratifiedSampler(name).map(_.iterator).getOrElse(Iterator[Row]())
   }
 
@@ -39,8 +43,8 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
   }
 }
 
-class CachedBlockPartition(val parent: Partition, val idx: Int,
-                           val host: String) extends Partition {
+class CachedBlockPartition(val idx: Int, val host: String) extends Partition {
+
   val index = idx
 
   override def toString = s"CachedBlockPartition($idx, $host)"

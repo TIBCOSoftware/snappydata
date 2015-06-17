@@ -71,11 +71,14 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
 
   private var _columnHandler: ColumnHandler = _
   private var _projectionColumnHandler: ColumnHandler = _
+  _columnHandler = newColumnHandler(columns, types, numColumns)
+  _projectionColumnHandler = newColumnHandler((0 until numColumns).toArray,
+    types, numColumns)
 
-  private var _capacity, _mask, _growThreshold = 0
+  private var _capacity = SegmentMap.nextPowerOf2(initialCapacity)
+  private var _mask = _capacity - 1
   private var _size = 0
-
-  initColumnHandlersAndCapacity(SegmentMap.nextPowerOf2(initialCapacity))
+  private var _growThreshold = (loadFactor * _capacity).toInt
 
   private[sql] def getColumnHandler(r: Row) =
     if (r.length == numColumns) _projectionColumnHandler else _columnHandler
@@ -89,15 +92,6 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
 
   private var _data: Array[Any] = _
   _data = _columnHandler.initDataContainer(_capacity)
-
-  private def initColumnHandlersAndCapacity(capacity: Int) = {
-    _columnHandler = newColumnHandler(columns, types, numColumns)
-    _projectionColumnHandler = newColumnHandler((0 until numColumns).toArray,
-      types, numColumns)
-    _capacity = capacity
-    _mask = capacity - 1
-    _growThreshold = (loadFactor * capacity).toInt
-  }
 
   /** Number of elements in the set. */
   override def size: Int = _size
