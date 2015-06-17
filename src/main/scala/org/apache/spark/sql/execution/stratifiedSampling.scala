@@ -104,7 +104,12 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
       // do the flush.
       sampler.setFlushStatus(true)
     }
-    sampler.sample(firstParent[Row].iterator(part.parent, context))
+    sampler.numThreads.incrementAndGet()
+    try {
+      sampler.sample(firstParent[Row].iterator(part.parent, context))
+    } finally {
+      sampler.numThreads.decrementAndGet()
+    }
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -116,6 +121,10 @@ object StratifiedSampler {
 
   private final val globalMap = new mutable.HashMap[String, StratifiedSampler]
   private final val mapLock = new ReentrantReadWriteLock
+
+  private final val MAX_FLUSHED_MAP_AGE_SECS = 600
+  private final val MAX_FLUSHED_MAP_SIZE = 1024
+  private final val flushedMaps = new mutable.LinkedHashMap[String, Long]
 
   final val BUFSIZE = 1000
   final val EMPTY_RESERVOIR = Array.empty[MutableRow]
@@ -237,6 +246,8 @@ object StratifiedSampler {
           globalMap.getOrElse(name, {
             val sampler = newSampler(qcs, name, fraction, strataSize,
               cacheBatchSize, tsCol, timeInterval, schema)
+            // if the map has been removed previously, then mark as flushed
+            sampler.setFlushStatus(flushedMaps.contains(name))
             globalMap(name) = sampler
             sampler
           })
@@ -244,9 +255,22 @@ object StratifiedSampler {
     }
   }
 
-  def removeSampler(name: String): Option[StratifiedSampler] =
+  def removeSampler(name: String, markFlushed: Boolean): Unit =
     SegmentMap.lock(mapLock.writeLock) {
       globalMap.remove(name)
+      if (markFlushed) {
+        // make an entry in the flushedMaps list with the current time
+        // for expiration later if the map becomes large
+        flushedMaps.put(name, System.currentTimeMillis())
+        // clear old values if map is too large and expiration
+        // has been hit for one or more older entries
+        if (flushedMaps.size > MAX_FLUSHED_MAP_SIZE) {
+          val expireTime = System.currentTimeMillis() -
+            (MAX_FLUSHED_MAP_AGE_SECS * 1000L)
+          flushedMaps.takeWhile(_._2 <= expireTime).keysIterator.foreach(
+            flushedMaps.remove)
+        }
+      }
     }
 
   private def newSampler(qcs: Array[Int], name: String, fraction: Double,
@@ -317,6 +341,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   protected final val rng = new Random()
 
   private[sql] final val numSamplers = new AtomicInteger
+  private[sql] final val numThreads = new AtomicInteger
 
   /**
    * Store pending values to be flushed in a separate buffer so that we
@@ -437,9 +462,9 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   protected def waitForSamplers(waitUntil: Int, maxTime: Long): Unit = {
     val startTime = System.currentTimeMillis
     numSamplers.synchronized {
-      while (numSamplers.get > waitUntil && (maxTime <= 0 ||
-        (System.currentTimeMillis - startTime) <= maxTime))
-        numSamplers.wait(200)
+      while (numSamplers.get > waitUntil && (numThreads.get > waitUntil ||
+        maxTime <= 0 || (System.currentTimeMillis - startTime) <= maxTime))
+        numSamplers.wait(100)
     }
   }
 }
@@ -853,9 +878,9 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
       }
       else if (flushStatus.get) {
         // wait for all other partitions to flush the cache
-        waitForSamplers(1, 3000)
+        waitForSamplers(1, 5000)
         // remove sampler used only for DataFrame => DataFrame transformation
-        removeSampler(name)
+        removeSampler(name, markFlushed = true)
         (sampleIterator(batchIter, doFlush = true), true)
       }
       else (sampleIterator(batchIter, doFlush = false), true)
@@ -941,9 +966,9 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
 
     if (flushStatus.get) {
       // iterate over all the strata reservoirs for marked partition
-      waitForSamplers(1, 3000)
+      waitForSamplers(1, 5000)
       // remove sampler used only for DataFrame => DataFrame transformation
-      removeSampler(name)
+      removeSampler(name, markFlushed = true)
       // at this point we don't have a problem with concurrency
       val columns = schema.length
       stratas.flatMap(_.valuesIterator.flatMap(_.iterator(reservoirSize,
