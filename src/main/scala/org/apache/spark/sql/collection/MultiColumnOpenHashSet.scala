@@ -350,7 +350,7 @@ private[sql] object MultiColumnOpenHashSet {
 
     val columns: Array[Int]
 
-    val numColumns: Int = columns.length
+    def numColumns: Int = columns.length
 
     def getMutableValue(index: Int): MutableValue
 
