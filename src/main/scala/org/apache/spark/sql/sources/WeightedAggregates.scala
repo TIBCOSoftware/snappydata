@@ -30,6 +30,9 @@ object WeightageRule extends Rule[LogicalPlan] {
       val generatedratioExpr = new MapColumnToWeight(hiddenCol)
 
       aggr transformExpressions {
+        // cheat code to run the query on sample table without applying weightages
+        case alias@Alias(_,name) if name.startsWith("cheat_sample") =>
+          alias
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
         case alias@Alias(f@Count(args), name) if !f.isInstanceOf[WeightedCount] =>
