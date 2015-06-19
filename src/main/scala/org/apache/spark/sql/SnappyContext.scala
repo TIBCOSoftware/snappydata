@@ -328,14 +328,28 @@ object snappy extends Serializable {
     }
   }
 
+  implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
+    df.sqlContext match {
+      case sc: SnappyContext =>
+        df.logicalPlan match {
+          case ss: StratifiedSample => new SampleDataFrame(sc, ss)
+          case s => throw new AnalysisException("Stratified sampling " +
+            "operations require stratifiedSample plan and not " +
+            s"${s.getClass.getSimpleName}")
+        }
+      case sc => throw new AnalysisException("Extended snappy operations " +
+        s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+    }
+  }
+
   implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]):
   SnappyDStreamOperations[T] = SnappyDStreamOperations(SnappyContext(
     ds.context.sparkContext), ds)
 
   implicit class SparkContextOperations(val s: SparkContext) {
-       def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
-         StreamingCtxtHolder(s, batchInterval)
-       }
+    def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
+      StreamingCtxtHolder(s, batchInterval)
+    }
   }
 }
 

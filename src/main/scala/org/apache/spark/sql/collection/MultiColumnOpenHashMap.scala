@@ -17,15 +17,14 @@
 
 package org.apache.spark.sql.collection
 
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
-import org.apache.spark.sql.types.DataType
-
 import scala.collection.generic.CanBuildFrom
-import scala.collection.{IterableLike, mutable}
+import scala.collection.{IterableLike, Iterator, mutable}
 import scala.reflect.ClassTag
 
-import MultiColumnOpenHashSet._
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
+import org.apache.spark.sql.collection.MultiColumnOpenHashSet._
+import org.apache.spark.sql.types.DataType
 
 /**
  * A fast hash map implementation for nullable keys. This hash map supports
@@ -34,17 +33,19 @@ import MultiColumnOpenHashSet._
  *
  * Under the hood, it uses our MultiColumnOpenHashSet implementation.
  */
-final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
-(_columns: Array[Int],
- _types: Array[DataType],
- _numColumns: Int,
- _initialCapacity: Int,
- _loadFactor: Double)
-  extends SegmentMap[Row, V]
-  with Iterable[(SpecificMutableRow, V)]
-  with IterableLike[(SpecificMutableRow, V), MultiColumnOpenHashMap[V]]
-  with mutable.Builder[(SpecificMutableRow, V), MultiColumnOpenHashMap[V]]
-  with Serializable {
+final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
+    _columns: Array[Int],
+    _types: Array[DataType],
+    _numColumns: Int,
+    _initialCapacity: Int,
+    _loadFactor: Double)
+    extends SegmentMap[Row, V]
+    with mutable.Map[Row, V]
+    with mutable.MapLike[Row, V, MultiColumnOpenHashMap[V]]
+    with Iterable[(Row, V)]
+    with IterableLike[(Row, V), MultiColumnOpenHashMap[V]]
+    with mutable.Builder[(Row, V), MultiColumnOpenHashMap[V]]
+    with Serializable {
 
   self =>
 
@@ -77,16 +78,16 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
   override def nonEmpty: Boolean = _keySet.nonEmpty || noNullValue
 
   /** Tests whether this map contains a binding for a row. */
-  private def contains(r: Row, columnHandler: ColumnHandler): Boolean = {
+  private def contains_(r: Row, columnHandler: ColumnHandler): Boolean = {
     val keySet = _keySet
     keySet.getPos(r, keySet.getHash(r, columnHandler),
       columnHandler) != INVALID_POS
   }
 
   /** Tests whether this map contains a binding for a row. */
-  def contains(r: Row): Boolean = {
+  override def contains(r: Row): Boolean = {
     if (r != null) {
-      contains(r, _keySet.getColumnHandler(r))
+      contains_(r, _keySet.getColumnHandler(r))
     } else {
       !noNullValue
     }
@@ -95,7 +96,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
   /** Tests whether this map contains a binding for a projected row. */
   def contains(r: SpecificMutableRow): Boolean = {
     if (r != null) {
-      contains(r, _keySet.getColumnHandler(r))
+      contains_(r, _keySet.getColumnHandler(r))
     } else {
       !noNullValue
     }
@@ -112,7 +113,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
   }
 
   /** Get the value for a given row */
-  private def apply(r: Row, columnHandler: ColumnHandler): V = {
+  private def get_(r: Row, columnHandler: ColumnHandler): V = {
     if (r != null) {
       val keySet = _keySet
       val pos = keySet.getPos(r, keySet.getHash(r, columnHandler),
@@ -128,9 +129,9 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
   }
 
   /** Get the value for a given row */
-  def apply(r: Row): V = {
+  override def apply(r: Row): V = {
     if (r != null) {
-      apply(r, _keySet.getColumnHandler(r))
+      get_(r, _keySet.getColumnHandler(r))
     } else {
       nullValue
     }
@@ -139,7 +140,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
   /** Get the value for a given row */
   def apply(r: SpecificMutableRow): V = {
     if (r != null) {
-      apply(r, _keySet.getColumnHandler(r))
+      get_(r, _keySet.getColumnHandler(r))
     } else {
       nullValue
     }
@@ -161,67 +162,95 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
   }
 
   /** Optionally get the value for a given row */
-  def get(r: Row): Option[V] = Option(apply(r))
+  override def get(r: Row): Option[V] = Option(apply(r))
 
   /** Optionally get the value for a given row */
   def get(r: SpecificMutableRow): Option[V] = Option(apply(r))
 
   /** Set the value for a row */
-  private def update(r: Row, v: V, hash: Int,
-                     columnHandler: ColumnHandler): Boolean = {
+  private def putValue(r: Row, v: V, hash: Int,
+      columnHandler: ColumnHandler): Option[V] = {
     val keySet = _keySet
     val pos = keySet.addWithoutResize(r, hash, columnHandler)
     if ((pos & NONEXISTENCE_MASK) != 0) {
       _values(pos & POSITION_MASK) = v
       keySet.rehashIfNeeded(r, grow, move)
-      true
+      None
     } else {
+      val oldV = _values(pos)
       _values(pos) = v
-      false
+      Option(oldV)
     }
   }
 
   /** Set the value for special null row */
-  private def updateNull(v: V): Boolean = {
+  private def putNull(v: V): Option[V] = {
     if (noNullValue) {
       noNullValue = false
       nullValue = v
-      true
+      None
     } else {
+      val oldV = nullValue
       nullValue = v
-      false
+      Option(oldV)
     }
   }
 
   /** Set the value for a row */
-  def update(r: Row, v: V): Boolean = {
+  override def put(r: Row, v: V): Option[V] = {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
-      update(r, v, keySet.getHash(r, columnHandler), columnHandler)
+      putValue(r, v, keySet.getHash(r, columnHandler), columnHandler)
     } else {
-      updateNull(v)
+      putNull(v)
     }
   }
 
   /** Set the value for a row */
-  def update(r: SpecificMutableRow, v: V): Boolean = {
+  override def update(r: Row, v: V) {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
-      update(r, v, keySet.getHash(r, columnHandler), columnHandler)
+      putValue(r, v, keySet.getHash(r, columnHandler), columnHandler)
     } else {
-      updateNull(v)
+      putNull(v)
     }
   }
 
   /** Set the value for a row */
+  def update(r: SpecificMutableRow, v: V) {
+    if (r != null) {
+      val keySet = _keySet
+      val columnHandler = keySet.getColumnHandler(r)
+      putValue(r, v, keySet.getHash(r, columnHandler), columnHandler)
+    } else {
+      putNull(v)
+    }
+  }
+
+  /** Set the value for a row given pre-computed hash */
   override def update(r: Row, hash: Int, v: V): Boolean = {
     if (r != null) {
-      update(r, v, hash, _keySet.getColumnHandler(r))
+      putValue(r, v, hash, _keySet.getColumnHandler(r)).isEmpty
     } else {
-      updateNull(v)
+      putNull(v).isEmpty
     }
+  }
+
+  override def +=(elem: (Row, V)) = {
+    self.update(elem._1, elem._2)
+    self
+  }
+
+  override def remove(row: Row) = throw new UnsupportedOperationException
+
+  override def -=(row: Row) = throw new UnsupportedOperationException
+
+  override def empty: MultiColumnOpenHashMap[V] = {
+    val keySet = _keySet
+    new MultiColumnOpenHashMap[V](keySet.columns, keySet.types,
+      keySet.numColumns, 1, keySet.loadFactor)
   }
 
   /**
@@ -232,7 +261,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
    *         if the default/merge calls returned null and nothing was done
    */
   private def changeValue(r: Row, hash: Int, columnHandler: ColumnHandler,
-                          change: ChangeValue[Row, V]): Option[Boolean] = {
+      change: ChangeValue[Row, V]): Option[Boolean] = {
     val keySet = _keySet
     val pos = keySet.addWithoutResize(r, hash, columnHandler)
     if ((pos & NONEXISTENCE_MASK) != 0) {
@@ -288,7 +317,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
    * @return the newly updated value.
    */
   def changeValue(r: SpecificMutableRow,
-                  change: ChangeValue[Row, V]): Option[Boolean] = {
+      change: ChangeValue[Row, V]): Option[Boolean] = {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
@@ -306,7 +335,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
    *         if the default/merge calls returned null and nothing was done
    */
   override def changeValue(r: Row, hash: Int,
-                           change: ChangeValue[Row, V]): Option[Boolean] = {
+      change: ChangeValue[Row, V]): Option[Boolean] = {
     if (r != null) {
       changeValue(r, hash, _keySet.getColumnHandler(r), change)
     } else {
@@ -381,134 +410,149 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag]
     otherMap
   }
 
-  override protected[this] def newBuilder: MultiColumnOpenHashMap[V] = {
-    val keySet = self._keySet
-    new MultiColumnOpenHashMap[V](keySet.columns, keySet.types,
+  def groupBy[K](groupOp: (Row, V) => Row,
+      combineOp: (V, V) => V): MultiColumnOpenHashMap[V] = {
+    val m = newBuilder
+    for ((row, value) <- this.iteratorRowReuse) {
+      val key = groupOp(row, value)
+      m.changeValue(key, new ChangeValue[Row, V] {
+        override def defaultValue(k: Row) = value
+
+        override def mergeValue(k: Row, v: V): V = combineOp(v, value)
+      })
+    }
+    m
+  }
+
+  private def newBuilder[B: ClassTag](keySet: MultiColumnOpenHashSet) = {
+    new MultiColumnOpenHashMap[B](keySet.columns, keySet.types,
       keySet.numColumns, keySet.capacity, keySet.loadFactor)
   }
 
+  override protected[this] def newBuilder = newBuilder[V](self._keySet)
+
   implicit def canBuildFrom[B: ClassTag] =
-    new CanBuildFrom[MultiColumnOpenHashMap[V], (SpecificMutableRow, B),
-      MultiColumnOpenHashMap[B]] {
+    new CanBuildFrom[MultiColumnOpenHashMap[V], (Row, B),
+        MultiColumnOpenHashMap[B]] {
 
-      override def apply(from: MultiColumnOpenHashMap[V]) = apply()
+      override def apply(from: MultiColumnOpenHashMap[V]) =
+        newBuilder(from._keySet)
 
-      override def apply(): MultiColumnOpenHashMap[B] = {
-        val keySet = self._keySet
-        new MultiColumnOpenHashMap[B](keySet.columns, keySet.types,
-          keySet.numColumns, keySet.capacity, keySet.loadFactor)
-      }
+      override def apply() = newBuilder[B](self._keySet)
     }
 
-  override def iterator: Iterator[(SpecificMutableRow, V)] =
-    new Iterator[(SpecificMutableRow, V)] {
-
-      final val bitset = _keySet.getBitSet
-      var pos = bitset.nextSetBit(0)
-
-      var nextPair: (SpecificMutableRow, V) =
-        if (noNullValue) computeNextPair()
-        else (null.asInstanceOf[SpecificMutableRow], nullValue)
-
-      /**
-       * Get the next value we should return from next(),
-       * or null if we're finished iterating
-       */
-      private final def computeNextPair(): (SpecificMutableRow, V) = {
-        if (pos >= 0) {
-          val row = _keySet.newEmptyValueAsRow()
-          _keySet.fillValueAsRow(pos, row)
-          val ret = (row, _values(pos))
-          pos = bitset.nextSetBit(pos + 1)
-          ret
-        } else {
-          null
-        }
-      }
-
-      override def hasNext: Boolean = nextPair != null
-
-      override def next(): (SpecificMutableRow, V) = {
-        val pair = nextPair
-        nextPair = computeNextPair()
-        pair
-      }
-    }
-
-  def iteratorRowReuse: Iterator[(SpecificMutableRow, V)] =
-    new Iterator[(SpecificMutableRow, V)] {
-
-      final val bitset = _keySet.getBitSet
-      var pos = bitset.nextSetBit(0)
-      val currentKey = _keySet.newEmptyValueAsRow()
-
-      var nextPair: (SpecificMutableRow, V) =
-        if (noNullValue) computeNextPair()
-        else (null.asInstanceOf[SpecificMutableRow], nullValue)
-
-      /**
-       * Get the next value we should return from next(),
-       * or null if we're finished iterating
-       */
-      private final def computeNextPair(): (SpecificMutableRow, V) = {
-        if (pos >= 0) {
-          _keySet.fillValueAsRow(pos, currentKey)
-          val ret = (currentKey, _values(pos))
-          pos = bitset.nextSetBit(pos + 1)
-          ret
-        } else {
-          null
-        }
-      }
-
-      override def hasNext: Boolean = nextPair != null
-
-      override def next(): (SpecificMutableRow, V) = {
-        val pair = nextPair
-        nextPair = computeNextPair()
-        pair
-      }
-    }
-
-  override def valuesIterator: Iterator[V] = new Iterator[V] {
+  abstract private class HashIterator[A] extends Iterator[A] {
 
     final val bitset = _keySet.getBitSet
     var pos = bitset.nextSetBit(0)
+    var nextVal = if (noNullValue) computeNext() else valueForNullKey
 
-    var nextV: V = if (noNullValue) computeNextV() else nullValue
+    def valueForNullKey: A
+
+    def newEmptyRow(): SpecificMutableRow
+
+    def buildResult(row: SpecificMutableRow, v: V): A
 
     /**
      * Get the next value we should return from next(),
      * or null if we're finished iterating
      */
-    def computeNextV(): V = {
+    private final def computeNext(): A = {
       if (pos >= 0) {
-        val ret = _values(pos)
+        val row = newEmptyRow()
+        val ret = if (row != null) {
+          _keySet.fillValueAsRow(pos, row)
+          buildResult(row, _values(pos))
+        }
+        else {
+          _values(pos).asInstanceOf[A]
+        }
         pos = bitset.nextSetBit(pos + 1)
         ret
       } else {
-        null.asInstanceOf[V]
+        null.asInstanceOf[A]
       }
     }
 
-    override def hasNext: Boolean = nextV != null
+    override final def hasNext: Boolean = nextVal != null
 
-    override def next(): V = {
-      val v = nextV
-      nextV = computeNextV()
-      v
+    override final def next(): A = {
+      val a = nextVal
+      nextVal = computeNext()
+      a
     }
   }
 
-  override def +=(elem: (SpecificMutableRow, V)) = {
-    self.update(elem._1, elem._2)
-    self
+  override def iterator: Iterator[(Row, V)] = new HashIterator[(Row, V)] {
+
+    def valueForNullKey = (null.asInstanceOf[Row], nullValue)
+
+    def newEmptyRow() = _keySet.newEmptyValueAsRow()
+
+    def buildResult(row: SpecificMutableRow, v: V) = (row.asInstanceOf[Row], v)
   }
 
-  override def clear(): Unit = {
-    Utils.fillArray[V](_values, null.asInstanceOf[V], 0, _values.length)
-    _keySet.clear()
+  def iteratorRowReuse: Iterator[(SpecificMutableRow, V)] =
+    new HashIterator[(SpecificMutableRow, V)] {
+
+      private[this] val currentRow = _keySet.newEmptyValueAsRow()
+
+      def valueForNullKey = (null.asInstanceOf[SpecificMutableRow], nullValue)
+
+      def newEmptyRow() = currentRow
+
+      def buildResult(row: SpecificMutableRow, v: V) = (row, v)
+    }
+
+  override def foreach[U](f: ((Row, V)) => U) = iteratorRowReuse.foreach(f)
+
+  /* Override to avoid tuple allocation */
+  override def keysIterator: Iterator[Row] = new HashIterator[Row] {
+
+    def valueForNullKey = null.asInstanceOf[Row]
+
+    def newEmptyRow() = _keySet.newEmptyValueAsRow()
+
+    def buildResult(row: SpecificMutableRow, v: V): Row = row
+  }
+
+  def keysIteratorRowReuse: Iterator[SpecificMutableRow] =
+    new HashIterator[SpecificMutableRow] {
+
+      private[this] val currentRow = _keySet.newEmptyValueAsRow()
+
+      def valueForNullKey = null.asInstanceOf[SpecificMutableRow]
+
+      def newEmptyRow() = currentRow
+
+      def buildResult(row: SpecificMutableRow, v: V) = row
+    }
+
+  /* Override to avoid tuple allocation */
+  override def valuesIterator: Iterator[V] = new HashIterator[V] {
+
+    def valueForNullKey = nullValue
+
+    def newEmptyRow() = null
+
+    def buildResult(row: SpecificMutableRow, v: V) = v
+  }
+
+  override def clear() {
+    // first clear the values array and value for null key
+    val bitset = _keySet.getBitSet
+    val nullV = null.asInstanceOf[V]
+    val values = _values
+    var pos = bitset.nextSetBit(0)
+    while (pos >= 0) {
+      values(pos) = nullV
+      pos = bitset.nextSetBit(pos + 1)
+    }
+    noNullValue = true
+    nullValue = nullV
     _oldValues = null
+    // next clear the key set
+    _keySet.clear()
   }
 
   override def result(): MultiColumnOpenHashMap[V] = self

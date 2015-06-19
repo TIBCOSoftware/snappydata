@@ -19,6 +19,8 @@ package org.apache.spark.sql.collection
 
 import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
+import org.apache.spark.sql.AnalysisException
+
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def foldValues[U](init: U)(f: (V, U) => U): U
@@ -48,9 +50,9 @@ trait ChangeValue[K, V] {
 
   def mergeValue(k: K, v: V): V
 
-  def segmentEnd(segment: SegmentMap[K, V]): Unit
+  def segmentEnd(segment: SegmentMap[K, V]) { }
 
-  def segmentAbort(segment: SegmentMap[K, V]): Boolean
+  def segmentAbort(segment: SegmentMap[K, V]) = false
 }
 
 object SegmentMap {
@@ -82,6 +84,17 @@ object Utils {
     while (index < endP1) {
       a(index) = v
       index += 1
+    }
+  }
+
+  def columnIndex(col: String, cols: Array[String]) = {
+    val colT = col.trim
+    cols.indices.collectFirst {
+      case index if colT.equalsIgnoreCase(cols(index)) => index
+    }.getOrElse {
+      throw new AnalysisException(
+        s"""StratifiedSampler: Cannot resolve column name "$col" among
+            (${cols.mkString(", ")})""")
     }
   }
 }

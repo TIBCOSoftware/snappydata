@@ -31,8 +31,8 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
   var hostPartitions: Map[String, Array[Int]] = _
 
   override def getPartitions: Array[Partition] = {
-    val peers = SparkEnv.get.blockManager.master.getMemoryStatus.keySet.map(
-      _.host)
+    val peers = SparkEnv.get.blockManager.master.getMemoryStatus.keySet.
+      map(_.host)
     val npeers = peers.size
     if (npeers > 0) {
       val numberedPeers = peers.toArray
@@ -157,8 +157,8 @@ object StratifiedSampler {
     // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
-    val (nm, fraction, strataSize, tsCol, timeInterval) = options.foldLeft(
-      "", 0.0, defaultStrataSize, -1, 0) {
+    val (nm, fraction, strataSize, tsCol, timeInterval) = options.
+      foldLeft("", 0.0, defaultStrataSize, -1, 0) {
       case ((n, fr, sz, ts, ti), (opt, optV)) =>
         opt match {
           case qcsTest() => (n, fr, sz, ts, ti) // ignore
@@ -180,8 +180,7 @@ object StratifiedSampler {
               s"StratifiedSampler: Cannot parse int 'strataReservoirSize'=$optV")
           }
           case timeSeriesColumnTest() => optV match {
-            case tss: String => (n, fr, sz,
-              SampleDataFrame.columnIndex(tss, cols), ti)
+            case tss: String => (n, fr, sz, Utils.columnIndex(tss, cols), ti)
             case tsi: Int => (n, fr, sz, tsi, ti)
             case _ => throw new AnalysisException(
               s"StratifiedSampler: Cannot parse 'timeSeriesColumn'=$optV")
@@ -267,8 +266,8 @@ object StratifiedSampler {
         if (flushedMaps.size > MAX_FLUSHED_MAP_SIZE) {
           val expireTime = System.currentTimeMillis() -
             (MAX_FLUSHED_MAP_AGE_SECS * 1000L)
-          flushedMaps.takeWhile(_._2 <= expireTime).keysIterator.foreach(
-            flushedMaps.remove)
+          flushedMaps.takeWhile(_._2 <= expireTime).keysIterator.
+            foreach(flushedMaps.remove)
         }
       }
     }
@@ -338,7 +337,8 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   }
 
   /** Random number generator for sampling. */
-  protected final val rng = new Random()
+  protected final val rng =
+    new Random(org.apache.spark.util.Utils.random.nextLong)
 
   private[sql] final val numSamplers = new AtomicInteger
   private[sql] final val numThreads = new AtomicInteger
@@ -370,10 +370,6 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
         wlock.unlock()
       }
     }
-  }
-
-  def setSeed(seed: Long) {
-    rng.setSeed(seed)
   }
 
   protected def strataReservoirSize: Int
@@ -653,8 +649,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         // pick up this row with probability of reservoirCapacity/totalSize
         if (rnd < reservoirCapacity) {
           // replace a random row in reservoir
-          sr.reservoir(rng.nextInt(reservoirCapacity)) = newMutableRow(row,
-            processSelected)
+          sr.reservoir(rng.nextInt(reservoirCapacity)) =
+            newMutableRow(row, processSelected)
           // update timeSlot start and end
           if (timeInterval > 0) {
             setTimeSlot(row)
@@ -675,7 +671,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
           val newReservoir = new Array[MutableRow](math.max(math.min(
             reservoirCapacity, reservoirLen + (reservoirLen >>> 1) + 1),
             cacheSize.get))
-          Utils.fillArray(newReservoir, EMPTY_ROW, reservoirLen, newReservoir.length)
+          Utils.fillArray(newReservoir, EMPTY_ROW, reservoirLen,
+            newReservoir.length)
           System.arraycopy(sr.reservoir, 0, newReservoir,
             0, reservoirLen)
           sr.reservoir = newReservoir
@@ -695,8 +692,6 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         sr
       }
     }
-
-    override def segmentEnd(seg: SegmentMap[Row, StrataReservoir]): Unit = {}
 
     override def segmentAbort(seg: SegmentMap[Row, StrataReservoir]): Boolean = {
       stratas.synchronized {
@@ -748,8 +743,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
           // no need to change if it is close enough already
           if (math.abs(newCacheSize - prevCacheSize) > (prevCacheSize / 10)) {
             // try to be somewhat gentle in changing to new value
-            this.cacheSize.set(
-              math.max(4, (newCacheSize * 2 + prevCacheSize) / 3))
+            this.cacheSize.set(math.max(4,
+              (newCacheSize * 2 + prevCacheSize) / 3))
           }
         }
         timeSlotSamples = 0
@@ -929,10 +924,6 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
       }
       sr
     }
-
-    override def segmentEnd(segment: SegmentMap[Row, StrataReservoir]): Unit = {}
-
-    override def segmentAbort(segment: SegmentMap[Row, StrataReservoir]) = false
   }
 
   override protected def strataReservoirSize: Int = reservoirSize

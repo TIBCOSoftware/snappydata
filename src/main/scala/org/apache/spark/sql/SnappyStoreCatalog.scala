@@ -1,5 +1,8 @@
 package org.apache.spark.sql
 
+import scala.collection.mutable
+import scala.language.implicitConversions
+
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -8,9 +11,6 @@ import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, sql}
 
-import scala.collection.mutable
-import scala.language.implicitConversions
-
 /**
  * Catalog primarily tracking stream/topK tables and returning LogicalPlan to materialize
  * these entities.
@@ -18,8 +18,8 @@ import scala.language.implicitConversions
  * Created by Soubhik on 5/13/15.
  */
 class SnappyStoreCatalog(context: SnappyContext,
-                         override val conf: CatalystConf)
-  extends SimpleCatalog(conf) with Logging {
+    override val conf: CatalystConf)
+    extends SimpleCatalog(conf) with Logging {
 
   protected val currentDatabase: String = "snappydata"
 
@@ -47,7 +47,7 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   override def lookupRelation(tableIdentifier: Seq[String],
-                              alias: Option[String]): LogicalPlan = {
+      alias: Option[String]): LogicalPlan = {
     val tableIdent = processTableIdentifier(tableIdentifier)
     //val databaseName = tableIdent.lift(tableIdent.size - 2).getOrElse(
     //  currentDatabase)
@@ -60,13 +60,15 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def registerSampleTable(schema: StructType, tableName: String,
-                          samplingOptions: Map[String, Any],
-                          df: Option[SampleDataFrame] = None): SampleDataFrame =
-  {
+      samplingOptions: Map[String, Any],
+      df: Option[SampleDataFrame] = None): SampleDataFrame = {
+    require(tableName != null && tableName.length > 0,
+      "registerSampleTable: expected non-empty table name")
+
     // add or overwrite existing name attribute
     val nameOption = "name"
     val options = samplingOptions.filterKeys(!_.equalsIgnoreCase(nameOption)) +
-      (nameOption -> tableName)
+        (nameOption -> tableName)
 
     // update the options in any provided StratifiedSample LogicalPlan
     df foreach (_.logicalPlan.options = options)
@@ -85,7 +87,7 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def registerTopKTable(schema: StructType, tableName: String,
-                        aggOptions: Map[String, Any]): DataFrame = {
+      aggOptions: Map[String, Any]): DataFrame = {
     //val accessPlan = DummyRDD(schema.toAttributes)(context)
     //val topKTab = TopKDataFrame(context, accessPlan, aggOptions)
     //topKTables.put(tableName, topKTab)
@@ -112,7 +114,7 @@ class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def getOrAddStreamTable(tableName: String, schema: StructType,
-                          samplingOptions: Map[String, Any]) =
+      samplingOptions: Map[String, Any]) =
     streamTables.getOrElse(tableName, registerSampleTable(schema, tableName,
       samplingOptions).logicalPlan)
 
@@ -130,16 +132,16 @@ class SnappyStoreCatalog(context: SnappyContext,
 }
 
 class TopKDataFrame(@transient override val sqlContext: SnappyContext,
-                    logicalPlan: LogicalPlan,
-                    val aggOptions: Map[String, Any])
-  extends sql.DataFrame(sqlContext, logicalPlan) {
+    logicalPlan: LogicalPlan,
+    val aggOptions: Map[String, Any])
+    extends sql.DataFrame(sqlContext, logicalPlan) {
 
   def this(incoming: DataFrame) {
     this(incoming.sqlContext.asInstanceOf[SnappyContext], {
       incoming.logicalPlan
     }, {
       val df: TopKDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].
-        catalog.sampleTables.find(p => p._2.logicalPlan.sameResult(
+          catalog.sampleTables.find(p => p._2.logicalPlan.sameResult(
         incoming.logicalPlan)).get._2
       df.aggOptions
     })
@@ -158,7 +160,7 @@ object TopKDataFrame {
   }
 
   def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan,
-            aggOptions: Map[String, Any]): TopKDataFrame = {
+      aggOptions: Map[String, Any]): TopKDataFrame = {
     new TopKDataFrame(sqlContext, logicalPlan, aggOptions)
   }
 }

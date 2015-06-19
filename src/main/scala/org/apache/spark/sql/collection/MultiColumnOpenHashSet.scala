@@ -17,12 +17,14 @@
 
 package org.apache.spark.sql.collection
 
+import scala.collection.generic.{Growable, CanBuildFrom}
+import scala.collection.{IterableLike, mutable}
+import scala.util.hashing.MurmurHash3
+
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.types._
 import org.apache.spark.util.collection.BitSet
-
-import scala.util.hashing.MurmurHash3
 
 /**
  * A simple, fast hash set optimized for non-null insertion-only use case,
@@ -44,13 +46,18 @@ import scala.util.hashing.MurmurHash3
  * which is guaranteed to explore all spaces for each key
  * (see http://en.wikipedia.org/wiki/Quadratic_probing).
  */
-final class MultiColumnOpenHashSet(var columns: Array[Int],
-                                   var types: Array[DataType],
-                                   var numColumns: Int,
-                                   var initialCapacity: Int,
-                                   var loadFactor: Double)
-  extends Iterable[SpecificMutableRow]
-  with Serializable {
+final class MultiColumnOpenHashSet(val columns: Array[Int],
+    val types: Array[DataType],
+    val numColumns: Int,
+    val initialCapacity: Int,
+    val loadFactor: Double)
+    extends Iterable[SpecificMutableRow]
+    with IterableLike[SpecificMutableRow, MultiColumnOpenHashSet]
+    with Growable[Row]
+    with mutable.Builder[Row, MultiColumnOpenHashSet]
+    with Serializable {
+
+  self =>
 
   require(initialCapacity <= (1 << 29),
     "Can't make capacity bigger than 2^29 elements")
@@ -125,14 +132,27 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
     rehashIfNeeded(row, grow, move)
   }
 
+  override def +=(row: Row) = {
+    add(row)
+    this
+  }
+
   /**
    * Add a projected row to the set. If the set is over capacity after
    * the insertion, grow the set and rehash all elements.
+   *
+   * @param row the row to be added
+   * @return `true` if the row was not present in the set, `false` otherwise
    */
   def add(row: SpecificMutableRow) {
     val columnHandler = getColumnHandler(row)
     addWithoutResize(row, columnHandler.hash(row), columnHandler)
     rehashIfNeeded(row, grow, move)
+  }
+
+  def +=(row: SpecificMutableRow): MultiColumnOpenHashSet = {
+    add(row)
+    this
   }
 
   /**
@@ -146,7 +166,7 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
    *         is set if the key does not exists previously.
    */
   private[sql] def addWithoutResize(row: Row, hash: Int,
-                                    columnHandler: ColumnHandler): Int = {
+      columnHandler: ColumnHandler): Int = {
     var pos = hash & _mask
     var delta = 1
     val data = _data
@@ -179,7 +199,7 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
    *                 (in the old array) to a new position (in the new array).
    */
   def rehashIfNeeded(row: Row, allocateFunc: (Int) => Unit,
-                     moveFunc: (Int, Int) => Unit) {
+      moveFunc: (Int, Int) => Unit) {
     if (_size > _growThreshold) {
       rehash(row, allocateFunc, moveFunc)
     }
@@ -219,6 +239,21 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
   def fillValueAsRow(pos: Int, row: SpecificMutableRow) =
     _columnHandler.fillValue(_data, pos, row)
 
+  private def newBuilder(from: MultiColumnOpenHashSet) = {
+    new MultiColumnOpenHashSet(from.columns, from.types,
+      from.numColumns, from.capacity, from.loadFactor)
+  }
+
+  override protected[this] def newBuilder = newBuilder(self)
+
+  implicit def canBuildFrom =
+    new CanBuildFrom[MultiColumnOpenHashSet, Row, MultiColumnOpenHashSet] {
+
+      override def apply(from: MultiColumnOpenHashSet) = newBuilder(from)
+
+      override def apply(): MultiColumnOpenHashSet = newBuilder(self)
+    }
+
   override def iterator: Iterator[SpecificMutableRow] =
     new Iterator[SpecificMutableRow] {
 
@@ -251,15 +286,17 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
       }
     }
 
-  def clear(): Unit = {
+  override def clear() {
     _data = _columnHandler.initDataContainer(_capacity)
     _bitset = new BitSet(_bitset.capacity)
     _size = 0
   }
 
+  override def result(): MultiColumnOpenHashSet = this
+
   /** Copy this set to given set clearing it if it is not empty */
-  def copyTo(other: MultiColumnOpenHashSet): Unit = {
-    val capacity = this.capacity
+  def copyTo(other: MultiColumnOpenHashSet) {
+    val capacity = self.capacity
     if (capacity == other.capacity) {
       // do direct array copies
       _data.indices.foreach { index =>
@@ -287,10 +324,10 @@ final class MultiColumnOpenHashSet(var columns: Array[Int],
    *                 (in the old array) to a new position (in the new array).
    */
   private def rehash(row: Row, allocateFunc: (Int) => Unit,
-                     moveFunc: (Int, Int) => Unit) {
+      moveFunc: (Int, Int) => Unit) {
     val newCapacity = _capacity * 2
     allocateFunc(newCapacity)
-    val columnHandler = this._columnHandler
+    val columnHandler = self._columnHandler
     val newBitset = new BitSet(newCapacity)
     val newData = columnHandler.initDataContainer(newCapacity)
     val newMask = newCapacity - 1
@@ -356,12 +393,12 @@ private[sql] object MultiColumnOpenHashSet {
 
     def equals(data: Array[Any], pos: Int, row: Row): Boolean
 
-    def fillValue(data: Array[Any], pos: Int, row: SpecificMutableRow): Unit
+    def fillValue(data: Array[Any], pos: Int, row: SpecificMutableRow)
 
-    def setValue(data: Array[Any], pos: Int, row: Row): Unit
+    def setValue(data: Array[Any], pos: Int, row: Row)
 
     def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                  newPos: Int): Unit
+        newPos: Int)
 
     final def newMutableRow(): SpecificMutableRow = {
       val ncols = numColumns
@@ -384,7 +421,7 @@ private[sql] object MultiColumnOpenHashSet {
   }
 
   def newColumnHandler(columns: Array[Int], types: Array[DataType],
-                       numColumns: Int) = {
+      numColumns: Int): ColumnHandler = {
     if (numColumns == 1) {
       val col = columns(0)
       types(0) match {
@@ -426,15 +463,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Long]](pos) == row.getLong(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setLong(0, data(0).asInstanceOf[Array[Long]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Long]](pos) = row.getLong(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Long]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Long]](newPos) =
         data(0).asInstanceOf[Array[Long]](pos)
   }
 
@@ -457,15 +493,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Int]](pos) == row.getInt(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setInt(0, data(0).asInstanceOf[Array[Int]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Int]](pos) = row.getInt(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Int]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Int]](newPos) =
         data(0).asInstanceOf[Array[Int]](pos)
   }
 
@@ -492,15 +527,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Double]](pos) == row.getDouble(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setDouble(0, data(0).asInstanceOf[Array[Double]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Double]](pos) = row.getDouble(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Double]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Double]](newPos) =
         data(0).asInstanceOf[Array[Double]](pos)
   }
 
@@ -518,21 +552,20 @@ private[sql] object MultiColumnOpenHashSet {
       hashInt(java.lang.Float.floatToRawIntBits(row.getFloat(col)))
 
     override def hash(data: Array[Any], pos: Int): Int = hashInt(java.lang
-      .Float.floatToRawIntBits(data(0).asInstanceOf[Array[Float]](pos)))
+        .Float.floatToRawIntBits(data(0).asInstanceOf[Array[Float]](pos)))
 
     override def equals(data: Array[Any], pos: Int, row: Row): Boolean =
       data(0).asInstanceOf[Array[Float]](pos) == row.getFloat(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setFloat(0, data(0).asInstanceOf[Array[Float]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Float]](pos) = row.getFloat(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Float]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Float]](newPos) =
         data(0).asInstanceOf[Array[Float]](pos)
   }
 
@@ -555,15 +588,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Boolean]](pos) == row.getBoolean(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setBoolean(0, data(0).asInstanceOf[Array[Boolean]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Boolean]](pos) = row.getBoolean(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Boolean]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Boolean]](newPos) =
         data(0).asInstanceOf[Array[Boolean]](pos)
   }
 
@@ -586,15 +618,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Byte]](pos) == row.getByte(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setByte(0, data(0).asInstanceOf[Array[Byte]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Byte]](pos) = row.getByte(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Byte]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Byte]](newPos) =
         data(0).asInstanceOf[Array[Byte]](pos)
   }
 
@@ -617,15 +648,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Short]](pos) == row.getShort(col)
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.setShort(0, data(0).asInstanceOf[Array[Short]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Short]](pos) = row.getShort(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Short]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Short]](newPos) =
         data(0).asInstanceOf[Array[Short]](pos)
   }
 
@@ -648,15 +678,14 @@ private[sql] object MultiColumnOpenHashSet {
       data(0).asInstanceOf[Array[Any]](pos).equals(row(col))
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) =
+        row: SpecificMutableRow) =
       row.update(0, data(0).asInstanceOf[Array[Any]](pos))
 
     override def setValue(data: Array[Any], pos: Int, row: Row) =
       data(0).asInstanceOf[Array[Any]](pos) = row(col)
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) =
-      newData(0).asInstanceOf[Array[Any]](newPos) =
+        newPos: Int) = newData(0).asInstanceOf[Array[Any]](newPos) =
         data(0).asInstanceOf[Array[Any]](pos)
   }
 
@@ -667,9 +696,9 @@ private[sql] object MultiColumnOpenHashSet {
   // Note that it is an expensive operation so should only be done when
   // this is known to be used for things like Sampled tables or GROUP BY.
   final class MultiColumnHandler(override val columns: Array[Int],
-                                 override val numColumns: Int,
-                                 val types: Array[DataType])
-    extends ColumnHandler {
+      override val numColumns: Int,
+      val types: Array[DataType])
+      extends ColumnHandler {
 
     override def getMutableValue(index: Int): MutableValue = {
       types(index) match {
@@ -760,7 +789,7 @@ private[sql] object MultiColumnOpenHashSet {
             h = MurmurHash3.mix(h, l.toInt)
             h = MurmurHash3.mix(h, (l >>> 32).toInt)
           case FloatType => h = MurmurHash3.mix(h, java.lang.Float
-            .floatToRawIntBits(data(i).asInstanceOf[Array[Float]](pos)))
+              .floatToRawIntBits(data(i).asInstanceOf[Array[Float]](pos)))
           case BooleanType => h = MurmurHash3.mix(h,
             if (data(i).asInstanceOf[Array[Boolean]](pos)) 1 else 0)
           case ByteType =>
@@ -818,7 +847,7 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def fillValue(data: Array[Any], pos: Int,
-                           row: SpecificMutableRow) = {
+        row: SpecificMutableRow) {
       val ncols = this.numColumns
       val types = this.types
       var i = 0
@@ -847,7 +876,7 @@ private[sql] object MultiColumnOpenHashSet {
       }
     }
 
-    override def setValue(data: Array[Any], pos: Int, row: Row) = {
+    override def setValue(data: Array[Any], pos: Int, row: Row) {
       val cols = this.columns
       val ncols = this.numColumns
       val types = this.types
@@ -878,7 +907,7 @@ private[sql] object MultiColumnOpenHashSet {
     }
 
     override def copyValue(data: Array[Any], pos: Int, newData: Array[Any],
-                           newPos: Int) = {
+        newPos: Int) {
       val ncols = this.numColumns
       val types = this.types
       var i = 0
@@ -886,31 +915,31 @@ private[sql] object MultiColumnOpenHashSet {
         types(i) match {
           case LongType =>
             newData(i).asInstanceOf[Array[Long]](newPos) =
-              data(i).asInstanceOf[Array[Long]](pos)
+                data(i).asInstanceOf[Array[Long]](pos)
           case IntegerType =>
             newData(i).asInstanceOf[Array[Int]](newPos) =
-              data(i).asInstanceOf[Array[Int]](pos)
+                data(i).asInstanceOf[Array[Int]](pos)
           case DoubleType =>
             newData(i).asInstanceOf[Array[Double]](newPos) =
-              data(i).asInstanceOf[Array[Double]](pos)
+                data(i).asInstanceOf[Array[Double]](pos)
           case FloatType =>
             newData(i).asInstanceOf[Array[Float]](newPos) =
-              data(i).asInstanceOf[Array[Float]](pos)
+                data(i).asInstanceOf[Array[Float]](pos)
           case BooleanType =>
             newData(i).asInstanceOf[Array[Boolean]](newPos) =
-              data(i).asInstanceOf[Array[Boolean]](pos)
+                data(i).asInstanceOf[Array[Boolean]](pos)
           case ByteType =>
             newData(i).asInstanceOf[Array[Byte]](newPos) =
-              data(i).asInstanceOf[Array[Byte]](pos)
+                data(i).asInstanceOf[Array[Byte]](pos)
           case ShortType =>
             newData(i).asInstanceOf[Array[Short]](newPos) =
-              data(i).asInstanceOf[Array[Short]](pos)
+                data(i).asInstanceOf[Array[Short]](pos)
           case DateType =>
             newData(i).asInstanceOf[Array[Int]](newPos) =
-              data(i).asInstanceOf[Array[Int]](pos)
+                data(i).asInstanceOf[Array[Int]](pos)
           case _ =>
             newData(i).asInstanceOf[Array[Any]](newPos) =
-              data(i).asInstanceOf[Array[Any]](pos)
+                data(i).asInstanceOf[Array[Any]](pos)
         }
         i += 1
       }

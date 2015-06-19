@@ -71,11 +71,9 @@ private[sql] class StreamSource extends SchemaRelationProvider {
     } catch {
       case cnf: java.lang.ClassNotFoundException =>
         sys.error(s"Failed to load class for data source: $provider")
-
     }
   }
 }
-
 
 object OptsUtil {
 
