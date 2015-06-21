@@ -22,7 +22,7 @@
   <parent>
     <groupId>org.apache.spark</groupId>
     <artifactId>snappy-spark-parent_2.10</artifactId>
-    <version>1.4.0-SNAPSHOT.2</version>
+    <version>1.4.0-SNAPSHOT.3</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
 
