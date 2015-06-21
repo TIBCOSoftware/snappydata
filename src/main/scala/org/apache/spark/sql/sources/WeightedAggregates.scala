@@ -63,7 +63,7 @@ case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression 
 
   override def toString: String = s"CoalesceDisparateTypes(${children.mkString(",")})"
 
-  override def eval(input: Row): EvaluatedType = {
+  override def eval(input: Row): Any = {
     throw new IllegalStateException("Children of CoalesceDisparateTypes " +
       "should be evaluated by its parent based on their types")
   }
@@ -91,7 +91,6 @@ object WeightedAverage {
 }
 
 case class MapColumnToWeight(child: Expression) extends UnaryExpression {
-  type EvaluatedType = Any
 
   override def dataType: DataType = DoubleType
 
