@@ -33,9 +33,6 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
   override def registerTempTable(tableName: String): Unit =
     registerSampleTable(tableName)
 
-  def appendToCache(tableName: String): Unit =
-    sqlContext.appendToCache(this, tableName)
-
   def errorStats(columnName: String,
       groupBy: Set[String] = Set.empty): MultiColumnOpenHashMap[StatCounter] = {
     val schema = this.schema

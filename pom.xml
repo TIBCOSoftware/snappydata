@@ -27,7 +27,7 @@
   </parent>
 
   <groupId>io.snappydata</groupId>
-  <artifactId>spark-snappydata_2.10</artifactId>
+  <artifactId>snappy-spark-aqp_2.10</artifactId>
   <packaging>jar</packaging>
   <name>Snappy Project AQP</name>
   <url>http://snappydata.io/</url>
