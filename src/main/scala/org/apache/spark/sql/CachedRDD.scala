@@ -11,7 +11,7 @@ import org.apache.spark.{Partition, SparkEnv, TaskContext}
  * Created by Soubhik on 5/13/15.
  */
 class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
-  extends RDD[Row](sqlContext.sparkContext, Nil) {
+    extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
     val master = SparkEnv.get.blockManager.master
@@ -35,7 +35,10 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
       throw new IllegalStateException(
         s"Expected to execute on ${part.host} but is on $thisHost")
     }
-    StratifiedSampler(name).map(_.iterator).getOrElse(Iterator[Row]())
+    StratifiedSampler(name) match {
+      case Some(ss) => ss.iterator
+      case None => Iterator.empty
+    }
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -51,7 +54,7 @@ class CachedBlockPartition(val idx: Int, val host: String) extends Partition {
 }
 
 class DummyRDD(sqlContext: SQLContext)
-  extends RDD[Row](sqlContext.sparkContext, Nil) {
+    extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   /**
    * Implemented by subclasses to compute a given partition.

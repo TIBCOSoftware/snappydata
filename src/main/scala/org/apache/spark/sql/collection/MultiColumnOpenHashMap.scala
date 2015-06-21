@@ -75,7 +75,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
   override def isEmpty: Boolean = _keySet.isEmpty && noNullValue
 
-  override def nonEmpty: Boolean = _keySet.nonEmpty || noNullValue
+  override def nonEmpty: Boolean = _keySet.nonEmpty || !noNullValue
 
   /** Tests whether this map contains a binding for a row. */
   private def contains_(r: Row, columnHandler: ColumnHandler): Boolean = {
@@ -130,20 +130,12 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
   /** Get the value for a given row */
   override def apply(r: Row): V = {
-    if (r != null) {
-      get_(r, _keySet.getColumnHandler(r))
-    } else {
-      nullValue
-    }
+    get_(r, _keySet.getColumnHandler(r))
   }
 
   /** Get the value for a given row */
   def apply(r: SpecificMutableRow): V = {
-    if (r != null) {
-      get_(r, _keySet.getColumnHandler(r))
-    } else {
-      nullValue
-    }
+    get_(r, _keySet.getColumnHandler(r))
   }
 
   /** Get the value for a given row */
@@ -261,7 +253,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    *         if the default/merge calls returned null and nothing was done
    */
   private def changeValue(r: Row, hash: Int, columnHandler: ColumnHandler,
-      change: ChangeValue[Row, V]): Option[Boolean] = {
+      change: ChangeValue[Row, V]): java.lang.Boolean = {
     val keySet = _keySet
     val pos = keySet.addWithoutResize(r, hash, columnHandler)
     if ((pos & NONEXISTENCE_MASK) != 0) {
@@ -269,28 +261,28 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
       if (v != null) {
         _values(pos & POSITION_MASK) = v
         keySet.rehashIfNeeded(r, grow, move)
-        SegmentMap.TRUE_OPTION
+        java.lang.Boolean.TRUE
       }
-      else None
+      else null
     } else {
       val v = change.mergeValue(r, _values(pos))
       if (v != null) {
         _values(pos) = v
-        SegmentMap.FALSE_OPTION
+        java.lang.Boolean.FALSE
       }
-      else None
+      else null
     }
   }
 
   /** Change value for the special null row */
-  private def changeValueForNull(c: ChangeValue[Row, V]): Option[Boolean] = {
+  private def changeValueForNull(c: ChangeValue[Row, V]): java.lang.Boolean = {
     if (noNullValue) {
       noNullValue = false
       nullValue = c.defaultValue(null)
-      SegmentMap.TRUE_OPTION
+      java.lang.Boolean.TRUE
     } else {
       nullValue = c.mergeValue(null, nullValue)
-      SegmentMap.FALSE_OPTION
+      java.lang.Boolean.FALSE
     }
   }
 
@@ -300,7 +292,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    *
    * @return the newly updated value.
    */
-  def changeValue(r: Row, change: ChangeValue[Row, V]): Option[Boolean] = {
+  def changeValue(r: Row, change: ChangeValue[Row, V]): java.lang.Boolean = {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
@@ -317,7 +309,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    * @return the newly updated value.
    */
   def changeValue(r: SpecificMutableRow,
-      change: ChangeValue[Row, V]): Option[Boolean] = {
+      change: ChangeValue[Row, V]): java.lang.Boolean = {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
@@ -335,7 +327,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    *         if the default/merge calls returned null and nothing was done
    */
   override def changeValue(r: Row, hash: Int,
-      change: ChangeValue[Row, V]): Option[Boolean] = {
+      change: ChangeValue[Row, V]): java.lang.Boolean = {
     if (r != null) {
       changeValue(r, hash, _keySet.getColumnHandler(r), change)
     } else {
@@ -343,7 +335,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     }
   }
 
-  override def foldValues[U](init: U)(f: (V, U) => U): U = {
+  override def foldValues[U](init: U, f: (V, U) => U): U = {
     var v = init
     // first check for null value
     if (!noNullValue) {
@@ -360,7 +352,8 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     v
   }
 
-  override def foldEntries[U](init: U)(f: (Row, V, U) => U): U = {
+  override def foldEntries[U](init: U, copyIfRequired: Boolean,
+      f: (Row, V, U) => U): U = {
     var v = init
     // first check for null value
     if (!noNullValue) {
@@ -369,10 +362,13 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     // next go through the entire map
     val keySet = _keySet
     val bitset = keySet.getBitSet
+    var currentKey = if (copyIfRequired) null else keySet.newEmptyValueAsRow()
     val values = _values
-    val currentKey = keySet.newEmptyValueAsRow()
     var pos = bitset.nextSetBit(0)
     while (pos >= 0) {
+      if (copyIfRequired) {
+        currentKey = keySet.newEmptyValueAsRow()
+      }
       keySet.fillValueAsRow(pos, currentKey)
       v = f(currentKey, values(pos), v)
       pos = bitset.nextSetBit(pos + 1)
@@ -416,6 +412,9 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     for ((row, value) <- this.iteratorRowReuse) {
       val key = groupOp(row, value)
       m.changeValue(key, new ChangeValue[Row, V] {
+
+        override def keyCopy(k: Row): Row = k.copy()
+
         override def defaultValue(k: Row) = value
 
         override def mergeValue(k: Row, v: V): V = combineOp(v, value)
@@ -441,10 +440,17 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
       override def apply() = newBuilder[B](self._keySet)
     }
 
-  abstract private class HashIterator[A] extends Iterator[A] {
+  abstract private class HashIterator[A](useCachedRow: Boolean = false)
+      extends Iterator[A] {
 
     final val bitset = _keySet.getBitSet
     var pos = bitset.nextSetBit(0)
+
+    // this is in parent class to allow initializing before first use in
+    // computeNext (else will need to make it lazy val etc in child classes)
+    private[this] final val currentRow =
+      if (useCachedRow) _keySet.newEmptyValueAsRow() else null
+
     var nextVal = if (noNullValue) computeNext() else valueForNullKey
 
     def valueForNullKey: A
@@ -459,7 +465,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
      */
     private final def computeNext(): A = {
       if (pos >= 0) {
-        val row = newEmptyRow()
+        val row = if (useCachedRow) currentRow else newEmptyRow()
         val ret = if (row != null) {
           _keySet.fillValueAsRow(pos, row)
           buildResult(row, _values(pos))
@@ -493,13 +499,11 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   }
 
   def iteratorRowReuse: Iterator[(SpecificMutableRow, V)] =
-    new HashIterator[(SpecificMutableRow, V)] {
-
-      private[this] val currentRow = _keySet.newEmptyValueAsRow()
+    new HashIterator[(SpecificMutableRow, V)](true) {
 
       def valueForNullKey = (null.asInstanceOf[SpecificMutableRow], nullValue)
 
-      def newEmptyRow() = currentRow
+      def newEmptyRow() = null
 
       def buildResult(row: SpecificMutableRow, v: V) = (row, v)
     }
@@ -517,13 +521,11 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   }
 
   def keysIteratorRowReuse: Iterator[SpecificMutableRow] =
-    new HashIterator[SpecificMutableRow] {
-
-      private[this] val currentRow = _keySet.newEmptyValueAsRow()
+    new HashIterator[SpecificMutableRow](true) {
 
       def valueForNullKey = null.asInstanceOf[SpecificMutableRow]
 
-      def newEmptyRow() = currentRow
+      def newEmptyRow() = null
 
       def buildResult(row: SpecificMutableRow, v: V) = row
     }

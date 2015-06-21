@@ -4,9 +4,10 @@ import scala.collection.{Map => SMap, mutable}
 import scala.util.Sorting
 
 import org.apache.spark.partial.StudentTCacher
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.collection.{MultiColumnOpenHashMap, Utils}
-import org.apache.spark.sql.types.{DoubleType, NumericType}
+import org.apache.spark.sql.types.{DoubleType, NumericType, StructType}
 import org.apache.spark.util.StatCounter
 
 /**
@@ -86,14 +87,13 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
       // use larger of the two maps
       val (m1, m2) =
         if (map1.size >= map2.size) (map1, map2) else (map2, map1)
-      for ((row, stat) <- m2.iteratorRowReuse) {
-        // merge the two stats or just copy from m2 if m1 does not have the row
-        val s = m1(row)
-        if (s != null) {
-          s.merge(stat)
-        }
-        else {
-          m1(row) = stat
+      if (m2.nonEmpty) {
+        for ((row, stat) <- m2.iterator) {
+          // merge the two stats or copy from m2 if m1 does not have the row
+          m1.get(row) match {
+            case Some(s) => s.merge(stat)
+            case None => m1(row) = stat
+          }
         }
       }
       m1
@@ -150,13 +150,24 @@ object SampleDataFrame {
     }
   }
 
-  def projectQCS(row: Row, qcs: Array[Int]) = {
-    val ncols = qcs.length
+  def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
+      convertToScalaRow: Boolean) = {
+    val ncols = columnIndices.length
     val newRow = new Array[Any](ncols)
     var index = 0
-    while (index < ncols) {
-      newRow(index) = row(qcs(index))
-      index += 1
+    if (convertToScalaRow) {
+      while (index < ncols) {
+        val colIndex = columnIndices(index)
+        newRow(index) = CatalystTypeConverters.convertToScala(row(colIndex),
+          schema(colIndex).dataType)
+        index += 1
+      }
+    }
+    else {
+      while (index < ncols) {
+        newRow(index) = row(columnIndices(index))
+        index += 1
+      }
     }
     new GenericRow(newRow)
   }

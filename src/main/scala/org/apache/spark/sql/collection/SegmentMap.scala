@@ -23,9 +23,9 @@ import org.apache.spark.sql.AnalysisException
 
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
-  def foldValues[U](init: U)(f: (V, U) => U): U
+  def foldValues[U](init: U, f: (V, U) => U): U
 
-  def foldEntries[U](init: U)(f: (K, V, U) => U): U
+  def foldEntries[U](init: U, copyIfRequired: Boolean, f: (K, V, U) => U): U
 
   def iterator: Iterator[(K, V)]
 
@@ -41,10 +41,12 @@ trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def update(k: K, hash: Int, v: V): Boolean
 
-  def changeValue(k: K, hash: Int, change: ChangeValue[K, V]): Option[Boolean]
+  def changeValue(k: K, hash: Int, change: ChangeValue[K, V]): java.lang.Boolean
 }
 
 trait ChangeValue[K, V] {
+
+  def keyCopy(k: K): K
 
   def defaultValue(k: K): V
 
@@ -58,9 +60,6 @@ trait ChangeValue[K, V] {
 object SegmentMap {
 
   val DEFAULT_LOAD_FACTOR = 0.7
-
-  val TRUE_OPTION = Some(true)
-  val FALSE_OPTION = Some(false)
 
   def nextPowerOf2(n: Int): Int = {
     val highBit = Integer.highestOneBit(n)
