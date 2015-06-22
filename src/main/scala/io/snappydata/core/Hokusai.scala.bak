@@ -1,0 +1,567 @@
+package io.snappydata.core
+
+import io.snappydata.core.csm.CountMinSketch
+import io.snappydata.util.NumberUtils
+import scala.reflect.ClassTag
+import scala.collection.mutable.MutableList
+import scala.collection.mutable.ListBuffer
+import scala.math
+import scala.collection.mutable.Stack
+import scala.util.Random
+
+// TODO Make sure M^t and A^t coincide  I think the timeAggregation may run left to right, but the
+//  item aggregation might run the other way in my impl????
+/**
+ * Implements the algorithms and data structures from "Hokusai -- Sketching
+ * Streams in Real Time", by Sergiy Matusevych, Alexander Smola, Amr Ahmed.
+ * http://www.auai.org/uai2012/papers/231.pdf
+ *
+ * Aggregates state, so this is a mutable class.
+ *
+ * Since we are all still learning scala, I thought I'd explain the use of
+ * implicits in this file.   TimeAggregation takes an implicit constructor
+ * parameter:
+ *    TimeAggregation[T]()(implicit val cmsMonoid: CMSMonoid[T])
+ * The purpose for that is:
+ * + In Algebird, a CMSMonoid[T] is a factory for creating instances of CMS[T]
+ * + TimeAggregation needs to occasionally make new CMS instances, so it will
+ *   use the factory
+ * + By making it an implicit (and in the curried param), the outer context of
+ *   the TimeAggregation can create/ensure that the factory is there.
+ * + Hokusai[T] will be the "outer context" so it can handle that for
+ *   TimeAggregation
+ *
+ *
+ * TODO
+ * 1. Decide if the underlying CMS should be mutable (save memory) or
+ *    functional (algebird) I'm afraid that with the functional approach,
+ *    and having so many, every time we merge two CMS, we create a third
+ *    and that is wasteful of memory or may take too much memory. If we go
+ *    with a mutable CMS, we have to either make stream-lib's serializable,
+ *    or make our own.
+ *
+ * 2. Clean up intrusion of algebird shenanigans in the code (implicit
+ *    factories etc)
+ *
+ * 3. Decide on API for managing data and time.  Do we increment time in a
+ *    separate operation or add a time parameter to addData()?
+ *
+ * 4. Decide if we want to be mutable or functional in this datastruct.
+ *    Current version is mutable.
+ */
+class Hokusai[T: ClassTag](cmsParams: CMSParams) {
+  //assert(NumberUtils.isPowerOfTwo(numIntervals))
+  val timeEpoch = new TimeEpoch()
+  val ta = new TimeAggregation[T](cmsParams)
+  val ia = new ItemAggregation[T](cmsParams)
+  val taPlusIa = new TimeAndItemAggregation(ta, ia, cmsParams)
+  // Current data accummulates into mBar until the next time tick
+  var mBar: CountMinSketch[T] = Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA)
+
+  def increment(): Unit = {
+    timeEpoch.increment()
+    ta.increment(mBar, timeEpoch.t)
+    ia.increment(mBar, timeEpoch.t)
+    taPlusIa.increment(mBar, timeEpoch.t)
+    mBar = Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA)
+  }
+
+  // For testing.  This follows spark one update per batch model?  But
+  // we may need to control for time a bit more carefully?
+  def addEpochData(data: Seq[T]) = {
+    accummulate(data)
+    increment()
+  }
+
+  def addEpochData(data: scala.collection.Map[T, Long]) = {
+    accummulate(data)
+    increment()
+  }
+
+  // Get the frequency estimate for key in epoch from the CMS
+  // If there is no data for epoch, returns None
+  /*def query(epoch: Long, key: T): Option[Long] =
+    // TODO I don't like passing numIntervals in .....
+    timeEpoch.jForTimestamp(epoch, numIntervals).flatMap(ta.query(_, key))*/
+
+  //def query(epoch: Long, key: T): Option[Long] = this.timeEpoch.jForTimestamp(epoch).flatMap(ta.query(_, key))
+
+  def query(epoch: Long, key: T): Option[Long] = this.timeEpoch.jForTimestamp(epoch).flatMap(ta.query(_, key))
+
+  //def accummulate(data: Seq[Long]): Unit = mBar = mBar ++ cmsMonoid.create(data)
+  def accummulate(data: Seq[T]): Unit = data.foreach(i => mBar.add(i, 1L))
+
+  def accummulate(data: scala.collection.Map[T, Long]): Unit = data.foreach { case (item, count) => mBar.add(item, count) }
+
+  def queryLastNIntervals(lastNIntervals: Int, item: T): Option[Long] = {
+    // 1 implies the current interval
+    if (lastNIntervals == 1) {
+      Some(this.mBar.estimateCount(item))
+    } else {
+      Some(this.taPlusIa.queryLastNIntervals(lastNIntervals, item)
+        + this.mBar.estimateCount(item))
+    }
+
+  }
+
+  override def toString = s"Hokusai[ta=${ta}, mBar=${mBar}]"
+}
+
+/**
+ * Manages a time epoch and how to index into it.
+ */
+class TimeEpoch {
+  val MAX_J = 16 // Using Int.MaxValue is waayyyyyyyyyyyy to computationally expensive
+  // we are talking exponents here, so 2^64 ought to be big enough for anyone?
+  var t: Long = 0 // t: The current time epoch
+
+  // TODO: Right now, we treat time as going up one tick per batch, but
+  // windowSize and epoch0 are put in place so we can have a time-tick be
+  // any number of seconds.  Not really used yet.
+  val epoch0 = 0L // The oldest timestamp known to this TimeAggregation
+  val windowSize = 1L // How many time units we increment in an increment
+
+  def increment() = t = t + windowSize
+
+  // For a given timestamp, what is the smallest index into m which
+  // contains data for the timestamp?
+  // TODO: This essentially searches O(log n) time periods for the correct one
+  // Perhaps there is an O(1) way to calculate?
+  def jForTimestamp(ts: Long): Option[Int] = {
+    if (ts < epoch0) return None
+    val ts1 = ((ts - epoch0) / windowSize).asInstanceOf[Int]
+
+    // This is bad: Searches...but this will generate correct test cases!
+    (0 until MAX_J) foreach ({ j =>
+      val tp = timePeriodForJ(t, j)
+      tp map { x =>
+        if (x._1 <= ts1 && ts1 < x._2)
+          return Some(j)
+      }
+    })
+    None
+  }
+
+  def timePeriodForJ(startTime: Long, j: Int): Option[(Long, Long)] = {
+    if (startTime < 0 || j < 0)
+      return None
+
+    val twoToJ = 1L << j
+    val delta = startTime % twoToJ
+    val p1 = startTime - delta
+    val p2 = startTime - delta - twoToJ
+    if (p2 >= 0L) Some(p2, p1) else None
+  }
+
+}
+
+// TODO Better handling of params and construction (both delta/eps and d/w support)
+case class CMSParams(width: Int, depth: Int, rootSeed: Int = 123) {
+  val hashA = createHashA
+
+  private def createHashA: Array[Long] = {
+    val r = new Random(rootSeed)
+    Array.fill[Long](depth)(r.nextInt(Int.MaxValue))
+  }
+}
+
+abstract class Aggregate[T: ClassTag]() {
+  val aggregates = new MutableList[CountMinSketch[T]]()
+
+  def query(index: Int, key: T): Option[Long] = this.aggregates.get(index).map(_.estimateCount(key))
+
+  def increment(cms: CountMinSketch[T], t: Long): Unit
+}
+
+class ItemAggregation[T: ClassTag](cmsParams: CMSParams) extends Aggregate[T] {
+
+  override def increment(cms: CountMinSketch[T], t: Long): Unit = {
+    //TODo :Asif : Take care of long being casted to int
+    // Since the indexes in aggregates are 0 based, A^1 is obtained by A(0)
+    aggregates += cms
+    for (k <- 1 to math.floor(Hokusai.log2X(t)).asInstanceOf[Int]) {
+      val compressIndex = t.asInstanceOf[Int] - math.pow(2, k).asInstanceOf[Int] - 1
+      val compressCMS = aggregates(compressIndex)
+      this.aggregates.update(compressIndex, compressCMS.compress)
+    }
+  }
+
+}
+/*
+val a: Array[Option[CountMinSketch]] = Array.fill(numIntervals) { None } // This is A from the paper
+def algo3(): Unit = {
+
+  val ln = a.length
+  val l = Hokusai.ilog2(h.timeUnits - 1)
+
+      h.liveItems++
+
+      if h.liveItems >= 1<<h.intervals {
+        // kill off the oldest live interval
+        h.itemAggregate[ln-h.liveItems+1] = nil
+        h.liveItems--
+      }
+
+      for k := 1; k < l; k++ {
+        // itemAggregation[t] is the data array for time t
+        sk := h.itemAggregate[ln-1<<uint(k)]
+        // FIXME(dgryski): can we avoid this check by be smarter about loop bounds?
+        if sk != nil {
+          sk.Compress()
+        }
+      }
+      h.itemAggregate = append(h.itemAggregate, h.sk.Clone())
+
+      }
+    */
+
+/**
+ * Data Structures and Algorithms to maintain Time Aggregation from the paper.
+ * Time is modeled as a non-decreasing integer starting at 0.
+ *
+ * The type parameter, T, is the key type.  This needs to be numeric.  Typical
+ * value is Long, but Short can cut down on size of resulting data structure,
+ * but increased chance of collision.  BigInt is another possibility.
+ *
+ *
+ * From Theorem 4 in the Paper:
+ *
+ * At time t, the sketch M^j contains statistics for the period
+ * [t-delta, t-delta-2^j] where delta = t mod 2^j
+ *
+ * The following shows an example of how data ages through m() as t
+ * starts at 0 and increases:
+ *
+ * {{{
+ *    === t = 0
+ *      t=0  j=0 m is EMPTY
+ *    === t = 1
+ *      t=1  j=0 m(0)=[0, 1) # secs in m(0): 1
+ *    === t = 2
+ *      t=2  j=0 m(0)=[1, 2) # secs in m(0): 1
+ *      t=2  j=1 m(1)=[0, 2) # secs in m(1): 2
+ *    === t = 3
+ *      t=3  j=0 m(0)=[2, 3) # secs in m(0): 1
+ *      t=3  j=1 m(1)=[0, 2) # secs in m(1): 2
+ *    === t = 4
+ *      t=4  j=0 m(0)=[3, 4) # secs in m(0): 1
+ *      t=4  j=1 m(1)=[2, 4) # secs in m(1): 2
+ *      t=4  j=2 m(2)=[0, 4) # secs in m(2): 4
+ *    === t = 5
+ *      t=5  j=0 m(0)=[4, 5) # secs in m(0): 1
+ *      t=5  j=1 m(1)=[2, 4) # secs in m(1): 2
+ *      t=5  j=2 m(2)=[0, 4) # secs in m(2): 4
+ *    === t = 6
+ *      t=6  j=0 m(0)=[5, 6) # secs in m(0): 1
+ *      t=6  j=1 m(1)=[4, 6) # secs in m(1): 2
+ *      t=6  j=2 m(2)=[0, 4) # secs in m(2): 4
+ *    === t = 7
+ *      t=7  j=0 m(0)=[6, 7) # secs in m(0): 1
+ *      t=7  j=1 m(1)=[4, 6) # secs in m(1): 2
+ *      t=7  j=2 m(2)=[0, 4) # secs in m(2): 4
+ *    === t = 8
+ *      t=8  j=0 m(0)=[7, 8) # secs in m(0): 1
+ *      t=8  j=1 m(1)=[6, 8) # secs in m(1): 2
+ *      t=8  j=2 m(2)=[4, 8) # secs in m(2): 4
+ *      t=8  j=3 m(3)=[0, 8) # secs in m(3): 8
+ *    === t = 9
+ *      t=9  j=0 m(0)=[8, 9) # secs in m(0): 1
+ *      t=9  j=1 m(1)=[6, 8) # secs in m(1): 2
+ *      t=9  j=2 m(2)=[4, 8) # secs in m(2): 4
+ *      t=9  j=3 m(3)=[0, 8) # secs in m(3): 8
+ * }}}
+ *
+ * @param numIntervals The number of sketches to keep in the exponential backoff.
+ *        the last one will have a sketch of all data.  Default value is 16.
+ */
+class TimeAggregation[T: ClassTag](cmsParams: CMSParams) extends Aggregate[T] {
+
+  // The terse variable names follow the variable names in the paper
+  // (minus capitalization)
+
+  // The array of exponentially decaying CMSs. In the paper, this is called
+  // M^j, but here we call it m(j). Each subsequent one covers a time
+  // period twice as long as the previous We will lazily initialize as time
+  // progresses, to keep memory down
+
+  // Increments time step by one unit, and compresses the sketches to
+  // maintain the invariants.  This is Algorithm 2 in the paper.
+  override def increment(cms: CountMinSketch[T], t: Long): Unit = {
+    if (NumberUtils.isPowerOfTwo(t.asInstanceOf[Int])) {
+      // Make a dummy  entry at the last  position
+      this.aggregates += new CountMinSketch[T](cmsParams.depth, cmsParams.width, cmsParams.hashA)
+    }
+    var mBar = cms
+    (0 until Hokusai.maxJ(t)) foreach ({ j =>
+      val temp = mBar
+      val mj = this.aggregates.get(j) match {
+        case Some(map) => map
+        case None => {
+          //make a place so update can happen correctly
+          throw new IllegalStateException("The index should have had a CMS")
+          //new CountMinSketch[T](cmsParams.depth, cmsParams.width, cmsParams.hashA) //mZero          
+        }
+      }
+      mBar = CountMinSketch.merge[T](mBar, mj)
+      this.aggregates.update(j, temp)
+    })
+
+  }
+
+  override def toString =
+    s"TimeAggregation[${this.aggregates.mkString("M=[", ", ", "]")}]"
+}
+
+class TimeAndItemAggregation[T: ClassTag](val timeAgg: Aggregate[T],
+  val itemAggregate: Aggregate[T], cmsParams: CMSParams) extends Aggregate[T] {
+  val intervalTracker = new IntervalTracker()
+  this.aggregates += new CountMinSketch[T](cmsParams.depth, cmsParams.width / 2, cmsParams.hashA)
+  //mZero  
+
+  override def increment(cms: CountMinSketch[T], t: Long): Unit = {
+    this.timeAgg.aggregates.get(1) match {
+      case Some(x) => {
+        var s = x
+        (0 until Hokusai.maxJ(t)) foreach { j =>
+          s = s.compress
+          val temp = s
+          s = CountMinSketch.merge(s, this.aggregates.get(j) match {
+            case Some(map) => map
+            case None => {
+              this.aggregates += null
+              new CountMinSketch[T](cmsParams.depth, s.width, cmsParams.hashA)
+            }
+          })
+          this.aggregates.update(j, temp)
+        }
+
+      }
+      case None =>
+    }
+
+    this.intervalTracker.updateIntervalLinks(t)
+
+  }
+
+  def queryLastNIntervals(lastNIntervals: Int, item: T): Long = {
+
+    //check the total number of intervals excluding the current ( in progress).
+    //The current interval counts only at the end of the current interval
+    val totalIntervals = this.itemAggregate.aggregates.size
+    // If total number of intervals is some power of 2, then all intervals are segregated &
+    // there is no overlap
+    val n = NumberUtils.isPowerOf2(totalIntervals)
+    val nQueried = NumberUtils.isPowerOf2(lastNIntervals)
+    if (n != -1 && nQueried != -1) {
+      val sumUpTo = math.min(n, nQueried)
+      queryBySummingTimeAggregates(item, sumUpTo)
+    } else if (n != -1) {
+      // the total intervals are power of 2 , but the queried up to interval is not
+      // In which case we find the nearest interval, which is power of 2 and sum up
+      // those time aggregates & approximate the remaining using interpolation
+      if (lastNIntervals > totalIntervals) {
+        queryBySummingTimeAggregates(item, n)
+      } else {
+        val nearestPowerOf2Num = NumberUtils.nearestPowerOf2LE(lastNIntervals)
+        var count = queryBySummingTimeAggregates(item, NumberUtils.isPowerOf2(nearestPowerOf2Num))
+        (nearestPowerOf2Num + 1 to lastNIntervals) foreach {
+          j => count += this.query(j.asInstanceOf[Int], item).get
+
+        }
+        count
+      }
+    } else {
+      // the number of intervals so far elapsed is not of form 2 ^n. So the time aggregates are 
+      // at various stages of overlaps
+      //Identify the total range of intervals by identifying the highest 2^n , greater than or equal to
+      // the interval
+
+      if (lastNIntervals > totalIntervals) {
+        1
+      } else {
+        val (bestPath, computedIntervalLength) = this.intervalTracker.identifyBestPath(lastNIntervals)
+        var total = bestPath.aggregate[Long](0)((total,  intervalPlusIndex) => {
+          total + timeAgg.aggregates(intervalPlusIndex._2).estimateCount(item)
+        }, _ + _)
+        // Add the first item representing interval 1
+        total += timeAgg.aggregates(0).estimateCount(item)
+
+        if (lastNIntervals > computedIntervalLength) {
+          (computedIntervalLength + 1 to lastNIntervals) foreach {
+            j => total += this.query(j.asInstanceOf[Int], item).get
+
+          }
+
+        }
+        total
+      }
+
+    }
+
+  }
+
+  override def query(t: Int, key: T): Option[Long] = {
+    //handle level =1
+    val totalIntervals = this.itemAggregate.aggregates.size
+    //val useHashOfInterval = m - j*
+    val cmsAtT = this.itemAggregate.aggregates.get(totalIntervals - t).get
+    val jStar = math.floor(Hokusai.log2X(totalIntervals - t)).asInstanceOf[Int]
+    val m = NumberUtils.isPowerOf2(NumberUtils.nearestPowerOf2LE(this.itemAggregate.aggregates.size))
+    val useHashOf = m - jStar
+    val csmForHash = this.itemAggregate.aggregates.get(useHashOf).get
+    val hashes = csmForHash.getIHashesFor(key)
+    val nTilda = calcNTilda(cmsAtT, hashes)
+    if (nTilda.get > (math.E * t) / cmsAtT.width) {
+      nTilda
+    } else {
+      calcNCarat(key, jStar, m, cmsAtT, hashes)
+    }
+
+  }
+
+  private def queryBySummingTimeAggregates(item: T, sumUpTo: Int): Long = {
+    var count: Long = 0
+    (0 to sumUpTo) foreach {
+      j => count += this.timeAgg.aggregates.get(j).get.estimateCount(item)
+    }
+
+    count
+  }
+
+  private def calcNTilda(cms: CountMinSketch[T],
+    hashes: Array[Int]): Option[Long] = {
+    var res = scala.Long.MaxValue;
+    for (i <- 0 until cms.depth) {
+      res = Math.min(res, cms.table(i)(hashes(i)));
+    }
+    return Some(res);
+  }
+
+  private def calcNCarat(key: T, jStar: Int, m: Int, cmsAtT: CountMinSketch[T],
+    hashesForTime: Array[Int]): Option[Long] = {
+    val totalIntervals = this.itemAggregate.aggregates.size
+    val mJStar = this.timeAgg.aggregates.get(jStar).get
+    val bJStar = this.aggregates.get(jStar).get
+    val mjStarHashes = mJStar.getIHashesFor(key)
+    var res = scala.Long.MaxValue;
+    for (i <- 0 until cmsAtT.depth) {
+      res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / bJStar.table(i)(hashesForTime(i)));
+    }
+    return Some(res);
+  }
+
+  class IntervalTracker {
+    private var head: IntervalLink = null
+    private val unsaturatedIntervals: Stack[IntervalLink] = new Stack[IntervalLink]()
+
+    def identifyBestPath(lastNIntervals: Int): (Seq[(Long, Int)], Long) = {
+      //The first 1 interval is outside the LinkedInterval but will always be there separate
+      this.head.identifyBestPath(lastNIntervals,1, 1)
+    }
+
+    def updateIntervalLinks(t: Long): Unit = {
+      if (t > 2) {
+        val lastIntervalPowerOf2 = NumberUtils.isPowerOf2(t - 1)
+        if (lastIntervalPowerOf2 != -1) {
+          // create new Interval Link , with values 
+          //2^n+1
+          this.unsaturatedIntervals.clear()
+          val seq = new ListBuffer[Long]()
+          var a = 1
+          seq += 1
+          for (i <- 1 to lastIntervalPowerOf2) {
+            a *= 2
+            seq += a
+          }
+          this.head = new IntervalLink(seq)
+          this.unsaturatedIntervals.push(this.head)
+        } else {
+          val topUnsaturated = this.unsaturatedIntervals.top
+          this.head = topUnsaturated.buildBackward
+          if (topUnsaturated.isSaturated) {
+            this.unsaturatedIntervals.pop()
+          }
+          if (!this.head.isSaturated) {
+            this.unsaturatedIntervals.push(this.head)
+          }
+        }
+      }
+
+    }
+
+    private class IntervalLink(val intervals: ListBuffer[Long]) {
+
+      def this(interval: Long) = this(ListBuffer(interval))
+      // intervals having same start
+      //The max interval will form the link to the next 
+
+      private var nextLink: IntervalLink = null
+      private var prevLink: IntervalLink = null
+
+      def buildBackward(): IntervalLink = {
+        val topInterval = this.intervals.remove(0)
+        val newHead = new IntervalLink(topInterval)
+        //subsume the previous intervals
+        if (prevLink != null) {
+          prevLink.subsume(newHead.intervals)
+        }
+        this.prevLink = newHead
+        newHead.nextLink = this
+        newHead
+      }
+
+      def subsume(subsumer: ListBuffer[Long]) {
+        this.intervals ++=: subsumer
+        if (prevLink != null) {
+          prevLink.subsume(subsumer)
+        }
+      }
+
+      def isSaturated: Boolean = this.intervals.size == 1
+
+      def identifyBestPath(lastNIntervals: Int, prevTotal: Long = 0, arryIndex: Int): (Seq[(Long, Int)], Long) = {
+        val last = this.intervals.last
+        if (last + prevTotal == lastNIntervals) {
+          (Seq[(Long, Int)](last-> arryIndex), last + prevTotal)
+        } else if (last + prevTotal < lastNIntervals) {
+          if (this.nextLink != null) {
+            val (seq, total) = this.nextLink.identifyBestPath(lastNIntervals, last + prevTotal, arryIndex + 1)
+            ((last , arryIndex) +: seq, total)
+          } else {
+            (Seq[(Long, Int)](last -> arryIndex), last + prevTotal)
+          }
+        }else {
+          (Seq.empty, prevTotal)
+        } 
+       /* else {
+          this.intervals.reverse.find { x => x + prevTotal <= lastNIntervals } match {
+            case Some(x) => (Seq[Long](x), x + prevTotal)
+            case None => (Seq.empty, prevTotal)
+          }
+        }*/
+
+      }
+    }
+
+  }
+
+}
+
+object Hokusai {
+
+  def log2X(X: Long): Double = math.log10(X) / math.log10(2)
+
+  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long]) =
+    new CountMinSketch[T](depth, width, hashA)
+
+  // @return the max i such that t % 2^i is zero
+  // from the paper (I think the paper has a typo, and "i" should be "t"):
+  //    argmax {l where i mod 2^l == 0}
+  def maxJ(t: Long): Int = {
+    if (t < 1) return 0
+    var l = 0
+    while (t % (1 << l) == 0) l = l + 1
+    l
+  }
+
+}
