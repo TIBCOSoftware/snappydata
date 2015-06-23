@@ -1,8 +1,10 @@
 package org.apache.spark.sql
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.StratifiedSampler
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -14,12 +16,13 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
     extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    val master = SparkEnv.get.blockManager.master
-    val numberedPeers = master.getMemoryStatus.zipWithIndex
+    val blockManager = SparkEnv.get.blockManager
+    val numberedPeers = blockManager.master.getMemoryStatus.keySet.filter(
+      !_.isDriver).zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
-        case (bid, idx) => new CachedBlockPartition(idx, bid._1.host)
+        case (bid, idx) => new CachedBlockPartition(idx, bid)
       }.toArray[Partition]
     }
     else {
@@ -27,13 +30,13 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
     }
   }
 
-  override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
+  override def compute(split: Partition, context: TaskContext) = {
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
-    val thisHost = blockManager.blockManagerId.host
-    if (part.host != thisHost) {
+    val thisBlockId = blockManager.blockManagerId
+    if (part.blockId != thisBlockId) {
       throw new IllegalStateException(
-        s"Expected to execute on ${part.host} but is on $thisHost")
+        s"Unexpected execution of $part on $thisBlockId")
     }
     StratifiedSampler(name) match {
       case Some(ss) => ss.iterator
@@ -41,16 +44,16 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
     }
   }
 
-  override def getPreferredLocations(split: Partition): Seq[String] = {
-    Seq(split.asInstanceOf[CachedBlockPartition].host)
-  }
+  override def getPreferredLocations(split: Partition): Seq[String] =
+    Seq(split.asInstanceOf[CachedBlockPartition].hostExecutorId)
 }
 
-class CachedBlockPartition(val idx: Int, val host: String) extends Partition {
+class CachedBlockPartition(override val index: Int, val blockId: BlockManagerId)
+    extends Partition {
 
-  val index = idx
+  def hostExecutorId = Utils.getHostExecutorId(blockId)
 
-  override def toString = s"CachedBlockPartition($idx, $host)"
+  override def toString = s"CachedBlockPartition($index, $blockId)"
 }
 
 class DummyRDD(sqlContext: SQLContext)

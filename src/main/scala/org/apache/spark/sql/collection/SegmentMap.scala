@@ -20,6 +20,7 @@ package org.apache.spark.sql.collection
 import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
 import org.apache.spark.sql.AnalysisException
+import org.apache.spark.storage.BlockManagerId
 
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
@@ -52,7 +53,7 @@ trait ChangeValue[K, V] {
 
   def mergeValue(k: K, v: V): V
 
-  def segmentEnd(segment: SegmentMap[K, V]) { }
+  def segmentEnd(segment: SegmentMap[K, V]) {}
 
   def segmentAbort(segment: SegmentMap[K, V]) = false
 }
@@ -96,4 +97,7 @@ object Utils {
             (${cols.mkString(", ")})""")
     }
   }
+
+  def getHostExecutorId(blockId: BlockManagerId) =
+    blockId.host + '_' + blockId.executorId
 }
