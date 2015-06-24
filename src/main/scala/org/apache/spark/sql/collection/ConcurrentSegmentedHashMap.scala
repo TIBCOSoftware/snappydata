@@ -18,6 +18,7 @@
 package org.apache.spark.sql.collection
 
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.Lock
 
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.reflect.ClassTag
@@ -256,22 +257,36 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   def readLock[U](f: Array[M] => U): U = {
-    val segments = wrapRefArray(_segments)
-    segments.foreach(_.readLock.lock())
+    val segments = _segments
+    val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
     try {
-      f(_segments)
+      for (seg <- segments) {
+        val lock = seg.readLock()
+        lock.lock()
+        locksObtained += lock
+      }
+      f(segments)
     } finally {
-      segments.foreach(_.readLock.unlock())
+      for (lock <- locksObtained) {
+        lock.unlock()
+      }
     }
   }
 
   def writeLock[U](f: Array[M] => U): U = {
-    val segments = wrapRefArray(_segments)
-    segments.foreach(_.writeLock.lock())
+    val segments = _segments
+    val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
     try {
-      f(_segments)
+      for (seg <- segments) {
+        val lock = seg.writeLock()
+        lock.lock()
+        locksObtained += lock
+      }
+      f(segments)
     } finally {
-      segments.foreach(_.writeLock.unlock())
+      for (lock <- locksObtained) {
+        lock.unlock()
+      }
     }
   }
 
