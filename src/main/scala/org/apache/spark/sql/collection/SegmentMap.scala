@@ -19,9 +19,6 @@ package org.apache.spark.sql.collection
 
 import java.util.concurrent.locks.{Lock, ReentrantReadWriteLock}
 
-import org.apache.spark.sql.AnalysisException
-import org.apache.spark.storage.BlockManagerId
-
 trait SegmentMap[K, V] extends ReentrantReadWriteLock {
 
   def foldValues[U](init: U, f: (V, U) => U): U
@@ -75,29 +72,4 @@ object SegmentMap {
       lock.unlock()
     }
   }
-}
-
-object Utils {
-
-  def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
-    var index = start
-    while (index < endP1) {
-      a(index) = v
-      index += 1
-    }
-  }
-
-  def columnIndex(col: String, cols: Array[String]) = {
-    val colT = col.trim
-    cols.indices.collectFirst {
-      case index if colT.equalsIgnoreCase(cols(index)) => index
-    }.getOrElse {
-      throw new AnalysisException(
-        s"""StratifiedSampler: Cannot resolve column name "$col" among
-            (${cols.mkString(", ")})""")
-    }
-  }
-
-  def getHostExecutorId(blockId: BlockManagerId) =
-    blockId.host + '_' + blockId.executorId
 }

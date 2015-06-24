@@ -1,5 +1,7 @@
 package org.apache.spark.sql.execution
 
+import scala.language.reflectiveCalls
+
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, Row}
 import org.apache.spark.sql.collection.{ChangeValue, Utils}
 import org.apache.spark.sql.execution.StratifiedSampler._

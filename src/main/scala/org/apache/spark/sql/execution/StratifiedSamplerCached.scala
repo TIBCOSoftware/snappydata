@@ -3,6 +3,7 @@ package org.apache.spark.sql.execution
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import scala.collection.mutable
+import scala.language.reflectiveCalls
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, Row}
