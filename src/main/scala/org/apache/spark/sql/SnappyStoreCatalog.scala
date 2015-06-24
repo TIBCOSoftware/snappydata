@@ -1,5 +1,7 @@
 package org.apache.spark.sql
 
+import org.apache.spark.sql.execution.cms.{TopKWrapper, TopKCMS}
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 
@@ -28,7 +30,7 @@ class SnappyStoreCatalog(context: SnappyContext,
   val streamTables = new mutable.HashMap[String, LogicalPlan]()
 
   // This keeps the stream table to Sample Table mapping
-  val streamToSampleTblMap = new mutable.HashMap[String, Seq[String]]()
+  val streamToStructureMap = new mutable.HashMap[String, Seq[String]]()
 
   /**
    * This logicalPlan will be on SampleDataFrame#logicalPlan which will know
@@ -36,7 +38,7 @@ class SnappyStoreCatalog(context: SnappyContext,
    */
   val sampleTables = new mutable.HashMap[String, SampleDataFrame]()
 
-  val topKTables = new mutable.HashMap[String, TopKDataFrame]()
+  val topKStructures = new mutable.HashMap[String, TopKWrapper[_]]()
 
   override def unregisterAllTables(): Unit = {
     throw new NotImplementedError()
@@ -86,12 +88,15 @@ class SnappyStoreCatalog(context: SnappyContext,
     sample
   }
 
-  def registerTopKTable(schema: StructType, tableName: String,
-      aggOptions: Map[String, Any]): DataFrame = {
+  def registerTopK(tableName: String, streamName: String, schema: StructType,
+      topkOptions: Map[String, Any]) = {
     //val accessPlan = DummyRDD(schema.toAttributes)(context)
     //val topKTab = TopKDataFrame(context, accessPlan, aggOptions)
     //topKTables.put(tableName, topKTab)
-    null
+    topKStructures.put(tableName, TopKWrapper(tableName, topkOptions, schema))
+    streamToStructureMap.put(streamName,
+      streamToStructureMap.getOrElse(streamName, Nil) :+ tableName)
+    ()
   }
 
   def getStreamTable(tableName: String): LogicalPlan =
@@ -128,39 +133,5 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   override def tableExists(tableIdentifier: Seq[String]): Boolean = {
     streamTables.isDefinedAt(tableIdentifier.last)
-  }
-}
-
-class TopKDataFrame(@transient override val sqlContext: SnappyContext,
-    logicalPlan: LogicalPlan,
-    val aggOptions: Map[String, Any])
-    extends sql.DataFrame(sqlContext, logicalPlan) {
-
-  def this(incoming: DataFrame) {
-    this(incoming.sqlContext.asInstanceOf[SnappyContext], {
-      incoming.logicalPlan
-    }, {
-      val df: TopKDataFrame = incoming.sqlContext.asInstanceOf[SnappyContext].
-          catalog.sampleTables.find(p => p._2.logicalPlan.sameResult(
-        incoming.logicalPlan)).get._2
-      df.aggOptions
-    })
-  }
-
-  def createApproxTopKFreq(): DataFrame = {
-    throw new NotImplementedError()
-  }
-}
-
-object TopKDataFrame {
-
-  implicit def dataFrameToTopKDataFrame(df: DataFrame): TopKDataFrame = {
-    assert(df.sqlContext.isInstanceOf[SnappyContext])
-    new TopKDataFrame(df)
-  }
-
-  def apply(sqlContext: SnappyContext, logicalPlan: LogicalPlan,
-      aggOptions: Map[String, Any]): TopKDataFrame = {
-    new TopKDataFrame(sqlContext, logicalPlan, aggOptions)
   }
 }

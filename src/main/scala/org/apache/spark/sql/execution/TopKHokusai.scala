@@ -1,10 +1,10 @@
-package io.snappydata.core
+package org.apache.spark.sql.execution
+
+import io.snappydata.util.NumberUtils
+import org.apache.spark.sql.collection.BoundedSortedSet
+import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
 
 import scala.reflect.ClassTag
-import io.snappydata.core.cms.CountMinSketch
-import io.snappydata.core.cms.TopKCMS
-import io.snappydata.util.NumberUtils
-import io.snappydata.util.BoundedSortedSet
 
 class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long, val topK: Int)
   extends Hokusai[T](cmsParams, windowSize, epoch0) {

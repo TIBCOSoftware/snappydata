@@ -1,4 +1,4 @@
-package io.snappydata.util;
+package org.apache.spark.sql.collection;
 
 import java.util.Comparator;
 import java.util.HashMap;

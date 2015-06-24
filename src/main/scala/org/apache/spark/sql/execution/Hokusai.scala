@@ -1,13 +1,13 @@
-package io.snappydata.core
+package org.apache.spark.sql.execution
 
-import io.snappydata.core.cms.CountMinSketch
-import io.snappydata.util.NumberUtils
-import scala.reflect.ClassTag
-import scala.collection.mutable.MutableList
-import scala.collection.mutable.ListBuffer
-import scala.collection.mutable.Stack
-import scala.util.Random
 import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import io.snappydata.util.NumberUtils
+import org.apache.spark.sql.execution.cms.CountMinSketch
+
+import scala.collection.mutable.{ListBuffer, MutableList, Stack}
+import scala.reflect.ClassTag
+import scala.util.Random
 
 // TODO Make sure M^t and A^t coincide  I think the timeAggregation may run left to right, but the
 //  item aggregation might run the other way in my impl????

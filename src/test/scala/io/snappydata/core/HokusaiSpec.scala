@@ -1,5 +1,7 @@
 package io.snappydata.core
 
+import org.apache.spark.sql.execution.{CMSParams, Hokusai}
+
 import scala.io.Source
 import org.scalatest._
 import Inspectors._  // picks up forAll () {}

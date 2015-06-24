@@ -1,4 +1,4 @@
-package io.snappydata.core.cms
+package org.apache.spark.sql.execution.cms
 
 import scala.util.Random
 import scala.math.ceil

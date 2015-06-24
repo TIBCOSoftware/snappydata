@@ -2,6 +2,8 @@ package org.apache.spark.sql
 
 import java.util.concurrent.atomic.AtomicReference
 
+import org.apache.spark.sql.execution.cms.{TopKCMS, TopKWrapper}
+
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
@@ -77,6 +79,25 @@ class SnappyContext(sc: SparkContext)
                 s"sampling table $name")).cachedRepresentation)
     }).toSeq
 
+    val topkStructures = (catalog.topKStructures.filter {
+      case (name, topkstruct) => sampleTab.contains(name)
+    }) map { case (name, topkWrapper) =>
+
+      val confidence = topkWrapper.topKCMS.confidence
+      val eps = topkWrapper.topKCMS.eps
+      val topK = topkWrapper.topKCMS.topK
+      val keyname  = topkWrapper.key.name
+      tDF.foreachPartition(rowIterator => {
+        val topkCMS = TopKCMS(name, confidence,
+          eps, topK)
+        rowIterator.foreach(f => {
+          topkCMS.add(f.get(f.fieldIndex(keyname)), 1)
+        })
+      })
+
+    }
+
+
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {
       case (name, samplingOptions, schema, output, relation) =>
@@ -93,6 +114,8 @@ class SnappyContext(sc: SparkContext)
         }))
     }
 
+
+
     // add to list in relation
     // TODO: avoid a separate job for each RDD and instead try to do it
     // TODO: using a single UnionRDD or something
@@ -102,6 +125,8 @@ class SnappyContext(sc: SparkContext)
         relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
       }
     }
+
+
   }
 
   def appendToCache(df: DataFrame, tableName: String) {
@@ -177,10 +202,10 @@ class SnappyContext(sc: SparkContext)
     registerSampleTable(tableName, schemaExtract, samplingOptions)
   }
 
-  def registerTopKTable(streamTableName: String, tableName: String,
-      topkOptions: Map[String, String]): DataFrame = {
-    catalog.registerTopKTable(catalog.getStreamTable(streamTableName).schema,
-      tableName, topkOptions)
+  def registerTopK(tableName: String, streamTableName: String,
+      topkOptions: Map[String, Any]) = {
+    catalog.registerTopK(tableName, streamTableName, catalog.getStreamTable(streamTableName).schema,
+       topkOptions)
   }
 
   @transient
@@ -371,7 +396,8 @@ object SnappyContext {
   }
 }
 
-case class StratifiedSample(var options: Map[String, Any],
+case class
+StratifiedSample(var options: Map[String, Any],
     @transient override val child: LogicalPlan)
     // pre-compute QCS because it is required by
     // other API driven from driver

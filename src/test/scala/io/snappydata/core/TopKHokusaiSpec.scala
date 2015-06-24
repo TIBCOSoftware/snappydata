@@ -1,5 +1,8 @@
 package io.snappydata.core
 
+import org.apache.spark.sql.collection.BoundedSortedSet
+import org.apache.spark.sql.execution.{TopKHokusai, CMSParams}
+
 import scala.io.Source
 import org.scalatest._
 import Inspectors._
@@ -7,8 +10,7 @@ import scala.collection.Map
 import scala.collection.SortedSet
 import scala.math.abs
 import io.snappydata.util.NumberUtils
-import io.snappydata.core.cms.TopKCMS
-import io.snappydata.util.BoundedSortedSet
+import org.apache.spark.sql.execution.cms.TopKCMS
 
 /**
  * Spec for Hokusai TimeAggregation

@@ -1,5 +1,7 @@
 package io.snappydata.core
 
+import org.apache.spark.sql.execution.{TopKHokusai, CMSParams}
+
 import scala.io.Source
 import org.scalatest._
 import Inspectors._
@@ -8,7 +10,7 @@ import scala.collection.Set
 import scala.collection.SortedSet
 import scala.math.abs
 import io.snappydata.util.NumberUtils
-import io.snappydata.core.cms.TopKCMS
+import org.apache.spark.sql.execution.cms.TopKCMS
 
 
 /**

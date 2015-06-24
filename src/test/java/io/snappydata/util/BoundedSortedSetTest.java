@@ -2,6 +2,7 @@ package io.snappydata.util;
 
 import java.util.Iterator;
 
+import org.apache.spark.sql.collection.BoundedSortedSet;
 import scala.Tuple2;
 import junit.framework.TestCase;
 

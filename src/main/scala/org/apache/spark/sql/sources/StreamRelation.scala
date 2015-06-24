@@ -143,7 +143,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
         val catalog = snappyCtxt.catalog
         catalog.streamTables.foreach(streamEntry => {
 
-          val sampleTables = catalog.streamToSampleTblMap.getOrElse(
+          val sampleTables = catalog.streamToStructureMap.getOrElse(
             streamEntry._1, Nil)
 
           val sr = catalog.getStreamTableRelation(streamEntry._1).
@@ -186,9 +186,9 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
 
     //val sampleTables =
     // Add the sample table to the catalog as well.
-      catalog.streamToSampleTblMap.put(tableName,
-        catalog.streamToSampleTblMap.getOrElse(tableName, Nil) :+ sampledTableName)
 
+    catalog.streamToStructureMap.put(tableName,
+      catalog.streamToStructureMap.getOrElse(tableName, Nil) :+ sampledTableName)
     // Register the sample table
     // StratifiedSampler is not expecting basetable, remove it.
     snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
