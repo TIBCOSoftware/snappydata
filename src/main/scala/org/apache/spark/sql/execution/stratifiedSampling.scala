@@ -56,7 +56,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
     schema: StructType)
     extends RDD[Row](parent) with Serializable {
 
-  var hostPartitions: Map[BlockManagerId, IndexedSeq[Int]] = Map.empty
+  var executorPartitions: Map[BlockManagerId, IndexedSeq[Int]] = Map.empty
 
   /**
    * This method does detailed scheduling itself which is required given that
@@ -65,17 +65,15 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
    * appropriate weight to that executor.
    */
   override def getPartitions: Array[Partition] = {
-    val blockManager = SparkEnv.get.blockManager
     val peerExecutorMap = new mutable.HashMap[String,
         mutable.ArrayBuffer[ExecutorPartitionInfo]]()
     var totalMemory = 1L
-    for ((blockId, (max, remaining)) <- blockManager.master.getMemoryStatus) {
-      if (!blockId.isDriver) {
-        peerExecutorMap.getOrElseUpdate(blockId.host,
-          new mutable.ArrayBuffer[ExecutorPartitionInfo](4)) +=
-            new ExecutorPartitionInfo(blockId, remaining, 0)
-        totalMemory += remaining
-      }
+    for ((blockId, (max, remaining)) <- Utils.getAllExecutorsMemoryStatus(
+      sparkContext)) {
+      peerExecutorMap.getOrElseUpdate(blockId.host,
+        new mutable.ArrayBuffer[ExecutorPartitionInfo](4)) +=
+          new ExecutorPartitionInfo(blockId, remaining, 0)
+      totalMemory += remaining
     }
     if (peerExecutorMap.nonEmpty) {
       // Split partitions executor-wise:
@@ -100,8 +98,11 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
       val partitions = (0 until numPartitions).map { index =>
         val ppart = parentPartitions(index)
         val plocs = firstParent[Row].preferredLocations(ppart)
-        // get the best preferred location in the peers, else if none
-        // found then use the head of priority queue among peers
+        // get the "best" one as per the maximum number of remaining partitions
+        // to be assigned from among the parent partition's preferred locations
+        // (that can be hosts or executors), else if none found then use the
+        // head of priority queue among available peers to get the
+        // "best" available executor
 
         // first find all executors for preferred hosts of parent partition
         plocs.flatMap { loc =>
@@ -110,12 +111,13 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
             // if the preferred location is already an executorId then search
             // in available executors for its host
             val host = loc.substring(0, underscoreIndex)
+            val executorId = loc.substring(underscoreIndex + 1)
             val executors = peerExecutorMap.getOrElse(host, Iterator.empty)
-            executors.find(_.hostExecutorId == loc) match {
+            executors.find(_.blockId.executorId == executorId) match {
               // executorId found so return the single value
               case Some(executor) => Iterator(executor)
               // executorId not found so return all executors for its host
-              case None => Iterator.empty
+              case None => executors
             }
           }
           else {
@@ -124,7 +126,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
           // reduceLeft below will find the executor with max number of
           // remaining partitions assigned to it
         }.reduceLeftOption((pm, p) => if (p.compareTo(pm) >= 0) pm else p).map {
-          // get the SamplePartition for the "best" executor, if any
+          // get the SamplePartition for the "best" executor
           partInfo => new SamplePartition(ppart, index, partInfo.usePartition(
             queue, removeFromQueue = true), isLastHostPartition = false)
           // queue.poll below will pick "best" one from the head of queue when
@@ -133,7 +135,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
           queue, removeFromQueue = false), isLastHostPartition = false))
       }
       val partitionOrdering = Ordering[Int].on[SamplePartition](_.index)
-      hostPartitions = partitions.groupBy(_.blockId).map { case (k, v) =>
+      executorPartitions = partitions.groupBy(_.blockId).map { case (k, v) =>
         val sortedPartitions = v.sorted(partitionOrdering)
         // mark the last partition in each host as the last one that should
         // also be necessarily scheduled on that host
@@ -142,21 +144,20 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
       }
       partitions.toArray[Partition]
     } else {
-      hostPartitions = Map.empty
+      executorPartitions = Map.empty
       Array.empty[Partition]
     }
   }
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[Row] = {
-    val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[SamplePartition]
-    val thisBlockId = blockManager.blockManagerId
+    val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     // use -ve cacheBatchSize to indicate that no additional batching is to be
     // done but still pass the value through for size increases
     val sampler = StratifiedSampler(options, qcs, "_rdd_" + id, -cacheBatchSize,
       schema, cached = true)
-    val numSamplers = hostPartitions(part.blockId).length
+    val numSamplers = executorPartitions(part.blockId).length
 
     if (part.blockId != thisBlockId) {
       // if this is the last partition then it has to be necessarily scheduled

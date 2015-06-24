@@ -16,9 +16,8 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
     extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
-    val blockManager = SparkEnv.get.blockManager
-    val numberedPeers = blockManager.master.getMemoryStatus.keySet.filter(
-      !_.isDriver).zipWithIndex
+    val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
+        keySet.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
@@ -31,9 +30,8 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
   }
 
   override def compute(split: Partition, context: TaskContext) = {
-    val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
-    val thisBlockId = blockManager.blockManagerId
+    val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId != thisBlockId) {
       throw new IllegalStateException(
         s"Unexpected execution of $part on $thisBlockId")
