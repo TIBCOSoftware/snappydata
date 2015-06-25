@@ -7,6 +7,10 @@ import org.apache.spark.sql.execution.cms.CountMinSketch
 
 import scala.collection.mutable.{ListBuffer, MutableList, Stack}
 import scala.reflect.ClassTag
+import scala.collection.mutable.MutableList
+import scala.collection.mutable.ListBuffer
+import scala.math
+import scala.collection.mutable.Stack
 import scala.util.Random
 
 // TODO Make sure M^t and A^t coincide  I think the timeAggregation may run left to right, but the
@@ -55,7 +59,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
   val rwLock = new ReentrantReadWriteLock()
   val readLock = rwLock.readLock
   val writeLock = rwLock.writeLock
-  val mergeCreator: (Array[CountMinSketch[T]] => CountMinSketch[T]) = estimators => CountMinSketch.merge[T](estimators: _*)
+  val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators )=> CountMinSketch.merge[T](estimators: _*)
   def this(cmsParams: CMSParams, windowSize: Long) = this(cmsParams, windowSize,
     System.currentTimeMillis())
 
@@ -79,7 +83,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
       // the remaining interval will lie in the time interval range
       val lengthOfLastInterval = nearestPowerOf2Num
       val residualIntervals = lastNIntervals - nearestPowerOf2Num
-      if (false /*residualIntervals > lengthOfLastInterval / 2*/ ) {
+      if (residualIntervals > (lengthOfLastInterval *3) /4) {
         //it would be better to find the time aggregation of last interval - the other intervals)
         count += this.taPlusIa.queryTimeAggregateForInterval(item, lengthOfLastInterval)
         count -= this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
@@ -129,7 +133,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
       // The accuracy becomes very poor if we query the first interval 1 using entity
       //aggregates . So subtraction approach needs to be looked at more carefully
       val residualLength = lastNIntervalsToQuery - (computedIntervalLength - skipLastInterval)
-      if (false /*residualLength > skipLastInterval / 2*/ ) {
+      if (residualLength > (skipLastInterval *3)/4 ) {
         //it will be better to add the whole time aggregate & substract the other intervals
 
         total += this.taPlusIa.queryTimeAggregateForInterval(item, skipLastInterval)
@@ -420,6 +424,8 @@ def algo3(): Unit = {
             }
           }
           if (j != 0) {
+            
+           
             mBar = mergeCreator(Array[CountMinSketch[T]](mBar, mj))
             //CountMinSketch.merge[T](mBar, mj)
           } else {
@@ -647,9 +653,10 @@ def algo3(): Unit = {
       val endRangeAsPerIA = beginingOfRangeAsPerIA + taIntervalWithInstant - 1
       val mJStar = this.ta.aggregates.get(jStar).get
       var total: Long = 0
-      var n: Long = -1
+      var n :Array[Long] = null
       val bStart = beginingOfRangeAsPerIA.asInstanceOf[Int]
       val bEnd = endRangeAsPerIA.asInstanceOf[Int]
+      val mjStarCount = mJStar.estimateCount(key)
       tIntervalsToQuery foreach {
         j =>
           val intervalNumRelativeToIA = convertIntervalBySwappingEnds(j).asInstanceOf[Int]
@@ -661,10 +668,12 @@ def algo3(): Unit = {
           } else {
             cmsParams.width - Hokusai.ilog2(j - 1) + 1
           }
-          total += (if (nTilda > math.E * intervalNumRelativeToIA / (1 << width)) {
+          total += (if (nTilda > math.E * intervalNumRelativeToIA / (1 << width)
+          && (nTilda < mjStarCount)    
+          ) {
             nTilda
           } else {
-            if (n == -1) {
+            if (n == null) {
               n = this.queryBySummingEntityAggregates(key, bStart - 1, bEnd - 1)
             }
             calcNCarat(key, jStar, cmsAtT, hashes, n, mJStar)
@@ -707,13 +716,20 @@ def algo3(): Unit = {
       ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).estimateCount(item)
     }
 
-    private def queryBySummingEntityAggregates(item: T, startIndex: Int, sumUpTo: Int): Long = {
-      var count: Long = 0
+    private def queryBySummingEntityAggregates(item: T, startIndex: Int, sumUpTo: Int): Array[Long] = {
+      var n = Array.ofDim[Long](cmsParams.depth)
+      
       (startIndex to sumUpTo) foreach {
-        j => count += this.ia.aggregates.get(j).get.estimateCount(item)
+        j => {
+          val cms = this.ia.aggregates.get(j).get 
+          val hashes = cms.getIHashesFor(item)
+          0 until n.length foreach { i=>            
+            n(i) = n(i) + cms.table(i)(hashes(i))
+          }
+        }
       }
 
-      count
+      n
     }
 
     private def calcNTilda(cms: CountMinSketch[T],
@@ -726,7 +742,7 @@ def algo3(): Unit = {
     }
 
     private def calcNCarat(key: T, jStar: Int, cmsAtT: CountMinSketch[T],
-      hashesForTime: Array[Int], sumOverEntities: Long, mJStar: CountMinSketch[T]): Long = {
+      hashesForTime: Array[Int], sumOverEntities: Array[Long], mJStar: CountMinSketch[T]): Long = {
 
       val mjStarHashes = mJStar.getIHashesFor(key)
       var res = scala.Long.MaxValue;
@@ -735,15 +751,19 @@ def algo3(): Unit = {
       var b: Long = scala.Long.MaxValue;
       // since the indexes are zero based
 
-      if (sumOverEntities == 0) {
-        return 0
-      } else {
+     
         for (i <- 0 until cmsAtT.depth) {
-          res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities)
+          if(sumOverEntities(i) != 0) {
+            res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
+          }
         }
-
-        return res;
-      }
+         
+        return if(res == scala.Long.MaxValue) {
+          0
+        }else {
+          res
+        }
+      
     }
 
   }

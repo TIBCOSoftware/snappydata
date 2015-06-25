@@ -2,6 +2,7 @@ package org.apache.spark.sql.collection;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeSet;
 
@@ -11,8 +12,10 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
 
   private final int bound;
   private final Map<T, Long> map;
+  private final static float tolerance = 0;
+  private final boolean isRelaxedBound ;
 
-  public BoundedSortedSet(int bound) {
+  public BoundedSortedSet(int bound, boolean isRelaxedBound) {
     super(new Comparator<Tuple2<T, Long>>() {
 
       @Override
@@ -29,6 +32,7 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
     });
     this.bound = bound;
     this.map = new HashMap<T, Long>();
+    this.isRelaxedBound = isRelaxedBound;
   }
   
   
@@ -49,7 +53,23 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
     boolean added = false;
 
     super.add(data);
-    if (this.size() > bound) {
+    if (this.size() > this.bound) {
+      boolean remove = false;
+      if(this.isRelaxedBound) {
+       Iterator<Tuple2<T,Long>> iter = this.descendingIterator();
+       Tuple2<T, Long> last = iter.next();
+       
+       if(iter.hasNext()) {
+         Tuple2<T, Long> last_1 = iter.next();
+         if((Math.abs(last._2 - last_1._2)*100f)/last_1._2 > tolerance) {
+           remove = true;
+         }
+       }
+      }else {
+        remove= true;
+      }
+         
+      if(remove) {
       Tuple2<T, Long> prev = this.pollLast();
       if (!prev._1.equals(data._1)) {
         this.map.put(data._1, data._2);
@@ -59,6 +79,10 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
         if (prevCount != null) {
           this.map.remove(data._1);
         }
+      }
+      }else {
+        this.map.put(data._1, data._2);
+        added = true;
       }
     } else {
       this.map.put(data._1, data._2);
@@ -70,6 +94,10 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
   
   public Long get(T key) {
     return this.map.get(key);
+  }
+  
+  public int getBound() {
+    return this.bound;
   }
 
 }

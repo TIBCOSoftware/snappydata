@@ -3,12 +3,11 @@ package org.apache.spark.sql.execution
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.collection.BoundedSortedSet
 import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
-
 import scala.reflect.ClassTag
 
-class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long, val topK: Int)
+class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long, val topKActual: Int)
   extends Hokusai[T](cmsParams, windowSize, epoch0) {
-
+  val topKInternal = topKActual * 2
   private val queryTillLastNTopK_Case1: () => Array[(T, Long)] = () => {
     val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
     topKCMS.getTopK
@@ -32,13 +31,31 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: L
 
       // the remaining interval will lie in the time interval range
       val lengthOfLastInterval = nearestPowerOf2Num
-      unionedTopKKeys.foreach { item: T =>
-        val count = this.taPlusIa.basicQuery(nearestPowerOf2Num.asInstanceOf[Int] + 1 to lastNIntervals,
-          item,
-          nearestPowerOf2Num.asInstanceOf[Int],
-          nearestPowerOf2Num.asInstanceOf[Int] * 2)
-        val prevCount = mappings.getOrElse[java.lang.Long](item, 0)
-        mappings += (item -> (prevCount + count))
+
+      val residualIntervals = lastNIntervals - nearestPowerOf2Num
+      if (residualIntervals > (lengthOfLastInterval * 3) / 4) {
+        //it would be better to find the time aggregation of last interval - the other intervals)
+        unionedTopKKeys.foreach { item: T =>
+          var total = this.queryTimeAggregateForInterval(item, lengthOfLastInterval)
+          var count = this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
+            item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
+            if( count < total) {
+              total = total - count
+            }else {
+              // what to do? ignore as count is abnormally high
+            }
+          val prevCount = mappings.getOrElse[java.lang.Long](item, 0)
+          mappings += (item -> (prevCount + count))
+        }
+
+      } else {
+        unionedTopKKeys.foreach { item: T =>
+          val count = this.taPlusIa.basicQuery(nearestPowerOf2Num.asInstanceOf[Int] + 1 to lastNIntervals,
+            item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
+          val prevCount = mappings.getOrElse[java.lang.Long](item, 0)
+          mappings += (item -> (prevCount + count))
+        }
+
       }
       sortAndBound(mappings)
     }
@@ -78,20 +95,47 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: L
         // start individual query from interval
         // The accuracy becomes very poor if we query the first interval 1 using entity
         //aggregates . So subtraction approach needs to be looked at more carefully
-        val begin = (computedIntervalLength - skipLastInterval + 1).asInstanceOf[Int]
-        unifiedTopKKeys.foreach { item: T =>
-          val total = this.taPlusIa.basicQuery(begin to lastNIntervalsToQuery,
-            item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
-          val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
-          topKs += (item -> (total + prevCount))
+        val residualLength = lastNIntervalsToQuery - (computedIntervalLength - skipLastInterval)
+        if (residualLength > (skipLastInterval * 3) / 4) {
+          //it will be better to add the whole time aggregate & substract the other intervals
+          unifiedTopKKeys.foreach { item: T =>
+            val total = this.queryTimeAggregateForInterval(item, skipLastInterval)
+            val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+            topKs += (item -> (total + prevCount))
+          }
+
+          val begin = (lastNIntervals + 1).asInstanceOf[Int]
+          val end = computedIntervalLength.asInstanceOf[Int]
+          unifiedTopKKeys.foreach { item: T =>
+            val total = this.taPlusIa.basicQuery(begin to end,
+              item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
+            val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+            if(prevCount > total) {
+              topKs += (item -> (prevCount - total))
+            }else {
+              ///ignore the values as they are abnormal. what to do?....
+            }
+          }
+
+        } else {
+          val begin = (computedIntervalLength - skipLastInterval + 1).asInstanceOf[Int]
+          unifiedTopKKeys.foreach { item: T =>
+            val total = this.taPlusIa.basicQuery(begin to lastNIntervalsToQuery,
+              item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
+            val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+            topKs += (item -> (total + prevCount))
+          }
         }
       }
+      /*val temp = new BoundedSortedSet[T](10000, false)
+      topKs.foreach(temp.add(_))
+      System.out.println(temp)*/
       sortAndBound(topKs)
+
     }
 
-  override val mergeCreator: (Array[CountMinSketch[T]] => CountMinSketch[T]) = estimators => {
-    TopKCMS.merge[T](estimators(1).asInstanceOf[TopKCMS[T]].topK, estimators)
-  }
+  override val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = estimators =>
+    TopKCMS.merge[T](estimators(1).asInstanceOf[TopKCMS[T]].topKInternal * 2, estimators)
 
   def this(cmsParams: CMSParams, windowSize: Long, topK: Int) = this(cmsParams, windowSize,
     System.currentTimeMillis(), topK)
@@ -189,6 +233,12 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: L
 
   }
 
+  def queryTimeAggregateForInterval(item: T, interval: Long): Long = {
+    assert(NumberUtils.isPowerOf2(interval) != -1)
+    val topKCMS = this.taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
+    topKCMS.getFromTopKMap(item).getOrElse(this.taPlusIa.queryTimeAggregateForInterval(item, interval))
+  }
+
   private def getTopKBySummingTimeAggregates(sumUpTo: Int, setOfTopKKeys: scala.collection.mutable.Set[T] = null): scala.collection.mutable.Map[T, java.lang.Long] = {
 
     val estimators = this.taPlusIa.ta.aggregates.slice(0, sumUpTo + 1)
@@ -205,7 +255,7 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: L
   }
 
   private def sortAndBound[T](topKs: scala.collection.mutable.Map[T, java.lang.Long]): Array[(T, Long)] = {
-    val sortedData = new BoundedSortedSet[T](this.topK)
+    val sortedData = new BoundedSortedSet[T](this.topKActual, false)
     topKs.foreach(sortedData.add(_))
     val iter = sortedData.iterator
     //topKs.foreach(sortedData.add(_))
@@ -217,16 +267,23 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: L
 
   }
 
-  override def createZeroCMS(powerOf2: Int): CountMinSketch[T] = 
-    if(powerOf2 == 0) {
-      TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topK)
-    }else {
-      TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topK*(powerOf2+1))
+  override def createZeroCMS(powerOf2: Int): CountMinSketch[T] =
+    if (powerOf2 == 0) {
+      //TODO: fix this
+      val x = if (this.topKInternal == 0) {
+        2 * this.topKActual
+      } else {
+        this.topKInternal
+      }
+      TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual, x)
+    } else {
+      TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual,
+        topKInternal * (powerOf2 + 1))
     }
 
 }
 
 object TopKHokusai {
-  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topK: Int) =
-    new TopKCMS[T](topK, depth, width, hashA)
+  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, topKInternal: Int) =
+    new TopKCMS[T](topKActual, topKInternal, depth, width, hashA)
 }

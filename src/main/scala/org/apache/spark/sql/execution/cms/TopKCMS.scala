@@ -9,29 +9,29 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class TopKCMS[T: ClassTag](val topK: Int, depth: Int, width: Int, seed: Int,
+class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: Int, width: Int, seed: Int,
   eps: Double, confidence: Double, size: Long, table: Array[Array[Long]],
   hashA: Array[Long]) extends CountMinSketch[T](depth, width, seed,
   eps, confidence, size, table, hashA) {
 
-  val topkSet: BoundedSortedSet[T] = new BoundedSortedSet[T](topK)
+  val topkSet: BoundedSortedSet[T] = new BoundedSortedSet[T](topKInternal, true)
 
-  def this(topK: Int, depth: Int, width: Int, seed: Int) = this(topK, depth, width, seed,
+  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, seed: Int) = this(topKActual, topKInternal, depth, width, seed,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
     CountMinSketch.initTable(depth, width), CountMinSketch.initHash(depth, seed))
 
-  def this(topK: Int, depth: Int, width: Int, hashA: Array[Long]) = this(topK, depth, width, 0,
+  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, hashA: Array[Long]) = this(topKActual, topKInternal, depth, width, 0,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
     CountMinSketch.initTable(depth, width), hashA)
 
-  def this(topK: Int, epsOfTotalCount: Double, confidence: Double, seed: Int) =
-    this(topK, CountMinSketch.initDepth(confidence), CountMinSketch.initWidth(epsOfTotalCount),
+  def this(topKActual: Int, topKInternal: Int, epsOfTotalCount: Double, confidence: Double, seed: Int) =
+    this(topKActual, topKInternal,CountMinSketch.initDepth(confidence), CountMinSketch.initWidth(epsOfTotalCount),
       seed, epsOfTotalCount, confidence, 0,
       CountMinSketch.initTable(CountMinSketch.initDepth(confidence),
         CountMinSketch.initWidth(epsOfTotalCount)),
       CountMinSketch.initHash(CountMinSketch.initDepth(confidence), seed))
 
-  def this(topK: Int, depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]]) = this(topK, depth, width, 0, CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth),
+  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]]) = this(topKActual, topKInternal, depth, width, 0, CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth),
     size, table, hashA)
 
   override def add(item: T, count: Long): Long = {
@@ -55,8 +55,13 @@ class TopKCMS[T: ClassTag](val topK: Int, depth: Int, width: Int, seed: Int,
   }
 
   def getTopK: Array[(T, Long)] = {
+    val size = if(this.topkSet.size() > this.topKActual) {
+      this.topKActual
+    }else{
+       this.topkSet.size
+    }
     val iter = this.topkSet.iterator()
-    Array.fill[(T, Long)](this.topkSet.size)({
+    Array.fill[(T, Long)](size)({
       val (key, value) = iter.next
       (key, value.longValue())
 
@@ -84,7 +89,8 @@ object TopKCMS {
     val seqOfEstimators = estimators.toSeq
     val topkKeys = getCombinedTopKFromEstimators(seqOfEstimators,
       getUnionedTopKKeysFromEstimators(seqOfEstimators))
-    val mergedTopK = new TopKCMS[T](bound, depth, width, size, hashA, table)
+    val mergedTopK = new TopKCMS[T](estimators(0).asInstanceOf[TopKCMS[T]].topKActual, 
+        bound, depth, width, size, hashA, table)
     topkKeys.foreach(x => mergedTopK.populateTopK(x))
     mergedTopK
 
@@ -116,12 +122,13 @@ object TopKCMS {
     estimators.foreach { x =>
       val topkCMS = x.asInstanceOf[TopKCMS[T]]
       val iter = topkCMS.topkSet.iterator()
-      var tempTopKeys = topKKeys.clone
+      val tempTopKeys = new scala.collection.mutable.HashSet[T]()
+      topKKeys.foreach { tempTopKeys +=(_) }
       while (iter.hasNext()) {
         val (key, count) = iter.next()
         val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0)
         topkKeysVals.+=(key -> (prevCount + count))
-        tempTopKeys = tempTopKeys - key
+        tempTopKeys -= key
       }
       tempTopKeys.foreach { key =>
         val count = x.estimateCount(key)
@@ -153,7 +160,9 @@ object TopKCMS {
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
             // TODO: why is seed needed as an input param
-            val topk = new TopKCMS[Any](size, eps, confidence, 123)
+            // TODO: after merging Asif's changes this is not working.
+            // val topk = new TopKCMS[Any](size, eps, confidence, 123)
+            val topk = null
             topKMap(name) = topk
             topk
           })

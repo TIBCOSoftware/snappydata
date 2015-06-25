@@ -101,72 +101,229 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
     }
 
   }
+  //////////////////////////////////////////////////////////////////////////////
+  "TopK expansion with increased time intervals " should "be correct" in {
+    val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
+    val topKCount = 4
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount)
+
+    {
+      //1st interval add 10 keys
+      topK.addEpochData(Map[Int, Long](1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6,
+        7 -> 7, 8 -> 8, 9 -> 9, 10 -> 10))
+      val topKCMS = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
+      assert(topKCMS.topKActual === 4)
+      assert(topKCMS.topKInternal === 8)
+      val topSetKeysIter = topKCMS.topkSet.iterator()
+      (10 to 3) foreach { j =>
+        val (key, value) = topSetKeysIter.next()
+        assert(key === j)
+        assert(value === j)
+      }
+    }
+
+    {
+      //add 2nd interval with next 10 keys
+      topK.addEpochData(Map[Int, Long](11 -> 11, 12 -> 12, 13 -> 13, 14 -> 14, 15 -> 15,
+        16 -> 16, 17 -> 17, 18 -> 18, 19 -> 19, 20 -> 20))
+      val topKCMS = topK.taPlusIa.ta.aggregates(1).asInstanceOf[TopKCMS[Int]]
+      assert(topKCMS.topKActual === 4)
+      assert(topKCMS.topKInternal === 8)
+      val topSetKeysIter = topKCMS.topkSet.iterator()
+      (10 to 3) foreach { j =>
+        val (key, value) = topSetKeysIter.next()
+        assert(key === j)
+        assert(value === j)
+      }
+    }
+
+    {
+      //add 3rd interval with next 10 keys
+      topK.addEpochData(Map[Int, Long](21 -> 21, 22 -> 22, 23 -> 23, 24 -> 24, 25 -> 25,
+        26 -> 26, 27 -> 27, 28 -> 28, 29 -> 29, 30 -> 30))
+      val topKCMS = topK.taPlusIa.ta.aggregates(1).asInstanceOf[TopKCMS[Int]]
+      assert(topKCMS.topKActual === 4)
+      assert(topKCMS.topKInternal === 8)
+      val topSetKeysIter = topKCMS.topkSet.iterator()
+      (20 to 13) foreach { j =>
+        val (key, value) = topSetKeysIter.next()
+        assert(key === j)
+        assert(value === j)
+      }
+
+      val topKCMS1 = topK.taPlusIa.ta.aggregates(2).asInstanceOf[TopKCMS[Int]]
+      assert(topKCMS1.topKActual === 4)
+      assert(topKCMS1.topKInternal === 16)
+      val topSetKeysIter1 = topKCMS1.topkSet.iterator()
+      (20 to 5) foreach { j =>
+        val (key, value) = topSetKeysIter1.next()
+        assert(key === j)
+        assert(value === j)
+      }
+
+    }
+
+  }
 
   //////////////////////////////////////////////////////////////////////////////
-
-   "TopK elements  till last n intervals  " should "be correct" in {
+  "TopK expansion with increased time intervals in generic manner " should "be correct" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
-    val topKCount = 10
+    val topKCount = 4
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount)
+    val numIntervals = 1000
+    val keyWidth = 10
+
+    {
+      1 to numIntervals foreach { i =>
+        var map = Map[Int, Long]()
+        0 until keyWidth foreach { j =>
+          map += ((i * 10 - j) -> (i * 10 - j)) // this will add like 1->1, 2->2,.... 21->21, 22->22,... 30-> 30.
+        }
+        topK.addEpochData(map)
+        if (i == 0) {
+          val topKCMS = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
+          assert(topKCMS.topKActual === topKCount)
+          assert(topKCMS.topKInternal === topKCount * 2)
+        } else {
+          val topKCMS = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
+          assert(topKCMS.topKActual === topKCount)
+          assert(topKCMS.topKInternal === topKCount * 2)
+          val size = topK.taPlusIa.ta.aggregates.size
+          1 until size foreach { j =>
+            val topKCMS = topK.taPlusIa.ta.aggregates(j).asInstanceOf[TopKCMS[Int]]
+            assert(topKCMS.topKActual === topKCount)
+            assert(topKCMS.topKInternal === topKCount * 2 * (scala.math.pow(2, j - 1)))
+            val boundedWidth = topKCount * 2 * (scala.math.pow(2, j - 1))
+            //assert(topKCMS.topkSet.size() === boundedWidth)
+            assert(topKCMS.topkSet.getBound() === boundedWidth)
+          }
+
+        }
+
+      }
+
+    }
+
+  }
+  //////////////////////////////////////////////////////////////////////////////
+
+  "TopK elements  till last n intervals  " should "be correct" in {
+    //val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(100000),12, SEED)
+    val cmsParams = CMSParams(scala.math.pow(2,18).asInstanceOf[Int],12, SEED)
+    val topKCount = 200
     val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount)
     val randomKey = new scala.util.Random(41)
-    val numIntervalsToAdd = 20
-    val keyRange = 100
+    val numIntervalsToAdd = 50
+    val keyRange = 200000
     val numTimesToRunQueries = 50
+    val errorPercent = 2
     val intervalMap = new scala.collection.mutable.HashMap[Int, Map[Int, Long]]()
-    1 to numIntervalsToAdd foreach {i =>
+    1 to numIntervalsToAdd foreach { i =>
       var map = Map[Int, Long]()
       1 to keyRange foreach { j =>
         val value = randomKey.nextInt(Integer.MAX_VALUE)
-        map +=(j -> value)
+        map += (j -> value)
       }
+      /*if(i == 16) {
+        System.out.println("tre")
+      }*/
       topK.addEpochData(map)
-      intervalMap += (i-> map)
+      intervalMap += (i -> map)
     }
     //Check till last N interval keys
-    for(i <- 1 to numTimesToRunQueries) {
-      var intervalTill : Int = 0        
-        while( intervalTill == 0) {
-         intervalTill = randomKey.nextInt(numIntervalsToAdd)         
-        }
-      
-      val epochTill = (intervalTill * 10 ) - 5
-      val topKs = topK.getTopKTillTime(epochTill)
-      val totalIntervals = intervalMap.size
-      val startInterval = totalIntervals - intervalTill +1
-      val dataMap = getAllKeysCount(startInterval, totalIntervals, intervalMap)
-      val sortAndBound = new BoundedSortedSet[Int](topKCount)
-      dataMap.foreach{case(key, value) => 
-        sortAndBound.add(key, value)
+    for (i <- 1 to numTimesToRunQueries) {
+      var intervalTill: Int = 0
+      while (intervalTill == 0) {
+        intervalTill = randomKey.nextInt(numIntervalsToAdd)
       }
-      assert ( sortAndBound.size() == topKs.get.length)
-      System.out.println("actual top Keys ="+ sortAndBound)
-      System.out.println("calculated ="+ (topKs.get.map{ case(key, value)=> Seq(key)}).mkString(","))
+      /*if(i == 7) {
+        System.out.print(true)
+      }*/
+      val totalIntervals = intervalMap.size
+      val epochTill = ((totalIntervals - intervalTill) * 10) + 5
+      val topKs = topK.getTopKTillTime(epochTill)
+     
+      val startInterval = totalIntervals - intervalTill + 1
+      val dataMap = getAllKeysCount(startInterval, totalIntervals, intervalMap)
+      val sortAndBound = new BoundedSortedSet[Int](topKCount, false)
+      dataMap.foreach {
+        case (key, value) =>
+          sortAndBound.add(key, value)
+      }
+      assert(sortAndBound.size() == topKs.get.length)
       val iter = sortAndBound.iterator()
-      topKs.get.foreach{ case(key, value) =>
-        val (actualKey, actualValue) = iter.next()
-        assert (key === actualKey)
+      /*topKs.get.foreach {
+        case (key, value) =>
+          val (actualKey, actualValue) = iter.next()
+          if (key != actualKey) {
+            System.out.println("faaaail")
+             System.out.println("actual top Keys =" + sortAndBound)
+             System.out.println("calculated =" + (topKs.get.map { case (key, value) => Seq(key) }).mkString(","))
+     
+          }
+        assert(key === actualKey)
+        assert ( value == actualValue)
+      }*/
+      val set = scala.collection.mutable.Set[Int]()
+      while(iter.hasNext()) {
+        set.+=(iter.next()._1)  
+      }
+      var keysNotFound = 0;
+      topKs.get.foreach {
+        case (key, value) =>         
+          if (!set.exists { x => x == key }) {
+             keysNotFound +=1
+          }
+        //assert(key === actualKey)
         //assert ( value == actualValue)
       }
+      val err = (100/topKCount)*keysNotFound 
+      if( err > errorPercent) {
+        topKs.get.foreach {
+        case (key, value) =>         
+          set.-=(key)
+        //assert(key === actualKey)
+        //assert ( value == actualValue)
+      }
+        System.out.println("keys missing in calc =" + set )
+        fail("error is =" + err + "%. for query till interval ="+ intervalTill)
+      }else {
+        System.out.println (" query till interval = "+ intervalTill + " is approx correct with err ="+ err)
+      }
     }
- 
+
   }
-  
+
   ////////////////////////////////////////////////////////////////
   private def computeSumOfAP(a: Int, d: Int, n: Int): Int = {
     val x: Int = (n * (2 * a + (n - 1) * d)).asInstanceOf[Int]
     x / 2
   }
-  
-  private def getAllKeysCount(startInterval: Int, endInterval: Int, dataMap: Map[Int, Map[Int, Long]]) 
-  : Map[Int, Long] = {
+
+  private def getAllKeysCount(startInterval: Int, endInterval: Int, dataMap: Map[Int, Map[Int, Long]]): Map[Int, Long] = {
     val finalMap = scala.collection.mutable.Map[Int, Long]()
-    startInterval to endInterval foreach  { i =>
+    startInterval to endInterval foreach { i =>
       val intervalMap = dataMap(i)
-      intervalMap.foreach{ case(key, value) => 
-        val prevCount = finalMap.getOrElse[Long](key, 0)
-        finalMap += (key -> (prevCount + value))
+     /*  val sortAndBound = new TreeMap[Long,Int]()
+       intervalMap.foreach {
+        case (key, value) =>  sortAndBound.put(value, key)
+          
+      }
+        System.out.println("actual top Keys =" + sortAndBound.descendingMap())*/
+      intervalMap.foreach {
+        case (key, value) =>
+          val prevCount = finalMap.getOrElse[Long](key, 0)
+          finalMap += (key -> (prevCount + value))
       }
     }
+    
+   /* val sortAndBound = new TreeMap[Long,Int]()
+       finalMap.foreach {
+        case (key, value) =>  sortAndBound.put(value, key)
+          
+      }
+    System.out.println("actual top Keys =" + sortAndBound.descendingMap())*/
+    
     finalMap
   }
 }

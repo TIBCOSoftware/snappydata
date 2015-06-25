@@ -1,14 +1,12 @@
 package io.snappydata.core
 
+import org.apache.spark.sql.collection.BoundedSortedSet
 import org.apache.spark.sql.execution.{TopKHokusai, CMSParams}
 
-import scala.io.Source
 import org.scalatest._
 import Inspectors._
 import scala.collection.Map
 import scala.collection.Set
-import scala.collection.SortedSet
-import scala.math.abs
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.execution.cms.TopKCMS
 
@@ -37,9 +35,7 @@ class TopKCMSSpec extends FlatSpec with Matchers {
     val expectedData = new java.util.TreeMap[Int, String]()
     var uniqueValues = Set[Int]()
     for (i <- 1 to numKeysToAdd) {
-      if(i == 2688) {
-        System.out.println("hi")
-      }
+      
       var value: Int = -1
       var keepGoing = true;
       while(keepGoing) {
@@ -55,9 +51,14 @@ class TopKCMSSpec extends FlatSpec with Matchers {
     }
     topK.addEpochData(map)
     val topKData = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[String]]
-    System.out.println("reverse data ="+ expectedData.descendingMap())
+   // System.out.println("reverse data ="+ expectedData.descendingMap())
     val expectedIter = expectedData.descendingMap().entrySet().iterator()
-    val actualIter = topKData.topkSet.iterator()
+    val boundedSortedData = new BoundedSortedSet[String](12, false)
+    val iter1 = topKData.topkSet.iterator()
+    while(iter1.hasNext()) {
+      boundedSortedData.add(iter1.next())
+    }
+    val actualIter = boundedSortedData.iterator();
     while(actualIter.hasNext()) {
       val boundedKey = actualIter.next()
       val entry = expectedIter.next()

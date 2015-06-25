@@ -9,7 +9,7 @@ import junit.framework.TestCase;
 public class BoundedSortedSetTest extends TestCase {
   
   public void testBoundedSortedMapTestOrdering() {
-    BoundedSortedSet<String> boundedSet = new BoundedSortedSet<String>(8);
+    BoundedSortedSet<String> boundedSet = new BoundedSortedSet<String>(8, false);
     for(int i = 1; i <= 100; ++i) {
       boundedSet.add(new Tuple2(i+"", Long.valueOf(i))) ;
     }
@@ -26,7 +26,7 @@ public class BoundedSortedSetTest extends TestCase {
   }
   
   public void testBoundedSortedMapTestOrderingReverseInsertion() {
-    BoundedSortedSet<String> boundedSet = new BoundedSortedSet<String>(8);
+    BoundedSortedSet<String> boundedSet = new BoundedSortedSet<String>(8, false);
     for(int i = 100; i > 0; --i) {
       boundedSet.add(new Tuple2<String,Long>(i+"", Long.valueOf(i) ));
     }
@@ -43,7 +43,7 @@ public class BoundedSortedSetTest extends TestCase {
   }
   
   public void testContains() {
-    BoundedSortedSet<String> boundedSet = new BoundedSortedSet<String>(8);
+    BoundedSortedSet<String> boundedSet = new BoundedSortedSet<String>(8, false);
     for(int i = 100; i > 0; --i) {
       boundedSet.add(new Tuple2<String,Long>(i+"", Long.valueOf(i)));
     }
