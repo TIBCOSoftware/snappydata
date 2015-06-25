@@ -78,6 +78,22 @@ class SnappyContext(sc: SparkContext)
     }).toSeq
 
 
+    // TODO: this iterates rows multiple times
+    val rdds = sampleTables.map {
+      case (name, samplingOptions, schema, output, relation) =>
+        (relation, tDF.mapPartitions(rowIterator => {
+          val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
+            nameSuffix = "", columnBatchSize, schema, cached = true)
+          // create a new holder for set of CachedBatches
+          val batches = InMemoryAppendableRelation(useCompression,
+            columnBatchSize, name, schema, output)
+          sampler.append(rowIterator,
+            CatalystTypeConverters.createToCatalystConverter(schema),
+            (), batches.appendRow, batches.endRows)
+          batches.forceEndOfBatch().iterator
+        }))
+    }
+    // TODO: A different set of job is created for topk structure
     val topkStructures = (catalog.topKStructures.filter {
       case (name, topkstruct) => sampleTab.contains(name)
     }) map { case (name, topkWrapper) =>
@@ -94,28 +110,12 @@ class SnappyContext(sc: SparkContext)
 
           r.get(r.fieldIndex(keyname))
         })).toSeq
+        // TODO: Currently a batch of data is creating a new interval. This
+        // TODO: needs to be fixed.
         topkhokusai.addEpochData(data)
       })
 
     }
-
-    // TODO: this iterates rows multiple times
-    val rdds = sampleTables.map {
-      case (name, samplingOptions, schema, output, relation) =>
-        (relation, tDF.mapPartitions(rowIterator => {
-          val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
-            nameSuffix = "", columnBatchSize, schema, cached = true)
-          // create a new holder for set of CachedBatches
-          val batches = InMemoryAppendableRelation(useCompression,
-            columnBatchSize, name, schema, output)
-          sampler.append(rowIterator,
-            CatalystTypeConverters.createToCatalystConverter(schema),
-            (), batches.appendRow, batches.endRows)
-          batches.forceEndOfBatch().iterator
-        }))
-    }
-
-
 
     // add to list in relation
     // TODO: avoid a separate job for each RDD and instead try to do it
@@ -126,7 +126,6 @@ class SnappyContext(sc: SparkContext)
         relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
       }
     }
-
 
   }
 
@@ -245,6 +244,11 @@ class SnappyContext(sc: SparkContext)
       }
     }
 
+  }
+  def queryTopK(topkName : String,
+                startTime : Long, endTime: Long, size: Int) : TopkResultRDD = {
+    //TODO: merge the results from multiple machines.
+    new TopkResultRDD(topkName, startTime, endTime, size)(this)
   }
 }
 
