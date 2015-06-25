@@ -2,8 +2,6 @@ package org.apache.spark.sql
 
 import java.util.concurrent.atomic.AtomicReference
 
-import org.apache.spark.sql.execution.cms.{TopKCMS, TopKWrapper}
-
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
@@ -79,24 +77,27 @@ class SnappyContext(sc: SparkContext)
                 s"sampling table $name")).cachedRepresentation)
     }).toSeq
 
+
     val topkStructures = (catalog.topKStructures.filter {
       case (name, topkstruct) => sampleTab.contains(name)
     }) map { case (name, topkWrapper) =>
 
-      val confidence = topkWrapper.topKCMS.confidence
-      val eps = topkWrapper.topKCMS.eps
-      val topK = topkWrapper.topKCMS.topK
+      val confidence = topkWrapper.confidence
+      val eps = topkWrapper.eps
+      val timeInterval = topkWrapper.topkHokusai.windowSize
+      val topK = topkWrapper.topkHokusai.topKActual
       val keyname  = topkWrapper.key.name
       tDF.foreachPartition(rowIterator => {
-        val topkCMS = TopKCMS(name, confidence,
-          eps, topK)
-        rowIterator.foreach(f => {
-          topkCMS.add(f.get(f.fieldIndex(keyname)), 1)
-        })
+        val topkhokusai = TopKHokusai(name, confidence,
+          eps, topK, timeInterval)
+        val data = (rowIterator map (r => {
+
+          r.get(r.fieldIndex(keyname))
+        })).toSeq
+        topkhokusai.addEpochData(data)
       })
 
     }
-
 
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {

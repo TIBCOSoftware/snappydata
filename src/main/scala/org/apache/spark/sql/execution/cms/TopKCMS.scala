@@ -71,10 +71,6 @@ class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: In
 }
 
 object TopKCMS {
-  // TODO: Resolve the type of TopKCMS
-  private final val topKMap = new mutable.HashMap[String, TopKCMS[Any]]
-  private final val mapLock = new ReentrantReadWriteLock
-
   /**
    * Merges count min sketches to produce a count min sketch for their combined streams
    *
@@ -113,17 +109,19 @@ object TopKCMS {
     topKKeyValMap: scala.collection.mutable.Map[T, java.lang.Long] = null):
     
     scala.collection.mutable.Map[T, java.lang.Long] = {
-    
-    val topkKeysVals = if(topKKeyValMap == null) {
-     scala.collection.mutable.HashMap[T, java.lang.Long]() 
-    }else {
+
+    val topkKeysVals = if (topKKeyValMap == null) {
+      scala.collection.mutable.HashMap[T, java.lang.Long]()
+    } else {
       topKKeyValMap
     }
     estimators.foreach { x =>
       val topkCMS = x.asInstanceOf[TopKCMS[T]]
       val iter = topkCMS.topkSet.iterator()
       val tempTopKeys = new scala.collection.mutable.HashSet[T]()
-      topKKeys.foreach { tempTopKeys +=(_) }
+      topKKeys.foreach {
+        tempTopKeys += (_)
+      }
       while (iter.hasNext()) {
         val (key, count) = iter.next()
         val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0)
@@ -138,112 +136,4 @@ object TopKCMS {
     }
     topkKeysVals
   }
-  def apply(name: String): Option[TopKCMS[Any]] = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
-    }
-  }
-
-  def apply(name: String, confidence: Double,
-            eps : Double, size: Int) = {
-    lookupOrAdd(name, confidence, eps, size)
-  }
-
-  private[sql] def lookupOrAdd(name: String,
-                               confidence: Double, eps : Double, size: Int) : TopKCMS[Any] = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
-    } match {
-      case Some(topk) => topk
-      case None =>
-        // insert into global map but double-check after write lock
-        SegmentMap.lock(mapLock.writeLock) {
-          topKMap.getOrElse(name, {
-            // TODO: why is seed needed as an input param
-            // TODO: after merging Asif's changes this is not working.
-            // val topk = new TopKCMS[Any](size, eps, confidence, 123)
-            val topk = null
-            topKMap(name) = topk
-            topk
-          })
-        }
-    }
-  }
-
-}
-class TopKWrapper[T] (val topKCMS: TopKCMS[T],
-                      val schema: StructType, val key : StructField)
-
-object TopKWrapper {
-
-
-  implicit class StringExtensions(val s: String) extends AnyVal {
-    def ci = new {
-      def unapply(other: String) = s.equalsIgnoreCase(other)
-    }
-  }
-
-  def apply(name: String , options: Map[String, Any],
-            schema: StructType) : TopKWrapper[Any] = {
-    val keyTest = "key".ci
-    val timeIntervalTest = "timeInterval".ci
-    val confidenceTest = "confidence".ci
-    val epsTest = "eps".ci
-    val sizeTest = "size".ci
-
-    val cols = schema.fieldNames
-
-    // using a default strata size of 104 since 100 is taken as the normal
-    // limit for assuming a Gaussian distribution (e.g. see MeanEvaluator)
-    val defaultStrataSize = 104
-    // Using foldLeft to read key-value pairs and build into the result
-    // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
-    // This "aggregate" simply keeps the last values for the corresponding
-    // keys as found when folding the map.
-    val (key, timeInterval, confidence, eps, size) = options.
-      foldLeft("", 5, 0.95, 0.01, 100) {
-      case ((k, ti, cf, e, s), (opt, optV)) =>
-        opt match {
-          case keyTest() => (optV.toString, ti, cf, e, s)
-          case confidenceTest() => optV match {
-            case fd: Double => (k, ti, fd, e, s)
-            case fs: String => (k, ti, fs.toDouble, e, s)
-            case ff: Float => (k, ti, ff.toDouble, e, s)
-            case fi: Int => (k, ti, fi.toDouble, e, s)
-            case fl: Long => (k, ti, fl.toDouble, e, s)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse double 'confidence'=$optV")
-          }
-          case epsTest() => optV match {
-            case fd: Double => (k, ti, cf, fd, s)
-            case fs: String => (k, ti, cf, fs.toDouble, s)
-            case ff: Float => (k, ti, cf, ff.toDouble, s)
-            case fi: Int => (k, ti, cf, fi.toDouble, s)
-            case fl: Long => (k, ti, cf, fl.toDouble, s)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse double 'eps'=$optV")
-          }
-
-          case timeIntervalTest() => optV match {
-            case si: Int => (k, si, cf, e, s)
-            case ss: String => (k, ss.toInt, cf, e, s)
-            case sl: Long => (k, sl.toInt, cf, e, s)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse int 'timeInterval'=$optV")
-          }
-          case sizeTest() => optV match {
-            case si: Int => (k, ti, cf, e, si)
-            case ss: String => (k, ti, cf, e, ss.toInt)
-            case sl: Long => (k, ti, cf, e, sl.toInt)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse int 'size'=$optV")
-          }
-        }
-    }
-    new TopKWrapper(TopKCMS.lookupOrAdd(name, confidence, eps, size),
-      schema, schema(key))
-
-  }
-
-
 }

@@ -1,14 +1,12 @@
 package org.apache.spark.sql
 
-import org.apache.spark.sql.execution.cms.{TopKWrapper, TopKCMS}
-
 import scala.collection.mutable
 import scala.language.implicitConversions
 
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.LogicalRDD
+import org.apache.spark.sql.execution.{TopKHokusaiWrapper, LogicalRDD}
 import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, sql}
@@ -38,7 +36,7 @@ class SnappyStoreCatalog(context: SnappyContext,
    */
   val sampleTables = new mutable.HashMap[String, SampleDataFrame]()
 
-  val topKStructures = new mutable.HashMap[String, TopKWrapper[_]]()
+  val topKStructures = new mutable.HashMap[String, TopKHokusaiWrapper[_]]()
 
   override def unregisterAllTables(): Unit = {
     throw new NotImplementedError()
@@ -93,7 +91,7 @@ class SnappyStoreCatalog(context: SnappyContext,
     //val accessPlan = DummyRDD(schema.toAttributes)(context)
     //val topKTab = TopKDataFrame(context, accessPlan, aggOptions)
     //topKTables.put(tableName, topKTab)
-    topKStructures.put(tableName, TopKWrapper(tableName, topkOptions, schema))
+    topKStructures.put(tableName, TopKHokusaiWrapper(tableName, topkOptions, schema))
     streamToStructureMap.put(streamName,
       streamToStructureMap.getOrElse(streamName, Nil) :+ tableName)
     ()

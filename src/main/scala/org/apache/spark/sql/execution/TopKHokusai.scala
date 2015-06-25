@@ -1,11 +1,16 @@
 package org.apache.spark.sql.execution
 
+import java.util.concurrent.locks.ReentrantReadWriteLock
+
 import io.snappydata.util.NumberUtils
-import org.apache.spark.sql.collection.BoundedSortedSet
+import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.collection.{SegmentMap, BoundedSortedSet}
 import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
+import org.apache.spark.sql.types.{StructField, StructType}
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long, val topKActual: Int)
+class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long, val topKActual: Int)
   extends Hokusai[T](cmsParams, windowSize, epoch0) {
   val topKInternal = topKActual * 2
   private val queryTillLastNTopK_Case1: () => Array[(T, Long)] = () => {
@@ -284,6 +289,124 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: L
 }
 
 object TopKHokusai {
+  // TODO: Resolve the type of TopKHokusai
+  private final val topKMap = new mutable.HashMap[String, TopKHokusai[Any]]
+  private final val mapLock = new ReentrantReadWriteLock
+
   def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, topKInternal: Int) =
     new TopKCMS[T](topKActual, topKInternal, depth, width, hashA)
+  def apply(name: String): Option[TopKHokusai[Any]] = {
+    SegmentMap.lock(mapLock.readLock) {
+      topKMap.get(name)
+    }
+  }
+
+  def apply(name: String, confidence: Double,
+            eps : Double, size: Int, timeInterval : Long) = {
+    lookupOrAdd(name, confidence, eps, size, timeInterval)
+  }
+
+  private[sql] def lookupOrAdd(name: String, confidence: Double, eps : Double,
+                               size: Int, timeInterval : Long) : TopKHokusai[Any] = {
+    SegmentMap.lock(mapLock.readLock) {
+      topKMap.get(name)
+    } match {
+      case Some(topk) => topk
+      case None =>
+        // insert into global map but double-check after write lock
+        SegmentMap.lock(mapLock.writeLock) {
+          topKMap.getOrElse(name, {
+            // TODO: why is seed needed as an input param
+
+            val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
+            val width =  Math.ceil(2 / eps).toInt
+
+            val cmsParams = CMSParams(width, depth)
+
+            val topk = new TopKHokusai[Any](cmsParams: CMSParams,
+              timeInterval: Long, System.currentTimeMillis(), size)
+            topKMap(name) = topk
+            topk
+          })
+        }
+    }
+  }
+}
+
+class TopKHokusaiWrapper[T] (val topkHokusai: TopKHokusai[T],
+                      val schema: StructType, val key : StructField,
+                              val eps: Double, val confidence: Double)
+
+object TopKHokusaiWrapper {
+
+
+  implicit class StringExtensions(val s: String) extends AnyVal {
+    def ci = new {
+      def unapply(other: String) = s.equalsIgnoreCase(other)
+    }
+  }
+
+  def apply(name: String , options: Map[String, Any],
+            schema: StructType) : TopKHokusaiWrapper[Any] = {
+    val keyTest = "key".ci
+    val timeIntervalTest = "timeInterval".ci
+    val confidenceTest = "confidence".ci
+    val epsTest = "eps".ci
+    val sizeTest = "size".ci
+
+    val cols = schema.fieldNames
+
+    // using a default strata size of 104 since 100 is taken as the normal
+    // limit for assuming a Gaussian distribution (e.g. see MeanEvaluator)
+    val defaultStrataSize = 104
+    // Using foldLeft to read key-value pairs and build into the result
+    // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
+    // This "aggregate" simply keeps the last values for the corresponding
+    // keys as found when folding the map.
+    val (key, timeInterval, confidence, eps, size) = options.
+      foldLeft("", 5L, 0.95, 0.01, 100) {
+      case ((k, ti, cf, e, s), (opt, optV)) =>
+        opt match {
+          case keyTest() => (optV.toString, ti, cf, e, s)
+          case confidenceTest() => optV match {
+            case fd: Double => (k, ti, fd, e, s)
+            case fs: String => (k, ti, fs.toDouble, e, s)
+            case ff: Float => (k, ti, ff.toDouble, e, s)
+            case fi: Int => (k, ti, fi.toDouble, e, s)
+            case fl: Long => (k, ti, fl.toDouble, e, s)
+            case _ => throw new AnalysisException(
+              s"TopKCMS: Cannot parse double 'confidence'=$optV")
+          }
+          case epsTest() => optV match {
+            case fd: Double => (k, ti, cf, fd, s)
+            case fs: String => (k, ti, cf, fs.toDouble, s)
+            case ff: Float => (k, ti, cf, ff.toDouble, s)
+            case fi: Int => (k, ti, cf, fi.toDouble, s)
+            case fl: Long => (k, ti, cf, fl.toDouble, s)
+            case _ => throw new AnalysisException(
+              s"TopKCMS: Cannot parse double 'eps'=$optV")
+          }
+
+          case timeIntervalTest() => optV match {
+            case si: Int => (k, si.toLong, cf, e, s)
+            case ss: String => (k, ss.toLong, cf, e, s)
+            case sl: Long => (k, sl, cf, e, s)
+            case _ => throw new AnalysisException(
+              s"TopKCMS: Cannot parse int 'timeInterval'=$optV")
+          }
+          case sizeTest() => optV match {
+            case si: Int => (k, ti, cf, e, si)
+            case ss: String => (k, ti, cf, e, ss.toInt)
+            case sl: Long => (k, ti, cf, e, sl.toInt)
+            case _ => throw new AnalysisException(
+              s"TopKCMS: Cannot parse int 'size'=$optV")
+          }
+        }
+    }
+    new TopKHokusaiWrapper(TopKHokusai.lookupOrAdd(name, confidence, eps, size, timeInterval),
+      schema, schema(key), eps, confidence)
+
+  }
+
+
 }
