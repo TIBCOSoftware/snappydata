@@ -9,7 +9,7 @@ import org.apache.spark.{Partition, SparkEnv, TaskContext}
  */
 class TopkResultRDD(name: String, startTime: Long,
                     endTime: Long)(sqlContext: SQLContext)
-  extends RDD[Row](sqlContext.sparkContext, Nil) {
+  extends RDD[(Any,Long)](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
     val master = SparkEnv.get.blockManager.master
@@ -25,7 +25,7 @@ class TopkResultRDD(name: String, startTime: Long,
     }
   }
 
-  override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(Any,Long)] = {
     val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[CachedBlockPartition]
     val thisHost = blockManager.blockManagerId.host
@@ -37,7 +37,7 @@ class TopkResultRDD(name: String, startTime: Long,
 
     val arrayTopk = topkHokusai.getTopKBetweenTime(startTime, endTime).getOrElse( return Iterator.empty )
 
-    (arrayTopk map (Row.fromTuple(_))).toIterator
+    arrayTopk.toIterator
   }
 
 }

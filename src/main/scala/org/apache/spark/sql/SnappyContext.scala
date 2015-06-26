@@ -244,10 +244,12 @@ class SnappyContext(sc: SparkContext)
     }
 
   }
+
   def queryTopK(topkName : String,
-                startTime : Long, endTime: Long) : TopkResultRDD = {
-    //TODO: merge the results from multiple machines.
-    new TopkResultRDD(topkName, startTime, endTime)(this)
+                startTime : Long, endTime: Long) : RDD[Row]  = {
+    val k = catalog.topKStructures(topkName).size
+    (new TopkResultRDD(topkName, startTime, endTime)(this)) reduceByKey
+      ( _ + _ ) sortBy( x => { x._2 }, false ) map (Row.fromTuple(_))
   }
 }
 
