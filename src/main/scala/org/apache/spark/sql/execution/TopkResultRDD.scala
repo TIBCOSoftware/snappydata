@@ -8,7 +8,7 @@ import org.apache.spark.{Partition, SparkEnv, TaskContext}
  * Created by hemantb on 6/18/15.
  */
 class TopkResultRDD(name: String, startTime: Long,
-                    endTime: Long, size: Int)(sqlContext: SQLContext)
+                    endTime: Long)(sqlContext: SQLContext)
   extends RDD[Row](sqlContext.sparkContext, Nil) {
 
   override def getPartitions: Array[Partition] = {
@@ -35,8 +35,7 @@ class TopkResultRDD(name: String, startTime: Long,
     }
     val topkHokusai = TopKHokusai(name).getOrElse(throw new IllegalStateException())
 
-    // TODO: need to fix this once getTopKBetweenTime API is fixed.
-    val arrayTopk = topkHokusai.getTopKTillTime(endTime).getOrElse( return Iterator.empty )
+    val arrayTopk = topkHokusai.getTopKBetweenTime(startTime, endTime).getOrElse( return Iterator.empty )
 
     (arrayTopk map (Row.fromTuple(_))).toIterator
   }

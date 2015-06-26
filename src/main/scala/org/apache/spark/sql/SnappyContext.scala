@@ -100,15 +100,14 @@ class SnappyContext(sc: SparkContext)
 
       val confidence = topkWrapper.confidence
       val eps = topkWrapper.eps
-      val timeInterval = topkWrapper.topkHokusai.windowSize
-      val topK = topkWrapper.topkHokusai.topKActual
-      val keyname  = topkWrapper.key.name
+      val timeInterval = topkWrapper.timeInterval
+      val topK = topkWrapper.size
       tDF.foreachPartition(rowIterator => {
-        val topkhokusai = TopKHokusai(name, confidence,
-          eps, topK, timeInterval)
+        val topkhokusai = TopKHokusai(name, topkWrapper.confidence,
+          topkWrapper.eps, topkWrapper.size, topkWrapper.timeInterval)
         val data = (rowIterator map (r => {
 
-          r.get(r.fieldIndex(keyname))
+          r.get(r.fieldIndex(topkWrapper.key.name))
         })).toSeq
         // TODO: Currently a batch of data is creating a new interval. This
         // TODO: needs to be fixed.
@@ -246,9 +245,9 @@ class SnappyContext(sc: SparkContext)
 
   }
   def queryTopK(topkName : String,
-                startTime : Long, endTime: Long, size: Int) : TopkResultRDD = {
+                startTime : Long, endTime: Long) : TopkResultRDD = {
     //TODO: merge the results from multiple machines.
-    new TopkResultRDD(topkName, startTime, endTime, size)(this)
+    new TopkResultRDD(topkName, startTime, endTime)(this)
   }
 }
 

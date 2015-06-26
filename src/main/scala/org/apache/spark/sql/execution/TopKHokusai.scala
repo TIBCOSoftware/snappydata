@@ -330,9 +330,9 @@ object TopKHokusai {
   }
 }
 
-class TopKHokusaiWrapper[T] (val topkHokusai: TopKHokusai[T],
-                      val schema: StructType, val key : StructField,
-                              val eps: Double, val confidence: Double)
+class TopKHokusaiWrapper[T] (val name : String, val confidence : Double, val eps : Double ,
+                             val size : Int, val timeInterval: Long,
+                      val schema: StructType, val key : StructField) extends  Serializable
 
 object TopKHokusaiWrapper {
 
@@ -400,8 +400,8 @@ object TopKHokusaiWrapper {
           }
         }
     }
-    new TopKHokusaiWrapper(TopKHokusai.lookupOrAdd(name, confidence, eps, size, timeInterval),
-      schema, schema(key), eps, confidence)
+    new TopKHokusaiWrapper(name, confidence, eps, size, timeInterval,
+      schema, schema(key))
 
   }
 
