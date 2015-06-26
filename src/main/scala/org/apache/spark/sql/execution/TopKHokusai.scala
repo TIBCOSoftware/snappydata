@@ -4,14 +4,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.AnalysisException
-import org.apache.spark.sql.collection.{SegmentMap, BoundedSortedSet}
-import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.collection.{ SegmentMap, BoundedSortedSet }
+import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
+import org.apache.spark.sql.types.{ StructField, StructType }
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long, 
-    val topKActual: Int, startIntervalGenerator: Boolean = true)
+class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long,
+  val topKActual: Int, startIntervalGenerator: Boolean = true)
   extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
   val topKInternal = topKActual * 2
   private val queryTillLastNTopK_Case1: () => Array[(T, Long)] = () => {
@@ -45,11 +45,11 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
           var total = this.queryTimeAggregateForInterval(item, lengthOfLastInterval)
           var count = this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
             item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
-            if( count < total) {
-              total = total - count
-            }else {
-              // what to do? ignore as count is abnormally high
-            }
+          if (count < total) {
+            total = total - count
+          } else {
+            // what to do? ignore as count is abnormally high
+          }
           val prevCount = mappings.getOrElse[java.lang.Long](item, 0)
           mappings += (item -> (prevCount + count))
         }
@@ -116,9 +116,9 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
             val total = this.taPlusIa.basicQuery(begin to end,
               item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
             val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
-            if(prevCount > total) {
+            if (prevCount > total) {
               topKs += (item -> (prevCount - total))
-            }else {
+            } else {
               ///ignore the values as they are abnormal. what to do?....
             }
           }
@@ -147,31 +147,36 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
     System.currentTimeMillis(), topK)
 
   def getTopKTillTime(epoch: Long): Option[Array[(T, Long)]] = {
-     this.executeInReadLock(
+    this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
-        val interval = if(x > timeEpoch.t) {
+        val interval = if (x > timeEpoch.t) {
           timeEpoch.t
-        }else {
+        } else {
           x
         }
-           Some(this.taPlusIa.queryLastNIntervals[Array[(T, Long)]](
-            this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
-            queryTillLastNTopK_Case1, queryTillLastNTopK_Case2, queryTillLastNTopK_Case3,
-            queryTillLastNTopK_Case4))
-        
+        Some(this.taPlusIa.queryLastNIntervals[Array[(T, Long)]](
+          this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
+          queryTillLastNTopK_Case1, queryTillLastNTopK_Case2, queryTillLastNTopK_Case3,
+          queryTillLastNTopK_Case4))
+
       }), true)
-    
+
   }
 
-  def getTopKBetweenTime(epochFrom: Long, epochTo: Long): Option[Array[(T, Long)]] = {
-   this.executeInReadLock(
+  def getTopKForCurrentInterval: Option[Array[(T, Long)]] = this.executeInReadLock(
     {
-     val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
-        case Some(x) => x
-        case None => return None
-      }
-      Some(this.getTopKBetweenTime(later, earlier))
-    } , true)
+      Some(this.mBar.asInstanceOf[TopKCMS[T]].getTopK)
+    }, true)
+
+  def getTopKBetweenTime(epochFrom: Long, epochTo: Long): Option[Array[(T, Long)]] = {
+    this.executeInReadLock(
+      {
+        val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+          case Some(x) => x
+          case None => return None
+        }
+        Some(this.getTopKBetweenTime(later, earlier))
+      }, true)
   }
 
   def getTopKBetweenTime(later: Int, earlier: Int): Array[(T, Long)] = {
@@ -299,12 +304,12 @@ object TopKHokusai {
   }
 
   def apply(name: String, confidence: Double,
-            eps : Double, size: Int, timeInterval : Long) = {
+    eps: Double, size: Int, timeInterval: Long) = {
     lookupOrAdd(name, confidence, eps, size, timeInterval)
   }
 
-  private[sql] def lookupOrAdd(name: String, confidence: Double, eps : Double,
-                               size: Int, timeInterval : Long) : TopKHokusai[Any] = {
+  private[sql] def lookupOrAdd(name: String, confidence: Double, eps: Double,
+    size: Int, timeInterval: Long): TopKHokusai[Any] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {
@@ -316,7 +321,7 @@ object TopKHokusai {
             // TODO: why is seed needed as an input param
 
             val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
-            val width =  Math.ceil(2 / eps).toInt
+            val width = Math.ceil(2 / eps).toInt
 
             val cmsParams = CMSParams(width, depth)
 
@@ -330,12 +335,11 @@ object TopKHokusai {
   }
 }
 
-class TopKHokusaiWrapper[T] (val name : String, val confidence : Double, val eps : Double ,
-                             val size : Int, val timeInterval: Long,
-                      val schema: StructType, val key : StructField) extends  Serializable
+class TopKHokusaiWrapper[T](val name: String, val confidence: Double, val eps: Double,
+  val size: Int, val timeInterval: Long,
+  val schema: StructType, val key: StructField) extends Serializable
 
 object TopKHokusaiWrapper {
-
 
   implicit class StringExtensions(val s: String) extends AnyVal {
     def ci = new {
@@ -343,8 +347,8 @@ object TopKHokusaiWrapper {
     }
   }
 
-  def apply(name: String , options: Map[String, Any],
-            schema: StructType) : TopKHokusaiWrapper[Any] = {
+  def apply(name: String, options: Map[String, Any],
+    schema: StructType): TopKHokusaiWrapper[Any] = {
     val keyTest = "key".ci
     val timeIntervalTest = "timeInterval".ci
     val confidenceTest = "confidence".ci
@@ -362,48 +366,47 @@ object TopKHokusaiWrapper {
     // keys as found when folding the map.
     val (key, timeInterval, confidence, eps, size) = options.
       foldLeft("", 5L, 0.95, 0.01, 100) {
-      case ((k, ti, cf, e, s), (opt, optV)) =>
-        opt match {
-          case keyTest() => (optV.toString, ti, cf, e, s)
-          case confidenceTest() => optV match {
-            case fd: Double => (k, ti, fd, e, s)
-            case fs: String => (k, ti, fs.toDouble, e, s)
-            case ff: Float => (k, ti, ff.toDouble, e, s)
-            case fi: Int => (k, ti, fi.toDouble, e, s)
-            case fl: Long => (k, ti, fl.toDouble, e, s)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse double 'confidence'=$optV")
-          }
-          case epsTest() => optV match {
-            case fd: Double => (k, ti, cf, fd, s)
-            case fs: String => (k, ti, cf, fs.toDouble, s)
-            case ff: Float => (k, ti, cf, ff.toDouble, s)
-            case fi: Int => (k, ti, cf, fi.toDouble, s)
-            case fl: Long => (k, ti, cf, fl.toDouble, s)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse double 'eps'=$optV")
-          }
+        case ((k, ti, cf, e, s), (opt, optV)) =>
+          opt match {
+            case keyTest() => (optV.toString, ti, cf, e, s)
+            case confidenceTest() => optV match {
+              case fd: Double => (k, ti, fd, e, s)
+              case fs: String => (k, ti, fs.toDouble, e, s)
+              case ff: Float => (k, ti, ff.toDouble, e, s)
+              case fi: Int => (k, ti, fi.toDouble, e, s)
+              case fl: Long => (k, ti, fl.toDouble, e, s)
+              case _ => throw new AnalysisException(
+                s"TopKCMS: Cannot parse double 'confidence'=$optV")
+            }
+            case epsTest() => optV match {
+              case fd: Double => (k, ti, cf, fd, s)
+              case fs: String => (k, ti, cf, fs.toDouble, s)
+              case ff: Float => (k, ti, cf, ff.toDouble, s)
+              case fi: Int => (k, ti, cf, fi.toDouble, s)
+              case fl: Long => (k, ti, cf, fl.toDouble, s)
+              case _ => throw new AnalysisException(
+                s"TopKCMS: Cannot parse double 'eps'=$optV")
+            }
 
-          case timeIntervalTest() => optV match {
-            case si: Int => (k, si.toLong, cf, e, s)
-            case ss: String => (k, ss.toLong, cf, e, s)
-            case sl: Long => (k, sl, cf, e, s)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse int 'timeInterval'=$optV")
+            case timeIntervalTest() => optV match {
+              case si: Int => (k, si.toLong, cf, e, s)
+              case ss: String => (k, ss.toLong, cf, e, s)
+              case sl: Long => (k, sl, cf, e, s)
+              case _ => throw new AnalysisException(
+                s"TopKCMS: Cannot parse int 'timeInterval'=$optV")
+            }
+            case sizeTest() => optV match {
+              case si: Int => (k, ti, cf, e, si)
+              case ss: String => (k, ti, cf, e, ss.toInt)
+              case sl: Long => (k, ti, cf, e, sl.toInt)
+              case _ => throw new AnalysisException(
+                s"TopKCMS: Cannot parse int 'size'=$optV")
+            }
           }
-          case sizeTest() => optV match {
-            case si: Int => (k, ti, cf, e, si)
-            case ss: String => (k, ti, cf, e, ss.toInt)
-            case sl: Long => (k, ti, cf, e, sl.toInt)
-            case _ => throw new AnalysisException(
-              s"TopKCMS: Cannot parse int 'size'=$optV")
-          }
-        }
-    }
+      }
     new TopKHokusaiWrapper(name, confidence, eps, size, timeInterval,
       schema, schema(key))
 
   }
-
 
 }
