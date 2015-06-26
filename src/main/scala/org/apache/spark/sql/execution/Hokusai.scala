@@ -237,13 +237,20 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       case None => return None
     }
 
-    if (fromInterval > timeEpoch.t || toInterval > timeEpoch.t) {
-      return None
-    }
+    
     if (fromInterval > toInterval) {
-      Some((fromInterval, toInterval))
+      if(toInterval >= timeEpoch.t) {
+         None
+      }else {
+        Some((fromInterval, toInterval))
+      }
     } else {
-      Some((toInterval, fromInterval))
+      if(fromInterval >= timeEpoch.t) {
+         None
+      }else {
+        Some((toInterval, fromInterval))
+      }
+      
     }
   }
 
@@ -812,8 +819,10 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
   // TODO: This essentially searches O(log n) time periods for the correct one
   // Perhaps there is an O(1) way to calculate?
   def timestampToInterval(ts: Long): Option[Int] = {
-    if (ts < epoch0) return None
-    if (ts == epoch0 && t >= 1) {
+    //if (ts < epoch0) return None
+    if(ts <= epoch0 && t < 1) return None
+    
+    if (ts <= epoch0 && t >= 1) {
       Some(1)
     } else {
       /*val interval = if((ts - epoch0) % windowSize == 0) {
@@ -822,7 +831,11 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
       (ts - epoch0)/windowSize + 1
     }*/
       val interval = (ts - epoch0) / windowSize + 1
-      Some(interval.asInstanceOf[Int])
+      if(interval > t) {
+        Some(t.asInstanceOf[Int])
+      }else {
+        Some(interval.asInstanceOf[Int])
+      }
 
     }
 

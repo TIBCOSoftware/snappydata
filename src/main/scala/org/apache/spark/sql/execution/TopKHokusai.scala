@@ -148,31 +148,33 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
 
   def getTopKTillTime(epoch: Long): Option[Array[(T, Long)]] = {
      this.executeInReadLock(
-      this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
-
-        if (x > timeEpoch.t) {
-          None
-        } else {
-          Some(this.taPlusIa.queryLastNIntervals[Array[(T, Long)]](
-            this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
+      this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
+        val interval = if(x > timeEpoch.t) {
+          timeEpoch.t
+        }else {
+          x
+        }
+           Some(this.taPlusIa.queryLastNIntervals[Array[(T, Long)]](
+            this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
             queryTillLastNTopK_Case1, queryTillLastNTopK_Case2, queryTillLastNTopK_Case3,
             queryTillLastNTopK_Case4))
-        }), true)
+        
+      }), true)
     
   }
 
-  def getTopKBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Array[(T, Long)]] = {
+  def getTopKBetweenTime(epochFrom: Long, epochTo: Long): Option[Array[(T, Long)]] = {
    this.executeInReadLock(
     {
      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
-      Some(this.getTopKBetweenTime(later, earlier, key))
+      Some(this.getTopKBetweenTime(later, earlier))
     } , true)
   }
 
-  def getTopKBetweenTime(later: Int, earlier: Int, key: T): Array[(T, Long)] = {
+  def getTopKBetweenTime(later: Int, earlier: Int): Array[(T, Long)] = {
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
     val tillLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(earlier)
     if (fromLastNInterval == 1 && tillLastNInterval == 1) {
@@ -213,7 +215,7 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
         } else {
           unifiedTopKKeys.foreach { item: T =>
             val total = this.taPlusIa.basicQuery(start.asInstanceOf[Int] to end.asInstanceOf[Int],
-              key, interval.asInstanceOf[Int], lengthTillInterval.asInstanceOf[Int])
+              item, interval.asInstanceOf[Int], lengthTillInterval.asInstanceOf[Int])
             val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
             topKs += (item -> (total + prevCount))
           }
