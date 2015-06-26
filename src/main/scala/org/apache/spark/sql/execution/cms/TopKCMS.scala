@@ -104,6 +104,7 @@ object TopKCMS {
     topkKeys
   }
 
+  
   def getCombinedTopKFromEstimators[T](estimators: Seq[CountMinSketch[T]],
     topKKeys: scala.collection.mutable.Set[T],
     topKKeyValMap: scala.collection.mutable.Map[T, java.lang.Long] = null):
@@ -117,22 +118,17 @@ object TopKCMS {
     }
     estimators.foreach { x =>
       val topkCMS = x.asInstanceOf[TopKCMS[T]]
-      val iter = topkCMS.topkSet.iterator()
-      val tempTopKeys = new scala.collection.mutable.HashSet[T]()
-      topKKeys.foreach {
-        tempTopKeys += (_)
-      }
-      while (iter.hasNext()) {
-        val (key, count) = iter.next()
+      topKKeys.foreach { key =>  
+        val temp = topkCMS.topkSet.get(key)
+        val count = if(temp != null) {
+           temp.asInstanceOf[Long]  
+        }else {
+          x.estimateCount(key)
+        }
         val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0)
         topkKeysVals.+=(key -> (prevCount + count))
-        tempTopKeys -= key
-      }
-      tempTopKeys.foreach { key =>
-        val count = x.estimateCount(key)
-        val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0)
-        topkKeysVals += (key -> (prevCount + count))
-      }
+      
+      }      
     }
     topkKeysVals
   }

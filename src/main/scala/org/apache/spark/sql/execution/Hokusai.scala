@@ -90,7 +90,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       // the remaining interval will lie in the time interval range
       val lengthOfLastInterval = nearestPowerOf2Num
       val residualIntervals = lastNIntervals - nearestPowerOf2Num
-      if (residualIntervals > (lengthOfLastInterval * 3) / 4) {
+      if (false /*residualIntervals > (lengthOfLastInterval * 3) / 4*/ ) {
         //it would be better to find the time aggregation of last interval - the other intervals)
         count += this.taPlusIa.queryTimeAggregateForInterval(item, lengthOfLastInterval)
         count -= this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
@@ -140,7 +140,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       // The accuracy becomes very poor if we query the first interval 1 using entity
       //aggregates . So subtraction approach needs to be looked at more carefully
       val residualLength = lastNIntervalsToQuery - (computedIntervalLength - skipLastInterval)
-      if (residualLength > (skipLastInterval * 3) / 4) {
+      if (false /*residualLength > (skipLastInterval * 3) / 4*/ ) {
         //it will be better to add the whole time aggregate & substract the other intervals
 
         total += this.taPlusIa.queryTimeAggregateForInterval(item, skipLastInterval)
@@ -159,15 +159,11 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     Some(total)
   }
 
-  def increment(): Unit = {
-    this.writeLock.lockInterruptibly()
-    try {
-      timeEpoch.increment()
-      this.taPlusIa.increment(mBar, timeEpoch.t)
-      mBar = createZeroCMS(0)
-    } finally {
-      this.writeLock.unlock()
-    }
+  def increment(): Unit = this.executeInWriteLock {
+    timeEpoch.increment()
+    this.taPlusIa.increment(mBar, timeEpoch.t)
+    mBar = createZeroCMS(0)
+
   }
 
   // For testing.  This follows spark one update per batch model?  But
@@ -237,30 +233,29 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       case None => return None
     }
 
-    
     if (fromInterval > toInterval) {
-      if(toInterval >= timeEpoch.t) {
-         None
-      }else {
+      if (toInterval > timeEpoch.t) {
+        None
+      } else {
         Some((fromInterval, toInterval))
       }
     } else {
-      if(fromInterval >= timeEpoch.t) {
-         None
-      }else {
+      if (fromInterval > timeEpoch.t) {
+        None
+      } else {
         Some((toInterval, fromInterval))
       }
-      
+
     }
   }
 
   //def accummulate(data: Seq[Long]): Unit = mBar = mBar ++ cmsMonoid.create(data)
-  def accummulate(data: Seq[T]): Unit = this.executeInReadLock {
+  def accummulate(data: Seq[T]): Unit = this.executeInWriteLock {
     data.foreach(i => mBar.add(i, 1L))
   }
 
   def accummulate(data: scala.collection.Map[T, Long]): Unit =
-    this.executeInReadLock {
+    this.executeInWriteLock {
       data.foreach { case (item, count) => mBar.add(item, count) }
     }
 
@@ -274,6 +269,19 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       body
     } finally {
       this.readLock.unlock()
+    }
+  }
+
+  protected def executeInWriteLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
+    if (lockInterruptibly) {
+      this.writeLock.lockInterruptibly()
+    } else {
+      this.writeLock.lock()
+    }
+    try {
+      body
+    } finally {
+      this.writeLock.unlock()
     }
   }
 
@@ -686,7 +694,7 @@ def algo3(): Unit = {
       var n: Array[Long] = null
       val bStart = beginingOfRangeAsPerIA.asInstanceOf[Int]
       val bEnd = endRangeAsPerIA.asInstanceOf[Int]
-      val mjStarCount = mJStar.estimateCount(key)
+      //val mjStarCount = mJStar.estimateCount(key)
       tIntervalsToQuery foreach {
         j =>
           val intervalNumRelativeToIA = convertIntervalBySwappingEnds(j).asInstanceOf[Int]
@@ -698,8 +706,7 @@ def algo3(): Unit = {
           } else {
             cmsParams.width - Hokusai.ilog2(j - 1) + 1
           }
-          total += (if (nTilda > math.E * intervalNumRelativeToIA / (1 << width)
-            && (nTilda < mjStarCount)) {
+          total += (if (nTilda > math.E * intervalNumRelativeToIA / (1 << width) || nTilda == 0) {
             nTilda
           } else {
             if (n == null) {
@@ -784,6 +791,8 @@ def algo3(): Unit = {
       for (i <- 0 until cmsAtT.depth) {
         if (sumOverEntities(i) != 0) {
           res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
+        } else {
+          return 0
         }
       }
 
@@ -820,8 +829,8 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
   // Perhaps there is an O(1) way to calculate?
   def timestampToInterval(ts: Long): Option[Int] = {
     //if (ts < epoch0) return None
-    if(ts <= epoch0 && t < 1) return None
-    
+    if (ts <= epoch0 && t < 1) return None
+
     if (ts <= epoch0 && t >= 1) {
       Some(1)
     } else {
@@ -831,11 +840,11 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
       (ts - epoch0)/windowSize + 1
     }*/
       val interval = (ts - epoch0) / windowSize + 1
-      if(interval > t) {
+      /*if(interval > t) {
         Some(t.asInstanceOf[Int])
-      }else {
-        Some(interval.asInstanceOf[Int])
-      }
+      }else {*/
+      Some(interval.asInstanceOf[Int])
+      //}
 
     }
 
