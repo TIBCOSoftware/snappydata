@@ -29,10 +29,11 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
   /////////////////////////////////////////////////////////////////////////////
   "TopK elements  for each interval  " should "be correct" in {
     val cmsParams = CMSParams(8192, 7, SEED)
-    val topK = new TopKHokusai[Int](cmsParams, 1, 0, 5)
+    val topK = new TopKHokusai[Int](cmsParams, 1, 0, 5, false)
     //1st interval
     topK.addEpochData(Map[Int, Long](1 -> 13, 2 -> 8, 3 -> 9, 4 -> 10, 5 -> 4, 6 -> 7, 7 -> 1, 8 -> 19, 9 -> 0, 10 -> 11))
-
+    topK.increment()
+    
     {
       val topKCMS1: TopKCMS[Int] = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
       val top5Elements = topKCMS1.getTopK
@@ -54,7 +55,8 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
     //2nd interval
 
     topK.addEpochData(Map[Int, Long](10 -> 13, 8 -> 8, 7 -> 9, 9 -> 10, 3 -> 4, 5 -> 7, 4 -> 1, 1 -> 19, 2 -> 0, 6 -> 11))
-
+    topK.increment()
+    
     {
       val topKCMS1: TopKCMS[Int] = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
       val top5Elements = topKCMS1.getTopK
@@ -79,7 +81,8 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
     //1 -> 32, 2->8, 3->13, 4->11, 5->11, 6->18, 7->10, 8->27, 9->10, 10->24
 
     topK.addEpochData(Map[Int, Long](4 -> 13, 3 -> 8, 1 -> 9, 2 -> 10, 9 -> 4, 6 -> 7, 10 -> 1, 8 -> 19, 7 -> 0, 5 -> 11))
-
+    topK.increment()
+    
     {
       val topKCMS2: TopKCMS[Int] = topK.taPlusIa.ta.aggregates(2).asInstanceOf[TopKCMS[Int]]
       val top5Elements = topKCMS2.getTopK
@@ -105,12 +108,13 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
   "TopK expansion with increased time intervals " should "be correct" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
     val topKCount = 4
-    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount)
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false)
 
     {
       //1st interval add 10 keys
       topK.addEpochData(Map[Int, Long](1 -> 1, 2 -> 2, 3 -> 3, 4 -> 4, 5 -> 5, 6 -> 6,
         7 -> 7, 8 -> 8, 9 -> 9, 10 -> 10))
+        topK.increment()
       val topKCMS = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
       assert(topKCMS.topKActual === 4)
       assert(topKCMS.topKInternal === 8)
@@ -126,6 +130,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
       //add 2nd interval with next 10 keys
       topK.addEpochData(Map[Int, Long](11 -> 11, 12 -> 12, 13 -> 13, 14 -> 14, 15 -> 15,
         16 -> 16, 17 -> 17, 18 -> 18, 19 -> 19, 20 -> 20))
+      topK.increment()  
       val topKCMS = topK.taPlusIa.ta.aggregates(1).asInstanceOf[TopKCMS[Int]]
       assert(topKCMS.topKActual === 4)
       assert(topKCMS.topKInternal === 8)
@@ -141,6 +146,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
       //add 3rd interval with next 10 keys
       topK.addEpochData(Map[Int, Long](21 -> 21, 22 -> 22, 23 -> 23, 24 -> 24, 25 -> 25,
         26 -> 26, 27 -> 27, 28 -> 28, 29 -> 29, 30 -> 30))
+        topK.increment()
       val topKCMS = topK.taPlusIa.ta.aggregates(1).asInstanceOf[TopKCMS[Int]]
       assert(topKCMS.topKActual === 4)
       assert(topKCMS.topKInternal === 8)
@@ -169,7 +175,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
   "TopK expansion with increased time intervals in generic manner " should "be correct" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
     val topKCount = 4
-    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount)
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false)
     val numIntervals = 1000
     val keyWidth = 10
 
@@ -180,6 +186,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
           map += ((i * 10 - j) -> (i * 10 - j)) // this will add like 1->1, 2->2,.... 21->21, 22->22,... 30-> 30.
         }
         topK.addEpochData(map)
+        topK.increment()
         if (i == 0) {
           val topKCMS = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
           assert(topKCMS.topKActual === topKCount)
@@ -211,7 +218,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
     //val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(100000),12, SEED)
     val cmsParams = CMSParams(scala.math.pow(2,18).asInstanceOf[Int],12, SEED)
     val topKCount = 200
-    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount)
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false)
     val randomKey = new scala.util.Random(41)
     val numIntervalsToAdd = 50
     val keyRange = 200000
@@ -228,6 +235,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
         System.out.println("tre")
       }*/
       topK.addEpochData(map)
+      topK.increment()
       intervalMap += (i -> map)
     }
     //Check till last N interval keys

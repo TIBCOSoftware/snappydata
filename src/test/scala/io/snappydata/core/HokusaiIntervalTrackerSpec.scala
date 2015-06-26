@@ -1,6 +1,6 @@
 package io.snappydata.core
 
-import org.apache.spark.sql.execution.{CMSParams, Hokusai}
+import org.apache.spark.sql.execution.{ CMSParams, Hokusai }
 
 import scala.io.Source
 import org.scalatest._
@@ -17,7 +17,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   val SEED = 123 // Do NOT use 1 for a Seed: I think makes streamlib CMS hashing degenerate!
   val MAX_J = 8 // Number of m(j) we are keeping during tests (numSketches)
   val MAX_TIME = math.pow(2, MAX_J).asInstanceOf[Int]
-  
+
   val FIVE_ONES = Array(1L, 1L, 1L, 1L, 1L) // data we count at each epoch
   val TEST_ACCURATE_INTERVALS = 8888
   val TEST_APRROXIMATE_INTERVALS_1 = 500
@@ -27,10 +27,11 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   /////////////////////////////////////////////////////////////////////////////
   "Hokusai interval conversion between last nth interval to interval from begining " should "be correct" in {
     val cmsParams = CMSParams(512, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0)
+    val h = new Hokusai[Int](cmsParams, 1, 0, false)
     val intervalsToAdd = 100
     for (i <- 1 to intervalsToAdd) {
       h.addEpochData(Map[Int, Long](1 -> 7))
+      h.increment()
     }
     //3rd interval from last should be 98th from begining 
     h.taPlusIa.convertIntervalBySwappingEnds(3) should be(98)
@@ -45,14 +46,16 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai Linked Interval" should "be correct after n intervals" in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(512, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0)
+    val h = new Hokusai[Int](cmsParams, 1, 0, false)
     h.addEpochData(Map[Int, Long](1 -> 7)) // 1st interval
+    h.increment()
 
     {
       assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(7, -7, 1)))
     }
 
     h.addEpochData(Map[Int, Long](1 -> 14)) // 2nd interval
+    h.increment()
 
     {
       assert(h.queryTillLastNIntervals(1, 1) === Some(14))
@@ -60,6 +63,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
     }
 
     h.addEpochData(Map[Int, Long](1 -> 21)) // 3nd interval
+    h.increment()
 
     {
       //After 3 interval , we should get best path of  2 ( the implicit 1 interval will always be added
@@ -74,7 +78,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
     }
     //After 4 intervals
     h.addEpochData(Map[Int, Long](1 -> 28)) // 4th interval
-
+    h.increment() 
+    
     {
       //After 4 interval , we should get best path of 1, 2 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(4)
@@ -89,7 +94,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 5 intervals
     h.addEpochData(Map[Int, Long](1 -> 35)) // 5th interval
-
+    h.increment()
+    
     {
       //After 5 interval , we should get best path of  4 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(5)
@@ -104,7 +110,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 6 intervals
     h.addEpochData(Map[Int, Long](1 -> 42)) // 6th interval
-
+    h.increment() 
+    
     {
       //After 6 interval , we should get best path of  1,4 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(6)
@@ -119,7 +126,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 7 intervals
     h.addEpochData(Map[Int, Long](1 -> 49)) // 7th interval
-
+    h.increment() 
+    
     {
       //After 7 interval , we should get best path of  2,4 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(7)
@@ -134,7 +142,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 8 intervals
     h.addEpochData(Map[Int, Long](1 -> 56))
-
+    h.increment() 
+    
     {
       //After 8 interval , we should get best path of  1,2,4 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(8)
@@ -149,7 +158,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 9 intervals
     h.addEpochData(Map[Int, Long](1 -> 63))
-
+    h.increment() 
+    
     {
       //After 9 interval , we should get best path of  8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(9)
@@ -166,7 +176,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 10 intervals
     h.addEpochData(Map[Int, Long](1 -> 70))
-
+    h.increment()
+    
     {
       //After 10 interval , we should get best path of 1, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(10)
@@ -183,7 +194,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 11 intervals
     h.addEpochData(Map[Int, Long](1 -> 77))
-
+    h.increment() 
+    
     {
       //After 11 interval , we should get best path of 2, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(11)
@@ -200,7 +212,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 12 intervals
     h.addEpochData(Map[Int, Long](1 -> 84))
-
+    h.increment()
+    
     {
       //After 12 interval , we should get best path of 1,2, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(12)
@@ -217,7 +230,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 13 intervals
     h.addEpochData(Map[Int, Long](1 -> 91))
-
+    h.increment() 
+    
     {
       //After 13 interval , we should get best path of 4, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(13)
@@ -234,7 +248,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 14 intervals
     h.addEpochData(Map[Int, Long](1 -> 98))
-
+    h.increment() 
+    
     {
       //After 14 interval , we should get best path of1, 4, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(14)
@@ -250,7 +265,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 15 intervals
     h.addEpochData(Map[Int, Long](1 -> 105))
-
+    h.increment()
+    
     {
       //After 15 interval , we should get best path of 2, 4, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(15)
@@ -266,7 +282,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
     //After 16 intervals
     h.addEpochData(Map[Int, Long](1 -> 112))
-
+    h.increment() 
+    
     {
       //After 16 interval , we should get best path of 1, 2, 4, 8 ( the implicit 1 interval will always be added
       val (seq, length) = h.taPlusIa.intervalTracker.identifyBestPath(16)
@@ -286,11 +303,12 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries for n intervals" should "be correct for all paths" in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(1024, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0)
+    val h = new Hokusai[Int](cmsParams, 1, 0, false)
     (1 to TEST_ACCURATE_INTERVALS) foreach {
       i =>
         val count = 7 * i;
         h.addEpochData(Map[Int, Long](1 -> count))
+        h.increment()
         val possiblePaths = h.taPlusIa.intervalTracker.getAllPossiblePaths
         possiblePaths.foreach {
           path =>
@@ -306,11 +324,12 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val ERROR_PERCENTAGE = 0
     val cmsParams = CMSParams(1024, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0)
+    val h = new Hokusai[Int](cmsParams, 1, 0, false)
     (1 to TEST_APRROXIMATE_INTERVALS_1) foreach {
       i =>
         val count = 7 * i;
         h.addEpochData(Map[Int, Long](1 -> count))
+        h.increment()
         val possiblePaths = h.taPlusIa.intervalTracker.getAllPossiblePaths
         val accurateIntervals = possiblePaths.map(_.aggregate(0)(_ + _, _ + _))
         val sortedAccurateIntervals = SortedSet(accurateIntervals: _*)(Ordering.Int)
@@ -341,7 +360,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries for n past intervals using interpolation for " + TEST_NUM_KEYS + " keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(816096), 10, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0)
+    val h = new Hokusai[Int](cmsParams, 1, 0, false)
     val ERROR_PERCENTAGE = 25
     (1 to TEST_APRROXIMATE_INTERVALS_2) foreach {
       k =>
@@ -353,6 +372,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
         }
 
         h.addEpochData(dataMap)
+        h.increment()
         val possiblePaths = h.taPlusIa.intervalTracker.getAllPossiblePaths
         val accurateIntervals = possiblePaths.map(_.aggregate(0)(_ + _, _ + _))
         val sortedAccurateIntervals = SortedSet(accurateIntervals: _*)(Ordering.Int)
@@ -370,7 +390,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
                   val exactFreq = computeSumOfAP(lastElemOfAP, -1 * keyToQuery, i)
 
                   val freqFromQuery = h.queryTillLastNIntervals(i, keyToQuery).get
-                 // System.out.println("expected frequency=" + exactFreq + ", hokusai count= " + freqFromQuery)
+                  // System.out.println("expected frequency=" + exactFreq + ", hokusai count= " + freqFromQuery)
                   if (freqFromQuery != exactFreq) {
                     val errorPercentage = (abs(exactFreq - freqFromQuery) * 100f) / exactFreq
                     if (errorPercentage > ERROR_PERCENTAGE) {
@@ -391,7 +411,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries at a given time in past  using interpolation for keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(1024), 5, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0)
+    val h = new Hokusai[Int](cmsParams, 1, 0, false)
     val KEYS = 100
     val ERROR_PERCENTAGE = 0
     (1 to TEST_APRROXIMATE_INTERVALS_1) foreach {
@@ -404,6 +424,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
         }
 
         h.addEpochData(dataMap)
+        h.increment()
     }
     //For each interval in past check some keys
     (1 to TEST_APRROXIMATE_INTERVALS_1) foreach {
@@ -435,28 +456,46 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries between two time intervals in past  using interpolation for keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 5, SEED)
-    val h = new Hokusai[Int](cmsParams, 10, 0)
+    val h = new Hokusai[Int](cmsParams, 10, 0, false)
 
     //For each interval in past check some keys
 
     h.addEpochData(Map[Int, Long](1 -> 7)) // 1 interval /10
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 14)) // 2 interval /20
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 21)) // 3 interval /30
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 28)) // 4 interval /40
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 35)) // 5 interval /50
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 42)) // 6 interval /60
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 49)) // 7 interval /70
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 56)) // 8 interval /80
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 63)) // 9 interval /90
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 70)) // 10 interval /100
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 77)) // 11 interval /110
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 84)) // 12 interval /120
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 91)) // 13 interval /130
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 98)) // 14 interval /140
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 105)) // 15 interval /150
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 112)) // 16 interval /160
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 119)) // 17 interval /170
+    h.increment()
     h.addEpochData(Map[Int, Long](1 -> 126)) // 18 interval /180
+    h.increment()
 
     {
       assert(h.queryBetweenTime(13, 23, 1) === Some(14 + 21))
@@ -464,8 +503,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(h.queryBetweenTime(0, 35, 1) === Some(7 + 14 + 21 + 28))
       assert(h.queryBetweenTime(15, 113, 1) === Some(14 + 21 + 28 + 35 + 42 + 49 + 56 + 63 + 70
         + 77 + 84))
-        
-      assert(h.queryBetweenTime(175, 178, 1) === Some(126))  
+
+      assert(h.queryBetweenTime(175, 178, 1) === Some(126))
     }
 
   }
@@ -473,10 +512,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   /////////////////////////////////////////////////////////////////
   "Hokusai queries between two time intervals (generic test) in past  using interpolation for keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
-    val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192),7, SEED)
-    val h = new Hokusai[Int](cmsParams, 10, 0)
+    val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
+    val h = new Hokusai[Int](cmsParams, 10, 0, false)
     val KEYS = 1
-    val ERROR_PERCENTAGE =0
+    val ERROR_PERCENTAGE = 0
     val TEST_NUM_INTERVALS = 1000
     val NUM_RUN = 1000
     (1 to TEST_NUM_INTERVALS) foreach {
@@ -484,6 +523,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
         val count = 7 * k;
         //System.out.println("Interval number ="+k + " count added ="+ count)
         h.addEpochData(Map[Int, Long](1 -> count))
+        h.increment()
     }
     //For each interval in past check some keys
     val randomKey = new scala.util.Random(41)
@@ -498,21 +538,19 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
         val max = math.max(one, two)
         val s1 = computeSumOfAP(7, 7, min)
         val s2 = computeSumOfAP(7, 7, max + 1)
-        
-        
+
         val estimate = h.queryBetweenTime(t1, t2, 1).get
         val expected = Math.abs(s2 - s1)
         if (estimate != expected) {
           val errorPercentage = (abs(estimate - expected) * 100f) / expected
           if (errorPercentage > ERROR_PERCENTAGE) {
             fail("error more than " + ERROR_PERCENTAGE + "%. With the error ="
-              + errorPercentage + "%. expected value =" + expected + "; actual value ="+ estimate
-            + " interval queried = " +one + ","+ two  
-            )
+              + errorPercentage + "%. expected value =" + expected + "; actual value =" + estimate
+              + " interval queried = " + one + "," + two)
           }
 
         }
-       /* val estimate1 = h.queryBetweenTime(85, 85, 1)
+      /* val estimate1 = h.queryBetweenTime(85, 85, 1)
          val expected1 = Math.abs(computeSumOfAP(7, 7, 9) - computeSumOfAP(7, 7, 17))
          System.out.println("estimate1 = "+ estimate1 + " expceted1 = "+ expected1)
         

@@ -10,8 +10,9 @@ import org.apache.spark.sql.types.{StructField, StructType}
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long, val topKActual: Int)
-  extends Hokusai[T](cmsParams, windowSize, epoch0) {
+class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long, 
+    val topKActual: Int, startIntervalGenerator: Boolean = true)
+  extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
   val topKInternal = topKActual * 2
   private val queryTillLastNTopK_Case1: () => Array[(T, Long)] = () => {
     val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
@@ -146,8 +147,7 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
     System.currentTimeMillis(), topK)
 
   def getTopKTillTime(epoch: Long): Option[Array[(T, Long)]] = {
-    this.readLock.lockInterruptibly()
-    try {
+     this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
 
         if (x > timeEpoch.t) {
@@ -157,24 +157,19 @@ class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val e
             this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
             queryTillLastNTopK_Case1, queryTillLastNTopK_Case2, queryTillLastNTopK_Case3,
             queryTillLastNTopK_Case4))
-        })
-    } finally {
-      this.readLock.unlock()
-    }
+        }), true)
+    
   }
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Array[(T, Long)]] = {
-    this.readLock.lockInterruptibly()
-    try {
-
-      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+   this.executeInReadLock(
+    {
+     val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
       Some(this.getTopKBetweenTime(later, earlier, key))
-    } finally {
-      this.readLock.unlock()
-    }
+    } , true)
   }
 
   def getTopKBetweenTime(later: Int, earlier: Int, key: T): Array[(T, Long)] = {

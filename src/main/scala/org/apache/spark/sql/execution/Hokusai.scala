@@ -4,8 +4,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.execution.cms.CountMinSketch
-
-import scala.collection.mutable.{ListBuffer, MutableList, Stack}
+import java.util.{ Timer, TimerTask }
+import scala.collection.mutable.{ ListBuffer, MutableList, Stack }
 import scala.reflect.ClassTag
 import scala.collection.mutable.MutableList
 import scala.collection.mutable.ListBuffer
@@ -53,13 +53,16 @@ import scala.util.Random
  * 4. Decide if we want to be mutable or functional in this datastruct.
  *    Current version is mutable.
  */
-class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long) {
+class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
+  startIntervalGenerator: Boolean = true) {
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
+
+  private val intervalGenerator = new Timer()
 
   val rwLock = new ReentrantReadWriteLock()
   val readLock = rwLock.readLock
   val writeLock = rwLock.writeLock
-  val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators )=> CountMinSketch.merge[T](estimators: _*)
+  val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators) => CountMinSketch.merge[T](estimators: _*)
   def this(cmsParams: CMSParams, windowSize: Long) = this(cmsParams, windowSize,
     System.currentTimeMillis())
 
@@ -69,10 +72,14 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
   // Current data accummulates into mBar until the next time tick
   var mBar: CountMinSketch[T] = createZeroCMS(0)
 
+  if (startIntervalGenerator) {
+    intervalGenerator.schedule(createTimerTask(this.increment), 0, windowSize)
+  }
+
   private val queryTillLastN_Case2: (T, Int) => Option[Long] = (item: T, sumUpTo: Int) => Some(this.taPlusIa.queryBySummingTimeAggregates(item, sumUpTo))
-  
+
   private val queryTillLastN_Case1: (T) => () => Option[Long] = (item: T) => () => Some(this.taPlusIa.ta.aggregates(0).estimateCount(item))
-  
+
   private val queryTillLastN_Case3: (T, Int, Int, Int, Int) => Option[Long] = (item: T, lastNIntervals: Int, totalIntervals: Int, n: Int, nQueried: Int) =>
     if (lastNIntervals > totalIntervals) {
       Some(this.taPlusIa.queryBySummingTimeAggregates(item, n))
@@ -83,7 +90,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
       // the remaining interval will lie in the time interval range
       val lengthOfLastInterval = nearestPowerOf2Num
       val residualIntervals = lastNIntervals - nearestPowerOf2Num
-      if (residualIntervals > (lengthOfLastInterval *3) /4) {
+      if (residualIntervals > (lengthOfLastInterval * 3) / 4) {
         //it would be better to find the time aggregation of last interval - the other intervals)
         count += this.taPlusIa.queryTimeAggregateForInterval(item, lengthOfLastInterval)
         count -= this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
@@ -133,7 +140,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
       // The accuracy becomes very poor if we query the first interval 1 using entity
       //aggregates . So subtraction approach needs to be looked at more carefully
       val residualLength = lastNIntervalsToQuery - (computedIntervalLength - skipLastInterval)
-      if (residualLength > (skipLastInterval *3)/4 ) {
+      if (residualLength > (skipLastInterval * 3) / 4) {
         //it will be better to add the whole time aggregate & substract the other intervals
 
         total += this.taPlusIa.queryTimeAggregateForInterval(item, skipLastInterval)
@@ -167,12 +174,10 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
   // we may need to control for time a bit more carefully?
   def addEpochData(data: Seq[T]) = {
     accummulate(data)
-    increment()
   }
 
   def addEpochData(data: scala.collection.Map[T, Long]) = {
     accummulate(data)
-    increment()
   }
 
   // Get the frequency estimate for key in epoch from the CMS
@@ -182,8 +187,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
     timeEpoch.jForTimestamp(epoch, numIntervals).flatMap(ta.query(_, key))*/
 
   def queryTillTime(epoch: Long, key: T): Option[Long] = {
-    this.readLock.lockInterruptibly()
-    try {
+    this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
 
         if (x > timeEpoch.t) {
@@ -191,39 +195,35 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
         } else {
           this.queryTillLastNIntervals(this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
             key)
-        })
-    } finally {
-      this.readLock.unlock()
-    }
+        }),
+      true)
+
   }
 
   def queryAtTime(epoch: Long, key: T): Option[Long] = {
-    this.readLock.lockInterruptibly()
-    try {
+
+    this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
         if (x > timeEpoch.t) {
           None
         } else {
           this.taPlusIa.queryAtInterval(this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
             key)
-        })
-    } finally {
-      this.readLock.unlock()
-    }
+        }), true)
+
   }
 
   def queryBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Long] = {
-    this.readLock.lockInterruptibly()
-    try {
 
-      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
-        case Some(x) => x
-        case None => return None
-      }
-      this.taPlusIa.queryBetweenIntervals(later, earlier, key)
-    } finally {
-      this.readLock.unlock()
-    }
+    this.executeInReadLock(
+      {
+        val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+          case Some(x) => x
+          case None => return None
+        }
+        this.taPlusIa.queryBetweenIntervals(later, earlier, key)
+      }, true)
+
   }
 
   def convertEpochToIntervals(epochFrom: Long, epochTo: Long): Option[(Int, Int)] = {
@@ -248,9 +248,27 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
   }
 
   //def accummulate(data: Seq[Long]): Unit = mBar = mBar ++ cmsMonoid.create(data)
-  def accummulate(data: Seq[T]): Unit = data.foreach(i => mBar.add(i, 1L))
+  def accummulate(data: Seq[T]): Unit = this.executeInReadLock {
+    data.foreach(i => mBar.add(i, 1L))
+  }
 
-  def accummulate(data: scala.collection.Map[T, Long]): Unit = data.foreach { case (item, count) => mBar.add(item, count) }
+  def accummulate(data: scala.collection.Map[T, Long]): Unit =
+    this.executeInReadLock {
+      data.foreach { case (item, count) => mBar.add(item, count) }
+    }
+
+  protected def executeInReadLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
+    if (lockInterruptibly) {
+      this.readLock.lockInterruptibly()
+    } else {
+      this.readLock.lock()
+    }
+    try {
+      body
+    } finally {
+      this.readLock.unlock()
+    }
+  }
 
   def queryTillLastNIntervals(lastNIntervals: Int, item: T): Option[Long] =
     this.taPlusIa.queryLastNIntervals[Option[Long]](lastNIntervals, queryTillLastN_Case1(item),
@@ -258,7 +276,13 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long)
       queryTillLastN_Case3(item, _, _, _, _),
       queryTillLastN_Case4(item, _, _, _, _))
 
-  def createZeroCMS(intervalFromLast: Int): CountMinSketch[T] = 
+  private def createTimerTask(taskBody: => Unit): TimerTask = new TimerTask() {
+    override def run() {
+      taskBody
+    }
+  }
+
+  def createZeroCMS(intervalFromLast: Int): CountMinSketch[T] =
     Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA)
 
   override def toString = s"Hokusai[ta=${taPlusIa}, mBar=${mBar}]"
@@ -424,8 +448,7 @@ def algo3(): Unit = {
             }
           }
           if (j != 0) {
-            
-           
+
             mBar = mergeCreator(Array[CountMinSketch[T]](mBar, mj))
             //CountMinSketch.merge[T](mBar, mj)
           } else {
@@ -653,7 +676,7 @@ def algo3(): Unit = {
       val endRangeAsPerIA = beginingOfRangeAsPerIA + taIntervalWithInstant - 1
       val mJStar = this.ta.aggregates.get(jStar).get
       var total: Long = 0
-      var n :Array[Long] = null
+      var n: Array[Long] = null
       val bStart = beginingOfRangeAsPerIA.asInstanceOf[Int]
       val bEnd = endRangeAsPerIA.asInstanceOf[Int]
       val mjStarCount = mJStar.estimateCount(key)
@@ -669,8 +692,7 @@ def algo3(): Unit = {
             cmsParams.width - Hokusai.ilog2(j - 1) + 1
           }
           total += (if (nTilda > math.E * intervalNumRelativeToIA / (1 << width)
-          && (nTilda < mjStarCount)    
-          ) {
+            && (nTilda < mjStarCount)) {
             nTilda
           } else {
             if (n == null) {
@@ -718,15 +740,16 @@ def algo3(): Unit = {
 
     private def queryBySummingEntityAggregates(item: T, startIndex: Int, sumUpTo: Int): Array[Long] = {
       var n = Array.ofDim[Long](cmsParams.depth)
-      
+
       (startIndex to sumUpTo) foreach {
-        j => {
-          val cms = this.ia.aggregates.get(j).get 
-          val hashes = cms.getIHashesFor(item)
-          0 until n.length foreach { i=>            
-            n(i) = n(i) + cms.table(i)(hashes(i))
+        j =>
+          {
+            val cms = this.ia.aggregates.get(j).get
+            val hashes = cms.getIHashesFor(item)
+            0 until n.length foreach { i =>
+              n(i) = n(i) + cms.table(i)(hashes(i))
+            }
           }
-        }
       }
 
       n
@@ -751,19 +774,18 @@ def algo3(): Unit = {
       var b: Long = scala.Long.MaxValue;
       // since the indexes are zero based
 
-     
-        for (i <- 0 until cmsAtT.depth) {
-          if(sumOverEntities(i) != 0) {
-            res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
-          }
+      for (i <- 0 until cmsAtT.depth) {
+        if (sumOverEntities(i) != 0) {
+          res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
         }
-         
-        return if(res == scala.Long.MaxValue) {
-          0
-        }else {
-          res
-        }
-      
+      }
+
+      return if (res == scala.Long.MaxValue) {
+        0
+      } else {
+        res
+      }
+
     }
 
   }

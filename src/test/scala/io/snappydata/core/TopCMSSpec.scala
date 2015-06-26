@@ -28,7 +28,7 @@ class TopKCMSSpec extends FlatSpec with Matchers {
   /////////////////////////////////////////////////////////////////////////////
   "TopK data in TopKCMS " should "be correct" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(400000), 7, SEED)
-    val topK = new TopKHokusai[String](cmsParams, 1, 0, 12)
+    val topK = new TopKHokusai[String](cmsParams, 1, 0, 12, false)
     val numKeysToAdd = 10000
     val randomCount = new scala.util.Random(41)
     var map = Map[String, Long]()
@@ -50,6 +50,7 @@ class TopKCMSSpec extends FlatSpec with Matchers {
       expectedData.put(value, (i+""))
     }
     topK.addEpochData(map)
+    topK.increment()
     val topKData = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[String]]
    // System.out.println("reverse data ="+ expectedData.descendingMap())
     val expectedIter = expectedData.descendingMap().entrySet().iterator()
@@ -73,7 +74,7 @@ class TopKCMSSpec extends FlatSpec with Matchers {
  /////////////////////////////////////////////////////////////////////////////
   "TopK data in TopKCMS " should "be correct on adding same key with different counts" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(400000), 7, SEED)
-    val topK = new TopKHokusai[String](cmsParams, 1, 0, 12)
+    val topK = new TopKHokusai[String](cmsParams, 1, 0, 12, false)
     val topkCMS = topK.mBar.asInstanceOf[TopKCMS[String]]
     //Add key 1 with count 5
     topkCMS.add("1", 5)
