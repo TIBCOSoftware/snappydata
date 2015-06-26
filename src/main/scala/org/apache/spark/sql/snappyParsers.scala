@@ -6,7 +6,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
-import org.apache.spark.sql.sources.{CaseInsensitiveMap, DDLParser, ErrorAvg, ErrorSum}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
@@ -29,12 +29,9 @@ private[sql] class SnappyParser extends SqlParser {
           (AVG | SUM) ~ ("(" ~> expression <~ ")") ^^ {
         case c ~ op ~ exp =>
           val confidence = c.map(_.toDouble).getOrElse(defaultConfidence)
-          if (op.equalsIgnoreCase(AVG.str)) {
-            ErrorAvg(exp, confidence, c.isEmpty)
-          }
-          else {
-            ErrorSum(exp, confidence, c.isEmpty)
-          }
+          val aggType = ErrorAggregate.withName(
+            op.toUpperCase(java.util.Locale.ENGLISH))
+          ErrorEstimateAggregate(exp, confidence, null, c.isEmpty, aggType)
       }
 }
 

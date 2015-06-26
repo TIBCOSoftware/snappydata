@@ -107,7 +107,10 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
       val nsamples = stat.count
       val mean = stat.mean
       val stdev = math.sqrt(stat.variance / nsamples)
-      val errorEstimate = tcache.get(nsamples) * stdev
+      // 30 is taken to be cut-off limit in most statistics calculations
+      // for z vs t distributions (unlike StudentTCacher that uses 100)
+      val errorEstimate = if (nsamples >= 30) tcache.normalApprox * stdev
+                          else tcache.get(nsamples) * stdev
       val percentError = (errorEstimate * 100.0) / math.abs(mean)
       (mean, stdev, errorEstimate, percentError)
     }

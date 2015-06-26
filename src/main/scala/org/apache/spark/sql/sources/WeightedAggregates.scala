@@ -28,7 +28,7 @@ object WeightageRule extends Rule[LogicalPlan] {
         case _ => return aggr
       }
 
-      val generatedratioExpr = new MapColumnToWeight(hiddenCol)
+      val generatedRatioExpr = new MapColumnToWeight(hiddenCol)
 
       aggr transformExpressions {
         // cheat code to run the query on sample table without applying weightages
@@ -37,18 +37,21 @@ object WeightageRule extends Rule[LogicalPlan] {
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
         case alias@Alias(f@Count(args), name) if !f.isInstanceOf[WeightedCount] =>
-          new Alias(WeightedCount(new CoalesceDisparateTypes(Seq(args, generatedratioExpr))),
+          new Alias(WeightedCount(new CoalesceDisparateTypes(Seq(args, generatedRatioExpr))),
             name)(alias.exprId, alias.qualifiers, alias.explicitMetadata)
         case alias@Alias(f@Sum(args), name) if !f.isInstanceOf[WeightedSum] =>
-          new Alias(WeightedSum(Multiply(args, generatedratioExpr)), name)(alias.exprId,
+          new Alias(WeightedSum(Multiply(args, generatedRatioExpr)), name)(alias.exprId,
             alias.qualifiers, alias.explicitMetadata)
         case alias@Alias(f@Average(args), name) if !f.isInstanceOf[WeightedAverage] =>
           //TODO: Check if the type conversion to double works for DecimalType as well.
           new Alias(WeightedAverage(
-            Coalesce(Seq(Cast(args, DoubleType), generatedratioExpr))), name)(alias.exprId,
+            Coalesce(Seq(Cast(args, DoubleType), generatedRatioExpr))), name)(alias.exprId,
                 alias.qualifiers, alias.explicitMetadata)
-        case alias@Alias(f@ErrorSum(child, confidence, isDefault), name) =>
-          alias
+        case alias@Alias(e@ErrorEstimateAggregate(child, confidence, ratioExpr,
+        isDefault, aggType), name) if e.ratioExpr == null =>
+          new Alias(ErrorEstimateAggregate(child, confidence, generatedRatioExpr,
+            isDefault, aggType), name)(alias.exprId, alias.qualifiers,
+                alias.explicitMetadata)
       }
   }
 }
@@ -111,11 +114,9 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
       val right = value & 0xffffffffL
 
       if (left != 0) right.toDouble / left
-      else {
-        0.0
-      }
+      else 1.0
     } else {
-      0.0
+      1.0
     }
   }
 }
@@ -136,22 +137,19 @@ class WeightedCount(child: Expression) extends Count(child) with trees.UnaryNode
   override def newInstance(): CountFunction = new WeightedCountFunction(child, this)
 }
 
-class WeightedCountFunction(override val expr: Expression, override val base: AggregateExpression)
+class WeightedCountFunction(override val expr: Expression,
+    override val base: AggregateExpression)
     extends CountFunction(expr, base) {
   def this() = this(null, null) // Required for serialization.
 
-  var countDouble: Double = _
+  var countDouble: Double = 0.0
   val expr0 = expr.asInstanceOf[CoalesceDisparateTypes].children.head
-  val expr1 = expr.asInstanceOf[CoalesceDisparateTypes].children(1)
+  val expr1 = expr.asInstanceOf[CoalesceDisparateTypes].children(1).
+      asInstanceOf[MapColumnToWeight]
 
   override def update(input: Row): Unit = {
-
-    val evaluatedExpr0 = expr0.eval(input)
-    val evaluatedExpr1 = expr1.eval(input)
-    if (evaluatedExpr0 != null) {
-      evaluatedExpr1 match {
-        case d: Double => countDouble += d
-      }
+    if (expr0.eval(input) != null) {
+      countDouble += expr1.eval(input)
     }
   }
 
