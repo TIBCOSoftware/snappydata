@@ -91,6 +91,13 @@ private[sql] class InMemoryAppendableRelation
     _cachedBufferList += batch
   }
 
+  def truncate() = writeLock {
+    for(batch <- _cachedBufferList) {
+      batch.unpersist(true)
+    }
+    _cachedBufferList.clear()
+  }
+
   override def recache(): Unit = {
     sys.error(
       s"InMemoryAppendableRelation: unexpected call to recache for $tableName")

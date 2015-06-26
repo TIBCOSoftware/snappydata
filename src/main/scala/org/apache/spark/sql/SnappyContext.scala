@@ -144,7 +144,21 @@ class SnappyContext(sc: SparkContext)
     }
   }
 
-  def registerTable[A <: Product : u.TypeTag](tableName: String) {
+  def truncateTable(tableName: String): Unit = {
+
+    val relation = cacheManager.lookupCachedData(catalog.lookupRelation(
+      Seq(tableName))).getOrElse {
+      null
+    }
+
+    if (relation != null) {
+      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
+        truncate()
+    }
+  }
+
+
+  def registerTable[A <: Product : u.TypeTag](tableName: String) = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
           "Mention type information for e.g. registerSampleTableOn[<class>]")

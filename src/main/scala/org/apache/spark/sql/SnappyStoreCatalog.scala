@@ -39,11 +39,21 @@ class SnappyStoreCatalog(context: SnappyContext,
   val topKTables = new mutable.HashMap[String, TopKDataFrame]()
 
   override def unregisterAllTables(): Unit = {
-    throw new NotImplementedError()
+    sampleTables.clear()
   }
 
   override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
-    throw new NotImplementedError()
+    val tableIdent = processTableIdentifier(tableIdentifier)
+    //val databaseName = tableIdent.lift(tableIdent.size - 2).getOrElse(
+    //  currentDatabase)
+    val tblName = tableIdent.last
+    if (sampleTables.contains(tblName)) {
+      context.truncateTable(tblName)
+      sampleTables -= tblName
+      return
+    }
+
+    super.unregisterTable(tableIdentifier)
   }
 
   override def lookupRelation(tableIdentifier: Seq[String],
