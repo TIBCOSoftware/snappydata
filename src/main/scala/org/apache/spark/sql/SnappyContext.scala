@@ -103,15 +103,7 @@ class SnappyContext(sc: SparkContext)
       val timeInterval = topkWrapper.timeInterval
       val topK = topkWrapper.size
       tDF.foreachPartition(rowIterator => {
-        val topkhokusai = TopKHokusai(name, topkWrapper.confidence,
-          topkWrapper.eps, topkWrapper.size, topkWrapper.timeInterval)
-        val data = (rowIterator map (r => {
-
-          r.get(r.fieldIndex(topkWrapper.key.name))
-        })).toSeq
-        // TODO: Currently a batch of data is creating a new interval. This
-        // TODO: needs to be fixed.
-        topkhokusai.addEpochData(data)
+        addHokusaiData(name, topkWrapper, rowIterator)
       })
 
     }
@@ -126,6 +118,16 @@ class SnappyContext(sc: SparkContext)
       }
     }
 
+  }
+
+  def addHokusaiData(name: String, topkWrapper: TopKHokusaiWrapper[_], rowIterator: Iterator[Row]): Unit = {
+    val topkhokusai = TopKHokusai(name, topkWrapper.confidence,
+      topkWrapper.eps, topkWrapper.size, topkWrapper.timeInterval)
+    val data = (rowIterator map (r => {
+
+      r.get(r.fieldIndex(topkWrapper.key.name))
+    })).toSeq
+    topkhokusai.addEpochData(data)
   }
 
   def appendToCache(df: DataFrame, tableName: String) {
@@ -450,6 +452,18 @@ private[sql] case class SnappyOperations(context: SnappyContext,
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
     new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan)())
+
+
+  def createTopK(name: String, options: Map[String, Any]): Unit =  {
+    val schema = df.logicalPlan.schema
+    val topkWrapper= TopKHokusaiWrapper(name, options, schema)
+    context.catalog.topKStructures.put(name, topkWrapper)
+
+    df.foreachPartition((x:Iterator[Row]) => {
+      context.addHokusaiData(name, topkWrapper, x)
+    })
+  }
+
 
   /**
    * Table must be registered using #registerSampleTable.
