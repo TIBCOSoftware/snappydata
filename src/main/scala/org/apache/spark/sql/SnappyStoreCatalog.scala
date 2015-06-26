@@ -6,7 +6,7 @@ import scala.language.implicitConversions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.LogicalRDD
+import org.apache.spark.sql.execution.{StratifiedSample, LogicalRDD}
 import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, sql}

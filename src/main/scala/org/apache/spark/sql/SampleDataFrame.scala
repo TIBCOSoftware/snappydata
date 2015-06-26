@@ -7,6 +7,7 @@ import org.apache.spark.partial.StudentTCacher
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.collection.{MultiColumnOpenHashMap, Utils}
+import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.types.{DoubleType, NumericType, StructType}
 import org.apache.spark.util.StatCounter
 
@@ -56,8 +57,7 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
       }
       if (groupByIndices.size == qcs.length) qcs
       else groupByIndices.toSeq.sorted.toArray
-    }
-    else qcs
+    } else qcs
 
     mapPartitions { rows =>
       // group by column map
@@ -106,7 +106,7 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
     stats.mapValues { stat =>
       val nsamples = stat.count
       val mean = stat.mean
-      val stdev = math.sqrt(stat.sampleVariance / nsamples)
+      val stdev = math.sqrt(stat.variance / nsamples)
       val errorEstimate = tcache.get(nsamples) * stdev
       val percentError = (errorEstimate * 100.0) / math.abs(mean)
       (mean, stdev, errorEstimate, percentError)

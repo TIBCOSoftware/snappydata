@@ -4,12 +4,13 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.trees
+import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SampleDataFrame, StratifiedSample}
+import org.apache.spark.sql.SampleDataFrame
 
 object WeightageRule extends Rule[LogicalPlan] {
-  // Transform the plan to changed the aggregates to weighted aggregates. The hidden column is
-  // pulled from the StratifiedSample
+  // Transform the plan to changed the aggregates to weighted aggregates.
+  // The hidden column is pulled from the StratifiedSample
   def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
     case aggr: Aggregate =>
       val isStratifiedSample = aggr find {
@@ -19,7 +20,7 @@ object WeightageRule extends Rule[LogicalPlan] {
       val hiddenCol = isStratifiedSample match {
         case Some(stratifiedSample) =>
           stratifiedSample.asInstanceOf[StratifiedSample].output.
-            find(p => {
+              find(p => {
             p.name == SampleDataFrame.WEIGHTAGE_COLUMN_NAME
           }).getOrElse(throw new IllegalStateException(
             "Hidden column for ratio not found."))
@@ -31,7 +32,7 @@ object WeightageRule extends Rule[LogicalPlan] {
 
       aggr transformExpressions {
         // cheat code to run the query on sample table without applying weightages
-        case alias@Alias(_,name) if name.startsWith("cheat_sample") =>
+        case alias@Alias(_, name) if name.startsWith("cheat_sample") =>
           alias
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
@@ -45,7 +46,9 @@ object WeightageRule extends Rule[LogicalPlan] {
           //TODO: Check if the type conversion to double works for DecimalType as well.
           new Alias(WeightedAverage(
             Coalesce(Seq(Cast(args, DoubleType), generatedratioExpr))), name)(alias.exprId,
-              alias.qualifiers, alias.explicitMetadata)
+                alias.qualifiers, alias.explicitMetadata)
+        case alias@Alias(f@ErrorSum(child, confidence, isDefault), name) =>
+          alias
       }
   }
 }
@@ -65,7 +68,7 @@ case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression 
 
   override def eval(input: Row): Any = {
     throw new IllegalStateException("Children of CoalesceDisparateTypes " +
-      "should be evaluated by its parent based on their types")
+        "should be evaluated by its parent based on their types")
   }
 }
 
@@ -134,7 +137,7 @@ class WeightedCount(child: Expression) extends Count(child) with trees.UnaryNode
 }
 
 class WeightedCountFunction(override val expr: Expression, override val base: AggregateExpression)
-  extends CountFunction(expr, base) {
+    extends CountFunction(expr, base) {
   def this() = this(null, null) // Required for serialization.
 
   var countDouble: Double = _
@@ -156,7 +159,7 @@ class WeightedCountFunction(override val expr: Expression, override val base: Ag
 }
 
 class WeightedAverage(child: Expression)
-  extends Average(child) with trees.UnaryNode[Expression] {
+    extends Average(child) with trees.UnaryNode[Expression] {
 
   override def toString: String = s"WeightedAverage($child)"
 
@@ -164,10 +167,12 @@ class WeightedAverage(child: Expression)
 
     val children = child.asInstanceOf[Coalesce].children
     child.dataType match {
-      //TODO: Given that the child will always have the data type of double, Is this block really required?
+      //TODO: Given that the child will always have the data type of double,
+      // Is this block really required?
       case DecimalType.Fixed(_, _) | DecimalType.Unlimited =>
         // Turn the child to unlimited decimals for calculation, before going back to fixed
-        val partialSum = Alias(Sum(Multiply(Cast(child, DecimalType.Unlimited), children(1))), "PartialSum")()
+        val partialSum = Alias(Sum(Multiply(Cast(child, DecimalType.Unlimited),
+          children(1))), "PartialSum")()
         val partialCount = Alias(WeightedCount(
           new CoalesceDisparateTypes(Seq(children.head, children(1)))), "PartialCount")()
 
@@ -191,5 +196,6 @@ class WeightedAverage(child: Expression)
   }
 
   override def newInstance(): AverageFunction =
-    throw new IllegalStateException("Average uses a combination of sum and count and not an Average function")
+    throw new IllegalStateException("Average uses a combination of sum " +
+        "and count and not an Average function")
 }

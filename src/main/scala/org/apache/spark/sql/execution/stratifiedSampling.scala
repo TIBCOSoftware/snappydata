@@ -8,19 +8,51 @@ import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{GenericMutableRow, GenericRow, MutableRow}
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{AnalysisException, Row, SampleDataFrame}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
+case class StratifiedSample(var options: Map[String, Any],
+    @transient override val child: logical.LogicalPlan)
+    // pre-compute QCS because it is required by
+    // other API driven from driver
+    (val qcs: Array[Int] = SampleDataFrame.resolveQCS(
+      options, child.schema.fieldNames))
+    extends logical.UnaryNode {
+
+  /**
+   * StratifiedSample will add one additional column for the ratio of total
+   * rows seen for a stratum to the number of samples picked.
+   */
+  override val output = child.output :+ AttributeReference(
+    SampleDataFrame.WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
+
+  override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
+
+  /**
+   * Perform stratified sampling given a Query-Column-Set (QCS). This variant
+   * can also use a fixed fraction to be sampled instead of fixed number of
+   * total samples since it is also designed to be used with streaming data.
+   */
+  case class Execute(override val child: SparkPlan,
+      override val output: Seq[Attribute]) extends UnaryNode {
+
+    protected override def doExecute(): RDD[Row] =
+      new StratifiedSampledRDD(child.execute(), qcs,
+        sqlContext.conf.columnBatchSize, options, schema)
+  }
+
+  def getExecution(plan: SparkPlan) = Execute(plan, output)
+}
+
 private final class ExecutorPartitionInfo(val blockId: BlockManagerId,
     val remainingMem: Long, var remainingPartitions: Double)
     extends java.lang.Comparable[ExecutorPartitionInfo] {
-
-  val hostExecutorId = Utils.getHostExecutorId(blockId)
 
   /** update "remainingPartitions" and enqueue again */
   def usePartition(queue: java.util.PriorityQueue[ExecutorPartitionInfo],
@@ -43,7 +75,7 @@ final class SamplePartition(val parent: Partition, override val index: Int,
 
   val blockId = _partInfo.blockId
 
-  @transient val hostExecutorId = _partInfo.hostExecutorId
+  def hostExecutorId = Utils.getHostExecutorId(blockId)
 
   override def toString =
     s"SamplePartition($index, $blockId, isLast=$isLastHostPartition)"
