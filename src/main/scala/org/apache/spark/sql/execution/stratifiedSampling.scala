@@ -1,7 +1,7 @@
 package org.apache.spark.sql.execution
 
 import java.util.Random
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean, AtomicInteger, AtomicLong}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -456,32 +456,14 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
 
   /**
    * Store pending values to be flushed in a separate buffer so that we
-   * do not end up creating too small CachedBatches
+   * do not end up creating too small CachedBatches.
+   *
+   * Note that this mini-cache is copy-on-write (to avoid copy-on-read for
+   * readers) so the buffer inside should never be changed rather the whole
+   * buffer replaced if required. This should happen only inside flushCache.
    */
-  protected final val pendingBatch = new mutable.ArrayBuffer[Row] {
-
-    private final val lock = new ReentrantReadWriteLock()
-
-    def readLock[U](f: => U): U = {
-      val rlock = lock.readLock()
-      rlock.lock()
-      try {
-        f
-      } finally {
-        rlock.unlock()
-      }
-    }
-
-    def writeLock[U](f: => U): U = {
-      val wlock = lock.writeLock()
-      wlock.lock()
-      try {
-        f
-      } finally {
-        wlock.unlock()
-      }
-    }
-  }
+  protected final val pendingBatch = new AtomicReference[
+      mutable.ArrayBuffer[Row]](new mutable.ArrayBuffer[Row])
 
   protected def strataReservoirSize: Int
 
@@ -531,8 +513,9 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
         }
         sampleBuffer.iterator
       }
-    } ++ pendingBatch.readLock {
-      if (pendingBatch.nonEmpty) pendingBatch.toArray.iterator
+    } ++ {
+      val pbatch = this.pendingBatch.get()
+      if (pbatch.nonEmpty) pbatch.iterator
       else Iterator.empty
     }
   }

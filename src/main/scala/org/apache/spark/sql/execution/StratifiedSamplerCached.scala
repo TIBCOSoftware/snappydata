@@ -209,8 +209,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         }
         timeSlotSamples = 0
       }
-    }
-    else {
+    } else {
       // increase the cacheSize for future data but not much beyond
       // cacheBatchSize
       val newCacheSize = prevCacheSize + (prevCacheSize >>> 1)
@@ -224,26 +223,26 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     // in case rows to be flushed do not fall into >50% of cacheBatchSize
     // then flush into pending list instead
     val batchSize = this.cacheBatchSize
-    val pendingBatch = this.pendingBatch
 
     def processSegment(cacheSize: Int, fullReset: Boolean) =
       foldDrainSegment(cacheSize, fullReset, process) _
 
-    val result = pendingBatch.writeLock {
+    val result = pendingBatch.synchronized {
       if (batchSize > 0) {
+        val pbatch = pendingBatch.get()
         // flush the pendingBatch at this point if possible
-        val pendingLen = pendingBatch.length
+        val pendingLen = pbatch.length
         val totalSamples = pendingLen + nsamples
         if (((totalSamples % batchSize) << 1) > batchSize) {
           // full flush of samples and pendingBatch
-          val u = pendingBatch.foldLeft(init)(process)
-          pendingBatch.clear()
+          val u = pbatch.foldLeft(init)(process)
+          val newPBatch = new mutable.ArrayBuffer[Row](pendingLen)
+          pendingBatch.set(newPBatch)
           endBatch(segs.foldLeft(u)(processSegment(prevCacheSize, fullReset)))
-        }
-        else if ((totalSamples << 1) > batchSize) {
+        } else if ((totalSamples << 1) > batchSize) {
           // some batches can be flushed but rest to be moved to pendingBatch
-          val u = pendingBatch.foldLeft(init)(process)
-          pendingBatch.clear()
+          val u = pbatch.foldLeft(init)(process)
+          val newPBatch = new mutable.ArrayBuffer[Row](pendingLen)
           // now apply process on the reservoir cache as much as required
           // (as per the maximum multiple of batchSize) and copy remaining
           // into pendingBatch
@@ -265,17 +264,23 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
               pendingLen
           assert(numToFlush >= 0,
             s"StratifiedSampler: unexpected numToFlush=$numToFlush")
-          endBatch(segs.foldLeft(u)(processAndCopyToBuffer(prevCacheSize,
-            fullReset, numToFlush, pendingBatch)))
-        }
-        else {
-          // move collected samples into pendingBatch
-          segs.foldLeft(pendingBatch)(foldDrainSegment(prevCacheSize,
+          val res = endBatch(segs.foldLeft(u)(processAndCopyToBuffer(
+            prevCacheSize, fullReset, numToFlush, newPBatch)))
+          // pendingBatch is COW so need to replace in final shape
+          pendingBatch.set(newPBatch)
+          res
+        } else {
+          // copy existing to newBatch
+          val newPBatch = new mutable.ArrayBuffer[Row](pendingLen)
+          pbatch.copyToBuffer(newPBatch)
+          // move collected samples into new pendingBatch
+          segs.foldLeft(newPBatch)(foldDrainSegment(prevCacheSize,
             fullReset, _ += _))
+          // pendingBatch is COW so need to replace in final shape
+          pendingBatch.set(newPBatch)
           init
         }
-      }
-      else {
+      } else {
         endBatch(segs.foldLeft(init)(processSegment(prevCacheSize, fullReset)))
       }
     }
@@ -321,16 +326,14 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
 
       if (sbuffer.nonEmpty) {
         (sbuffer.iterator, false)
-      }
-      else if (finished || !flush) {
+      } else if (finished || !flush) {
         // if required notify any other waiting samplers that iteration is done
         if (numSamplers.decrementAndGet() == 1) numSamplers.synchronized {
           numSamplers.notifyAll()
         }
         (GenerateFlatIterator.TERMINATE, true)
-      }
-      // flush == true
-      else {
+      } else {
+        // flush == true
         // wait for all other partitions to flush the cache
         waitForSamplers(1, 5000)
         setFlushStatus(true)

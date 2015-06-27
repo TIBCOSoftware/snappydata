@@ -158,8 +158,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     added
   }
 
-  final def bulkChangeValues(ks: TraversableOnce[K],
-      change: ChangeValue[K, V]): Unit = {
+  final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V]) {
     val segs = this._segments
     val segShift = _segmentShift
     val segMask = _segmentMask
@@ -173,7 +172,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     var numAdded = 0
 
     // split into max batch sizes to avoid buffering up too much
-    val iter = new SlicedIterator[K](ks.toIterator, 0, MAX_BULK_INSERT_SIZE)
+    val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
     while (iter.hasNext) {
       iter.foreach { k =>
         val hash = if (hasher != null) hasher(k) else k.##
