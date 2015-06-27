@@ -248,8 +248,14 @@ class SnappyContext(sc: SparkContext)
   }
 
   def queryTopK(topkName : String,
-                startTime : Long, endTime: Long) : RDD[Row]  = {
-    val k = catalog.topKStructures(topkName).size
+                startTime : Long = Long.MinValue,
+                endTime: Long = Long.MaxValue) : RDD[Row]  = {
+    val k: TopKHokusaiWrapper[_] = catalog.topKStructures(topkName)
+    if (k.timeInterval == Long.MaxValue &&
+      (endTime != Long.MaxValue || startTime != Long.MinValue))
+      throw new IllegalStateException ("start and end time cannot be specified while " +
+        "querying a topk created over a dataframe ")
+
     (new TopkResultRDD(topkName, startTime, endTime)(this)) reduceByKey
       ( _ + _ ) sortBy( x => { x._2 }, false ) map (Row.fromTuple(_))
   }
@@ -456,7 +462,14 @@ private[sql] case class SnappyOperations(context: SnappyContext,
 
   def createTopK(name: String, options: Map[String, Any]): Unit =  {
     val schema = df.logicalPlan.schema
-    val topkWrapper= TopKHokusaiWrapper(name, options, schema)
+
+    if (options exists { _._1.toLowerCase.equals("timeinterval") })
+      throw new IllegalStateException("timeInterval cannot be specified " +
+        "when creating a Topk over dataframe")
+
+
+    // Create a very long timeinterval when the topk is being created on a dataframe.
+    val topkWrapper= TopKHokusaiWrapper(name, options  +  ("timeinterval" -> Long.MaxValue.toString), schema)
     context.catalog.topKStructures.put(name, topkWrapper)
 
     df.foreachPartition((x:Iterator[Row]) => {

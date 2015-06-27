@@ -10,7 +10,8 @@ import org.apache.spark.sql.types.{ StructField, StructType }
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
-class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long,
+class
+TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long,
   val topKActual: Int, startIntervalGenerator: Boolean = true)
   extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
   val topKInternal = topKActual * 2
@@ -452,8 +453,6 @@ object TopKHokusai {
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
-            // TODO: why is seed needed as an input param
-
             val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
             val width = Math.ceil(2 / eps).toInt
 
