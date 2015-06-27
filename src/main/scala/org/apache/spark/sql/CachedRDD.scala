@@ -1,6 +1,8 @@
 package org.apache.spark.sql
 
-import org.apache.spark.rdd.RDD
+import scala.reflect.ClassTag
+
+import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.StratifiedSampler
 import org.apache.spark.sql.types.StructType
@@ -52,6 +54,17 @@ class CachedBlockPartition(override val index: Int, val blockId: BlockManagerId)
   def hostExecutorId = Utils.getHostExecutorId(blockId)
 
   override def toString = s"CachedBlockPartition($index, $blockId)"
+}
+
+private[sql] class CachedMapPartitionsRDD[U: ClassTag, T: ClassTag](
+    prev: RDD[T],
+    f: (TaskContext, Int, Iterator[T]) => Iterator[U],
+    preservesPartitioning: Boolean = false)
+    extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
+
+  // TODO [sumedh] why doesn't the standard MapPartitionsRDD do this???
+  override def getPreferredLocations(split: Partition) =
+    firstParent[T].preferredLocations(split)
 }
 
 class DummyRDD(sqlContext: SQLContext)

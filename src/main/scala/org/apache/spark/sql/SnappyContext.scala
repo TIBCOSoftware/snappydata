@@ -151,18 +151,10 @@ class SnappyContext(sc: SparkContext)
   }
 
   def truncateTable(tableName: String): Unit = {
-
-    val relation = cacheManager.lookupCachedData(catalog.lookupRelation(
-      Seq(tableName))).getOrElse {
-      null
-    }
-
-    if (relation != null) {
-      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
-        truncate()
-    }
+    cacheManager.lookupCachedData(catalog.lookupRelation(
+      Seq(tableName))).foreach(_.cachedRepresentation.
+        asInstanceOf[InMemoryAppendableRelation].truncate())
   }
-
 
   def registerTable[A <: Product : u.TypeTag](tableName: String) = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {

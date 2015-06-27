@@ -151,8 +151,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
               // executorId not found so return all executors for its host
               case None => executors
             }
-          }
-          else {
+          } else {
             peerExecutorMap.getOrElse(loc, Iterator.empty)
           }
           // reduceLeft below will find the executor with max number of
@@ -384,20 +383,16 @@ object StratifiedSampler {
       timeInterval: Int, schema: StructType) = {
     if (qcs.isEmpty) {
       throw new AnalysisException(SampleDataFrame.ERROR_NO_QCS)
-    }
-    else if (tsCol >= 0 && timeInterval <= 0) {
+    } else if (tsCol >= 0 && timeInterval <= 0) {
       throw new AnalysisException("StratifiedSampler: no timeInterval for " +
           "timeSeriesColumn=" + schema(tsCol).name)
-    }
-    else if (fraction > 0.0) {
+    } else if (fraction > 0.0) {
       new StratifiedSamplerCached(qcs, name, schema,
         new AtomicInteger(strataSize), fraction, cacheBatchSize,
         tsCol, timeInterval)
-    }
-    else if (strataSize > 0) {
+    } else if (strataSize > 0) {
       new StratifiedSamplerReservoir(qcs, name, schema, strataSize)
-    }
-    else {
+    } else {
       throw new AnalysisException("StratifiedSampler: " +
           s"'fraction'=$fraction 'strataReservoirSize'=$strataSize")
     }

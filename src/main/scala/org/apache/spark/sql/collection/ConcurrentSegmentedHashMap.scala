@@ -218,8 +218,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
                   if (change.segmentAbort(seg)) {
                     // break out of loop when segmentAbort returns true
                     idx = nhashes
-                  }
-                  else {
+                  } else {
                     idx += 1
                   }
                 } finally {
@@ -317,8 +316,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       val buffer = new mutable.ArrayBuffer[(K, V)](size.toInt)
       foldEntriesRead[Unit]((), true, { (k, v, u) => buffer += ((k, v)) })
       buffer
-    }
-    else {
+    } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
           " is greater than maximum integer so cannot be converted to a flat Seq")
     }
@@ -330,8 +328,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       val buffer = new mutable.ArrayBuffer[V](size.toInt)
       foldValuesRead[Unit]((), { (v, u) => buffer += v })
       buffer
-    }
-    else {
+    } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
           " is greater than maximum integer so cannot be converted to a flat Seq")
     }
@@ -343,8 +340,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       val buffer = new mutable.ArrayBuffer[K](size.toInt)
       foldEntriesRead[Unit]((), true, { (k, v, u) => buffer += k })
       buffer
-    }
-    else {
+    } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
           " is greater than maximum integer so cannot be converted to a flat Seq")
     }

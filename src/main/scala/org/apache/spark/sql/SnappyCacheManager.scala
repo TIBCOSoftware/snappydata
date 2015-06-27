@@ -1,5 +1,6 @@
 package org.apache.spark.sql
 
+import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.storage.StorageLevel
 
 /**
@@ -23,13 +24,17 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
       logWarning("SnappyCacheManager: asked to cache already cached data.")
     }
     else {
+      val isSampledTable = query.logicalPlan match {
+        case s: StratifiedSample => true
+        case _ => false
+      }
       cachedData += execution.CachedData(query.logicalPlan,
         columnar.InMemoryAppendableRelation(
           sqlContext.conf.useCompression,
           sqlContext.conf.columnBatchSize,
           storageLevel,
           query.queryExecution.executedPlan,
-          tableName))
+          tableName, isSampledTable))
     }
   }
 }
