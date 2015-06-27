@@ -470,7 +470,7 @@ object TopKHokusai {
 
 class TopKHokusaiWrapper[T](val name: String, val confidence: Double, val eps: Double,
   val size: Int, val timeInterval: Long,
-  val schema: StructType, val key: StructField) extends Serializable
+  val schema: StructType, val key: StructField, val frequencyCol: Option[StructField]) extends Serializable
 
 object TopKHokusaiWrapper {
 
@@ -487,6 +487,7 @@ object TopKHokusaiWrapper {
     val confidenceTest = "confidence".ci
     val epsTest = "eps".ci
     val sizeTest = "size".ci
+    val frequencyColTest = "frequencyCol".ci
 
     val cols = schema.fieldNames
 
@@ -497,48 +498,50 @@ object TopKHokusaiWrapper {
     // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
-    val (key, timeInterval, confidence, eps, size) = options.
-      foldLeft("", 5L, 0.95, 0.01, 100) {
-        case ((k, ti, cf, e, s), (opt, optV)) =>
+    val (key, timeInterval, confidence, eps, size, frequencyCol) = options.
+      foldLeft("", 5L, 0.95, 0.01, 100, "") {
+        case ((k, ti, cf, e, s, fr), (opt, optV)) =>
           opt match {
-            case keyTest() => (optV.toString, ti, cf, e, s)
+            case keyTest() => (optV.toString, ti, cf, e, s, fr)
             case confidenceTest() => optV match {
-              case fd: Double => (k, ti, fd, e, s)
-              case fs: String => (k, ti, fs.toDouble, e, s)
-              case ff: Float => (k, ti, ff.toDouble, e, s)
-              case fi: Int => (k, ti, fi.toDouble, e, s)
-              case fl: Long => (k, ti, fl.toDouble, e, s)
+              case fd: Double => (k, ti, fd, e, s, fr)
+              case fs: String => (k, ti, fs.toDouble, e, s, fr)
+              case ff: Float => (k, ti, ff.toDouble, e, s, fr)
+              case fi: Int => (k, ti, fi.toDouble, e, s, fr)
+              case fl: Long => (k, ti, fl.toDouble, e, s, fr)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse double 'confidence'=$optV")
             }
             case epsTest() => optV match {
-              case fd: Double => (k, ti, cf, fd, s)
-              case fs: String => (k, ti, cf, fs.toDouble, s)
-              case ff: Float => (k, ti, cf, ff.toDouble, s)
-              case fi: Int => (k, ti, cf, fi.toDouble, s)
-              case fl: Long => (k, ti, cf, fl.toDouble, s)
+              case fd: Double => (k, ti, cf, fd, s, fr)
+              case fs: String => (k, ti, cf, fs.toDouble, s, fr)
+              case ff: Float => (k, ti, cf, ff.toDouble, s, fr)
+              case fi: Int => (k, ti, cf, fi.toDouble, s, fr)
+              case fl: Long => (k, ti, cf, fl.toDouble, s, fr)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse double 'eps'=$optV")
             }
 
             case timeIntervalTest() => optV match {
-              case si: Int => (k, si.toLong, cf, e, s)
-              case ss: String => (k, ss.toLong, cf, e, s)
-              case sl: Long => (k, sl, cf, e, s)
+              case si: Int => (k, si.toLong, cf, e, s, fr)
+              case ss: String => (k, ss.toLong, cf, e, s, fr)
+              case sl: Long => (k, sl, cf, e, s, fr)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'timeInterval'=$optV")
             }
             case sizeTest() => optV match {
-              case si: Int => (k, ti, cf, e, si)
-              case ss: String => (k, ti, cf, e, ss.toInt)
-              case sl: Long => (k, ti, cf, e, sl.toInt)
+              case si: Int => (k, ti, cf, e, si, fr)
+              case ss: String => (k, ti, cf, e, ss.toInt, fr)
+              case sl: Long => (k, ti, cf, e, sl.toInt, fr)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")
             }
+            case frequencyColTest() => (k, ti, cf, e, s, optV.toString)
           }
       }
     new TopKHokusaiWrapper(name, confidence, eps, size, timeInterval,
-      schema, schema(key))
+      schema, schema(key),
+      (if (frequencyCol.equals("")) None else Some(schema(frequencyCol))))
 
   }
 

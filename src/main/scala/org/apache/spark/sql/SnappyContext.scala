@@ -123,11 +123,16 @@ class SnappyContext(sc: SparkContext)
   def addHokusaiData(name: String, topkWrapper: TopKHokusaiWrapper[_], rowIterator: Iterator[Row]): Unit = {
     val topkhokusai = TopKHokusai(name, topkWrapper.confidence,
       topkWrapper.eps, topkWrapper.size, topkWrapper.timeInterval)
-    val data = (rowIterator map (r => {
-
-      r.get(r.fieldIndex(topkWrapper.key.name))
-    })).toSeq
-    topkhokusai.addEpochData(data)
+    topkWrapper.frequencyCol match {
+      case None => topkhokusai.addEpochData ((rowIterator map (r => {
+        r.get (r.fieldIndex (topkWrapper.key.name) )
+      }) ).toSeq)
+      case Some(freqCol) =>
+        topkhokusai.addEpochData ((rowIterator map (r => {
+          (r.get (r.fieldIndex (topkWrapper.key.name) ),
+            (r.get(r.fieldIndex(freqCol.name))).asInstanceOf[Number].longValue())
+        }) ).toMap)
+    }
   }
 
   def appendToCache(df: DataFrame, tableName: String) {
@@ -258,6 +263,7 @@ class SnappyContext(sc: SparkContext)
 
     (new TopkResultRDD(topkName, startTime, endTime)(this)) reduceByKey
       ( _ + _ ) sortBy( x => { x._2 }, false ) map (Row.fromTuple(_))
+
   }
 }
 
