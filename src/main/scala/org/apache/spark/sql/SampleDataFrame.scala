@@ -8,8 +8,8 @@ import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.collection.{MultiColumnOpenHashMap, Utils}
 import org.apache.spark.sql.execution.StratifiedSample
+import org.apache.spark.sql.sources.StatCounter
 import org.apache.spark.sql.types.{DoubleType, NumericType, StructType}
-import org.apache.spark.util.StatCounter
 
 /**
  * Encapsulates a DataFrame created after stratified sampling.

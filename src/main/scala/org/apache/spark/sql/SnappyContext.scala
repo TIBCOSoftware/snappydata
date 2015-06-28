@@ -8,11 +8,11 @@ import scala.reflect.runtime.{universe => u}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources.{StreamStrategy, WeightageRule}
@@ -68,8 +68,8 @@ class SnappyContext(sc: SparkContext)
     })
   }
 
-  // TODO: do we really need a CatalystConverter below and in appendToCache??
-  def collectSamples(tDF: DataFrame, sampleTab: Seq[String]) {
+  def collectSamples(tDF: DataFrame, sampleTab: Seq[String],
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
@@ -93,9 +93,8 @@ class SnappyContext(sc: SparkContext)
           // create a new holder for set of CachedBatches
           val batches = InMemoryAppendableRelation(useCompression,
             columnBatchSize, name, schema, output)
-          sampler.append(rowIterator,
-            CatalystTypeConverters.createToCatalystConverter(schema),
-            (), batches.appendRow, batches.endRows)
+          sampler.append(rowIterator, null, (),
+            batches.appendRow, batches.endRows)
           batches.forceEndOfBatch().iterator
         }))
     }
@@ -118,7 +117,7 @@ class SnappyContext(sc: SparkContext)
     // TODO: avoid a separate job for each RDD and instead try to do it
     // TODO: using a single UnionRDD or something
     rdds.foreach { case (relation, rdd) =>
-      val cached = rdd.persist(StorageLevel.MEMORY_AND_DISK)
+      val cached = rdd.persist(storageLevel)
       if (cached.count() > 0) {
         relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
       }
@@ -149,7 +148,8 @@ class SnappyContext(sc: SparkContext)
     }
   }
 
-  def appendToCache(df: DataFrame, tableName: String) {
+  def appendToCache(df: DataFrame, tableName: String,
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
@@ -158,7 +158,7 @@ class SnappyContext(sc: SparkContext)
       val lookup = catalog.lookupRelation(Seq(tableName))
       cacheManager.cacheQuery(
         DataFrame(this, lookup),
-        Some(tableName), StorageLevel.MEMORY_AND_DISK)
+        Some(tableName), storageLevel)
 
       cacheManager.lookupCachedData(lookup).getOrElse {
         sys.error(s"couldn't cache table $tableName")
@@ -172,15 +172,10 @@ class SnappyContext(sc: SparkContext)
       val batches = InMemoryAppendableRelation(useCompression,
         columnBatchSize, tableName, schema, output)
 
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-
-      rowIterator foreach { r =>
-        batches.appendRow((), converter(r).asInstanceOf[Row])
-      }
-
+      rowIterator.foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
 
-    }.persist(StorageLevel.MEMORY_AND_DISK)
+    }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {

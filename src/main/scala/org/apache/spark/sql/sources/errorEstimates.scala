@@ -9,7 +9,6 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.trees
 import org.apache.spark.sql.types._
-import org.apache.spark.util.StatCounter
 
 case class ErrorEstimateAggregate(child: Expression, confidence: Double,
     ratioExpr: MapColumnToWeight, isDefault: Boolean,
@@ -51,19 +50,32 @@ object ErrorAggregate extends Enumeration {
 }
 
 final class StatCounterWithFullCount(var weightedCount: Double = 0.0)
-    extends StatCounter with Serializable {
+    extends StatVarianceCounter with Serializable {
 
-  override def merge(other: StatCounter): StatCounterWithFullCount = {
+  override protected def mergeDistinctCounter(other: StatVarianceCounter) {
     super.merge(other)
     other match {
       case s: StatCounterWithFullCount => weightedCount += s.weightedCount
     }
-    this
   }
 
   def merge(other: StatCounterWithFullCount) {
     super.merge(other)
     weightedCount += other.weightedCount
+  }
+
+  override def copy(): StatCounterWithFullCount = {
+    val other = new StatCounterWithFullCount
+    other.count = count
+    other.mean = mean
+    other.nvariance = nvariance
+    other.weightedCount = weightedCount
+    other
+  }
+
+  override def toString: String = {
+    "(count: %d, mean: %f, stdev: %f, weightedCount: %f)".format(count, mean,
+      stdev, weightedCount)
   }
 }
 
@@ -76,21 +88,17 @@ private[spark] case object StatCounterUDT
       StructField("count", LongType, nullable = false),
       StructField("mean", DoubleType, nullable = false),
       StructField("nvariance", DoubleType, nullable = false),
-      StructField("max", DoubleType, nullable = false),
-      StructField("min", DoubleType, nullable = false),
       StructField("weightedCount", DoubleType, nullable = false)))
   }
 
   override def serialize(obj: Any): Row = {
     obj match {
       case s: StatCounterWithFullCount =>
-        val row = new GenericMutableRow(6)
+        val row = new GenericMutableRow(4)
         row.setLong(0, s.count)
         row.setDouble(1, s.mean)
-        row.setDouble(2, s.m2)
-        row.setDouble(3, s.max)
-        row.setDouble(4, s.min)
-        row.setDouble(5, s.weightedCount)
+        row.setDouble(2, s.nvariance)
+        row.setDouble(3, s.weightedCount)
         row
       // due to bugs in UDT serialization (SPARK-7186)
       case row: Row => row
@@ -101,11 +109,10 @@ private[spark] case object StatCounterUDT
     datum match {
       case row: Row =>
         require(row.length == 6, "StatCounterUDT.deserialize given row " +
-            s"with length ${row.length} but requires length == 6")
-        val s = new StatCounterWithFullCount(row.getDouble(5))
+            s"with length ${row.length} but requires length == 4")
+        val s = new StatCounterWithFullCount(row.getDouble(3))
         s.init(count = row.getLong(0), mean = row.getDouble(1),
-          nvariance = row.getDouble(2), max = row.getDouble(3),
-          min = row.getDouble(4))
+          nvariance = row.getDouble(2))
         s
       // due to bugs in UDT serialization (SPARK-7186)
       case s: StatCounterWithFullCount => s
