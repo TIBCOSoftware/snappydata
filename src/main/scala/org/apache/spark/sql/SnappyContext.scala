@@ -128,10 +128,18 @@ class SnappyContext(sc: SparkContext)
         r.get (r.fieldIndex (topkWrapper.key.name) )
       }) ).toSeq)
       case Some(freqCol) =>
-        topkhokusai.addEpochData ((rowIterator map (r => {
-          (r.get (r.fieldIndex (topkWrapper.key.name) ),
-            (r.get(r.fieldIndex(freqCol.name))).asInstanceOf[Number].longValue())
-        }) ).toMap)
+        var datamap = Map[Any, Long]()
+        rowIterator foreach  {r => {
+          val key = r.get (r.fieldIndex (topkWrapper.key.name))
+          datamap.get(key) match {
+            case None =>
+              datamap += (key -> (r.get(r.fieldIndex(freqCol.name))).asInstanceOf[Number].longValue())
+            case Some(prevvalue )=>
+              datamap += (key -> (prevvalue + (r.get(r.fieldIndex(freqCol.name))).asInstanceOf[Number].longValue()))
+          }
+        }
+        }
+        topkhokusai.addEpochData (datamap)
     }
   }
 
