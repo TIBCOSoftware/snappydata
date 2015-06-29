@@ -9,17 +9,17 @@ import scala.reflect.runtime.{universe => u}
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan, UnaryNode}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{LongType, StructType}
+import org.apache.spark.sql.sources.{StreamStrategy, WeightageRule}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
+import org.apache.spark.streaming.{StreamingContext, Time}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -33,7 +33,13 @@ class SnappyContext(sc: SparkContext)
   self =>
 
   @transient
-  override protected[sql] val ddlParser = new SnappyParser(sqlParser.parse)
+  override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
+
+  override protected[sql] def dialectClassName = if (conf.dialect == "sql") {
+    classOf[SnappyParserDialect].getCanonicalName
+  } else {
+    conf.dialect
+  }
 
   @transient
   override protected[sql] lazy val catalog =
@@ -183,7 +189,13 @@ class SnappyContext(sc: SparkContext)
     }
   }
 
-  def registerTable[A <: Product : u.TypeTag](tableName: String) {
+  def truncateTable(tableName: String): Unit = {
+    cacheManager.lookupCachedData(catalog.lookupRelation(
+      Seq(tableName))).foreach(_.cachedRepresentation.
+        asInstanceOf[InMemoryAppendableRelation].truncate())
+  }
+
+  def registerTable[A <: Product : u.TypeTag](tableName: String) = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
           "Mention type information for e.g. registerSampleTableOn[<class>]")
@@ -275,102 +287,6 @@ class SnappyContext(sc: SparkContext)
   }
 }
 
-private[sql] class SnappyParser(parseQuery: String => LogicalPlan)
-    extends DDLParser(parseQuery) {
-
-  override protected lazy val ddl: Parser[LogicalPlan] =
-    createTable | describeTable | refreshTable |
-        createStream | createSampled | strmctxt
-
-  protected val STREAM = Keyword("STREAM")
-  protected val SAMPLED = Keyword("SAMPLED")
-  protected val STRM = Keyword("STREAMING")
-  protected val CTXT = Keyword("CONTEXT")
-  protected val START = Keyword("START")
-  protected val STOP = Keyword("STOP")
-  protected val INIT = Keyword("INIT")
-
-
-  protected lazy val createStream: Parser[LogicalPlan] =
-    (CREATE ~> (STREAM ~> (TABLE ~> ident)) ~
-        tableCols.? ~ (OPTIONS ~> options)) ^^ {
-      case streamname ~ cols ~ opts =>
-        val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-        CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
-    }
-
-  protected lazy val createSampled: Parser[LogicalPlan] =
-    (CREATE ~> (SAMPLED ~> (TABLE ~> ident)) ~
-        (OPTIONS ~> options)) ^^ {
-      case samplename ~ opts =>
-        CreateSampledTable(samplename, new CaseInsensitiveMap(opts))
-    }
-
-  protected lazy val strmctxt: Parser[LogicalPlan] =
-    (STRM ~> CTXT ~> (
-        INIT ^^^ 0 |
-            START ^^^ 1 |
-            STOP ^^^ 2) ~ numericLit.?) ^^ {
-      case action ~ batchInterval =>
-        if (batchInterval.isDefined)
-          StreamingCtxtActions(action, Some(batchInterval.get.toInt))
-        else
-          StreamingCtxtActions(action, None)
-
-    }
-}
-
-private[sql] case class CreateStream(streamName: String,
-    userColumns: Option[StructType],
-    options: Map[String, String])
-    extends LogicalPlan with Command {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
-}
-
-private[sql] case class CreateSampledTable(streamName: String,
-    options: Map[String, String])
-    extends LogicalPlan with Command {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
-}
-
-private[sql] case class StreamingCtxtActions(action: Int,
-    batchInterval: Option[Int])
-    extends LogicalPlan with Command {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
-}
-
-private object StreamingCtxtHolder {
-
-  private val atomicContext = new AtomicReference[StreamingContext]()
-
-  def streamingContext = atomicContext.get()
-
-  def apply(sparkCtxt: SparkContext,
-      duration: Int): StreamingContext = {
-    val context = atomicContext.get
-    if (context != null) {
-      context
-    }
-    else {
-      atomicContext.compareAndSet(null,
-        new StreamingContext(sparkCtxt, Seconds(duration)))
-      atomicContext.get
-    }
-  }
-}
-
 object snappy extends Serializable {
 
   implicit def snappyOperationsOnDataFrame(df: DataFrame): SnappyOperations = {
@@ -422,41 +338,6 @@ object SnappyContext {
       atomicContext.get
     }
   }
-}
-
-case class
-StratifiedSample(var options: Map[String, Any],
-    @transient override val child: LogicalPlan)
-    // pre-compute QCS because it is required by
-    // other API driven from driver
-    (val qcs: Array[Int] = SampleDataFrame.resolveQCS(
-      options, child.schema.fieldNames))
-    extends UnaryNode {
-
-  /**
-   * StratifiedSample will add one additional column for the ratio of total
-   * rows seen for a stratum to the number of samples picked.
-   */
-  override val output = child.output :+ AttributeReference(
-    SampleDataFrame.WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
-
-  override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
-
-  /**
-   * Perform stratified sampling given a Query-Column-Set (QCS). This variant
-   * can also use a fixed fraction to be sampled instead of fixed number of
-   * total samples since it is also designed to be used with streaming data.
-   */
-  case class Execute(override val child: SparkPlan,
-      override val output: Seq[Attribute])
-      extends org.apache.spark.sql.execution.UnaryNode {
-
-    protected override def doExecute(): RDD[Row] =
-      new StratifiedSampledRDD(child.execute(), qcs,
-        sqlContext.conf.columnBatchSize, options, schema)
-  }
-
-  def getExecution(plan: SparkPlan) = Execute(plan, output)
 }
 
 //end of SnappyContext
@@ -526,34 +407,3 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag](
     context.saveStream(ds, sampleTab, formatter, schema, transform)
 
 }
-
-private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
-    extends execution.CacheManager(sqlContext) {
-
-  /**
-   * Caches the data produced by the logical representation of the given
-   * schema rdd. Unlike `RDD.cache()`, the default storage level is set to be
-   * `MEMORY_AND_DISK` because recomputing the in-memory columnar representation
-   * of the underlying table is expensive.
-   */
-  override private[sql] def cacheQuery(query: DataFrame,
-      tableName: Option[String] = None,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = writeLock {
-
-    val alreadyCached = lookupCachedData(query.logicalPlan)
-    if (alreadyCached.nonEmpty) {
-      logWarning("SnappyCacheManager: asked to cache already cached data.")
-    }
-    else {
-      cachedData += CachedData(query.logicalPlan,
-        columnar.InMemoryAppendableRelation(
-          sqlContext.conf.useCompression,
-          sqlContext.conf.columnBatchSize,
-          storageLevel,
-          query.queryExecution.executedPlan,
-          tableName))
-    }
-  }
-}
-
-// end of CacheManager

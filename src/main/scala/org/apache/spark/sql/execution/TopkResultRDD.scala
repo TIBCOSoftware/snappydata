@@ -1,7 +1,7 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{CachedBlockPartition, Row, SQLContext}
+import org.apache.spark.sql.{GlobalVarsDummyPartition, CachedBlockPartition, Row, SQLContext}
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -17,7 +17,7 @@ class TopkResultRDD(name: String, startTime: Long,
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
-        case (bid, idx) => new CachedBlockPartition(idx, bid._1.host)
+        case (bid, idx) => new GlobalVarsDummyPartition(idx, bid._1.host)
       }.toArray[Partition]
     }
     else {

@@ -1,5 +1,7 @@
 package org.apache.spark.sql.execution
 
+import scala.language.reflectiveCalls
+
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, Row}
 import org.apache.spark.sql.collection.{ChangeValue, Utils}
 import org.apache.spark.sql.execution.StratifiedSampler._
@@ -75,8 +77,7 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
       // at this point we don't have a problem with concurrency
       stratas.flatMap(_.valuesIterator.flatMap(_.iterator(reservoirSize,
         reservoirSize, schema.length, doReset = true, fullReset = false)))
-    }
-    else {
+    } else {
       if (numSamplers.decrementAndGet() == 1) numSamplers.synchronized {
         numSamplers.notifyAll()
       }

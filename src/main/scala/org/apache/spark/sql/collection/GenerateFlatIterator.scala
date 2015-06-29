@@ -34,16 +34,26 @@ final class GenerateFlatIterator[A, U](val genFunc: U => (Iterator[A], U),
 
 final class SlicedIterator[A](val iter: Iterator[A]) extends Iterator[A] {
 
+  def this(itr: Iterator[A], from: Int, until: Int) = {
+    this(itr)
+    setSlice(from, until)
+  }
+
   private var remaining = 0
 
   def setSlice(from: Int, until: Int): Unit = {
-    val lo = from max 0
-    var toDrop = lo
-    while (toDrop > 0 && iter.hasNext) {
-      iter.next()
-      toDrop -= 1
+    if (from > 0) {
+      val lo = from max 0
+      var toDrop = lo
+      while (toDrop > 0 && iter.hasNext) {
+        iter.next()
+        toDrop -= 1
+      }
+      remaining = until - lo
     }
-    remaining = until - lo
+    else {
+      remaining = until
+    }
   }
 
   override def hasNext = remaining > 0 && iter.hasNext

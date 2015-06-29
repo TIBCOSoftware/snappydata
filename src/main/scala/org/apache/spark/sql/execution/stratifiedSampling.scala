@@ -1,25 +1,84 @@
 package org.apache.spark.sql.execution
 
 import java.util.Random
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean, AtomicInteger, AtomicLong}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.{GenericMutableRow, GenericRow, MutableRow}
+import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{AnalysisException, Row, SampleDataFrame}
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
-final class SamplePartition(val parent: Partition, override val index: Int,
-    val host: String, var isLastHostPartition: Boolean)
-    extends Partition with Serializable {
+case class StratifiedSample(var options: Map[String, Any],
+    @transient override val child: logical.LogicalPlan)
+    // pre-compute QCS because it is required by
+    // other API driven from driver
+    (val qcs: Array[Int] = SampleDataFrame.resolveQCS(
+      options, child.schema.fieldNames))
+    extends logical.UnaryNode {
 
-  override def toString = s"SamplePartition($index, $host)"
+  /**
+   * StratifiedSample will add one additional column for the ratio of total
+   * rows seen for a stratum to the number of samples picked.
+   */
+  override val output = child.output :+ AttributeReference(
+    SampleDataFrame.WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
+
+  override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
+
+  /**
+   * Perform stratified sampling given a Query-Column-Set (QCS). This variant
+   * can also use a fixed fraction to be sampled instead of fixed number of
+   * total samples since it is also designed to be used with streaming data.
+   */
+  case class Execute(override val child: SparkPlan,
+      override val output: Seq[Attribute]) extends UnaryNode {
+
+    protected override def doExecute(): RDD[Row] =
+      new StratifiedSampledRDD(child.execute(), qcs,
+        sqlContext.conf.columnBatchSize, options, schema)
+  }
+
+  def getExecution(plan: SparkPlan) = Execute(plan, output)
+}
+
+private final class ExecutorPartitionInfo(val blockId: BlockManagerId,
+    val remainingMem: Long, var remainingPartitions: Double)
+    extends java.lang.Comparable[ExecutorPartitionInfo] {
+
+  /** update "remainingPartitions" and enqueue again */
+  def usePartition(queue: java.util.PriorityQueue[ExecutorPartitionInfo],
+      removeFromQueue: Boolean) = {
+    if (removeFromQueue) queue.remove(this)
+    remainingPartitions -= 1.0
+    queue.offer(this)
+    this
+  }
+
+  override def compareTo(other: ExecutorPartitionInfo): Int = {
+    // reverse the order so that max partitions is at head of queue
+    java.lang.Double.compare(other.remainingPartitions, remainingPartitions)
+  }
+}
+
+final class SamplePartition(val parent: Partition, override val index: Int,
+    @transient private[this] val _partInfo: ExecutorPartitionInfo,
+    var isLastHostPartition: Boolean) extends Partition with Serializable {
+
+  val blockId = _partInfo.blockId
+
+  def hostExecutorId = Utils.getHostExecutorId(blockId)
+
+  override def toString =
+    s"SamplePartition($index, $blockId, isLast=$isLastHostPartition)"
 }
 
 final class StratifiedSampledRDD(@transient parent: RDD[Row],
@@ -29,73 +88,123 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
     schema: StructType)
     extends RDD[Row](parent) with Serializable {
 
-  var hostPartitions: Map[String, Array[Int]] = _
+  var executorPartitions: Map[BlockManagerId, IndexedSeq[Int]] = Map.empty
 
+  /**
+   * This method does detailed scheduling itself which is required given that
+   * the sample cache is not managed by Spark's scheduler implementations.
+   * Depending on the amount of memory reported as remaining, we will assign
+   * appropriate weight to that executor.
+   */
   override def getPartitions: Array[Partition] = {
-    val peers = SparkEnv.get.blockManager.master.getMemoryStatus.keySet.
-        map(_.host)
-    val npeers = peers.size
-    if (npeers > 0) {
-      val numberedPeers = peers.toArray
+    val peerExecutorMap = new mutable.HashMap[String,
+        mutable.ArrayBuffer[ExecutorPartitionInfo]]()
+    var totalMemory = 1L
+    for ((blockId, (max, remaining)) <- Utils.getAllExecutorsMemoryStatus(
+      sparkContext)) {
+      peerExecutorMap.getOrElseUpdate(blockId.host,
+        new mutable.ArrayBuffer[ExecutorPartitionInfo](4)) +=
+          new ExecutorPartitionInfo(blockId, remaining, 0)
+      totalMemory += remaining
+    }
+    if (peerExecutorMap.nonEmpty) {
       // Split partitions executor-wise:
-      //  1) first prefer the parent's first valid preference if any
-      //  2) if no parent preference then in round-robin
+      //  1) assign number of partitions to each executor in proportion
+      //     to amount of remaining memory on the executor
+      //  2) use a priority queue to order the hosts
+      //  3) first prefer the parent's hosts and select the executor with
+      //     maximum remaining partitions to be assigned
+      //  4) if no parent preference then select head of priority queue
       // So number of partitions assigned to each executor are known and wait
       // on each executor accordingly to drain the remaining cache.
       val parentPartitions = parent.partitions
-      val partitions = parentPartitions.indices.map { index =>
+      // calculate the approx number of partitions for each executor in
+      // proportion to its total remaining memory and place in priority queue
+      val queue = new java.util.PriorityQueue[ExecutorPartitionInfo]
+      val numPartitions = parentPartitions.length
+      peerExecutorMap.values.foreach(_.foreach { partInfo =>
+        partInfo.remainingPartitions =
+            (partInfo.remainingMem.toDouble * numPartitions) / totalMemory
+        queue.offer(partInfo)
+      })
+      val partitions = (0 until numPartitions).map { index =>
         val ppart = parentPartitions(index)
         val plocs = firstParent[Row].preferredLocations(ppart)
-        // get the first preferred location in the peers, else if none
-        // found then use default round-robin policy among peers
-        plocs.collectFirst { case host if peers contains host =>
-          new SamplePartition(ppart, index, host, isLastHostPartition = false)
-        }.getOrElse(new SamplePartition(ppart, index,
-          numberedPeers(index % npeers), isLastHostPartition = false))
+        // get the "best" one as per the maximum number of remaining partitions
+        // to be assigned from among the parent partition's preferred locations
+        // (that can be hosts or executors), else if none found then use the
+        // head of priority queue among available peers to get the
+        // "best" available executor
+
+        // first find all executors for preferred hosts of parent partition
+        plocs.flatMap { loc =>
+          val underscoreIndex = loc.indexOf('_')
+          if (underscoreIndex >= 0) {
+            // if the preferred location is already an executorId then search
+            // in available executors for its host
+            val host = loc.substring(0, underscoreIndex)
+            val executorId = loc.substring(underscoreIndex + 1)
+            val executors = peerExecutorMap.getOrElse(host, Iterator.empty)
+            executors.find(_.blockId.executorId == executorId) match {
+              // executorId found so return the single value
+              case Some(executor) => Iterator(executor)
+              // executorId not found so return all executors for its host
+              case None => executors
+            }
+          } else {
+            peerExecutorMap.getOrElse(loc, Iterator.empty)
+          }
+          // reduceLeft below will find the executor with max number of
+          // remaining partitions assigned to it
+        }.reduceLeftOption((pm, p) => if (p.compareTo(pm) >= 0) pm else p).map {
+          // get the SamplePartition for the "best" executor
+          partInfo => new SamplePartition(ppart, index, partInfo.usePartition(
+            queue, removeFromQueue = true), isLastHostPartition = false)
+          // queue.poll below will pick "best" one from the head of queue when
+          // no valid executor found from parent preferred locations
+        }.getOrElse(new SamplePartition(ppart, index, queue.poll().usePartition(
+          queue, removeFromQueue = false), isLastHostPartition = false))
       }
       val partitionOrdering = Ordering[Int].on[SamplePartition](_.index)
-      hostPartitions = partitions.groupBy(_.host).map { case (k, v) =>
+      executorPartitions = partitions.groupBy(_.blockId).map { case (k, v) =>
         val sortedPartitions = v.sorted(partitionOrdering)
         // mark the last partition in each host as the last one that should
         // also be necessarily scheduled on that host
         sortedPartitions.last.isLastHostPartition = true
-        (k, sortedPartitions.map(_.index).toArray)
+        (k, sortedPartitions.map(_.index))
       }
       partitions.toArray[Partition]
-    }
-    else {
-      hostPartitions = Map.empty
+    } else {
+      executorPartitions = Map.empty
       Array.empty[Partition]
     }
   }
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[Row] = {
-    val blockManager = SparkEnv.get.blockManager
     val part = split.asInstanceOf[SamplePartition]
-    val thisHost = blockManager.blockManagerId.host
+    val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     // use -ve cacheBatchSize to indicate that no additional batching is to be
     // done but still pass the value through for size increases
     val sampler = StratifiedSampler(options, qcs, "_rdd_" + id, -cacheBatchSize,
       schema, cached = true)
-    val numSamplers = hostPartitions(part.host).length
+    val numSamplers = executorPartitions(part.blockId).length
 
-    if (part.host != thisHost) {
+    if (part.blockId != thisBlockId) {
       // if this is the last partition then it has to be necessarily scheduled
       // on specified host
       if (part.isLastHostPartition) {
         throw new IllegalStateException(
-          s"Expected to execute on ${part.host} but is on $thisHost")
-      }
-      else {
+          s"Unexpected execution of $part on $thisBlockId")
+      } else {
         // this has been scheduled from some other target node so increment
         // the number of expected samplers but don't fail
+        logWarning(s"Unexpected execution of $part on $thisBlockId")
         if (!sampler.numSamplers.compareAndSet(0, numSamplers + 1)) {
           sampler.numSamplers.incrementAndGet()
         }
       }
-    }
-    else {
+    } else {
       sampler.numSamplers.compareAndSet(0, numSamplers)
     }
     sampler.numThreads.incrementAndGet()
@@ -111,9 +220,8 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
     }
   }
 
-  override def getPreferredLocations(split: Partition): Seq[String] = {
-    Seq(split.asInstanceOf[SamplePartition].host)
-  }
+  override def getPreferredLocations(split: Partition): Seq[String] =
+    Seq(split.asInstanceOf[SamplePartition].hostExecutorId)
 }
 
 object StratifiedSampler {
@@ -214,8 +322,7 @@ object StratifiedSampler {
     if (cached && name.nonEmpty) {
       lookupOrAdd(qcs, name, fraction, strataSize, cacheBatchSize,
         tsCol, timeInterval, schema)
-    }
-    else {
+    } else {
       newSampler(qcs, name, fraction, strataSize, cacheBatchSize,
         tsCol, timeInterval, schema)
     }
@@ -274,19 +381,21 @@ object StratifiedSampler {
   private def newSampler(qcs: Array[Int], name: String, fraction: Double,
       strataSize: Int, cacheBatchSize: Int, tsCol: Int,
       timeInterval: Int, schema: StructType) = {
-    if (qcs.isEmpty)
+    if (qcs.isEmpty) {
       throw new AnalysisException(SampleDataFrame.ERROR_NO_QCS)
-    else if (tsCol >= 0 && timeInterval <= 0)
+    } else if (tsCol >= 0 && timeInterval <= 0) {
       throw new AnalysisException("StratifiedSampler: no timeInterval for " +
           "timeSeriesColumn=" + schema(tsCol).name)
-    else if (fraction > 0.0)
+    } else if (fraction > 0.0) {
       new StratifiedSamplerCached(qcs, name, schema,
         new AtomicInteger(strataSize), fraction, cacheBatchSize,
         tsCol, timeInterval)
-    else if (strataSize > 0)
+    } else if (strataSize > 0) {
       new StratifiedSamplerReservoir(qcs, name, schema, strataSize)
-    else throw new AnalysisException("StratifiedSampler: " +
-        s"'fraction'=$fraction 'strataReservoirSize'=$strataSize")
+    } else {
+      throw new AnalysisException("StratifiedSampler: " +
+          s"'fraction'=$fraction 'strataReservoirSize'=$strataSize")
+    }
   }
 
   def compareOrderAndSet(atomicVal: AtomicLong, compareTo: Long,
@@ -342,32 +451,14 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
 
   /**
    * Store pending values to be flushed in a separate buffer so that we
-   * do not end up creating too small CachedBatches
+   * do not end up creating too small CachedBatches.
+   *
+   * Note that this mini-cache is copy-on-write (to avoid copy-on-read for
+   * readers) so the buffer inside should never be changed rather the whole
+   * buffer replaced if required. This should happen only inside flushCache.
    */
-  protected final val pendingBatch = new mutable.ArrayBuffer[Row] {
-
-    private final val lock = new ReentrantReadWriteLock()
-
-    def readLock[U](f: => U): U = {
-      val rlock = lock.readLock()
-      rlock.lock()
-      try {
-        f
-      } finally {
-        rlock.unlock()
-      }
-    }
-
-    def writeLock[U](f: => U): U = {
-      val wlock = lock.writeLock()
-      wlock.lock()
-      try {
-        f
-      } finally {
-        wlock.unlock()
-      }
-    }
-  }
+  protected final val pendingBatch = new AtomicReference[
+      mutable.ArrayBuffer[Row]](new mutable.ArrayBuffer[Row])
 
   protected def strataReservoirSize: Int
 
@@ -417,8 +508,9 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
         }
         sampleBuffer.iterator
       }
-    } ++ pendingBatch.readLock {
-      if (pendingBatch.nonEmpty) pendingBatch.toArray.iterator
+    } ++ {
+      val pbatch = this.pendingBatch.get()
+      if (pbatch.nonEmpty) pbatch.iterator
       else Iterator.empty
     }
   }
@@ -453,12 +545,17 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   }
 
   protected def waitForSamplers(waitUntil: Int, maxMillis: Long) {
-    val maxNanos = maxMillis * 1000000L
-    val startTime = System.nanoTime
-    numSamplers.synchronized {
-      while (numSamplers.get > waitUntil && (numThreads.get > waitUntil ||
-          maxNanos <= 0 || (System.nanoTime - startTime) <= maxNanos))
-        numSamplers.wait(100)
+    val startTime = System.currentTimeMillis
+    numThreads.decrementAndGet()
+    try {
+      numSamplers.synchronized {
+        while (numSamplers.get > waitUntil &&
+            (numThreads.get > 0 || maxMillis <= 0 ||
+                (System.currentTimeMillis - startTime) <= maxMillis))
+          numSamplers.wait(100)
+      }
+    } finally {
+      numThreads.incrementAndGet()
     }
   }
 }
@@ -515,8 +612,7 @@ final class StrataReservoir(var totalSamples: Int, var batchTotalSize: Int,
       //   constant will result in less change)
       (nsamples.asInstanceOf[Long] << 32L) |
           self.batchTotalSize.asInstanceOf[Long]
-    }
-    else 0
+    } else 0
   }
 
   def reset(prevReservoirSize: Int, newReservoirSize: Int, fullReset: Boolean) {

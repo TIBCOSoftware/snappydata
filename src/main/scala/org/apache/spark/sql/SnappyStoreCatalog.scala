@@ -6,7 +6,8 @@ import scala.language.implicitConversions
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.{TopKHokusaiWrapper, LogicalRDD}
+import org.apache.spark.sql.execution.{TopKHokusaiWrapper}
+import org.apache.spark.sql.execution.{StratifiedSample, LogicalRDD}
 import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, sql}
@@ -39,11 +40,21 @@ class SnappyStoreCatalog(context: SnappyContext,
   val topKStructures = new mutable.HashMap[String, TopKHokusaiWrapper[_]]()
 
   override def unregisterAllTables(): Unit = {
-    throw new NotImplementedError()
+    sampleTables.clear()
   }
 
   override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
-    throw new NotImplementedError()
+    val tableIdent = processTableIdentifier(tableIdentifier)
+    //val databaseName = tableIdent.lift(tableIdent.size - 2).getOrElse(
+    //  currentDatabase)
+    val tblName = tableIdent.last
+    if (sampleTables.contains(tblName)) {
+      context.truncateTable(tblName)
+      sampleTables -= tblName
+      return
+    }
+
+    super.unregisterTable(tableIdentifier)
   }
 
   override def lookupRelation(tableIdentifier: Seq[String],

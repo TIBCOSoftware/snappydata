@@ -18,6 +18,7 @@
 package org.apache.spark.sql.collection
 
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.locks.Lock
 
 import scala.collection.{GenTraversableOnce, mutable}
 import scala.reflect.ClassTag
@@ -29,6 +30,9 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     val concurrency: Int,
     val segmentCreator: (Int, Double) => M,
     val hasher: K => Int) extends Serializable {
+
+  /** maximum size of batches in bulk insert API */
+  private[this] final val MAX_BULK_INSERT_SIZE = 256
 
   /**
    * A default constructor creates a concurrent hash map with initial size `32`
@@ -154,8 +158,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     added
   }
 
-  final def bulkChangeValues(ks: TraversableOnce[K],
-      change: ChangeValue[K, V]): Unit = {
+  final def bulkChangeValues(ks: Iterator[K], change: ChangeValue[K, V]) {
     val segs = this._segments
     val segShift = _segmentShift
     val segMask = _segmentMask
@@ -163,68 +166,77 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
 
     // first group keys by segments
     val nsegs = segs.length
+    val nsegsRange = 0 until nsegs
     val groupedKeys = new Array[mutable.ArrayBuffer[K]](nsegs)
     val groupedHashes = new Array[mutable.ArrayBuilder.ofInt](nsegs)
-    ks.foreach { k =>
-      val hash = if (hasher != null) hasher(k) else k.##
-      val segIndex = (hash >>> segShift) & segMask
-      val buffer = groupedKeys(segIndex)
-      if (buffer != null) {
-        buffer += change.keyCopy(k)
-        groupedHashes(segIndex) += hash
-      } else {
-        val newBuffer = new mutable.ArrayBuffer[K](4)
-        val newHashBuffer = new mutable.ArrayBuilder.ofInt()
-        newHashBuffer.sizeHint(4)
-        newBuffer += change.keyCopy(k)
-        newHashBuffer += hash
-        groupedKeys(segIndex) = newBuffer
-        groupedHashes(segIndex) = newHashBuffer
-      }
-    }
-
-    // now lock segments one by one and then apply changes for all keys
-    // of the locked segment
     var numAdded = 0
-    // shuffle the indexes to minimize segment thread contention
-    Random.shuffle[Int, IndexedSeq](0 until nsegs).foreach { i =>
-      val keys = groupedKeys(i)
-      if (keys != null) {
-        val hashes = groupedHashes(i).result()
-        val nhashes = hashes.length
-        val seg = segs(i)
-        val lock = seg.writeLock
-        lock.lock()
-        try {
-          var added: java.lang.Boolean = null
-          var idx = 0
-          do {
-            added = seg.changeValue(keys(idx), hashes(idx), change)
-            if (added != null) {
-              if (added.booleanValue()) numAdded += 1
-              idx += 1
-            } else {
-              // indicates that loop must be broken immediately
-              lock.unlock()
-              try {
-                if (change.segmentAbort(seg)) {
-                  // break out of loop when segmentAbort returns true
-                  idx = nhashes
+
+    // split into max batch sizes to avoid buffering up too much
+    val iter = new SlicedIterator[K](ks, 0, MAX_BULK_INSERT_SIZE)
+    while (iter.hasNext) {
+      iter.foreach { k =>
+        val hash = if (hasher != null) hasher(k) else k.##
+        val segIndex = (hash >>> segShift) & segMask
+        val buffer = groupedKeys(segIndex)
+        if (buffer != null) {
+          buffer += change.keyCopy(k)
+          groupedHashes(segIndex) += hash
+        } else {
+          val newBuffer = new mutable.ArrayBuffer[K](4)
+          val newHashBuffer = new mutable.ArrayBuilder.ofInt()
+          newHashBuffer.sizeHint(4)
+          newBuffer += change.keyCopy(k)
+          newHashBuffer += hash
+          groupedKeys(segIndex) = newBuffer
+          groupedHashes(segIndex) = newHashBuffer
+        }
+      }
+
+      // now lock segments one by one and then apply changes for all keys
+      // of the locked segment
+      // shuffle the indexes to minimize segment thread contention
+      Random.shuffle[Int, IndexedSeq](nsegsRange).foreach { i =>
+        val keys = groupedKeys(i)
+        if (keys != null) {
+          val hashes = groupedHashes(i).result()
+          val nhashes = hashes.length
+          val seg = segs(i)
+          val lock = seg.writeLock
+          lock.lock()
+          try {
+            var added: java.lang.Boolean = null
+            var idx = 0
+            while (idx < nhashes) {
+              added = seg.changeValue(keys(idx), hashes(idx), change)
+              if (added != null) {
+                if (added.booleanValue()) numAdded += 1
+                idx += 1
+              } else {
+                // indicates that loop must be broken immediately
+                lock.unlock()
+                try {
+                  if (change.segmentAbort(seg)) {
+                    // break out of loop when segmentAbort returns true
+                    idx = nhashes
+                  } else {
+                    idx += 1
+                  }
+                } finally {
+                  lock.lock()
                 }
-                else {
-                  idx += 1
-                }
-              } finally {
-                lock.lock()
               }
             }
-          } while (idx < nhashes)
-        } finally {
-          lock.unlock()
+          } finally {
+            lock.unlock()
+          }
+          // invoke the segmentEnd method outside of the segment lock
+          change.segmentEnd(seg)
         }
-        // invoke the segmentEnd method outside of the segment lock
-        change.segmentEnd(seg)
       }
+      // pick up another set of keys+values
+      iter.setSlice(0, MAX_BULK_INSERT_SIZE)
+      for (b <- groupedKeys) if (b != null) b.clear()
+      for (b <- groupedHashes) if (b != null) b.clear()
     }
     if (numAdded > 0) _size.addAndGet(numAdded)
   }
@@ -256,22 +268,36 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   def readLock[U](f: Array[M] => U): U = {
-    val segments = wrapRefArray(_segments)
-    segments.foreach(_.readLock.lock())
+    val segments = _segments
+    val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
     try {
-      f(_segments)
+      for (seg <- segments) {
+        val lock = seg.readLock()
+        lock.lock()
+        locksObtained += lock
+      }
+      f(segments)
     } finally {
-      segments.foreach(_.readLock.unlock())
+      for (lock <- locksObtained) {
+        lock.unlock()
+      }
     }
   }
 
   def writeLock[U](f: Array[M] => U): U = {
-    val segments = wrapRefArray(_segments)
-    segments.foreach(_.writeLock.lock())
+    val segments = _segments
+    val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
     try {
-      f(_segments)
+      for (seg <- segments) {
+        val lock = seg.writeLock()
+        lock.lock()
+        locksObtained += lock
+      }
+      f(segments)
     } finally {
-      segments.foreach(_.writeLock.unlock())
+      for (lock <- locksObtained) {
+        lock.unlock()
+      }
     }
   }
 
@@ -290,8 +316,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       val buffer = new mutable.ArrayBuffer[(K, V)](size.toInt)
       foldEntriesRead[Unit]((), true, { (k, v, u) => buffer += ((k, v)) })
       buffer
-    }
-    else {
+    } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
           " is greater than maximum integer so cannot be converted to a flat Seq")
     }
@@ -303,8 +328,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       val buffer = new mutable.ArrayBuffer[V](size.toInt)
       foldValuesRead[Unit]((), { (v, u) => buffer += v })
       buffer
-    }
-    else {
+    } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
           " is greater than maximum integer so cannot be converted to a flat Seq")
     }
@@ -316,8 +340,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
       val buffer = new mutable.ArrayBuffer[K](size.toInt)
       foldEntriesRead[Unit]((), true, { (k, v, u) => buffer += k })
       buffer
-    }
-    else {
+    } else {
       throw new IllegalStateException(s"ConcurrentSegmentedHashMap: size=$size" +
           " is greater than maximum integer so cannot be converted to a flat Seq")
     }
