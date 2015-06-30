@@ -1,7 +1,8 @@
 package io.snappydata.util
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+
+import _root_.com.typesafe.config.Config
+import _root_.com.typesafe.config.ConfigFactory
 
 /**
   * Utility functions for working with Typesafe Config.

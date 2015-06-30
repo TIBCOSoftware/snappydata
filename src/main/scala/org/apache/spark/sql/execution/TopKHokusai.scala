@@ -3,6 +3,7 @@ package org.apache.spark.sql.execution
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import io.snappydata.util.NumberUtils
+import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.{ SegmentMap, BoundedSortedSet }
 import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
@@ -454,7 +455,7 @@ object TopKHokusai {
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
             val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
-            val width = Math.ceil(2 / eps).toInt
+            val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
 
             val cmsParams = CMSParams(width, depth)
 

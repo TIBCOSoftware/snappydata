@@ -16,13 +16,13 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package com.clearspring.analytics.stream.membership;
+package io.snappydata.util.com.clearspring.analytics.stream.membership;
 
 import java.io.UnsupportedEncodingException;
 
 import java.lang.reflect.Method;
 
-import com.clearspring.analytics.hash.MurmurHash;
+import io.snappydata.util.com.clearspring.analytics.hash.MurmurHash;
 
 public abstract class Filter {
 

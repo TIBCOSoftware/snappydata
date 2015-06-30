@@ -16,7 +16,7 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package com.clearspring.analytics.stream.membership;
+package io.snappydata.util.com.clearspring.analytics.stream.membership;
 
 import java.util.Iterator;
 

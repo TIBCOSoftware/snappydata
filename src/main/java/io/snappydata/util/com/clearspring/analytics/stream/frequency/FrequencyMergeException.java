@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.clearspring.analytics.stream.frequency;
+package io.snappydata.util.com.clearspring.analytics.stream.frequency;
 
 @SuppressWarnings("serial")
 public abstract class FrequencyMergeException extends Exception {

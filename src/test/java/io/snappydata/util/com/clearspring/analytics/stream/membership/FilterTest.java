@@ -16,7 +16,7 @@
 * specific language governing permissions and limitations
 * under the License.
 */
-package com.clearspring.analytics.stream.membership;
+package io.snappydata.util.com.clearspring.analytics.stream.membership;
 
 import java.io.IOException;
 
@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import junit.framework.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -43,7 +44,7 @@ public class FilterTest {
             }
             collisions += (MAX_HASH_COUNT - hashes.size());
         }
-        assertTrue("Collisions: " + collisions, collisions <= 100);
+        Assert.assertTrue("Collisions: " + collisions, collisions <= 100);
     }
 
     @Test
@@ -84,7 +85,7 @@ public class FilterTest {
         }
 
         double fp_ratio = fp / (keys.size() * BloomCalculations.probs[spec.bucketsPerElement][spec.K]);
-        assertTrue("FP ratio: " + fp_ratio, fp_ratio < 1.03);
+        Assert.assertTrue("FP ratio: " + fp_ratio, fp_ratio < 1.03);
     }
 
     public static Filter testSerialize(Filter f) throws IOException {
@@ -96,8 +97,8 @@ public class FilterTest {
         in.reset(out.getData(), out.getLength());
         Filter f2 = f.getSerializer().deserialize(in);
 
-        assertTrue(f2.isPresent("a"));
-        assertFalse(f2.isPresent("b"));
+        Assert.assertTrue(f2.isPresent("a"));
+        Assert.assertFalse(f2.isPresent("b"));
         return f2;
     }
 

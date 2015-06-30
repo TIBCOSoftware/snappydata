@@ -1,4 +1,4 @@
-package com.clearspring.analytics.stream.frequency;
+package io.snappydata.util.com.clearspring.analytics.stream.frequency;
 
 public interface IFrequency {
 

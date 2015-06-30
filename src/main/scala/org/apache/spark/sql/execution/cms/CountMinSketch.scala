@@ -1,5 +1,7 @@
 package org.apache.spark.sql.execution.cms
 
+import io.snappydata.util.com.clearspring.analytics.stream.membership.Filter
+
 import scala.util.Random
 import scala.math.ceil
 import scala.Array
@@ -10,8 +12,6 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import scala.reflect.ClassTag
 import scala.reflect.classTag
-
-import com.clearspring.analytics.stream.membership.Filter
 
 class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
   val eps: Double, val confidence: Double, var size: Long, val table: Array[Array[Long]],

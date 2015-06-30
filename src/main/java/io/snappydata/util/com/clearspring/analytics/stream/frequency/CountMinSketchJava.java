@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package com.clearspring.analytics.stream.frequency;
+package io.snappydata.util.com.clearspring.analytics.stream.frequency;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
-import com.clearspring.analytics.stream.membership.Filter;
+import io.snappydata.util.com.clearspring.analytics.stream.membership.Filter;
 
 /**
  * Count-Min Sketch datastructure.
