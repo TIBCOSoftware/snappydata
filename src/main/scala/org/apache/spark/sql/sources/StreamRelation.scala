@@ -6,7 +6,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.dstream.{UnionDStream, DStream}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.util.Utils
 
@@ -38,8 +38,9 @@ private[sql] class StreamSource extends SchemaRelationProvider {
                      options: Map[String, String],
                      schema: StructType): BaseRelation = {
 
-    val host: String = OptsUtil.getOption(OptsUtil.HOST, options)
-    val port: Int = OptsUtil.getOption(OptsUtil.PORT, options).toInt
+    val addresses: String = OptsUtil.getOption(OptsUtil.SERVER_ADDRESS, options)
+    val urls = addresses.split(",").map(addr=> addr.split(":"))
+    //val port: Int = OptsUtil.getOption(OptsUtil.PORT, options).toInt
 
     // Load the format function using reflection
     val formatFunction = loadFormatClass(OptsUtil.getOption(
@@ -50,8 +51,11 @@ private[sql] class StreamSource extends SchemaRelationProvider {
     }
 
     // Create a dstream here based on the parameters passed as part of create stream
-    val stream: DStream[String] = StreamingCtxtHolder.streamingContext.
-      socketTextStream(host, port)
+    val stream = StreamingCtxtHolder.streamingContext.union(
+        (urls map { url =>
+        StreamingCtxtHolder.streamingContext.
+          socketTextStream(url(0), url(1).toInt)
+      }).toSeq)
 
     val dstream: DStream[String] = options.get(OptsUtil.WINDOWDURATION) match {
       case Some(wd) => options.get(OptsUtil.SLIDEDURATION) match {
@@ -79,8 +83,8 @@ object OptsUtil {
 
   // Options while creating sample/stream table
   val BASETABLE = "basetable"
-  val HOST = "host"
-  val PORT = "port"
+  val SERVER_ADDRESS = "serveraddress"
+  //val PORT = "port"
   val FORMAT = "format"
   val SLIDEDURATION = "slideduration"
   val WINDOWDURATION = "windowduration"
