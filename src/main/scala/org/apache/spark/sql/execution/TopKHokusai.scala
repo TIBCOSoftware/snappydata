@@ -2,15 +2,16 @@ package org.apache.spark.sql.execution
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.mutable
+import scala.language.reflectiveCalls
+import scala.reflect.ClassTag
+
 import io.snappydata.util.NumberUtils
 import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
-import org.apache.spark.sql.collection.{ SegmentMap, BoundedSortedSet }
-import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
-import org.apache.spark.sql.types.{ StructField, StructType }
-import scala.collection.mutable
-import scala.reflect.ClassTag
-
+import org.apache.spark.sql.collection.{BoundedSortedSet, SegmentMap}
+import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
+import org.apache.spark.sql.types.{StructField, StructType}
 import org.apache.spark.util.collection.OpenHashSet
 
 class
