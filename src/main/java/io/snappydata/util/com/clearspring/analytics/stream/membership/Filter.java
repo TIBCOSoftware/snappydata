@@ -61,6 +61,9 @@ public abstract class Filter {
         }
     }
 
+    static final int seed1 = 0x3c074a61;
+    static final int seed2 = 0xf7ca7fd2;
+
     // Murmur is faster than an SHA-based approach and provides as-good collision
     // resistance.  The combinatorial generation approach described in
     // http://www.eecs.harvard.edu/~kirsch/pubs/bbbf/esa06.pdf
@@ -69,7 +72,7 @@ public abstract class Filter {
     public static int[] getHashBuckets(String key, int hashCount, int max) {
         byte[] b;
         try {
-            b = key.getBytes("UTF-16");
+            b = key.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
@@ -78,8 +81,8 @@ public abstract class Filter {
 
     static int[] getHashBuckets(byte[] b, int hashCount, int max) {
         int[] result = new int[hashCount];
-        int hash1 = MurmurHash.hash(b, b.length, 0);
-        int hash2 = MurmurHash.hash(b, b.length, hash1);
+        int hash1 = MurmurHash.hash(b, b.length, seed1);
+        int hash2 = MurmurHash.hash(b, b.length, hash1 * seed2);
         for (int i = 0; i < hashCount; i++) {
             result[i] = Math.abs((hash1 + i * hash2) % max);
         }
