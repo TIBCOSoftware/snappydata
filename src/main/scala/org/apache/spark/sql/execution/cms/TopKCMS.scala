@@ -1,13 +1,10 @@
 package org.apache.spark.sql.execution.cms
 
-import java.util.concurrent.locks.ReentrantReadWriteLock
-
-import org.apache.spark.sql.AnalysisException
-import org.apache.spark.sql.collection.{BoundedSortedSet, SegmentMap}
-import org.apache.spark.sql.types.{StructField, StructType}
-
-import scala.collection.mutable
 import scala.reflect.ClassTag
+
+import org.apache.spark.sql.collection.BoundedSortedSet
+import CountMinSketch._
+import org.apache.spark.util.collection.OpenHashSet
 
 class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: Int, width: Int, seed: Int,
   eps: Double, confidence: Double, size: Long, table: Array[Array[Long]],
@@ -66,7 +63,20 @@ class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: In
       (key, value.longValue())
 
     })
+  }
 
+  def getTopKKeys: OpenHashSet[T] = {
+    val size = if (this.topkSet.size() > this.topKActual) {
+      this.topKActual
+    } else {
+      this.topkSet.size
+    }
+    val iter = this.topkSet.iterator()
+    val result = new OpenHashSet[T](size)
+    while (iter.hasNext) {
+      result.add(iter.next._1)
+    }
+    result
   }
 }
 

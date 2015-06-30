@@ -1,9 +1,12 @@
 package org.apache.spark.sql.collection
 
-import org.apache.spark.SparkContext
+import scala.reflect.ClassTag
+
+import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.{Partition, SparkContext}
 
 object Utils {
 
@@ -38,4 +41,33 @@ object Utils {
 
   def getHostExecutorId(blockId: BlockManagerId) =
     blockId.host + '_' + blockId.executorId
+}
+
+abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)
+    extends RDD[T](_sc, Nil) {
+
+  override def getPartitions: Array[Partition] = {
+    val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
+        keySet.zipWithIndex
+
+    if (numberedPeers.nonEmpty) {
+      numberedPeers.map {
+        case (bid, idx) => new ExecutorLocalPartition(idx, bid)
+      }.toArray[Partition]
+    }
+    else {
+      Array.empty[Partition]
+    }
+  }
+
+  override def getPreferredLocations(split: Partition): Seq[String] =
+    Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)
+}
+
+class ExecutorLocalPartition(override val index: Int,
+    val blockId: BlockManagerId) extends Partition {
+
+  def hostExecutorId = Utils.getHostExecutorId(blockId)
+
+  override def toString = s"ExecutorLocalPartition($index, $blockId)"
 }

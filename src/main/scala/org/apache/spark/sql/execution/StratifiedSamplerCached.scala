@@ -291,7 +291,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     result
   }
 
-  override protected def stratumReservoirSize: Int = cacheSize.get
+  override protected def strataReservoirSize: Int = cacheSize.get
 
   override def append[U](rows: Iterator[Row], processSelected: Any => Any,
       init: U, processFlush: (U, Row) => U,

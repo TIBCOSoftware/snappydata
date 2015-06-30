@@ -250,7 +250,7 @@ object StratifiedSampler {
     val nameTest = "name".ci
     val qcsTest = "qcs".ci
     val fracTest = "fraction".ci
-    val reservoirSizeTest = "stratumReservoirSize".ci
+    val reservoirSizeTest = "strataReservoirSize".ci
     val timeSeriesColumnTest = "timeSeriesColumn".ci
     val timeIntervalTest = "timeInterval".ci
 
@@ -261,7 +261,7 @@ object StratifiedSampler {
     // limit for assuming a Gaussian distribution (e.g. see MeanEvaluator)
     val defaultStratumSize = 104
     // Using foldLeft to read key-value pairs and build into the result
-    // tuple of (qcs, fraction, stratumReservoirSize) like an aggregate.
+    // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
     val (nm, fraction, stratumSize, tsCol, timeInterval) = options.
@@ -284,7 +284,7 @@ object StratifiedSampler {
             case ss: String => (n, fr, ss.toInt, ts, ti)
             case sl: Long => (n, fr, sl.toInt, ts, ti)
             case _ => throw new AnalysisException(
-              s"StratifiedSampler: Cannot parse 'stratumReservoirSize'=$optV")
+              s"StratifiedSampler: Cannot parse 'strataReservoirSize'=$optV")
           }
           case timeSeriesColumnTest() => optV match {
             case tss: String => (n, fr, sz, Utils.columnIndex(tss, cols), ti)
@@ -394,7 +394,7 @@ object StratifiedSampler {
       new StratifiedSamplerReservoir(qcs, name, schema, stratumSize)
     } else {
       throw new AnalysisException("StratifiedSampler: " +
-          s"'fraction'=$fraction 'stratumReservoirSize'=$stratumSize")
+          s"'fraction'=$fraction 'strataReservoirSize'=$stratumSize")
     }
   }
 
@@ -460,7 +460,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   protected final val pendingBatch = new AtomicReference[
       mutable.ArrayBuffer[Row]](new mutable.ArrayBuffer[Row])
 
-  protected def stratumReservoirSize: Int
+  protected def strataReservoirSize: Int
 
   protected final def newMutableRow(parentRow: Row,
       process: Any => Any): MutableRow = {
@@ -539,7 +539,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
     }
     // reset transient data
     if (doReset) {
-      sr.reset(prevReservoirSize, stratumReservoirSize, fullReset)
+      sr.reset(prevReservoirSize, strataReservoirSize, fullReset)
     }
     v
   }
@@ -647,7 +647,7 @@ class StratumReservoir(final var totalSamples: Int,
         */
         self.prevShortFall += (prevReservoirSize - nsamples)
       }
-      // shrink reservoir back to stratumReservoirSize if required to avoid
+      // shrink reservoir back to strataReservoirSize if required to avoid
       // growing possibly without bound (in case some stratum consistently
       //   gets small number of total rows less than sample size)
       if (self.reservoir.length == newReservoirSize) {

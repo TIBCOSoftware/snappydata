@@ -11,6 +11,8 @@ import org.apache.spark.sql.types.{ StructField, StructType }
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
+import org.apache.spark.util.collection.OpenHashSet
+
 class
 TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long,
   val topKActual: Int, startIntervalGenerator: Boolean = true)
@@ -242,9 +244,20 @@ TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0:
 
   }
 
-  def getTopKForCurrentInterval: Option[Array[(T, Long)]] = this.executeInReadLock(
-    {
+  def getTopKForCurrentInterval: Option[Array[(T, Long)]] =
+    this.executeInReadLock({
       Some(this.mBar.asInstanceOf[TopKCMS[T]].getTopK)
+    }, true)
+
+  def getTopKKeysForCurrentInterval: OpenHashSet[T] =
+    this.executeInReadLock({
+      this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
+    }, true)
+
+  def getForKeysInCurrentInterval(combinedKeys: Array[T]): Array[(T, Long)] =
+    this.executeInReadLock({
+      val cms = this.mBar
+      combinedKeys.map { k => (k, cms.estimateCount(k)) }
     }, true)
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[Array[T]] = {
@@ -276,16 +289,29 @@ TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0:
 
   }
 
-  def getTopKBetweenTime(epochFrom: Long, epochTo: Long, combinedTopKKeys: Array[T] = null): Option[Array[(T, Long)]] = {
-    this.executeInReadLock(
-      {
-        val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
-          case Some(x) => x
-          case None => return None
-        }
-        Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
-      }, true)
-  }
+  def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
+      combinedTopKKeys: Array[T] = null): Option[Array[(T, Long)]] =
+    this.executeInReadLock({
+      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+        case Some(x) => x
+        case None => return None
+      }
+      Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
+    }, true)
+
+  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long,
+      combinedTopKKeys: Array[T] = null): Option[OpenHashSet[T]] =
+    this.executeInReadLock({
+      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+        case Some(x) => x
+        case None => return None
+      }
+      // TODO: could be optimized to return only the keys
+      val topK = this.getTopKBetweenTime(later, earlier, combinedTopKKeys)
+      val result = new OpenHashSet[T](topK.length)
+      topK.foreach { v => result.add(v._1) }
+      Some(result)
+    }, true)
 
   def getTopKBetweenTime(later: Int, earlier: Int, combinedTopKKeys: Array[T]): Array[(T, Long)] = {
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
@@ -469,9 +495,10 @@ object TopKHokusai {
   }
 }
 
-class TopKHokusaiWrapper[T](val name: String, val confidence: Double, val eps: Double,
-  val size: Int, val timeInterval: Long,
-  val schema: StructType, val key: StructField, val frequencyCol: Option[StructField]) extends Serializable
+class TopKHokusaiWrapper[T](val name: String, val confidence: Double,
+    val eps: Double, val size: Int, val timeInterval: Long,
+    val schema: StructType, val key: StructField,
+    val frequencyCol: Option[StructField]) extends Serializable
 
 object TopKHokusaiWrapper {
 
@@ -490,13 +517,8 @@ object TopKHokusaiWrapper {
     val sizeTest = "size".ci
     val frequencyColTest = "frequencyCol".ci
 
-    val cols = schema.fieldNames
-
-    // using a default strata size of 104 since 100 is taken as the normal
-    // limit for assuming a Gaussian distribution (e.g. see MeanEvaluator)
-    val defaultStrataSize = 104
     // Using foldLeft to read key-value pairs and build into the result
-    // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
+    // tuple of (key, confidence, eps, size, frequencyCol) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
     val (key, timeInterval, confidence, eps, size, frequencyCol) = options.
@@ -542,8 +564,6 @@ object TopKHokusaiWrapper {
       }
     new TopKHokusaiWrapper(name, confidence, eps, size, timeInterval,
       schema, schema(key),
-      (if (frequencyCol.equals("")) None else Some(schema(frequencyCol))))
-
+      if (frequencyCol.equals("")) None else Some(schema(frequencyCol)))
   }
-
 }

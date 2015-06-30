@@ -3,10 +3,9 @@ package org.apache.spark.sql
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, ExecutorLocalRDD}
 import org.apache.spark.sql.execution.StratifiedSampler
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkEnv, TaskContext}
 
 /**
@@ -14,25 +13,11 @@ import org.apache.spark.{Partition, SparkEnv, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
-    extends RDD[Row](sqlContext.sparkContext, Nil) {
-
-  override def getPartitions: Array[Partition] = {
-    val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
-
-    if (numberedPeers.nonEmpty) {
-      numberedPeers.map {
-        case (bid, idx) => new CachedBlockPartition(idx, bid)
-      }.toArray[Partition]
-    }
-    else {
-      Array.empty[Partition]
-    }
-  }
+class CachedRDD(name: String, schema: StructType, sqlContext: SQLContext)
+    extends ExecutorLocalRDD[Row](sqlContext.sparkContext) {
 
   override def compute(split: Partition, context: TaskContext) = {
-    val part = split.asInstanceOf[CachedBlockPartition]
+    val part = split.asInstanceOf[ExecutorLocalPartition]
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId != thisBlockId) {
       throw new IllegalStateException(
@@ -43,20 +28,6 @@ class CachedRDD(name: String, schema: StructType)(sqlContext: SQLContext)
       case None => Iterator.empty
     }
   }
-
-  override def getPreferredLocations(split: Partition): Seq[String] =
-    Seq(split.asInstanceOf[CachedBlockPartition].hostExecutorId)
-}
-
-class CachedBlockPartition(override val index: Int, val blockId: BlockManagerId)
-    extends Partition {
-
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
-
-  override def toString = s"CachedBlockPartition($index, $blockId)"
-}
-class GlobalVarsDummyPartition(val idx: Int, val host: String) extends Partition {
-  val index = idx
 }
 
 private[sql] class CachedMapPartitionsRDD[U: ClassTag, T: ClassTag](

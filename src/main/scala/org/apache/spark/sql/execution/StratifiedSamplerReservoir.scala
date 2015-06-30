@@ -51,7 +51,7 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
     }
   }
 
-  override protected def stratumReservoirSize: Int = reservoirSize
+  override protected def strataReservoirSize: Int = reservoirSize
 
   override def append[U](rows: Iterator[Row], processSelected: Any => Any,
       init: U, processFlush: (U, Row) => U,

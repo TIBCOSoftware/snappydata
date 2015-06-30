@@ -62,7 +62,7 @@ private[sql] class InMemoryAppendableRelation(
 
   private[sql] val reservoirRDD =
     if (isSampledTable) Some(new CachedRDD(tableName.get,
-      schema)(child.sqlContext))
+      schema, child.sqlContext))
     else None
 
   private val bufferLock = new ReentrantReadWriteLock()
