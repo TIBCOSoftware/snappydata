@@ -1,7 +1,7 @@
 package io.snappydata.util
 
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import _root_.com.typesafe.config.Config
+import _root_.com.typesafe.config.ConfigFactory
 
 object StringUtils {
   val numFormatter = java.text.NumberFormat.getInstance
