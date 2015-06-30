@@ -32,7 +32,7 @@ object WeightageRule extends Rule[LogicalPlan] {
 
       aggr transformExpressions {
         // cheat code to run the query on sample table without applying weightages
-        case alias@Alias(_, name) if name.startsWith("cheat_sample") =>
+        case alias@Alias(_, name) if name.startsWith("sample_") =>
           alias
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
