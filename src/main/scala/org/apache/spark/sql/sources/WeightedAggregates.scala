@@ -4,7 +4,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.trees
-import org.apache.spark.sql.execution.StratifiedSample
+import org.apache.spark.sql.execution.{AggregateEvaluation, StratifiedSample}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.SampleDataFrame
 
@@ -36,24 +36,49 @@ object WeightageRule extends Rule[LogicalPlan] {
           alias
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
-        case alias@Alias(f@Count(args), name) if !f.isInstanceOf[WeightedCount] =>
-          new Alias(WeightedCount(new CoalesceDisparateTypes(Seq(args, generatedRatioExpr))),
-            name)(alias.exprId, alias.qualifiers, alias.explicitMetadata)
-        case alias@Alias(f@Sum(args), name) if !f.isInstanceOf[WeightedSum] =>
-          new Alias(WeightedSum(Multiply(args, generatedRatioExpr)), name)(alias.exprId,
+        case alias@Alias(e, name) =>
+          val expr = transformAggExprToWeighted(e,generatedRatioExpr)
+          new Alias(expr, name)(alias.exprId,
             alias.qualifiers, alias.explicitMetadata)
-        case alias@Alias(f@Average(args), name) if !f.isInstanceOf[WeightedAverage] =>
-          //TODO: Check if the type conversion to double works for DecimalType as well.
-          new Alias(WeightedAverage(
-            Coalesce(Seq(Cast(args, DoubleType), generatedRatioExpr))), name)(alias.exprId,
-                alias.qualifiers, alias.explicitMetadata)
-        case alias@Alias(e@ErrorEstimateAggregate(child, confidence, ratioExpr,
-        isDefault, aggType), name) if e.ratioExpr == null =>
-          new Alias(ErrorEstimateAggregate(child, confidence, generatedRatioExpr,
-            isDefault, aggType), name)(alias.exprId, alias.qualifiers,
-                alias.explicitMetadata)
       }
   }
+
+  def transformAggExprToWeighted(e : Expression, mapExpr : MapColumnToWeight): Expression = {
+    e transform  {
+      case aggr@Count(args) if !aggr.isInstanceOf[WeightedCount] =>
+        WeightedCount(new CoalesceDisparateTypes(Seq(args, mapExpr)))
+      case aggr@Sum(args) if !aggr.isInstanceOf[WeightedSum] =>
+        WeightedSum(Multiply(args, mapExpr))
+      case aggr@Average(args) if !aggr.isInstanceOf[WeightedAverage] =>
+        WeightedAverage(Coalesce(Seq(Cast(args, DoubleType), mapExpr)))
+      case e@ErrorEstimateAggregate(child, confidence, ratioExpr,
+      isDefault, aggType) if e.ratioExpr == null =>
+        ErrorEstimateAggregate(child, confidence, mapExpr,
+          isDefault, aggType)
+      // TODO: This repetition is bad. Find a better way.
+      case Add(left,right) =>
+        new Add(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
+      case Subtract(left,right) =>
+        new Subtract(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
+      case Divide(left,right) =>
+        new Divide(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
+      case Multiply(left,right) =>
+        new Multiply(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
+      case Remainder(left,right) =>
+        new Remainder(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
+      case Cast(left, dtype) =>
+        new Cast(transformAggExprToWeighted(left, mapExpr),dtype)
+      case Sqrt(left) =>
+        new Sqrt(transformAggExprToWeighted(left, mapExpr))
+      case Abs(left) =>
+        new Abs(transformAggExprToWeighted(left, mapExpr))
+      case UnaryMinus(left) =>
+        new UnaryMinus(transformAggExprToWeighted(left, mapExpr))
+    }
+  }
+
+
+
 }
 
 case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression {
