@@ -419,15 +419,9 @@ private[sql] case class SnappyOperations(context: SnappyContext,
   def createTopK(name: String, options: Map[String, Any]): Unit = {
     val schema = df.logicalPlan.schema
 
-    if (options exists (_._1.toLowerCase == "timeinterval")) {
-      throw new IllegalStateException("timeInterval cannot be specified " +
-          "when creating a Topk over dataframe")
-    }
-
     // Create a very long timeInterval when the topK is being created
     // on a DataFrame.
-    val topkWrapper = TopKHokusaiWrapper(name, options +
-        ("timeinterval" -> Long.MaxValue.toString), schema)
+    val topkWrapper = TopKHokusaiWrapper(name, options, schema)
     context.catalog.topKStructures.put(name, topkWrapper)
 
     df.foreachPartition((x: Iterator[Row]) => {
