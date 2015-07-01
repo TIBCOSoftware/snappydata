@@ -189,8 +189,8 @@ case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
   override def update(input: Row): Unit = {
     val boundRef = boundReference
     if (boundRef != null) {
-      val v = toDouble(input, boundRef.ordinal, Double.NaN)
-      if (v != Double.NaN) {
+      val v = toDouble(input, boundRef.ordinal, Double.NegativeInfinity)
+      if (v != Double.NegativeInfinity) {
         errorStats.merge(v)
         // update the weighted count
         errorStats.weightedCount += ratioExpr.eval(input)
