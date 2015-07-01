@@ -126,29 +126,78 @@ class SnappyContext(sc: SparkContext)
   }
 
   def addHokusaiData(name: String, topkWrapper: TopKHokusaiWrapper[_],
-      rowIterator: Iterator[Row]): Unit = {
+      rowIterator: Iterator[Row]): Unit = if (rowIterator.hasNext) {
+    var rowIter = rowIterator
+    val tsCol = if (topkWrapper.timeInterval > 0)
+      topkWrapper.timeSeriesColumn
+    else -1
     val topkhokusai = TopKHokusai(name, topkWrapper.confidence,
-      topkWrapper.eps, topkWrapper.size, topkWrapper.timeInterval)
+      topkWrapper.eps, topkWrapper.size, tsCol, topkWrapper.timeInterval,
+      () => {
+        if (tsCol >= 0) {
+          var epoch0 = -1L
+          val rowBuf = new mutable.ArrayBuffer[Row](4)
+          // assume first row will have the least time
+          // TODO: this assumption may not be correct and we may need to
+          // do something more comprehensive
+          do {
+            val row = rowIterator.next()
+            epoch0 = topkWrapper.parseMillis(row, tsCol)
+            rowBuf += row.copy()
+          } while (epoch0 <= 0)
+          rowIter = rowBuf.iterator ++ rowIterator
+          epoch0
+        } else {
+          System.currentTimeMillis()
+        }
+      })
     val topKKeyIndex = topkWrapper.schema.fieldIndex(topkWrapper.key.name)
-    topkWrapper.frequencyCol match {
-      case None => topkhokusai.addEpochData(
-        rowIterator.map(_(topKKeyIndex)).toSeq)
-      case Some(freqCol) =>
-        val freqColIndex = topkWrapper.schema.fieldIndex(freqCol.name)
-        val datamap = mutable.Map[Any, Long]()
-        rowIterator foreach { r =>
-          val freq = r(freqColIndex)
-          if (freq != null) {
-            val key = r(topKKeyIndex)
-            datamap.get(key) match {
-              case Some(prevvalue) => datamap +=
-                  (key -> (prevvalue + freq.asInstanceOf[Number].longValue()))
-              case None => datamap +=
-                  (key -> freq.asInstanceOf[Number].longValue())
+    if (tsCol < 0) {
+      topkWrapper.frequencyCol match {
+        case None => topkhokusai.addEpochData(
+          rowIter.map(_(topKKeyIndex)).toSeq)
+        case Some(freqCol) =>
+          val freqColIndex = topkWrapper.schema.fieldIndex(freqCol.name)
+          val datamap = mutable.Map[Any, Long]()
+          rowIter foreach { r =>
+            val freq = r(freqColIndex)
+            if (freq != null) {
+              val key = r(topKKeyIndex)
+              datamap.get(key) match {
+                case Some(prevvalue) => datamap +=
+                    (key -> (prevvalue + freq.asInstanceOf[Number].longValue()))
+                case None => datamap +=
+                    (key -> freq.asInstanceOf[Number].longValue())
+              }
             }
           }
-        }
-        topkhokusai.addEpochData(datamap)
+          topkhokusai.addEpochData(datamap)
+      }
+    }
+    else {
+      val dataBuffer = new mutable.ArrayBuffer[KeyFrequencyWithTimestamp[Any]]
+      topkWrapper.frequencyCol match {
+        case None =>
+          rowIter foreach { r =>
+            val key = r(topKKeyIndex)
+            val timeVal = topkWrapper.parseMillis(r, tsCol)
+            dataBuffer += new KeyFrequencyWithTimestamp[Any](key, 1L, timeVal)
+          }
+          topkhokusai.addTimestampedData(dataBuffer)
+
+        case Some(freqCol) =>
+          val freqColIndex = topkWrapper.schema.fieldIndex(freqCol.name)
+          rowIter foreach { r =>
+            val freq = r(freqColIndex)
+            if (freq != null) {
+              val key = r(topKKeyIndex)
+              val timeVal = topkWrapper.parseMillis(r, tsCol)
+              dataBuffer += new KeyFrequencyWithTimestamp[Any](key,
+                freq.asInstanceOf[Number].longValue(), timeVal)
+            }
+          }
+          topkhokusai.addTimestampedData(dataBuffer)
+      }
     }
   }
 
@@ -275,11 +324,6 @@ class SnappyContext(sc: SparkContext)
       startTime: Long = Long.MinValue,
       endTime: Long = Long.MaxValue): DataFrame = {
     val k: TopKHokusaiWrapper[_] = catalog.topKStructures(topKName)
-    if (k.timeInterval == Long.MaxValue &&
-        (endTime != Long.MaxValue || startTime != Long.MinValue)) {
-      throw new IllegalStateException("start and end time cannot be " +
-          "specified while querying a topK created over a DataFrame ")
-    }
 
     // TODO: perhaps this can be done more efficiently via a shuffle but
     // TODO: using the straightforward approach for now

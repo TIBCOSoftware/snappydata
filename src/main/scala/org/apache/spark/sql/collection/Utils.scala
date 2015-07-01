@@ -10,6 +10,12 @@ import org.apache.spark.{Partition, SparkContext}
 
 object Utils {
 
+  implicit class StringExtensions(val s: String) extends AnyVal {
+    def ci = new {
+      def unapply(other: String) = s.equalsIgnoreCase(other)
+    }
+  }
+
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
     var index = start
     while (index < endP1) {
@@ -41,6 +47,30 @@ object Utils {
 
   def getHostExecutorId(blockId: BlockManagerId) =
     blockId.host + '_' + blockId.executorId
+
+  final val timeIntervalSpec = "([0-9]+)(ms|s|m|h)".r
+
+  def parseTimeInterval(optV: Any, module: String): Long = {
+    optV match {
+      case tii: Int => tii.toLong
+      case til: Long => til
+      case tis: String => tis match {
+        case timeIntervalSpec(interval, unit) =>
+          unit match {
+            case "ms" => interval.toLong
+            case "s" => interval.toLong * 1000L
+            case "m" => interval.toLong * 60000L
+            case "h" => interval.toLong * 3600000L
+            case _ => throw new AssertionError(
+              s"unexpected regex match 'unit'=$unit")
+          }
+        case _ => throw new AnalysisException(
+          s"$module: Cannot parse 'timeInterval'=$tis")
+      }
+      case _ => throw new AnalysisException(
+        s"$module: Cannot parse 'timeInterval'=$optV")
+    }
+  }
 }
 
 abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)

@@ -1,17 +1,14 @@
 package org.apache.spark.sql.execution
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.{Timer, TimerTask}
+
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, MutableList, Stack}
+import scala.reflect.ClassTag
+import scala.util.Random
 
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.execution.cms.CountMinSketch
-import java.util.{ Timer, TimerTask }
-import scala.collection.mutable.{ ListBuffer, MutableList, Stack }
-import scala.reflect.ClassTag
-import scala.collection.mutable.MutableList
-import scala.collection.mutable.ListBuffer
-import scala.math
-import scala.collection.mutable.Stack
-import scala.util.Random
 
 // TODO Make sure M^t and A^t coincide  I think the timeAggregation may run left to right, but the
 //  item aggregation might run the other way in my impl????
@@ -63,8 +60,6 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   val readLock = rwLock.readLock
   val writeLock = rwLock.writeLock
   val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators) => CountMinSketch.merge[T](estimators: _*)
-  def this(cmsParams: CMSParams, windowSize: Long) = this(cmsParams, windowSize,
-    System.currentTimeMillis())
 
   val timeEpoch = new TimeEpoch(windowSize, epoch0)
 
@@ -176,6 +171,10 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     accummulate(data)
   }
 
+  def addTimestampedData(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]) = {
+    accummulate(data)
+  }
+
   // Get the frequency estimate for key in epoch from the CMS
   // If there is no data for epoch, returns None
   /*def query(epoch: Long, key: T): Option[Long] =
@@ -201,6 +200,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
         if (x > timeEpoch.t) {
+          // cannot query the current mBar
           None
         } else {
           this.taPlusIa.queryAtInterval(this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
@@ -257,6 +257,44 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   def accummulate(data: scala.collection.Map[T, Long]): Unit =
     this.executeInWriteLock {
       data.foreach { case (item, count) => mBar.add(item, count) }
+    }
+
+  def accummulate(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]): Unit =
+  this.executeInWriteLock {
+    val timeEpoch = this.timeEpoch
+    val iaAggs = this.taPlusIa.ia.aggregates
+    val taAggs = this.taPlusIa.ta.aggregates
+    data.foreach { v =>
+        val epoch = v.epoch
+        if (epoch > 0) {
+          // find the appropriate time and item aggregates and update them
+          timeEpoch.timestampToInterval(epoch) match {
+            case Some(interval) =>
+              // first check if it lies in current mBar
+              if (interval > timeEpoch.t) {
+                // check if new slot has to be created
+                if (interval > (timeEpoch.t + 1)) {
+                  if (interval > (timeEpoch.t + 2)) {
+                    println(s"SW: WARNING: got time stamp = $epoch more than twice beyond current")
+                  }
+                  increment()
+                }
+                mBar.add(v.key, v.frequency)
+              }
+              else {
+                val log2 = NumberUtils.nearestPowerOf2LE(interval - 1).toInt
+                val timeAgg = taAggs(log2)
+                timeAgg.add(v.key, v.frequency)
+                val itemAgg = iaAggs(interval - 1)
+                itemAgg.add(v.key, v.frequency)
+              }
+            case None => println(s"SW: WARNING: got epoch=$epoch with epoch0 as ${timeEpoch.epoch0}")
+          }
+        }
+        else {
+          mBar.add(v.key, v.frequency)
+        }
+      }
     }
 
   protected def executeInReadLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
@@ -883,6 +921,9 @@ case class CMSParams(width: Int, depth: Int, seed: Int = 123) {
     Array.fill[Long](depth)(r.nextInt(Int.MaxValue))
   }
 }
+
+final class KeyFrequencyWithTimestamp[T](val key: T, val frequency: Long,
+    val epoch: Long)
 
 class IntervalTracker {
   private var head: IntervalLink = null
