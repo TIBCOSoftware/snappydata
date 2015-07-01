@@ -569,12 +569,16 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
  * in the stratum seen so far, the QCS key, reservoir of samples etc.
  */
 class StratumReservoir(final var totalSamples: Int,
-    final var batchTotalSize: Int,
+    final var batchSize: Int,
     final var reservoir: Array[MutableRow],
     final var reservoirSize: Int,
     final var prevShortFall: Int) {
 
   self =>
+
+  def batchTotalSize = batchSize
+
+  def clearBatchTotalSize(): Unit = batchSize = 0
 
   final def iterator(prevReservoirSize: Int, newReservoirSize: Int,
       columns: Int, doReset: Boolean,
@@ -659,7 +663,7 @@ class StratumReservoir(final var totalSamples: Int,
         self.reservoir = new Array[MutableRow](newReservoirSize)
       }
       self.reservoirSize = 0
-      self.batchTotalSize = 0
+      self.clearBatchTotalSize()
     }
   }
 }

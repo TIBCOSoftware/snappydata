@@ -31,9 +31,9 @@ trait StatVarianceCounter extends Serializable {
   // Running mean of our values
   final var mean: Double = 0
   // Running variance times count of our values
-  final private[spark] var nvariance: Double = 0
+  final private[sql] var nvariance: Double = 0
 
-  private[spark] def init(count: Long, mean: Double, nvariance: Double) = {
+  private[sql] final def init(count: Long, mean: Double, nvariance: Double) {
     this.count = count
     this.mean = mean
     this.nvariance = nvariance

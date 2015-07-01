@@ -1,5 +1,7 @@
 package org.apache.spark.sql.sources
 
+import scala.util.control.NonFatal
+
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -131,17 +133,43 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
 
   override def toString: String = s"MapColumnToWeight($child)"
 
-  override def eval(input: Row): Double = {
-    val evalE = child.eval(input)
-    if (evalE != null) {
-      val value = evalE.asInstanceOf[Long]
-      val left = (value >> 32) & 0xffffffffL
-      val right = value & 0xffffffffL
+  private[this] final val boundReference = child match {
+    case b: BoundReference => b
+    case _ => null
+  }
 
-      if (left != 0) right.toDouble / left
-      else 1.0
-    } else {
-      1.0
+  override final def eval(input: Row): Double = {
+    val boundRef = boundReference
+    if (boundRef != null) {
+      try {
+        val value = input.getLong(boundRef.ordinal)
+        if (value != 0 || !input.isNullAt(boundRef.ordinal)) {
+          val left = (value >> 32) & 0xffffffffL
+          val right = value & 0xffffffffL
+
+          if (left != 0) right.toDouble / left
+          else 1.0
+        }
+        else {
+          1.0
+        }
+      } catch {
+        case NonFatal(e) => 1.0
+        case t => throw t
+      }
+    }
+    else {
+      val evalE = child.eval(input)
+      if (evalE != null) {
+        val value = evalE.asInstanceOf[Long]
+        val left = (value >> 32) & 0xffffffffL
+        val right = value & 0xffffffffL
+
+        if (left != 0) right.toDouble / left
+        else 1.0
+      } else {
+        1.0
+      }
     }
   }
 }
@@ -162,19 +190,41 @@ class WeightedCount(child: Expression) extends Count(child) with trees.UnaryNode
   override def newInstance(): CountFunction = new WeightedCountFunction(child, this)
 }
 
-class WeightedCountFunction(override val expr: Expression,
+final class WeightedCountFunction(override val expr: Expression,
     override val base: AggregateExpression)
     extends CountFunction(expr, base) {
   def this() = this(null, null) // Required for serialization.
 
   var countDouble: Double = 0.0
   val expr0 = expr.asInstanceOf[CoalesceDisparateTypes].children.head
+  val boundReference = expr0 match {
+    case b: BoundReference => b
+    case _ => null
+  }
+  val isNonNullLiteral = expr0 match {
+    case l: Literal => l.value != null
+    case _ => false
+  }
+
   val expr1 = expr.asInstanceOf[CoalesceDisparateTypes].children(1).
       asInstanceOf[MapColumnToWeight]
 
   override def update(input: Row): Unit = {
-    if (expr0.eval(input) != null) {
+    if (isNonNullLiteral) {
       countDouble += expr1.eval(input)
+    }
+    else {
+      val boundRef = boundReference
+      if (boundRef != null) {
+        if (!input.isNullAt(boundRef.ordinal)) {
+          countDouble += expr1.eval(input)
+        }
+      }
+      else {
+        if (expr0.eval(input) != null) {
+          countDouble += expr1.eval(input)
+        }
+      }
     }
   }
 

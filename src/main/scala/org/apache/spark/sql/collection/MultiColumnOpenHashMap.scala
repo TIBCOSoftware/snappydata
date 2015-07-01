@@ -262,15 +262,13 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
         _values(pos & POSITION_MASK) = v
         keySet.rehashIfNeeded(r, grow, move)
         java.lang.Boolean.TRUE
-      }
-      else null
+      } else null
     } else {
       val v = change.mergeValue(r, _values(pos))
       if (v != null) {
         _values(pos) = v
         java.lang.Boolean.FALSE
-      }
-      else null
+      } else null
     }
   }
 
@@ -396,8 +394,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
         otherMap.noNullValue = false
         otherMap.nullValue = f(self.nullValue)
       }
-    }
-    else {
+    } else {
       // for some reason capacity is still different so use slower row by row
       self.iteratorRowReuse.foreach { case (row, v) =>
         otherMap.update(row, f(v))
@@ -469,8 +466,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
         val ret = if (row != null) {
           _keySet.fillValueAsRow(pos, row)
           buildResult(row, _values(pos))
-        }
-        else {
+        } else {
           _values(pos).asInstanceOf[A]
         }
         pos = bitset.nextSetBit(pos + 1)

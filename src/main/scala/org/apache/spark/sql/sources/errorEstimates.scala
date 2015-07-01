@@ -53,15 +53,20 @@ final class StatCounterWithFullCount(var weightedCount: Double = 0.0)
     extends StatVarianceCounter with Serializable {
 
   override protected def mergeDistinctCounter(other: StatVarianceCounter) {
-    super.merge(other)
+    super.mergeDistinctCounter(other)
     other match {
       case s: StatCounterWithFullCount => weightedCount += s.weightedCount
     }
   }
 
   def merge(other: StatCounterWithFullCount) {
-    super.merge(other)
-    weightedCount += other.weightedCount
+    if (other != this) {
+      super.mergeDistinctCounter(other)
+      weightedCount += other.weightedCount
+    }
+    else {
+      merge(other.copy()) // Avoid overwriting fields in a weird order
+    }
   }
 
   override def copy(): StatCounterWithFullCount = {
@@ -166,35 +171,38 @@ case class ErrorStatsPartition(children: Seq[Expression], confidence: Double,
 
 case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
     base: AggregateExpression, confidence: Double, confFactor: Double,
-    aggType: ErrorAggregate.Type, partial: Boolean) extends AggregateFunction {
+    aggType: ErrorAggregate.Type, partial: Boolean)
+    extends AggregateFunction with CastDouble {
 
   // Required for serialization
   def this() = this(null, null, null, 0.0, 0.0, null, false)
 
-  private[this] val errorStats = new StatCounterWithFullCount()
+  private[this] final val errorStats = new StatCounterWithFullCount()
 
-  private val castExpressionType = expr.dataType match {
-    case DecimalType.Fixed(_, _) | DecimalType.Unlimited => 2
-    case DoubleType => 1
-    case x: NumericType => 0
-    case other => sys.error(s"Type $other does not support error estimation")
-  }
+  override def doubleColumnType: DataType = expr.dataType
 
-  private val numericCast = expr.dataType match {
-    case x: NumericType => x.numeric.asInstanceOf[Numeric[Any]]
+  private[this] final val boundReference = expr match {
+    case b: BoundReference => b
     case _ => null
   }
 
   override def update(input: Row): Unit = {
-    val result = expr.eval(input)
-    if (result != null) {
-      errorStats.merge(castExpressionType match {
-        case 0 => numericCast.toDouble(result)
-        case 1 => result.asInstanceOf[Double]
-        case 2 => result.asInstanceOf[Decimal].toDouble
-      })
-      // update the weighted count
-      errorStats.weightedCount += ratioExpr.eval(input)
+    val boundRef = boundReference
+    if (boundRef != null) {
+      val v = toDouble(input, boundRef.ordinal, Double.NaN)
+      if (v != Double.NaN) {
+        errorStats.merge(v)
+        // update the weighted count
+        errorStats.weightedCount += ratioExpr.eval(input)
+      }
+    }
+    else {
+      val result = expr.eval(input)
+      if (result != null) {
+        errorStats.merge(toDouble(result))
+        // update the weighted count
+        errorStats.weightedCount += ratioExpr.eval(input)
+      }
     }
   }
 

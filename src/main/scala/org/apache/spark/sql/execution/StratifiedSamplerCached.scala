@@ -100,10 +100,10 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     override def mergeValue(row: Row,
         sr: StratumReservoir): StratumReservoir = {
       // else update meta information in current stratum
-      sr.batchTotalSize += 1
+      sr.batchSize += 1
       val reservoirCapacity = cacheSize.get + sr.prevShortFall
       if (sr.reservoirSize >= reservoirCapacity) {
-        val rnd = rng.nextInt(sr.batchTotalSize)
+        val rnd = rng.nextInt(sr.batchSize)
         // pick up this row with probability of reservoirCapacity/totalSize
         if (rnd < reservoirCapacity) {
           // replace a random row in reservoir
@@ -173,8 +173,9 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     val numStrata = strata.size
 
     // if more than 50% of keys are empty, then clear the whole map
-    val emptyStrata = segs.foldLeft(0)(
-      _ + _.valuesIterator.count(_.reservoir.isEmpty))
+    val emptyStrata = segs.foldLeft(0) {
+      _ + _.valuesIterator.count(_.reservoir.length == 0)
+    }
 
     val prevCacheSize = this.cacheSize.get
     val timeInterval = this.timeInterval
