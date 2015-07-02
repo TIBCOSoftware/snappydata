@@ -1,7 +1,7 @@
 package org.apache.spark.sql.execution
 
 import java.util.Random
-import java.util.concurrent.atomic.{AtomicReference, AtomicBoolean, AtomicInteger, AtomicLong}
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -10,6 +10,7 @@ import scala.language.reflectiveCalls
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical
+import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.types.{LongType, StructType}
@@ -75,7 +76,7 @@ final class SamplePartition(val parent: Partition, override val index: Int,
 
   val blockId = _partInfo.blockId
 
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
+  def hostExecutorId = getHostExecutorId(blockId)
 
   override def toString =
     s"SamplePartition($index, $blockId, isLast=$isLastHostPartition)"
@@ -100,7 +101,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
     val peerExecutorMap = new mutable.HashMap[String,
         mutable.ArrayBuffer[ExecutorPartitionInfo]]()
     var totalMemory = 1L
-    for ((blockId, (max, remaining)) <- Utils.getAllExecutorsMemoryStatus(
+    for ((blockId, (max, remaining)) <- getAllExecutorsMemoryStatus(
       sparkContext)) {
       peerExecutorMap.getOrElseUpdate(blockId.host,
         new mutable.ArrayBuffer[ExecutorPartitionInfo](4)) +=
@@ -238,12 +239,6 @@ object StratifiedSampler {
   final val EMPTY_ROW = new GenericMutableRow(Array[Any]())
   final val LONG_ONE = Long.box(1)
 
-  implicit class StringExtensions(val s: String) extends AnyVal {
-    def ci = new {
-      def unapply(other: String) = s.equalsIgnoreCase(other)
-    }
-  }
-
   def apply(options: Map[String, Any], qcsi: Array[Int],
       nameSuffix: String, cacheBatchSize: Int,
       schema: StructType, cached: Boolean) = {
@@ -254,7 +249,6 @@ object StratifiedSampler {
     val timeSeriesColumnTest = "timeSeriesColumn".ci
     val timeIntervalTest = "timeInterval".ci
 
-    val timeIntervalSpec = "([0-9]+)(s|m|h)".r
     val cols = schema.fieldNames
 
     // using a default stratum size of 104 since 100 is taken as the normal
@@ -265,7 +259,7 @@ object StratifiedSampler {
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
     val (nm, fraction, stratumSize, tsCol, timeInterval) = options.
-        foldLeft("", 0.0, defaultStratumSize, -1, 0) {
+        foldLeft("", 0.0, defaultStratumSize, -1, 0L) {
       case ((n, fr, sz, ts, ti), (opt, optV)) =>
         opt match {
           case qcsTest() => (n, fr, sz, ts, ti) // ignore
@@ -287,29 +281,13 @@ object StratifiedSampler {
               s"StratifiedSampler: Cannot parse 'strataReservoirSize'=$optV")
           }
           case timeSeriesColumnTest() => optV match {
-            case tss: String => (n, fr, sz, Utils.columnIndex(tss, cols), ti)
+            case tss: String => (n, fr, sz, columnIndex(tss, cols), ti)
             case tsi: Int => (n, fr, sz, tsi, ti)
             case _ => throw new AnalysisException(
               s"StratifiedSampler: Cannot parse 'timeSeriesColumn'=$optV")
           }
-          case timeIntervalTest() => optV match {
-            case tii: Int => (n, fr, sz, ts, tii)
-            case til: Long => (n, fr, sz, ts, til.toInt)
-            case tis: String => tis match {
-              case timeIntervalSpec(interval, unit) =>
-                unit match {
-                  case "s" => (n, fr, sz, ts, interval.toInt)
-                  case "m" => (n, fr, sz, ts, interval.toInt * 60)
-                  case "h" => (n, fr, sz, ts, interval.toInt * 3600)
-                  case _ => throw new AssertionError(
-                    s"unexpected regex match 'unit'=$unit")
-                }
-              case _ => throw new AnalysisException(
-                s"StratifiedSampler: Cannot parse 'timeInterval'=$tis")
-            }
-            case _ => throw new AnalysisException(
-              s"StratifiedSampler: Cannot parse 'timeInterval'=$optV")
-          }
+          case timeIntervalTest() => (n, fr, sz, ts,
+              parseTimeInterval(optV, "StratifiedSampler"))
           case _ => throw new AnalysisException(
             s"StratifiedSampler: Unknown option '$opt'")
         }
@@ -334,10 +312,9 @@ object StratifiedSampler {
     }
   }
 
-  private[sql] def lookupOrAdd(qcs: Array[Int], name: String,
-      fraction: Double, stratumSize: Int,
-      cacheBatchSize: Int, tsCol: Int,
-      timeInterval: Int, schema: StructType) = {
+  private[sql] def lookupOrAdd(qcs: Array[Int], name: String, fraction: Double,
+      stratumSize: Int, cacheBatchSize: Int, tsCol: Int, timeInterval: Long,
+      schema: StructType) = {
     // not using getOrElse in one shot to allow taking only read lock
     // for the common case, then release it and take write lock if new
     // sampler has to be added
@@ -380,7 +357,7 @@ object StratifiedSampler {
 
   private def newSampler(qcs: Array[Int], name: String, fraction: Double,
       stratumSize: Int, cacheBatchSize: Int, tsCol: Int,
-      timeInterval: Int, schema: StructType) = {
+      timeInterval: Long, schema: StructType) = {
     if (qcs.isEmpty) {
       throw new AnalysisException(SampleDataFrame.ERROR_NO_QCS)
     } else if (tsCol >= 0 && timeInterval <= 0) {
@@ -426,6 +403,8 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
     extends Serializable with Cloneable with Logging {
 
   type ReservoirSegment = MultiColumnOpenHashMap[StratumReservoir]
+
+  def module: String = "StratifiedSampler"
 
   /**
    * Map of each stratum key (i.e. a unique combination of values of columns
@@ -655,7 +634,7 @@ class StratumReservoir(final var totalSamples: Int,
       // growing possibly without bound (in case some stratum consistently
       //   gets small number of total rows less than sample size)
       if (self.reservoir.length == newReservoirSize) {
-        Utils.fillArray(reservoir, EMPTY_ROW, 0, nsamples)
+        fillArray(reservoir, EMPTY_ROW, 0, nsamples)
       } else if (nsamples <= 2 && newReservoirSize > 3) {
         // empty the reservoir since it did not receive much data in last round
         self.reservoir = EMPTY_RESERVOIR

@@ -9,14 +9,15 @@ import scala.reflect.ClassTag
 import io.snappydata.util.NumberUtils
 import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{BoundedSortedSet, SegmentMap}
 import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.sources.CastLongTime
+import org.apache.spark.sql.types.{DataType, StructField, StructType}
 import org.apache.spark.util.collection.OpenHashSet
 
-class
-TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0: Long,
-  val topKActual: Int, startIntervalGenerator: Boolean = true)
+final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
+    val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean)
   extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
   val topKInternal = topKActual * 2
 
@@ -224,9 +225,6 @@ TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0:
   override val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = estimators =>
     TopKCMS.merge[T](estimators(1).asInstanceOf[TopKCMS[T]].topKInternal * 2, estimators)
 
-  def this(cmsParams: CMSParams, windowSize: Long, topK: Int) = this(cmsParams, windowSize,
-    System.currentTimeMillis(), topK)
-
   def getTopKTillTime(epoch: Long, combinedKeys: Array[T] = null): Option[Array[(T, Long)]] = {
     this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
@@ -300,17 +298,16 @@ TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long, val epoch0:
       Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
     }, true)
 
-  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long,
-      combinedTopKKeys: Array[T] = null): Option[OpenHashSet[T]] =
+  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[OpenHashSet[T]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
       // TODO: could be optimized to return only the keys
-      val topK = this.getTopKBetweenTime(later, earlier, combinedTopKKeys)
+      val topK = this.getCombinedTopKKeysBetween(later, earlier)
       val result = new OpenHashSet[T](topK.length)
-      topK.foreach { v => result.add(v._1) }
+      topK.foreach { v => result.add(v) }
       Some(result)
     }, true)
 
@@ -466,13 +463,14 @@ object TopKHokusai {
     }
   }
 
-  def apply(name: String, confidence: Double,
-    eps: Double, size: Int, timeInterval: Long) = {
-    lookupOrAdd(name, confidence, eps, size, timeInterval)
+  def apply(name: String, confidence: Double, eps: Double, size: Int,
+      tsCol: Int, timeInterval: Long, epoch0: () => Long) = {
+    lookupOrAdd(name, confidence, eps, size, tsCol, timeInterval, epoch0)
   }
 
   private[sql] def lookupOrAdd(name: String, confidence: Double, eps: Double,
-    size: Int, timeInterval: Long): TopKHokusai[Any] = {
+      size: Int, tsCol: Int, timeInterval: Long,
+      epoch0: () => Long): TopKHokusai[Any] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {
@@ -482,12 +480,13 @@ object TopKHokusai {
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
             val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
-            val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
+            //val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
+            val width = NumberUtils.nearestPowerOf2GE(Math.ceil(2 / eps).toInt)
 
             val cmsParams = CMSParams(width, depth)
 
-            val topk = new TopKHokusai[Any](cmsParams: CMSParams,
-              timeInterval: Long, System.currentTimeMillis(), size)
+            val topk = new TopKHokusai[Any](cmsParams, timeInterval,
+              epoch0(), size, false/*timeInterval > 0 && tsCol < 0*/)
             topKMap(name) = topk
             topk
           })
@@ -496,75 +495,94 @@ object TopKHokusai {
   }
 }
 
-class TopKHokusaiWrapper[T](val name: String, val confidence: Double,
-    val eps: Double, val size: Int, val timeInterval: Long,
-    val schema: StructType, val key: StructField,
-    val frequencyCol: Option[StructField]) extends Serializable
+final class TopKHokusaiWrapper[T](val name: String, val confidence: Double,
+    val eps: Double, val size: Int, val timeSeriesColumn: Int,
+    val timeInterval: Long, val schema: StructType, val key: StructField,
+    val frequencyCol: Option[StructField], val epoch : Long)
+    extends CastLongTime with Serializable {
 
-object TopKHokusaiWrapper {
+  override protected def getNullMillis(getDefaultForNull: Boolean) =
+    if (getDefaultForNull) System.currentTimeMillis() else -1L
 
-  implicit class StringExtensions(val s: String) extends AnyVal {
-    def ci = new {
-      def unapply(other: String) = s.equalsIgnoreCase(other)
+  override def timeColumnType: Option[DataType] = {
+    if (timeSeriesColumn >= 0) {
+      Some(schema(timeSeriesColumn).dataType)
+    } else {
+      None
     }
   }
 
+  override def module: String = "TopKHokusai"
+}
+
+object TopKHokusaiWrapper {
+
   def apply(name: String, options: Map[String, Any],
-    schema: StructType): TopKHokusaiWrapper[Any] = {
+      schema: StructType): TopKHokusaiWrapper[Any] = {
     val keyTest = "key".ci
+    val timeSeriesColumnTest = "timeSeriesColumn".ci
     val timeIntervalTest = "timeInterval".ci
     val confidenceTest = "confidence".ci
     val epsTest = "eps".ci
     val sizeTest = "size".ci
     val frequencyColTest = "frequencyCol".ci
+    val epochTest = "epoch".ci
+    val cols = schema.fieldNames
 
     // Using foldLeft to read key-value pairs and build into the result
     // tuple of (key, confidence, eps, size, frequencyCol) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
-    val (key, timeInterval, confidence, eps, size, frequencyCol) = options.
-      foldLeft("", 5L, 0.95, 0.01, 100, "") {
-        case ((k, ti, cf, e, s, fr), (opt, optV)) =>
+    val (key, tsCol, timeInterval, confidence, eps, size, frequencyCol, epoch) =
+      options.foldLeft("", -1, 5L, 0.95, 0.01, 100, "", -1L) {
+        case ((k, ts, ti, cf, e, s, fr, ep), (opt, optV)) =>
           opt match {
-            case keyTest() => (optV.toString, ti, cf, e, s, fr)
+            case keyTest() => (optV.toString, ts, ti, cf, e, s, fr, ep)
             case confidenceTest() => optV match {
-              case fd: Double => (k, ti, fd, e, s, fr)
-              case fs: String => (k, ti, fs.toDouble, e, s, fr)
-              case ff: Float => (k, ti, ff.toDouble, e, s, fr)
-              case fi: Int => (k, ti, fi.toDouble, e, s, fr)
-              case fl: Long => (k, ti, fl.toDouble, e, s, fr)
+              case fd: Double => (k, ts, ti, fd, e, s, fr, ep)
+              case fs: String => (k, ts, ti, fs.toDouble, e, s, fr, ep)
+              case ff: Float => (k, ts, ti, ff.toDouble, e, s, fr, ep)
+              case fi: Int => (k, ts, ti, fi.toDouble, e, s, fr, ep)
+              case fl: Long => (k, ts, ti, fl.toDouble, e, s, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse double 'confidence'=$optV")
             }
             case epsTest() => optV match {
-              case fd: Double => (k, ti, cf, fd, s, fr)
-              case fs: String => (k, ti, cf, fs.toDouble, s, fr)
-              case ff: Float => (k, ti, cf, ff.toDouble, s, fr)
-              case fi: Int => (k, ti, cf, fi.toDouble, s, fr)
-              case fl: Long => (k, ti, cf, fl.toDouble, s, fr)
+              case fd: Double => (k, ts, ti, cf, fd, s, fr, ep)
+              case fs: String => (k, ts, ti, cf, fs.toDouble, s, fr, ep)
+              case ff: Float => (k, ts, ti, cf, ff.toDouble, s, fr, ep)
+              case fi: Int => (k, ts, ti, cf, fi.toDouble, s, fr, ep)
+              case fl: Long => (k, ts, ti, cf, fl.toDouble, s, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse double 'eps'=$optV")
             }
-
-            case timeIntervalTest() => optV match {
-              case si: Int => (k, si.toLong, cf, e, s, fr)
-              case ss: String => (k, ss.toLong, cf, e, s, fr)
-              case sl: Long => (k, sl, cf, e, s, fr)
+            case timeSeriesColumnTest() => optV match {
+              case tss: String => (k, columnIndex(tss, cols), ti, cf, e, s, fr, ep)
+              case tsi: Int => (k, tsi, ti, cf, e, s, fr, ep)
               case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse int 'timeInterval'=$optV")
+                s"TopKCMS: Cannot parse 'timeSeriesColumn'=$optV")
             }
+            case timeIntervalTest() =>
+              (k, ts, parseTimeInterval(optV, "TopKCMS"), cf, e, s, fr, ep)
             case sizeTest() => optV match {
-              case si: Int => (k, ti, cf, e, si, fr)
-              case ss: String => (k, ti, cf, e, ss.toInt, fr)
-              case sl: Long => (k, ti, cf, e, sl.toInt, fr)
+              case si: Int => (k, ts, ti, cf, e, si, fr, ep)
+              case ss: String => (k, ts, ti, cf, e, ss.toInt, fr, ep)
+              case sl: Long => (k, ts, ti, cf, e, sl.toInt, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")
             }
-            case frequencyColTest() => (k, ti, cf, e, s, optV.toString)
+            case epochTest() => optV match {
+              case si: Int => (k, ts, ti, cf, e, s, fr, si.toLong)
+              case ss: String => (k, ts, ti, cf, e, s, fr, ss.toLong)
+              case sl: Long => (k, ts, ti, cf, e, s, fr, sl)
+              case _ => throw new AnalysisException(
+                s"TopKCMS: Cannot parse int 'size'=$optV")
+            }
+            case frequencyColTest() => (k, ts, ti, cf, e, s, optV.toString, ep)
           }
       }
-    new TopKHokusaiWrapper(name, confidence, eps, size, timeInterval,
+    new TopKHokusaiWrapper(name, confidence, eps, size, tsCol, timeInterval,
       schema, schema(key),
-      if (frequencyCol.equals("")) None else Some(schema(frequencyCol)))
+      if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)), epoch)
   }
 }

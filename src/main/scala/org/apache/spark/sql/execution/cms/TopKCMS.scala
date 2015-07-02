@@ -6,7 +6,7 @@ import org.apache.spark.sql.collection.BoundedSortedSet
 import CountMinSketch._
 import org.apache.spark.util.collection.OpenHashSet
 
-class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: Int, width: Int, seed: Int,
+final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: Int, width: Int, seed: Int,
   eps: Double, confidence: Double, size: Long, table: Array[Array[Long]],
   hashA: Array[Long]) extends CountMinSketch[T](depth, width, seed,
   eps, confidence, size, table, hashA) {

@@ -4,33 +4,39 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
+import scala.util.control.NonFatal
 
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, Row}
 import org.apache.spark.sql.collection.{ChangeValue, GenerateFlatIterator, SegmentMap, Utils}
 import org.apache.spark.sql.execution.StratifiedSampler._
-import org.apache.spark.sql.sources.CastLongTime
-import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.sources.{CastDouble, StatVarianceCounter}
+import org.apache.spark.sql.types._
 
 /**
- * A stratified sampling implementation that uses a fraction and initial
- * cache size. Latter is used as the initial reservoir size per stratum
- * for reservoir sampling. It primarily tries to satisfy the fraction of
- * the total data repeatedly filling up the cache as required (and expanding
- * the cache size for bigger reservoir if required in next rounds).
- * The fraction is attempted to be satisfied while ensuring that the selected
- * rows are equally divided among the current stratum (for those that received
- * any rows, that is).
+ * A stratified sampling implementation that uses an error limit with confidence
+ * on a numerical column to sample as much as required to maintaining the
+ * expected error within the limit. An optional initial cache size can
+ * be specified that is used as the initial reservoir size per stratum
+ * for reservoir sampling. The error limit is attempted to be honoured for
+ * each of the stratum independently and the sampling rate increased or
+ * decreased accordingly. It uses standard closed form estimation of the
+ * sampling error increasing or decreasing the sampling as required (and
+ * expanding the cache size for bigger reservoir if required in next rounds).
  */
-final class StratifiedSamplerCached(override val qcs: Array[Int],
+final class StratifiedSamplerErrorLimit(override val qcs: Array[Int],
     override val name: String,
     override val schema: StructType,
     private val cacheSize: AtomicInteger,
-    val fraction: Double,
+    val errorLimit: Double,
+    val confidence: Double,
+    val errorLimitColumn: Int,
     val cacheBatchSize: Int,
     val timeSeriesColumn: Int,
-    val timeInterval: Long)
-    extends StratifiedSampler(qcs, name, schema) with CastLongTime {
+    val timeInterval: Int)
+    extends StratifiedSampler(qcs, name, schema) {
 
+  val fraction = 0.01 // SW:
   private val batchSamples, slotSize = new AtomicInteger
   /** Keeps track of the maximum number of samples in a stratum seen so far */
   private val maxSamples = new AtomicLong
@@ -38,46 +44,148 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
   // time around for the slot (since every valid time will be less)
   private val timeSlotStart = new AtomicLong(Long.MaxValue)
   private val timeSlotEnd = new AtomicLong
+
+  /** Store type of column once to avoid checking for every row at runtime */
+  private val timeSeriesColumnType: Int = {
+    if (timeSeriesColumn >= 0) {
+      val ts = schema(timeSeriesColumn)
+      ts.dataType match {
+        case LongType => 0
+        case IntegerType => 1
+        case TimestampType | DateType => 2
+        case _ => throw new AnalysisException(
+          s"StratifiedSampler: Cannot parse 'timeSeriesColumn'=$ts")
+      }
+    } else -1
+  }
+
   /**
    * Total number of samples collected in a timeInterval. Not atomic since
    * it is always updated and read under global lock.
    */
   private var timeSlotSamples = 0
 
-  override def timeColumnType: Option[DataType] = {
-    if (timeSeriesColumn >= 0) {
-      Some(schema(timeSeriesColumn).dataType)
-    } else {
-      None
-    }
-  }
-
   private def setTimeSlot(timeSlot: Long) {
     compareOrderAndSet(timeSlotStart, timeSlot, getMax = false)
     compareOrderAndSet(timeSlotEnd, timeSlot, getMax = true)
   }
 
-  private def updateTimeSlot(row: Row, useCurrentTimeIfNoColumn: Boolean) {
-    val tsCol = timeSeriesColumn
-    if (tsCol >= 0) {
-      val timeVal = parseMillis(row, tsCol)
-      if (timeVal > 0) setTimeSlot(timeVal)
+  private def parseMillisFromAny(ts: Any): Long = {
+    ts match {
+      case tts: java.sql.Timestamp =>
+        val time = tts.getTime
+        if (tts.getNanos >= 500000) time + 1 else time
+      case td: java.util.Date => td.getTime
+      case tl: Long => tl
+      case ti: Int => ti.toLong
+      case _ => throw new AnalysisException(
+        s"StratifiedSampler: Cannot parse 'timeSeriesColumn'=$ts")
     }
-    // update the timeSlot if a) explicitly requested, or
-    // b) in case if it has not been initialized at all
-    else if (useCurrentTimeIfNoColumn || timeSlotEnd.get == 0L) {
-      setTimeSlot(System.currentTimeMillis)
+  }
+
+  private def updateTimeSlot(row: Row, useCurrentTimeIfNoColumn: Boolean) {
+    try {
+      val tsType = timeSeriesColumnType
+      if (tsType >= 0) {
+        tsType match {
+          case 0 =>
+            val ts = row.getLong(timeSeriesColumn)
+            if (ts != 0 || !row.isNullAt(timeSeriesColumn)) {
+              setTimeSlot(ts)
+            }
+          case 1 =>
+            val ts = row.getInt(timeSeriesColumn)
+            if (ts != 0 || !row.isNullAt(timeSeriesColumn)) {
+              setTimeSlot(ts)
+            }
+          case 2 =>
+            val ts = row(timeSeriesColumn)
+            if (ts != null) {
+              setTimeSlot(parseMillisFromAny(ts))
+            }
+        }
+      }
+      // update the timeSlot if a) explicitly requested, or
+      // b) in case if it has not been initialized at all
+      else if (useCurrentTimeIfNoColumn || timeSlotEnd.get == 0L) {
+        setTimeSlot(System.currentTimeMillis)
+      }
+    } catch {
+      case NonFatal(e) => if (timeSeriesColumn < 0 ||
+          !row.isNullAt(timeSeriesColumn)) throw e
+      case t => throw t
     }
   }
 
   private final class ProcessRows[U](val processSelected: Any => Any,
       val processFlush: (U, Row) => U,
       val endBatch: U => U, var result: U)
-      extends ChangeValue[Row, StratumReservoir] {
+      extends ChangeValue[Row, StratumReservoir] with CastDouble {
 
     override def keyCopy(row: Row) = row.copy()
 
-    override def defaultValue(row: Row): StratumReservoir = {
+    override def doubleColumnType: DataType = schema(errorLimitColumn).dataType
+
+    /** Update the stats required to honour error limit for a new base row */
+    def updateStratumStats(sr: StratumCache, row: Row,
+        updateSampleStats: Boolean, replacedRow: Row): Unit = {
+      val statVal = toDouble(row, errorLimitColumn, Double.NaN)
+      if (statVal != Double.NaN) {
+        sr.merge(statVal)
+        if (updateSampleStats) {
+          var prevVal: Double = 0
+          if (replacedRow != null && {
+            prevVal = toDouble(replacedRow, errorLimitColumn, Double.NaN)
+            prevVal
+          } != Double.NaN) {
+            sr.stratumMean += (statVal - prevVal) / sr.batchSize
+          } else {
+            sr.batchSize += 1
+            sr.stratumMean += (statVal - sr.stratumMean) / sr.batchSize
+          }
+        }
+      }
+    }
+
+    /** Check whether the cache needs to be flushed.
+      *
+      * @return java.lang.Boolean.TRUE if cache needs to be flushed and fully
+      *         reset, java.lang.Boolean.FALSE if cache needs to be flushed but
+      *         no full reset, and null if cache does not need to be flushed
+      */
+    def checkCacheFlush(slotSize: Int): java.lang.Boolean = {
+      // now that there is no "fraction" as reference, this will flush
+      // the cache based on following criteria (cannot grow indefinitely)
+      // 1) if time-slot is defined and is over then flush in any case
+      // 2) if cache has grown beyond 10*cacheBatchSize then flush (regardless
+      //    of time-slot defined or not)
+      // 3) subject 2) to minimum 10 rows per stratum on an average
+      // 4) do the above three checks every 10 rows to avoid too much
+      //    processing on every row
+      // The above constant 10 is hardcoded and making them configurable
+      // will be too confusing to the users
+
+      if ((slotSize % 10) == 1) {
+        if (timeInterval >= 0) {
+          // in case the current timeSlot is over, reset maxSamples
+          // (thus causing shortFall to clear up)
+          val tsEnd = timeSlotEnd.get
+          if ((tsEnd != 0) && ((tsEnd - timeSlotStart.get) >=
+              (timeInterval.toLong * 1000L))) {
+            return java.lang.Boolean.TRUE
+          }
+        }
+        if (slotSize > (cacheBatchSize * 10) && slotSize > (strata.size * 10)) {
+          java.lang.Boolean.FALSE
+        } else {
+          null
+        }
+      } else {
+        null
+      }
+    }
+
+    override def defaultValue(row: Row): StratumCache = {
       val capacity = cacheSize.get
       val reservoir = new Array[MutableRow](capacity)
       reservoir(0) = newMutableRow(row, processSelected)
@@ -90,36 +198,36 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         updateTimeSlot(row, useCurrentTimeIfNoColumn = true)
         0
       } else math.max(0, maxSamples.get - capacity).toInt
-      val sr = new StratumReservoir(1, 1, reservoir, 1, initShortFall)
+      val sr = new StratumCache(1, 1, reservoir, 1, initShortFall)
+      updateStratumStats(sr, row, updateSampleStats = true, replacedRow = null)
       maxSamples.compareAndSet(0, 1)
       batchSamples.incrementAndGet()
       slotSize.incrementAndGet()
       sr
     }
 
-    override def mergeValue(row: Row,
-        sr: StratumReservoir): StratumReservoir = {
+    override def mergeValue(row: Row, sr: StratumReservoir) = {
+      val sc = sr.asInstanceOf[StratumCache]
       // else update meta information in current stratum
-      sr.batchSize += 1
-      val reservoirCapacity = cacheSize.get + sr.prevShortFall
-      if (sr.reservoirSize >= reservoirCapacity) {
-        val rnd = rng.nextInt(sr.batchSize)
+      val reservoirCapacity = cacheSize.get + sc.prevShortFall
+      if (sc.reservoirSize >= reservoirCapacity) {
+        val rnd = rng.nextInt(sc.count.toInt)
         // pick up this row with probability of reservoirCapacity/totalSize
         if (rnd < reservoirCapacity) {
           // replace a random row in reservoir
-          sr.reservoir(rng.nextInt(reservoirCapacity)) =
+          sc.reservoir(rng.nextInt(reservoirCapacity)) =
               newMutableRow(row, processSelected)
           // update timeSlot start and end
           if (timeInterval > 0) {
             updateTimeSlot(row, useCurrentTimeIfNoColumn = false)
           }
         }
-        if (batchSamples.get >= (fraction * slotSize.incrementAndGet())) sr
+        if (batchSamples.get >= (fraction * slotSize.incrementAndGet())) sc
         else null
       } else {
         // if reservoir has empty slots then fill them up first
-        val reservoirLen = sr.reservoir.length
-        if (reservoirLen <= sr.reservoirSize) {
+        val reservoirLen = sc.reservoir.length
+        if (reservoirLen <= sc.reservoirSize) {
           // new size of reservoir will be > reservoirSize given that it
           // increases only in steps of 1 and the expression
           // reservoirLen + (reservoirLen >>> 1) + 1 will certainly be
@@ -129,23 +237,23 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
             cacheSize.get))
           Utils.fillArray(newReservoir, EMPTY_ROW, reservoirLen,
             newReservoir.length)
-          System.arraycopy(sr.reservoir, 0, newReservoir,
+          System.arraycopy(sc.reservoir, 0, newReservoir,
             0, reservoirLen)
-          sr.reservoir = newReservoir
+          sc.reservoir = newReservoir
         }
-        sr.reservoir(sr.reservoirSize) = newMutableRow(row, processSelected)
-        sr.reservoirSize += 1
-        sr.totalSamples += 1
+        sc.reservoir(sc.reservoirSize) = newMutableRow(row, processSelected)
+        sc.reservoirSize += 1
+        sc.totalSamples += 1
 
         // update timeSlot start and end
         if (timeInterval > 0) {
           updateTimeSlot(row, useCurrentTimeIfNoColumn = false)
         }
 
-        compareOrderAndSet(maxSamples, sr.totalSamples, getMax = true)
+        compareOrderAndSet(maxSamples, sc.totalSamples, getMax = true)
         batchSamples.incrementAndGet()
         slotSize.incrementAndGet()
-        sr
+        sc
       }
     }
 
@@ -173,9 +281,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     val numStrata = strata.size
 
     // if more than 50% of keys are empty, then clear the whole map
-    val emptyStrata = segs.foldLeft(0) {
-      _ + _.valuesIterator.count(_.reservoir.length == 0)
-    }
+    val emptyStrata = segs.foldLeft(0)(
+      _ + _.valuesIterator.count(_.reservoir.isEmpty))
 
     val prevCacheSize = this.cacheSize.get
     val timeInterval = this.timeInterval
@@ -190,7 +297,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
       // in case the current timeSlot is over, reset maxSamples
       // (thus causing shortFall to clear up)
       val tsEnd = timeSlotEnd.get
-      fullReset = (tsEnd != 0) && ((tsEnd - timeSlotStart.get) >= timeInterval)
+      fullReset = (tsEnd != 0) && ((tsEnd - timeSlotStart.get) >=
+          (timeInterval.toLong * 1000L))
       if (fullReset) {
         maxSamples.set(0)
         // reset timeSlot start and end
@@ -264,7 +372,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
           val numToFlush = (totalSamples / batchSize) * batchSize -
               pendingLen
           assert(numToFlush >= 0,
-            s"$module: unexpected numToFlush=$numToFlush")
+            s"StratifiedSampler: unexpected numToFlush=$numToFlush")
           val res = endBatch(segs.foldLeft(u)(processAndCopyToBuffer(
             prevCacheSize, fullReset, numToFlush, newPBatch)))
           // pendingBatch is COW so need to replace in final shape
@@ -294,7 +402,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
   override protected def strataReservoirSize: Int = cacheSize.get
 
   override def append[U](rows: Iterator[Row], processSelected: Any => Any,
-      init: U, processFlush: (U, Row) => U, endBatch: U => U): U = {
+      init: U, processFlush: (U, Row) => U,
+      endBatch: U => U): U = {
     if (rows.hasNext) {
       val processedResult = new ProcessRows(processSelected, processFlush,
         endBatch, init)
@@ -306,8 +415,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
   override def sample(items: Iterator[Row], flush: Boolean): Iterator[Row] = {
     // use "batchSize" to determine the sample buffer size
     val batchSize = BUFSIZE
-    val sampleBuffer = new mutable.ArrayBuffer[Row](math.min(batchSize,
-      (batchSize * fraction * 10).toInt))
+    val sampleBuffer = new mutable.ArrayBuffer[Row](batchSize / 10)
 
     new GenerateFlatIterator[Row, Boolean](finished => {
       val sbuffer = sampleBuffer
@@ -347,7 +455,36 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     }, false)
   }
 
-  override def clone: StratifiedSamplerCached = new StratifiedSamplerCached(
-    qcs, name, schema, cacheSize, fraction, cacheBatchSize,
-    timeSeriesColumn, timeInterval)
+  override def clone: StratifiedSamplerErrorLimit =
+    new StratifiedSamplerErrorLimit(qcs, name, schema, cacheSize,
+      errorLimit, confidence, errorLimitColumn, cacheBatchSize,
+      timeSeriesColumn, timeInterval)
+}
+
+/**
+ * An extension to StratumReservoir to also track the mean, variance of full
+ * population as well as the mean of sampling to determine if the error limit
+ * is being honoured.
+ *
+ * Note that batchSize field in this extension is used to account for total
+ * number of rows that have non-null value in the column chosen for error limit
+ * checks. This is used to keep running mean in stratumMean. The original batch
+ * size field for total number of rows seen in the stratum in current batch
+ * is taken care by parent StatVarianceCounter.count field.
+ */
+private final class StratumCache(_totalSamples: Int, _batchSize: Int,
+    _reservoir: Array[MutableRow], _reservoirSize: Int, _prevShortFall: Int,
+    var stratumMean: Double = 0)
+    extends StratumReservoir(_totalSamples, _batchSize, _reservoir,
+      _reservoirSize, _prevShortFall) with StatVarianceCounter {
+
+  override def batchTotalSize = count.toInt
+
+  override def clearBatchTotalSize(): Unit = {
+    super.init(0, 0, 0)
+    batchSize = 0
+    this.stratumMean = 0
+  }
+
+  override def copy() = sys.error("StratumCache.copy: unexpected call")
 }
