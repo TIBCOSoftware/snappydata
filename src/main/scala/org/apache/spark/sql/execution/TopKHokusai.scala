@@ -298,17 +298,16 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
     }, true)
 
-  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long,
-      combinedTopKKeys: Array[T] = null): Option[OpenHashSet[T]] =
+  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[OpenHashSet[T]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
       // TODO: could be optimized to return only the keys
-      val topK = this.getTopKBetweenTime(later, earlier, combinedTopKKeys)
+      val topK = this.getCombinedTopKKeysBetween(later, earlier)
       val result = new OpenHashSet[T](topK.length)
-      topK.foreach { v => result.add(v._1) }
+      topK.foreach { v => result.add(v) }
       Some(result)
     }, true)
 
@@ -487,7 +486,7 @@ object TopKHokusai {
             val cmsParams = CMSParams(width, depth)
 
             val topk = new TopKHokusai[Any](cmsParams, timeInterval,
-              epoch0(), size, timeInterval > 0 && tsCol < 0)
+              epoch0(), size, false/*timeInterval > 0 && tsCol < 0*/)
             topKMap(name) = topk
             topk
           })

@@ -51,7 +51,7 @@ import org.apache.spark.sql.execution.cms.CountMinSketch
  *    Current version is mutable.
  */
 class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
-  startIntervalGenerator: Boolean = true) {
+  startIntervalGenerator: Boolean = false) {
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
 
   private val intervalGenerator = new Timer()
