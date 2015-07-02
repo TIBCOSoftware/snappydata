@@ -8,7 +8,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.{Seconds, StreamingContext}
+import org.apache.spark.streaming.{StreamingContextState, Seconds, StreamingContext}
 
 /**
  * Snappy SQL extensions. Includes:
@@ -132,13 +132,13 @@ private object StreamingCtxtHolder {
   def apply(sparkCtxt: SparkContext,
       duration: Int): StreamingContext = {
     val context = atomicContext.get
-    if (context != null) {
-      context
+    if (context != null &&
+      !context.getState().equals(StreamingContextState.STOPPED)) {
+      return context
     }
-    else {
-      atomicContext.compareAndSet(null,
-        new StreamingContext(sparkCtxt, Seconds(duration)))
-      atomicContext.get
-    }
+    atomicContext.compareAndSet(context,
+      new StreamingContext(sparkCtxt, Seconds(duration)))
+    atomicContext.get
+
   }
 }
