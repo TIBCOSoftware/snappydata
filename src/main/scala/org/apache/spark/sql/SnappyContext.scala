@@ -134,7 +134,7 @@ class SnappyContext(sc: SparkContext)
     val topkhokusai = TopKHokusai(name, topkWrapper.confidence,
       topkWrapper.eps, topkWrapper.size, tsCol, topkWrapper.timeInterval,
       () => {
-        if (tsCol >= 0) {
+        if (tsCol >= 0 && topkWrapper.epoch == -1) {
           var epoch0 = -1L
           val rowBuf = new mutable.ArrayBuffer[Row](4)
           // assume first row will have the least time
@@ -147,6 +147,8 @@ class SnappyContext(sc: SparkContext)
           } while (epoch0 <= 0)
           rowIter = rowBuf.iterator ++ rowIterator
           epoch0
+        } else if (topkWrapper.epoch != -1){
+          topkWrapper.epoch
         } else {
           System.currentTimeMillis()
         }

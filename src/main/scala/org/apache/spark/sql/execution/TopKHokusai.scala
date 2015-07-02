@@ -481,7 +481,8 @@ object TopKHokusai {
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
             val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
-            val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
+            //val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
+            val width = NumberUtils.nearestPowerOf2GE(Math.ceil(2 / eps).toInt)
 
             val cmsParams = CMSParams(width, depth)
 
@@ -498,7 +499,7 @@ object TopKHokusai {
 final class TopKHokusaiWrapper[T](val name: String, val confidence: Double,
     val eps: Double, val size: Int, val timeSeriesColumn: Int,
     val timeInterval: Long, val schema: StructType, val key: StructField,
-    val frequencyCol: Option[StructField])
+    val frequencyCol: Option[StructField], val epoch : Long)
     extends CastLongTime with Serializable {
 
   override protected def getNullMillis(getDefaultForNull: Boolean) =
@@ -526,56 +527,63 @@ object TopKHokusaiWrapper {
     val epsTest = "eps".ci
     val sizeTest = "size".ci
     val frequencyColTest = "frequencyCol".ci
-
+    val epochTest = "epoch".ci
     val cols = schema.fieldNames
 
     // Using foldLeft to read key-value pairs and build into the result
     // tuple of (key, confidence, eps, size, frequencyCol) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
-    val (key, tsCol, timeInterval, confidence, eps, size, frequencyCol) =
-      options.foldLeft("", -1, 5L, 0.95, 0.01, 100, "") {
-        case ((k, ts, ti, cf, e, s, fr), (opt, optV)) =>
+    val (key, tsCol, timeInterval, confidence, eps, size, frequencyCol, epoch) =
+      options.foldLeft("", -1, 5L, 0.95, 0.01, 100, "", -1L) {
+        case ((k, ts, ti, cf, e, s, fr, ep), (opt, optV)) =>
           opt match {
-            case keyTest() => (optV.toString, ts, ti, cf, e, s, fr)
+            case keyTest() => (optV.toString, ts, ti, cf, e, s, fr, ep)
             case confidenceTest() => optV match {
-              case fd: Double => (k, ts, ti, fd, e, s, fr)
-              case fs: String => (k, ts, ti, fs.toDouble, e, s, fr)
-              case ff: Float => (k, ts, ti, ff.toDouble, e, s, fr)
-              case fi: Int => (k, ts, ti, fi.toDouble, e, s, fr)
-              case fl: Long => (k, ts, ti, fl.toDouble, e, s, fr)
+              case fd: Double => (k, ts, ti, fd, e, s, fr, ep)
+              case fs: String => (k, ts, ti, fs.toDouble, e, s, fr, ep)
+              case ff: Float => (k, ts, ti, ff.toDouble, e, s, fr, ep)
+              case fi: Int => (k, ts, ti, fi.toDouble, e, s, fr, ep)
+              case fl: Long => (k, ts, ti, fl.toDouble, e, s, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse double 'confidence'=$optV")
             }
             case epsTest() => optV match {
-              case fd: Double => (k, ts, ti, cf, fd, s, fr)
-              case fs: String => (k, ts, ti, cf, fs.toDouble, s, fr)
-              case ff: Float => (k, ts, ti, cf, ff.toDouble, s, fr)
-              case fi: Int => (k, ts, ti, cf, fi.toDouble, s, fr)
-              case fl: Long => (k, ts, ti, cf, fl.toDouble, s, fr)
+              case fd: Double => (k, ts, ti, cf, fd, s, fr, ep)
+              case fs: String => (k, ts, ti, cf, fs.toDouble, s, fr, ep)
+              case ff: Float => (k, ts, ti, cf, ff.toDouble, s, fr, ep)
+              case fi: Int => (k, ts, ti, cf, fi.toDouble, s, fr, ep)
+              case fl: Long => (k, ts, ti, cf, fl.toDouble, s, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse double 'eps'=$optV")
             }
             case timeSeriesColumnTest() => optV match {
-              case tss: String => (k, columnIndex(tss, cols), ti, cf, e, s, fr)
-              case tsi: Int => (k, tsi, ti, cf, e, s, fr)
+              case tss: String => (k, columnIndex(tss, cols), ti, cf, e, s, fr, ep)
+              case tsi: Int => (k, tsi, ti, cf, e, s, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse 'timeSeriesColumn'=$optV")
             }
             case timeIntervalTest() =>
-              (k, ts, parseTimeInterval(optV, "TopKCMS"), cf, e, s, fr)
+              (k, ts, parseTimeInterval(optV, "TopKCMS"), cf, e, s, fr, ep)
             case sizeTest() => optV match {
-              case si: Int => (k, ts, ti, cf, e, si, fr)
-              case ss: String => (k, ts, ti, cf, e, ss.toInt, fr)
-              case sl: Long => (k, ts, ti, cf, e, sl.toInt, fr)
+              case si: Int => (k, ts, ti, cf, e, si, fr, ep)
+              case ss: String => (k, ts, ti, cf, e, ss.toInt, fr, ep)
+              case sl: Long => (k, ts, ti, cf, e, sl.toInt, fr, ep)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")
             }
-            case frequencyColTest() => (k, ts, ti, cf, e, s, optV.toString)
+            case epochTest() => optV match {
+              case si: Int => (k, ts, ti, cf, e, s, fr, si.toLong)
+              case ss: String => (k, ts, ti, cf, e, s, fr, ss.toLong)
+              case sl: Long => (k, ts, ti, cf, e, s, fr, sl)
+              case _ => throw new AnalysisException(
+                s"TopKCMS: Cannot parse int 'size'=$optV")
+            }
+            case frequencyColTest() => (k, ts, ti, cf, e, s, optV.toString, ep)
           }
       }
     new TopKHokusaiWrapper(name, confidence, eps, size, tsCol, timeInterval,
       schema, schema(key),
-      if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)))
+      if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)), epoch)
   }
 }
