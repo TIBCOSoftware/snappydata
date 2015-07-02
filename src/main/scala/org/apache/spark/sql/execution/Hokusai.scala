@@ -188,7 +188,8 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
         if (x > timeEpoch.t) {
           None
         } else {
-          this.queryTillLastNIntervals(this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
+          this.queryTillLastNIntervals(
+              this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
             key)
         }),
       true)
@@ -290,7 +291,8 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                   taAggs(0).add(v.key, v.frequency)
                 } else {
                   val timeIntervalsToModify = this.taPlusIa.intervalTracker
-                    .identifyIntervalsContaining(interval)
+                    .identifyIntervalsContaining(
+                        this.taPlusIa.convertIntervalBySwappingEnds(interval))
                   timeIntervalsToModify.foreach { x =>
                     taAggs(NumberUtils.isPowerOf2(x) + 1)
                       .add(v.key, v.frequency)
@@ -947,7 +949,7 @@ class IntervalTracker {
     this.head.identifyBestPath(lastNIntervals, prevTotal, encompassLastInterval, startingFromInterval)
   }
 
-  def identifyIntervalsContaining(interval: Int): Seq[Long] = {
+  def identifyIntervalsContaining(interval: Long): Seq[Long] = {
     //The first 1 interval is outside the LinkedInterval but will always be there separate
     //But the computed interval length includes the 1st interval
     this.head.identifyIntervalsContaining(interval)
@@ -1097,7 +1099,7 @@ class IntervalTracker {
 
     }
 
-    def identifyIntervalsContaining(interval: Int, prevTotal: Long = 1): Seq[Long] = {
+    def identifyIntervalsContaining(interval: Long, prevTotal: Long = 1): Seq[Long] = {
       val last = this.intervals.last
       if (last + prevTotal == interval) {
         Seq[Long](last)
