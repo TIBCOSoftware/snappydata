@@ -1,9 +1,9 @@
 package org.apache.spark.sql.execution
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import java.util.{Timer, TimerTask}
+import java.util.{ Timer, TimerTask }
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer, MutableList, Stack}
+import scala.collection.mutable.{ ArrayBuffer, ListBuffer, MutableList, Stack }
 import scala.reflect.ClassTag
 import scala.util.Random
 
@@ -260,11 +260,11 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     }
 
   def accummulate(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]): Unit =
-  this.executeInWriteLock {
-    val timeEpoch = this.timeEpoch
-    val iaAggs = this.taPlusIa.ia.aggregates
-    val taAggs = this.taPlusIa.ta.aggregates
-    data.foreach { v =>
+    this.executeInWriteLock {
+      val timeEpoch = this.timeEpoch
+      val iaAggs = this.taPlusIa.ia.aggregates
+      val taAggs = this.taPlusIa.ta.aggregates
+      data.foreach { v =>
         val epoch = v.epoch
         if (epoch > 0) {
           // find the appropriate time and item aggregates and update them
@@ -277,21 +277,30 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                   if (interval > (timeEpoch.t + 2)) {
                     println(s"SW: WARNING: got time stamp = $epoch more than twice beyond current")
                   }
-                  increment()
+                  val incrementAmount = interval - timeEpoch.t.asInstanceOf[Int] - 1
+                  0 until incrementAmount foreach { _ =>
+                    increment()
+                  }
                 }
                 mBar.add(v.key, v.frequency)
-              }
-              else {
-                val log2 = NumberUtils.nearestPowerOf2LE(interval - 1).toInt
-                val timeAgg = taAggs(log2)
-                timeAgg.add(v.key, v.frequency)
-                val itemAgg = iaAggs(interval - 1)
-                itemAgg.add(v.key, v.frequency)
+              } else {
+                //we have to update CMS in past
+                //identify all the intervals which store data for this interval
+                if (interval == timeEpoch.t) {
+                  taAggs(0).add(v.key, v.frequency)
+                } else {
+                  val timeIntervalsToModify = this.taPlusIa.intervalTracker
+                    .identifyIntervalsContaining(interval)
+                  timeIntervalsToModify.foreach { x =>
+                    taAggs(NumberUtils.isPowerOf2(x) + 1)
+                      .add(v.key, v.frequency)
+                  }
+                }
+                iaAggs(interval - 1).add(v.key, v.frequency)
               }
             case None => println(s"SW: WARNING: got epoch=$epoch with epoch0 as ${timeEpoch.epoch0}")
           }
-        }
-        else {
+        } else {
           mBar.add(v.key, v.frequency)
         }
       }
@@ -923,7 +932,7 @@ case class CMSParams(width: Int, depth: Int, seed: Int = 123) {
 }
 
 final class KeyFrequencyWithTimestamp[T](val key: T, val frequency: Long,
-    val epoch: Long)
+  val epoch: Long)
 
 class IntervalTracker {
   private var head: IntervalLink = null
@@ -936,6 +945,12 @@ class IntervalTracker {
     //The first 1 interval is outside the LinkedInterval but will always be there separate
     //But the computed interval length includes the 1st interval
     this.head.identifyBestPath(lastNIntervals, prevTotal, encompassLastInterval, startingFromInterval)
+  }
+
+  def identifyIntervalsContaining(interval: Int): Seq[Long] = {
+    //The first 1 interval is outside the LinkedInterval but will always be there separate
+    //But the computed interval length includes the 1st interval
+    this.head.identifyIntervalsContaining(interval)
   }
 
   def numSaturatedSize: Int = {
@@ -1078,6 +1093,25 @@ class IntervalTracker {
             case None => (Seq.empty, prevTotal)
           }
         }
+      }
+
+    }
+
+    def identifyIntervalsContaining(interval: Int, prevTotal: Long = 1): Seq[Long] = {
+      val last = this.intervals.last
+      if (last + prevTotal == interval) {
+        Seq[Long](last)
+      } else if (last + prevTotal < interval) {
+        this.nextLink.identifyIntervalsContaining(interval, last + prevTotal)
+      } else {
+        this.intervals.filter { x =>
+          if ((x + prevTotal) >= interval) {
+            true
+          } else {
+            false
+          }
+        }
+
       }
 
     }
