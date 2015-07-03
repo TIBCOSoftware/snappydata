@@ -349,7 +349,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
           lengthTillInterval
         }
 
-        val total1 = if (start == taIntervalStartsAt && end == lengthTillInterval) {
+        if (start == taIntervalStartsAt && end == lengthTillInterval) {
           // can add the time series aggregation as whole interval is needed
           val topKCMS = this.taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
           TopKCMS.getCombinedTopKFromEstimators(Array(topKCMS), unifiedTopKKeys, topKs)

@@ -55,7 +55,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
 
   private val intervalGenerator = new Timer()
-
+  
   val rwLock = new ReentrantReadWriteLock()
   val readLock = rwLock.readLock
   val writeLock = rwLock.writeLock
@@ -262,11 +262,11 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   def accummulate(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]): Unit =
     this.executeInWriteLock {
-      val timeEpoch = this.timeEpoch
+     
       val iaAggs = this.taPlusIa.ia.aggregates
       val taAggs = this.taPlusIa.ta.aggregates
       data.foreach { v =>
-        val epoch = v.epoch
+        val epoch = v.epoch       
         if (epoch > 0) {
           // find the appropriate time and item aggregates and update them
           timeEpoch.timestampToInterval(epoch) match {
@@ -289,16 +289,21 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                 //identify all the intervals which store data for this interval
                 if (interval == timeEpoch.t) {
                   taAggs(0).add(v.key, v.frequency)
+                  if(!taAggs(0).eq(iaAggs(interval - 1))) {
+                    iaAggs(interval - 1).add(v.key, v.frequency) 
+                  }
                 } else {
                   val timeIntervalsToModify = this.taPlusIa.intervalTracker
-                    .identifyIntervalsContaining(
-                        this.taPlusIa.convertIntervalBySwappingEnds(interval))
+                    .identifyIntervalsContaining(this.taPlusIa.convertIntervalBySwappingEnds(interval))
                   timeIntervalsToModify.foreach { x =>
                     taAggs(NumberUtils.isPowerOf2(x) + 1)
                       .add(v.key, v.frequency)
                   }
+                  if(!(timeIntervalsToModify.contains(1) && taAggs(1).eq(iaAggs(interval - 1)) )) {
+                     iaAggs(interval - 1).add(v.key, v.frequency)
+                  }
                 }
-                iaAggs(interval - 1).add(v.key, v.frequency)
+                
               }
             case None => println(s"SW: WARNING: got epoch=$epoch with epoch0 as ${timeEpoch.epoch0}")
           }
@@ -306,6 +311,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
           mBar.add(v.key, v.frequency)
         }
       }
+      
     }
 
   protected def executeInReadLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
