@@ -1,5 +1,6 @@
 package org.apache.spark.sql.execution.cms
 
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import org.apache.spark.sql.collection.BoundedSortedSet
@@ -43,12 +44,7 @@ final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, dep
   }
 
   def getFromTopKMap(key: T): Option[Long] = {
-    val count = this.topkSet.get(key)
-    if (count != null) {
-      Some(count)
-    } else {
-      None
-    }
+    Option(this.topkSet.get(key))
   }
 
   def getTopK: Array[(T, Long)] = {
@@ -99,27 +95,23 @@ object TopKCMS {
         bound, depth, width, size, hashA, table)
     topkKeys.foreach(x => mergedTopK.populateTopK(x))
     mergedTopK
-
   }
 
-  def getUnionedTopKKeysFromEstimators[T](estimators: Seq[CountMinSketch[T]]): scala.collection.mutable.Set[T] = {
+  def getUnionedTopKKeysFromEstimators[T](estimators: Seq[CountMinSketch[T]]): mutable.Set[T] = {
     val topkKeys = scala.collection.mutable.HashSet[T]()
     estimators.foreach { x =>
       val topkCMS = x.asInstanceOf[TopKCMS[T]]
       val iter = topkCMS.topkSet.iterator()
-      while (iter.hasNext()) {
+      while (iter.hasNext) {
         topkKeys += iter.next()._1
       }
     }
     topkKeys
   }
 
-  
   def getCombinedTopKFromEstimators[T](estimators: Seq[CountMinSketch[T]],
-    topKKeys: scala.collection.mutable.Set[T],
-    topKKeyValMap: scala.collection.mutable.Map[T, java.lang.Long] = null):
-    
-    scala.collection.mutable.Map[T, java.lang.Long] = {
+    topKKeys: Iterable[T], topKKeyValMap: mutable.Map[T, java.lang.Long] = null):
+    mutable.Map[T, java.lang.Long] = {
 
     val topkKeysVals = if (topKKeyValMap == null) {
       scala.collection.mutable.HashMap[T, java.lang.Long]()
@@ -135,10 +127,9 @@ object TopKCMS {
         }else {
           x.estimateCount(key)
         }
-        val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0)
-        topkKeysVals.+=(key -> (prevCount + count))
-      
-      }      
+        val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0L)
+        topkKeysVals += (key -> (prevCount + count))
+      }
     }
     topkKeysVals
   }

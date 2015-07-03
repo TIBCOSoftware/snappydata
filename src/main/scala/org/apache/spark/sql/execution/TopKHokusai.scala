@@ -27,17 +27,17 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
         if (combinedKeys != null) {
           sortAndBound(TopKCMS.getCombinedTopKFromEstimators(Array(topKCMS),
-            scala.collection.mutable.Set(combinedKeys: _*)))
+            combinedKeys))
         } else {
           topKCMS.getTopK
         }
       }
   }
 
-  private val queryTillLastNTopK_Case2: (Int, Array[T]) => Array[(T, Long)] = (sumUpTo: Int, combinedTopKKeys: Array[T]) =>
-    {
-      val combinedKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+  private val queryTillLastNTopK_Case2: (Int, Array[T]) => Array[(T, Long)] =
+    (sumUpTo: Int, combinedTopKKeys: Array[T]) => {
+      val combinedKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         null
       }
@@ -47,8 +47,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   private val queryTillLastNTopK_Case3: (Int, Int, Int, Int, Array[T]) => Array[(T, Long)] = (lastNIntervals: Int,
     totalIntervals: Int, n: Int, nQueried: Int, combinedTopKKeys: Array[T]) =>
     if (lastNIntervals > totalIntervals) {
-      val topKKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+      val topKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         null
       }
@@ -59,8 +59,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       //get all the unioned top k keys.
       val estimators = this.taPlusIa.ta.aggregates.slice(0,
         NumberUtils.isPowerOf2(nearestPowerOf2NumGE) + 1)
-      val unionedTopKKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+      val unionedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
       }
@@ -117,8 +117,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         // get all the unified top k keys of all the intervals in the path
         var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]] }
         estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
-        val unifiedTopKKeys = if (combinedTopKKeys != null) {
-          scala.collection.mutable.Set(combinedTopKKeys: _*)
+        val unifiedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+          combinedTopKKeys
         } else {
           TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
         }
@@ -259,7 +259,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       combinedKeys.map { k => (k, cms.estimateCount(k)) }
     }, true)
 
-  def getCombinedTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[Array[T]] = {
+  def getCombinedTopKKeysBetweenTime(epochFrom: Long,
+      epochTo: Long): Option[mutable.Set[T]] = {
     this.executeInReadLock(
       {
         val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
@@ -298,16 +299,16 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
     }, true)
 
-  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[OpenHashSet[T]] =
+  def getTopKKeysBetweenTime(epochFrom: Long,
+      epochTo: Long): Option[OpenHashSet[T]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
-      // TODO: could be optimized to return only the keys
-      val topK = this.getCombinedTopKKeysBetween(later, earlier)
-      val result = new OpenHashSet[T](topK.length)
-      topK.foreach { v => result.add(v) }
+      val topKKeys = this.getCombinedTopKKeysBetween(later, earlier)
+      val result = new OpenHashSet[T](topKKeys.size)
+      topKKeys.foreach(result.add)
       Some(result)
     }, true)
 
@@ -324,8 +325,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       if (fromLastNInterval == 1) {
         estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
       }
-      val unifiedTopKKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+      val unifiedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
       }
@@ -336,7 +337,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       } else {
         fromLastNInterval
       }
-      val topKs = scala.collection.mutable.HashMap[T, java.lang.Long]()
+      val topKs = mutable.HashMap[T, java.lang.Long]()
       var taIntervalStartsAt = computedIntervalLength - bestPath.aggregate[Long](0)(_ + _, _ + _) + 1
 
       bestPath.foreach { interval =>
@@ -375,12 +376,12 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     }
   }
 
-  def getCombinedTopKKeysBetween(later: Int, earlier: Int): Array[T] = {
+  def getCombinedTopKKeysBetween(later: Int, earlier: Int): mutable.Set[T] = {
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
     val tillLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(earlier)
     if (fromLastNInterval == 1 && tillLastNInterval == 1) {
       val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
-      TopKCMS.getUnionedTopKKeysFromEstimators(Array(topKCMS)).toArray
+      TopKCMS.getUnionedTopKKeysFromEstimators(Array(topKCMS))
     } else {
       // Identify the best path
       val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker.identifyBestPath(tillLastNInterval.asInstanceOf[Int],
@@ -389,10 +390,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       if (fromLastNInterval == 1) {
         estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
       }
-      val unifiedTopKKeys = TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
-      unifiedTopKKeys.toArray
+      TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
     }
-
   }
 
   def queryTimeAggregateForInterval(item: T, interval: Long): Long = {
@@ -401,7 +400,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     topKCMS.getFromTopKMap(item).getOrElse(this.taPlusIa.queryTimeAggregateForInterval(item, interval))
   }
 
-  private def getTopKBySummingTimeAggregates(sumUpTo: Int, setOfTopKKeys: scala.collection.mutable.Set[T] = null): scala.collection.mutable.Map[T, java.lang.Long] = {
+  private def getTopKBySummingTimeAggregates(sumUpTo: Int,
+      setOfTopKKeys: Iterable[T] = null): mutable.Map[T, java.lang.Long] = {
 
     val estimators = this.taPlusIa.ta.aggregates.slice(0, sumUpTo + 1)
 
@@ -413,7 +413,6 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
       })
     topKs
-
   }
 
   private def getTopKKeysBySummingTimeAggregates(sumUpTo: Int): scala.collection.Set[T] = {
@@ -421,7 +420,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
   }
 
-  private def sortAndBound[T](topKs: scala.collection.mutable.Map[T, java.lang.Long]): Array[(T, Long)] = {
+  private def sortAndBound[T](topKs: mutable.Map[T, java.lang.Long]): Array[(T, Long)] = {
     val sortedData = new BoundedSortedSet[T](this.topKActual, false)
     topKs.foreach(sortedData.add(_))
     val iter = sortedData.iterator
