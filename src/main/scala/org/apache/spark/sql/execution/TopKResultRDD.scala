@@ -4,26 +4,27 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.ExecutorLocalRDD
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{Partition, TaskContext}
+import scala.reflect.ClassTag
 
 /**
  * RDD to compute topK results from all executors where the full
  * set of keys across cluster has been pre-computed.
  */
-class TopKResultRDD(name: String, startTime: Long, endTime: Long,
-    combinedKeys: Array[Any], sqlContext: SQLContext)
-    extends ExecutorLocalRDD[(Any, Long)](sqlContext.sparkContext) {
+class TopKResultRDD[T: ClassTag](name: String, startTime: Long, endTime: Long,
+    combinedKeys: Array[T], sqlContext: SQLContext)
+    extends ExecutorLocalRDD[(T, Long)](sqlContext.sparkContext) {
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[(Any, Long)] = {
+      context: TaskContext): Iterator[(T, Long)] = {
 
-    val topKHokusai = TopKHokusai(name).getOrElse(
+    val topKHokusai = TopKHokusai[T](name).getOrElse(
       throw new IllegalStateException())
 
     val arrayTopK =
       if (topKHokusai.windowSize == Long.MaxValue)
-        Some(topKHokusai.getForKeysInCurrentInterval(combinedKeys))
+        Some(topKHokusai.getForKeysInCurrentInterval(null))
       else
-        topKHokusai.getTopKBetweenTime(startTime, endTime, combinedKeys)
+        topKHokusai.getTopKBetweenTime(startTime, endTime, null)
 
     arrayTopK.map(_.toIterator).getOrElse(Iterator.empty)
   }
@@ -32,14 +33,14 @@ class TopKResultRDD(name: String, startTime: Long, endTime: Long,
 /**
  * RDD to collect topK keys from all the partitions (exactly one per executor).
  */
-class TopKKeysRDD(name: String, startTime: Long,
+class TopKKeysRDD[T: ClassTag](name: String, startTime: Long,
     endTime: Long, sqlContext: SQLContext)
-    extends ExecutorLocalRDD[OpenHashSet[Any]](sqlContext.sparkContext) {
+    extends ExecutorLocalRDD[OpenHashSet[T]](sqlContext.sparkContext) {
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[OpenHashSet[Any]] = {
+      context: TaskContext): Iterator[OpenHashSet[T]] = {
 
-    val topKHokusai = TopKHokusai(name).getOrElse(
+    val topKHokusai = TopKHokusai[T](name).getOrElse(
       throw new IllegalStateException())
 
     val arrayTopK =

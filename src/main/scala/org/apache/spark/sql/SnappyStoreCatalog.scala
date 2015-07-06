@@ -37,7 +37,7 @@ class SnappyStoreCatalog(context: SnappyContext,
    */
   val sampleTables = new mutable.HashMap[String, SampleDataFrame]()
 
-  val topKStructures = new mutable.HashMap[String, TopKHokusaiWrapper[_]]()
+  val topKStructures = new mutable.HashMap[String, TopKHokusaiWrapper]()
 
   override def unregisterAllTables(): Unit = {
     sampleTables.clear()

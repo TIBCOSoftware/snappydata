@@ -5,7 +5,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
-
 import io.snappydata.util.NumberUtils
 import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
@@ -15,6 +14,7 @@ import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types.{DataType, StructField, StructType}
 import org.apache.spark.util.collection.OpenHashSet
+
 
 final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean)
@@ -452,29 +452,33 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
 object TopKHokusai {
   // TODO: Resolve the type of TopKHokusai
-  private final val topKMap = new mutable.HashMap[String, TopKHokusai[Any]]
+  private final val topKMap = new mutable.HashMap[String, TopKHokusai[_]]
   private final val mapLock = new ReentrantReadWriteLock
 
   def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, topKInternal: Int) =
     new TopKCMS[T](topKActual, topKInternal, depth, width, hashA)
-  def apply(name: String): Option[TopKHokusai[Any]] = {
+  
+  def apply[T](name: String): Option[TopKHokusai[T]] = {
     SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
+      topKMap.get(name) match {
+        case Some(tk) => Some(tk.asInstanceOf[TopKHokusai[T]])
+        case None => None
+      }
     }
   }
 
-  def apply(name: String, confidence: Double, eps: Double, size: Int,
+  def apply[T: ClassTag](name: String, confidence: Double, eps: Double, size: Int,
       tsCol: Int, timeInterval: Long, epoch0: () => Long) = {
-    lookupOrAdd(name, confidence, eps, size, tsCol, timeInterval, epoch0)
+    lookupOrAdd[T](name, confidence, eps, size, tsCol, timeInterval, epoch0)
   }
 
-  private[sql] def lookupOrAdd(name: String, confidence: Double, eps: Double,
+  private[sql] def lookupOrAdd[T: ClassTag](name: String, confidence: Double, eps: Double,
       size: Int, tsCol: Int, timeInterval: Long,
-      epoch0: () => Long): TopKHokusai[Any] = {
+      epoch0: () => Long): TopKHokusai[T] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {
-      case Some(topk) => topk
+      case Some(topk) => topk.asInstanceOf[TopKHokusai[T]]
       case None =>
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
@@ -485,26 +489,27 @@ object TopKHokusai {
 
             val cmsParams = CMSParams(width, depth)
 
-            val topk = new TopKHokusai[Any](cmsParams, timeInterval,
-              epoch0(), size, false/*timeInterval > 0 && tsCol < 0*/)
+            val topk = new TopKHokusai[T](cmsParams, timeInterval,
+              epoch0(), size, timeInterval > 0 && tsCol < 0)
             topKMap(name) = topk
             topk
-          })
+          }).asInstanceOf[TopKHokusai[T]]
         }
     }
   }
 }
 
-final class TopKHokusaiWrapper[T](val name: String, val confidence: Double,
+protected[sql] final class TopKHokusaiWrapper(val name: String, val confidence: Double,
     val eps: Double, val size: Int, val timeSeriesColumn: Int,
     val timeInterval: Long, val schema: StructType, val key: StructField,
     val frequencyCol: Option[StructField], val epoch : Long)
     extends CastLongTime with Serializable {
-
+  
+ 
   override protected def getNullMillis(getDefaultForNull: Boolean) =
     if (getDefaultForNull) System.currentTimeMillis() else -1L
 
-  override def timeColumnType: Option[DataType] = {
+  override def timeColumnType: Option[DataType] = {      
     if (timeSeriesColumn >= 0) {
       Some(schema(timeSeriesColumn).dataType)
     } else {
@@ -518,7 +523,7 @@ final class TopKHokusaiWrapper[T](val name: String, val confidence: Double,
 object TopKHokusaiWrapper {
 
   def apply(name: String, options: Map[String, Any],
-      schema: StructType): TopKHokusaiWrapper[Any] = {
+      schema: StructType): TopKHokusaiWrapper = {
     val keyTest = "key".ci
     val timeSeriesColumnTest = "timeSeriesColumn".ci
     val timeIntervalTest = "timeInterval".ci
@@ -528,7 +533,7 @@ object TopKHokusaiWrapper {
     val frequencyColTest = "frequencyCol".ci
     val epochTest = "epoch".ci
     val cols = schema.fieldNames
-
+    
     // Using foldLeft to read key-value pairs and build into the result
     // tuple of (key, confidence, eps, size, frequencyCol) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
@@ -585,4 +590,6 @@ object TopKHokusaiWrapper {
       schema, schema(key),
       if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)), epoch)
   }
+  
+  
 }
