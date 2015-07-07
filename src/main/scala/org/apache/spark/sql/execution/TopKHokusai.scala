@@ -577,7 +577,20 @@ object TopKHokusaiWrapper {
             }
             case epochTest() => optV match {
               case si: Int => (k, ts, ti, cf, e, s, fr, si.toLong)
-              case ss: String => (k, ts, ti, cf, e, s, fr, ss.toLong)
+              case ss: String =>
+                try {
+                  (k, ts, ti, cf, e, s, fr, ss.toLong)
+                } catch {
+                  case nfe: NumberFormatException =>
+                    try {
+                      (k, ts, ti, cf, e, s, fr, CastLongTime.getMillis(
+                        java.sql.Timestamp.valueOf(ss)))
+                    } catch {
+                      case iae: IllegalArgumentException =>
+                        throw new AnalysisException(
+                          s"TopKCMS: Cannot parse timestamp 'epoch'=$optV")
+                    }
+                }
               case sl: Long => (k, ts, ti, cf, e, s, fr, sl)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")

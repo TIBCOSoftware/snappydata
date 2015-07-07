@@ -18,7 +18,7 @@ class TopKResultRDD[T: ClassTag](name: String, startTime: Long, endTime: Long,
       context: TaskContext): Iterator[(T, Long)] = {
 
     val topKHokusai = TopKHokusai[T](name).getOrElse(
-      throw new IllegalStateException())
+      throw new IllegalStateException(s"TopK named '$name' not found"))
 
     val arrayTopK =
       if (topKHokusai.windowSize == Long.MaxValue)
