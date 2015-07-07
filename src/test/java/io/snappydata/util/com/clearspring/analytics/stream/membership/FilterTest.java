@@ -39,7 +39,7 @@ public class FilterTest {
         int collisions = 0;
         while (keys.hasNext()) {
             hashes.clear();
-            for (int hashIndex : Filter.getHashBuckets(keys.next(), MAX_HASH_COUNT, 1024 * 1024)) {
+            for (int hashIndex : Filter.getHashBuckets(keys.next(), MAX_HASH_COUNT, 1024 * 1024, true)) {
                 hashes.add(hashIndex);
             }
             collisions += (MAX_HASH_COUNT - hashes.size());

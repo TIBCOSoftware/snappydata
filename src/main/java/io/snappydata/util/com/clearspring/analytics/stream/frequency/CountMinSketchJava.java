@@ -131,7 +131,7 @@ public class CountMinSketchJava implements IFrequency {
             // parameter to constructor.
             throw new IllegalArgumentException("Negative increments not implemented");
         }
-        int[] buckets = Filter.getHashBuckets(item, depth, width);
+        int[] buckets = Filter.getHashBuckets(item, depth, width, true);
         for (int i = 0; i < depth; ++i) {
             table[i][buckets[i]] += count;
         }
@@ -159,7 +159,7 @@ public class CountMinSketchJava implements IFrequency {
     @Override
     public long estimateCount(String item) {
         long res = Long.MAX_VALUE;
-        int[] buckets = Filter.getHashBuckets(item, depth, width);
+        int[] buckets = Filter.getHashBuckets(item, depth, width, true);
         for (int i = 0; i < depth; ++i) {
             res = Math.min(res, table[i][buckets[i]]);
         }

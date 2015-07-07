@@ -32,12 +32,12 @@ public abstract class Filter {
         return hashCount;
     }
 
-    public int[] getHashBuckets(String key) {
-        return Filter.getHashBuckets(key, hashCount, buckets());
+    public int[] getHashBuckets(String key, boolean applyWidth) {
+        return Filter.getHashBuckets(key, hashCount, buckets(), applyWidth);
     }
 
-    public int[] getHashBuckets(byte[] key) {
-        return Filter.getHashBuckets(key, hashCount, buckets());
+    public int[] getHashBuckets(byte[] key, boolean applyWidth) {
+        return Filter.getHashBuckets(key, hashCount, buckets(), applyWidth);
     }
 
 
@@ -69,22 +69,26 @@ public abstract class Filter {
     // http://www.eecs.harvard.edu/~kirsch/pubs/bbbf/esa06.pdf
     // does prove to work in actual tests, and is obviously faster
     // than performing further iterations of murmur.
-    public static int[] getHashBuckets(String key, int hashCount, int max) {
+    public static int[] getHashBuckets(String key, int hashCount, int max, boolean applyWidth) {
         byte[] b;
         try {
             b = key.getBytes("UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new RuntimeException(e);
         }
-        return getHashBuckets(b, hashCount, max);
+        return getHashBuckets(b, hashCount, max, applyWidth);
     }
 
-    static int[] getHashBuckets(byte[] b, int hashCount, int max) {
+    static int[] getHashBuckets(byte[] b, int hashCount, int max, boolean applyWidth) {
         int[] result = new int[hashCount];
         int hash1 = MurmurHash.hash(b, b.length, seed1);
         int hash2 = MurmurHash.hash(b, b.length, hash1 * seed2);
         for (int i = 0; i < hashCount; i++) {
-            result[i] = Math.abs((hash1 + i * hash2) % max);
+        	if(applyWidth) {
+              result[i] = Math.abs((hash1 + i * hash2) % max);
+        	}else {
+              result[i] = Math.abs(hash1 + i * hash2 );
+        	}
         }
         return result;
     }

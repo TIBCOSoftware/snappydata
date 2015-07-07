@@ -26,10 +26,10 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
   def this(depth: Int, width: Int, seed: Int) = this(depth, width, seed,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
     CountMinSketch.initTable(depth, width), CountMinSketch.initHash(depth, seed))
-    
-   def this(depth: Int, width: Int, hashA: Array[Long]) = this(depth, width, 0,
+
+  def this(depth: Int, width: Int, hashA: Array[Long]) = this(depth, width, 0,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
-    CountMinSketch.initTable(depth, width), hashA)  
+    CountMinSketch.initTable(depth, width), hashA)
 
   def this(epsOfTotalCount: Double, confidence: Double, seed: Int) =
     this(CountMinSketch.initDepth(confidence), CountMinSketch.initWidth(epsOfTotalCount),
@@ -52,14 +52,17 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
     // page 149, right after Proposition 7.
     hash += hash >> 32;
     hash &= CountMinSketch.PRIME_MODULUS;
+    hash.asInstanceOf[Int]
     // Doing "%" after (int) conversion is ~2x faster than %'ing longs.
-    hash.asInstanceOf[Int] % width;
+    //hash.asInstanceOf[Int] % width;
   }
 
+  private def applyWidthOnHash(hash: Int): Int = hash % width
+
   /**
-   * Returns the currrent total count for the key 
+   * Returns the currrent total count for the key
    */
-  def add(item: T, count: Long): Long =  {
+  def add(item: T, count: Long): Long = {
     if (count < 0) {
       // Actually for negative increments we'll need to use the median
       // instead of minimum, and accuracy will suffer somewhat.
@@ -67,7 +70,7 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
       // parameter to constructor.
       throw new IllegalArgumentException("Negative increments not implemented");
     }
-    def matchItem(elem: Any): Long =  {
+    def matchItem(elem: Any): Long = {
       elem match {
         case s: String => addString(s, count)
         case num: Long => addNum(num, count)
@@ -87,8 +90,8 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
     this.size += count;
     totalCount
   }
-  
-  override def clone : CountMinSketch[T] = {
+
+  override def clone: CountMinSketch[T] = {
     val hashACopy = this.hashA.clone
 
     val tableCopy = Array.ofDim[Long](depth, width)
@@ -96,70 +99,101 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
       Array.copy(this.table(d), 0, tableCopy(d), 0, this.table(d).length)
     }
     val newCMS = new CountMinSketch[T](this.depth, this.width, this.seed,
-  this.eps, this.confidence, this.size, tableCopy,
-  hashACopy)
-  newCMS
+      this.eps, this.confidence, this.size, tableCopy,
+      hashACopy)
+    newCMS
   }
 
   private def hash(tuple: Product): Long =
     tuple.productIterator.aggregate[Long](0)(_ ^ _.hashCode(), _ ^ _)
 
-  private def addNum(item: Long, count: Long): Long =  {
+  private def addNum(item: Long, count: Long): Long = {
     var totalCount = scala.Long.MaxValue
     for (i <- 0 until depth) {
-      val prevCount = table(i)(hash(item, i))
+      val hsh = applyWidthOnHash(hash(item, i))
+      val prevCount = table(i)(hsh)
       val newTotal = count + prevCount
-      table(i)(hash(item, i)) = newTotal;
+      table(i)(hsh) = newTotal;
       totalCount = math.min(totalCount, newTotal)
     }
     totalCount
   }
 
   private def addString(item: String, count: Long): Long = {
-    val buckets: Array[Int] = Filter.getHashBuckets(item, depth, width);
+    val buckets: Array[Int] = Filter.getHashBuckets(item, depth, width, true);
     var totalCount = scala.Long.MaxValue
     for (i <- 0 until depth) {
-      
-      val prevCount =  table(i)(buckets(i))
+
+      val prevCount = table(i)(buckets(i))
       val newTotal = count + prevCount
       table(i)(buckets(i)) = newTotal;
       totalCount = math.min(totalCount, newTotal)
-     
+
     }
     totalCount
   }
-  
-  def getIHashesFor(item: T): Array[Int] = {
+
+  def getIHashesFor(item: T, applyWidth: Boolean): Array[Int] = {
     def getHashes(elem: Any): Array[Int] = {
       elem match {
-        case s: String => Filter.getHashBuckets(s, depth, width);
-        case num: Long => val hashes = new Array[Int](depth)  
-          for(i <- 0 until depth ) {
-            hashes(i) = hash(num,i)
+        case s: String => Filter.getHashBuckets(s, depth, width, applyWidth);
+        case num: Long =>
+          val hashes = new Array[Int](depth)
+          for (i <- 0 until depth) {
+            val hsh = hash(num, i)
+            hashes(i) = if (applyWidth) {
+              applyWidthOnHash(hsh)
+            } else {
+              hsh
+            }
           }
           hashes
-        case num: Int => val hashes = new Array[Int](depth)  
-          for(i <- 0 until depth ) {
-            hashes(i) = hash(num,i)
+        case num: Int =>
+          val hashes = new Array[Int](depth)
+          for (i <- 0 until depth) {
+            val hsh = hash(num, i)
+            hashes(i) = if (applyWidth) {
+              applyWidthOnHash(hsh)
+            } else {
+              hsh
+            }
+
           }
           hashes
-        case num: Short => val hashes = new Array[Int](depth)  
-          for(i <- 0 until depth ) {
-            hashes(i) = hash(num,i)
+        case num: Short =>
+          val hashes = new Array[Int](depth)
+          for (i <- 0 until depth) {
+            val hsh = hash(num, i)
+            hashes(i) = if (applyWidth) {
+              applyWidthOnHash(hsh)
+            } else {
+              hsh
+            }
           }
           hashes
-        case num: Byte => val hashes = new Array[Int](depth)  
-          for(i <- 0 until depth ) {
-            hashes(i) = hash(num,i)
+        case num: Byte =>
+          val hashes = new Array[Int](depth)
+          for (i <- 0 until depth) {
+            val hsh = hash(num, i)
+            hashes(i) = if (applyWidth) {
+              applyWidthOnHash(hsh)
+            } else {
+              hsh
+            }
           }
           hashes
         case p: Product => if (isTuple) {
           val hsh = hash(p)
-          val hashes = new Array[Int](depth)  
-          for(i <- 0 until depth ) {
-            hashes(i) = hash(hsh,i)
+          val hashes = new Array[Int](depth)
+          for (i <- 0 until depth) {
+            val hsh1 = hash(hsh, i)
+            hashes(i) = if (applyWidth) {
+              applyWidthOnHash(hsh1)
+            } else {
+              hsh1
+            }
           }
-          hashes 
+          hashes
         } else {
           throw new UnsupportedOperationException("implement hash code for other types")
         }
@@ -199,14 +233,14 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
   private def estimateCount(item: Long): Long = {
     var res = scala.Long.MaxValue;
     for (i <- 0 until this.depth) {
-      res = Math.min(res, table(i)(hash(item, i)));
+      res = Math.min(res, table(i)(applyWidthOnHash(hash(item, i))));
     }
     return res;
   }
 
   private def estimateCount(item: String): Long = {
     var res = scala.Long.MaxValue;
-    val buckets = Filter.getHashBuckets(item, depth, width);
+    val buckets = Filter.getHashBuckets(item, depth, width, true);
     for (i <- 0 until this.depth) {
       res = Math.min(res, table(i)(buckets(i)));
     }
@@ -255,7 +289,7 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
 
 }
 
- object CountMinSketch {
+object CountMinSketch {
   val PRIME_MODULUS: Long = (1L << 31) - 1;
 
   def initEPS(width: Int): Double = 2.0 / width
@@ -281,10 +315,8 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
 
   def initWidth(epsOfTotalCount: Double): Int = ceil(2 / epsOfTotalCount).asInstanceOf[Int]
 
- 
   @throws(classOf[CountMinSketch.CMSMergeException])
-  def basicMerge[T: ClassTag](estimators: CountMinSketch[T]*): (Int, Int, Array[Long],
-      Array[Array[Long]], Long) = {
+  def basicMerge[T: ClassTag](estimators: CountMinSketch[T]*): (Int, Int, Array[Long], Array[Array[Long]], Long) = {
 
     if (estimators != null && estimators.length > 0) {
       val depth = estimators(0).depth
@@ -312,15 +344,15 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
         }
         size += estimator.size;
       }
-      (depth, width, hashA, table , size)
-     // new CountMinSketch[T](depth, width, size, hashA, table)
+      (depth, width, hashA, table, size)
+      // new CountMinSketch[T](depth, width, size, hashA, table)
     } else {
       null
     }
 
   }
-  
- /**
+
+  /**
    * Merges count min sketches to produce a count min sketch for their combined streams
    *
    * @param estimators
@@ -329,7 +361,7 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
    */
   @throws(classOf[CountMinSketch.CMSMergeException])
   def merge[T: ClassTag](estimators: CountMinSketch[T]*): CountMinSketch[T] = {
-    val ( depth, width, hashA, table, size) = basicMerge[T](estimators:_*)
+    val (depth, width, hashA, table, size) = basicMerge[T](estimators: _*)
     new CountMinSketch[T](depth, width, size, hashA, table)
   }
 

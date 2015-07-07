@@ -5,6 +5,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
+
 import io.snappydata.util.NumberUtils
 import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
@@ -504,7 +505,8 @@ protected[sql] final class TopKHokusaiWrapper(val name: String, val confidence: 
     val timeInterval: Long, val schema: StructType, val key: StructField,
     val frequencyCol: Option[StructField], val epoch : Long)
     extends CastLongTime with Serializable {
-  
+   
+   
  
   override protected def getNullMillis(getDefaultForNull: Boolean) =
     if (getDefaultForNull) System.currentTimeMillis() else -1L

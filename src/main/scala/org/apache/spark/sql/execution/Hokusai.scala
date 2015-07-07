@@ -299,7 +299,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                     taAggs(NumberUtils.isPowerOf2(x) + 1)
                       .add(v.key, v.frequency)
                   }
-                  if(!(timeIntervalsToModify.contains(1) && taAggs(1).eq(iaAggs(interval - 1)) )) {
+                  if(!(timeIntervalsToModify(0) == 1 && taAggs(1).eq(iaAggs(interval - 1)) )) {
                      iaAggs(interval - 1).add(v.key, v.frequency)
                   }
                 }
@@ -749,12 +749,12 @@ def algo3(): Unit = {
       var n: Array[Long] = null
       val bStart = beginingOfRangeAsPerIA.asInstanceOf[Int]
       val bEnd = endRangeAsPerIA.asInstanceOf[Int]
-      //val mjStarCount = mJStar.estimateCount(key)
+      val unappliedWidthHashes = this.ia.aggregates(0).getIHashesFor(key, false)
       tIntervalsToQuery foreach {
         j =>
           val intervalNumRelativeToIA = convertIntervalBySwappingEnds(j).asInstanceOf[Int]
           val cmsAtT = this.ia.aggregates.get(intervalNumRelativeToIA - 1).get
-          val hashes = cmsAtT.getIHashesFor(key)
+          val hashes = unappliedWidthHashes.map( _ % cmsAtT.width)
           val nTilda = calcNTilda(cmsAtT, hashes)
           val width = if (j <= 2) {
             cmsParams.width
@@ -809,12 +809,12 @@ def algo3(): Unit = {
 
     private def queryBySummingEntityAggregates(item: T, startIndex: Int, sumUpTo: Int): Array[Long] = {
       var n = Array.ofDim[Long](cmsParams.depth)
-
+      val unappledWidthHashes = this.ia.aggregates(0).getIHashesFor(item, false)
       (startIndex to sumUpTo) foreach {
         j =>
           {
             val cms = this.ia.aggregates.get(j).get
-            val hashes = cms.getIHashesFor(item)
+            val hashes = unappledWidthHashes.map(_ % cms.width)
             0 until n.length foreach { i =>
               n(i) = n(i) + cms.table(i)(hashes(i))
             }
@@ -836,7 +836,7 @@ def algo3(): Unit = {
     private def calcNCarat(key: T, jStar: Int, cmsAtT: CountMinSketch[T],
       hashesForTime: Array[Int], sumOverEntities: Array[Long], mJStar: CountMinSketch[T]): Long = {
 
-      val mjStarHashes = mJStar.getIHashesFor(key)
+      val mjStarHashes = mJStar.getIHashesFor(key, true)
       var res = scala.Long.MaxValue;
       var m: Long = scala.Long.MaxValue;
       var c: Long = scala.Long.MaxValue;
@@ -845,7 +845,8 @@ def algo3(): Unit = {
 
       for (i <- 0 until cmsAtT.depth) {
         if (sumOverEntities(i) != 0) {
-          res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) * cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
+          res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) *
+              cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
         } else {
           return 0
         }
