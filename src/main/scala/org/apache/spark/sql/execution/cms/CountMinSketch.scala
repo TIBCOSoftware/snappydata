@@ -87,6 +87,19 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
     this.size += count;
     totalCount
   }
+  
+  override def clone : CountMinSketch[T] = {
+    val hashACopy = this.hashA.clone
+
+    val tableCopy = Array.ofDim[Long](depth, width)
+    for (d <- 0 until tableCopy.length) {
+      Array.copy(this.table(d), 0, tableCopy(d), 0, this.table(d).length)
+    }
+    val newCMS = new CountMinSketch[T](this.depth, this.width, this.seed,
+  this.eps, this.confidence, this.size, tableCopy,
+  hashACopy)
+  newCMS
+  }
 
   private def hash(tuple: Product): Long =
     tuple.productIterator.aggregate[Long](0)(_ ^ _.hashCode(), _ ^ _)

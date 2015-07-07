@@ -3,6 +3,7 @@ package io.snappydata.util
 import _root_.com.typesafe.config.Config
 import _root_.com.typesafe.config.ConfigFactory
 
+
 object StringUtils {
   val numFormatter = java.text.NumberFormat.getInstance
 
@@ -50,4 +51,6 @@ object StringUtils {
       s"[${Thread.currentThread().getName()}] ${sc.s(args:_*)}"
     }
   }
+  
+  
 }
