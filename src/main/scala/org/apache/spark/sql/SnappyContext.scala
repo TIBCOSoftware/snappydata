@@ -20,7 +20,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{ StreamingContext, Time }
 import io.snappydata.util.SqlUtils
-import org.apache.spark.util.collection.OpenHashSet
+
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -313,17 +313,31 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
   }
 
+  /**
+   * Queries the topk structure between two points in time. If the specified
+   * time lies between a topk interval the whole interval is considered
+   *
+   * @param topKName - The topk structure that is to be queried.
+   * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
+   *                  If passed as null, oldest interval is considered as the start interval.
+   * @param endTime  end time as string of the format "yyyy-mm-dd hh:mm:ss".
+   *                  If passed as null, newest interval is considered as the last interval.
+   * @return returns the top K elements with their respective frequencies between two time
+   */
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: String, endTime: String): DataFrame = {
-    val stime = java.sql.Timestamp.valueOf(startTime)
-    val etime = java.sql.Timestamp.valueOf(endTime)
-    queryTopK[T](topKName, CastLongTime.getMillis(stime),
-      CastLongTime.getMillis(etime))
+      startTime: String = null, endTime: String = null): DataFrame = {
+
+    val stime = if (startTime == null ) 0L else
+      CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
+
+    val etime = if (endTime == null ) Long.MaxValue  else
+      CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
+
+    queryTopK[T](topKName, stime, etime)
   }
 
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: Long = Long.MinValue,
-      endTime: Long = Long.MaxValue): DataFrame = {
+      startTime: Long, endTime: Long): DataFrame = {
     val k: TopKHokusaiWrapper = catalog.topKStructures(topKName)
 
     // TODO: perhaps this can be done more efficiently via a shuffle but

@@ -1,12 +1,12 @@
 package org.apache.spark.sql.execution
 
+import java.util.{Calendar, Date}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 import io.snappydata.util.NumberUtils
-import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{BoundedSortedSet, SegmentMap}
@@ -293,6 +293,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       combinedTopKKeys: Array[T] = null): Option[Array[(T, Long)]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+        case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
         case Some(x) => x
         case None => return None
       }
@@ -592,6 +593,8 @@ object TopKHokusaiWrapper {
                     }
                 }
               case sl: Long => (k, ts, ti, cf, e, s, fr, sl)
+              case dt: Date  => (k, ts, ti, cf, e, s, fr, dt.getTime)
+              case cal: Calendar=> (k, ts, ti, cf, e, s, fr, cal.getTimeInMillis)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")
             }
