@@ -126,8 +126,8 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val tsCol = if (topkWrapper.timeInterval > 0)
       topkWrapper.timeSeriesColumn
     else -1
-    val topkhokusai = TopKHokusai[T](name, topkWrapper.confidence,
-      topkWrapper.eps, topkWrapper.size, tsCol, topkWrapper.timeInterval,
+    val topkhokusai = TopKHokusai[T](name, topkWrapper.depth,
+      topkWrapper.width, topkWrapper.size, tsCol, topkWrapper.timeInterval,
       () => {
         if (tsCol >= 0 && topkWrapper.epoch == -1) {
           var epoch0 = -1L
