@@ -1,5 +1,6 @@
 package org.apache.spark.sql.execution
 
+import java.util.{Calendar, Date}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -7,7 +8,6 @@ import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
 
 import io.snappydata.util.NumberUtils
-import io.snappydata.util.gnu.trove.impl.PrimeFinder
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{BoundedSortedSet, SegmentMap}
@@ -28,17 +28,17 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
         if (combinedKeys != null) {
           sortAndBound(TopKCMS.getCombinedTopKFromEstimators(Array(topKCMS),
-            scala.collection.mutable.Set(combinedKeys: _*)))
+            combinedKeys))
         } else {
           topKCMS.getTopK
         }
       }
   }
 
-  private val queryTillLastNTopK_Case2: (Int, Array[T]) => Array[(T, Long)] = (sumUpTo: Int, combinedTopKKeys: Array[T]) =>
-    {
-      val combinedKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+  private val queryTillLastNTopK_Case2: (Int, Array[T]) => Array[(T, Long)] =
+    (sumUpTo: Int, combinedTopKKeys: Array[T]) => {
+      val combinedKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         null
       }
@@ -48,8 +48,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   private val queryTillLastNTopK_Case3: (Int, Int, Int, Int, Array[T]) => Array[(T, Long)] = (lastNIntervals: Int,
     totalIntervals: Int, n: Int, nQueried: Int, combinedTopKKeys: Array[T]) =>
     if (lastNIntervals > totalIntervals) {
-      val topKKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+      val topKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         null
       }
@@ -60,8 +60,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       //get all the unioned top k keys.
       val estimators = this.taPlusIa.ta.aggregates.slice(0,
         NumberUtils.isPowerOf2(nearestPowerOf2NumGE) + 1)
-      val unionedTopKKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+      val unionedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
       }
@@ -118,8 +118,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         // get all the unified top k keys of all the intervals in the path
         var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]] }
         estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
-        val unifiedTopKKeys = if (combinedTopKKeys != null) {
-          scala.collection.mutable.Set(combinedTopKKeys: _*)
+        val unifiedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+          combinedTopKKeys
         } else {
           TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
         }
@@ -260,7 +260,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       combinedKeys.map { k => (k, cms.estimateCount(k)) }
     }, true)
 
-  def getCombinedTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[Array[T]] = {
+  def getCombinedTopKKeysBetweenTime(epochFrom: Long,
+      epochTo: Long): Option[mutable.Set[T]] = {
     this.executeInReadLock(
       {
         val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
@@ -293,22 +294,23 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       combinedTopKKeys: Array[T] = null): Option[Array[(T, Long)]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+        case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
         case Some(x) => x
         case None => return None
       }
       Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
     }, true)
 
-  def getTopKKeysBetweenTime(epochFrom: Long, epochTo: Long): Option[OpenHashSet[T]] =
+  def getTopKKeysBetweenTime(epochFrom: Long,
+      epochTo: Long): Option[OpenHashSet[T]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
-      // TODO: could be optimized to return only the keys
-      val topK = this.getCombinedTopKKeysBetween(later, earlier)
-      val result = new OpenHashSet[T](topK.length)
-      topK.foreach { v => result.add(v) }
+      val topKKeys = this.getCombinedTopKKeysBetween(later, earlier)
+      val result = new OpenHashSet[T](topKKeys.size)
+      topKKeys.foreach(result.add)
       Some(result)
     }, true)
 
@@ -325,8 +327,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       if (fromLastNInterval == 1) {
         estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
       }
-      val unifiedTopKKeys = if (combinedTopKKeys != null) {
-        scala.collection.mutable.Set(combinedTopKKeys: _*)
+      val unifiedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
+        combinedTopKKeys
       } else {
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
       }
@@ -337,7 +339,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       } else {
         fromLastNInterval
       }
-      val topKs = scala.collection.mutable.HashMap[T, java.lang.Long]()
+      val topKs = mutable.HashMap[T, java.lang.Long]()
       var taIntervalStartsAt = computedIntervalLength - bestPath.aggregate[Long](0)(_ + _, _ + _) + 1
 
       bestPath.foreach { interval =>
@@ -376,12 +378,12 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     }
   }
 
-  def getCombinedTopKKeysBetween(later: Int, earlier: Int): Array[T] = {
+  def getCombinedTopKKeysBetween(later: Int, earlier: Int): mutable.Set[T] = {
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
     val tillLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(earlier)
     if (fromLastNInterval == 1 && tillLastNInterval == 1) {
       val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
-      TopKCMS.getUnionedTopKKeysFromEstimators(Array(topKCMS)).toArray
+      TopKCMS.getUnionedTopKKeysFromEstimators(Array(topKCMS))
     } else {
       // Identify the best path
       val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker.identifyBestPath(tillLastNInterval.asInstanceOf[Int],
@@ -390,10 +392,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       if (fromLastNInterval == 1) {
         estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
       }
-      val unifiedTopKKeys = TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
-      unifiedTopKKeys.toArray
+      TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
     }
-
   }
 
   def queryTimeAggregateForInterval(item: T, interval: Long): Long = {
@@ -402,7 +402,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     topKCMS.getFromTopKMap(item).getOrElse(this.taPlusIa.queryTimeAggregateForInterval(item, interval))
   }
 
-  private def getTopKBySummingTimeAggregates(sumUpTo: Int, setOfTopKKeys: scala.collection.mutable.Set[T] = null): scala.collection.mutable.Map[T, java.lang.Long] = {
+  private def getTopKBySummingTimeAggregates(sumUpTo: Int,
+      setOfTopKKeys: Iterable[T] = null): mutable.Map[T, java.lang.Long] = {
 
     val estimators = this.taPlusIa.ta.aggregates.slice(0, sumUpTo + 1)
 
@@ -414,7 +415,6 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
       })
     topKs
-
   }
 
   private def getTopKKeysBySummingTimeAggregates(sumUpTo: Int): scala.collection.Set[T] = {
@@ -422,7 +422,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
   }
 
-  private def sortAndBound[T](topKs: scala.collection.mutable.Map[T, java.lang.Long]): Array[(T, Long)] = {
+  private def sortAndBound[T](topKs: mutable.Map[T, java.lang.Long]): Array[(T, Long)] = {
     val sortedData = new BoundedSortedSet[T](this.topKActual, false)
     topKs.foreach(sortedData.add(_))
     val iter = sortedData.iterator
@@ -468,12 +468,12 @@ object TopKHokusai {
     }
   }
 
-  def apply[T: ClassTag](name: String, confidence: Double, eps: Double, size: Int,
+  def apply[T: ClassTag](name: String, depth: Int, width: Int, size: Int,
       tsCol: Int, timeInterval: Long, epoch0: () => Long) = {
-    lookupOrAdd[T](name, confidence, eps, size, tsCol, timeInterval, epoch0)
+    lookupOrAdd[T](name, depth, width, size, tsCol, timeInterval, epoch0)
   }
 
-  private[sql] def lookupOrAdd[T: ClassTag](name: String, confidence: Double, eps: Double,
+  private[sql] def lookupOrAdd[T: ClassTag](name: String, depth: Int, width: Int,
       size: Int, tsCol: Int, timeInterval: Long,
       epoch0: () => Long): TopKHokusai[T] = {
     SegmentMap.lock(mapLock.readLock) {
@@ -484,11 +484,11 @@ object TopKHokusai {
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
-            val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
+            //val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
             //val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
-            val width = NumberUtils.nearestPowerOf2GE(Math.ceil(2 / eps).toInt)
-
-            val cmsParams = CMSParams(width, depth)
+            // val width = NumberUtils.nearestPowerOf2GE(Math.ceil(2 / eps).toInt)
+            val powerOf2width = NumberUtils.nearestPowerOf2GE(width)
+            val cmsParams = CMSParams(powerOf2width, depth)
 
             val topk = new TopKHokusai[T](cmsParams, timeInterval,
               epoch0(), size, timeInterval > 0 && tsCol < 0)
@@ -500,8 +500,8 @@ object TopKHokusai {
   }
 }
 
-protected[sql] final class TopKHokusaiWrapper(val name: String, val confidence: Double,
-    val eps: Double, val size: Int, val timeSeriesColumn: Int,
+protected[sql] final class TopKHokusaiWrapper(val name: String, val depth: Int,
+    val width: Int, val size: Int, val timeSeriesColumn: Int,
     val timeInterval: Long, val schema: StructType, val key: StructField,
     val frequencyCol: Option[StructField], val epoch : Long)
     extends CastLongTime with Serializable {
@@ -529,39 +529,33 @@ object TopKHokusaiWrapper {
     val keyTest = "key".ci
     val timeSeriesColumnTest = "timeSeriesColumn".ci
     val timeIntervalTest = "timeInterval".ci
-    val confidenceTest = "confidence".ci
-    val epsTest = "eps".ci
+    val depthTest = "depth".ci
+    val widthTest = "width".ci
     val sizeTest = "size".ci
     val frequencyColTest = "frequencyCol".ci
     val epochTest = "epoch".ci
     val cols = schema.fieldNames
     
     // Using foldLeft to read key-value pairs and build into the result
-    // tuple of (key, confidence, eps, size, frequencyCol) like an aggregate.
+    // tuple of (key, depth, width, size, frequencyCol) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
     // keys as found when folding the map.
-    val (key, tsCol, timeInterval, confidence, eps, size, frequencyCol, epoch) =
-      options.foldLeft("", -1, 5L, 0.95, 0.01, 100, "", -1L) {
+    val (key, tsCol, timeInterval, depth, width, size, frequencyCol, epoch) =
+      options.foldLeft("", -1, 5L, 5, 200, 100, "", -1L) {
         case ((k, ts, ti, cf, e, s, fr, ep), (opt, optV)) =>
           opt match {
             case keyTest() => (optV.toString, ts, ti, cf, e, s, fr, ep)
-            case confidenceTest() => optV match {
-              case fd: Double => (k, ts, ti, fd, e, s, fr, ep)
-              case fs: String => (k, ts, ti, fs.toDouble, e, s, fr, ep)
-              case ff: Float => (k, ts, ti, ff.toDouble, e, s, fr, ep)
-              case fi: Int => (k, ts, ti, fi.toDouble, e, s, fr, ep)
-              case fl: Long => (k, ts, ti, fl.toDouble, e, s, fr, ep)
+            case depthTest() => optV match {
+              case fs: String => (k, ts, ti, fs.toInt, e, s, fr, ep)
+              case fi: Int => (k, ts, ti, fi, e, s, fr, ep)
               case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse double 'confidence'=$optV")
+                s"TopKCMS: Cannot parse double 'depth'=$optV")
             }
-            case epsTest() => optV match {
-              case fd: Double => (k, ts, ti, cf, fd, s, fr, ep)
-              case fs: String => (k, ts, ti, cf, fs.toDouble, s, fr, ep)
-              case ff: Float => (k, ts, ti, cf, ff.toDouble, s, fr, ep)
-              case fi: Int => (k, ts, ti, cf, fi.toDouble, s, fr, ep)
-              case fl: Long => (k, ts, ti, cf, fl.toDouble, s, fr, ep)
+            case widthTest() => optV match {
+              case fs: String => (k, ts, ti, cf, fs.toInt, s, fr, ep)
+              case fi: Int => (k, ts, ti, cf, fi, s, fr, ep)
               case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse double 'eps'=$optV")
+                s"TopKCMS: Cannot parse double 'width'=$optV")
             }
             case timeSeriesColumnTest() => optV match {
               case tss: String => (k, columnIndex(tss, cols), ti, cf, e, s, fr, ep)
@@ -580,15 +574,30 @@ object TopKHokusaiWrapper {
             }
             case epochTest() => optV match {
               case si: Int => (k, ts, ti, cf, e, s, fr, si.toLong)
-              case ss: String => (k, ts, ti, cf, e, s, fr, ss.toLong)
+              case ss: String =>
+                try {
+                  (k, ts, ti, cf, e, s, fr, ss.toLong)
+                } catch {
+                  case nfe: NumberFormatException =>
+                    try {
+                      (k, ts, ti, cf, e, s, fr, CastLongTime.getMillis(
+                        java.sql.Timestamp.valueOf(ss)))
+                    } catch {
+                      case iae: IllegalArgumentException =>
+                        throw new AnalysisException(
+                          s"TopKCMS: Cannot parse timestamp 'epoch'=$optV")
+                    }
+                }
               case sl: Long => (k, ts, ti, cf, e, s, fr, sl)
+              case dt: Date  => (k, ts, ti, cf, e, s, fr, dt.getTime)
+              case cal: Calendar=> (k, ts, ti, cf, e, s, fr, cal.getTimeInMillis)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")
             }
             case frequencyColTest() => (k, ts, ti, cf, e, s, optV.toString, ep)
           }
       }
-    new TopKHokusaiWrapper(name, confidence, eps, size, tsCol, timeInterval,
+    new TopKHokusaiWrapper(name, depth, width, size, tsCol, timeInterval,
       schema, schema(key),
       if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)), epoch)
   }

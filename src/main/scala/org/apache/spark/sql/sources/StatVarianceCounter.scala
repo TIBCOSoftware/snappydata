@@ -101,10 +101,10 @@ trait StatVarianceCounter extends Serializable {
 
   /** Return the variance of the values. */
   final def variance: Double = {
-    if (count == 0) {
-      Double.NaN
-    } else {
+    if (count != 0) {
       nvariance / count
+    } else {
+      Double.NaN
     }
   }
 
@@ -113,10 +113,10 @@ trait StatVarianceCounter extends Serializable {
    * by N-1 instead of N.
    */
   final def sampleVariance: Double = {
-    if (count <= 1) {
-      Double.NaN
-    } else {
+    if (count > 1) {
       nvariance / (count - 1)
+    } else {
+      Double.NaN
     }
   }
 
@@ -134,7 +134,7 @@ trait StatVarianceCounter extends Serializable {
   }
 }
 
-class StatCounter extends StatVarianceCounter with Serializable {
+final class StatCounter extends StatVarianceCounter with Serializable {
   /** Clone this StatCounter */
   override def copy(): StatCounter = {
     val other = new StatCounter

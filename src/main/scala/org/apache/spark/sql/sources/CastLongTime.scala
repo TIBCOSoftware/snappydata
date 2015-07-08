@@ -28,10 +28,9 @@ trait CastLongTime {
 
   protected final def parseMillisFromAny(ts: Any): Long = {
     ts match {
-      case tts: java.sql.Timestamp =>
-        val time = tts.getTime
-        if (tts.getNanos >= 500000) time + 1 else time
+      case tts: java.sql.Timestamp => CastLongTime.getMillis(tts)
       case td: java.util.Date => td.getTime
+      case ts: String => CastLongTime.getMillis(java.sql.Timestamp.valueOf(ts))
       case tl: Long => tl
       case ti: Int => ti.toLong
       case _ => throw new AnalysisException(
@@ -68,9 +67,19 @@ trait CastLongTime {
           }
       }
     } catch {
-      case NonFatal(e) => if (timeCol >= 0 && row.isNullAt(timeCol))
-        getNullMillis(getDefaultForNull) else throw e
+      case NonFatal(e) =>
+        if (timeCol >= 0 && row.isNullAt(timeCol))
+          getNullMillis(getDefaultForNull)
+        else throw e
       case t => throw t
     }
+  }
+}
+
+object CastLongTime {
+
+  final def getMillis(timestamp: java.sql.Timestamp): Long = {
+    val time = timestamp.getTime
+    if (timestamp.getNanos >= 500000) time + 1 else time
   }
 }

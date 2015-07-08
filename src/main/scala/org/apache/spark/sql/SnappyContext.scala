@@ -14,13 +14,13 @@ import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.{ InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation }
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.sources.{ StreamStrategy, WeightageRule }
-import org.apache.spark.sql.types.{ LongType, StructField, StructType }
+import org.apache.spark.sql.sources.{CastLongTime, StreamStrategy, WeightageRule}
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{ StreamingContext, Time }
 import io.snappydata.util.SqlUtils
-import org.apache.spark.util.collection.OpenHashSet
+
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -102,17 +102,10 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // TODO: A different set of job is created for topK structure
     catalog.topKStructures.filter {
       case (name, topkstruct) => sampleTab.contains(name)
-    } foreach {
-      case (name, topkWrapper) =>
-        /*
-      val confidence = topkWrapper.confidence
-      val eps = topkWrapper.eps
-      val timeInterval = topkWrapper.timeInterval
-      val topK = topkWrapper.size
-      */
-        tDF.foreachPartition(rowIterator => {
-          addHokusaiData(name, topkWrapper, rowIterator)
-        })
+    } foreach { case (name, topkWrapper) =>
+      tDF.foreachPartition(rowIterator => {
+        addHokusaiData(name, topkWrapper, rowIterator)
+      })
     }
 
     // add to list in relation
@@ -133,8 +126,8 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val tsCol = if (topkWrapper.timeInterval > 0)
       topkWrapper.timeSeriesColumn
     else -1
-    val topkhokusai = TopKHokusai[T](name, topkWrapper.confidence,
-      topkWrapper.eps, topkWrapper.size, tsCol, topkWrapper.timeInterval,
+    val topkhokusai = TopKHokusai[T](name, topkWrapper.depth,
+      topkWrapper.width, topkWrapper.size, tsCol, topkWrapper.timeInterval,
       () => {
         if (tsCol >= 0 && topkWrapper.epoch == -1) {
           var epoch0 = -1L
@@ -279,9 +272,9 @@ protected[sql] class SnappyContext(sc: SparkContext)
   }
 
   def registerTopK(tableName: String, streamTableName: String,
-    topkOptions: Map[String, Any]) = {
-    catalog.registerTopK(tableName, streamTableName, catalog.getStreamTable(streamTableName).schema,
-      topkOptions)
+      topkOptions: Map[String, Any]) = {
+    catalog.registerTopK(tableName, streamTableName,
+      catalog.getStreamTable(streamTableName).schema, topkOptions)
   }
 
   @transient
@@ -320,13 +313,35 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
   }
 
+  /**
+   * Queries the topk structure between two points in time. If the specified
+   * time lies between a topk interval the whole interval is considered
+   *
+   * @param topKName - The topk structure that is to be queried.
+   * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
+   *                  If passed as null, oldest interval is considered as the start interval.
+   * @param endTime  end time as string of the format "yyyy-mm-dd hh:mm:ss".
+   *                  If passed as null, newest interval is considered as the last interval.
+   * @return returns the top K elements with their respective frequencies between two time
+   */
   def queryTopK[T: ClassTag](topKName: String,
-    startTime: Long = Long.MinValue,
-    endTime: Long = Long.MaxValue): DataFrame = {
+      startTime: String = null, endTime: String = null): DataFrame = {
+
+    val stime = if (startTime == null ) 0L else
+      CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
+
+    val etime = if (endTime == null ) Long.MaxValue  else
+      CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
+
+    queryTopK[T](topKName, stime, etime)
+  }
+
+  def queryTopK[T: ClassTag](topKName: String,
+      startTime: Long, endTime: Long): DataFrame = {
     val k: TopKHokusaiWrapper = catalog.topKStructures(topKName)
 
     // TODO: perhaps this can be done more efficiently via a shuffle but
-    // TODO: using the straightforward approach for now
+    // using the straightforward approach for now
 
     // first collect keys from across the cluster
     val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
@@ -344,8 +359,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
       .reduceByKey(_ + _).map(Row.fromTuple(_))
 
     val aggColumn = "AggregatedValue"
-    val topKSchema = StructType(Array(k.key,
-      StructField.apply(aggColumn, LongType)))
+    val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType)))
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k.size)
   }
