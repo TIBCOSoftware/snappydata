@@ -340,7 +340,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
               i =>
                 if (h.queryTillLastNIntervals(i, 1)
                   != Some(computeSumOfAP(count, -7, i))) {
-                  val approx = h.queryTillLastNIntervals(i, 1).get
+                  val approx = h.queryTillLastNIntervals(i, 1).get.estimate
                   val exact = computeSumOfAP(count, -7, i)
                   val error = (abs(exact - approx) * 100f) / exact
                   if (error > ERROR_PERCENTAGE) {
@@ -389,7 +389,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
 
                   val exactFreq = computeSumOfAP(lastElemOfAP, -1 * keyToQuery, i)
 
-                  val freqFromQuery = h.queryTillLastNIntervals(i, keyToQuery).get
+                  val freqFromQuery = h.queryTillLastNIntervals(i, keyToQuery).get.estimate
                   // System.out.println("expected frequency=" + exactFreq + ", hokusai count= " + freqFromQuery)
                   if (freqFromQuery != exactFreq) {
                     val errorPercentage = (abs(exactFreq - freqFromQuery) * 100f) / exactFreq
@@ -435,7 +435,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
             val keyToQuery = randomKey.nextInt(KEYS)
             if (keyToQuery > 0) {
               val lastElemOfAP = keyToQuery + (k - 1) * keyToQuery
-              val countForInterval = h.queryAtTime(k - 1, keyToQuery).get
+              val countForInterval = h.queryAtTime(k - 1, keyToQuery).get.estimate
               if (countForInterval != lastElemOfAP) {
                 val errorPercentage = (abs(countForInterval - lastElemOfAP) * 100f) / lastElemOfAP
                 if (errorPercentage > ERROR_PERCENTAGE) {
@@ -539,7 +539,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
         val s1 = computeSumOfAP(7, 7, min)
         val s2 = computeSumOfAP(7, 7, max + 1)
 
-        val estimate = h.queryBetweenTime(t1, t2, 1).get
+        val estimate = h.queryBetweenTime(t1, t2, 1).get.estimate
         val expected = Math.abs(s2 - s1)
         if (estimate != expected) {
           val errorPercentage = (abs(estimate - expected) * 100f) / expected

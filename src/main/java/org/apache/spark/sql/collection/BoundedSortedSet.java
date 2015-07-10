@@ -8,21 +8,21 @@ import java.util.TreeSet;
 
 import scala.Tuple2;
 
-public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
+public class BoundedSortedSet<K,V extends Comparable<V>> extends TreeSet<Tuple2<K, V>> {
 
   private final int bound;
-  private final Map<T, Long> map;
+  private final Map<K, V> map;
   private final static float tolerance = 0;
   private final boolean isRelaxedBound ;
 
   public BoundedSortedSet(int bound, boolean isRelaxedBound) {
-    super(new Comparator<Tuple2<T, Long>>() {
+    super(new Comparator<Tuple2<K, V>>() {
 
       @Override
-      public int compare(Tuple2<T, Long> o1, Tuple2<T, Long> o2) {
+      public int compare(Tuple2<K, V> o1, Tuple2<K, V> o2) {
         if (o1._1.equals(o2._1)) {
           return 0;
-        } else if (o1._2 > o2._2) {
+        } else if (o1._2.compareTo(o2._2) > 0) {
           return -1;
         } else {
           return 1;
@@ -31,7 +31,7 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
 
     });
     this.bound = bound;
-    this.map = new HashMap<T, Long>();
+    this.map = new HashMap<K, V>();
     this.isRelaxedBound = isRelaxedBound;
   }
   
@@ -44,11 +44,11 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
   }
 
   @Override
-  public boolean add(Tuple2<T, Long> data) {
+  public boolean add(Tuple2<K, V> data) {
     // check if the structure already contains this key
-    Long prevCount = this.map.get(data._1);
+    V prevCount = this.map.get(data._1);
     if (prevCount != null) {
-      this.remove(new Tuple2(data._1, prevCount));
+      this.remove(new Tuple2<K,V>(data._1, prevCount));
     }
     boolean added = false;
 
@@ -56,12 +56,14 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
     if (this.size() > this.bound) {
       boolean remove = false;
       if(this.isRelaxedBound) {
-       Iterator<Tuple2<T,Long>> iter = this.descendingIterator();
-       Tuple2<T, Long> last = iter.next();
+       //If relaxed bound is true, data will always be stored as Long value
+       //&& not approximate value	  
+       Iterator<Tuple2<K,V>> iter = this.descendingIterator();
+       Tuple2<K, V> last = iter.next();
        
        if(iter.hasNext()) {
-         Tuple2<T, Long> last_1 = iter.next();
-         if((Math.abs(last._2 - last_1._2)*100f)/last_1._2 > tolerance) {
+         Tuple2<K, V> last_1 = iter.next();
+         if((Math.abs((Long)last._2 - (Long)last_1._2)*100f)/(Long)last_1._2 > tolerance) {
            remove = true;
          }
        }
@@ -70,7 +72,7 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
       }
          
       if(remove) {
-      Tuple2<T, Long> prev = this.pollLast();
+      Tuple2<K, V> prev = this.pollLast();
       if (!prev._1.equals(data._1)) {
         this.map.put(data._1, data._2);
         this.map.remove(prev._1);
@@ -92,7 +94,7 @@ public class BoundedSortedSet<T> extends TreeSet<Tuple2<T, Long>> {
     return added;
   }
   
-  public Long get(T key) {
+  public V get(K key) {
     return this.map.get(key);
   }
   

@@ -82,13 +82,16 @@ abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
-        case (bid, idx) => new ExecutorLocalPartition(idx, bid)
+        case (bid, idx) => createPartition(idx, bid)
       }.toArray[Partition]
     }
     else {
       Array.empty[Partition]
     }
   }
+  
+ def createPartition(index: Int , blockId: BlockManagerId) : ExecutorLocalPartition = 
+    new ExecutorLocalPartition(index, blockId)
 
   override def getPreferredLocations(split: Partition): Seq[String] =
     Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)

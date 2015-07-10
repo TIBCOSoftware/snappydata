@@ -6,13 +6,14 @@ import scala.reflect.ClassTag
 import org.apache.spark.sql.collection.BoundedSortedSet
 import CountMinSketch._
 import org.apache.spark.util.collection.OpenHashSet
+import org.apache.spark.sql.execution.Approximate
 
 final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: Int, width: Int, seed: Int,
   eps: Double, confidence: Double, size: Long, table: Array[Array[Long]],
   hashA: Array[Long]) extends CountMinSketch[T](depth, width, seed,
   eps, confidence, size, table, hashA) {
 
-  val topkSet: BoundedSortedSet[T] = new BoundedSortedSet[T](topKInternal, true)
+  val topkSet: BoundedSortedSet[T, java.lang.Long] = new BoundedSortedSet[T, java.lang.Long](topKInternal, true)
 
   def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, seed: Int) = this(topKActual, topKInternal, depth, width, seed,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
@@ -43,20 +44,26 @@ final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, dep
     this.topkSet.add(element)
   }
 
-  def getFromTopKMap(key: T): Option[Long] = {
-    Option(this.topkSet.get(key))
+  def getFromTopKMap(key: T): Option[Approximate] = {
+    val count = this.topkSet.get(key)
+    val approx =if( count != null) {
+      this.wrapAsApproximate(count)
+    }else {
+      null
+    }
+    Option(approx)
   }
 
-  def getTopK: Array[(T, Long)] = {
+  def getTopK: Array[(T, Approximate)] = {
     val size = if(this.topkSet.size() > this.topKActual) {
       this.topKActual
     }else{
        this.topkSet.size
     }
     val iter = this.topkSet.iterator()
-    Array.fill[(T, Long)](size)({
+    Array.fill[(T, Approximate)](size)({
       val (key, value) = iter.next
-      (key, value.longValue())
+      (key, this.wrapAsApproximate(value))
 
     })
   }
@@ -93,7 +100,7 @@ object TopKCMS {
       getUnionedTopKKeysFromEstimators(seqOfEstimators))
     val mergedTopK = new TopKCMS[T](estimators(0).asInstanceOf[TopKCMS[T]].topKActual, 
         bound, depth, width, size, hashA, table)
-    topkKeys.foreach(x => mergedTopK.populateTopK(x))
+    topkKeys.foreach(x => mergedTopK.populateTopK(x._1 -> x._2.estimate))
     mergedTopK
   }
 
@@ -110,11 +117,11 @@ object TopKCMS {
   }
 
   def getCombinedTopKFromEstimators[T](estimators: Seq[CountMinSketch[T]],
-    topKKeys: Iterable[T], topKKeyValMap: mutable.Map[T, java.lang.Long] = null):
-    mutable.Map[T, java.lang.Long] = {
+    topKKeys: Iterable[T], topKKeyValMap: mutable.Map[T, Approximate] = null):
+    mutable.Map[T, Approximate] = {
 
     val topkKeysVals = if (topKKeyValMap == null) {
-      scala.collection.mutable.HashMap[T, java.lang.Long]()
+      scala.collection.mutable.HashMap[T, Approximate]()
     } else {
       topKKeyValMap
     }
@@ -123,11 +130,12 @@ object TopKCMS {
       topKKeys.foreach { key =>  
         val temp = topkCMS.topkSet.get(key)
         val count = if(temp != null) {
-           temp.asInstanceOf[Long]  
+           topkCMS.wrapAsApproximate(temp.asInstanceOf[Long])  
         }else {
-          x.estimateCount(key)
+          x.estimateCountAsApproximate(key)
         }
-        val prevCount = topkKeysVals.getOrElse[java.lang.Long](key, 0L)
+        val prevCount = topkKeysVals.getOrElse[Approximate](key,
+            Approximate.zeroApproximate(topkCMS.confidence))
         topkKeysVals += (key -> (prevCount + count))
       }
     }

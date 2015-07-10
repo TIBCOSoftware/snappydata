@@ -54,7 +54,7 @@ class TopKCMSSpec extends FlatSpec with Matchers {
     val topKData = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[String]]
    // System.out.println("reverse data ="+ expectedData.descendingMap())
     val expectedIter = expectedData.descendingMap().entrySet().iterator()
-    val boundedSortedData = new BoundedSortedSet[String](12, false)
+    val boundedSortedData = new BoundedSortedSet[String, java.lang.Long](12, false)
     val iter1 = topKData.topkSet.iterator()
     while(iter1.hasNext()) {
       boundedSortedData.add(iter1.next())

@@ -354,12 +354,18 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
     val iter = combinedKeys.iterator
 
+   /* val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+      Array.fill(combinedKeys.size)(iter.next()), this)
+      .reduceByKey(_ + _).map(Row.fromTuple(_))*/
     val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
-      .reduceByKey(_ + _).map(Row.fromTuple(_))
+      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))
 
-    val aggColumn = "AggregatedValue"
-    val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType)))
+    val aggColumn = "EstimatedValue"
+    val errorBounds = "ErrorBoundsInfo"
+    val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
+        StructField(errorBounds, ApproximateType)))
+   
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k.size)
   }

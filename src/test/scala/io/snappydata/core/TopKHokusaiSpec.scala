@@ -253,7 +253,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
      
       val startInterval = totalIntervals - intervalTill + 1
       val dataMap = getAllKeysCount(startInterval, totalIntervals, intervalMap)
-      val sortAndBound = new BoundedSortedSet[Int](topKCount, false)
+      val sortAndBound = new BoundedSortedSet[Int, java.lang.Long](topKCount, false)
       dataMap.foreach {
         case (key, value) =>
           sortAndBound.add(key, value)

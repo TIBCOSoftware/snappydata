@@ -1,7 +1,6 @@
 package org.apache.spark.sql.execution.cms
 
 import io.snappydata.util.com.clearspring.analytics.stream.membership.Filter
-
 import scala.util.Random
 import scala.math.ceil
 import scala.Array
@@ -12,11 +11,43 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import scala.reflect.ClassTag
 import scala.reflect.classTag
+import io.snappydata.util.NumberUtilsSpec
+import io.snappydata.util.NumberUtils
+import org.apache.spark.sql.execution.Approximate
+
+/*
+Calculating W & D
+
+There are two parameters (values) used when calculating the correct W and D dimensions of a count min sketch, for the desired accuracy levels. The parameters are ε (epsilon) and δ (delta).
+
+ε (Epsilon) is “how much error is added to our counts with each item we add to the cm sketch”.
+
+δ (Delta) is “with what probability do we want to allow the count estimate to be outside of our epsilon error rate”
+
+To calculate W and D, you use these formulas:
+
+W = ⌈e/ε⌉     ( The ⌈ ⌉ symbol is ceiling  meaning ⌈x⌉ means the 
+ceiling of x, i.e. the smallest integer greater than or equal to x.)
+
+D = ⌈ln (1/δ)⌉
+
+Where ln is “natural log” and e is “euler’s constant”.
+
+Accuracy Guarantees
+
+When querying to get a count for a specific object (also called a “point query”)
+ the accuracy guarantees are:
+
+1) True Count <= Estimated Count
+2) Estimated Count <= True Count + ε * Number Of Items Added
+There is a δ chance that #2 is not true
+* 
+*/
 
 class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
   val eps: Double, val confidence: Double, var size: Long, val table: Array[Array[Long]],
   val hashA: Array[Long]) {
-
+  
   val isTuple = checkForTuple
 
   private def checkForTuple: Boolean = {
@@ -38,7 +69,8 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
         CountMinSketch.initWidth(epsOfTotalCount)),
       CountMinSketch.initHash(CountMinSketch.initDepth(confidence), seed))
 
-  def this(depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]]) = this(depth, width, 0, CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth),
+  def this(depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]]) = this(depth, width, 0, CountMinSketch.initEPS(width), 
+      CountMinSketch.initConfidence(depth),
     size, table, hashA)
 
   def getRelativeError: Double = this.eps
@@ -87,7 +119,7 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
     }
 
     val totalCount = matchItem(item)
-    this.size += count;
+    this.size += count
     totalCount
   }
 
@@ -229,6 +261,27 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
 
     matchItem(item)
   }
+  
+  def estimateCountAsApproximate(item: T): Approximate = {
+    def matchItem(elem: Any): Approximate = {
+      val count =elem match {
+        case s: String => estimateCount(s)
+        case num: Long => estimateCount(num)
+        case num: Int => estimateCount(num)
+        case num: Short => estimateCount(num)
+        case num: Byte => estimateCount(num)
+        case p: Product => if (isTuple) {
+          estimateCount(p)
+        } else {
+          throw new UnsupportedOperationException("implement hash code for other types")
+        }
+        case _ => throw new UnsupportedOperationException("implement hash code for other types")
+      }
+      this.wrapAsApproximate(count)
+    }
+
+    matchItem(item)
+  }
 
   private def estimateCount(item: Long): Long = {
     var res = scala.Long.MaxValue;
@@ -286,15 +339,19 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
 
   // This is needed to test compress()  // ugh
   def getTable: Array[Array[Long]] = this.table
+  
+  def wrapAsApproximate(estimate: Long) : Approximate = {
+    new Approximate(estimate - (size*eps).asInstanceOf[Long], estimate, estimate, confidence) 
+  }
 
 }
 
 object CountMinSketch {
   val PRIME_MODULUS: Long = (1L << 31) - 1;
 
-  def initEPS(width: Int): Double = 2.0 / width
+  def initEPS(width: Int): Double = scala.math.exp(1.0) / width
 
-  def initConfidence(depth: Double): Double = 1 - 1 / Math.pow(2, depth)
+  def initConfidence(depth: Double): Double = 1 - 1 / scala.math.exp(depth)
 
   def initTable(depth: Int, width: Int): Array[Array[Long]] = Array.ofDim[Long](depth, width)
 
@@ -310,10 +367,47 @@ object CountMinSketch {
     Array.fill[Long](depth)(r.nextInt(Int.MaxValue))
   }
 
-  def initDepth(confidence: Double): Int = ceil(-Math.log(1 - confidence) / Math.log(2))
-    .asInstanceOf[Int];
+   /**
+   * Translates from 'confidence' to 'depth'.
+   */
+  @throws[IllegalArgumentException]("if delta is is not in (0, 1)")
+  def initDepth(confidence: Double): Int = {
+    require( 0 < confidence && confidence < 1, "confidence must lie in (0,1)")
+    scala.math.ceil(scala.math.log(1.0/(1- confidence))).toInt
+  }
 
-  def initWidth(epsOfTotalCount: Double): Int = ceil(2 / epsOfTotalCount).asInstanceOf[Int]
+  /**
+   * Translates from `eps` to `width`.
+   */
+  @throws[IllegalArgumentException]("if eps is is not in (0, 1)")
+  def initWidth(eps: Double): Int = {
+    require(0 < eps && eps < 1, "eps must lie in (0, 1)")
+    scala.math.ceil(truncatePrecisionError(scala.math.exp(1) / eps)).toInt
+  }
+  
+  /**
+   * Translates from `eps` to `width`.
+   */
+  @throws[IllegalArgumentException]("if eps is is not in (0, 1)")
+  def initWidthOfPowerOf2(eps: Double): (Int, Double) = {
+    require(0 < eps && eps < 1, "eps must lie in (0, 1)")
+    val width =scala.math.ceil(truncatePrecisionError(scala.math.exp(1) / eps)).toInt
+    val powerOf2Width = NumberUtils.nearestPowerOf2GE(width)
+    val newEPS = initEPS(powerOf2Width)
+    powerOf2Width -> newEPS
+  }
+  
+   //Taken from alge bird   
+  // Eliminates precision errors such as the following:
+  //
+  //   scala> val width = 39
+  //   scala> scala.math.exp(1) / CMSFunctions.eps(width)
+  //   res171: Double = 39.00000000000001   <<< should be 39.0
+  //
+  // Because of the actual types on which CMSFunctions operates (i.e. Int and Double), the maximum number of decimal
+  // places should be 6.
+  private def truncatePrecisionError(i: Double, decimalPlaces: Int = 6) =
+    BigDecimal(i).setScale(decimalPlaces, BigDecimal.RoundingMode.HALF_UP).toDouble
 
   @throws(classOf[CountMinSketch.CMSMergeException])
   def basicMerge[T: ClassTag](estimators: CountMinSketch[T]*): (Int, Int, Array[Long], Array[Array[Long]], Long) = {

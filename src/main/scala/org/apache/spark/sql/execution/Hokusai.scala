@@ -55,7 +55,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
 
   private val intervalGenerator = new Timer()
-  
+
   val rwLock = new ReentrantReadWriteLock()
   val readLock = rwLock.readLock
   val writeLock = rwLock.writeLock
@@ -71,11 +71,11 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     intervalGenerator.schedule(createTimerTask(this.increment), 0, windowSize)
   }
 
-  private val queryTillLastN_Case2: (T, Int) => Option[Long] = (item: T, sumUpTo: Int) => Some(this.taPlusIa.queryBySummingTimeAggregates(item, sumUpTo))
+  private val queryTillLastN_Case2: (T, Int) => Option[Approximate] = (item: T, sumUpTo: Int) => Some(this.taPlusIa.queryBySummingTimeAggregates(item, sumUpTo))
 
-  private val queryTillLastN_Case1: (T) => () => Option[Long] = (item: T) => () => Some(this.taPlusIa.ta.aggregates(0).estimateCount(item))
+  private val queryTillLastN_Case1: (T) => () => Option[Approximate] = (item: T) => () => Some(this.taPlusIa.ta.aggregates(0).estimateCountAsApproximate(item))
 
-  private val queryTillLastN_Case3: (T, Int, Int, Int, Int) => Option[Long] = (item: T, lastNIntervals: Int, totalIntervals: Int, n: Int, nQueried: Int) =>
+  private val queryTillLastN_Case3: (T, Int, Int, Int, Int) => Option[Approximate] = (item: T, lastNIntervals: Int, totalIntervals: Int, n: Int, nQueried: Int) =>
     if (lastNIntervals > totalIntervals) {
       Some(this.taPlusIa.queryBySummingTimeAggregates(item, n))
     } else {
@@ -94,13 +94,12 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
         count += this.taPlusIa.basicQuery(nearestPowerOf2Num.asInstanceOf[Int] + 1 to lastNIntervals, item,
           nearestPowerOf2Num.asInstanceOf[Int],
           nearestPowerOf2Num.asInstanceOf[Int] * 2)
-
       }
 
       Some(count)
     }
 
-  private val queryTillLastN_Case4: (T, Int, Int, Int, Int) => Option[Long] = (item: T, lastNIntervals: Int, totalIntervals: Int, n: Int, nQueried: Int) => {
+  private val queryTillLastN_Case4: (T, Int, Int, Int, Int) => Option[Approximate] = (item: T, lastNIntervals: Int, totalIntervals: Int, n: Int, nQueried: Int) => {
     val lastNIntervalsToQuery = if (lastNIntervals > totalIntervals) {
       totalIntervals
     } else {
@@ -117,18 +116,18 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     } else {
       -1
     }
-
-    var total = bestPath.aggregate[Long](0)((total, interval) => {
-      total +
+    val zeroApprox = Approximate.zeroApproximate(cmsParams.confidence)
+    var total = bestPath.aggregate[Approximate](zeroApprox)((partTotal, interval) => {
+      partTotal +
         (if (interval != skipLastInterval) {
           this.taPlusIa.queryTimeAggregateForInterval(item, interval)
         } else {
-          0
+          Approximate.zeroApproximate(cmsParams.confidence)
         })
     }, _ + _)
 
     // Add the first item representing interval 1
-    total += this.taPlusIa.ta.aggregates(0).estimateCount(item)
+    total += this.taPlusIa.ta.aggregates(0).estimateCountAsApproximate(item)
 
     if (computedIntervalLength > lastNIntervalsToQuery) {
       // start individual query from interval
@@ -181,7 +180,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     // TODO I don't like passing numIntervals in .....
     timeEpoch.jForTimestamp(epoch, numIntervals).flatMap(ta.query(_, key))*/
 
-  def queryTillTime(epoch: Long, key: T): Option[Long] = {
+  def queryTillTime(epoch: Long, key: T): Option[Approximate] = {
     this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
 
@@ -189,14 +188,14 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
           None
         } else {
           this.queryTillLastNIntervals(
-              this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
+            this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
             key)
         }),
       true)
 
   }
 
-  def queryAtTime(epoch: Long, key: T): Option[Long] = {
+  def queryAtTime(epoch: Long, key: T): Option[Approximate] = {
 
     this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
@@ -210,7 +209,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   }
 
-  def queryBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Long] = {
+  def queryBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Approximate] = {
 
     this.executeInReadLock(
       {
@@ -262,11 +261,11 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   def accummulate(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]): Unit =
     this.executeInWriteLock {
-     
+
       val iaAggs = this.taPlusIa.ia.aggregates
       val taAggs = this.taPlusIa.ta.aggregates
       data.foreach { v =>
-        val epoch = v.epoch       
+        val epoch = v.epoch
         if (epoch > 0) {
           // find the appropriate time and item aggregates and update them
           timeEpoch.timestampToInterval(epoch) match {
@@ -289,8 +288,8 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                 //identify all the intervals which store data for this interval
                 if (interval == timeEpoch.t) {
                   taAggs(0).add(v.key, v.frequency)
-                  if(!taAggs(0).eq(iaAggs(interval - 1))) {
-                    iaAggs(interval - 1).add(v.key, v.frequency) 
+                  if (!taAggs(0).eq(iaAggs(interval - 1))) {
+                    iaAggs(interval - 1).add(v.key, v.frequency)
                   }
                 } else {
                   val timeIntervalsToModify = this.taPlusIa.intervalTracker
@@ -299,11 +298,11 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                     taAggs(NumberUtils.isPowerOf2(x) + 1)
                       .add(v.key, v.frequency)
                   }
-                  if(!(timeIntervalsToModify(0) == 1 && taAggs(1).eq(iaAggs(interval - 1)) )) {
-                     iaAggs(interval - 1).add(v.key, v.frequency)
+                  if (!(timeIntervalsToModify(0) == 1 && taAggs(1).eq(iaAggs(interval - 1)))) {
+                    iaAggs(interval - 1).add(v.key, v.frequency)
                   }
                 }
-                
+
               }
             case None => println(s"SW: WARNING: got epoch=$epoch with epoch0 as ${timeEpoch.epoch0}")
           }
@@ -311,7 +310,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
           mBar.add(v.key, v.frequency)
         }
       }
-      
+
     }
 
   protected def executeInReadLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
@@ -340,8 +339,8 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     }
   }
 
-  def queryTillLastNIntervals(lastNIntervals: Int, item: T): Option[Long] =
-    this.taPlusIa.queryLastNIntervals[Option[Long]](lastNIntervals, queryTillLastN_Case1(item),
+  def queryTillLastNIntervals(lastNIntervals: Int, item: T): Option[Approximate] =
+    this.taPlusIa.queryLastNIntervals[Option[Approximate]](lastNIntervals, queryTillLastN_Case1(item),
       queryTillLastN_Case2(item, _),
       queryTillLastN_Case3(item, _, _, _, _),
       queryTillLastN_Case4(item, _, _, _, _))
@@ -630,16 +629,16 @@ def algo3(): Unit = {
 
   }*/
 
-    def queryAtInterval(lastNthInterval: Int, key: T): Option[Long] = {
+    def queryAtInterval(lastNthInterval: Int, key: T): Option[Approximate] = {
       if (lastNthInterval == 1) {
-        Some(this.ta.aggregates(0).estimateCount(key))
+        Some(this.ta.aggregates(0).estimateCountAsApproximate(key))
       } else {
         // Identify the best path which contains the last interval
         val (bestPath, computedIntervalLength) = this.intervalTracker.identifyBestPath(lastNthInterval,
           true)
         val lastIntervalRange = bestPath.last.asInstanceOf[Int]
         if (lastIntervalRange == 1) {
-          Some(ta.aggregates(1).estimateCount(key))
+          Some(ta.aggregates(1).estimateCountAsApproximate(key))
         } else {
           Some(this.basicQuery(lastNthInterval to lastNthInterval,
             key, lastIntervalRange, computedIntervalLength.asInstanceOf[Int]))
@@ -649,11 +648,11 @@ def algo3(): Unit = {
 
     }
 
-    def queryBetweenIntervals(later: Int, earlier: Int, key: T): Option[Long] = {
+    def queryBetweenIntervals(later: Int, earlier: Int, key: T): Option[Approximate] = {
       val fromLastNInterval = this.convertIntervalBySwappingEnds(later)
       val tillLastNInterval = this.convertIntervalBySwappingEnds(earlier)
       if (fromLastNInterval == 1 && tillLastNInterval == 1) {
-        Some(this.ta.aggregates(0).estimateCount(key))
+        Some(this.ta.aggregates(0).estimateCountAsApproximate(key))
       } else {
         // Identify the best path
         val (bestPath, computedIntervalLength) = this.intervalTracker.identifyBestPath(tillLastNInterval.asInstanceOf[Int],
@@ -665,8 +664,9 @@ def algo3(): Unit = {
         } else {
           fromLastNInterval
         }
+        val zeroApprox = Approximate.zeroApproximate(cmsParams.confidence)
         var taIntervalStartsAt = computedIntervalLength - bestPath.aggregate[Long](0)(_ + _, _ + _) + 1
-        var finalTotal = bestPath.aggregate[Long](0)((total, interval) => {
+        var finalTotal = bestPath.aggregate[Approximate](zeroApprox)((total, interval) => {
           val lengthToDrop = truncatedSeq.head
           truncatedSeq = truncatedSeq.drop(1)
           val lengthTillInterval = computedIntervalLength - truncatedSeq.aggregate[Long](0)(_ + _, _ + _)
@@ -678,7 +678,7 @@ def algo3(): Unit = {
 
           val total1 = if (start == taIntervalStartsAt && end == lengthTillInterval) {
             // can add the time series aggregation as whole interval is needed
-            ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).estimateCount(key)
+            ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).estimateCountAsApproximate(key)
           } else {
             basicQuery(start.asInstanceOf[Int] to end.asInstanceOf[Int],
               key, interval.asInstanceOf[Int], lengthTillInterval.asInstanceOf[Int])
@@ -689,7 +689,7 @@ def algo3(): Unit = {
         }, _ + _)
 
         if (fromLastNInterval == 1) {
-          finalTotal += this.ta.aggregates(0).estimateCount(key)
+          finalTotal += this.ta.aggregates(0).estimateCountAsApproximate(key)
         }
         Some(finalTotal)
       }
@@ -735,7 +735,7 @@ def algo3(): Unit = {
      *  , while item aggregates are from left to right, that is most recent interval is at the end
      */
     def basicQuery(tIntervalsToQuery: Range, key: T, taIntervalWithInstant: Int,
-      totalComputedIntervalLength: Int): Long = {
+      totalComputedIntervalLength: Int): Approximate = {
       //handle level =1
       val totalIntervals = this.ia.aggregates.size
       val jStar = NumberUtils.isPowerOf2(taIntervalWithInstant) + 1
@@ -745,7 +745,7 @@ def algo3(): Unit = {
 
       val endRangeAsPerIA = beginingOfRangeAsPerIA + taIntervalWithInstant - 1
       val mJStar = this.ta.aggregates.get(jStar).get
-      var total: Long = 0
+      var total = Approximate.zeroApproximate(cmsParams.confidence) 
       var n: Array[Long] = null
       val bStart = beginingOfRangeAsPerIA.asInstanceOf[Int]
       val bEnd = endRangeAsPerIA.asInstanceOf[Int]
@@ -754,14 +754,15 @@ def algo3(): Unit = {
         j =>
           val intervalNumRelativeToIA = convertIntervalBySwappingEnds(j).asInstanceOf[Int]
           val cmsAtT = this.ia.aggregates.get(intervalNumRelativeToIA - 1).get
-          val hashes = unappliedWidthHashes.map( _ % cmsAtT.width)
+          val hashes = unappliedWidthHashes.map(_ % cmsAtT.width)
           val nTilda = calcNTilda(cmsAtT, hashes)
           val width = if (j <= 2) {
             cmsParams.width
           } else {
             cmsParams.width - Hokusai.ilog2(j - 1) + 1
           }
-          total += (if (nTilda > math.E * intervalNumRelativeToIA / (1 << width) || nTilda == 0) {
+          total += (if (nTilda.estimate > math.E * intervalNumRelativeToIA / (1 << width) 
+              || nTilda.estimate == 0) {
             nTilda
           } else {
             if (n == null) {
@@ -793,18 +794,18 @@ def algo3(): Unit = {
     def convertIntervalBySwappingEnds(intervalNumber: Long) =
       this.ia.aggregates.size - intervalNumber + 1
 
-    def queryBySummingTimeAggregates(item: T, sumUpTo: Int): Long = {
-      var count: Long = 0
+    def queryBySummingTimeAggregates(item: T, sumUpTo: Int): Approximate = {
+      var count: Approximate = Approximate.zeroApproximate(cmsParams.confidence) 
       (0 to sumUpTo) foreach {
-        j => count += this.ta.aggregates.get(j).get.estimateCount(item)
+        j => count = count + this.ta.aggregates.get(j).get.estimateCountAsApproximate(item)
       }
 
       count
     }
 
-    def queryTimeAggregateForInterval(item: T, interval: Long): Long = {
+    def queryTimeAggregateForInterval(item: T, interval: Long): Approximate = {
       assert(NumberUtils.isPowerOf2(interval) != -1)
-      ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).estimateCount(item)
+      ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).estimateCountAsApproximate(item)
     }
 
     private def queryBySummingEntityAggregates(item: T, startIndex: Int, sumUpTo: Int): Array[Long] = {
@@ -825,16 +826,17 @@ def algo3(): Unit = {
     }
 
     private def calcNTilda(cms: CountMinSketch[T],
-      hashes: Array[Int]): Long = {
+      hashes: Array[Int]): Approximate = {
       var res = scala.Long.MaxValue;
       for (i <- 0 until cms.depth) {
         res = Math.min(res, cms.table(i)(hashes(i)));
       }
-      return res;
+      
+      return cms.wrapAsApproximate(res)
     }
 
     private def calcNCarat(key: T, jStar: Int, cmsAtT: CountMinSketch[T],
-      hashesForTime: Array[Int], sumOverEntities: Array[Long], mJStar: CountMinSketch[T]): Long = {
+      hashesForTime: Array[Int], sumOverEntities: Array[Long], mJStar: CountMinSketch[T]): Approximate = {
 
       val mjStarHashes = mJStar.getIHashesFor(key, true)
       var res = scala.Long.MaxValue;
@@ -846,16 +848,17 @@ def algo3(): Unit = {
       for (i <- 0 until cmsAtT.depth) {
         if (sumOverEntities(i) != 0) {
           res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) *
-              cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
+            cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
         } else {
-          return 0
+          return Approximate.zeroApproximate(cmsParams.confidence) 
         }
       }
 
       return if (res == scala.Long.MaxValue) {
-        0
+        Approximate.zeroApproximate(cmsParams.confidence) 
       } else {
-        res
+        //TODO: Fix it
+        cmsAtT.wrapAsApproximate(res)
       }
 
     }
@@ -931,12 +934,42 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
 }
 
 // TODO Better handling of params and construction (both delta/eps and d/w support)
-case class CMSParams(width: Int, depth: Int, seed: Int = 123) {
+class CMSParams private (val width: Int, val depth: Int, val eps: Double,
+  val confidence: Double, val seed: Int = 123) {
+
   val hashA = createHashA
 
   private def createHashA: Array[Long] = {
     val r = new Random(seed)
     Array.fill[Long](depth)(r.nextInt(Int.MaxValue))
+  }
+
+}
+
+object CMSParams {
+  def apply(eps: Double, confidence: Double) = {
+    val (width, modifiedEPS) = CountMinSketch.initWidthOfPowerOf2(eps)
+    new CMSParams(width,
+      CountMinSketch.initDepth(confidence), modifiedEPS, confidence)
+  }
+
+  def apply(width: Int, depth: Int) = {
+    val newWidth = NumberUtils.nearestPowerOf2GE(width)
+    new CMSParams(newWidth,
+      depth, CountMinSketch.initEPS(newWidth), CountMinSketch.initConfidence(depth))
+  }
+
+  def apply(eps: Double, confidence: Double, seed: Int) = {
+    val (width, modifiedEPS) = CountMinSketch.initWidthOfPowerOf2(eps)
+    new CMSParams(width,
+      CountMinSketch.initDepth(confidence), modifiedEPS, confidence, seed)
+  }
+
+  def apply(width: Int, depth: Int, seed: Int) = {
+    val newWidth = NumberUtils.nearestPowerOf2GE(width)
+    new CMSParams(newWidth,
+      depth, CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), seed)
+
   }
 }
 

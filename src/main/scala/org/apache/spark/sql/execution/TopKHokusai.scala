@@ -22,7 +22,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
   val topKInternal = topKActual * 2
 
-  private val queryTillLastNTopK_Case1: (Array[T]) => () => Array[(T, Long)] = (combinedKeys: Array[T]) => {
+  private val queryTillLastNTopK_Case1: (Array[T]) => () => Array[(T, Approximate)] = (combinedKeys: Array[T]) => {
     () =>
       {
         val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
@@ -35,7 +35,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       }
   }
 
-  private val queryTillLastNTopK_Case2: (Int, Array[T]) => Array[(T, Long)] =
+  private val queryTillLastNTopK_Case2: (Int, Array[T]) => Array[(T, Approximate)] =
     (sumUpTo: Int, combinedTopKKeys: Array[T]) => {
       val combinedKeys: Iterable[T] = if (combinedTopKKeys != null) {
         combinedTopKKeys
@@ -45,7 +45,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       sortAndBound(getTopKBySummingTimeAggregates(sumUpTo, combinedKeys))
     }
 
-  private val queryTillLastNTopK_Case3: (Int, Int, Int, Int, Array[T]) => Array[(T, Long)] = (lastNIntervals: Int,
+  private val queryTillLastNTopK_Case3: (Int, Int, Int, Int, Array[T]) => Array[(T, Approximate)] = (lastNIntervals: Int,
     totalIntervals: Int, n: Int, nQueried: Int, combinedTopKKeys: Array[T]) =>
     if (lastNIntervals > totalIntervals) {
       val topKKeys: Iterable[T] = if (combinedTopKKeys != null) {
@@ -84,7 +84,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
           } else {
             // what to do? ignore as count is abnormally high
           }
-          val prevCount = mappings.getOrElse[java.lang.Long](item, 0)
+          val prevCount = mappings.getOrElse[Approximate](item,
+              Approximate.zeroApproximate(cmsParams.confidence))
           mappings += (item -> (prevCount + count))
         }
 
@@ -92,7 +93,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         unionedTopKKeys.foreach { item: T =>
           val count = this.taPlusIa.basicQuery(nearestPowerOf2Num.asInstanceOf[Int] + 1 to lastNIntervals,
             item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
-          val prevCount = mappings.getOrElse[java.lang.Long](item, 0)
+          val prevCount = mappings.getOrElse[Approximate](item, 
+              Approximate.zeroApproximate(cmsParams.confidence))
           mappings += (item -> (prevCount + count))
         }
 
@@ -100,7 +102,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       sortAndBound(mappings)
     }
 
-  private val queryTillLastNTopK_Case4: (Int, Int, Int, Int, Array[T]) => Array[(T, Long)] =
+  private val queryTillLastNTopK_Case4: (Int, Int, Int, Int, Array[T]) => Array[(T, Approximate)] =
     (lastNIntervals: Int, totalIntervals: Int, n: Int, nQueried: Int, combinedTopKKeys: Array[T]) =>
       { // the number of intervals so far elapsed is not of form 2 ^n. So the time aggregates are
         // at various stages of overlaps
@@ -145,7 +147,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
             //it will be better to add the whole time aggregate & substract the other intervals
             unifiedTopKKeys.foreach { item: T =>
               val total = this.queryTimeAggregateForInterval(item, skipLastInterval)
-              val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+              val prevCount = topKs.getOrElse[Approximate](item, 
+                  Approximate.zeroApproximate(cmsParams.confidence))
               topKs += (item -> (total + prevCount))
             }
 
@@ -154,7 +157,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
             unifiedTopKKeys.foreach { item: T =>
               val total = this.taPlusIa.basicQuery(begin to end,
                 item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
-              val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+              val prevCount = topKs.getOrElse[Approximate](item,
+                  Approximate.zeroApproximate(cmsParams.confidence))
               if (prevCount > total) {
                 topKs += (item -> (prevCount - total))
               } else {
@@ -167,14 +171,12 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
             unifiedTopKKeys.foreach { item: T =>
               val total = this.taPlusIa.basicQuery(begin to lastNIntervalsToQuery,
                 item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
-              val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+              val prevCount = topKs.getOrElse[Approximate](item, Approximate.zeroApproximate(cmsParams.confidence))
               topKs += (item -> (total + prevCount))
             }
           }
         }
-        /*val temp = new BoundedSortedSet[T](10000, false)
-      topKs.foreach(temp.add(_))
-      System.out.println(temp)*/
+       
         sortAndBound(topKs)
 
       }
@@ -226,7 +228,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   override val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = estimators =>
     TopKCMS.merge[T](estimators(1).asInstanceOf[TopKCMS[T]].topKInternal * 2, estimators)
 
-  def getTopKTillTime(epoch: Long, combinedKeys: Array[T] = null): Option[Array[(T, Long)]] = {
+  def getTopKTillTime(epoch: Long, combinedKeys: Array[T] = null): Option[Array[(T, Approximate)]] = {
     this.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
         val interval = if (x > timeEpoch.t) {
@@ -234,7 +236,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         } else {
           x
         }
-        Some(this.taPlusIa.queryLastNIntervals[Array[(T, Long)]](
+        Some(this.taPlusIa.queryLastNIntervals[Array[(T, Approximate)]](
           this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
           queryTillLastNTopK_Case1(combinedKeys), queryTillLastNTopK_Case2(_, combinedKeys),
           queryTillLastNTopK_Case3(_, _, _, _, combinedKeys),
@@ -244,7 +246,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
   }
 
-  def getTopKForCurrentInterval: Option[Array[(T, Long)]] =
+  def getTopKForCurrentInterval: Option[Array[(T, Approximate)]] =
     this.executeInReadLock({
       Some(this.mBar.asInstanceOf[TopKCMS[T]].getTopK)
     }, true)
@@ -254,10 +256,10 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
     }, true)
 
-  def getForKeysInCurrentInterval(combinedKeys: Array[T]): Array[(T, Long)] =
+  def getForKeysInCurrentInterval(combinedKeys: Array[T]): Array[(T, Approximate)] =
     this.executeInReadLock({
       val cms = this.mBar
-      combinedKeys.map { k => (k, cms.estimateCount(k)) }
+      combinedKeys.map { k => (k, cms.estimateCountAsApproximate(k)) }
     }, true)
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
@@ -291,7 +293,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
-      combinedTopKKeys: Array[T] = null): Option[Array[(T, Long)]] =
+      combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
@@ -314,7 +316,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       Some(result)
     }, true)
 
-  def getTopKBetweenTime(later: Int, earlier: Int, combinedTopKKeys: Array[T]): Array[(T, Long)] = {
+  def getTopKBetweenTime(later: Int, earlier: Int, combinedTopKKeys: Array[T]): Array[(T, Approximate)] = {
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
     val tillLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(earlier)
     if (fromLastNInterval == 1 && tillLastNInterval == 1) {
@@ -339,7 +341,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       } else {
         fromLastNInterval
       }
-      val topKs = mutable.HashMap[T, java.lang.Long]()
+      val topKs = mutable.HashMap[T, Approximate]()
       var taIntervalStartsAt = computedIntervalLength - bestPath.aggregate[Long](0)(_ + _, _ + _) + 1
 
       bestPath.foreach { interval =>
@@ -360,7 +362,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
           unifiedTopKKeys.foreach { item: T =>
             val total = this.taPlusIa.basicQuery(start.asInstanceOf[Int] to end.asInstanceOf[Int],
               item, interval.asInstanceOf[Int], lengthTillInterval.asInstanceOf[Int])
-            val prevCount = topKs.getOrElse[java.lang.Long](item, 0)
+            val prevCount = topKs.getOrElse[Approximate](item, 
+                Approximate.zeroApproximate(cmsParams.confidence))
             topKs += (item -> (total + prevCount))
           }
         }
@@ -396,14 +399,14 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     }
   }
 
-  def queryTimeAggregateForInterval(item: T, interval: Long): Long = {
+  def queryTimeAggregateForInterval(item: T, interval: Long): Approximate = {
     assert(NumberUtils.isPowerOf2(interval) != -1)
     val topKCMS = this.taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
     topKCMS.getFromTopKMap(item).getOrElse(this.taPlusIa.queryTimeAggregateForInterval(item, interval))
   }
 
   private def getTopKBySummingTimeAggregates(sumUpTo: Int,
-      setOfTopKKeys: Iterable[T] = null): mutable.Map[T, java.lang.Long] = {
+      setOfTopKKeys: Iterable[T] = null): mutable.Map[T, Approximate] = {
 
     val estimators = this.taPlusIa.ta.aggregates.slice(0, sumUpTo + 1)
 
@@ -422,14 +425,15 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
   }
 
-  private def sortAndBound[T](topKs: mutable.Map[T, java.lang.Long]): Array[(T, Long)] = {
-    val sortedData = new BoundedSortedSet[T](this.topKActual, false)
+  private def sortAndBound[T](topKs: mutable.Map[T, Approximate]): Array[(T, Approximate)] = {
+    val sortedData = new BoundedSortedSet[T, Approximate](this.topKActual, false)
     topKs.foreach(sortedData.add(_))
     val iter = sortedData.iterator
     //topKs.foreach(sortedData.add(_))
-    Array.fill[(T, Long)](sortedData.size())({
-      val (key, value) = iter.next
-      (key, value.longValue())
+    Array.fill[(T, Approximate)](sortedData.size())({
+      //val (key, value) = iter.next
+      //(key, value.longValue())
+      iter.next
 
     })
 
@@ -483,14 +487,9 @@ object TopKHokusai {
       case None =>
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
-          topKMap.getOrElse(name, {
-            //val depth = Math.ceil(-Math.log(1 - confidence) / Math.log(2)).toInt
-            //val width = PrimeFinder.nextPrime(Math.ceil(2 / eps).toInt)
-            // val width = NumberUtils.nearestPowerOf2GE(Math.ceil(2 / eps).toInt)
-            val powerOf2width = NumberUtils.nearestPowerOf2GE(width)
-            val cmsParams = CMSParams(powerOf2width, depth)
-
-            val topk = new TopKHokusai[T](cmsParams, timeInterval,
+          topKMap.getOrElse(name, {          
+           val cmsParams =  CMSParams(width, depth)
+           val topk = new TopKHokusai[T](cmsParams, timeInterval,
               epoch0(), size, timeInterval > 0 && tsCol < 0)
             topKMap(name) = topk
             topk
