@@ -49,7 +49,7 @@ object ErrorAggregate extends Enumeration {
   val Sum = Value("SUM")
 }
 
-final class StatCounterWithFullCount(var weightedCount: Double = 0.0)
+final class StatCounterWithFullCount(var weightedCount: Double = 0)
     extends StatVarianceCounter with Serializable {
 
   override protected def mergeDistinctCounter(other: StatVarianceCounter) {
@@ -63,8 +63,7 @@ final class StatCounterWithFullCount(var weightedCount: Double = 0.0)
     if (other != this) {
       super.mergeDistinctCounter(other)
       weightedCount += other.weightedCount
-    }
-    else {
+    } else {
       merge(other.copy()) // Avoid overwriting fields in a weird order
     }
   }
@@ -113,7 +112,7 @@ private[spark] case object StatCounterUDT
   override def deserialize(datum: Any): StatCounterWithFullCount = {
     datum match {
       case row: Row =>
-        require(row.length == 6, "StatCounterUDT.deserialize given row " +
+        require(row.length == 4, "StatCounterUDT.deserialize given row " +
             s"with length ${row.length} but requires length == 4")
         val s = new StatCounterWithFullCount(row.getDouble(3))
         s.init(count = row.getLong(0), mean = row.getDouble(1),
@@ -175,7 +174,7 @@ case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
     extends AggregateFunction with CastDouble {
 
   // Required for serialization
-  def this() = this(null, null, null, 0.0, 0.0, null, false)
+  def this() = this(null, null, null, 0, 0, null, false)
 
   private[this] final val errorStats = new StatCounterWithFullCount()
 
@@ -195,8 +194,7 @@ case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
         // update the weighted count
         errorStats.weightedCount += ratioExpr.eval(input)
       }
-    }
-    else {
+    } else {
       val result = expr.eval(input)
       if (result != null) {
         errorStats.merge(toDouble(result))
@@ -235,7 +233,7 @@ case class ErrorStatsMergeFunction(expr: Expression, base: AggregateExpression,
     extends AggregateFunction {
 
   // Required for serialization
-  def this() = this(null, null, 0.0, 0.0, null)
+  def this() = this(null, null, 0, 0, null)
 
   private val errorStats = new StatCounterWithFullCount()
 
