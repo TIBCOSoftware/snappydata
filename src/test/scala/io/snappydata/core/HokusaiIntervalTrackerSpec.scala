@@ -51,15 +51,15 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
     h.increment()
 
     {
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(7, -7, 1)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(7, -7, 1)))
     }
 
     h.addEpochData(Map[Int, Long](1 -> 14)) // 2nd interval
     h.increment()
 
     {
-      assert(h.queryTillLastNIntervals(1, 1) === Some(14))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(14, -7, 2)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(14))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(14, -7, 2)))
     }
 
     h.addEpochData(Map[Int, Long](1 -> 21)) // 3nd interval
@@ -71,9 +71,9 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 3)
       assert(seq.length === 1)
       assert(seq.containsSlice(Array(2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(21, -7, 3)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(21, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(21, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(21, -7, 3)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(21, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(21, -7, 2)))
 
     }
     //After 4 intervals
@@ -86,9 +86,9 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 4)
       assert(seq.length === 2)
       assert(seq.containsSlice(Array(1, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(28, -7, 4)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(28, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(28, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(28, -7, 4)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(28, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(28, -7, 2)))
 
     }
 
@@ -102,10 +102,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 5)
       assert(seq.length === 1)
       assert(seq.containsSlice(Array(4)))
-      assert(h.queryTillLastNIntervals(5, 1) === Some(computeSumOfAP(35, -7, 5)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(35, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(35, -7, 2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(35, -7, 3)))
+      assert(h.queryTillLastNIntervals(5, 1).map { _.estimate } === Some(computeSumOfAP(35, -7, 5)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(35, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(35, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(35, -7, 3)))
     }
 
     //After 6 intervals
@@ -118,10 +118,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 6)
       assert(seq.length === 2)
       assert(seq.containsSlice(Array(1, 4)))
-      assert(h.queryTillLastNIntervals(6, 1) === Some(computeSumOfAP(42, -7, 6)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(42, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(42, -7, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(42, -7, 4)))
+      assert(h.queryTillLastNIntervals(6, 1).map { _.estimate } === Some(computeSumOfAP(42, -7, 6)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(42, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(42, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(42, -7, 4)))
     }
 
     //After 7 intervals
@@ -134,10 +134,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 7)
       assert(seq.length === 2)
       assert(seq.containsSlice(Array(2, 4)))
-      assert(h.queryTillLastNIntervals(7, 1) === Some(computeSumOfAP(49, -7, 7)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(49, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(49, -7, 2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(49, -7, 3)))
+      assert(h.queryTillLastNIntervals(7, 1).map { _.estimate } === Some(computeSumOfAP(49, -7, 7)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(49, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(49, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(49, -7, 3)))
     }
 
     //After 8 intervals
@@ -150,10 +150,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 8)
       assert(seq.length === 3)
       assert(seq.containsSlice(Array(1, 2, 4)))
-      assert(h.queryTillLastNIntervals(8, 1) === Some(computeSumOfAP(56, -7, 8)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(56, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(56, -7, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(56, -7, 4)))
+      assert(h.queryTillLastNIntervals(8, 1).map { _.estimate } === Some(computeSumOfAP(56, -7, 8)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(56, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(56, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(56, -7, 4)))
     }
 
     //After 9 intervals
@@ -166,11 +166,11 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 9)
       assert(seq.length === 1)
       assert(seq.containsSlice(Array(8)))
-      assert(h.queryTillLastNIntervals(9, 1) === Some(computeSumOfAP(63, -7, 9)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(63, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(63, -7, 2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(63, -7, 3)))
-      assert(h.queryTillLastNIntervals(5, 1) === Some(computeSumOfAP(63, -7, 5)))
+      assert(h.queryTillLastNIntervals(9, 1).map { _.estimate } === Some(computeSumOfAP(63, -7, 9)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(63, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(63, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(63, -7, 3)))
+      assert(h.queryTillLastNIntervals(5, 1).map { _.estimate } === Some(computeSumOfAP(63, -7, 5)))
 
     }
 
@@ -184,11 +184,11 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 10)
       assert(seq.length === 2)
       assert(seq.containsSlice(Array(1, 8)))
-      assert(h.queryTillLastNIntervals(10, 1) === Some(computeSumOfAP(70, -7, 10)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(70, -7, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(70, -7, 4)))
-      assert(h.queryTillLastNIntervals(6, 1) === Some(computeSumOfAP(70, -7, 6)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(70, -7, 1)))
+      assert(h.queryTillLastNIntervals(10, 1).map { _.estimate } === Some(computeSumOfAP(70, -7, 10)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(70, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(70, -7, 4)))
+      assert(h.queryTillLastNIntervals(6, 1).map { _.estimate } === Some(computeSumOfAP(70, -7, 6)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(70, -7, 1)))
 
     }
 
@@ -202,11 +202,11 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 11)
       assert(seq.length === 2)
       assert(seq.containsSlice(Array(2, 8)))
-      assert(h.queryTillLastNIntervals(11, 1) === Some(computeSumOfAP(77, -7, 11)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(77, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(77, -7, 2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(77, -7, 3)))
-      assert(h.queryTillLastNIntervals(7, 1) === Some(computeSumOfAP(77, -7, 7)))
+      assert(h.queryTillLastNIntervals(11, 1).map { _.estimate } === Some(computeSumOfAP(77, -7, 11)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(77, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(77, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(77, -7, 3)))
+      assert(h.queryTillLastNIntervals(7, 1).map { _.estimate } === Some(computeSumOfAP(77, -7, 7)))
 
     }
 
@@ -220,10 +220,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 12)
       assert(seq.length === 3)
       assert(seq.containsSlice(Array(1, 2, 8)))
-      assert(h.queryTillLastNIntervals(12, 1) === Some(computeSumOfAP(84, -7, 12)))
-      assert(h.queryTillLastNIntervals(1, 1) === Some(computeSumOfAP(84, -7, 1)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(84, -7, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(84, -7, 4)))
+      assert(h.queryTillLastNIntervals(12, 1).map { _.estimate } === Some(computeSumOfAP(84, -7, 12)))
+      assert(h.queryTillLastNIntervals(1, 1).map { _.estimate } === Some(computeSumOfAP(84, -7, 1)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(84, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(84, -7, 4)))
       /* assert(h.queryTillLastNIntervals(7, 1) === Some(441))*/
 
     }
@@ -238,10 +238,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 13)
       assert(seq.length === 2)
       assert(seq.containsSlice(Array(4, 8)))
-      assert(h.queryTillLastNIntervals(13, 1) === Some(computeSumOfAP(91, -7, 13)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(91, -7, 2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(91, -7, 3)))
-      assert(h.queryTillLastNIntervals(5, 1) === Some(computeSumOfAP(91, -7, 5)))
+      assert(h.queryTillLastNIntervals(13, 1).map { _.estimate } === Some(computeSumOfAP(91, -7, 13)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(91, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(91, -7, 3)))
+      assert(h.queryTillLastNIntervals(5, 1).map { _.estimate } === Some(computeSumOfAP(91, -7, 5)))
       /* assert(h.queryTillLastNIntervals(7, 1) === Some(441))*/
 
     }
@@ -256,10 +256,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 14)
       assert(seq.length === 3)
       assert(seq.containsSlice(Array(1, 4, 8)))
-      assert(h.queryTillLastNIntervals(14, 1) === Some(computeSumOfAP(98, -7, 14)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(98, -7, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(98, -7, 4)))
-      assert(h.queryTillLastNIntervals(6, 1) === Some(computeSumOfAP(98, -7, 6)))
+      assert(h.queryTillLastNIntervals(14, 1).map { _.estimate } === Some(computeSumOfAP(98, -7, 14)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(98, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(98, -7, 4)))
+      assert(h.queryTillLastNIntervals(6, 1).map { _.estimate } === Some(computeSumOfAP(98, -7, 6)))
 
     }
 
@@ -273,10 +273,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 15)
       assert(seq.length === 3)
       assert(seq.containsSlice(Array(2, 4, 8)))
-      assert(h.queryTillLastNIntervals(15, 1) === Some(computeSumOfAP(105, -7, 15)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(105, -7, 2)))
-      assert(h.queryTillLastNIntervals(3, 1) === Some(computeSumOfAP(105, -7, 3)))
-      assert(h.queryTillLastNIntervals(7, 1) === Some(computeSumOfAP(105, -7, 7)))
+      assert(h.queryTillLastNIntervals(15, 1).map { _.estimate } === Some(computeSumOfAP(105, -7, 15)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(105, -7, 2)))
+      assert(h.queryTillLastNIntervals(3, 1).map { _.estimate } === Some(computeSumOfAP(105, -7, 3)))
+      assert(h.queryTillLastNIntervals(7, 1).map { _.estimate } === Some(computeSumOfAP(105, -7, 7)))
 
     }
 
@@ -290,10 +290,10 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
       assert(length === 16)
       assert(seq.length === 4)
       assert(seq.containsSlice(Array(1, 2, 4, 8)))
-      assert(h.queryTillLastNIntervals(16, 1) === Some(computeSumOfAP(112, -7, 16)))
-      assert(h.queryTillLastNIntervals(2, 1) === Some(computeSumOfAP(112, -7, 2)))
-      assert(h.queryTillLastNIntervals(4, 1) === Some(computeSumOfAP(112, -7, 4)))
-      assert(h.queryTillLastNIntervals(8, 1) === Some(computeSumOfAP(112, -7, 8)))
+      assert(h.queryTillLastNIntervals(16, 1).map { _.estimate } === Some(computeSumOfAP(112, -7, 16)))
+      assert(h.queryTillLastNIntervals(2, 1).map { _.estimate } === Some(computeSumOfAP(112, -7, 2)))
+      assert(h.queryTillLastNIntervals(4, 1).map { _.estimate } === Some(computeSumOfAP(112, -7, 4)))
+      assert(h.queryTillLastNIntervals(8, 1).map { _.estimate } === Some(computeSumOfAP(112, -7, 8)))
 
     }
 
@@ -313,7 +313,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
         possiblePaths.foreach {
           path =>
             val totalInterval = path.aggregate[Long](0)(_ + _, _ + _)
-            assert(h.queryTillLastNIntervals(totalInterval.asInstanceOf[Int], 1)
+            assert(h.queryTillLastNIntervals(totalInterval.asInstanceOf[Int], 1).map { _.estimate }
               === Some(computeSumOfAP(count, -7, totalInterval.asInstanceOf[Int])))
         }
     }
@@ -338,7 +338,7 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
           {
             start until x foreach {
               i =>
-                if (h.queryTillLastNIntervals(i, 1)
+                if (h.queryTillLastNIntervals(i, 1).map { _.estimate }
                   != Some(computeSumOfAP(count, -7, i))) {
                   val approx = h.queryTillLastNIntervals(i, 1).get.estimate
                   val exact = computeSumOfAP(count, -7, i)
@@ -498,13 +498,13 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
     h.increment()
 
     {
-      assert(h.queryBetweenTime(13, 23, 1) === Some(14 + 21))
-      assert(h.queryBetweenTime(13, 18, 1) === Some(14))
-      assert(h.queryBetweenTime(0, 35, 1) === Some(7 + 14 + 21 + 28))
-      assert(h.queryBetweenTime(15, 113, 1) === Some(14 + 21 + 28 + 35 + 42 + 49 + 56 + 63 + 70
+      assert(h.queryBetweenTime(13, 23, 1).map { _.estimate } === Some(14 + 21))
+      assert(h.queryBetweenTime(13, 18, 1).map { _.estimate } === Some(14))
+      assert(h.queryBetweenTime(0, 35, 1).map { _.estimate } === Some(7 + 14 + 21 + 28))
+      assert(h.queryBetweenTime(15, 113, 1).map { _.estimate } === Some(14 + 21 + 28 + 35 + 42 + 49 + 56 + 63 + 70
         + 77 + 84))
 
-      assert(h.queryBetweenTime(175, 178, 1) === Some(126))
+      assert(h.queryBetweenTime(175, 178, 1).map { _.estimate } === Some(126))
     }
 
   }

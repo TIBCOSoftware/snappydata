@@ -38,19 +38,19 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
       val topKCMS1: TopKCMS[Int] = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
       val top5Elements = topKCMS1.getTopK
       assert(top5Elements(0)._1 == 8)
-      assert(top5Elements(0)._2 == 19)
+      assert(top5Elements(0)._2.estimate == 19)
 
       assert(top5Elements(1)._1 == 1)
-      assert(top5Elements(1)._2 == 13)
+      assert(top5Elements(1)._2.estimate == 13)
 
       assert(top5Elements(2)._1 == 10)
-      assert(top5Elements(2)._2 == 11)
+      assert(top5Elements(2)._2.estimate == 11)
 
       assert(top5Elements(3)._1 == 4)
-      assert(top5Elements(3)._2 == 10)
+      assert(top5Elements(3)._2.estimate == 10)
 
       assert(top5Elements(4)._1 == 3)
-      assert(top5Elements(4)._2 == 9)
+      assert(top5Elements(4)._2.estimate == 9)
     }
     //2nd interval
 
@@ -61,19 +61,19 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
       val topKCMS1: TopKCMS[Int] = topK.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[Int]]
       val top5Elements = topKCMS1.getTopK
       assert(top5Elements(0)._1 == 1)
-      assert(top5Elements(0)._2 == 19)
+      assert(top5Elements(0)._2.estimate == 19)
 
       assert(top5Elements(1)._1 == 10)
-      assert(top5Elements(1)._2 == 13)
+      assert(top5Elements(1)._2.estimate == 13)
 
       assert(top5Elements(2)._1 == 6)
-      assert(top5Elements(2)._2 == 11)
+      assert(top5Elements(2)._2.estimate == 11)
 
       assert(top5Elements(3)._1 == 9)
-      assert(top5Elements(3)._2 == 10)
+      assert(top5Elements(3)._2.estimate == 10)
 
       assert(top5Elements(4)._1 == 7)
-      assert(top5Elements(4)._2 == 9)
+      assert(top5Elements(4)._2.estimate == 9)
     }
 
     //3rd interval
@@ -87,19 +87,19 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
       val topKCMS2: TopKCMS[Int] = topK.taPlusIa.ta.aggregates(2).asInstanceOf[TopKCMS[Int]]
       val top5Elements = topKCMS2.getTopK
       assert(top5Elements(0)._1 == 1)
-      assert(top5Elements(0)._2 == 32)
+      assert(top5Elements(0)._2.estimate == 32)
 
       assert(top5Elements(1)._1 == 8)
-      assert(top5Elements(1)._2 == 27)
+      assert(top5Elements(1)._2.estimate == 27)
 
       assert(top5Elements(2)._1 == 10)
-      assert(top5Elements(2)._2 == 24)
+      assert(top5Elements(2)._2.estimate == 24)
 
       assert(top5Elements(3)._1 == 6)
-      assert(top5Elements(3)._2 == 18)
+      assert(top5Elements(3)._2.estimate == 18)
 
       assert(top5Elements(4)._1 == 3)
-      assert(top5Elements(4)._2 == 13)
+      assert(top5Elements(4)._2.estimate == 13)
 
     }
 

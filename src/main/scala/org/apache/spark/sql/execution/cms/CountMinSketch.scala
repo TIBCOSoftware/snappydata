@@ -69,8 +69,8 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
         CountMinSketch.initWidth(epsOfTotalCount)),
       CountMinSketch.initHash(CountMinSketch.initDepth(confidence), seed))
 
-  def this(depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]]) = this(depth, width, 0, CountMinSketch.initEPS(width), 
-      CountMinSketch.initConfidence(depth),
+  def this(depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]])
+  = this(depth, width, 0, CountMinSketch.initEPS(width),  CountMinSketch.initConfidence(depth),
     size, table, hashA)
 
   def getRelativeError: Double = this.eps
@@ -439,7 +439,7 @@ object CountMinSketch {
         size += estimator.size;
       }
       (depth, width, hashA, table, size)
-      // new CountMinSketch[T](depth, width, size, hashA, table)
+      
     } else {
       null
     }

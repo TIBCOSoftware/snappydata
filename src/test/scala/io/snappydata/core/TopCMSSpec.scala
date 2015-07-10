@@ -81,7 +81,7 @@ class TopKCMSSpec extends FlatSpec with Matchers {
    //Add another key 1 with count 10
     topkCMS.add("1", 10)
     assert(topkCMS.topkSet.size() === 1)
-    assert(topkCMS.getFromTopKMap("1").get === 15)    
+    assert(topkCMS.getFromTopKMap("1").get.estimate === 15)    
 
   }
   

@@ -857,8 +857,7 @@ def algo3(): Unit = {
 
       return if (res == scala.Long.MaxValue) {
         Approximate.zeroApproximate(cmsParams.confidence)
-      } else {
-        //TODO: Fix it
+      } else {        
         cmsAtT.wrapAsApproximate(res)
       }
 
