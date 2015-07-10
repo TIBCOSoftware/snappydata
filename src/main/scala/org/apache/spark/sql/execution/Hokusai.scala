@@ -10,8 +10,6 @@ import scala.util.Random
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.execution.cms.CountMinSketch
 
-// TODO Make sure M^t and A^t coincide  I think the timeAggregation may run left to right, but the
-//  item aggregation might run the other way in my impl????
 /**
  * Implements the algorithms and data structures from "Hokusai -- Sketching
  * Streams in Real Time", by Sergiy Matusevych, Alexander Smola, Amr Ahmed.
@@ -53,7 +51,7 @@ import org.apache.spark.sql.execution.cms.CountMinSketch
 class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   startIntervalGenerator: Boolean = false) {
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
-
+  var summ: Long = 0
   private val intervalGenerator = new Timer()
 
   val rwLock = new ReentrantReadWriteLock()
@@ -271,6 +269,9 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
           timeEpoch.timestampToInterval(epoch) match {
             case Some(interval) =>
               // first check if it lies in current mBar
+              if (interval <= 3 && v.key == "0_90421") {
+                summ += v.frequency
+              }
               if (interval > timeEpoch.t) {
                 // check if new slot has to be created
                 if (interval > (timeEpoch.t + 1)) {
@@ -745,7 +746,7 @@ def algo3(): Unit = {
 
       val endRangeAsPerIA = beginingOfRangeAsPerIA + taIntervalWithInstant - 1
       val mJStar = this.ta.aggregates.get(jStar).get
-      var total = Approximate.zeroApproximate(cmsParams.confidence) 
+      var total = Approximate.zeroApproximate(cmsParams.confidence)
       var n: Array[Long] = null
       val bStart = beginingOfRangeAsPerIA.asInstanceOf[Int]
       val bEnd = endRangeAsPerIA.asInstanceOf[Int]
@@ -761,8 +762,8 @@ def algo3(): Unit = {
           } else {
             cmsParams.width - Hokusai.ilog2(j - 1) + 1
           }
-          total += (if (nTilda.estimate > math.E * intervalNumRelativeToIA / (1 << width) 
-              || nTilda.estimate == 0) {
+          total += (if (nTilda.estimate > math.E * intervalNumRelativeToIA / (1 << width)
+            || nTilda.estimate == 0) {
             nTilda
           } else {
             if (n == null) {
@@ -795,7 +796,7 @@ def algo3(): Unit = {
       this.ia.aggregates.size - intervalNumber + 1
 
     def queryBySummingTimeAggregates(item: T, sumUpTo: Int): Approximate = {
-      var count: Approximate = Approximate.zeroApproximate(cmsParams.confidence) 
+      var count: Approximate = Approximate.zeroApproximate(cmsParams.confidence)
       (0 to sumUpTo) foreach {
         j => count = count + this.ta.aggregates.get(j).get.estimateCountAsApproximate(item)
       }
@@ -831,7 +832,7 @@ def algo3(): Unit = {
       for (i <- 0 until cms.depth) {
         res = Math.min(res, cms.table(i)(hashes(i)));
       }
-      
+
       return cms.wrapAsApproximate(res)
     }
 
@@ -850,12 +851,12 @@ def algo3(): Unit = {
           res = Math.min(res, (mJStar.table(i)(mjStarHashes(i)) *
             cmsAtT.table(i)(hashesForTime(i))) / sumOverEntities(i))
         } else {
-          return Approximate.zeroApproximate(cmsParams.confidence) 
+          return Approximate.zeroApproximate(cmsParams.confidence)
         }
       }
 
       return if (res == scala.Long.MaxValue) {
-        Approximate.zeroApproximate(cmsParams.confidence) 
+        Approximate.zeroApproximate(cmsParams.confidence)
       } else {
         //TODO: Fix it
         cmsAtT.wrapAsApproximate(res)
@@ -887,7 +888,7 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
   // TODO: This essentially searches O(log n) time periods for the correct one
   // Perhaps there is an O(1) way to calculate?
   def timestampToInterval(ts: Long): Option[Int] = {
-    //if (ts < epoch0) return None
+
     if (ts <= epoch0 && t < 1) return None
 
     if (ts <= epoch0 && t >= 1) {

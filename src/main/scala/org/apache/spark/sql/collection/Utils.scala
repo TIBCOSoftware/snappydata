@@ -6,7 +6,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext}
+import org.apache.spark.{ Partition, SparkContext }
 
 object Utils {
 
@@ -35,8 +35,7 @@ object Utils {
     }
   }
 
-  def getAllExecutorsMemoryStatus(sc: SparkContext): Map[BlockManagerId,
-      (Long, Long)] = {
+  def getAllExecutorsMemoryStatus(sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
     val memoryStatus = sc.env.blockManager.master.getMemoryStatus
     // no filtering for local backend
     sc.schedulerBackend match {
@@ -74,23 +73,22 @@ object Utils {
 }
 
 abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)
-    extends RDD[T](_sc, Nil) {
+  extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
     val numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
+      keySet.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {
         case (bid, idx) => createPartition(idx, bid)
       }.toArray[Partition]
-    }
-    else {
+    } else {
       Array.empty[Partition]
     }
   }
-  
- def createPartition(index: Int , blockId: BlockManagerId) : ExecutorLocalPartition = 
+
+  def createPartition(index: Int, blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
 
   override def getPreferredLocations(split: Partition): Seq[String] =
@@ -98,7 +96,7 @@ abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)
 }
 
 class ExecutorLocalPartition(override val index: Int,
-    val blockId: BlockManagerId) extends Partition {
+  val blockId: BlockManagerId) extends Partition {
 
   def hostExecutorId = Utils.getHostExecutorId(blockId)
 

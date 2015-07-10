@@ -1,6 +1,6 @@
 package org.apache.spark.sql.execution
 
-import java.util.{Calendar, Date}
+import java.util.{ Calendar, Date }
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -10,15 +10,14 @@ import scala.reflect.ClassTag
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
-import org.apache.spark.sql.collection.{BoundedSortedSet, SegmentMap}
-import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
+import org.apache.spark.sql.collection.{ BoundedSortedSet, SegmentMap }
+import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
 import org.apache.spark.sql.sources.CastLongTime
-import org.apache.spark.sql.types.{DataType, StructField, StructType}
+import org.apache.spark.sql.types.{ DataType, StructField, StructType }
 import org.apache.spark.util.collection.OpenHashSet
 
-
 final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
-    val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean)
+  val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean)
   extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
   val topKInternal = topKActual * 2
 
@@ -85,7 +84,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
             // what to do? ignore as count is abnormally high
           }
           val prevCount = mappings.getOrElse[Approximate](item,
-              Approximate.zeroApproximate(cmsParams.confidence))
+            Approximate.zeroApproximate(cmsParams.confidence))
           mappings += (item -> (prevCount + count))
         }
 
@@ -93,8 +92,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         unionedTopKKeys.foreach { item: T =>
           val count = this.taPlusIa.basicQuery(nearestPowerOf2Num.asInstanceOf[Int] + 1 to lastNIntervals,
             item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
-          val prevCount = mappings.getOrElse[Approximate](item, 
-              Approximate.zeroApproximate(cmsParams.confidence))
+          val prevCount = mappings.getOrElse[Approximate](item,
+            Approximate.zeroApproximate(cmsParams.confidence))
           mappings += (item -> (prevCount + count))
         }
 
@@ -147,8 +146,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
             //it will be better to add the whole time aggregate & substract the other intervals
             unifiedTopKKeys.foreach { item: T =>
               val total = this.queryTimeAggregateForInterval(item, skipLastInterval)
-              val prevCount = topKs.getOrElse[Approximate](item, 
-                  Approximate.zeroApproximate(cmsParams.confidence))
+              val prevCount = topKs.getOrElse[Approximate](item,
+                Approximate.zeroApproximate(cmsParams.confidence))
               topKs += (item -> (total + prevCount))
             }
 
@@ -158,7 +157,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
               val total = this.taPlusIa.basicQuery(begin to end,
                 item, skipLastInterval.asInstanceOf[Int], computedIntervalLength.asInstanceOf[Int])
               val prevCount = topKs.getOrElse[Approximate](item,
-                  Approximate.zeroApproximate(cmsParams.confidence))
+                Approximate.zeroApproximate(cmsParams.confidence))
               if (prevCount > total) {
                 topKs += (item -> (prevCount - total))
               } else {
@@ -176,7 +175,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
             }
           }
         }
-       
+
         sortAndBound(topKs)
 
       }
@@ -263,7 +262,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     }, true)
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
-      epochTo: Long): Option[mutable.Set[T]] = {
+    epochTo: Long): Option[mutable.Set[T]] = {
     this.executeInReadLock(
       {
         val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
@@ -293,7 +292,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
-      combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
+    combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
@@ -304,7 +303,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     }, true)
 
   def getTopKKeysBetweenTime(epochFrom: Long,
-      epochTo: Long): Option[OpenHashSet[T]] =
+    epochTo: Long): Option[OpenHashSet[T]] =
     this.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
@@ -362,8 +361,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
           unifiedTopKKeys.foreach { item: T =>
             val total = this.taPlusIa.basicQuery(start.asInstanceOf[Int] to end.asInstanceOf[Int],
               item, interval.asInstanceOf[Int], lengthTillInterval.asInstanceOf[Int])
-            val prevCount = topKs.getOrElse[Approximate](item, 
-                Approximate.zeroApproximate(cmsParams.confidence))
+            val prevCount = topKs.getOrElse[Approximate](item,
+              Approximate.zeroApproximate(cmsParams.confidence))
             topKs += (item -> (total + prevCount))
           }
         }
@@ -406,7 +405,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   private def getTopKBySummingTimeAggregates(sumUpTo: Int,
-      setOfTopKKeys: Iterable[T] = null): mutable.Map[T, Approximate] = {
+    setOfTopKKeys: Iterable[T] = null): mutable.Map[T, Approximate] = {
 
     val estimators = this.taPlusIa.ta.aggregates.slice(0, sumUpTo + 1)
 
@@ -462,7 +461,7 @@ object TopKHokusai {
 
   def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, topKInternal: Int) =
     new TopKCMS[T](topKActual, topKInternal, depth, width, hashA)
-  
+
   def apply[T](name: String): Option[TopKHokusai[T]] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name) match {
@@ -473,13 +472,13 @@ object TopKHokusai {
   }
 
   def apply[T: ClassTag](name: String, depth: Int, width: Int, size: Int,
-      tsCol: Int, timeInterval: Long, epoch0: () => Long) = {
+    tsCol: Int, timeInterval: Long, epoch0: () => Long) = {
     lookupOrAdd[T](name, depth, width, size, tsCol, timeInterval, epoch0)
   }
 
   private[sql] def lookupOrAdd[T: ClassTag](name: String, depth: Int, width: Int,
-      size: Int, tsCol: Int, timeInterval: Long,
-      epoch0: () => Long): TopKHokusai[T] = {
+    size: Int, tsCol: Int, timeInterval: Long,
+    epoch0: () => Long): TopKHokusai[T] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {
@@ -487,9 +486,9 @@ object TopKHokusai {
       case None =>
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
-          topKMap.getOrElse(name, {          
-           val cmsParams =  CMSParams(width, depth)
-           val topk = new TopKHokusai[T](cmsParams, timeInterval,
+          topKMap.getOrElse(name, {
+            val cmsParams = CMSParams(width, depth)
+            val topk = new TopKHokusai[T](cmsParams, timeInterval,
               epoch0(), size, timeInterval > 0 && tsCol < 0)
             topKMap(name) = topk
             topk
@@ -500,17 +499,15 @@ object TopKHokusai {
 }
 
 protected[sql] final class TopKHokusaiWrapper(val name: String, val depth: Int,
-    val width: Int, val size: Int, val timeSeriesColumn: Int,
-    val timeInterval: Long, val schema: StructType, val key: StructField,
-    val frequencyCol: Option[StructField], val epoch : Long)
-    extends CastLongTime with Serializable {
-   
-   
- 
+  val width: Int, val size: Int, val timeSeriesColumn: Int,
+  val timeInterval: Long, val schema: StructType, val key: StructField,
+  val frequencyCol: Option[StructField], val epoch: Long)
+  extends CastLongTime with Serializable {
+
   override protected def getNullMillis(getDefaultForNull: Boolean) =
     if (getDefaultForNull) System.currentTimeMillis() else -1L
 
-  override def timeColumnType: Option[DataType] = {      
+  override def timeColumnType: Option[DataType] = {
     if (timeSeriesColumn >= 0) {
       Some(schema(timeSeriesColumn).dataType)
     } else {
@@ -524,7 +521,7 @@ protected[sql] final class TopKHokusaiWrapper(val name: String, val depth: Int,
 object TopKHokusaiWrapper {
 
   def apply(name: String, options: Map[String, Any],
-      schema: StructType): TopKHokusaiWrapper = {
+    schema: StructType): TopKHokusaiWrapper = {
     val keyTest = "key".ci
     val timeSeriesColumnTest = "timeSeriesColumn".ci
     val timeIntervalTest = "timeInterval".ci
@@ -534,7 +531,7 @@ object TopKHokusaiWrapper {
     val frequencyColTest = "frequencyCol".ci
     val epochTest = "epoch".ci
     val cols = schema.fieldNames
-    
+
     // Using foldLeft to read key-value pairs and build into the result
     // tuple of (key, depth, width, size, frequencyCol) like an aggregate.
     // This "aggregate" simply keeps the last values for the corresponding
@@ -588,8 +585,8 @@ object TopKHokusaiWrapper {
                     }
                 }
               case sl: Long => (k, ts, ti, cf, e, s, fr, sl)
-              case dt: Date  => (k, ts, ti, cf, e, s, fr, dt.getTime)
-              case cal: Calendar=> (k, ts, ti, cf, e, s, fr, cal.getTimeInMillis)
+              case dt: Date => (k, ts, ti, cf, e, s, fr, dt.getTime)
+              case cal: Calendar => (k, ts, ti, cf, e, s, fr, cal.getTimeInMillis)
               case _ => throw new AnalysisException(
                 s"TopKCMS: Cannot parse int 'size'=$optV")
             }
@@ -600,6 +597,5 @@ object TopKHokusaiWrapper {
       schema, schema(key),
       if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)), epoch)
   }
-  
-  
+
 }

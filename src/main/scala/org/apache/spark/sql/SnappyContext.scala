@@ -14,13 +14,12 @@ import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.{ InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation }
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.sources.{CastLongTime, StreamStrategy, WeightageRule}
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.sources.{ CastLongTime, StreamStrategy, WeightageRule }
+import org.apache.spark.sql.types.{ LongType, StructField, StructType }
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{ StreamingContext, Time }
 import io.snappydata.util.SqlUtils
-
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -102,10 +101,11 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // TODO: A different set of job is created for topK structure
     catalog.topKStructures.filter {
       case (name, topkstruct) => sampleTab.contains(name)
-    } foreach { case (name, topkWrapper) =>
-      tDF.foreachPartition(rowIterator => {
-        addHokusaiData(name, topkWrapper, rowIterator)
-      })
+    } foreach {
+      case (name, topkWrapper) =>
+        tDF.foreachPartition(rowIterator => {
+          addHokusaiData(name, topkWrapper, rowIterator)
+        })
     }
 
     // add to list in relation
@@ -272,7 +272,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
   }
 
   def registerTopK(tableName: String, streamTableName: String,
-      topkOptions: Map[String, Any]) = {
+    topkOptions: Map[String, Any]) = {
     catalog.registerTopK(tableName, streamTableName,
       catalog.getStreamTable(streamTableName).schema, topkOptions)
   }
@@ -325,19 +325,19 @@ protected[sql] class SnappyContext(sc: SparkContext)
    * @return returns the top K elements with their respective frequencies between two time
    */
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: String = null, endTime: String = null): DataFrame = {
+    startTime: String = null, endTime: String = null): DataFrame = {
 
-    val stime = if (startTime == null ) 0L else
+    val stime = if (startTime == null) 0L else
       CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
 
-    val etime = if (endTime == null ) Long.MaxValue  else
+    val etime = if (endTime == null) Long.MaxValue else
       CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
 
     queryTopK[T](topKName, stime, etime)
   }
 
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long): DataFrame = {
+    startTime: Long, endTime: Long): DataFrame = {
     val k: TopKHokusaiWrapper = catalog.topKStructures(topKName)
 
     // TODO: perhaps this can be done more efficiently via a shuffle but
@@ -354,18 +354,22 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
     val iter = combinedKeys.iterator
 
+     val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+      Array.fill(combinedKeys.size)(iter.next()), this)
+      .reduceByKey(_ + _).map(Row.fromTuple(_))
    /* val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
-      .reduceByKey(_ + _).map(Row.fromTuple(_))*/
-    val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
-      Array.fill(combinedKeys.size)(iter.next()), this)
-      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))
-
+      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))*/
+   /*
     val aggColumn = "EstimatedValue"
     val errorBounds = "ErrorBoundsInfo"
     val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
-        StructField(errorBounds, ApproximateType)))
+      StructField(errorBounds, ApproximateType)))*/
+      
+    val aggColumn = "EstimatedValue"
    
+    val topKSchema = StructType(Array(k.key, StructField(aggColumn, ApproximateType)))  
+
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k.size)
   }
