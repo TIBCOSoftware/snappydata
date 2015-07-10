@@ -354,21 +354,21 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
     val iter = combinedKeys.iterator
 
-     val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+    /* val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
-      .reduceByKey(_ + _).map(Row.fromTuple(_))
-   /* val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+      .reduceByKey(_ + _).map(Row.fromTuple(_))*/
+    val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
-      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))*/
-   /*
+      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))
+   
     val aggColumn = "EstimatedValue"
     val errorBounds = "ErrorBoundsInfo"
     val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
-      StructField(errorBounds, ApproximateType)))*/
-      
+      StructField(errorBounds, ApproximateType)))
+    /*  
     val aggColumn = "EstimatedValue"
    
-    val topKSchema = StructType(Array(k.key, StructField(aggColumn, ApproximateType)))  
+    val topKSchema = StructType(Array(k.key, StructField(aggColumn, ApproximateType)))*/  
 
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k.size)
