@@ -228,7 +228,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     TopKCMS.merge[T](estimators(1).asInstanceOf[TopKCMS[T]].topKInternal * 2, estimators)
 
   def getTopKTillTime(epoch: Long, combinedKeys: Array[T] = null): Option[Array[(T, Approximate)]] = {
-    this.executeInReadLock(
+    this.rwlock.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
         val interval = if (x > timeEpoch.t) {
           timeEpoch.t
@@ -246,24 +246,24 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   def getTopKForCurrentInterval: Option[Array[(T, Approximate)]] =
-    this.executeInReadLock({
+    this.rwlock.executeInReadLock({
       Some(this.mBar.asInstanceOf[TopKCMS[T]].getTopK)
     }, true)
 
   def getTopKKeysForCurrentInterval: OpenHashSet[T] =
-    this.executeInReadLock({
+    this.rwlock.executeInReadLock({
       this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
     }, true)
 
   def getForKeysInCurrentInterval(combinedKeys: Array[T]): Array[(T, Approximate)] =
-    this.executeInReadLock({
+    this.rwlock.executeInReadLock({
       val cms = this.mBar
       combinedKeys.map { k => (k, cms.estimateCountAsApproximate(k)) }
     }, true)
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
     epochTo: Long): Option[mutable.Set[T]] = {
-    this.executeInReadLock(
+    this.rwlock.executeInReadLock(
       {
         val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
           case Some(x) => x
@@ -274,7 +274,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   def getCombinedTopKKeysTillTime(epoch: Long): Option[Array[T]] = {
-    this.executeInReadLock(
+    this.rwlock.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
         val interval = if (x > timeEpoch.t) {
           timeEpoch.t
@@ -293,7 +293,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
-    this.executeInReadLock({
+    this.rwlock.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
         case Some(x) => x
@@ -304,7 +304,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
   def getTopKKeysBetweenTime(epochFrom: Long,
     epochTo: Long): Option[OpenHashSet[T]] =
-    this.executeInReadLock({
+    this.rwlock.executeInReadLock({
       val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
