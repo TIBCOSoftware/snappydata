@@ -11,7 +11,6 @@ import java.io.ByteArrayOutputStream
 import java.io.IOException
 import scala.reflect.ClassTag
 import scala.reflect.classTag
-import io.snappydata.util.NumberUtilsSpec
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.execution.Approximate
 
