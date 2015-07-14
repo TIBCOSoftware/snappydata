@@ -61,6 +61,11 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
     CountMinSketch.initTable(depth, width), hashA)
 
+  def this(depth: Int, width: Int, hashA: Array[Long], confidence: Double, eps: Double) =
+    this(depth, width, 0,
+    eps, confidence, 0,
+    CountMinSketch.initTable(depth, width), hashA)  
+    
   def this(epsOfTotalCount: Double, confidence: Double, seed: Int) =
     this(CountMinSketch.initDepth(confidence), CountMinSketch.initWidth(epsOfTotalCount),
       seed, epsOfTotalCount, confidence, 0,

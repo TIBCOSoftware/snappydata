@@ -329,7 +329,8 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   }
 
   def createZeroCMS(intervalFromLast: Int): CountMinSketch[T] =
-    Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA)
+    Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, cmsParams.confidence,
+        cmsParams.eps)
 
   override def toString = s"Hokusai[ta=${taPlusIa}, mBar=${mBar}]"
 
@@ -1140,8 +1141,9 @@ object Hokusai {
 
   def log2X(X: Long): Double = math.log10(X) / math.log10(2)
 
-  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long]) =
-    new CountMinSketch[T](depth, width, hashA)
+  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], 
+      confidence: Double, eps: Double) =
+    new CountMinSketch[T](depth, width, hashA, confidence, eps)
 
   // @return the max i such that t % 2^i is zero
   // from the paper (I think the paper has a typo, and "i" should be "t"):

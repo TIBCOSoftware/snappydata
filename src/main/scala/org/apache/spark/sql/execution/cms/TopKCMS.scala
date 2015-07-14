@@ -19,8 +19,9 @@ final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, dep
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
     CountMinSketch.initTable(depth, width), CountMinSketch.initHash(depth, seed))
 
-  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, hashA: Array[Long]) = this(topKActual, topKInternal, depth, width, 0,
-    CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
+  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, hashA: Array[Long],
+      confidence: Double, eps: Double) = this(topKActual, topKInternal, depth, width, 0,
+    eps,confidence, 0,
     CountMinSketch.initTable(depth, width), hashA)
 
   def this(topKActual: Int, topKInternal: Int, epsOfTotalCount: Double, confidence: Double, seed: Int) =

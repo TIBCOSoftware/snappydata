@@ -446,10 +446,11 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       } else {
         this.topKInternal
       }
-      TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual, x)
+      TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual, x,
+          cmsParams.confidence, cmsParams.eps)
     } else {
       TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual,
-        topKInternal * (powerOf2 + 1))
+        topKInternal * (powerOf2 + 1), cmsParams.confidence, cmsParams.eps)
     }
 
 }
@@ -459,8 +460,9 @@ object TopKHokusai {
   private final val topKMap = new mutable.HashMap[String, TopKHokusai[_]]
   private final val mapLock = new ReentrantReadWriteLock
 
-  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, topKInternal: Int) =
-    new TopKCMS[T](topKActual, topKInternal, depth, width, hashA)
+  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, 
+      topKInternal: Int, confidence: Double, eps: Double) =
+    new TopKCMS[T](topKActual, topKInternal, depth, width, hashA, confidence, eps)
 
   def apply[T](name: String): Option[TopKHokusai[T]] = {
     SegmentMap.lock(mapLock.readLock) {
