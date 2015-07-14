@@ -935,7 +935,7 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
 
 // TODO Better handling of params and construction (both delta/eps and d/w support)
 class CMSParams private (val width: Int, val depth: Int, val eps: Double,
-  val confidence: Double, val seed: Int = 123) {
+  val confidence: Double, val seed: Int = 123) extends  Serializable{
 
   val hashA = createHashA
 
