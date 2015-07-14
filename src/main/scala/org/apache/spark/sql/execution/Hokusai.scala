@@ -3,6 +3,9 @@ package org.apache.spark.sql.execution
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.{ Timer, TimerTask }
 
+import org.apache.spark.sql.LockUtils
+import org.apache.spark.sql.LockUtils.ReadWriteLock
+
 import scala.collection.mutable.{ ArrayBuffer, ListBuffer, MutableList, Stack }
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -54,9 +57,6 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   var summ: Long = 0
   private val intervalGenerator = new Timer()
 
-  val rwLock = new ReentrantReadWriteLock()
-  val readLock = rwLock.readLock
-  val writeLock = rwLock.writeLock
   val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators) => CountMinSketch.merge[T](estimators: _*)
 
   val timeEpoch = new TimeEpoch(windowSize, epoch0)
@@ -64,6 +64,8 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   val taPlusIa = new TimeAndItemAggregation()
   // Current data accummulates into mBar until the next time tick
   var mBar: CountMinSketch[T] = createZeroCMS(0)
+
+  val rwlock = new ReadWriteLock()
 
   if (startIntervalGenerator) {
     intervalGenerator.schedule(createTimerTask(this.increment), 0, windowSize)
@@ -151,7 +153,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     Some(total)
   }
 
-  def increment(): Unit = this.executeInWriteLock {
+  def increment(): Unit = this.rwlock.executeInWriteLock {
     timeEpoch.increment()
     this.taPlusIa.increment(mBar, timeEpoch.t)
     mBar = createZeroCMS(0)
@@ -179,7 +181,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     timeEpoch.jForTimestamp(epoch, numIntervals).flatMap(ta.query(_, key))*/
 
   def queryTillTime(epoch: Long, key: T): Option[Approximate] = {
-    this.executeInReadLock(
+    this.rwlock.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
 
         if (x > timeEpoch.t) {
@@ -195,7 +197,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   def queryAtTime(epoch: Long, key: T): Option[Approximate] = {
 
-    this.executeInReadLock(
+    this.rwlock.executeInReadLock(
       this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
         if (x > timeEpoch.t) {
           // cannot query the current mBar
@@ -209,7 +211,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   def queryBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Approximate] = {
 
-    this.executeInReadLock(
+    this.rwlock.executeInReadLock(
       {
         val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
           case Some(x) => x
@@ -248,17 +250,17 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   }
 
   //def accummulate(data: Seq[Long]): Unit = mBar = mBar ++ cmsMonoid.create(data)
-  def accummulate(data: Seq[T]): Unit = this.executeInWriteLock {
+  def accummulate(data: Seq[T]): Unit = this.rwlock.executeInWriteLock {
     data.foreach(i => mBar.add(i, 1L))
   }
 
   def accummulate(data: scala.collection.Map[T, Long]): Unit =
-    this.executeInWriteLock {
+    this.rwlock.executeInWriteLock {
       data.foreach { case (item, count) => mBar.add(item, count) }
     }
 
   def accummulate(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]): Unit =
-    this.executeInWriteLock {
+    this.rwlock.executeInWriteLock {
 
       val iaAggs = this.taPlusIa.ia.aggregates
       val taAggs = this.taPlusIa.ta.aggregates
@@ -313,32 +315,6 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       }
 
     }
-
-  protected def executeInReadLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
-    if (lockInterruptibly) {
-      this.readLock.lockInterruptibly()
-    } else {
-      this.readLock.lock()
-    }
-    try {
-      body
-    } finally {
-      this.readLock.unlock()
-    }
-  }
-
-  protected def executeInWriteLock[T](body: => T, lockInterruptibly: Boolean = false): T = {
-    if (lockInterruptibly) {
-      this.writeLock.lockInterruptibly()
-    } else {
-      this.writeLock.lock()
-    }
-    try {
-      body
-    } finally {
-      this.writeLock.unlock()
-    }
-  }
 
   def queryTillLastNIntervals(lastNIntervals: Int, item: T): Option[Approximate] =
     this.taPlusIa.queryLastNIntervals[Option[Approximate]](lastNIntervals, queryTillLastN_Case1(item),
@@ -935,7 +911,7 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
 
 // TODO Better handling of params and construction (both delta/eps and d/w support)
 class CMSParams private (val width: Int, val depth: Int, val eps: Double,
-  val confidence: Double, val seed: Int = 123) {
+  val confidence: Double, val seed: Int = 123) extends  Serializable{
 
   val hashA = createHashA
 
