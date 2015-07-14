@@ -72,6 +72,11 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
   def this(depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]])
   = this(depth, width, 0, CountMinSketch.initEPS(width),  CountMinSketch.initConfidence(depth),
     size, table, hashA)
+    
+  private def this(depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]],
+      confidence: Double)
+  = this(depth, width, 0, CountMinSketch.initEPS(width),  confidence,
+    size, table, hashA)  
 
   def getRelativeError: Double = this.eps
 
@@ -334,7 +339,7 @@ class CountMinSketch[T: ClassTag](val depth: Int, val width: Int, val seed: Int,
 
     val newHashA = this.hashA.clone()
 
-    return new CountMinSketch[T](depth, newWidth, size, newHashA, newTable);
+    return new CountMinSketch[T](depth, newWidth, size, newHashA, newTable, this.confidence);
   }
 
   // This is needed to test compress()  // ugh
@@ -456,7 +461,7 @@ object CountMinSketch {
   @throws(classOf[CountMinSketch.CMSMergeException])
   def merge[T: ClassTag](estimators: CountMinSketch[T]*): CountMinSketch[T] = {
     val (depth, width, hashA, table, size) = basicMerge[T](estimators: _*)
-    new CountMinSketch[T](depth, width, size, hashA, table)
+    new CountMinSketch[T](depth, width, size, hashA, table, estimators(0).confidence)
   }
 
   def deserialize[T: ClassTag](data: Array[Byte]): CountMinSketch[T] = {
