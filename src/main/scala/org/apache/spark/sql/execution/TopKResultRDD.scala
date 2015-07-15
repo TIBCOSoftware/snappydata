@@ -2,6 +2,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.ExecutorLocalRDD
+import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.{ Partition, TaskContext }
 import scala.reflect.ClassTag
@@ -65,3 +66,24 @@ class TopKKeysRDD[T: ClassTag](name: String, startTime: Long,
     arrayTopK.map(Iterator(_)).getOrElse(Iterator.empty)
   }
 }
+
+/**
+ * RDD to collect topK keys from all the partitions (exactly one per executor).
+ */
+class TopKStreamRDD[T: ClassTag](name: String, startTime: Long,
+                               endTime: Long, sqlContext: SQLContext)
+  extends ExecutorLocalRDD[(T, Approximate)](sqlContext.sparkContext) {
+
+  override def compute(split: Partition,
+                       context: TaskContext): Iterator[(T, Approximate)] = {
+
+    val streamSummary = StreamSummaryAggregation[T](name).getOrElse(
+      throw new IllegalStateException())
+
+    val arrayTopK =
+      streamSummary.getTopKBetweenTime(startTime, endTime, streamSummary.capacity)
+
+    arrayTopK.map(_.toIterator).getOrElse(Iterator.empty)
+  }
+}
+
