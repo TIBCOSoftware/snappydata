@@ -37,8 +37,13 @@ final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, dep
 
   override def add(item: T, count: Long): Long = {
     val totalCount = super.add(item, count)
-
-    this.topkSet.add(item -> totalCount)
+    val prevValInTopK = this.topkSet.get(item)
+    val valueToPut = if(prevValInTopK != null) {
+      count + prevValInTopK
+    }else {
+      totalCount
+    }
+    this.topkSet.add(item -> valueToPut)
     totalCount
   }
 
