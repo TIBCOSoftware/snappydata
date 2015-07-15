@@ -77,7 +77,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
 
     override def keyCopy(row: Row) = row.copy()
 
-    override def defaultValue(row: Row): StratumReservoir = {
+    override def defaultValue(row: Row): StratumCache = {
       val capacity = cacheSize.get
       val reservoir = new Array[MutableRow](capacity)
       reservoir(0) = newMutableRow(row, processSelected)
@@ -90,36 +90,36 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         updateTimeSlot(row, useCurrentTimeIfNoColumn = true)
         0
       } else math.max(0, maxSamples.get - capacity).toInt
-      val sr = new StratumReservoir(1, 1, reservoir, 1, initShortFall)
+      val sc = new StratumCache(reservoir, 1, 1, 1, initShortFall)
       maxSamples.compareAndSet(0, 1)
       batchSamples.incrementAndGet()
       slotSize.incrementAndGet()
-      sr
+      sc
     }
 
-    override def mergeValue(row: Row,
-        sr: StratumReservoir): StratumReservoir = {
+    override def mergeValue(row: Row, sr: StratumReservoir): StratumCache = {
+      val sc = sr.asInstanceOf[StratumCache]
       // else update meta information in current stratum
-      sr.batchSize += 1
-      val reservoirCapacity = cacheSize.get + sr.prevShortFall
-      if (sr.reservoirSize >= reservoirCapacity) {
-        val rnd = rng.nextInt(sr.batchSize)
+      sc.batchTotalSize += 1
+      val reservoirCapacity = cacheSize.get + sc.prevShortFall
+      if (sc.reservoirSize >= reservoirCapacity) {
+        val rnd = rng.nextInt(sc.batchTotalSize)
         // pick up this row with probability of reservoirCapacity/totalSize
         if (rnd < reservoirCapacity) {
           // replace a random row in reservoir
-          sr.reservoir(rng.nextInt(reservoirCapacity)) =
+          sc.reservoir(rng.nextInt(reservoirCapacity)) =
               newMutableRow(row, processSelected)
           // update timeSlot start and end
           if (timeInterval > 0) {
             updateTimeSlot(row, useCurrentTimeIfNoColumn = false)
           }
         }
-        if (batchSamples.get >= (fraction * slotSize.incrementAndGet())) sr
+        if (batchSamples.get >= (fraction * slotSize.incrementAndGet())) sc
         else null
       } else {
         // if reservoir has empty slots then fill them up first
-        val reservoirLen = sr.reservoir.length
-        if (reservoirLen <= sr.reservoirSize) {
+        val reservoirLen = sc.reservoir.length
+        if (reservoirLen <= sc.reservoirSize) {
           // new size of reservoir will be > reservoirSize given that it
           // increases only in steps of 1 and the expression
           // reservoirLen + (reservoirLen >>> 1) + 1 will certainly be
@@ -129,23 +129,23 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
             cacheSize.get))
           Utils.fillArray(newReservoir, EMPTY_ROW, reservoirLen,
             newReservoir.length)
-          System.arraycopy(sr.reservoir, 0, newReservoir,
+          System.arraycopy(sc.reservoir, 0, newReservoir,
             0, reservoirLen)
-          sr.reservoir = newReservoir
+          sc.reservoir = newReservoir
         }
-        sr.reservoir(sr.reservoirSize) = newMutableRow(row, processSelected)
-        sr.reservoirSize += 1
-        sr.totalSamples += 1
+        sc.reservoir(sc.reservoirSize) = newMutableRow(row, processSelected)
+        sc.reservoirSize += 1
+        sc.totalSamples += 1
 
         // update timeSlot start and end
         if (timeInterval > 0) {
           updateTimeSlot(row, useCurrentTimeIfNoColumn = false)
         }
 
-        compareOrderAndSet(maxSamples, sr.totalSamples, getMax = true)
+        compareOrderAndSet(maxSamples, sc.totalSamples, getMax = true)
         batchSamples.incrementAndGet()
         slotSize.incrementAndGet()
-        sr
+        sc
       }
     }
 
@@ -350,4 +350,49 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
   override def clone: StratifiedSamplerCached = new StratifiedSamplerCached(
     qcs, name, schema, cacheSize, fraction, cacheBatchSize,
     timeSeriesColumn, timeInterval)
+}
+
+/**
+ * An extension to StratumReservoir to also track total samples seen since
+ * last time slot and short fall from previous rounds.
+ */
+private final class StratumCache(_reservoir: Array[MutableRow],
+    _reservoirSize: Int, _batchTotalSize: Int, var totalSamples: Int,
+    var prevShortFall: Int) extends StratumReservoir(_reservoir,
+  _reservoirSize, _batchTotalSize) {
+
+  override def reset(prevReservoirSize: Int, newReservoirSize: Int,
+      fullReset: Boolean) {
+
+    if (newReservoirSize > 0) {
+      val numSamples = reservoirSize
+
+      // reset transient data
+      super.reset(prevReservoirSize, newReservoirSize, fullReset)
+
+      // check for the end of current time-slot; if it has ended, then
+      // also reset the "shortFall" and other such history
+      if (fullReset) {
+        totalSamples = 0
+        prevShortFall = 0
+      } else {
+        // First update the shortfall for next round.
+        // If it has not seen much data for sometime and has fallen behind
+        // a lot, then it is likely gone and there is no point in increasing
+        // shortfall indefinitely (else it will over sample if seen in future)
+        // [sumedh] Above observation does not actually hold. Two cases:
+        // 1) timeInterval is defined: in this case we better keep the shortFall
+        //    till the end of timeInterval when it shall be reset in any case
+        // 2) timeInterval is not defined: this is a case of non-time series
+        //    data where we should keep shortFall till the end of data
+        /*
+        if (prevReservoirSize <= reservoirSize ||
+          prevShortFall <= (prevReservoirSize + numSamples)) {
+          prevShortFall += (prevReservoirSize - numSamples)
+        }
+        */
+        prevShortFall += (prevReservoirSize - numSamples)
+      }
+    }
+  }
 }

@@ -78,7 +78,6 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long, val
     }, true)
 }
 
-
 object StreamSummaryAggregation {
   private final val topKMap = new mutable.HashMap[String, StreamSummaryAggregation[_]]
   private final val mapLock = new ReentrantReadWriteLock()
@@ -92,14 +91,14 @@ object StreamSummaryAggregation {
     }
   }
 
-  def apply[T: ClassTag](name: String, size: Int,
-                         tsCol: Int, timeInterval: Long, epoch0: () => Long, maxInterval : Int) = {
+  def apply[T: ClassTag](name: String, size: Int, tsCol: Int,
+      timeInterval: Long, epoch0: () => Long, maxInterval: Int) = {
     lookupOrAdd[T](name, size, tsCol, timeInterval, epoch0, maxInterval)
   }
 
-  private[sql] def lookupOrAdd[T: ClassTag](name: String, size: Int, tsCol: Int,
-                                            timeInterval: Long, epoch0: () => Long,
-                                            maxInterval : Int): StreamSummaryAggregation[T] = {
+  private[sql] def lookupOrAdd[T: ClassTag](name: String, size: Int,
+      tsCol: Int, timeInterval: Long, epoch0: () => Long,
+      maxInterval: Int): StreamSummaryAggregation[T] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {

@@ -3,14 +3,14 @@ package org.apache.spark.sql
 import scala.collection.mutable
 import scala.language.implicitConversions
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.{TopKWrapper}
-import org.apache.spark.sql.execution.{StratifiedSample, LogicalRDD}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopKWrapper}
 import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.{Logging, sql}
 
 /**
  * Catalog primarily tracking stream/topK tables and returning LogicalPlan to materialize
@@ -77,19 +77,17 @@ class SnappyStoreCatalog(context: SnappyContext,
       "registerSampleTable: expected non-empty table name")
 
     // add or overwrite existing name attribute
-    val nameOption = "name"
-    val options = samplingOptions.filterKeys(!_.equalsIgnoreCase(nameOption)) +
-        (nameOption -> tableName)
+    val opts = Utils.normalizeOptions(samplingOptions)
+        .filterKeys(_ != "name") + ("name" -> tableName)
 
     // update the options in any provided StratifiedSample LogicalPlan
-    df foreach (_.logicalPlan.options = options)
+    df foreach (_.logicalPlan.options = opts)
     // create new StratifiedSample LogicalPlan if none was passed
     // (currently for streaming case)
     val sample = df.getOrElse {
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
         new DummyRDD(context))(context)
-      val newDF = new SampleDataFrame(context,
-        StratifiedSample(options, plan)())
+      val newDF = new SampleDataFrame(context, StratifiedSample(opts, plan)())
       context.cacheManager.cacheQuery(newDF, Some(tableName))
       newDF
     }
@@ -100,9 +98,9 @@ class SnappyStoreCatalog(context: SnappyContext,
   def registerTopK(tableName: String, streamName: String, schema: StructType,
       topkOptions: Map[String, Any]) = {
 
-  topKStructures.put(tableName, TopKWrapper(tableName, topkOptions, schema))
+    topKStructures.put(tableName, TopKWrapper(tableName, topkOptions, schema))
 
-  streamToStructureMap.put(streamName,
+    streamToStructureMap.put(streamName,
       streamToStructureMap.getOrElse(streamName, Nil) :+ tableName)
     ()
   }

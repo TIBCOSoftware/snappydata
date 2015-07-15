@@ -6,9 +6,9 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.trees
-import org.apache.spark.sql.execution.{AggregateEvaluation, StratifiedSample}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.SampleDataFrame
 
 object WeightageRule extends Rule[LogicalPlan] {
   // Transform the plan to changed the aggregates to weighted aggregates.
@@ -23,7 +23,7 @@ object WeightageRule extends Rule[LogicalPlan] {
         case Some(stratifiedSample) =>
           stratifiedSample.asInstanceOf[StratifiedSample].output.
               find(p => {
-            p.name == SampleDataFrame.WEIGHTAGE_COLUMN_NAME
+            p.name == Utils.WEIGHTAGE_COLUMN_NAME
           }).getOrElse(throw new IllegalStateException(
             "Hidden column for ratio not found."))
         // The aggregate is not on a StratifiedSample. No transformations needed.
@@ -39,14 +39,15 @@ object WeightageRule extends Rule[LogicalPlan] {
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
         case alias@Alias(e, name) =>
-          val expr = transformAggExprToWeighted(e,generatedRatioExpr)
+          val expr = transformAggExprToWeighted(e, generatedRatioExpr)
           new Alias(expr, name)(alias.exprId,
             alias.qualifiers, alias.explicitMetadata)
       }
   }
 
-  def transformAggExprToWeighted(e : Expression, mapExpr : MapColumnToWeight): Expression = {
-    e transform  {
+  def transformAggExprToWeighted(e: Expression,
+      mapExpr: MapColumnToWeight): Expression = {
+    e transform {
       case aggr@Count(args) if !aggr.isInstanceOf[WeightedCount] =>
         WeightedCount(new CoalesceDisparateTypes(Seq(args, mapExpr)))
       case aggr@Sum(args) if !aggr.isInstanceOf[WeightedSum] =>
@@ -58,18 +59,23 @@ object WeightageRule extends Rule[LogicalPlan] {
         ErrorEstimateAggregate(child, confidence, mapExpr,
           isDefault, aggType)
       // TODO: This repetition is bad. Find a better way.
-      case Add(left,right) =>
-        new Add(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
-      case Subtract(left,right) =>
-        new Subtract(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
-      case Divide(left,right) =>
-        new Divide(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
-      case Multiply(left,right) =>
-        new Multiply(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
-      case Remainder(left,right) =>
-        new Remainder(transformAggExprToWeighted(left, mapExpr), transformAggExprToWeighted(right, mapExpr))
+      case Add(left, right) =>
+        new Add(transformAggExprToWeighted(left, mapExpr),
+          transformAggExprToWeighted(right, mapExpr))
+      case Subtract(left, right) =>
+        new Subtract(transformAggExprToWeighted(left, mapExpr),
+          transformAggExprToWeighted(right, mapExpr))
+      case Divide(left, right) =>
+        new Divide(transformAggExprToWeighted(left, mapExpr),
+          transformAggExprToWeighted(right, mapExpr))
+      case Multiply(left, right) =>
+        new Multiply(transformAggExprToWeighted(left, mapExpr),
+          transformAggExprToWeighted(right, mapExpr))
+      case Remainder(left, right) =>
+        new Remainder(transformAggExprToWeighted(left, mapExpr),
+          transformAggExprToWeighted(right, mapExpr))
       case Cast(left, dtype) =>
-        new Cast(transformAggExprToWeighted(left, mapExpr),dtype)
+        new Cast(transformAggExprToWeighted(left, mapExpr), dtype)
       case Sqrt(left) =>
         new Sqrt(transformAggExprToWeighted(left, mapExpr))
       case Abs(left) =>
@@ -78,9 +84,6 @@ object WeightageRule extends Rule[LogicalPlan] {
         new UnaryMinus(transformAggExprToWeighted(left, mapExpr))
     }
   }
-
-
-
 }
 
 case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression {

@@ -33,7 +33,8 @@ trait StatVarianceCounter extends Serializable {
   // Running variance times count of our values
   final private[sql] var nvariance: Double = 0
 
-  private[sql] final def init(count: Long, mean: Double, nvariance: Double) {
+  private[sql] final def initStats(count: Long, mean: Double,
+      nvariance: Double): Unit = {
     this.count = count
     this.mean = mean
     this.nvariance = nvariance
@@ -97,7 +98,7 @@ trait StatVarianceCounter extends Serializable {
   /** Clone this StatVarianceCounter */
   def copy(): StatVarianceCounter
 
-  final def sum: Double = count * mean
+  final def sum: Double = mean * count
 
   /** Return the variance of the values. */
   final def variance: Double = {

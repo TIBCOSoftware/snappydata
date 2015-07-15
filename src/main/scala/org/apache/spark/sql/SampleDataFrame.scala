@@ -1,15 +1,13 @@
 package org.apache.spark.sql
 
-import scala.collection.{Map => SMap, mutable}
-import scala.util.Sorting
+import scala.collection.mutable
 
 import org.apache.spark.partial.StudentTCacher
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
-import org.apache.spark.sql.catalyst.expressions.GenericRow
-import org.apache.spark.sql.collection.{MultiColumnOpenHashMap, Utils}
+import org.apache.spark.sql.collection.MultiColumnOpenHashMap
+import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.sources.StatCounter
-import org.apache.spark.sql.types.{DoubleType, NumericType, StructType}
+import org.apache.spark.sql.types.{DoubleType, NumericType}
 
 /**
  * Encapsulates a DataFrame created after stratified sampling.
@@ -38,8 +36,8 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
       groupBy: Set[String] = Set.empty): MultiColumnOpenHashMap[StatCounter] = {
     val schema = this.schema
     val allColumns = schema.fieldNames
-    val columnIndex = Utils.columnIndex(columnName, allColumns)
-    val requireConversion = schema(columnIndex).dataType match {
+    val colIndex = columnIndex(columnName, allColumns, "errorEstimateStats")
+    val requireConversion = schema(colIndex).dataType match {
       case dbl: DoubleType => false
       case numeric: NumericType => true // conversion required
       case tp => throw new AnalysisException("errorEstimateStats: Cannot " +
@@ -48,7 +46,8 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
 
     // map group by columns to indices
     val columnIndices = if (groupBy != null && groupBy.nonEmpty) {
-      val groupByIndices = groupBy.map(Utils.columnIndex(_, allColumns))
+      val groupByIndices = groupBy.map(columnIndex(_, allColumns,
+        "errorEstimateStats"))
       // check that all columns should be part of qcs
       val qcsCols = intArrayOps(logicalPlan.qcs)
       for (col <- groupByIndices) {
@@ -64,7 +63,7 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
       val groupedMap = new MultiColumnOpenHashMap[StatCounter](columnIndices,
         columnIndices.map(schema(_).dataType))
       for (row <- rows) {
-        if (!row.isNullAt(columnIndex)) {
+        if (!row.isNullAt(colIndex)) {
           val stat = groupedMap.get(row).getOrElse {
             val sc = new StatCounter()
             groupedMap(row) = sc
@@ -72,10 +71,10 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
           }
           // merge the new row into statistics
           if (requireConversion) {
-            stat.merge(row(columnIndex).asInstanceOf[Number].doubleValue())
+            stat.merge(row(colIndex).asInstanceOf[Number].doubleValue())
           }
           else {
-            stat.merge(row.getDouble(columnIndex))
+            stat.merge(row.getDouble(colIndex))
           }
         }
       }
@@ -109,66 +108,11 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
       val stdev = math.sqrt(stat.variance / nsamples)
       // 30 is taken to be cut-off limit in most statistics calculations
       // for z vs t distributions (unlike StudentTCacher that uses 100)
-      val errorEstimate = if (nsamples >= 30) tcache.normalApprox * stdev
-                          else tcache.get(nsamples) * stdev
+      val errorEstimate =
+        if (nsamples >= 30) tcache.normalApprox * stdev
+        else tcache.get(nsamples) * stdev
       val percentError = (errorEstimate * 100.0) / math.abs(mean)
       (mean, stdev, errorEstimate, percentError)
     }
-  }
-}
-
-object SampleDataFrame {
-
-  final val WEIGHTAGE_COLUMN_NAME = "__STRATIFIED_SAMPLER_WEIGHTAGE"
-  final val ERROR_NO_QCS = "StratifiedSampler: QCS is empty"
-
-  def qcsOf(qa: Array[String], cols: Array[String]): Array[Int] = {
-    val colIndexes = qa.map {
-      Utils.columnIndex(_, cols)
-    }
-    Sorting.quickSort(colIndexes)
-    colIndexes
-  }
-
-  def matchOption(optionName: String,
-      options: SMap[String, Any]): Option[(String, Any)] = {
-    options.get(optionName).map((optionName, _)).orElse {
-      options.collectFirst { case (key, value)
-        if key.equalsIgnoreCase(optionName) => (key, value)
-      }
-    }
-  }
-
-  def resolveQCS(options: SMap[String, Any], fieldNames: Array[String]) = {
-    matchOption("qcs", options).getOrElse(
-      throw new AnalysisException(ERROR_NO_QCS))._2 match {
-      case qi: Array[Int] => qi
-      case qs: String => qcsOf(qs.split(","), fieldNames)
-      case qa: Array[String] => qcsOf(qa, fieldNames)
-      case q => throw new AnalysisException(
-        s"StratifiedSampler: Cannot parse 'qcs'='$q'")
-    }
-  }
-
-  def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
-      convertToScalaRow: Boolean) = {
-    val ncols = columnIndices.length
-    val newRow = new Array[Any](ncols)
-    var index = 0
-    if (convertToScalaRow) {
-      while (index < ncols) {
-        val colIndex = columnIndices(index)
-        newRow(index) = CatalystTypeConverters.convertToScala(row(colIndex),
-          schema(colIndex).dataType)
-        index += 1
-      }
-    }
-    else {
-      while (index < ncols) {
-        newRow(index) = row(columnIndices(index))
-        index += 1
-      }
-    }
-    new GenericRow(newRow)
   }
 }

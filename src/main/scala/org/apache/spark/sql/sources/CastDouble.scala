@@ -1,7 +1,5 @@
 package org.apache.spark.sql.sources
 
-import scala.util.control.NonFatal
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types._
 
@@ -30,36 +28,25 @@ trait CastDouble {
   }
 
   final def toDouble(row: Row, ordinal: Int, default: Double): Double = {
-    try {
-      castType match {
-        case 0 =>
-          val v = row.getInt(ordinal)
-          if (v != 0 || !row.isNullAt(ordinal)) v else default
-        case 1 =>
-          val v = row.getDouble(ordinal)
-          if (v != 0 || !row.isNullAt(ordinal)) v else default
-        case 2 =>
-          val v = row.getLong(ordinal)
-          if (v != 0 || !row.isNullAt(ordinal)) v else default
-        case 3 =>
-          val v = row.getFloat(ordinal)
-          if (v != 0 || !row.isNullAt(ordinal)) v else default
-        case 4 =>
-          val v = row.getShort(ordinal)
-          if (v != 0 || !row.isNullAt(ordinal)) v else default
-        case 5 =>
-          val v = row.getByte(ordinal)
-          if (v != 0 || !row.isNullAt(ordinal)) v else default
-        case 6 =>
-          val v = row(ordinal)
-          if (v != null) v.asInstanceOf[Decimal].toDouble else default
-        case 7 =>
-          val v = row(ordinal)
-          if (v != null) numericCast.toDouble(v) else default
-      }
-    } catch {
-      case NonFatal(e) => if (row.isNullAt(ordinal)) default else throw e
-      case t: Throwable => throw t
+    castType match {
+      case 0 =>
+        if (!row.isNullAt(ordinal)) row.getInt(ordinal) else default
+      case 1 =>
+        if (!row.isNullAt(ordinal)) row.getDouble(ordinal) else default
+      case 2 =>
+        if (!row.isNullAt(ordinal)) row.getLong(ordinal) else default
+      case 3 =>
+        if (!row.isNullAt(ordinal)) row.getFloat(ordinal) else default
+      case 4 =>
+        if (!row.isNullAt(ordinal)) row.getShort(ordinal) else default
+      case 5 =>
+        if (!row.isNullAt(ordinal)) row.getByte(ordinal) else default
+      case 6 =>
+        val v = row(ordinal)
+        if (v != null) v.asInstanceOf[Decimal].toDouble else default
+      case 7 =>
+        val v = row(ordinal)
+        if (v != null) numericCast.toDouble(v) else default
     }
   }
 

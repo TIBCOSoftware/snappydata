@@ -3,8 +3,7 @@
  */
 package org.apache.spark.sql.sources
 
-import org.apache.commons.math3.distribution.NormalDistribution
-import org.apache.spark.partial.StudentTCacher
+import org.apache.commons.math3.distribution.{NormalDistribution, TDistribution}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.trees
@@ -17,10 +16,10 @@ case class ErrorEstimateAggregate(child: Expression, confidence: Double,
 
   override def nullable = true
 
-  override def dataType = DoubleType
+  override def dataType: DataType = DoubleType
 
   private[sql] final val confFactor = new NormalDistribution().
-      inverseCumulativeProbability(1 - (1 - confidence) / 2)
+      inverseCumulativeProbability(0.5 + confidence / 2.0)
 
   override def asPartial: SplitEvaluation = {
     this.otherCopyArgs
@@ -115,7 +114,7 @@ private[spark] case object StatCounterUDT
         require(row.length == 4, "StatCounterUDT.deserialize given row " +
             s"with length ${row.length} but requires length == 4")
         val s = new StatCounterWithFullCount(row.getDouble(3))
-        s.init(count = row.getLong(0), mean = row.getDouble(1),
+        s.initStats(count = row.getLong(0), mean = row.getDouble(1),
           nvariance = row.getDouble(2))
         s
       // due to bugs in UDT serialization (SPARK-7186)
@@ -129,23 +128,24 @@ private[spark] case object StatCounterUDT
 
   def finalizeEvaluation(errorStats: StatCounterWithFullCount,
       confidence: Double, confFactor: Double, aggType: ErrorAggregate.Type) = {
-    val count = errorStats.count
-    val fullCount = errorStats.weightedCount
-    val stdev = math.sqrt((errorStats.variance / count) *
-        (1.0 - count / fullCount))
+    val sampleCount = errorStats.count.toDouble
+    val populationCount = errorStats.weightedCount
+    val stdev = math.sqrt((errorStats.nvariance / (sampleCount * sampleCount)) *
+        ((populationCount - sampleCount) / populationCount))
 
     // 30 is taken to be cut-off limit in most statistics calculations
     // for z vs t distributions (unlike StudentTCacher that uses 100)
     val errorMean =
-      if (count >= 30) stdev * confFactor
+      if (sampleCount >= 30) stdev * confFactor
       // TODO: somehow cache this at the whole evaluation level
-      // (wrapper LogicalPlan?)
+      // (wrapper LogicalPlan with StudentTCacher?)
       // the expensive t-distribution
-      else stdev * new StudentTCacher(confidence).get(count)
+      else stdev * new TDistribution(errorStats.count - 1)
+          .inverseCumulativeProbability(0.5 + confidence / 2.0)
 
     aggType match {
       case ErrorAggregate.Avg => errorMean
-      case ErrorAggregate.Sum => errorMean * fullCount
+      case ErrorAggregate.Sum => errorMean * populationCount
     }
   }
 }

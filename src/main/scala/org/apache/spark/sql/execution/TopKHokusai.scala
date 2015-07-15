@@ -71,7 +71,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         //it would be better to find the time aggregation of last interval - the other intervals)
         unionedTopKKeys.foreach { item: T =>
           var total = this.queryTimeAggregateForInterval(item, lengthOfLastInterval)
-          var count = this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
+          val count = this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
             item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
           if (count < total) {
             total = total - count
@@ -146,7 +146,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
               topKs += (item -> (total + prevCount))
             }
 
-            val begin = (lastNIntervals + 1).asInstanceOf[Int]
+            val begin = lastNIntervals + 1
             val end = computedIntervalLength.asInstanceOf[Int]
             unifiedTopKKeys.foreach { item: T =>
               val total = this.taPlusIa.basicQuery(begin to end,
@@ -190,7 +190,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
     } else {
       val nearestPowerOf2NumGE = NumberUtils.nearestPowerOf2GE(lastNIntervals)
-      val nearestPowerOf2Num = NumberUtils.nearestPowerOf2LE(lastNIntervals)
+      //val nearestPowerOf2Num = NumberUtils.nearestPowerOf2LE(lastNIntervals)
       //get all the unioned top k keys.
       val estimators = this.taPlusIa.ta.aggregates.slice(0,
         NumberUtils.isPowerOf2(nearestPowerOf2NumGE) + 1)
@@ -305,9 +305,13 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         case None => return None
       }
       val topKKeys = this.getCombinedTopKKeysBetween(later, earlier)
-      val result = new OpenHashSet[T](topKKeys.size)
-      topKKeys.foreach(result.add)
-      Some(result)
+      if (topKKeys.nonEmpty) {
+        val result = new OpenHashSet[T](topKKeys.size)
+        topKKeys.foreach(result.add)
+        Some(result)
+      } else {
+        None
+      }
     }, true)
 
   def getTopKBetweenTime(later: Int, earlier: Int, combinedTopKKeys: Array[T]): Array[(T, Approximate)] = {
@@ -419,18 +423,17 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
   }
 
-  private def sortAndBound[T](topKs: mutable.Map[T, Approximate]): Array[(T, Approximate)] = {
-    val sortedData = new BoundedSortedSet[T, Approximate](this.topKActual, false)
-    topKs.foreach(sortedData.add(_))
+  private def sortAndBound[U](
+      topKs: mutable.Map[U, Approximate]): Array[(U, Approximate)] = {
+    val sortedData = new BoundedSortedSet[U, Approximate](this.topKActual, false)
+    topKs.foreach(sortedData.add)
     val iter = sortedData.iterator
     //topKs.foreach(sortedData.add(_))
-    Array.fill[(T, Approximate)](sortedData.size())({
+    Array.fill[(U, Approximate)](sortedData.size())({
       //val (key, value) = iter.next
       //(key, value.longValue())
       iter.next
-
     })
-
   }
 
   override def createZeroCMS(powerOf2: Int): CountMinSketch[T] =
@@ -447,7 +450,6 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual,
         topKInternal * (powerOf2 + 1), cmsParams.confidence, cmsParams.eps)
     }
-
 }
 
 object TopKHokusai {
@@ -455,9 +457,9 @@ object TopKHokusai {
   private final val topKMap = new mutable.HashMap[String, TopKHokusai[_]]
   private final val mapLock = new ReentrantReadWriteLock
 
-  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int, 
+  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int,
       topKInternal: Int, confidence: Double, eps: Double) =
-    new TopKCMS[T](topKActual, topKInternal, depth, width, hashA, confidence, eps)
+  new TopKCMS[T](topKActual, topKInternal, depth, width, hashA, confidence, eps)
 
   def apply[T](name: String): Option[TopKHokusai[T]] = {
     SegmentMap.lock(mapLock.readLock) {
@@ -484,8 +486,8 @@ object TopKHokusai {
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
           topKMap.getOrElse(name, {
-            val topk = new TopKHokusai[T](cms, timeInterval,
-              epoch0(), size, timeInterval > 0 && tsCol < 0)
+            val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
+              timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0)
             topKMap(name) = topk
             topk
           }).asInstanceOf[TopKHokusai[T]]

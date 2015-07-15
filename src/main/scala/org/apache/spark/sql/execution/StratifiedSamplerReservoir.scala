@@ -27,16 +27,16 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
       val reservoir = new Array[MutableRow](reservoirSize)
       reservoir(0) = newMutableRow(row, processSelected)
       Utils.fillArray(reservoir, EMPTY_ROW, 1, reservoirSize)
-      new StratumReservoir(1, 1, reservoir, 1, 0)
+      new StratumReservoir(reservoir, 1, 1)
     }
 
     override def mergeValue(row: Row, sr: StratumReservoir): StratumReservoir = {
       // else update meta information in current stratum
-      sr.batchSize += 1
+      sr.batchTotalSize += 1
       val stratumSize = sr.reservoirSize
       if (stratumSize >= reservoirSize) {
         // copy into the reservoir as per probability (stratumSize/totalSize)
-        val rnd = rng.nextInt(sr.batchSize)
+        val rnd = rng.nextInt(sr.batchTotalSize)
         if (rnd < stratumSize) {
           // pick up this row and replace a random one from reservoir
           sr.reservoir(rng.nextInt(stratumSize)) = newMutableRow(row,

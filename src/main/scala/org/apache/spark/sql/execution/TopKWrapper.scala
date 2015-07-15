@@ -1,18 +1,17 @@
 package org.apache.spark.sql.execution
 
-import java.util.{Calendar, Date}
+import scala.collection.mutable
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types.{DataType, StructField, StructType}
 
-
-protected[sql] final class TopKWrapper(val name: String, val cms : CMSParams,
-                                       val size: Int, val timeSeriesColumn: Int,
-                                       val timeInterval: Long, val schema: StructType, val key: StructField,
-                                       val frequencyCol: Option[StructField], val epoch: Long, val maxinterval : Int, val stsummary: Boolean)
-  extends CastLongTime with Serializable {
+protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
+    val size: Int, val timeSeriesColumn: Int,
+    val timeInterval: Long, val schema: StructType, val key: StructField,
+    val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
+    val stsummary: Boolean) extends CastLongTime with Serializable {
 
   override protected def getNullMillis(getDefaultForNull: Boolean) =
     if (getDefaultForNull) System.currentTimeMillis() else -1L
@@ -30,132 +29,135 @@ protected[sql] final class TopKWrapper(val name: String, val cms : CMSParams,
 
 object TopKWrapper {
 
-  def apply(name: String, options: Map[String, Any],
-            schema: StructType): TopKWrapper = {
-    val keyTest = "key".ci
-    val timeSeriesColumnTest = "timeSeriesColumn".ci
-    val timeIntervalTest = "timeInterval".ci
-    val depthTest = "depth".ci
-    val widthTest = "width".ci
-    val sizeTest = "size".ci
-    val frequencyColTest = "frequencyCol".ci
-    val epochTest = "epoch".ci
-    val epsTest = "eps".ci
-    val confidenceTest = "confidence".ci
-    val streamSummary = "streamsummary".ci
-    val maxinterval = "maxinterval".ci
+  def apply(name: String, opts: Map[String, Any],
+      schema: StructType): TopKWrapper = {
+
+    val keyOpt = "key".normalize
+    val depthOpt = "depth".normalize
+    val widthOpt = "width".normalize
+    val sizeOpt = "size".normalize
+    val epsOpt = "eps".normalize
+    val confidenceOpt = "confidence".normalize
+    val streamSummaryOpt = "streamSummary".normalize
+    val maxintervalOpt = "maxInterval".normalize
+    val timeSeriesColumnOpt = "timeSeriesColumn".normalize
+    val timeIntervalOpt = "timeInterval".normalize
+    val frequencyColOpt = "frequencyCol".normalize
+    val epochOpt = "epoch".normalize
+
     val cols = schema.fieldNames
-    var epsAndcf = false;
-    var widthAndDepth = false;
-    var isstreamparam = false;
-    // Using foldLeft to read key-value pairs and build into the result
-    // tuple of (key, depth, width, size, frequencyCol) like an aggregate.
-    // This "aggregate" simply keeps the last values for the corresponding
-    // keys as found when folding the map.
-    val (key, tsCol, timeInterval, depth, width, size, frequencyCol, epoch, eps, confidence, stsummary, maxival) =
-      options.foldLeft("", -1, 5L, 5, 200, 100, "", -1L, 0.01, 0.95, false, 20) {
-        case ((k, ts, ti, cf, e, s, fr, ep, eps, cfi, su, mi), (opt, optV)) =>
-          opt match {
-            case keyTest() => (optV.toString, ts, ti, cf, e, s, fr, ep, eps, cfi, su, mi)
-            case depthTest() =>
-              widthAndDepth = true
-              optV match {
-                case fs: String => (k, ts, ti, fs.toInt, e, s, fr, ep, eps, cfi, su, mi)
-                case fi: Int => (k, ts, ti, fi, e, s, fr, ep, eps, cfi, su, mi)
-                case _ => throw new AnalysisException(
-                  s"TopKCMS: Cannot parse int 'depth'=$optV")
-              }
-            case widthTest() =>
-              widthAndDepth = true
-              optV match {
-                case fs: String => (k, ts, ti, cf, fs.toInt, s, fr, ep, eps, cfi, su, mi)
-                case fi: Int => (k, ts, ti, cf, fi, s, fr, ep, eps, cfi, su, mi)
-                case _ => throw new AnalysisException(
-                  s"TopKCMS: Cannot parse int 'width'=$optV")
-              }
-            case timeSeriesColumnTest() => optV match {
-              case tss: String => (k, columnIndex(tss, cols), ti, cf, e, s, fr, ep, eps, cfi, su, mi)
-              case tsi: Int => (k, tsi, ti, cf, e, s, fr, ep, eps, cfi, su, mi)
-              case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse 'timeSeriesColumn'=$optV")
+    val module = "TopKCMS"
+
+    var epsAndcf = false
+    var widthAndDepth = false
+    var isStreamParam = false
+
+    // first normalize options into a mutable map to ease lookup and removal
+    val options = normalizeOptions[mutable.HashMap[String, Any]](opts)
+
+    val key = options.remove(keyOpt).map(_.toString).getOrElse("")
+
+    val depth = options.remove(depthOpt).map { d =>
+      widthAndDepth = true
+      parseInteger(d, module, "depth")
+    }.getOrElse(7)
+    val width = options.remove(widthOpt).map { w =>
+      widthAndDepth = true
+      parseInteger(w, module, "width")
+    }.getOrElse(200)
+    val eps = options.remove(epsOpt).map { e =>
+      epsAndcf = true
+      parseDouble(e, module, "eps", 0.0, 1.0)
+    }.getOrElse(0.01)
+    val confidence = options.remove(confidenceOpt).map { c =>
+      epsAndcf = true
+      parseDouble(c, module, "confidence", 0.0, 1.0)
+    }.getOrElse(0.95)
+
+    val size = options.remove(sizeOpt).map(
+      parseInteger(_, module, "size")).getOrElse(100)
+
+    val stSummary = options.remove(streamSummaryOpt).exists {
+      case sb: Boolean => sb
+      case ss: String =>
+        try {
+          ss.toBoolean
+        } catch {
+          case iae: IllegalArgumentException =>
+            throw new AnalysisException(
+              s"$module: Cannot parse boolean 'streamSummary'=$ss")
+        }
+      case sv => throw new AnalysisException(
+        s"TopKCMS: Cannot parse boolean 'streamSummary'=$sv")
+    }
+    val maxInterval = options.remove(maxintervalOpt).map { i =>
+      isStreamParam = true
+      parseInteger(i, module, "maxInterval")
+    }.getOrElse(20)
+
+    val tsCol = options.remove(timeSeriesColumnOpt).map(
+      parseColumn(_, cols, module, "timeSeriesColumn")).getOrElse(-1)
+    val timeInterval = options.remove(timeIntervalOpt).map(
+      parseTimeInterval(_, module)).getOrElse(
+          if (tsCol >= 0 || stSummary) 5000L else Long.MaxValue)
+
+    val frequencyCol = options.remove(frequencyColOpt).map(
+      parseColumn(_, cols, module, "frequencyCol"))
+
+    val epoch = options.remove(epochOpt).map {
+      case ei: Int => ei.toLong
+      case el: Long => el
+      case es: String =>
+        try {
+          es.toLong
+        } catch {
+          case nfe: NumberFormatException =>
+            try {
+              CastLongTime.getMillis(java.sql.Timestamp.valueOf(es))
+            } catch {
+              case iae: IllegalArgumentException =>
+                throw new AnalysisException(
+                  s"$module: Cannot parse timestamp 'epoch'=$es")
             }
-            case timeIntervalTest() =>
-              (k, ts, parseTimeInterval(optV, "TopKCMS"), cf, e, s, fr, ep, eps, cfi, su, mi)
-            case sizeTest() => optV match {
-              case si: Int => (k, ts, ti, cf, e, si, fr, ep, eps, cfi, su, mi)
-              case ss: String => (k, ts, ti, cf, e, ss.toInt, fr, ep, eps, cfi, su, mi)
-              case sl: Long => (k, ts, ti, cf, e, sl.toInt, fr, ep, eps, cfi, su, mi)
-              case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse int 'size'=$optV")
-            }
-            case epochTest() => optV match {
-              case si: Int => (k, ts, ti, cf, e, s, fr, si.toLong, eps, cfi, su, mi)
-              case ss: String =>
-                try {
-                  (k, ts, ti, cf, e, s, fr, ss.toLong, eps, cfi, su, mi)
-                } catch {
-                  case nfe: NumberFormatException =>
-                    try {
-                      (k, ts, ti, cf, e, s, fr, CastLongTime.getMillis(
-                        java.sql.Timestamp.valueOf(ss)), eps, cfi, su, mi)
-                    } catch {
-                      case iae: IllegalArgumentException =>
-                        throw new AnalysisException(
-                          s"TopKCMS: Cannot parse timestamp 'epoch'=$optV")
-                    }
-                }
-              case sl: Long => (k, ts, ti, cf, e, s, fr, sl, eps, cfi, su, mi)
-              case dt: Date => (k, ts, ti, cf, e, s, fr, dt.getTime, eps, cfi, su, mi)
-              case cal: Calendar => (k, ts, ti, cf, e, s, fr, cal.getTimeInMillis, eps, cfi, su, mi)
-              case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse int 'size'=$optV")
-            }
-            case frequencyColTest() => (k, ts, ti, cf, e, s, optV.toString, ep, eps, cfi, su, mi)
-            case epsTest() =>
-              epsAndcf = true
-              optV match {
-                case es: String => (k, ts, ti, cf, e, s, fr, ep, es.toDouble, cfi, su, mi)
-                case ed: Double => (k, ts, ti, cf, e, s, fr, ep, ed, cfi, su, mi)
-                case _ => throw new AnalysisException(
-                  s"TopKCMS: Cannot parse double 'eps'=$optV")
-              }
-            case confidenceTest() =>
-              epsAndcf = true
-              optV match {
-                case cfs: String => (k, ts, ti, cf, e, s, fr, ep, eps, cfs.toDouble, su, mi)
-                case cfd: Double => (k, ts, ti, cf, e, s, fr, ep, eps, cfd, su, mi)
-                case _ => throw new AnalysisException(
-                  s"TopKCMS: Cannot parse double 'confidence'=$optV")
-              }
-            case maxinterval() =>
-              isstreamparam = true
-              optV match {
-                case si: Int => (k, ts, ti, cf, e, s, fr, ep, eps, cfi, su, si)
-                case ss: String => (k, ts, ti, cf, e, s, fr, ep, eps, cfi,  su, ss.toInt)
-                case _ => throw new AnalysisException(
-                  s"TopKCMS: Cannot parse int 'size'=$optV")
-              }
-            case streamSummary() => optV match {
-              case sb: Boolean  => (k, ts, ti, cf, e, s, fr, ep, eps, cfi, sb, mi)
-              case ss: String => (k, ts, ti, cf, e, s, fr, ep, eps, cfi,  ss.toBoolean, mi)
-              case _ => throw new AnalysisException(
-                s"TopKCMS: Cannot parse int 'size'=$optV")
-            }
-          }
+        }
+      case et: java.sql.Timestamp => CastLongTime.getMillis(et)
+      case ed: java.util.Date => ed.getTime
+      case ec: java.util.Calendar => ec.getTimeInMillis
+      case en: Number => en.longValue()
+      case ev => throw new AnalysisException(
+        s"$module: Cannot parse int 'size'=$ev")
+    }.getOrElse(-1L)
+
+    // check for any remaining unsupported options
+    if (options.nonEmpty) {
+      val optMsg = if (options.size > 1) "options" else "option"
+      throw new AnalysisException(
+        s"$module: Unknown $optMsg: $options")
+    }
+
+    if (epsAndcf && widthAndDepth) {
+      throw new AnalysisException("TopK parameters should specify either " +
+          "(eps, confidence) or (width, depth) but not both.")
+    }
+    if ((epsAndcf || widthAndDepth) && stSummary) {
+      throw new AnalysisException("TopK parameters shouldn't specify " +
+          "hokusai params for a stream summary.")
+    }
+    if (isStreamParam) {
+      if (!stSummary) {
+        throw new AnalysisException("TopK parameters shouldn't specify " +
+            "stream summary params for a Hokusai.")
       }
-    if (epsAndcf && widthAndDepth)
-      throw new AnalysisException("TopK parameters should specify either (eps, confidence) or (width, depth) and not both.")
-    if ((epsAndcf || widthAndDepth) && stsummary)
-      throw new AnalysisException("TopK parameters shouldn't specify hokusai params for a stream summary.")
-    if (!stsummary && isstreamparam)
-      throw new AnalysisException("TopK parameters shouldn't specify stream summary params for a Hokusai.")
-    if (tsCol < 0 && isstreamparam)
-        throw new AnalysisException("Timestamp column is required for stream summary")
+      if (tsCol < 0) {
+        throw new AnalysisException(
+          "Timestamp column is required for stream summary")
+      }
+    }
 
+    val cms =
+      if (epsAndcf) CMSParams(eps, confidence) else CMSParams(width, depth)
 
-      val cms = if (epsAndcf) CMSParams(eps, confidence) else CMSParams(width, depth)
     new TopKWrapper(name, cms, size, tsCol, timeInterval,
-      schema, schema(key),
-      if (frequencyCol.isEmpty) None else Some(schema(frequencyCol)), epoch, maxival, stsummary)
+      schema, schema(key), frequencyCol, epoch, maxInterval, stSummary)
   }
 }

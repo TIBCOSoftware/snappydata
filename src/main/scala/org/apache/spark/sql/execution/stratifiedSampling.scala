@@ -1,7 +1,7 @@
 package org.apache.spark.sql.execution
 
 import java.util.Random
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger, AtomicLong, AtomicReference}
+import java.util.concurrent.atomic._
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -14,24 +14,23 @@ import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{AnalysisException, Row, SampleDataFrame}
+import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
 case class StratifiedSample(var options: Map[String, Any],
     @transient override val child: logical.LogicalPlan)
     // pre-compute QCS because it is required by
-    // other API driven from driver
-    (val qcs: Array[Int] = SampleDataFrame.resolveQCS(
-      options, child.schema.fieldNames))
-    extends logical.UnaryNode {
+    // other API invoked from driver
+    (val qcs: Array[Int] = resolveQCS(options, child.schema.fieldNames,
+      "StratifiedSample")) extends logical.UnaryNode {
 
   /**
    * StratifiedSample will add one additional column for the ratio of total
    * rows seen for a stratum to the number of samples picked.
    */
   override val output = child.output :+ AttributeReference(
-    SampleDataFrame.WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
+    WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
 
   override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
 
@@ -237,72 +236,67 @@ object StratifiedSampler {
   final val BUFSIZE = 1000
   final val EMPTY_RESERVOIR = Array.empty[MutableRow]
   final val EMPTY_ROW = new GenericMutableRow(Array[Any]())
-  final val LONG_ONE = Long.box(1)
+  final val LONG_ONE = Long.box(1).asInstanceOf[AnyRef]
 
-  def apply(options: Map[String, Any], qcsi: Array[Int],
+  def apply(opts: Map[String, Any], qcsi: Array[Int],
       nameSuffix: String, cacheBatchSize: Int,
       schema: StructType, cached: Boolean) = {
-    val nameTest = "name".ci
-    val qcsTest = "qcs".ci
-    val fracTest = "fraction".ci
-    val reservoirSizeTest = "strataReservoirSize".ci
-    val timeSeriesColumnTest = "timeSeriesColumn".ci
-    val timeIntervalTest = "timeInterval".ci
+
+    val nameOpt = "name".normalize
+    val qcsOpt = "qcs".normalize
+    val fracOpt = "fraction".normalize
+    val reservoirSizeOpt = "strataReservoirSize".normalize
+    val errorLimitColumnOpt = "errorLimitColumn".normalize
+    val errorLimitPercentOpt = "errorLimitPercent".normalize
+    val timeSeriesColumnOpt = "timeSeriesColumn".normalize
+    val timeIntervalOpt = "timeInterval".normalize
 
     val cols = schema.fieldNames
+    val module = "StratifiedSampler"
 
-    // using a default stratum size of 104 since 100 is taken as the normal
-    // limit for assuming a Gaussian distribution (e.g. see MeanEvaluator)
-    val defaultStratumSize = 104
-    // Using foldLeft to read key-value pairs and build into the result
-    // tuple of (qcs, fraction, strataReservoirSize) like an aggregate.
-    // This "aggregate" simply keeps the last values for the corresponding
-    // keys as found when folding the map.
-    val (nm, fraction, stratumSize, tsCol, timeInterval) = options.
-        foldLeft("", 0.0, defaultStratumSize, -1, 0L) {
-      case ((n, fr, sz, ts, ti), (opt, optV)) =>
-        opt match {
-          case qcsTest() => (n, fr, sz, ts, ti) // ignore
-          case nameTest() => (optV.toString, fr, sz, ts, ti)
-          case fracTest() => optV match {
-            case fd: Double => (n, fd, sz, ts, ti)
-            case fs: String => (n, fs.toDouble, sz, ts, ti)
-            case ff: Float => (n, ff.toDouble, sz, ts, ti)
-            case fi: Int => (n, fi.toDouble, sz, ts, ti)
-            case fl: Long => (n, fl.toDouble, sz, ts, ti)
-            case _ => throw new AnalysisException(
-              s"StratifiedSampler: Cannot parse double 'fraction'=$optV")
-          }
-          case reservoirSizeTest() => optV match {
-            case si: Int => (n, fr, si, ts, ti)
-            case ss: String => (n, fr, ss.toInt, ts, ti)
-            case sl: Long => (n, fr, sl.toInt, ts, ti)
-            case _ => throw new AnalysisException(
-              s"StratifiedSampler: Cannot parse 'strataReservoirSize'=$optV")
-          }
-          case timeSeriesColumnTest() => optV match {
-            case tss: String => (n, fr, sz, columnIndex(tss, cols), ti)
-            case tsi: Int => (n, fr, sz, tsi, ti)
-            case _ => throw new AnalysisException(
-              s"StratifiedSampler: Cannot parse 'timeSeriesColumn'=$optV")
-          }
-          case timeIntervalTest() => (n, fr, sz, ts,
-              parseTimeInterval(optV, "StratifiedSampler"))
-          case _ => throw new AnalysisException(
-            s"StratifiedSampler: Unknown option '$opt'")
-        }
+    // using a default stratum size of 50 since 30 is taken as the normal
+    // limit for assuming a normal Gaussian distribution
+    val defaultStratumSize = 50
+
+    // first normalize options into a mutable map to ease lookup and removal
+    val options = normalizeOptions[mutable.HashMap[String, Any]](opts)
+
+    val qcsV = options.remove(qcsOpt)
+    // passed in qcs, if any, overrides the one in options
+    val qcs =
+      if (qcsi.isEmpty) resolveQCS(qcsV, cols, module) else qcsi
+
+    val name = options.remove(nameOpt).map(_.toString + nameSuffix)
+        .getOrElse(nameSuffix)
+
+    val fraction = options.remove(fracOpt).map(
+      parseDouble(_, module, "fraction", 0.0, 1.0)).getOrElse(0.0)
+    val stratumSize = options.remove(reservoirSizeOpt).map(parseInteger(_,
+      module, "strataReservoirSize")).getOrElse(defaultStratumSize)
+
+    val errorLimitColumn = options.remove(errorLimitColumnOpt).map(
+      parseColumn(_, cols, module, "errorLimitColumn")).getOrElse(-1)
+    val errorLimitPercent = options.remove(errorLimitPercentOpt).map(
+      parseDouble(_, module, "errorLimitPercent", 0.0, 100.0)).getOrElse(0.0)
+
+    val tsCol = options.remove(timeSeriesColumnOpt).map(
+      parseColumn(_, cols, module, "timeSeriesColumn")).getOrElse(-1)
+    val timeInterval = options.remove(timeIntervalOpt).map(
+      parseTimeInterval(_, module)).getOrElse(0L)
+
+    // check for any remaining unsupported options
+    if (options.nonEmpty) {
+      val optMsg = if (options.size > 1) "options" else "option"
+      throw new AnalysisException(
+        s"$module: Unknown $optMsg: $options")
     }
 
-    val qcs =
-      if (qcsi.isEmpty) SampleDataFrame.resolveQCS(options, schema.fieldNames)
-      else qcsi
-    val name = nm + nameSuffix
     if (cached && name.nonEmpty) {
-      lookupOrAdd(qcs, name, fraction, stratumSize, cacheBatchSize,
-        tsCol, timeInterval, schema)
+      lookupOrAdd(qcs, name, fraction, stratumSize, errorLimitColumn,
+        errorLimitPercent, cacheBatchSize, tsCol, timeInterval, schema)
     } else {
-      newSampler(qcs, name, fraction, stratumSize, cacheBatchSize,
-        tsCol, timeInterval, schema)
+      newSampler(qcs, name, fraction, stratumSize, errorLimitColumn,
+        errorLimitPercent, cacheBatchSize, tsCol, timeInterval, schema)
     }
   }
 
@@ -313,8 +307,8 @@ object StratifiedSampler {
   }
 
   private[sql] def lookupOrAdd(qcs: Array[Int], name: String, fraction: Double,
-      stratumSize: Int, cacheBatchSize: Int, tsCol: Int, timeInterval: Long,
-      schema: StructType) = {
+      stratumSize: Int, errorLimitCol: Int, errorLimitPercent: Double,
+      memBatchSize: Int, tsCol: Int, timeInterval: Long, schema: StructType) = {
     // not using getOrElse in one shot to allow taking only read lock
     // for the common case, then release it and take write lock if new
     // sampler has to be added
@@ -327,7 +321,8 @@ object StratifiedSampler {
         SegmentMap.lock(mapLock.writeLock) {
           globalMap.getOrElse(name, {
             val sampler = newSampler(qcs, name, fraction, stratumSize,
-              cacheBatchSize, tsCol, timeInterval, schema)
+              errorLimitCol, errorLimitPercent, memBatchSize,
+              tsCol, timeInterval, schema)
             // if the map has been removed previously, then mark as flushed
             sampler.setFlushStatus(flushedMaps.contains(name))
             globalMap(name) = sampler
@@ -356,16 +351,19 @@ object StratifiedSampler {
     }
 
   private def newSampler(qcs: Array[Int], name: String, fraction: Double,
-      stratumSize: Int, cacheBatchSize: Int, tsCol: Int,
-      timeInterval: Long, schema: StructType) = {
+      stratumSize: Int, errorLimitCol: Int, errorLimitPercent: Double,
+      memBatchSize: Int, tsCol: Int, timeInterval: Long, schema: StructType) = {
     if (qcs.isEmpty) {
-      throw new AnalysisException(SampleDataFrame.ERROR_NO_QCS)
+      throw new AnalysisException(ERROR_NO_QCS("StratifiedSampler"))
     } else if (tsCol >= 0 && timeInterval <= 0) {
       throw new AnalysisException("StratifiedSampler: no timeInterval for " +
           "timeSeriesColumn=" + schema(tsCol).name)
+    } else if (errorLimitCol >= 0) {
+      new StratifiedSamplerErrorLimit(qcs, name, schema, stratumSize,
+        errorLimitCol, errorLimitPercent, memBatchSize, tsCol, timeInterval)
     } else if (fraction > 0.0) {
       new StratifiedSamplerCached(qcs, name, schema,
-        new AtomicInteger(stratumSize), fraction, cacheBatchSize,
+        new AtomicInteger(stratumSize), fraction, memBatchSize,
         tsCol, timeInterval)
     } else if (stratumSize > 0) {
       new StratifiedSamplerReservoir(qcs, name, schema, stratumSize)
@@ -389,11 +387,13 @@ object StratifiedSampler {
     false
   }
 
-  def readReservoir(reservoir: Array[MutableRow], pos: Int,
+  def fillWeightageIfAbsent(reservoir: Array[MutableRow], pos: Int,
       ratio: Long, lastIndex: Int) = {
-    // fill in the weight ratio column
+    // fill in the weight ratio column if required
     val row = reservoir(pos)
-    row(lastIndex) = ratio
+    if (LONG_ONE eq row(lastIndex).asInstanceOf[AnyRef]) {
+      row(lastIndex) = Long.box(ratio).asInstanceOf[AnyRef]
+    }
     row
   }
 }
@@ -415,7 +415,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
     val numColumns = qcs.length
     val columnHandler = MultiColumnOpenHashSet.newColumnHandler(qcs,
       types, numColumns)
-    val hasher = { row: Row => columnHandler.hash(row) }
+    val hasher: Row => Int = columnHandler.hash
     new ConcurrentSegmentedHashMap[Row, StratumReservoir, ReservoirSegment](
       (initialCapacity, loadFactor) => new ReservoirSegment(qcs, types,
         numColumns, initialCapacity, loadFactor), hasher)
@@ -457,10 +457,10 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
         val lastIndex = row.length
         val newRow = new GenericMutableRow(lastIndex + 1)
         var index = 0
-        do {
+        while (index < lastIndex) {
           newRow(index) = row(index)
           index += 1
-        } while (index < lastIndex)
+        }
         newRow(lastIndex) = LONG_ONE
         newRow
     }
@@ -481,9 +481,8 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
       iter ++ {
         if (sampleBuffer.nonEmpty) sampleBuffer.clear()
         SegmentMap.lock(seg.readLock()) {
-          seg.foldValues[Unit]((), foldReservoir(0, false, false, { (_, row) =>
-            sampleBuffer += row
-          }))
+          seg.foldValues((), foldReservoir[Unit](0, doReset = false,
+            fullReset = false, (_, row) => sampleBuffer += row))
         }
         sampleBuffer.iterator
       }
@@ -502,18 +501,19 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
       fullReset, process))
   }
 
-  protected final def foldReservoir[U]
-  (prevReservoirSize: Int, doReset: Boolean, fullReset: Boolean,
-      process: (U, Row) => U)(sr: StratumReservoir, init: U): U = {
+  protected final def foldReservoir[U](prevReservoirSize: Int,
+      doReset: Boolean, fullReset: Boolean, process: (U, Row) => U)
+      (sr: StratumReservoir, init: U): U = {
     // imperative code segment below for best efficiency
     var v = init
     val reservoir = sr.reservoir
-    val nsamples = sr.reservoirSize
-    val ratio = sr.prepareToRead(nsamples)
-    val lastIndex = schema.length - 1
+    val reservoirSize = sr.reservoirSize
+    val ratio = sr.calculateWeightageColumn()
+    val lastColumnIndex = schema.length - 1
     var index = 0
-    while (index < nsamples) {
-      v = process(v, readReservoir(reservoir, index, ratio, lastIndex))
+    while (index < reservoirSize) {
+      v = process(v,
+        fillWeightageIfAbsent(reservoir, index, ratio, lastColumnIndex))
       index += 1
     }
     // reset transient data
@@ -547,17 +547,13 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
  * meta-data including number of samples collected, total number of rows
  * in the stratum seen so far, the QCS key, reservoir of samples etc.
  */
-class StratumReservoir(final var totalSamples: Int,
-    final var batchSize: Int,
-    final var reservoir: Array[MutableRow],
+class StratumReservoir(final var reservoir: Array[MutableRow],
     final var reservoirSize: Int,
-    final var prevShortFall: Int) {
+    final var batchTotalSize: Int) {
 
   self =>
 
-  def batchTotalSize = batchSize
-
-  def clearBatchTotalSize(): Unit = batchSize = 0
+  def numSamples: Int = reservoirSize
 
   final def iterator(prevReservoirSize: Int, newReservoirSize: Int,
       columns: Int, doReset: Boolean,
@@ -565,13 +561,13 @@ class StratumReservoir(final var totalSamples: Int,
     new Iterator[MutableRow] {
 
       final val reservoir = self.reservoir
-      final val nsamples = self.reservoirSize
-      final val ratio = prepareToRead(nsamples)
+      final val reservoirSize = self.reservoirSize
+      final val ratio = calculateWeightageColumn()
       final val lastIndex = columns - 1
       var pos = 0
 
       override def hasNext: Boolean = {
-        if (pos < nsamples) {
+        if (pos < reservoirSize) {
           true
         } else if (doReset) {
           self.reset(prevReservoirSize, newReservoirSize, fullReset)
@@ -582,67 +578,42 @@ class StratumReservoir(final var totalSamples: Int,
       }
 
       override def next() = {
-        val v = readReservoir(reservoir, pos, ratio, lastIndex)
+        val v = fillWeightageIfAbsent(reservoir, pos, ratio, lastIndex)
         pos += 1
         v
       }
     }
   }
 
-  final def prepareToRead(nsamples: Int): Long = {
+  final def calculateWeightageColumn(): Long = {
+    val numSamples = self.numSamples
     // calculate the weight ratio column
-    if (nsamples > 0) {
+    if (numSamples > 0) {
       // combine the two integers into a long
       // higher order is number of samples (which is expected to remain mostly
       //   constant will result in less change)
-      (nsamples.asInstanceOf[Long] << 32L) |
-          self.batchTotalSize.asInstanceOf[Long]
+      (numSamples.asInstanceOf[Long] << 32L) |
+          batchTotalSize.asInstanceOf[Long]
     } else 0
   }
 
-  final def reset(prevReservoirSize: Int, newReservoirSize: Int,
-      fullReset: Boolean) {
+  def reset(prevReservoirSize: Int, newReservoirSize: Int,
+      fullReset: Boolean): Unit = {
 
     if (newReservoirSize > 0) {
-      val nsamples = self.reservoirSize
-      // reset transient data
-
-      // check for the end of current time-slot; if it has ended, then
-      // also reset the "shortFall" and other such history
-      if (fullReset) {
-        self.totalSamples = 0
-        self.prevShortFall = 0
-      } else {
-        // First update the shortfall for next round.
-        // If it has not seen much data for sometime and has fallen behind
-        // a lot, then it is likely gone and there is no point in increasing
-        // shortfall indefinitely (else it will over sample if seen in future)
-        // [sumedh] Above observation does not actually hold. Two cases:
-        // 1) timeInterval is defined: in this case we better keep the shortFall
-        //    till the end of timeInterval when it shall be reset in any case
-        // 2) timeInterval is not defined: this is a case of non-time series
-        //    data where we should keep shortFall till the end of data
-        /*
-        if (prevReservoirSize <= reservoirSize ||
-          prevShortFall <= (prevReservoirSize + reservoirSize)) {
-          prevShortFall += (prevReservoirSize - reservoirSize)
-        }
-        */
-        self.prevShortFall += (prevReservoirSize - nsamples)
-      }
       // shrink reservoir back to strataReservoirSize if required to avoid
       // growing possibly without bound (in case some stratum consistently
       //   gets small number of total rows less than sample size)
-      if (self.reservoir.length == newReservoirSize) {
-        fillArray(reservoir, EMPTY_ROW, 0, nsamples)
-      } else if (nsamples <= 2 && newReservoirSize > 3) {
+      if (reservoir.length == newReservoirSize) {
+        fillArray(reservoir, EMPTY_ROW, 0, reservoirSize)
+      } else if (reservoirSize <= 2 && newReservoirSize > 3) {
         // empty the reservoir since it did not receive much data in last round
-        self.reservoir = EMPTY_RESERVOIR
+        reservoir = EMPTY_RESERVOIR
       } else {
-        self.reservoir = new Array[MutableRow](newReservoirSize)
+        reservoir = new Array[MutableRow](newReservoirSize)
       }
-      self.reservoirSize = 0
-      self.clearBatchTotalSize()
+      reservoirSize = 0
+      batchTotalSize = 0
     }
   }
 }
