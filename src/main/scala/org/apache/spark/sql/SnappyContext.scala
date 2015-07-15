@@ -344,7 +344,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // using the straightforward approach for now
 
     // first collect keys from across the cluster
-    val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
+   /* val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
       .reduce { (map1, map2) =>
         // choose bigger of the two maps as resulting map
         val (m1, m2) = if (map1.size < map2.size) (map2, map1) else (map1, map2)
@@ -352,15 +352,20 @@ protected[sql] class SnappyContext(sc: SparkContext)
         m1
       }
 
-    val iter = combinedKeys.iterator
+    val iter = combinedKeys.iterator*/
 
     /* val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
       .reduceByKey(_ + _).map(Row.fromTuple(_))*/
-    val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
-      Array.fill(combinedKeys.size)(iter.next()), this)
-      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))
    
+    /*val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+      Array.fill(combinedKeys.size)(iter.next()), this)
+      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))*/
+   
+    val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+      null, this)
+      .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))
+      
     val aggColumn = "EstimatedValue"
     val errorBounds = "ErrorBoundsInfo"
     val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
