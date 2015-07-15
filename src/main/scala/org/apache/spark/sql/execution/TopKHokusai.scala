@@ -265,7 +265,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     epochTo: Long): Option[mutable.Set[T]] = {
     this.rwlock.executeInReadLock(
       {
-        val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+        val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
           case Some(x) => x
           case None => return None
         }
@@ -294,7 +294,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
     this.rwlock.executeInReadLock({
-      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+      val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
         case Some(x) => x
         case None => return None
@@ -305,7 +305,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   def getTopKKeysBetweenTime(epochFrom: Long,
     epochTo: Long): Option[OpenHashSet[T]] =
     this.rwlock.executeInReadLock({
-      val (later, earlier) = convertEpochToIntervals(epochFrom, epochTo) match {
+      val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
       }
