@@ -31,7 +31,8 @@ final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, dep
         CountMinSketch.initWidth(epsOfTotalCount)),
       CountMinSketch.initHash(CountMinSketch.initDepth(confidence), seed))
 
-  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]]) = this(topKActual, topKInternal, depth, width, 0, CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth),
+  def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]],
+      confidence: Double, eps: Double) = this(topKActual, topKInternal, depth, width, 0, eps, confidence,
     size, table, hashA)
 
   override def add(item: T, count: Long): Long = {
@@ -100,7 +101,7 @@ object TopKCMS {
     val topkKeys = getCombinedTopKFromEstimators(seqOfEstimators,
       getUnionedTopKKeysFromEstimators(seqOfEstimators))
     val mergedTopK = new TopKCMS[T](estimators(0).asInstanceOf[TopKCMS[T]].topKActual, 
-        bound, depth, width, size, hashA, table)
+        bound, depth, width, size, hashA, table, estimators(0).confidence, estimators(0).eps)
     topkKeys.foreach(x => mergedTopK.populateTopK(x._1 -> x._2.estimate))
     mergedTopK
   }

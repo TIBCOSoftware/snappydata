@@ -7,7 +7,7 @@ package org.apache.spark.sql.execution
 class Approximate(val lowerBound: Long, val estimate: Long, val max: Long,
   val probabilityWithinBounds: Double) extends Comparable[Approximate] with Ordered[Approximate] with Serializable {
 
-  def +(other: Approximate): Approximate = {
+  def +(other: Approximate): Approximate = {    
     require(this.probabilityWithinBounds == other.probabilityWithinBounds)
     new Approximate(this.lowerBound + other.lowerBound, this.estimate + other.estimate,
       this.estimate + other.estimate, this.probabilityWithinBounds)

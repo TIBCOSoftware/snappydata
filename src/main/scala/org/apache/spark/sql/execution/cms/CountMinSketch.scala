@@ -360,7 +360,8 @@ object CountMinSketch {
 
   def initEPS(width: Int): Double = scala.math.exp(1.0) / width
 
-  def initConfidence(depth: Double): Double = 1 - 1 / scala.math.exp(depth)
+  def initConfidence(depth: Double): Double =  1 - 1 / scala.math.exp(depth)
+  
 
   def initTable(depth: Int, width: Int): Array[Array[Long]] = Array.ofDim[Long](depth, width)
 

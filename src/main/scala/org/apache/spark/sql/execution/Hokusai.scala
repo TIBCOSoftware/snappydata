@@ -54,7 +54,7 @@ import org.apache.spark.sql.execution.cms.CountMinSketch
 class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   startIntervalGenerator: Boolean = false) {
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
-  var summ: Long = 0
+ 
   private val intervalGenerator = new Timer()
 
   val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators) => CountMinSketch.merge[T](estimators: _*)
@@ -245,9 +245,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
           timeEpoch.timestampToInterval(epoch) match {
             case Some(interval) =>
               // first check if it lies in current mBar
-              if (interval <= 3 && v.key == "0_90421") {
-                summ += v.frequency
-              }
+              
               if (interval > timeEpoch.t) {
                 // check if new slot has to be created
                 if (interval > (timeEpoch.t + 1)) {
