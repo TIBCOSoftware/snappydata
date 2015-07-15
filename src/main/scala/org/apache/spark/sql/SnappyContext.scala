@@ -1,6 +1,8 @@
 package org.apache.spark.sql
 
 import java.util.concurrent.atomic.AtomicReference
+import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -104,7 +106,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     } foreach {
       case (name, topkWrapper) =>
         tDF.foreachPartition(rowIterator => {
-          addHokusaiData(name, topkWrapper, rowIterator)
+          addDataForTopK(name, topkWrapper, rowIterator)
         })
     }
 
@@ -120,38 +122,51 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
   }
 
-  def addHokusaiData[T](name: String, topkWrapper: TopKHokusaiWrapper,
+  def addDataForTopK[T](name: String, topkWrapper: TopKWrapper,
     rowIterator: Iterator[Row])(implicit ct: ClassTag[T]): Unit = if (rowIterator.hasNext) {
     var rowIter = rowIterator
     val tsCol = if (topkWrapper.timeInterval > 0)
       topkWrapper.timeSeriesColumn
     else -1
-    val topkhokusai = TopKHokusai[T](name, topkWrapper.cms,
-      topkWrapper.size, tsCol, topkWrapper.timeInterval,
-      () => {
-        if (tsCol >= 0 && topkWrapper.epoch == -1) {
-          var epoch0 = -1L
-          val rowBuf = new mutable.ArrayBuffer[Row](4)
-          // assume first row will have the least time
-          // TODO: this assumption may not be correct and we may need to
-          // do something more comprehensive
-          do {
-            val row = rowIterator.next()
-            epoch0 = topkWrapper.parseMillis(row, tsCol)
-            rowBuf += row.copy()
-          } while (epoch0 <= 0)
-          rowIter = rowBuf.iterator ++ rowIterator
-          epoch0
-        } else if (topkWrapper.epoch != -1) {
-          topkWrapper.epoch
-        } else {
-          System.currentTimeMillis()
-        }
-      })
+    def epoch () : Long = {
+      if (tsCol >= 0 && topkWrapper.epoch == -1) {
+        var epoch0 = -1L
+        val rowBuf = new mutable.ArrayBuffer[Row](4)
+        // assume first row will have the least time
+        // TODO: this assumption may not be correct and we may need to
+        // do something more comprehensive
+        do {
+          val row = rowIterator.next()
+          epoch0 = topkWrapper.parseMillis(row, tsCol)
+          rowBuf += row.copy()
+        } while (epoch0 <= 0)
+        rowIter = rowBuf.iterator ++ rowIterator
+        epoch0
+      } else if (topkWrapper.epoch != -1) {
+        topkWrapper.epoch
+      } else {
+        System.currentTimeMillis()
+      }
+    }
+    var topkhokusai: TopKHokusai[T] = null
+    var streamSummaryAggr : StreamSummaryAggregation[T] = null
+    if (topkWrapper.stsummary)
+      streamSummaryAggr = StreamSummaryAggregation[T](name,
+        topkWrapper.size, tsCol, topkWrapper.timeInterval,
+        () => { epoch }, topkWrapper.maxinterval)
+    else
+      topkhokusai= TopKHokusai[T](name, topkWrapper.cms,
+        topkWrapper.size, tsCol, topkWrapper.timeInterval,
+        () => { epoch })
+
+
     val topKKeyIndex = topkWrapper.schema.fieldIndex(topkWrapper.key.name)
     if (tsCol < 0) {
+      if (topkWrapper.stsummary)
+        throw new IllegalStateException("Timestamp column is required for stream summary")
       topkWrapper.frequencyCol match {
-        case None => topkhokusai.addEpochData(
+        case None =>
+          topkhokusai.addEpochData(
           rowIter.map(_(topKKeyIndex).asInstanceOf[T]).toSeq)
         case Some(freqCol) =>
           val freqColIndex = topkWrapper.schema.fieldIndex(freqCol.name)
@@ -172,15 +187,14 @@ protected[sql] class SnappyContext(sc: SparkContext)
       }
     } else {
       val dataBuffer = new mutable.ArrayBuffer[KeyFrequencyWithTimestamp[T]]
-      topkWrapper.frequencyCol match {
+      val buffer = topkWrapper.frequencyCol match {
         case None =>
           rowIter foreach { r =>
             val key = r(topKKeyIndex).asInstanceOf[T]
             val timeVal = topkWrapper.parseMillis(r, tsCol)
             dataBuffer += new KeyFrequencyWithTimestamp[T](key, 1L, timeVal)
           }
-          topkhokusai.addTimestampedData(dataBuffer)
-
+          dataBuffer
         case Some(freqCol) =>
           val freqColIndex = topkWrapper.schema.fieldIndex(freqCol.name)
           rowIter foreach { r =>
@@ -192,8 +206,12 @@ protected[sql] class SnappyContext(sc: SparkContext)
                 freq.asInstanceOf[Number].longValue(), timeVal)
             }
           }
-          topkhokusai.addTimestampedData(dataBuffer)
+          dataBuffer
       }
+      if (topkWrapper.stsummary)
+        streamSummaryAggr.addItems(buffer)
+      else
+        topkhokusai.addTimestampedData(buffer)
     }
   }
 
@@ -338,7 +356,32 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
   def queryTopK[T: ClassTag](topKName: String,
     startTime: Long, endTime: Long): DataFrame = {
-    val k: TopKHokusaiWrapper = catalog.topKStructures(topKName)
+    val k: TopKWrapper = catalog.topKStructures(topKName)
+
+    if (k.stsummary)
+      queryTopkStreamSummary(topKName, startTime, endTime, k)
+    else
+      queryTopkHokusai(topKName, startTime, endTime, k)
+  }
+
+  def queryTopkStreamSummary[T: ClassTag](topKName: String,
+                                    startTime: Long, endTime: Long,
+                                    k: TopKWrapper): DataFrame = {
+    val topKRDD = new TopKStreamRDD[T](topKName, startTime, endTime, this).
+      reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2.lowerBound))
+
+    val aggColumn = "EstimatedValue"
+    val errorBounds = "DeltaError"
+    val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
+      StructField(errorBounds, LongType)))
+
+    val df = createDataFrame(topKRDD, topKSchema)
+    df.sort(df.col(aggColumn).desc).limit(k.size)
+  }
+
+  def queryTopkHokusai[T: ClassTag](topKName: String,
+                                    startTime: Long, endTime: Long,
+                                    k: TopKWrapper): DataFrame = {
 
     // TODO: perhaps this can be done more efficiently via a shuffle but
     // using the straightforward approach for now
@@ -346,11 +389,11 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // first collect keys from across the cluster
     val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
       .reduce { (map1, map2) =>
-        // choose bigger of the two maps as resulting map
-        val (m1, m2) = if (map1.size < map2.size) (map2, map1) else (map1, map2)
-        m2.iterator.foreach(m1.add)
-        m1
-      }
+      // choose bigger of the two maps as resulting map
+      val (m1, m2) = if (map1.size < map2.size) (map2, map1) else (map1, map2)
+      m2.iterator.foreach(m1.add)
+      m1
+    }
 
     val iter = combinedKeys.iterator
 
@@ -360,15 +403,15 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
       .reduceByKey(_ + _).map(tuple => Row(tuple._1, tuple._2.estimate, tuple._2))
-   
+
     val aggColumn = "EstimatedValue"
     val errorBounds = "ErrorBoundsInfo"
     val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
       StructField(errorBounds, ApproximateType)))
-    /*  
+    /*
     val aggColumn = "EstimatedValue"
-   
-    val topKSchema = StructType(Array(k.key, StructField(aggColumn, ApproximateType)))*/  
+
+    val topKSchema = StructType(Array(k.key, StructField(aggColumn, ApproximateType)))*/
 
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k.size)
@@ -445,12 +488,12 @@ private[sql] case class SnappyOperations(context: SnappyContext,
 
     // Create a very long timeInterval when the topK is being created
     // on a DataFrame.
-    val topkWrapper = TopKHokusaiWrapper(name, options, schema)
+    val topkWrapper = TopKWrapper(name, options, schema)
     context.catalog.topKStructures.put(name, topkWrapper)
     val clazz = SqlUtils.getInternalType(topkWrapper.schema(topkWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
     df.foreachPartition((x: Iterator[Row]) => {
-      context.addHokusaiData(name, topkWrapper, x)(ct)
+      context.addDataForTopK(name, topkWrapper, x)(ct)
     })
   }
 

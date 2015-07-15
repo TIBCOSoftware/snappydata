@@ -22,7 +22,8 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long) {
   // Perhaps there is an O(1) way to calculate?
   def timestampToInterval(ts: Long): Option[Int] = {
 
-    if (ts <= epoch0 && t < 1) return None
+    if (ts <= epoch0 && t < 1)
+      return None
 
     if (ts <= epoch0 && t >= 1) {
       Some(1)
