@@ -22,7 +22,11 @@ import org.apache.spark.sql.sources.{CastLongTime, StreamStrategy, WeightageRule
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{StreamingContext, Time}
+import org.apache.spark.streaming.{ StreamingContext, Time }
+import io.snappydata.util.SqlUtils
+import org.apache.spark.SparkContext._
+import org.apache.spark.Partitioner
+import org.apache.spark.sql.collection.Utils
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -107,7 +111,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     } foreach {
       case (name, topkWrapper) =>
         tDF.foreachPartition(rowIterator => {
-          addDataForTopK(name, topkWrapper, rowIterator)
+          addDataForTopK1(name, topkWrapper, rowIterator)
         })
     }
 
@@ -123,7 +127,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
   }
 
-  def addDataForTopK[T: ClassTag](name: String, topkWrapper: TopKWrapper,
+  def addDataForTopK1[T: ClassTag](name: String, topkWrapper: TopKWrapper,
       rowIterator: Iterator[Row]): Unit = if (rowIterator.hasNext) {
     var rowIter = rowIterator
     val tsCol = if (topkWrapper.timeInterval > 0)
@@ -216,6 +220,100 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
   }
 
+  def addDataForTopK[T](name: String, topkWrapper: TopKWrapper,
+		    rowIterator: Iterator[(Any, Any)])(implicit ct: ClassTag[T]): Unit = if (rowIterator.hasNext) {
+		    var rowIter = rowIterator
+		    val tsCol = if (topkWrapper.timeInterval > 0)
+		      topkWrapper.timeSeriesColumn
+		    else -1
+		    def epoch () : Long = {
+		      if (tsCol >= 0 && topkWrapper.epoch == -1) {
+		        var epoch0 = -1L
+		        val rowBuf = new mutable.ArrayBuffer[(Any,Any)](4)
+		        // assume first row will have the least time
+		        // TODO: this assumption may not be correct and we may need to
+		        // do something more comprehensive
+		        do {
+		          val row = rowIterator.next()
+		          epoch0 = row._2.asInstanceOf[(Long,Long)]._2
+		          rowBuf += row.copy()
+		        } while (epoch0 <= 0)
+		        rowIter = rowBuf.iterator ++ rowIterator
+		        epoch0
+		      } else if (topkWrapper.epoch != -1) {
+		        topkWrapper.epoch
+		      } else {
+		        System.currentTimeMillis()
+		      }
+		    }
+		    var topkhokusai: TopKHokusai[T] = null
+		    var streamSummaryAggr : StreamSummaryAggregation[T] = null
+		    if (topkWrapper.stsummary)
+		      streamSummaryAggr = StreamSummaryAggregation[T](name,
+		        topkWrapper.size, tsCol, topkWrapper.timeInterval,
+		        () => { epoch }, topkWrapper.maxinterval)
+		    else
+		      topkhokusai= TopKHokusai[T](name, topkWrapper.cms,
+		        topkWrapper.size, tsCol, topkWrapper.timeInterval,
+		        () => { epoch })
+
+
+		    val topKKeyIndex = topkWrapper.schema.fieldIndex(topkWrapper.key.name)
+		    if (tsCol < 0) {
+		      if (topkWrapper.stsummary)
+		        throw new IllegalStateException("Timestamp column is required for stream summary")
+		      topkWrapper.frequencyCol match {
+		        case None =>
+		          topkhokusai.addEpochData(
+		          rowIter.map(_._1.asInstanceOf[T]).toSeq)
+		        case Some(freqCol) =>
+		         
+		          val datamap = mutable.Map[T, Long]()
+		          rowIter foreach { r =>
+		            val freq = r._2.asInstanceOf[Long]
+		            if (freq != null) {
+		              val key = r._1.asInstanceOf[T]
+		              datamap.get(key) match {
+		                case Some(prevvalue) => datamap +=
+		                  (key -> (prevvalue + freq.asInstanceOf[Number].longValue()))
+		                case None => datamap +=
+		                  (key -> freq.asInstanceOf[Number].longValue())
+		              }
+		            }
+		          }
+		          topkhokusai.addEpochData(datamap)
+		      }
+		    } else {
+		      val dataBuffer = new mutable.ArrayBuffer[KeyFrequencyWithTimestamp[T]]
+		      val buffer = topkWrapper.frequencyCol match {
+		        case None =>
+		          rowIter foreach { r =>
+		            val key = r._1.asInstanceOf[T]
+		            val timeVal = r._2.asInstanceOf[Long]
+		            dataBuffer += new KeyFrequencyWithTimestamp[T](key, 1L, timeVal)
+		          }
+		          dataBuffer
+		        case Some(freqCol) =>
+		         
+		          rowIter foreach { r =>
+		            val x = r.asInstanceOf[(T,(Long, Long))]
+		            val freq = x._2._1
+		            if (freq != null) {
+		              val key = x._1
+		              val timeVal = x._2._2
+		              dataBuffer += new KeyFrequencyWithTimestamp[T](key,
+		                freq.asInstanceOf[Number].longValue(), timeVal)
+		            }
+		          }
+		          dataBuffer
+		      }
+		      if (topkWrapper.stsummary)
+		        streamSummaryAggr.addItems(buffer)
+		      else
+		        topkhokusai.addTimestampedData(buffer)
+		    }
+		  }
+  
   def appendToCache(df: DataFrame, tableName: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
@@ -392,7 +490,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // using the straightforward approach for now
 
     // first collect keys from across the cluster
-    val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
+    /*val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
         .reduce { (map1, map2) =>
       // choose bigger of the two maps as resulting map
       val (m1, m2) = if (map1.size < map2.size) (map2, map1) else (map1, map2)
@@ -400,10 +498,10 @@ protected[sql] class SnappyContext(sc: SparkContext)
       m1
     }
 
-    val iter = combinedKeys.iterator
+    val iter = combinedKeys.iterator*/
 
     val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
-      Array.fill(combinedKeys.size)(iter.next()), this)
+      /*Array.fill(combinedKeys.size)(iter.next())*/ null, this)
         .reduceByKey(_ + _).map(tuple =>
       Row(tuple._1, tuple._2.estimate, tuple._2))
 
@@ -496,12 +594,67 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     // on a DataFrame.
     val topkWrapper = TopKWrapper(name, options, schema)
     context.catalog.topKStructures.put(name, topkWrapper)
-    val clazz = SqlUtils.getInternalType(
-      topkWrapper.schema(topkWrapper.key.name).dataType)
+    val clazz = SqlUtils.getInternalType(topkWrapper.schema(topkWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
-    df.foreachPartition((x: Iterator[Row]) => {
+    val pairRDD = df.rdd.map[(Any,Any)]( x => {
+       val tsCol = if (topkWrapper.timeInterval > 0)
+                     topkWrapper.timeSeriesColumn
+                   else -1
+      
+                   
+       val topKKeyIndex = topkWrapper.schema.fieldIndex(topkWrapper.key.name)
+    if (tsCol < 0) {
+      
+      topkWrapper.frequencyCol match {
+        case None =>
+          (x(topKKeyIndex), null)          
+        case Some(freqCol) =>
+           val freq1 = x(freqCol)
+            val freq = freq1 match {
+            case num: Double => num.toLong
+            case num: Float => num.toLong
+            case _ => freq1
+            }
+            (x(topKKeyIndex), freq)
+           
+      }
+    } else {
+      
+       topkWrapper.frequencyCol match {
+        case None =>
+          
+            val key = x(topKKeyIndex)
+            val timeVal = topkWrapper.parseMillis(x, tsCol)
+            (key, timeVal)
+          
+          
+        case Some(freqCol) =>
+            
+             val freq1 = x(freqCol)
+            val freq = freq1 match {
+            case num: Double => num.toLong
+            case num: Float => num.toLong
+            case _ => freq1
+            }
+              val key = x(topKKeyIndex)
+              val timeVal = topkWrapper.parseMillis(x, tsCol)
+              (key, (freq, timeVal))
+            
+          }
+          
+      }            
+                   
+    } )
+    val partCount = Utils.getAllExecutorsMemoryStatus(context.sparkContext).
+      keySet.size
+    pairRDD.partitionBy(new Partitioner() {
+      override def numPartitions: Int = partCount 
+      override def getPartition(key: Any) = scala.math.abs(key.hashCode()) % partCount
+    }).foreachPartition((x: Iterator[(Any, Any)]) => {
+      context.addDataForTopK(name, topkWrapper, x)(ct)})
+    /*df.foreachPartition((x: Iterator[Row]) => {
       context.addDataForTopK(name, topkWrapper, x)(ct)
-    })
+    })*/
   }
 
   /**
