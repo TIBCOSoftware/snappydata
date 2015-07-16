@@ -121,9 +121,13 @@ private[sql] case class CreateStreamTableCmd(streamName: String,
       Array.empty[String], "org.apache.spark.sql.sources.StreamSource", options)
     val plan = LogicalRelation(resolved.relation)
 
+    val catalog = sqlContext.asInstanceOf[SnappyContext].catalog
     // add the stream to the streamtables in the catalog
-    sqlContext.asInstanceOf[SnappyContext].catalog.streamTables.put(
-      streamName, plan)
+    catalog.streamTables.get(streamName) match {
+      case None=>
+        catalog.streamTables.put(streamName, plan)
+      case Some(x) => throw new IllegalStateException(s"Stream name $streamName already defined")
+    }
     Seq.empty
   }
 }
@@ -188,11 +192,13 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
 
     val sr = catalog.getStreamTableRelation(tableName)
 
-    //val sampleTables =
     // Add the sample table to the catalog as well.
+    val strcts = catalog.streamToStructureMap.getOrElse(tableName, Nil)
+    if (strcts.contains(sampledTableName))
+      throw new IllegalStateException(s"A structure with name $sampledTableName is already defined")
 
     catalog.streamToStructureMap.put(tableName,
-      catalog.streamToStructureMap.getOrElse(tableName, Nil) :+ sampledTableName)
+      strcts :+ sampledTableName)
     // Register the sample table
     // StratifiedSampler is not expecting basetable, remove it.
     snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
