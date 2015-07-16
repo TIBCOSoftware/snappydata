@@ -414,6 +414,14 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k.size)
   }
+
+  private var storeConfig: Map[String,String] = _
+  def setExternalStoreConfig(conf: Map[String,String]) = {
+    this.storeConfig = conf
+  }
+  def getExternalStoreConfig: Map[String,String] = {
+    storeConfig
+  }
 }
 
 object snappy extends Serializable {
@@ -449,7 +457,6 @@ object snappy extends Serializable {
       StreamingCtxtHolder(s, batchInterval)
     }
   }
-
 }
 
 object SnappyContext {
