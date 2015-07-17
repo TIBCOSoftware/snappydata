@@ -26,7 +26,7 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long, val
   val timeEpoch = new TimeEpoch(intervalSize, epoch0)
 
   for (x <- 1 to maxIntervals) {
-    streamAggregates += new StreamSummary[T](maxIntervals)
+    streamAggregates += new StreamSummary[T](capacity)
     timeEpoch.increment()
   }
 

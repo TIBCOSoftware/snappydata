@@ -342,10 +342,11 @@ protected[sql] class SnappyContext(sc: SparkContext)
    *                  If passed as null, oldest interval is considered as the start interval.
    * @param endTime  end time as string of the format "yyyy-mm-dd hh:mm:ss".
    *                 If passed as null, newest interval is considered as the last interval.
+   * @param k Optional. Number of elements to be queried. This is to be passed only for stream summary
    * @return returns the top K elements with their respective frequencies between two time
    */
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: String = null, endTime: String = null): DataFrame = {
+      startTime: String = null, endTime: String = null, k: Int = -1): DataFrame = {
 
     val stime = if (startTime == null) 0L
     else
@@ -355,33 +356,37 @@ protected[sql] class SnappyContext(sc: SparkContext)
     else
       CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
 
-    queryTopK[T](topKName, stime, etime)
+    queryTopK[T](topKName, stime, etime, k)
   }
 
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long): DataFrame = {
-    val k: TopKWrapper = catalog.topKStructures(topKName)
+      startTime: Long, endTime: Long, k: Int): DataFrame = {
+    val topk: TopKWrapper = catalog.topKStructures(topKName)
 
-    if (k.stsummary)
-      queryTopkStreamSummary(topKName, startTime, endTime, k)
-    else
-      queryTopkHokusai(topKName, startTime, endTime, k)
+    if (topk.stsummary) {
+      val size = if (k != -1) k else topk.size
+      queryTopkStreamSummary(topKName, startTime, endTime, topk, size)
+    }
+    else {
+      if (k != -1) throw new IllegalArgumentException("K cannot be specified for TopK with Hokusai.")
+      queryTopkHokusai(topKName, startTime, endTime, topk)
+    }
   }
 
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long,
-      k: TopKWrapper): DataFrame = {
+      topk: TopKWrapper, k: Int): DataFrame = {
     val topKRDD = new TopKStreamRDD[T](topKName, startTime, endTime, this).
         reduceByKey(_ + _).map(tuple =>
       Row(tuple._1, tuple._2.estimate, tuple._2.lowerBound))
 
     val aggColumn = "EstimatedValue"
     val errorBounds = "DeltaError"
-    val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
+    val topKSchema = StructType(Array(topk.key, StructField(aggColumn, LongType),
       StructField(errorBounds, LongType)))
 
     val df = createDataFrame(topKRDD, topKSchema)
-    df.sort(df.col(aggColumn).desc).limit(k.size)
+    df.sort(df.col(aggColumn).desc).limit(k)
   }
 
   def queryTopkHokusai[T: ClassTag](topKName: String,
