@@ -13,8 +13,8 @@ import org.apache.spark.sql.sources.{LogicalRelation, StreamRelation}
 import org.apache.spark.sql.types.StructType
 
 /**
- * Catalog primarily tracking stream/topK tables and returning LogicalPlan to materialize
- * these entities.
+ * Catalog primarily tracking stream/topK tables and returning LogicalPlan
+ * to materialize these entities.
  *
  * Created by Soubhik on 5/13/15.
  */
@@ -54,19 +54,21 @@ class SnappyStoreCatalog(context: SnappyContext,
       sampleTables -= tblName
     }
     streamToStructureMap.get(tblName) match {
-      case Some(x) => if (x.size > 0)
-        throw new IllegalStateException(s"Stream $tblName has structure(s) ${x.mkString(",")} associated with it")
-        else
+      case Some(x) => if (x.nonEmpty)
+        throw new IllegalStateException(s"Stream $tblName has structure(s)" +
+            s" ${x.mkString(",")} associated with it")
+      else
         streamToStructureMap -= tblName
       case None => // do nothing
     }
     if (streamTables.contains(tblName)) {
       streamTables -= tblName
     }
-    val matchingStream = streamToStructureMap filter  { p : (String, Seq[String]) =>
+    streamToStructureMap filter { p: (String, Seq[String]) =>
       p._2.exists(tblName.equals(_))
     } foreach { s => val difflist = s._2.diff(List(tblName))
-      streamToStructureMap.put(s._1, difflist)}
+      streamToStructureMap.put(s._1, difflist)
+    }
     super.unregisterTable(tableIdentifier)
   }
 
@@ -78,7 +80,7 @@ class SnappyStoreCatalog(context: SnappyContext,
     val tblName = tableIdent.last
 
     sampleTables.get(tblName).map(_.logicalPlan).getOrElse {
-      streamTables.get(tblName).getOrElse(
+      streamTables.getOrElse(tblName,
         tables.getOrElse(tblName,
           sys.error(s"Table Not Found: $tblName")))
     }

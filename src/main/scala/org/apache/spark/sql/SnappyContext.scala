@@ -107,11 +107,11 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     catalog.topKStructures.filter {
       case (name, topkstruct) => sampleTab.contains(name)
     } foreach {
-      case (name, topkWrapper) =>
-        val clazz = SqlUtils.getInternalType(topkWrapper.schema(topkWrapper.key.name).dataType)
+      case (name, topKWrapper) =>
+        val clazz = SqlUtils.getInternalType(
+          topKWrapper.schema(topKWrapper.key.name).dataType)
         val ct = ClassTag(clazz)
-        SnappyContext.populateTopK(tDF, topkWrapper, this, name)(ct)
-
+        SnappyContext.populateTopK(tDF, topKWrapper, this, name)(ct)
     }
 
     // add to list in relation
@@ -350,8 +350,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
     // first collect keys from across the cluster
 
-    val topKRDD = TopKRDD.resultRDD(topKName, startTime, endTime,
-       this)
+    val topKRDD = TopKRDD.resultRDD[T](topKName, startTime, endTime, this)
         .reduceByKey(_ + _).mapPreserve{case (key, approx) =>
         Row(key, approx.estimate, approx)}
 
