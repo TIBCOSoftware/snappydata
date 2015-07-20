@@ -171,7 +171,7 @@ object PoolProperty extends Enumeration {
 
   def Value(i: Int, name: String, tomcatMethod: (TConf, String) => Unit,
       hikariMethod: (HConf, String) => Unit,
-      alternateNames: Seq[String] = NO_NAMES) =
+      alternateNames: Seq[String]) =
     new Type(i, name, tomcatMethod, hikariMethod, alternateNames)
 
   def Value(name: String, tomcatMethod: (TConf, String) => Unit,
