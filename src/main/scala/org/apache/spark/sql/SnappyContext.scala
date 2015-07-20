@@ -8,7 +8,6 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.util.SqlUtils
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.Analyzer
@@ -17,12 +16,14 @@ import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.row.UpdatableRelation
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
-import org.apache.spark.sql.sources.{CastLongTime, StreamStrategy, WeightageRule}
+import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StreamStrategy, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
+import org.apache.spark.{SparkContext, TaskContext}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -30,7 +31,7 @@ import org.apache.spark.streaming.{StreamingContext, Time}
  *
  * Created by Soubhik on 5/13/15.
  */
-protected[sql] class SnappyContext(sc: SparkContext)
+protected[sql] final class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
   self =>
@@ -297,6 +298,47 @@ protected[sql] class SnappyContext(sc: SparkContext)
       catalog.getStreamTable(streamTableName).schema, topkOptions)
   }
 
+  // insert/update/delete/drop operations on an external table
+
+  private def getUpdatableRelation(tableName: String): UpdatableRelation = {
+    catalog.lookupRelation(Seq(tableName)) match {
+      case LogicalRelation(u: UpdatableRelation) => u
+      case _ => throw new AnalysisException(
+        s"$tableName is not an updatable table")
+    }
+  }
+
+  def insert(tableName: String, row: Row): Int = {
+    getUpdatableRelation(tableName).insert(row)
+  }
+
+  def update(tableName: String, updatedColumns: Row, filterExpr: String,
+      setColumns: String*): Int = {
+    getUpdatableRelation(tableName).update(updatedColumns, setColumns.toSeq,
+      filterExpr)
+  }
+
+  def delete(tableName: String, filterExpr: String): Int = {
+    getUpdatableRelation(tableName).delete(filterExpr)
+  }
+
+  def dropExternalTable(tableName: String): Unit = {
+    val df = table(tableName)
+    // additional cleanup for external tables, if required
+    df.logicalPlan match {
+      case LogicalRelation(br) => br match {
+        case u: UpdatableRelation =>
+          cacheManager.tryUncacheQuery(df)
+          catalog.unregisterTable(Seq(tableName))
+          u.destroy()
+      }
+      case _ => throw new AnalysisException(
+        s"Table $tableName not an external table")
+    }
+  }
+
+  // end of insert/update/delete/drop operations
+
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
     new Analyzer(catalog, functionRegistry, conf) {
@@ -373,11 +415,13 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
   }
 
+  import snappy.RDDExtensions
+
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long,
       topk: TopKWrapper, k: Int): DataFrame = {
-    val topKRDD = new TopKStreamRDD[T](topKName, startTime, endTime, this).
-        reduceByKey(_ + _).map(tuple =>
+    val topKRDD = TopKRDD.streamRDD[T](topKName, startTime, endTime, this).
+        reduceByKey(_ + _).mapPreserve(tuple =>
       Row(tuple._1, tuple._2.estimate, tuple._2.lowerBound))
 
     val aggColumn = "EstimatedValue"
@@ -397,7 +441,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // using the straightforward approach for now
 
     // first collect keys from across the cluster
-    val combinedKeys = new TopKKeysRDD[T](topKName, startTime, endTime, this)
+    val combinedKeys = TopKRDD.keysRDD[T](topKName, startTime, endTime, this)
         .reduce { (map1, map2) =>
       // choose bigger of the two maps as resulting map
       val (m1, m2) = if (map1.size < map2.size) (map2, map1) else (map1, map2)
@@ -407,9 +451,9 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
     val iter = combinedKeys.iterator
 
-    val topKRDD = new TopKResultRDD(topKName, startTime, endTime,
+    val topKRDD = TopKRDD.resultRDD(topKName, startTime, endTime,
       Array.fill(combinedKeys.size)(iter.next()), this)
-        .reduceByKey(_ + _).map(tuple =>
+        .reduceByKey(_ + _).mapPreserve(tuple =>
       Row(tuple._1, tuple._2.estimate, tuple._2))
 
     val aggColumn = "EstimatedValue"
@@ -420,11 +464,13 @@ protected[sql] class SnappyContext(sc: SparkContext)
     df.sort(df.col(aggColumn).desc).limit(k.size)
   }
 
-  private var storeConfig: Map[String,String] = _
-  def setExternalStoreConfig(conf: Map[String,String]) = {
+  private var storeConfig: Map[String, String] = _
+
+  def setExternalStoreConfig(conf: Map[String, String]) = {
     this.storeConfig = conf
   }
-  def getExternalStoreConfig: Map[String,String] = {
+
+  def getExternalStoreConfig: Map[String, String] = {
     storeConfig
   }
 }
@@ -462,6 +508,36 @@ object snappy extends Serializable {
       StreamingCtxtHolder(s, batchInterval)
     }
   }
+
+  implicit class RDDExtensions[T: ClassTag](rdd: RDD[T]) extends Serializable {
+
+    /**
+     * Return a new RDD by applying a function to all elements of this RDD.
+     */
+    def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
+      val cleanF = rdd.sparkContext.clean(f)
+      new MapPartitionsPreserveRDD[U, T](rdd,
+        (context, pid, iter) => iter.map(cleanF))
+    }
+
+    /**
+     * Return a new RDD by applying a function to each partition of given RDD.
+     * This variant also preserves the preferred locations of parent RDD.
+     *
+     * `preservesPartitioning` indicates whether the input function preserves
+     * the partitioner, which should be `false` unless this is a pair RDD and
+     * the input function doesn't modify the keys.
+     */
+    def mapPartitionsPreserve[U: ClassTag](
+        f: Iterator[T] => Iterator[U],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      val cleanedF = rdd.sparkContext.clean(f)
+      new MapPartitionsPreserveRDD(rdd,
+        (context: TaskContext, index: Int, iter: Iterator[T]) => cleanedF(iter),
+        preservesPartitioning)
+    }
+  }
+
 }
 
 object SnappyContext {

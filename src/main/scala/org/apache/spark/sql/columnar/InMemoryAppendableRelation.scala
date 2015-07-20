@@ -29,7 +29,6 @@ package org.apache.spark.sql.columnar
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable.ArrayBuffer
-import scala.reflect.ClassTag
 
 import org.apache.spark._
 import org.apache.spark.rdd.{RDD, UnionRDD}
@@ -37,8 +36,9 @@ import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{CachedMapPartitionsRDD, CachedRDD, Row}
+import org.apache.spark.sql.{CachedRDD, Row}
 import org.apache.spark.storage.StorageLevel
 
 private[sql] class InMemoryAppendableRelation(
@@ -61,8 +61,8 @@ private[sql] class InMemoryAppendableRelation(
     with MultiInstanceRelation {
 
   private[sql] val reservoirRDD =
-    if (isSampledTable) Some(new CachedRDD(tableName.get,
-      schema, child.sqlContext))
+    if (isSampledTable) Some(CachedRDD.samplerCache(tableName.get,
+      child.sqlContext))
     else None
 
   private val bufferLock = new ReentrantReadWriteLock()
@@ -236,21 +236,13 @@ private[sql] class InMemoryAppendableColumnarTableScan(
     override val relation: InMemoryAppendableRelation)
     extends InMemoryColumnarTableScan(attributes, predicates, relation) {
 
-  protected def mapPartitions[T: ClassTag, U: ClassTag](rdd: RDD[T])
-      (f: Iterator[T] => Iterator[U],
-          preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
-    val cleanedF = rdd.sparkContext.clean(f)
-    new CachedMapPartitionsRDD(rdd, (context: TaskContext, index: Int,
-        iter: Iterator[T]) => cleanedF(iter), preservesPartitioning)
-  }
-
   protected override def doExecute(): RDD[Row] = {
 
-    val reservoirRDD = relation.reservoirRDD
-    if (reservoirRDD.isEmpty) {
+    val rdd = relation.reservoirRDD
+    if (rdd.isEmpty) {
       return super.doExecute()
     }
-    val reservoirRows: RDD[Row] = mapPartitions(reservoirRDD.get) { rows =>
+    val reservoirRows: RDD[Row] = rdd.get.mapPartitionsPreserve { rows =>
 
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with

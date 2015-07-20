@@ -11,9 +11,9 @@ import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.{SQLContext, AnalysisException, Row}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext}
+import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
@@ -227,6 +227,20 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     }
   }
 
+  def mapExecutors[T: ClassTag](sqlContext: SQLContext,
+      f: () => Iterator[T]): RDD[T] = {
+    val sc = sqlContext.sparkContext
+    val cleanedF = sc.clean(f)
+    new ExecutorLocalRDD[T](sc,
+      (context: TaskContext, part: ExecutorLocalPartition) => cleanedF())
+  }
+
+  def mapExecutors[T: ClassTag](sc: SparkContext,
+      f: (TaskContext, ExecutorLocalPartition) => Iterator[T]): RDD[T] = {
+    val cleanedF = sc.clean(f)
+    new ExecutorLocalRDD[T](sc, cleanedF)
+  }
+
   def normalizeOptionKey(k: String): String = {
     var index = 0
     val len = k.length
@@ -258,7 +272,8 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   }
 }
 
-abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)
+class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext,
+    f: (TaskContext, ExecutorLocalPartition) => Iterator[T])
     extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
@@ -280,6 +295,17 @@ abstract class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext)
 
   override def getPreferredLocations(split: Partition): Seq[String] =
     Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)
+
+  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
+    val part = split.asInstanceOf[ExecutorLocalPartition]
+    val thisBlockId = SparkEnv.get.blockManager.blockManagerId
+    if (part.blockId != thisBlockId) {
+      throw new IllegalStateException(
+        s"Unexpected execution of $part on $thisBlockId")
+    }
+
+    f(context, part)
+  }
 }
 
 class ExecutorLocalPartition(override val index: Int,
