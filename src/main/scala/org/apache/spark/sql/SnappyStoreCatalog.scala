@@ -41,6 +41,7 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   override def unregisterAllTables(): Unit = {
     sampleTables.clear()
+    streamToStructureMap.clear()
   }
 
   override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
@@ -51,9 +52,21 @@ class SnappyStoreCatalog(context: SnappyContext,
     if (sampleTables.contains(tblName)) {
       context.truncateTable(tblName)
       sampleTables -= tblName
-      return
     }
-
+    streamToStructureMap.get(tblName) match {
+      case Some(x) => if (x.size > 0)
+        throw new IllegalStateException(s"Stream $tblName has structure(s) ${x.mkString(",")} associated with it")
+        else
+        streamToStructureMap -= tblName
+      case None => // do nothing
+    }
+    if (streamTables.contains(tblName)) {
+      streamTables -= tblName
+    }
+    val matchingStream = streamToStructureMap filter  { p : (String, Seq[String]) =>
+      p._2.exists(tblName.equals(_))
+    } foreach { s => val difflist = s._2.diff(List(tblName))
+      streamToStructureMap.put(s._1, difflist)}
     super.unregisterTable(tableIdentifier)
   }
 
@@ -65,8 +78,9 @@ class SnappyStoreCatalog(context: SnappyContext,
     val tblName = tableIdent.last
 
     sampleTables.get(tblName).map(_.logicalPlan).getOrElse {
-      tables.getOrElse(tblName,
-        sys.error(s"Table Not Found: $tblName"))
+      streamTables.get(tblName).getOrElse(
+        tables.getOrElse(tblName,
+          sys.error(s"Table Not Found: $tblName")))
     }
   }
 

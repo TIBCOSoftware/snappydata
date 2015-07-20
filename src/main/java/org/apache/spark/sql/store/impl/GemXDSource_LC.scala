@@ -1,18 +1,20 @@
 package org.apache.spark.sql.store.impl
 
-import java.sql.{Blob, PreparedStatement, DriverManager, Connection}
+import java.sql.{Blob, Connection, DriverManager, PreparedStatement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import scala.collection.mutable.HashMap
+
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.columnar.CachedBatch
 import org.apache.spark.sql.store.ExternalStore
 
-import scala.collection.mutable.HashMap
-
 /**
- * Created by neeraj on 16/7/15.
+ * ExternalStore implementation for GemFireXD.
+ *
+ * Created by Neeraj on 16/7/15.
  */
 class GemXDSource_LC extends ExternalStore {
 
@@ -81,16 +83,10 @@ class GemXDSource_LC extends ExternalStore {
 
   private def getConnURL(): String = {
     val sc = SparkContext.getOrCreate()
-    sc match {
-      case snc: SnappyContext => {
-        val config = snc.getExternalStoreConfig
-        val host = config.getOrElse("host", "localhost")
-        val port = config.getOrElse("port", "1527")
-        "jdbc:gemfirexd://" + host + ":" + port + "/"
-      }
-      case sc =>
-        throw new IllegalStateException("Extended snappy operations " +
-          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
-    }
+    val snc = SnappyContext(sc)
+    val config = snc.getExternalStoreConfig
+    val host = config.getOrElse("host", "localhost")
+    val port = config.getOrElse("port", "1527")
+    "jdbc:gemfirexd://" + host + ":" + port + "/"
   }
 }

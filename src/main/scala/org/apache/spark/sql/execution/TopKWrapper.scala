@@ -148,8 +148,9 @@ object TopKWrapper {
     }
     if (isStreamParam) {
       if (!stSummary) {
-        throw new AnalysisException("TopK parameters shouldn't specify " +
-          "stream summary params for a Hokusai.")
+
+        throw new AnalysisException("TopK parameters should specify " +
+            "stream summary as true with stream summary params.")
       }
       if (tsCol < 0) {
         throw new AnalysisException(
