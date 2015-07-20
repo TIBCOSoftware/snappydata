@@ -24,7 +24,8 @@ class JDBCUpdatableRelation(
     table: String,
     override val schema: StructType,
     parts: Array[Partition],
-    properties: Properties,
+    _poolProps: Map[String, String],
+    connProperties: Properties,
     ddlExtensions: Option[String],
     @transient val sqlContext: SQLContext)
     extends BaseRelation
@@ -36,6 +37,9 @@ class JDBCUpdatableRelation(
   override val needConversion: Boolean = false
 
   val driver = DriverRegistry.getDriverClassName(url)
+
+  private[this] val poolProperties =
+    JDBCUpdatableRelation.getAllPoolProperties(url, driver, _poolProps)
 
   final val dialect = JdbcDialects.get(url)
 
@@ -53,11 +57,10 @@ class JDBCUpdatableRelation(
   // end up invoking this multiple times in Spark execution workflow. Later
   // should make it "Ignore" so that it will work with existing tables in
   // backend as well (or can provide in OPTIONS for user-configured)
-  createTable(url, table, properties, SaveMode.ErrorIfExists)
+  createTable(SaveMode.ErrorIfExists)
 
-  def createTable(url: String, table: String,
-      connectionProperties: Properties, mode: SaveMode): Unit = {
-    val conn = JdbcUtils.createConnection(url, connectionProperties)
+  def createTable(mode: SaveMode): Unit = {
+    val conn = JdbcUtils.createConnection(url, connProperties)
     try {
       var tableExists = JdbcUtils.tableExists(conn, table)
 
@@ -99,31 +102,30 @@ class JDBCUpdatableRelation(
       filters: Array[Filter]): RDD[Row] = {
     new JDBCRDD(
       sqlContext.sparkContext,
-      JDBCUpdatableRelation.getConnector(table, url, driver, properties),
+      JDBCUpdatableRelation.getConnector(table, driver, poolProperties,
+        connProperties),
       JDBCUpdatableRelation.pruneSchema(schema, requiredColumns),
       table,
       requiredColumns,
       filters,
       parts,
-      properties)
+      connProperties)
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    jdbc(data, url, table, properties,
-      if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    jdbc(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
   }
 
-  def jdbc(df: DataFrame, url: String, table: String,
-      connectionProperties: Properties, mode: SaveMode): Unit = {
-    createTable(url, table, connectionProperties, mode)
-    JDBCWriteDetails.saveTable(df, url, table, connectionProperties)
+  def jdbc(df: DataFrame, mode: SaveMode): Unit = {
+    createTable(mode)
+    JDBCWriteDetails.saveTable(df, url, table, connProperties)
   }
 
   // TODO: SW: should below all be executed from driver or some random executor?
 
   override def insert(row: Row): Int = {
-    val connection = JDBCUpdatableRelation.createConnection(table, url,
-      driver, properties)
+    val connection = JDBCUpdatableRelation.createConnection(table,
+      poolProperties, connProperties)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
       JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
@@ -151,8 +153,8 @@ class JDBCUpdatableRelation(
             s"column name '$col' among (${schema.fieldNames.mkString(", ")})"))
       index += 1
     }
-    val connection = JDBCUpdatableRelation.createConnection(table, url,
-      driver, properties)
+    val connection = JDBCUpdatableRelation.createConnection(table,
+      poolProperties, connProperties)
     try {
       val setStr = setColumns.mkString("SET ", "=?, ", "=?")
       val whereStr =
@@ -170,8 +172,8 @@ class JDBCUpdatableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = JDBCUpdatableRelation.createConnection(table, url,
-      driver, properties)
+    val connection = JDBCUpdatableRelation.createConnection(table,
+      poolProperties, connProperties)
     try {
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
@@ -192,7 +194,7 @@ class JDBCUpdatableRelation(
       Iterator.empty
     })
     // drop the external table using a non-pool connection
-    val conn = JdbcUtils.createConnection(url, properties)
+    val conn = JdbcUtils.createConnection(url, connProperties)
     try {
       conn.createStatement().executeUpdate(s"DROP TABLE $table")
     } finally {
@@ -203,16 +205,30 @@ class JDBCUpdatableRelation(
 
 object JDBCUpdatableRelation extends Logging {
 
-  def createConnection(id: String, url: String, driver: String,
-      properties: Properties): Connection = {
-    ConnectionPool.getPoolDataSource(id, Map(
-      PoolProperty.URL -> url,
-      PoolProperty.DriverClassName -> driver), properties,
+  def getAllPoolProperties(url: String, driver: String,
+      poolProps: Map[_, String]): Map[_, String] = {
+    if (driver == null || driver.isEmpty) {
+      if (poolProps.isEmpty) {
+        Map(PoolProperty.URL -> url)
+      } else {
+        poolProps.asInstanceOf[Map[Any, String]] + (PoolProperty.URL -> url)
+      }
+    } else if (poolProps.isEmpty) {
+      Map(PoolProperty.URL -> url, PoolProperty.DriverClassName -> driver)
+    } else {
+      poolProps.asInstanceOf[Map[Any, String]] + (PoolProperty.URL -> url) +
+          (PoolProperty.DriverClassName -> driver)
+    }
+  }
+
+  def createConnection(id: String, poolProps: Map[_, String],
+      connProps: Properties): Connection = {
+    ConnectionPool.getPoolDataSource(id, poolProps, connProps,
       hikariCP = false).getConnection
   }
 
-  def getConnector(id: String, driver: String, url: String,
-      properties: Properties): () => Connection = {
+  def getConnector(id: String, driver: String, poolProps: Map[_, String],
+      connProps: Properties): () => Connection = {
     () => {
       try {
         if (driver != null) DriverRegistry.register(driver)
@@ -220,7 +236,7 @@ object JDBCUpdatableRelation extends Logging {
         case cnfe: ClassNotFoundException =>
           logWarning(s"Couldn't find driver class $driver", cnfe)
       }
-      createConnection(id, url, driver, properties)
+      createConnection(id, poolProps, connProps)
     }
   }
 
@@ -327,6 +343,7 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     val table = parameters.remove("dbtable").getOrElse(
       sys.error("Option 'dbtable' not specified"))
     val driver = parameters.remove("driver")
+    val poolProperties = parameters.remove("poolproperties")
     val ddlExtensions = parameters.remove("ddlextensions")
     val partitionColumn = parameters.remove("partitionColumn")
     val lowerBound = parameters.remove("lowerBound")
@@ -334,6 +351,16 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     val numPartitions = parameters.remove("numPartitions")
 
     driver.foreach(DriverRegistry.register)
+
+    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+      val eqIndex = s.indexOf('=')
+      if (eqIndex >= 0) {
+        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
+      } else {
+        // assume a boolean property to be enabled
+        (s.trim, "true")
+      }
+    }: _*)).getOrElse(Map.empty)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
@@ -349,9 +376,9 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
     // remaining parameters are passed as properties to getConnection
-    val properties = new Properties()
-    parameters.foreach(kv => properties.setProperty(kv._1, kv._2))
-    new JDBCUpdatableRelation(url, table, schema, parts, properties,
+    val connProps = new Properties()
+    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+    new JDBCUpdatableRelation(url, table, schema, parts, poolProps, connProps,
       ddlExtensions, sqlContext)
   }
 }
