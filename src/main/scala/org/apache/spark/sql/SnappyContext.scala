@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{ universe => u }
+import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.util.SqlUtils
 import org.apache.spark.rdd.RDD
@@ -14,21 +14,17 @@ import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.columnar.{ InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation }
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row.UpdatableRelation
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
-import org.apache.spark.sql.types.{ LongType, StructField, StructType }
-import io.snappydata.util.SqlUtils
-import org.apache.spark.SparkContext._
-import org.apache.spark.Partitioner
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StreamStrategy, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{SparkContext, TaskContext}
+import org.apache.spark.{Partitioner, SparkContext, TaskContext}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -36,7 +32,6 @@ import org.apache.spark.{SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-
 protected[sql] final class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
@@ -240,12 +235,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val df = table(tableName)
     // additional cleanup for external tables, if required
     df.logicalPlan match {
-      case LogicalRelation(br) => br match {
-        case u: UpdatableRelation =>
-          cacheManager.tryUncacheQuery(df)
-          catalog.unregisterTable(Seq(tableName))
-          u.destroy()
-      }
+      case LogicalRelation(br) =>
+        cacheManager.tryUncacheQuery(df)
+        catalog.unregisterTable(Seq(tableName))
+        br match {
+          case u: UpdatableRelation => u.destroy()
+        }
       case _ => throw new AnalysisException(
         s"Table $tableName not an external table")
     }
@@ -460,15 +455,15 @@ object SnappyContext {
     }
   }
 
-  def addDataForTopK[T: ClassTag](name: String, topkWrapper: TopKWrapper,
+  def addDataForTopK[T: ClassTag](name: String, topKWrapper: TopKWrapper,
     iterator: Iterator[(T, Any)]): Unit = if (iterator.hasNext) {
     var tupleIterator = iterator
-    val tsCol = if (topkWrapper.timeInterval > 0)
-      topkWrapper.timeSeriesColumn
+    val tsCol = if (topKWrapper.timeInterval > 0)
+      topKWrapper.timeSeriesColumn
     else -1
     val epoch = () => {
-      if (topkWrapper.epoch != -1L) {
-        topkWrapper.epoch
+      if (topKWrapper.epoch != -1L) {
+        topKWrapper.epoch
       } else if (tsCol >= 0) {
         var epoch0 = -1L
         val iter = tupleIterator.asInstanceOf[Iterator[(T, (Long, Long))]]
@@ -492,22 +487,22 @@ object SnappyContext {
     }
     var topkhokusai: TopKHokusai[T] = null
     var streamSummaryAggr: StreamSummaryAggregation[T] = null
-    if (topkWrapper.stsummary) {
+    if (topKWrapper.stsummary) {
       streamSummaryAggr = StreamSummaryAggregation[T](name,
-        topkWrapper.size, tsCol, topkWrapper.timeInterval,
-        epoch, topkWrapper.maxinterval)
+        topKWrapper.size, tsCol, topKWrapper.timeInterval,
+        epoch, topKWrapper.maxinterval)
     } else {
-      topkhokusai = TopKHokusai[T](name, topkWrapper.cms,
-        topkWrapper.size, tsCol, topkWrapper.timeInterval, epoch)
+      topkhokusai = TopKHokusai[T](name, topKWrapper.cms,
+        topKWrapper.size, tsCol, topKWrapper.timeInterval, epoch)
     }
 
-    val topKKeyIndex = topkWrapper.schema.fieldIndex(topkWrapper.key.name)
+    //val topKKeyIndex = topKWrapper.schema.fieldIndex(topKWrapper.key.name)
     if (tsCol < 0) {
-      if (topkWrapper.stsummary) {
+      if (topKWrapper.stsummary) {
         throw new IllegalStateException(
           "Timestamp column is required for stream summary")
       }
-      topkWrapper.frequencyCol match {
+      topKWrapper.frequencyCol match {
         case None =>
           topkhokusai.addEpochData(
             tupleIterator.map(_._1).toSeq)
@@ -528,7 +523,7 @@ object SnappyContext {
       }
     } else {
       val dataBuffer = new mutable.ArrayBuffer[KeyFrequencyWithTimestamp[T]]
-      val buffer = topkWrapper.frequencyCol match {
+      val buffer = topKWrapper.frequencyCol match {
         case None =>
           tupleIterator.asInstanceOf[Iterator[(T, Long)]] foreach {
             case (key, timeVal) =>
@@ -543,7 +538,7 @@ object SnappyContext {
           }
           dataBuffer
       }
-      if (topkWrapper.stsummary)
+      if (topKWrapper.stsummary)
         streamSummaryAggr.addItems(buffer)
       else
         topkhokusai.addTimestampedData(buffer)
@@ -561,8 +556,6 @@ object SnappyContext {
     }).foreachPartition((iter: Iterator[(Any, Any)]) =>
       SnappyContext.addDataForTopK(name, topkWrapper, iter.asInstanceOf[Iterator[(T, Any)]]))
   }
-  
-  
 }
 
 //end of SnappyContext
@@ -584,14 +577,15 @@ private[sql] case class SnappyOperations(context: SnappyContext,
 
     // Create a very long timeInterval when the topK is being created
     // on a DataFrame.
-    val topkWrapper = TopKWrapper(name, options, schema)
-    context.catalog.topKStructures.put(name, topkWrapper)
-    val clazz = SqlUtils.getInternalType(topkWrapper.schema(topkWrapper.key.name).dataType)
+    val topKWrapper = TopKWrapper(name, options, schema)
+    context.catalog.topKStructures.put(name, topKWrapper)
+    val clazz = SqlUtils.getInternalType(
+      topKWrapper.schema(topKWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
-    SnappyContext.populateTopK(df, topkWrapper, context, name)(ct)
+    SnappyContext.populateTopK(df, topKWrapper, context, name)(ct)
 
     /*df.foreachPartition((x: Iterator[Row]) => {
-      context.addDataForTopK(name, topkWrapper, x)(ct)
+      context.addDataForTopK(name, topKWrapper, x)(ct)
     })*/
   }
 
