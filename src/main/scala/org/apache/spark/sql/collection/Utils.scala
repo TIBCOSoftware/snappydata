@@ -25,7 +25,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   final val Z95Squared = Z95Percent * Z95Percent
 
   implicit class StringExtensions(val s: String) extends AnyVal {
-    def normalize = normalizeOptionKey(s)
+    def normalize = normalizeId(s)
   }
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
@@ -37,9 +37,9 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   }
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
-    val colT = normalizeOptionKey(col.trim)
+    val colT = normalizeId(col.trim)
     cols.indices.collectFirst {
-      case index if colT == normalizeOptionKey(cols(index)) => index
+      case index if colT == normalizeId(cols(index)) => index
     }.getOrElse {
       throw new AnalysisException(
         s"""$module: Cannot resolve column name "$col" among
@@ -84,10 +84,10 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
 
   def matchOption(optName: String,
       options: SMap[String, Any]): Option[(String, Any)] = {
-    val optionName = normalizeOptionKey(optName)
+    val optionName = normalizeId(optName)
     options.get(optionName).map((optionName, _)).orElse {
       options.collectFirst { case (key, value)
-        if normalizeOptionKey(key) == optionName => (key, value)
+        if normalizeId(key) == optionName => (key, value)
       }
     }
   }
@@ -241,7 +241,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     new ExecutorLocalRDD[T](sc, cleanedF)
   }
 
-  def normalizeOptionKey(k: String): String = {
+  def normalizeId(k: String): String = {
     var index = 0
     val len = k.length
     while (index < len) {
@@ -256,7 +256,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   def normalizeOptions[T](opts: Map[String, Any])
       (implicit bf: CanBuildFrom[Map[String, Any], (String, Any), T]): T =
     opts.map[(String, Any), T] {
-      case (k, v) => (normalizeOptionKey(k), v)
+      case (k, v) => (normalizeId(k), v)
     }(bf)
 
   // for mapping any tuple traversable to a mutable map

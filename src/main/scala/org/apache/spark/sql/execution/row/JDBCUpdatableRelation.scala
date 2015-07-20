@@ -40,7 +40,7 @@ class JDBCUpdatableRelation(
   final val dialect = JdbcDialects.get(url)
 
   final val schemaFields = Map(schema.fields.map { f =>
-    (Utils.normalizeOptionKey(f.name), f)
+    (Utils.normalizeId(f.name), f)
   }: _*)
 
   final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
@@ -49,6 +49,10 @@ class JDBCUpdatableRelation(
   GemFireXDDialect.init()
 
   // create table in external store once upfront
+  // TODO: currently ErrorIfExists mode is being used to ensure that we do not
+  // end up invoking this multiple times in Spark execution workflow. Later
+  // should make it "Ignore" so that it will work with existing tables in
+  // backend as well (or can provide in OPTIONS for user-configured)
   createTable(url, table, properties, SaveMode.ErrorIfExists)
 
   def createTable(url: String, table: String,
@@ -83,7 +87,7 @@ class JDBCUpdatableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val extensions = ddlExtensions.map(" " + _).getOrElse("")
-        val sql = s"CREATE TABLE $table ($schema) $extensions"
+        val sql = s"CREATE TABLE $table ($schema)$extensions"
         conn.prepareStatement(sql).executeUpdate()
       }
     } finally {
@@ -142,7 +146,7 @@ class JDBCUpdatableRelation(
     val setFields = new Array[StructField](ncols)
     var index = 0
     setColumns.foreach { col =>
-      setFields(index) = schemaFields.getOrElse(Utils.normalizeOptionKey(col),
+      setFields(index) = schemaFields.getOrElse(Utils.normalizeId(col),
         throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
             s"column name '$col' among (${schema.fieldNames.mkString(", ")})"))
       index += 1
@@ -199,6 +203,14 @@ class JDBCUpdatableRelation(
 
 object JDBCUpdatableRelation extends Logging {
 
+  def createConnection(id: String, url: String, driver: String,
+      properties: Properties): Connection = {
+    ConnectionPool.getPoolDataSource(id, Map(
+      PoolProperty.URL -> url,
+      PoolProperty.DriverClassName -> driver), properties,
+      hikariCP = false).getConnection
+  }
+
   def getConnector(id: String, driver: String, url: String,
       properties: Properties): () => Connection = {
     () => {
@@ -225,14 +237,6 @@ object JDBCUpdatableRelation extends Logging {
       x.metadata.getString("name") -> x
     }: _*)
     new StructType(columns map { name => fieldMap(name) })
-  }
-
-  def createConnection(id: String, url: String, driver: String,
-      properties: Properties): Connection = {
-    ConnectionPool.getPoolDataSource(id, Map(
-      PoolProperty.URL -> url,
-      PoolProperty.DriverClass -> driver), properties,
-      hikariCP = false).getConnection
   }
 
   def getInsertString(table: String, schema: StructType) = {

@@ -459,6 +459,7 @@ object SnappyContext {
       atomicContext.get
     }
   }
+
   def addDataForTopK[T: ClassTag](name: String, topkWrapper: TopKWrapper,
     iterator: Iterator[(T, Any)]): Unit = if (iterator.hasNext) {
     var tupleIterator = iterator
@@ -473,9 +474,8 @@ object SnappyContext {
         val iter = tupleIterator.asInstanceOf[Iterator[(T, (Long, Long))]]
         val tupleBuf = new mutable.ArrayBuffer[(T, (Long, Long))](4)
 
-        // assume first row will have the least time
-        // TODO: this assumption may not be correct and we may need to
-        // do something more comprehensive
+        // assume first row has the least time
+        // if this is not the case then epoch needs to be provided via property
         do {
           val tuple = iter.next()
           epoch0 = tuple match {
