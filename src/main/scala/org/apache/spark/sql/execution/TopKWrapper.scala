@@ -5,14 +5,17 @@ import scala.collection.mutable
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.sources.CastLongTime
-import org.apache.spark.sql.types.{DataType, StructField, StructType}
+import org.apache.spark.sql.types.{ DataType, StructField, StructType }
+import org.apache.spark.sql.Row
 
 protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
-    val size: Int, val timeSeriesColumn: Int,
-    val timeInterval: Long, val schema: StructType, val key: StructField,
-    val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
-    val stsummary: Boolean) extends CastLongTime with Serializable {
-
+  val size: Int, val timeSeriesColumn: Int,
+  val timeInterval: Long, val schema: StructType, val key: StructField,
+  val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
+  val stsummary: Boolean) extends CastLongTime with Serializable {
+  
+  val rowToTupleConverter: Row => (Any, Any) = TopKWrapper.getRowToTupleConverter(this)
+  
   override protected def getNullMillis(getDefaultForNull: Boolean) =
     if (getDefaultForNull) System.currentTimeMillis() else -1L
 
@@ -30,7 +33,7 @@ protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
 object TopKWrapper {
 
   def apply(name: String, opts: Map[String, Any],
-      schema: StructType): TopKWrapper = {
+    schema: StructType): TopKWrapper = {
 
     val keyOpt = "key".normalize
     val depthOpt = "depth".normalize
@@ -99,7 +102,7 @@ object TopKWrapper {
       parseColumn(_, cols, module, "timeSeriesColumn")).getOrElse(-1)
     val timeInterval = options.remove(timeIntervalOpt).map(
       parseTimeInterval(_, module)).getOrElse(
-          if (tsCol >= 0 || stSummary) 5000L else Long.MaxValue)
+        if (tsCol >= 0 || stSummary) 5000L else Long.MaxValue)
 
     val frequencyCol = options.remove(frequencyColOpt).map(
       parseColumn(_, cols, module, "frequencyCol"))
@@ -137,16 +140,16 @@ object TopKWrapper {
 
     if (epsAndcf && widthAndDepth) {
       throw new AnalysisException("TopK parameters should specify either " +
-          "(eps, confidence) or (width, depth) but not both.")
+        "(eps, confidence) or (width, depth) but not both.")
     }
     if ((epsAndcf || widthAndDepth) && stSummary) {
       throw new AnalysisException("TopK parameters shouldn't specify " +
-          "hokusai params for a stream summary.")
+        "hokusai params for a stream summary.")
     }
     if (isStreamParam) {
       if (!stSummary) {
         throw new AnalysisException("TopK parameters shouldn't specify " +
-            "stream summary params for a Hokusai.")
+          "stream summary params for a Hokusai.")
       }
       if (tsCol < 0) {
         throw new AnalysisException(
@@ -159,5 +162,63 @@ object TopKWrapper {
 
     new TopKWrapper(name, cms, size, tsCol, timeInterval,
       schema, schema(key), frequencyCol, epoch, maxInterval, stSummary)
+  }
+
+  private def getRowToTupleConverter(topkWrapper: TopKWrapper): Row => (Any, Any) = {
+
+    val tsCol = if (topkWrapper.timeInterval > 0)
+      topkWrapper.timeSeriesColumn
+    else -1
+
+    val topKKeyIndex = topkWrapper.schema.fieldIndex(topkWrapper.key.name)
+    if (tsCol < 0) {
+      topkWrapper.frequencyCol match {
+        case None =>
+          (row: Row) => (row(topKKeyIndex), null)
+          case Some(freqCol) =>
+          (row: Row) => {
+            val freq = row(freqCol) match {
+              case num: Double => num.toLong
+              case num: Float => num.toLong
+              case num: java.lang.Double => num.longValue().toLong
+              case num: java.lang.Float => num.longValue().toLong
+              case num: java.lang.Integer => num.intValue().toLong
+              case num: java.lang.Long => num.longValue().toLong
+              case x =>x
+            }
+            (row(topKKeyIndex), freq)
+          }
+
+      }
+    } else {
+
+      topkWrapper.frequencyCol match {
+        case None =>
+          (row: Row) => {
+            val key = row(topKKeyIndex)
+            val timeVal = topkWrapper.parseMillis(row, tsCol)
+            (key, timeVal)
+          }
+
+          case Some(freqCol) =>
+          (row: Row) => {
+
+            val freq = row(freqCol) match {
+              case num: Double => num.toLong
+              case num: Float => num.toLong
+              case num: java.lang.Double => num.longValue().toLong
+              case num: java.lang.Float => num.longValue().toLong
+              case num: java.lang.Integer => num.intValue().toLong
+              case num: java.lang.Long => num.longValue().toLong
+              case x => x
+            }
+            val key = row(topKKeyIndex)
+            val timeVal = topkWrapper.parseMillis(row, tsCol)
+            (key, (freq, timeVal))
+          }
+      }
+
+    }
+
   }
 }

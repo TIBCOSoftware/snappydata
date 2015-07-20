@@ -13,7 +13,7 @@ import org.apache.spark.{Partition, TaskContext}
  * set of keys across cluster has been pre-computed.
  */
 class TopKResultRDD[T: ClassTag](name: String, startTime: Long,
-    endTime: Long, combinedKeys: Array[T], sqlContext: SQLContext)
+    endTime: Long,  sqlContext: SQLContext)
     extends ExecutorLocalRDD[(T, Approximate)](sqlContext.sparkContext) {
 
   override def compute(split: Partition,
@@ -24,9 +24,9 @@ class TopKResultRDD[T: ClassTag](name: String, startTime: Long,
 
     val arrayTopK =
       if (topKHokusai.windowSize == Long.MaxValue)
-        Some(topKHokusai.getForKeysInCurrentInterval(combinedKeys))
+        Some(topKHokusai.getTopKInCurrentInterval())
       else
-        topKHokusai.getTopKBetweenTime(startTime, endTime, combinedKeys)
+        topKHokusai.getTopKBetweenTime(startTime, endTime)
 
     arrayTopK.map(_.toIterator).getOrElse(Iterator.empty)
   }

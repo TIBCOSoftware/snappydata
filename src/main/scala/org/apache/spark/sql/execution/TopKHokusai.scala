@@ -250,10 +250,9 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
     }, true)
 
-  def getForKeysInCurrentInterval(combinedKeys: Array[T]): Array[(T, Approximate)] =
+  def getTopKInCurrentInterval[T](): Array[(T, Approximate)] =
     this.rwlock.executeInReadLock({
-      val cms = this.mBar
-      combinedKeys.map { k => (k, cms.estimateCountAsApproximate(k)) }
+       this.mBar.asInstanceOf[TopKCMS[T]].getTopK      
     }, true)
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
