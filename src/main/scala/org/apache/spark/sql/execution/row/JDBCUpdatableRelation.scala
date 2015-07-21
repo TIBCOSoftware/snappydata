@@ -36,6 +36,9 @@ class JDBCUpdatableRelation(
 
   override val needConversion: Boolean = false
 
+  // initialize GemFireXDDialect so that it gets registered
+  GemFireXDDialect.init()
+
   val driver = DriverRegistry.getDriverClassName(url)
 
   private[this] val poolProperties = JDBCUpdatableRelation
@@ -48,9 +51,6 @@ class JDBCUpdatableRelation(
   }: _*)
 
   final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
-
-  // initialize GemFireXDDialect to that it gets registered
-  GemFireXDDialect.init()
 
   // create table in external store once upfront
   // TODO: currently ErrorIfExists mode is being used to ensure that we do not
@@ -90,7 +90,8 @@ class JDBCUpdatableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val extensions = ddlExtensions.map(" " + _).getOrElse("")
-        val sql = s"CREATE TABLE $table ($schema)$extensions"
+        val schemaString = JDBCUpdatableRelation.schemaString(schema, dialect)
+        val sql = s"CREATE TABLE $table ($schemaString)$extensions"
         conn.prepareStatement(sql).executeUpdate()
       }
     } finally {
@@ -254,6 +255,39 @@ object JDBCUpdatableRelation extends Logging {
     new StructType(columns map { name => fieldMap(name) })
   }
 
+  /**
+   * Compute the schema string for this RDD.
+   */
+  def schemaString(schema: StructType, dialect: JdbcDialect): String = {
+    val sb = new StringBuilder()
+    schema.fields.foreach { field =>
+      val dataType = field.dataType
+      val typeString: String =
+        dialect.getJDBCType(dataType).map(_.databaseTypeDefinition).getOrElse(
+          dataType match {
+            case IntegerType => "INTEGER"
+            case LongType => "BIGINT"
+            case DoubleType => "DOUBLE PRECISION"
+            case FloatType => "REAL"
+            case ShortType => "INTEGER"
+            case ByteType => "BYTE"
+            case BooleanType => "BIT(1)"
+            case StringType => "TEXT"
+            case BinaryType => "BLOB"
+            case TimestampType => "TIMESTAMP"
+            case DateType => "DATE"
+            case DecimalType.Fixed(precision, scale) =>
+              s"DECIMAL($precision,$scale)"
+            case DecimalType.Unlimited => "DECIMAL(38,19)"
+            case _ => throw new IllegalArgumentException(
+              s"Don't know how to save $field to JDBC")
+          })
+      val nullable = if (field.nullable) "" else "NOT NULL"
+      sb.append(s", ${field.name} $typeString $nullable")
+    }
+    if (sb.length < 2) "" else sb.substring(2)
+  }
+
   def getInsertString(table: String, schema: StructType) = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
@@ -289,12 +323,13 @@ object JDBCUpdatableRelation extends Logging {
             case s: String => stmt.setString(col + 1, s)
             case o => stmt.setObject(col + 1, o)
           }
-          case DecimalType.Fixed(_, _) | DecimalType.Unlimited => row(col) match {
-            case d: Decimal => stmt.setBigDecimal(col + 1, d.toJavaBigDecimal)
-            case bd: java.math.BigDecimal => stmt.setBigDecimal(col + 1, bd)
-            case s: String => stmt.setString(col + 1, s)
-            case o => stmt.setObject(col + 1, o)
-          }
+          case DecimalType.Fixed(_, _) | DecimalType.Unlimited =>
+            row(col) match {
+              case d: Decimal => stmt.setBigDecimal(col + 1, d.toJavaBigDecimal)
+              case bd: java.math.BigDecimal => stmt.setBigDecimal(col + 1, bd)
+              case s: String => stmt.setString(col + 1, s)
+              case o => stmt.setObject(col + 1, o)
+            }
           case _ => stmt.setObject(col + 1, row(col))
         }
       } else {
