@@ -223,8 +223,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
-    getUpdatableRelation(tableName).update(updateColumns, newColumnValues,
-      filterExpr)
+    getUpdatableRelation(tableName).update(filterExpr, newColumnValues,
+      updateColumns)
   }
 
   def delete(tableName: String, filterExpr: String): Int = {

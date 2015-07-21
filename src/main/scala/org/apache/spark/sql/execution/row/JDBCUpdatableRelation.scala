@@ -7,7 +7,7 @@ import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{ConnectionPool, PoolProperty}
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -38,8 +38,8 @@ class JDBCUpdatableRelation(
 
   val driver = DriverRegistry.getDriverClassName(url)
 
-  private[this] val poolProperties =
-    JDBCUpdatableRelation.getAllPoolProperties(url, driver, _poolProps)
+  private[this] val poolProperties = JDBCUpdatableRelation
+      .getAllPoolProperties(url, driver, _poolProps, hikariCP)
 
   final val dialect = JdbcDialects.get(url)
 
@@ -210,22 +210,23 @@ class JDBCUpdatableRelation(
 object JDBCUpdatableRelation extends Logging {
 
   def getAllPoolProperties(url: String, driver: String,
-      poolProps: Map[_, String]): Map[_, String] = {
+      poolProps: Map[String, String], hikariCP: Boolean) = {
+    val urlProp = if (hikariCP) "jdbcUrl" else "url"
+    val driverClassProp = "driverClassName"
     if (driver == null || driver.isEmpty) {
       if (poolProps.isEmpty) {
-        Map(PoolProperty.URL -> url)
+        Map(urlProp -> url)
       } else {
-        poolProps.asInstanceOf[Map[Any, String]] + (PoolProperty.URL -> url)
+        poolProps + (urlProp -> url)
       }
     } else if (poolProps.isEmpty) {
-      Map(PoolProperty.URL -> url, PoolProperty.DriverClassName -> driver)
+      Map(urlProp -> url, driverClassProp -> driver)
     } else {
-      poolProps.asInstanceOf[Map[Any, String]] + (PoolProperty.URL -> url) +
-          (PoolProperty.DriverClassName -> driver)
+      poolProps + (urlProp -> url) + (driverClassProp -> driver)
     }
   }
 
-  def getConnector(id: String, driver: String, poolProps: Map[_, String],
+  def getConnector(id: String, driver: String, poolProps: Map[String, String],
       connProps: Properties, hikariCP: Boolean): () => Connection = {
     () => {
       try {

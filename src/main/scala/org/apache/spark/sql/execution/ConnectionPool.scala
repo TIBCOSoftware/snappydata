@@ -6,9 +6,9 @@ import javax.sql.DataSource
 
 import scala.collection.mutable
 
-import com.zaxxer.hikari.{HikariConfig => HConf, HikariDataSource => HDataSource}
-import org.apache.spark.sql.collection.Utils
-import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolConfiguration => TConf, PoolProperties}
+import com.zaxxer.hikari.util.PropertyBeanSetter
+import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
+import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -22,8 +22,7 @@ object ConnectionPool {
    * Type of the key used to search for matching pool. Tuple of pool properties,
    * connection properties, and whether pool uses Tomcat pool or HikariCP pool.
    */
-  private[this] type PoolKey = (Map[PoolProperty.Type, String],
-      Properties, Boolean)
+  private[this] type PoolKey = (Properties, Properties, Boolean)
 
   /**
    * Map of ID to corresponding pool DataSources. Using Java's
@@ -60,7 +59,7 @@ object ConnectionPool {
    * @param hikariCP if true then use HikariCP else Tomcat-JDBC pool
    *                 implementation; default is false i.e. Tomcat pool
    */
-  def getPoolDataSource(id: String, props: Map[_, String],
+  def getPoolDataSource(id: String, props: Map[String, String],
       connectionProps: Properties = EMPTY_PROPS,
       hikariCP: Boolean = false): DataSource = {
     // fast lock-free path first (the usual case)
@@ -74,10 +73,8 @@ object ConnectionPool {
         dsKey._1
       } else {
         // search if there is already an existing pool with same properties
-        val poolProps = props.map {
-          case (k: PoolProperty.Type, v) => (k, v)
-          case (k, v) => (PoolProperty.valueOf(k.toString), v)
-        }
+        val poolProps = new Properties()
+        for ((k, v) <- props) poolProps.setProperty(k, v)
         val poolKey: PoolKey = (poolProps, connectionProps, hikariCP)
         pools.get(poolKey) match {
           case Some((newDS, ids)) =>
@@ -88,27 +85,14 @@ object ConnectionPool {
           case None =>
             // create new pool
             val newDS: DataSource = if (hikariCP) {
-              val hconf = new HConf
-              for ((prop, value) <- poolProps) {
-                if (prop.hikariMethod == null) {
-                  throw new IllegalArgumentException("ConnectionPool: " +
-                      s"unknown property '$prop' for Hikari connection pool")
-                }
-                prop.hikariMethod(hconf, value)
-              }
+              val hconf = new HikariConfig(poolProps)
               if (connectionProps != null) {
                 hconf.setDataSourceProperties(connectionProps)
               }
               new HDataSource(hconf)
             } else {
-              val tconf = new PoolProperties
-              for ((prop, value) <- poolProps) {
-                if (prop.tomcatMethod == null) {
-                  throw new IllegalArgumentException("ConnectionPool: " +
-                      s"unknown property '$prop' for Tomcat JDBC pool")
-                }
-                prop.tomcatMethod(tconf, value)
-              }
+              val tconf = new PoolProperties()
+              PropertyBeanSetter.setTargetFromProperties(tconf, poolProps)
               if (connectionProps != null) {
                 tconf.setDbProperties(connectionProps)
               }
@@ -126,10 +110,10 @@ object ConnectionPool {
   /**
    * Utility method to get the connection from DataSource returned by
    * `getPoolDataSource`.
-   * 
+   *
    * @see getPoolDataSource
    */
-  def getPoolConnection(id: String, poolProps: Map[_, String],
+  def getPoolConnection(id: String, poolProps: Map[String, String],
       connProps: Properties, hikariCP: Boolean): Connection = {
     getPoolDataSource(id, poolProps, connProps, hikariCP).getConnection
   }
@@ -160,85 +144,4 @@ object ConnectionPool {
       } else false
     } else false
   }
-}
-
-object PoolProperty extends Enumeration {
-
-  private[this] final val nameMap = new mutable.HashMap[String, Type]
-  private[this] final val NO_NAMES = Seq.empty[String]
-
-  final class Type(i: Int, name: String,
-      val tomcatMethod: (TConf, String) => Unit,
-      val hikariMethod: (HConf, String) => Unit,
-      alternateNames: Seq[String] = NO_NAMES) extends Val(i, name) {
-
-    // since this is only populated statically, so no need of synchronization
-    nameMap(name) = this // for fast lookup path
-    nameMap(Utils.normalizeId(name)) = this
-    alternateNames.foreach(id => nameMap(Utils.normalizeId(id)) = this)
-
-    def this(name: String, tomcatMethod: (TConf, String) => Unit,
-        hikariMethod: (HConf, String) => Unit,
-        alternateNames: Seq[String]) =
-      this(nextId, name, tomcatMethod, hikariMethod, alternateNames)
-  }
-
-  def Value(i: Int, name: String, tomcatMethod: (TConf, String) => Unit,
-      hikariMethod: (HConf, String) => Unit,
-      alternateNames: Seq[String]) =
-    new Type(i, name, tomcatMethod, hikariMethod, alternateNames)
-
-  def Value(name: String, tomcatMethod: (TConf, String) => Unit,
-      hikariMethod: (HConf, String) => Unit,
-      alternateNames: Seq[String] = NO_NAMES) =
-    new Type(name, tomcatMethod, hikariMethod, alternateNames)
-
-  def valueOf(name: String) = nameMap.getOrElse(name,
-    nameMap.getOrElse(Utils.normalizeId(name),
-      throw new IllegalArgumentException(s"unknown pool property $name")))
-
-  // "primary" names for properties below are those used by Tomcat-JDBC pool,
-  // though enumeration variable names themselves are chosen to be the more
-  // "natural" one among the Tomcat-JDBC and Hikari pool property names
-
-  val URL = Value("url", (tc: TConf, vs: String) => tc.setUrl(vs),
-    (hc: HConf, vs: String) => hc.setJdbcUrl(vs),
-    Seq("jdbcUrl"))
-  val DriverClassName = Value("driverClassName",
-    (tc: TConf, vs: String) => tc.setDriverClassName(vs),
-    (hc: HConf, vs: String) => hc.setDriverClassName(vs),
-    Seq("driverClass"))
-
-  val UserName = Value("username",
-    (tc: TConf, vs: String) => tc.setUsername(vs),
-    (hc: HConf, vs: String) => hc.setUsername(vs),
-    Seq("user"))
-  val Password = Value("password",
-    (tc: TConf, vs: String) => tc.setPassword(vs),
-    (hc: HConf, vs: String) => hc.setPassword(vs))
-
-  val MaxPoolSize = Value("maxActive",
-    (tc: TConf, vs: String) => tc.setMaxActive(vs.toInt),
-    (hc: HConf, vs: String) => hc.setMaximumPoolSize(vs.toInt),
-    Seq("maxPoolSize", "maximumPoolSize"))
-  val MinIdle = Value("minIdle",
-    (tc: TConf, vs: String) => tc.setMinIdle(vs.toInt),
-    (hc: HConf, vs: String) => hc.setMinimumIdle(vs.toInt),
-    Seq("minimumIdle"))
-  /**
-   * Only in tomcat pool: maximum number of connections that should be
-   * kept in the pool at all times
-   */
-  val MaxIdle = Value("maxIdle",
-    (tc: TConf, vs: String) => tc.setMaxIdle(vs.toInt),
-    null /* no equivalent in HikariCP */)
-
-  val AutoCommit = Value("defaultAutoCommit",
-    (tc: TConf, vs: String) => tc.setDefaultAutoCommit(vs.toBoolean),
-    (hc: HConf, vs: String) => hc.setAutoCommit(vs.toBoolean),
-    Seq("autoCommit"))
-  val TransactionIsolation = Value("defaultTransactionIsolation",
-    (tc: TConf, vs: String) => tc.setDefaultTransactionIsolation(vs.toInt),
-    (hc: HConf, vs: String) => hc.setTransactionIsolation(vs),
-    Seq("transactionIsolation"))
 }
