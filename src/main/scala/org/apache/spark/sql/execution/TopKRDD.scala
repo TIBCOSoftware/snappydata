@@ -56,7 +56,8 @@ object TopKRDD {
     Utils.mapExecutors[(T, Approximate)](sqlContext, { () =>
 
       val streamSummary = StreamSummaryAggregation[T](name).getOrElse(
-        throw new IllegalStateException())
+        throw new IllegalStateException(
+          s"Stream aggregate named '$name' not found"))
 
       val arrayTopK = streamSummary.getTopKBetweenTime(startTime, endTime,
         streamSummary.capacity)

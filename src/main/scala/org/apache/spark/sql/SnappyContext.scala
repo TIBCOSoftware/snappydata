@@ -349,11 +349,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     startTime: Long, endTime: Long,
     topK: TopKWrapper, k: Int): DataFrame = {
 
-    // TODO: perhaps this can be done more efficiently via a shuffle but
-    // using the straightforward approach for now
-
-    // first collect keys from across the cluster
-
     val topKRDD = TopKRDD.resultRDD[T](topKName, startTime, endTime, this)
         .reduceByKey(_ + _).mapPreserve { case (key, approx) =>
       Row(key, approx.estimate, approx)

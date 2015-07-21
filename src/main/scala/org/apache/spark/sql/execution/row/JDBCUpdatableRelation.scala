@@ -57,7 +57,7 @@ class JDBCUpdatableRelation(
   // TODO: currently ErrorIfExists mode is being used to ensure that we do not
   // end up invoking this multiple times in Spark execution workflow. Later
   // should make it "Ignore" so that it will work with existing tables in
-  // backend as well (or can provide in OPTIONS for user-configured)
+  // backend as well (or can provide in OPTIONS for user-configured mode)
   createTable(SaveMode.ErrorIfExists)
 
   def createTable(mode: SaveMode): Unit = {
@@ -123,14 +123,18 @@ class JDBCUpdatableRelation(
   }
 
   // TODO: SW: should below all be executed from driver or some random executor?
+  // at least the insert can be split into batches and modelled as an RDD
 
-  override def insert(row: Row): Int = {
+  override def insert(rows: Row*): Int = {
     val connection = JDBCUpdatableRelation.createConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
-      JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
-        row, dialect)
+      for (row <- rows) {
+        JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
+          row, dialect)
+        stmt.addBatch()
+      }
       val result = stmt.executeUpdate()
       stmt.close()
       result
