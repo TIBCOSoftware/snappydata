@@ -13,7 +13,7 @@ trait UpdatableRelation {
    *
    * @return number of rows inserted
    */
-  def insert(rows: Row*): Int
+  def insert(rows: Seq[Row]): Int
 
   /**
    * Update a set of rows matching given criteria.

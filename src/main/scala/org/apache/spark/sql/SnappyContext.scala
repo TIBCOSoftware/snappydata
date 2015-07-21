@@ -217,8 +217,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
   }
 
-  def insert(tableName: String, row: Row): Int = {
-    getUpdatableRelation(tableName).insert(row)
+  def insert(tableName: String, rows: Row*): Int = {
+    getUpdatableRelation(tableName).insert(rows)
   }
 
   def update(tableName: String, updatedColumns: Row, filterExpr: String,

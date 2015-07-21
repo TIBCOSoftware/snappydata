@@ -125,7 +125,7 @@ class JDBCUpdatableRelation(
   // TODO: SW: should below all be executed from driver or some random executor?
   // at least the insert can be split into batches and modelled as an RDD
 
-  override def insert(rows: Row*): Int = {
+  override def insert(rows: Seq[Row]): Int = {
     val connection = JDBCUpdatableRelation.createConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
