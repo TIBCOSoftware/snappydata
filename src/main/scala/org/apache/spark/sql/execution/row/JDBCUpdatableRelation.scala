@@ -6,13 +6,12 @@ import java.util.Properties
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.{ConnectionPool, PoolProperty}
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
+import org.apache.spark.sql._
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -143,16 +142,16 @@ class JDBCUpdatableRelation(
     }
   }
 
-  override def update(updatedColumns: Row, setColumns: Seq[String],
-      filterExpr: String): Int = {
-    val ncols = setColumns.length
+  override def update(filterExpr: String, newColumnValues: Row,
+      updateColumns: Seq[String]): Int = {
+    val ncols = updateColumns.length
     if (ncols == 0) {
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.update: no columns provided")
     }
     val setFields = new Array[StructField](ncols)
     var index = 0
-    setColumns.foreach { col =>
+    updateColumns.foreach { col =>
       setFields(index) = schemaFields.getOrElse(Utils.normalizeId(col),
         throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
             s"column name '$col' among (${schema.fieldNames.mkString(", ")})"))
@@ -161,13 +160,13 @@ class JDBCUpdatableRelation(
     val connection = JDBCUpdatableRelation.createConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
-      val setStr = setColumns.mkString("SET ", "=?, ", "=?")
+      val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
         else "WHERE " + filterExpr
       val stmt = connection.prepareStatement(s"UPDATE $table $setStr $whereStr")
       JDBCUpdatableRelation.setStatementParameters(stmt, setFields,
-        updatedColumns, dialect)
+        newColumnValues, dialect)
       val result = stmt.executeUpdate()
       stmt.close()
       result
@@ -348,8 +347,8 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     val table = parameters.remove("dbtable").getOrElse(
       sys.error("Option 'dbtable' not specified"))
     val driver = parameters.remove("driver")
-    val poolProperties = parameters.remove("poolproperties")
     val poolImpl = parameters.remove("poolImpl")
+    val poolProperties = parameters.remove("poolproperties")
     val ddlExtensions = parameters.remove("ddlextensions")
     val partitionColumn = parameters.remove("partitionColumn")
     val lowerBound = parameters.remove("lowerBound")
@@ -358,15 +357,6 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
 
     driver.foreach(DriverRegistry.register)
 
-    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
-      val eqIndex = s.indexOf('=')
-      if (eqIndex >= 0) {
-        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
-      } else {
-        // assume a boolean property to be enabled
-        (s.trim, "true")
-      }
-    }: _*)).getOrElse(Map.empty)
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
       case Some("hikari") => true
       case Some("tomcat") => false
@@ -376,6 +366,15 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
             s"(supported values: tomcat, hikari)")
       case None => false
     }
+    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+      val eqIndex = s.indexOf('=')
+      if (eqIndex >= 0) {
+        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
+      } else {
+        // assume a boolean property to be enabled
+        (s.trim, "true")
+      }
+    }: _*)).getOrElse(Map.empty)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null

@@ -18,14 +18,15 @@ trait UpdatableRelation {
   /**
    * Update a set of rows matching given criteria.
    *
-   * @param updatedColumns updated values for the columns being changed
-   * @param setColumns the columns to be updated; must match `updatedColumns`
    * @param filterExpr SQL WHERE criteria to select rows that will be updated
+   * @param newColumnValues updated values for the columns being changed;
+   *                        must match `updateColumns`
+   * @param updateColumns the columns to be updated; must match `updatedColumns`
    *
    * @return number of rows affected
    */
-  def update(updatedColumns: Row, setColumns: Seq[String],
-      filterExpr: String): Int
+  def update(filterExpr: String, newColumnValues: Row,
+      updateColumns: Seq[String]): Int
 
   /**
    * Delete a set of row matching given criteria.
