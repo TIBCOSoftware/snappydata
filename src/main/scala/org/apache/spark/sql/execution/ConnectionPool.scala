@@ -27,7 +27,7 @@ object ConnectionPool {
   /**
    * Map of ID to corresponding pool DataSources. Using Java's
    * ConcurrentHashMap for lock-free reads. No concurrency required
-   * so keeping it at minimum.
+   * only lock-free reads so keeping it at minimum.
    */
   private[this] val idToPoolMap = new java.util.concurrent.ConcurrentHashMap[
       String, (DataSource, PoolKey)](8, 0.75f, 1)
@@ -114,7 +114,8 @@ object ConnectionPool {
    * @see getPoolDataSource
    */
   def getPoolConnection(id: String, poolProps: Map[String, String],
-      connProps: Properties, hikariCP: Boolean): Connection = {
+      connProps: Properties = EMPTY_PROPS,
+      hikariCP: Boolean = false): Connection = {
     getPoolDataSource(id, poolProps, connProps, hikariCP).getConnection
   }
 
