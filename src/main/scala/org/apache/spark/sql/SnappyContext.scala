@@ -1,8 +1,10 @@
 package org.apache.spark.sql
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
@@ -15,7 +17,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.{InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
+import org.apache.spark.sql.columnar.{ExternalStoreRelation, CachedBatch, InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row.UpdatableRelation
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
@@ -97,10 +99,16 @@ protected[sql] final class SnappyContext(sc: SparkContext)
             nameSuffix = "", columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
           val batches = InMemoryAppendableRelation(useCompression,
-            columnBatchSize, name, schema, output)
+            columnBatchSize, name, schema, relation, output)
           sampler.append(rowIterator, null, (),
             batches.appendRow, batches.endRows)
-          batches.forceEndOfBatch().iterator
+          val x = batches.forceEndOfBatch()
+          if (x.isInstanceOf[ArrayBuffer[CachedBatch]]) {
+            x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
+          }
+          else {
+            x.asInstanceOf[ArrayBuffer[UUID]].iterator
+          }
         }))
     }
     // TODO: A different set of job is created for topK structure
@@ -121,7 +129,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       case (relation, rdd) =>
         val cached = rdd.persist(storageLevel)
         if (cached.count() > 0) {
-          relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached)
+          if (relation.isInstanceOf[ExternalStoreRelation]) {
+            relation.asInstanceOf[InMemoryAppendableRelation].appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+          }
+          else {
+            relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
+          }
         }
     }
   }
@@ -148,17 +161,30 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val cached = df.mapPartitions { rowIterator =>
 
       val batches = InMemoryAppendableRelation(useCompression,
-        columnBatchSize, tableName, schema, output)
+        columnBatchSize, tableName, schema, relation.cachedRepresentation, output)
 
       rowIterator.foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
+      val x = batches.forceEndOfBatch()
+            if (x.isInstanceOf[ArrayBuffer[CachedBatch]]) {
+                x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
+              }
+            else {
+                x.asInstanceOf[ArrayBuffer[UUID]].iterator
+              }
+
 
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
-        appendBatch(cached)
+      if (cached.isInstanceOf[RDD[CachedBatch]]) {
+        relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
+          appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
+      }
+      else {
+        relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
+          appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+      }
     }
   }
 

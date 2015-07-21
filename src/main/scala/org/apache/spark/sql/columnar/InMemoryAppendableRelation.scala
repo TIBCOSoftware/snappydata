@@ -26,6 +26,7 @@ package org.apache.spark.sql.columnar
  * limitations under the License.
  */
 
+import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable.ArrayBuffer
@@ -95,11 +96,19 @@ private[sql] class InMemoryAppendableRelation(
     _cachedBufferList += batch
   }
 
+  def appendUUIDBatch(batch: RDD[UUID]): Unit = writeLock {
+    throw new IllegalStateException(s"did not expect appendUUIDBatch of InMemoryAppendableRelation to be called")
+  }
+
   def truncate() = writeLock {
     for (batch <- _cachedBufferList) {
       batch.unpersist(true)
     }
     _cachedBufferList.clear()
+  }
+
+  def batchAggregate(accumulated: ArrayBuffer[CachedBatch], batch: CachedBatch): ArrayBuffer[CachedBatch] = {
+    accumulated += batch
   }
 
   override def recache(): Unit = {
@@ -149,12 +158,14 @@ private[sql] class InMemoryAppendableRelation(
 
 private[sql] object InMemoryAppendableRelation {
 
-  final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
+  final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
       var rowCount: Int, val batchSize: Int,
-      val batches: ArrayBuffer[CachedBatch]) {
+      val init: T,
+      val batchAggregate: (T, CachedBatch) => T) {
 
     var columnBuilders = getColumnBuilders
 
+    var result = init
     /**
      * Append a single row to the current CachedBatch (creating a new one
      * if not present or has exceeded its capacity)
@@ -183,7 +194,8 @@ private[sql] object InMemoryAppendableRelation {
         val stats = Row.merge(columnBuilders.map(
           _.columnStats.collectedStatistics): _*)
         // TODO: somehow push into global batchStats
-        batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
+        result = batchAggregate(result, CachedBatch(columnBuilders.map(_.build().array()), stats))
+        // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
         if (newBuilders) columnBuilders = getColumnBuilders
       }
     }
@@ -193,14 +205,14 @@ private[sql] object InMemoryAppendableRelation {
     // empty for now
     def endRows(u: Unit): Unit = {}
 
-    def forceEndOfBatch(): ArrayBuffer[CachedBatch] = {
+    def forceEndOfBatch(): T = {
       if (rowCount > 0) {
         // setting rowCount to batchSize temporarily will automatically
         // force creation of a new batch in appendRow
         rowCount = batchSize
         appendRow_(newBuilders = false, EmptyRow)
       }
-      this.batches
+      result
     }
   }
 
@@ -217,7 +229,8 @@ private[sql] object InMemoryAppendableRelation {
       batchSize: Int,
       tableName: String,
       schema: StructType,
-      output: Seq[Attribute]): CachedBatchHolder = {
+      relation: InMemoryRelation,
+      output: Seq[Attribute]): CachedBatchHolder[ArrayBuffer[Serializable]] = {
     def columnBuilders = output.map { attribute =>
       val columnType = ColumnType(attribute.dataType)
       val initialBufferSize = columnType.defaultSize * batchSize
@@ -225,8 +238,18 @@ private[sql] object InMemoryAppendableRelation {
         attribute.name, useCompression)
     }.toArray
 
-    new CachedBatchHolder(columnBuilders, 0, batchSize,
-      new ArrayBuffer[CachedBatch](1))
+    if (relation.isInstanceOf[ExternalStoreRelation]) {
+      val esr = relation.asInstanceOf[ExternalStoreRelation]
+      new CachedBatchHolder(columnBuilders, 0, batchSize,
+        new ArrayBuffer[UUID](1), esr.uuidBatchAggregate)
+    }
+    else {
+      val imar = relation.asInstanceOf[InMemoryAppendableRelation]
+      new CachedBatchHolder(columnBuilders, 0, batchSize,
+        new ArrayBuffer[CachedBatch](1), imar.batchAggregate)
+    }
+    throw new IllegalStateException(
+      s"InMemoryAppendableRelation: unknown relation $relation for table $tableName")
   }
 }
 
