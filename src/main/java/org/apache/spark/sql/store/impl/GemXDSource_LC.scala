@@ -4,7 +4,8 @@ import java.sql.{Blob, Connection, DriverManager, PreparedStatement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SnappyContext
@@ -24,7 +25,7 @@ class GemXDSource_LC extends ExternalStore {
 
   private val connLock = new ReentrantReadWriteLock()
 
-  private val preparedStmntCache = new HashMap[String,PreparedStatement]()
+  private val preparedStmntCache = new mutable.HashMap[String, PreparedStatement]
 
   /** Acquires a read lock on the conn for the duration of `f`. */
   private[sql] def readLock[A](f: => A): A = {
@@ -63,7 +64,7 @@ class GemXDSource_LC extends ExternalStore {
   }
 
   override def storeCachedBatch(batch: CachedBatch, tname: String): Any = writeLock {
-    var ps = this.preparedStmntCache.getOrElse(tname, preparePrepStmnt(tname))
+    val ps = this.preparedStmntCache.getOrElse(tname, preparePrepStmnt(tname))
     val uuid = UUID.randomUUID()
     ps.setString(1, uuid)
     ps.setBlob(2, batch)
@@ -76,12 +77,13 @@ class GemXDSource_LC extends ExternalStore {
   }
 
   private def preparePrepStmnt(tname: String): PreparedStatement = {
-    val pInsert = cachedConn.prepareStatement("insert into " + tname + " values (?, ?)")
+    val pInsert = cachedConn.prepareStatement(
+      "insert into " + tname + " values (?, ?)")
     this.preparedStmntCache.put(tname, pInsert)
     pInsert
   }
 
-  private def getConnURL(): String = {
+  private def getConnURL: String = {
     val sc = SparkContext.getOrCreate()
     val snc = SnappyContext(sc)
     val config = snc.getExternalStoreConfig

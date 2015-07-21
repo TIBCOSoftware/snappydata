@@ -309,7 +309,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long) =
+      startTime: Long, endTime: Long): DataFrame =
     queryTopK[T](topKName, startTime, endTime, -1)
 
   def queryTopK[T: ClassTag](topKName: String,

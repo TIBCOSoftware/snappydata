@@ -39,6 +39,8 @@ object ConnectionPool {
   private[this] val pools = mutable.Map[PoolKey,
       (DataSource, mutable.Set[String])]()
 
+  private[this] val EMPTY_PROPS = new Properties()
+
   /**
    * Get a pooled DataSource for a given ID, pool properties and connection
    * properties. Currently two pool implementations are supported namely
@@ -58,7 +60,7 @@ object ConnectionPool {
    *                 implementation; default is false i.e. Tomcat pool
    */
   def getPoolDataSource(id: String, props: Map[_, String],
-      connectionProps: Properties = new Properties(),
+      connectionProps: Properties = EMPTY_PROPS,
       hikariCP: Boolean = false): DataSource = {
     // fast lock-free path first (the usual case)
     val dsKey = idToPoolMap.get(id)
@@ -156,7 +158,7 @@ object PoolProperty extends Enumeration {
   final class Type(i: Int, name: String,
       val tomcatMethod: (TConf, String) => Unit,
       val hikariMethod: (HConf, String) => Unit,
-      alternateNames: Seq[String]) extends Val(i, name) {
+      alternateNames: Seq[String] = NO_NAMES) extends Val(i, name) {
 
     // since this is only populated statically, so no need of synchronization
     nameMap(name) = this // for fast lookup path
