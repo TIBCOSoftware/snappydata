@@ -26,6 +26,7 @@ class JDBCUpdatableRelation(
     parts: Array[Partition],
     _poolProps: Map[String, String],
     connProperties: Properties,
+    hikariCP: Boolean,
     ddlExtensions: Option[String],
     @transient val sqlContext: SQLContext)
     extends BaseRelation
@@ -103,7 +104,7 @@ class JDBCUpdatableRelation(
     new JDBCRDD(
       sqlContext.sparkContext,
       JDBCUpdatableRelation.getConnector(table, driver, poolProperties,
-        connProperties),
+        connProperties, hikariCP),
       JDBCUpdatableRelation.pruneSchema(schema, requiredColumns),
       table,
       requiredColumns,
@@ -125,7 +126,7 @@ class JDBCUpdatableRelation(
 
   override def insert(row: Row): Int = {
     val connection = JDBCUpdatableRelation.createConnection(table,
-      poolProperties, connProperties)
+      poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
       JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
@@ -154,7 +155,7 @@ class JDBCUpdatableRelation(
       index += 1
     }
     val connection = JDBCUpdatableRelation.createConnection(table,
-      poolProperties, connProperties)
+      poolProperties, connProperties, hikariCP)
     try {
       val setStr = setColumns.mkString("SET ", "=?, ", "=?")
       val whereStr =
@@ -173,7 +174,7 @@ class JDBCUpdatableRelation(
 
   override def delete(filterExpr: String): Int = {
     val connection = JDBCUpdatableRelation.createConnection(table,
-      poolProperties, connProperties)
+      poolProperties, connProperties, hikariCP)
     try {
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
@@ -192,7 +193,7 @@ class JDBCUpdatableRelation(
     Utils.mapExecutors(sqlContext, { () =>
       ConnectionPool.removePoolReference(table)
       Iterator.empty
-    })
+    }).count()
     // drop the external table using a non-pool connection
     val conn = JdbcUtils.createConnection(url, connProperties)
     try {
@@ -222,13 +223,13 @@ object JDBCUpdatableRelation extends Logging {
   }
 
   def createConnection(id: String, poolProps: Map[_, String],
-      connProps: Properties): Connection = {
+      connProps: Properties, hikariCP: Boolean): Connection = {
     ConnectionPool.getPoolDataSource(id, poolProps, connProps,
-      hikariCP = false).getConnection
+      hikariCP).getConnection
   }
 
   def getConnector(id: String, driver: String, poolProps: Map[_, String],
-      connProps: Properties): () => Connection = {
+      connProps: Properties, hikariCP: Boolean): () => Connection = {
     () => {
       try {
         if (driver != null) DriverRegistry.register(driver)
@@ -236,7 +237,7 @@ object JDBCUpdatableRelation extends Logging {
         case cnfe: ClassNotFoundException =>
           logWarning(s"Couldn't find driver class $driver", cnfe)
       }
-      createConnection(id, poolProps, connProps)
+      createConnection(id, poolProps, connProps, hikariCP)
     }
   }
 
@@ -344,6 +345,7 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
       sys.error("Option 'dbtable' not specified"))
     val driver = parameters.remove("driver")
     val poolProperties = parameters.remove("poolproperties")
+    val poolImpl = parameters.remove("poolImpl")
     val ddlExtensions = parameters.remove("ddlextensions")
     val partitionColumn = parameters.remove("partitionColumn")
     val lowerBound = parameters.remove("lowerBound")
@@ -361,12 +363,22 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
         (s.trim, "true")
       }
     }: _*)).getOrElse(Map.empty)
+    val hikariCP = poolImpl.map(Utils.normalizeId) match {
+      case Some("hikari") => true
+      case Some("tomcat") => false
+      case Some(p) =>
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            s"unsupported pool implementation '$p' " +
+            s"(supported values: tomcat, hikari)")
+      case None => false
+    }
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
     } else {
       if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
-        sys.error("Partitioning incompletely specified")
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            "incomplete partitioning specified")
       }
       JDBCPartitioningInfo(
         partitionColumn.get,
@@ -379,6 +391,6 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
     new JDBCUpdatableRelation(url, table, schema, parts, poolProps, connProps,
-      ddlExtensions, sqlContext)
+      hikariCP, ddlExtensions, sqlContext)
   }
 }

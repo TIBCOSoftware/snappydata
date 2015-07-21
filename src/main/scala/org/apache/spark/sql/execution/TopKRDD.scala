@@ -21,7 +21,7 @@ object TopKRDD {
 
       val arrayTopK =
         if (topKHokusai.windowSize == Long.MaxValue)
-          Some(topKHokusai.getTopKInCurrentInterval)
+          Some(topKHokusai.getTopKInCurrentInterval())
         else
           topKHokusai.getTopKBetweenTime(startTime, endTime)
 

@@ -297,29 +297,31 @@ protected[sql] final class SnappyContext(sc: SparkContext)
    * @return returns the top K elements with their respective frequencies between two time
    */
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: String = null, endTime: String = null, k: Int = -1): DataFrame = {
+      startTime: String = null, endTime: String = null,
+      k: Int = -1): DataFrame = {
     val stime = if (startTime == null) 0L
-    else
-      CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
+    else CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
 
     val etime = if (endTime == null) Long.MaxValue
-    else
-      CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
+    else CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
 
     queryTopK[T](topKName, stime, etime, k)
   }
 
   def queryTopK[T: ClassTag](topKName: String,
+      startTime: Long, endTime: Long) =
+    queryTopK[T](topKName, startTime, endTime, -1)
+
+  def queryTopK[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long, k: Int): DataFrame = {
     val topk: TopKWrapper = catalog.topKStructures(topKName)
 
+    val size = if (k > 0) k else topk.size
     if (topk.stsummary) {
-      val size = if (k != -1) k else topk.size
       queryTopkStreamSummary(topKName, startTime, endTime, topk, size)
     }
     else {
-      if (k != -1) throw new IllegalArgumentException("K cannot be specified for TopK with Hokusai.")
-      queryTopkHokusai(topKName, startTime, endTime, topk)
+      queryTopkHokusai(topKName, startTime, endTime, topk, size)
     }
   }
 
@@ -327,14 +329,16 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long,
-      topk: TopKWrapper, k: Int): DataFrame = {
-    val topKRDD = TopKRDD.streamRDD[T](topKName, startTime, endTime, this).
-        reduceByKey(_ + _).mapPreserve(tuple =>
-      Row(tuple._1, tuple._2.estimate, tuple._2.lowerBound))
+      topK: TopKWrapper, k: Int): DataFrame = {
+    val topKRDD = TopKRDD.streamRDD[T](topKName, startTime, endTime, this)
+        .reduceByKey(_ + _).mapPreserve { case (key, approx) =>
+      Row(key, approx.estimate, approx.lowerBound)
+    }
 
     val aggColumn = "EstimatedValue"
     val errorBounds = "DeltaError"
-    val topKSchema = StructType(Array(topk.key, StructField(aggColumn, LongType),
+    val topKSchema = StructType(Array(topK.key,
+      StructField(aggColumn, LongType),
       StructField(errorBounds, LongType)))
 
     val df = createDataFrame(topKRDD, topKSchema)
@@ -343,7 +347,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def queryTopkHokusai[T: ClassTag](topKName: String,
     startTime: Long, endTime: Long,
-    k: TopKWrapper): DataFrame = {
+    topK: TopKWrapper, k: Int): DataFrame = {
 
     // TODO: perhaps this can be done more efficiently via a shuffle but
     // using the straightforward approach for now
@@ -351,15 +355,18 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     // first collect keys from across the cluster
 
     val topKRDD = TopKRDD.resultRDD[T](topKName, startTime, endTime, this)
-        .reduceByKey(_ + _).mapPreserve{case (key, approx) =>
-        Row(key, approx.estimate, approx)}
+        .reduceByKey(_ + _).mapPreserve { case (key, approx) =>
+      Row(key, approx.estimate, approx)
+    }
 
     val aggColumn = "EstimatedValue"
     val errorBounds = "ErrorBoundsInfo"
-    val topKSchema = StructType(Array(k.key, StructField(aggColumn, LongType),
+    val topKSchema = StructType(Array(topK.key,
+      StructField(aggColumn, LongType),
       StructField(errorBounds, ApproximateType)))
+
     val df = createDataFrame(topKRDD, topKSchema)
-    df.sort(df.col(aggColumn).desc).limit(k.size)
+    df.sort(df.col(aggColumn).desc).limit(k)
   }
 
   private var storeConfig: Map[String, String] = _
