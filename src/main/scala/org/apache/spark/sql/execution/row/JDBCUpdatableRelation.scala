@@ -125,7 +125,7 @@ class JDBCUpdatableRelation(
   // at least the insert can be split into batches and modelled as an RDD
 
   override def insert(rows: Seq[Row]): Int = {
-    val connection = JDBCUpdatableRelation.createConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
@@ -157,7 +157,7 @@ class JDBCUpdatableRelation(
             s"column name '$col' among (${schema.fieldNames.mkString(", ")})"))
       index += 1
     }
-    val connection = JDBCUpdatableRelation.createConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
@@ -176,7 +176,7 @@ class JDBCUpdatableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = JDBCUpdatableRelation.createConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
       val whereStr =
@@ -225,12 +225,6 @@ object JDBCUpdatableRelation extends Logging {
     }
   }
 
-  def createConnection(id: String, poolProps: Map[_, String],
-      connProps: Properties, hikariCP: Boolean): Connection = {
-    ConnectionPool.getPoolDataSource(id, poolProps, connProps,
-      hikariCP).getConnection
-  }
-
   def getConnector(id: String, driver: String, poolProps: Map[_, String],
       connProps: Properties, hikariCP: Boolean): () => Connection = {
     () => {
@@ -240,7 +234,7 @@ object JDBCUpdatableRelation extends Logging {
         case cnfe: ClassNotFoundException =>
           logWarning(s"Couldn't find driver class $driver", cnfe)
       }
-      createConnection(id, poolProps, connProps, hikariCP)
+      ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
     }
   }
 

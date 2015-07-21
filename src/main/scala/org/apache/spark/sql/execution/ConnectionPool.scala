@@ -1,5 +1,6 @@
 package org.apache.spark.sql.execution
 
+import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
@@ -120,6 +121,17 @@ object ConnectionPool {
         }
       }
     }
+  }
+
+  /**
+   * Utility method to get the connection from DataSource returned by
+   * `getPoolDataSource`.
+   * 
+   * @see getPoolDataSource
+   */
+  def getPoolConnection(id: String, poolProps: Map[_, String],
+      connProps: Properties, hikariCP: Boolean): Connection = {
+    getPoolDataSource(id, poolProps, connProps, hikariCP).getConnection
   }
 
   /**
