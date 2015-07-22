@@ -4,13 +4,13 @@ import java.sql.{Blob, Connection, DriverManager, PreparedStatement}
 import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import scala.collection.mutable
-import scala.language.implicitConversions
-
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.columnar.CachedBatch
 import org.apache.spark.sql.store.ExternalStore
+
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 /**
  * ExternalStore implementation for GemFireXD.
