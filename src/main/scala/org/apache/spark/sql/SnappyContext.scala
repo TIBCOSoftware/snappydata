@@ -19,7 +19,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.{ExternalStoreRelation, CachedBatch, InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.row.UpdatableRelation
+import org.apache.spark.sql.execution.row.{DeletableRelation, RowInsertableRelation, UpdatableRelation}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StreamStrategy, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -235,26 +235,30 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   // insert/update/delete/drop operations on an external table
 
-  private def getUpdatableRelation(tableName: String): UpdatableRelation = {
+  def insert(tableName: String, rows: Row*): Int = {
     catalog.lookupRelation(Seq(tableName)) match {
-      case LogicalRelation(u: UpdatableRelation) => u
+      case LogicalRelation(r: RowInsertableRelation) => r.insert(rows)
+      case _ => throw new AnalysisException(
+        s"$tableName is not a row insertable table")
+    }
+  }
+
+  def update(tableName: String, filterExpr: String, newColumnValues: Row,
+      updateColumns: String*): Int = {
+    catalog.lookupRelation(Seq(tableName)) match {
+      case LogicalRelation(u: UpdatableRelation) =>
+        u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
     }
   }
 
-  def insert(tableName: String, rows: Row*): Int = {
-    getUpdatableRelation(tableName).insert(rows)
-  }
-
-  def update(tableName: String, filterExpr: String, newColumnValues: Row,
-      updateColumns: String*): Int = {
-    getUpdatableRelation(tableName).update(filterExpr, newColumnValues,
-      updateColumns)
-  }
-
   def delete(tableName: String, filterExpr: String): Int = {
-    getUpdatableRelation(tableName).delete(filterExpr)
+    catalog.lookupRelation(Seq(tableName)) match {
+      case LogicalRelation(d: DeletableRelation) => d.delete(filterExpr)
+      case _ => throw new AnalysisException(
+        s"$tableName is not a deletable table")
+    }
   }
 
   def dropExternalTable(tableName: String): Unit = {
@@ -265,7 +269,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         cacheManager.tryUncacheQuery(df)
         catalog.unregisterTable(Seq(tableName))
         br match {
-          case u: UpdatableRelation => u.destroy()
+          case d: DeletableRelation => d.destroy()
         }
       case _ => throw new AnalysisException(
         s"Table $tableName not an external table")

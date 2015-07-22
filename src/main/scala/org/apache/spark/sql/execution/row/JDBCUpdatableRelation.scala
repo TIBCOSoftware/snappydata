@@ -31,7 +31,9 @@ class JDBCUpdatableRelation(
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
+    with RowInsertableRelation
     with UpdatableRelation
+    with DeletableRelation
     with Logging {
 
   override val needConversion: Boolean = false

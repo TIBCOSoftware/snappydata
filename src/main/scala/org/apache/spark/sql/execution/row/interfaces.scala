@@ -5,7 +5,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.jdbc.JdbcDialect
 
 @DeveloperApi
-trait UpdatableRelation {
+trait RowInsertableRelation {
   /**
    * Insert a sequence of rows into the table represented by this relation.
    *
@@ -14,7 +14,10 @@ trait UpdatableRelation {
    * @return number of rows inserted
    */
   def insert(rows: Seq[Row]): Int
+}
 
+@DeveloperApi
+trait UpdatableRelation {
   /**
    * Update a set of rows matching given criteria.
    *
@@ -27,7 +30,10 @@ trait UpdatableRelation {
    */
   def update(filterExpr: String, newColumnValues: Row,
       updateColumns: Seq[String]): Int
+}
 
+@DeveloperApi
+trait DeletableRelation {
   /**
    * Delete a set of row matching given criteria.
    *
