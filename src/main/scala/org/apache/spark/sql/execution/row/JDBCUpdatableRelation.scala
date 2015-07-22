@@ -48,8 +48,15 @@ class JDBCUpdatableRelation(
 
   final val dialect = JdbcDialects.get(url)
 
-  final val schemaFields = Map(schema.fields.map { f =>
-    (Utils.normalizeId(f.name), f)
+  final val schemaFields = Map(schema.fields.flatMap { f =>
+    val name =
+      if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
+    val nname = Utils.normalizeId(name)
+    if (name != nname) {
+      Seq((name, f), (Utils.normalizeId(name), f))
+    } else {
+      Seq((name, f))
+    }
   }: _*)
 
   final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
@@ -107,7 +114,7 @@ class JDBCUpdatableRelation(
       sqlContext.sparkContext,
       JDBCUpdatableRelation.getConnector(table, driver, poolProperties,
         connProperties, hikariCP),
-      JDBCUpdatableRelation.pruneSchema(schema, requiredColumns),
+      JDBCUpdatableRelation.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
       filters,
@@ -128,14 +135,24 @@ class JDBCUpdatableRelation(
   // at least the insert can be split into batches and modelled as an RDD
 
   override def insert(rows: Seq[Row]): Int = {
+    val numRows = rows.length
+    if (numRows == 0) {
+      throw new IllegalArgumentException(
+        "JDBCUpdatableRelation.insert: no rows provided")
+    }
     val connection = ConnectionPool.getPoolConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
-      for (row <- rows) {
+      if (numRows > 1) {
+        for (row <- rows) {
+          JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
+            row, dialect)
+          stmt.addBatch()
+        }
+      } else {
         JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
-          row, dialect)
-        stmt.addBatch()
+          rows.head, dialect)
       }
       val result = stmt.executeUpdate()
       stmt.close()
@@ -154,10 +171,13 @@ class JDBCUpdatableRelation(
     }
     val setFields = new Array[StructField](ncols)
     var index = 0
+    // not using loop over index below because incoming Seq[...]
+    // may not have efficient index lookup
     updateColumns.foreach { col =>
-      setFields(index) = schemaFields.getOrElse(Utils.normalizeId(col),
-        throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
-            s"column name '$col' among (${schema.fieldNames.mkString(", ")})"))
+      setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
+        Utils.normalizeId(col), throw new AnalysisException(
+          "JDBCUpdatableRelation: Cannot resolve column name " +
+              s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
     }
     val connection = ConnectionPool.getPoolConnection(table,
@@ -166,8 +186,8 @@ class JDBCUpdatableRelation(
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
-        else "WHERE " + filterExpr
-      val stmt = connection.prepareStatement(s"UPDATE $table $setStr $whereStr")
+        else " WHERE " + filterExpr
+      val stmt = connection.prepareStatement(s"UPDATE $table $setStr$whereStr")
       JDBCUpdatableRelation.setStatementParameters(stmt, setFields,
         newColumnValues, dialect)
       val result = stmt.executeUpdate()
@@ -245,16 +265,19 @@ object JDBCUpdatableRelation extends Logging {
   /**
    * Prune all but the specified columns from the specified Catalyst schema.
    *
-   * @param schema - The Catalyst schema of the master table
+   * @param fieldMap - The Catalyst column name to metadata of the master table
    * @param columns - The list of desired columns
    *
    * @return A Catalyst schema corresponding to columns in the given order.
    */
-  def pruneSchema(schema: StructType, columns: Array[String]): StructType = {
-    val fieldMap = Map(schema.fields map { x =>
-      x.metadata.getString("name") -> x
-    }: _*)
-    new StructType(columns map { name => fieldMap(name) })
+  def pruneSchema(fieldMap: Map[String, StructField],
+      columns: Array[String]): StructType = {
+    new StructType(columns.map { col =>
+      fieldMap.getOrElse(col, fieldMap.getOrElse(Utils.normalizeId(col),
+        throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
+            s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
+      ))
+    })
   }
 
   /**
@@ -293,7 +316,7 @@ object JDBCUpdatableRelation extends Logging {
   def getInsertString(table: String, schema: StructType) = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
-    (0 until (schema.length - 1)).foreach(sb.append("?,"))
+    (1 until schema.length).foreach(sb.append("?,"))
     sb.append("?)").toString()
   }
 
