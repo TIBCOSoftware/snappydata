@@ -103,11 +103,11 @@ protected[sql] final class SnappyContext(sc: SparkContext)
           sampler.append(rowIterator, null, (),
             batches.appendRow, batches.endRows)
           val x = batches.forceEndOfBatch()
-          if (!relation.isInstanceOf[ExternalStoreRelation]) {
-            x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
-          }
-          else {
-            x.asInstanceOf[ArrayBuffer[UUID]].iterator
+          relation match {
+            case _: ExternalStoreRelation =>
+              x.asInstanceOf[ArrayBuffer[UUID]].iterator
+            case _: InMemoryAppendableRelation =>
+              x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
           }
         }))
     }
@@ -129,11 +129,11 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       case (relation, rdd) =>
         val cached = rdd.persist(storageLevel)
         if (cached.count() > 0) {
-          if (relation.isInstanceOf[ExternalStoreRelation]) {
-            relation.asInstanceOf[InMemoryAppendableRelation].appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
-          }
-          else {
-            relation.asInstanceOf[InMemoryAppendableRelation].appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
+          relation match {
+            case externalStore: ExternalStoreRelation =>
+              externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+            case appendable: InMemoryAppendableRelation =>
+              appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
           }
         }
     }
@@ -165,25 +165,21 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
       rowIterator.foreach(batches.appendRow((), _))
       val x = batches.forceEndOfBatch()
-            if (!relation.cachedRepresentation.isInstanceOf[ExternalStoreRelation]) {
-                x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
-              }
-            else {
-                x.asInstanceOf[ArrayBuffer[UUID]].iterator
-              }
-
-
+      relation.cachedRepresentation match {
+        case _: ExternalStoreRelation =>
+          x.asInstanceOf[ArrayBuffer[UUID]].iterator
+        case _: InMemoryAppendableRelation =>
+          x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
+      }
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      if (!relation.cachedRepresentation.isInstanceOf[ExternalStoreRelation]) {
-        relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
-          appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-      }
-      else {
-        relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
-          appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+      relation.cachedRepresentation match {
+        case externalStore: ExternalStoreRelation =>
+          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+        case appendable: InMemoryAppendableRelation =>
+          appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
       }
     }
   }
