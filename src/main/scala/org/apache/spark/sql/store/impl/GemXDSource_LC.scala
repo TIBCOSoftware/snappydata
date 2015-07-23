@@ -1,11 +1,17 @@
 package org.apache.spark.sql.store.impl
 
+import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
 import java.sql.{Blob, Connection, DriverManager, PreparedStatement}
-import java.util.UUID
-import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.{Properties, UUID}
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.execution.ConnectionPool
+
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+
+import org.apache.spark.{SparkEnv, SparkConf, SparkContext}
+
 import org.apache.spark.sql.columnar.CachedBatch
 import org.apache.spark.sql.store.ExternalStore
 
@@ -17,78 +23,153 @@ import scala.language.implicitConversions
  *
  * Created by Neeraj on 16/7/15.
  */
-class GemXDSource_LC extends ExternalStore {
+class GemXDSource_LC(connURL: String, connProperties: Properties, poolProperties: Map[String, String], hikariCP: Boolean) extends ExternalStore {
 
-  lazy val connURL: String = getConnURL
-
-  private val cachedConn: Connection = createCachedConnection
-
-  private val connLock = new ReentrantReadWriteLock()
-
-  private val preparedStmntCache = new mutable.HashMap[String, PreparedStatement]
-
-  /** Acquires a read lock on the conn for the duration of `f`. */
-  private[sql] def readLock[A](f: => A): A = {
-    val lock = connLock.readLock()
-    lock.lock()
-    try f finally {
-      lock.unlock()
-    }
-  }
-
-  /** Acquires a write lock on the cache for the duration of `f`. */
-  private[sql] def writeLock[A](f: => A): A = {
-    val lock = connLock.writeLock()
-    lock.lock()
-    try f finally {
-      lock.unlock()
-    }
-  }
+private val serializer = SparkEnv.get.serializer
 
   override def initSource() = {
-    if (connURL == null && connURL.isEmpty) {
-      throw new IllegalStateException(
-        s"Invalid connURL for GemXD store $connURL")
-    }
-  }
 
-  private def createCachedConnection: Connection = DriverManager.getConnection(connURL)
+  }
 
   implicit def uuidToString(uuid: UUID): String = {
     uuid.toString
   }
 
-  implicit def cachedBatchToBlob(batch: CachedBatch): Blob = {
-    // TODO: write proper method
-    Nil.asInstanceOf[Blob]
+  private var insertStrings: mutable.HashMap[String, String] =
+    new mutable.HashMap[String, String]()
+
+  private def getRowInsertStr(tableName: String): String = {
+    val istr = insertStrings.getOrElse(tableName, {
+      synchronized(insertStrings) {
+        val s = insertStrings.getOrElse(tableName, s"insert into $tableName values(?, ?")
+        insertStrings.put(tableName, s)
+        s
+      }
+    })
+    istr
   }
 
-  override def storeCachedBatch(batch: CachedBatch, tname: String): Any = writeLock {
-    val ps = this.preparedStmntCache.getOrElse(tname, preparePrepStmnt(tname))
-    val uuid = UUID.randomUUID()
-    ps.setString(1, uuid)
-    ps.setBlob(2, batch)
-    uuid.toString
+  override def storeCachedBatch(batch: CachedBatch, tableName: String): UUID = {
+    val connection = ConnectionPool.getPoolConnection(tableName,
+      poolProperties, connProperties, hikariCP)
+    val ser = serializer.newInstance()
+    var blob = prepareCachedBatchAsBlob(batch, connection)
+    try {
+      val uuid = UUID.randomUUID()
+      val rowInsertStr = getRowInsertStr(tableName)
+      val stmt = connection.prepareStatement(rowInsertStr)
+      stmt.setString(1, uuid)
+      stmt.setBlob(2, blob)
+      val result = stmt.executeUpdate()
+      stmt.close()
+      uuid
+    } finally {
+      connection.close()
+    }
+  }
+
+  private def prepareCachedBatchAsBlob(batch: CachedBatch, conn: Connection): Blob = {
+    var baos = new ByteArrayOutputStream()
+    val dos = new DataOutputStream(baos)
+    var blob = conn.createBlob()
+    val numCols = batch.buffers.length
+    dos.writeInt(numCols)
+
+    batch.buffers.foreach(x => {
+      var len = x.length
+      dos.writeInt(len)
+      dos.write(x)
+    })
+    val ser = serializer.newInstance()
+    val bf = ser.serialize(batch.stats)
+    dos.write(bf.array())
+    val barr = baos.toByteArray
+    blob.setBytes(0, barr)
+    blob
+  }
+
+  private def getCachedBatchFromBlob(blob: Blob): CachedBatch = {
+    val totBytes = blob.length()
+    var inpstream = blob.getBinaryStream
+    var dis = new DataInputStream(inpstream)
+    var offset = 0
+    val numCols = dis.readInt()
+    offset = offset + 4
+    val colBuffers = new ArrayBuffer[Array[Byte]]()
+    for(i <- 0 until numCols) {
+      val lenOfByteArr = dis.readInt()
+      offset = offset + 4
+      val colbuf = Array.fill[Byte](lenOfByteArr)(0)
+      val length = dis.read(colbuf)
+      offset = offset + lenOfByteArr
+      colBuffers += colbuf
+    }
+    val remainingLength = totBytes - offset
+    val bytes = Array.fill[Byte](remainingLength.asInstanceOf[Int])(0)
+    val length = dis.read(bytes)
+    val deserializationStream = serializer.newInstance.deserializeStream(new ByteArrayInputStream(bytes))
+    val stats = deserializationStream.readValue[Row]()
+    CachedBatch(colBuffers.toArray, stats)
   }
 
   override def cleanup(): Unit = {
-    this.preparedStmntCache.values.foreach(ps => ps.close())
-    cachedConn.close()
+
   }
 
-  private def preparePrepStmnt(tname: String): PreparedStatement = {
-    val pInsert = cachedConn.prepareStatement(
-      "insert into " + tname + " values (?, ?)")
-    this.preparedStmntCache.put(tname, pInsert)
-    pInsert
+  override  def truncate(tableName: String) = {
+
   }
 
-  private def getConnURL: String = {
-    val sc = SparkContext.getOrCreate()
-    val snc = SnappyContext(sc)
-    val config = snc.getExternalStoreConfig
-    val host = config.getOrElse("host", "localhost")
-    val port = config.getOrElse("port", "1527")
-    "jdbc:gemfirexd://" + host + ":" + port + "/"
+  override def getCachedBatchIterator(tableName: String,
+   itr: Iterator[UUID], getAll: Boolean = false): Iterator[CachedBatch] = {
+    val connection = ConnectionPool.getPoolConnection(tableName,
+      poolProperties, connProperties, hikariCP)
+    val sb = new StringBuilder()
+    if (getAll) {
+      val alluuids = itr.foreach(u => {
+        sb.append(u)
+        sb.append(',')
+      })
+      if (!sb.isEmpty) {
+        sb.deleteCharAt(sb.length-1)
+      }
+      else {
+        new Iterator[CachedBatch] {
+
+          override def hasNext: Boolean = false
+
+          override def next() = {
+            null
+          }
+        }
+      }
+      val rs = connection.createStatement().
+        executeQuery(s"select cachedbatch from $tableName where uuid IN (${sb.toString()})")
+        new Iterator[CachedBatch] {
+
+          override def hasNext: Boolean = rs.next()
+
+          override def next() = {
+            val blob = rs.getBlob(1)
+            getCachedBatchFromBlob(blob)
+          }
+        }
+      }
+     else {
+      val ps = connection.prepareStatement(s"select cachedbatch from $tableName where uuid = ?")
+
+      new Iterator[CachedBatch] {
+
+        override def hasNext: Boolean = itr.hasNext
+
+        override def next() = {
+          val u = itr.next()
+          ps.setString(1, u)
+          val rs = ps.executeQuery()
+          val blob = rs.getBlob(1)
+          getCachedBatchFromBlob(blob)
+        }
+      }
+    }
   }
 }

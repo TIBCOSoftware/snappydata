@@ -5,6 +5,8 @@ import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.impl.GemXDSource_LC
 import org.apache.spark.{TaskContext, Accumulable}
 import org.apache.spark.rdd.{UnionRDD, RDD}
 import org.apache.spark.sql.catalyst.expressions._
@@ -37,6 +39,13 @@ private[sql] class ExternalStoreRelation(
 
   private var _uuidList: ArrayBuffer[RDD[UUID]] =
     new ArrayBuffer[RDD[UUID]]()
+
+  private lazy val externalStore: ExternalStore = getExternalStore(connURL, connProps)
+
+  private def getExternalStore(connURL: String, connProps: Properties): ExternalStore = {
+    // For now construct GemXD_LC source as the method can resolve from the url
+    new GemXDSource_LC(connURL, connProps, Map[String, String](), false)
+  }
 
   override def appendBatch(batch: RDD[CachedBatch]) = writeLock {
     throw new IllegalStateException(s"did not expect appendBatch of ExternalStoreRelation to be called")
@@ -81,13 +90,7 @@ private[sql] class ExternalStoreRelation(
   }
 
   private def getCachedBatchIteratorFromuuidItr(itr: Iterator[UUID]): Iterator[CachedBatch] = {
-    // TODO: Write the code of pulling the CachedBatches from external store
-    val buffer = new ArrayBuffer[CachedBatch]()
-    itr.foreach(x => {
-      // get CachedBatch from gemxd
-      // buffer += cachedbatch
-    })
-    buffer.iterator
+    externalStore.getCachedBatchIterator(tableName.get, itr, false)
   }
 
   // TODO: Check if this is allright
@@ -119,8 +122,7 @@ private[sql] class ExternalStoreRelation(
   }
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUID], batch: CachedBatch): ArrayBuffer[UUID] = {
-    // TODO: put batch in GemXD with the generated uuid
-    val uuid = UUID.randomUUID()
+    val uuid = externalStore.storeCachedBatch(batch, tableName.getOrElse(throw new IllegalStateException("tableName required")))
     accumulated += uuid
   }
 }
