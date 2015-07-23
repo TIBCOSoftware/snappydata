@@ -103,7 +103,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
           sampler.append(rowIterator, null, (),
             batches.appendRow, batches.endRows)
           val x = batches.forceEndOfBatch()
-          if (x.isInstanceOf[ArrayBuffer[CachedBatch]]) {
+          if (!relation.isInstanceOf[ExternalStoreRelation]) {
             x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
           }
           else {
@@ -165,7 +165,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
       rowIterator.foreach(batches.appendRow((), _))
       val x = batches.forceEndOfBatch()
-            if (x.isInstanceOf[ArrayBuffer[CachedBatch]]) {
+            if (!relation.cachedRepresentation.isInstanceOf[ExternalStoreRelation]) {
                 x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
               }
             else {
@@ -177,7 +177,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      if (cached.isInstanceOf[RDD[CachedBatch]]) {
+      if (!relation.cachedRepresentation.isInstanceOf[ExternalStoreRelation]) {
         relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation].
           appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
       }
