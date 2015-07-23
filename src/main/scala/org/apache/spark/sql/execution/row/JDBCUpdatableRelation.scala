@@ -1,6 +1,6 @@
 package org.apache.spark.sql.execution.row
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.{ResultSetMetaData, DriverManager, Connection, PreparedStatement}
 import java.util.Properties
 
 import scala.collection.mutable
@@ -18,10 +18,10 @@ import org.apache.spark.{Logging, Partition}
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-class JDBCUpdatableRelation(
+case class JDBCUpdatableRelation(
     url: String,
     table: String,
-    override val schema: StructType,
+    userSpecifiedString : String,
     parts: Array[Partition],
     _poolProps: Map[String, String],
     connProperties: Properties,
@@ -48,6 +48,20 @@ class JDBCUpdatableRelation(
 
   final val dialect = JdbcDialects.get(url)
 
+
+
+
+
+
+  // create table in external store once upfront
+  // TODO: currently ErrorIfExists mode is being used to ensure that we do not
+  // end up invoking this multiple times in Spark execution workflow. Later
+  // should make it "Ignore" so that it will work with existing tables in
+  // backend as well (or can provide in OPTIONS for user-configured mode)
+  createTable(SaveMode.ErrorIfExists)
+
+  override val schema: StructType = resolveTable
+
   final val schemaFields = Map(schema.fields.flatMap { f =>
     val name =
       if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
@@ -61,12 +75,95 @@ class JDBCUpdatableRelation(
 
   final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
 
-  // create table in external store once upfront
-  // TODO: currently ErrorIfExists mode is being used to ensure that we do not
-  // end up invoking this multiple times in Spark execution workflow. Later
-  // should make it "Ignore" so that it will work with existing tables in
-  // backend as well (or can provide in OPTIONS for user-configured mode)
-  createTable(SaveMode.ErrorIfExists)
+  def resolveTable: StructType = {
+     val conn: Connection = DriverManager.getConnection(url, connProperties)
+    try {
+      val rs = conn.prepareStatement(s"SELECT * FROM $table WHERE 1=0").executeQuery()
+      try {
+        val rsmd = rs.getMetaData
+        val ncols = rsmd.getColumnCount
+        val fields = new Array[StructField](ncols)
+        var i = 0
+        while (i < ncols) {
+          val columnName = rsmd.getColumnLabel(i + 1)
+          val dataType = rsmd.getColumnType(i + 1)
+          val typeName = rsmd.getColumnTypeName(i + 1)
+          val fieldSize = rsmd.getPrecision(i + 1)
+          val fieldScale = rsmd.getScale(i + 1)
+          val isSigned = rsmd.isSigned(i + 1)
+          val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
+          val metadata = new MetadataBuilder().putString("name", columnName)
+          val columnType =
+            dialect.getCatalystType(dataType, typeName, fieldSize, metadata).getOrElse(
+            getCatalystType(dataType, fieldSize, fieldScale, isSigned))
+          fields(i) = StructField(columnName, columnType, nullable, metadata.build())
+          i = i + 1
+        }
+        return new StructType(fields)
+      } finally {
+        rs.close()
+      }
+    } finally {
+      conn.close()
+    }
+
+    throw new RuntimeException("This line is unreachable.")
+  }
+
+  private def getCatalystType(
+                               sqlType: Int,
+                               precision: Int,
+                               scale: Int,
+                               signed: Boolean): DataType = {
+    val answer = sqlType match {
+      // scalastyle:off
+      case java.sql.Types.ARRAY         => null
+      case java.sql.Types.BIGINT        => if (signed) { LongType } else { DecimalType.Unlimited }
+      case java.sql.Types.BINARY        => BinaryType
+      case java.sql.Types.BIT           => BooleanType // @see JdbcDialect for quirks
+      case java.sql.Types.BLOB          => BinaryType
+      case java.sql.Types.BOOLEAN       => BooleanType
+      case java.sql.Types.CHAR          => StringType
+      case java.sql.Types.CLOB          => StringType
+      case java.sql.Types.DATALINK      => null
+      case java.sql.Types.DATE          => DateType
+      case java.sql.Types.DECIMAL
+        if precision != 0 || scale != 0 => DecimalType(precision, scale)
+      case java.sql.Types.DECIMAL       => DecimalType.Unlimited
+      case java.sql.Types.DISTINCT      => null
+      case java.sql.Types.DOUBLE        => DoubleType
+      case java.sql.Types.FLOAT         => FloatType
+      case java.sql.Types.INTEGER       => if (signed) { IntegerType } else { LongType }
+      case java.sql.Types.JAVA_OBJECT   => null
+      case java.sql.Types.LONGNVARCHAR  => StringType
+      case java.sql.Types.LONGVARBINARY => BinaryType
+      case java.sql.Types.LONGVARCHAR   => StringType
+      case java.sql.Types.NCHAR         => StringType
+      case java.sql.Types.NCLOB         => StringType
+      case java.sql.Types.NULL          => null
+      case java.sql.Types.NUMERIC
+        if precision != 0 || scale != 0 => DecimalType(precision, scale)
+      case java.sql.Types.NUMERIC       => DecimalType.Unlimited
+      case java.sql.Types.NVARCHAR      => StringType
+      case java.sql.Types.OTHER         => null
+      case java.sql.Types.REAL          => DoubleType
+      case java.sql.Types.REF           => StringType
+      case java.sql.Types.ROWID         => LongType
+      case java.sql.Types.SMALLINT      => IntegerType
+      case java.sql.Types.SQLXML        => StringType
+      case java.sql.Types.STRUCT        => StringType
+      case java.sql.Types.TIME          => TimestampType
+      case java.sql.Types.TIMESTAMP     => TimestampType
+      case java.sql.Types.TINYINT       => IntegerType
+      case java.sql.Types.VARBINARY     => BinaryType
+      case java.sql.Types.VARCHAR       => StringType
+      case _                            => null
+      // scalastyle:on
+    }
+
+    if (answer == null) throw new java.sql.SQLException("Unsupported type " + sqlType)
+    answer
+  }
 
   def createTable(mode: SaveMode): Unit = {
     val conn = JdbcUtils.createConnection(url, connProperties)
@@ -98,9 +195,7 @@ class JDBCUpdatableRelation(
 
       // Create the table if the table didn't exist.
       if (!tableExists) {
-        val extensions = ddlExtensions.map(" " + _).getOrElse("")
-        val schemaString = JDBCUpdatableRelation.schemaString(schema, dialect)
-        val sql = s"CREATE TABLE $table ($schemaString)$extensions"
+        val sql = s"CREATE TABLE $table $userSpecifiedString"
         conn.prepareStatement(sql).executeUpdate()
       }
     } finally {
@@ -388,11 +483,10 @@ object JDBCUpdatableRelation extends Logging {
   }
 }
 
-final class JDBCUpdatableSource extends SchemaRelationProvider {
+final class JDBCUpdatableSource extends RelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
-
+      options: Map[String, String]) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
     val url = parameters.remove("url").getOrElse(
@@ -409,7 +503,8 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     val lowerBound = parameters.remove("lowerBound")
     val upperBound = parameters.remove("upperBound")
     val numPartitions = parameters.remove("numPartitions")
-
+    val userSpecifiedString = parameters.remove("tableschema").getOrElse(
+      sys.error("Option 'tableschema' not specified"))
     driver.foreach(DriverRegistry.register)
 
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
@@ -448,7 +543,7 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    new JDBCUpdatableRelation(url, table, schema, parts, poolProps, connProps,
+    new JDBCUpdatableRelation(url, table,userSpecifiedString, parts, poolProps, connProps,
       hikariCP, ddlExtensions, sqlContext)
   }
 }

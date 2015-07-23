@@ -21,6 +21,8 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, WeightageRule}
+
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -228,7 +230,14 @@ final class SnappyContext(sc: SparkContext)
       catalog.getStreamTableRelation(streamTableName).schema, topkOptions)
   }
 
-  // insert/update/delete/drop operations on an external table
+  /**
+   * Registers the given [[DataFrame]] as a external table in the catalog.
+   */
+  private[sql] def registerExternalTable(df: DataFrame, tableName: String): Unit = {
+    catalog.registerTable(Seq(tableName), df.logicalPlan)
+  }
+
+    // insert/update/delete/drop operations on an external table
 
   def insert(tableName: String, rows: Row*): Int = {
     catalog.lookupRelation(tableName) match {
@@ -290,7 +299,7 @@ final class SnappyContext(sc: SparkContext)
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy) ++ super.strategies
+      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
 
     object SnappyStrategies extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {

@@ -8,8 +8,12 @@ import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources._
+
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming._
+import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.streaming.{StreamingContextState, Seconds, StreamingContext}
+
 
 /**
  * Snappy SQL extensions. Includes:
@@ -55,7 +59,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable |
-        createStream | createSampled | strmctxt
+        createStream | createSampled | strmctxt | createExternalTable
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -64,6 +68,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val START = Keyword("START")
   protected val STOP = Keyword("STOP")
   protected val INIT = Keyword("INIT")
+  protected val EXTERNAL = Keyword("EXTERNAL")
 
 
   protected lazy val createStream: Parser[LogicalPlan] =
@@ -91,6 +96,40 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           StreamingCtxtActions(action, None)
 
     }
+  protected lazy val createExternalTable: Parser[LogicalPlan] =
+    (CREATE ~> (EXTERNAL ~> (TABLE ~> ident)) ~
+      externalTableInput ~ (USING ~> className) ~ (OPTIONS ~> options)) ^^ {
+      case tableName ~ userSpecifiedSchema ~ provider ~ opts =>
+        val newOpts = opts +  ("tableschema" ->  userSpecifiedSchema)
+        CreateExternalTableUsing(
+          tableName,
+          None,
+          provider,
+          new CaseInsensitiveMap(newOpts))
+    }
+
+  protected lazy val externalTableInput: Parser[String] = new Parser[String] {
+    def apply(in: Input): ParseResult[String] = {
+      val remaining = in.source.subSequence(in.offset, in.source.length()).toString
+      assert(remaining.contains(USING.str))
+      val externalTableDefinition = remaining.substring(0, remaining.indexOf(USING.str))
+      val others = remaining.substring(externalTableDefinition.length)
+      val reader = new PackratReader(new lexical.Scanner(others))
+      Success(
+        externalTableDefinition,reader)
+    }
+  }
+}
+
+private[sql] case class CreateExternalTableUsing(
+                                                  tableName: String,
+                                                  userSpecifiedSchema: Option[StructType],
+                                                  provider: String,
+                                                  options: Map[String, String]
+                                                  ) extends LogicalPlan with Command {
+
+  override def output: Seq[Attribute] = Seq.empty
+  override def children: Seq[LogicalPlan] = Seq.empty
 }
 
 object StreamStrategy extends Strategy {
@@ -107,6 +146,7 @@ object StreamStrategy extends Strategy {
     case _ => Nil
   }
 }
+
 
 private[sql] case class CreateStream(streamName: String,
     userColumns: Option[StructType],
