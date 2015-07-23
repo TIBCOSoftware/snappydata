@@ -25,6 +25,13 @@
     <version>1.4.0-SNAPSHOT.3</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
+  <repositories>
+    <repository>
+      <!-- DO NOT set id to "local" because it is reserved by Maven -->
+      <id>snappy-local-repo</id>
+      <url>file://${basedir}/../../local-repo</url>
+    </repository>
+  </repositories>
 
   <groupId>io.snappydata</groupId>
   <artifactId>snappy-spark-aqp_2.10</artifactId>
@@ -33,6 +40,7 @@
   <url>http://snappydata.io/</url>
   <properties>
     <sbt.project.name>snappy</sbt.project.name>
+    <gemfirexd.version>2.0-Beta</gemfirexd.version>
   </properties>
 
   <dependencies>
@@ -55,6 +63,24 @@
       <groupId>org.apache.tomcat</groupId>
       <artifactId>tomcat-jdbc</artifactId>
       <version>8.0.24</version>
+    </dependency>
+    <dependency>
+      <groupId>com.pivotal</groupId>
+      <artifactId>gemfirexd</artifactId>
+      <version>${gemfirexd.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.pivotal</groupId>
+      <artifactId>gemfirexd-client</artifactId>
+      <version>${gemfirexd.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.pivotal</groupId>
+      <artifactId>gemfirexd-tools</artifactId>
+      <version>${gemfirexd.version}</version>
+      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.zaxxer</groupId>
