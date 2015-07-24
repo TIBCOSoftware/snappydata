@@ -1,5 +1,9 @@
 package org.apache.spark.sql
 
+import java.util.Properties
+
+import org.apache.spark.sql.execution.row.JDBCUpdatableSource
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 
@@ -88,7 +92,7 @@ class SnappyStoreCatalog(context: SnappyContext,
 
   def registerSampleTable(schema: StructType, tableName: String,
       samplingOptions: Map[String, Any],
-      df: Option[SampleDataFrame] = None): SampleDataFrame = {
+      df: Option[SampleDataFrame] = None, jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
     require(tableName != null && tableName.length > 0,
       "registerSampleTable: expected non-empty table name")
 
@@ -104,7 +108,13 @@ class SnappyStoreCatalog(context: SnappyContext,
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
         new DummyRDD(context))(context)
       val newDF = new SampleDataFrame(context, StratifiedSample(opts, plan)())
-      context.cacheManager.cacheQuery(newDF, Some(tableName))
+      if (!jdbcSource.isDefined) {
+        context.cacheManager.cacheQuery(newDF, Some(tableName))
+      }
+      else {
+        createExternalTableForCachedBatches(tableName, jdbcSource.get)
+        context.cacheManager.cacheQuery_ext(newDF, Some(tableName), jdbcSource.get)
+      }
       newDF
     }
     sampleTables.put(tableName, sample)
@@ -119,6 +129,20 @@ class SnappyStoreCatalog(context: SnappyContext,
     streamToStructureMap.put(streamName,
       streamToStructureMap.getOrElse(streamName, Nil) :+ tableName)
     ()
+  }
+
+  def registerAndInsertIntoExternalStore(df: DataFrame, tableName: String,
+    schema: StructType, jdbcSource: JDBCUpdatableSource): Unit = {
+    require(tableName != null && tableName.length > 0,
+      "registerSampleTable: expected non-empty table name")
+
+    createExternalTableForCachedBatches(tableName, jdbcSource)
+    tables.put(tableName, df.logicalPlan )
+    context.cacheManager.cacheQuery_ext(df, Some(tableName), jdbcSource)
+  }
+
+  private def createExternalTableForCachedBatches(tableName: String, jdbcSource: JDBCUpdatableSource): Unit = {
+
   }
 
   def getStreamTable(tableName: String): LogicalPlan =

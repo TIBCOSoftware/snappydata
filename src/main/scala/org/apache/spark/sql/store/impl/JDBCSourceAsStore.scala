@@ -6,6 +6,7 @@ import java.util.{Properties, UUID}
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.row.JDBCUpdatableSource
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -23,7 +24,7 @@ import scala.language.implicitConversions
  *
  * Created by Neeraj on 16/7/15.
  */
-class GemXDSource_LC(connURL: String, connProperties: Properties, poolProperties: Map[String, String], hikariCP: Boolean) extends ExternalStore {
+class JDBCSourceAsStore(jdbcSource: JDBCUpdatableSource) extends ExternalStore {
 
 private val serializer = SparkEnv.get.serializer
 
@@ -49,9 +50,13 @@ private val serializer = SparkEnv.get.serializer
     istr
   }
 
+  private def getConnection : Connection = {
+    // TODO: implement
+    null
+  }
+
   override def storeCachedBatch(batch: CachedBatch, tableName: String): UUID = {
-    val connection = ConnectionPool.getPoolConnection(tableName,
-      poolProperties, connProperties, hikariCP)
+    val connection = getConnection
     val ser = serializer.newInstance()
     var blob = prepareCachedBatchAsBlob(batch, connection)
     try {
@@ -122,8 +127,7 @@ private val serializer = SparkEnv.get.serializer
 
   override def getCachedBatchIterator(tableName: String,
    itr: Iterator[UUID], getAll: Boolean = false): Iterator[CachedBatch] = {
-    val connection = ConnectionPool.getPoolConnection(tableName,
-      poolProperties, connProperties, hikariCP)
+    val connection = getConnection
     val sb = new StringBuilder()
     if (getAll) {
       val alluuids = itr.foreach(u => {

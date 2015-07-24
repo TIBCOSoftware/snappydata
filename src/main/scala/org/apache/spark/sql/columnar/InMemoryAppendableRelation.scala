@@ -96,10 +96,6 @@ private[sql] class InMemoryAppendableRelation(
     _cachedBufferList += batch
   }
 
-  def appendUUIDBatch(batch: RDD[UUID]): Unit = writeLock {
-    throw new IllegalStateException(s"did not expect appendUUIDBatch of InMemoryAppendableRelation to be called")
-  }
-
   def truncate() = writeLock {
     for (batch <- _cachedBufferList) {
       batch.unpersist(true)

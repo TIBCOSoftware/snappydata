@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import java.util.UUID
+import java.util.{Properties, UUID}
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable
@@ -19,7 +19,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.{ExternalStoreRelation, CachedBatch, InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.row.{DeletableRelation, RowInsertableRelation, UpdatableRelation}
+import org.apache.spark.sql.execution.row.{JDBCUpdatableSource, DeletableRelation, RowInsertableRelation, UpdatableRelation}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StreamStrategy, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -207,12 +207,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def registerSampleTable(tableName: String, schema: StructType,
-    samplingOptions: Map[String, Any]): SampleDataFrame = {
-    catalog.registerSampleTable(schema, tableName, samplingOptions)
+    samplingOptions: Map[String, Any], jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
+    catalog.registerSampleTable(schema, tableName, samplingOptions, None, jdbcSource)
   }
 
   def registerSampleTableOn[A <: Product: u.TypeTag](tableName: String,
-    samplingOptions: Map[String, Any]): DataFrame = {
+    samplingOptions: Map[String, Any], jdbcSource: Option[JDBCUpdatableSource] = None): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
         "Mention type information for e.g. registerSampleTableOn[<class>]")
@@ -220,7 +220,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     SparkPlan.currentContext.set(self)
     val schemaExtract = ScalaReflection.schemaFor[A].dataType
       .asInstanceOf[StructType]
-    registerSampleTable(tableName, schemaExtract, samplingOptions)
+    registerSampleTable(tableName, schemaExtract, samplingOptions, jdbcSource)
+  }
+
+  def registerAndInsertIntoExternalStore(df: DataFrame, tableName: String,
+    schema: StructType, jdbcSource: JDBCUpdatableSource): Unit = {
+    catalog.registerAndInsertIntoExternalStore(df, tableName, schema, jdbcSource)
   }
 
   def registerTopK(tableName: String, streamTableName: String,
@@ -637,6 +642,10 @@ private[sql] case class SnappyOperations(context: SnappyContext,
         tableName, df.schema, options)
     }
     context.collectSamples(df, in.map(_._1))
+  }
+
+  def registerAndInsertIntoExternalStore(tableName: String, jdbcSource: JDBCUpdatableSource): Unit = {
+    context.registerAndInsertIntoExternalStore(df, tableName, df.schema, jdbcSource)
   }
 }
 
