@@ -45,6 +45,7 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
                 streamAggregates(interval - 1).offer(item.key,
                   item.frequency.toInt)
               } // else IGNORE
+            case None => // IGNORE
           }
         }
         else {

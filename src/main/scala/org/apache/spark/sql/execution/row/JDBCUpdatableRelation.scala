@@ -53,9 +53,9 @@ class JDBCUpdatableRelation(
       if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
     val nname = Utils.normalizeId(name)
     if (name != nname) {
-      Seq((name, f), (Utils.normalizeId(name), f))
+      Iterator((name, f), (Utils.normalizeId(name), f))
     } else {
-      Seq((name, f))
+      Iterator((name, f))
     }
   }: _*)
 

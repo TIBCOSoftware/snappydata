@@ -6,9 +6,10 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
+import org.apache.spark.sql.execution.{ExecutedCommand, SparkPlan, RunnableCommand}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.{StreamingContextState, Seconds, StreamingContext}
+import org.apache.spark.streaming._
 
 /**
  * Snappy SQL extensions. Includes:
@@ -92,6 +93,21 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     }
 }
 
+object StreamStrategy extends Strategy {
+  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+    case CreateStream(streamName, userColumns, options) =>
+      ExecutedCommand(
+        CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
+    case CreateSampledTable(streamName, options) =>
+      ExecutedCommand(
+        CreateSampledTableCmd(streamName, options)) :: Nil
+    case StreamingCtxtActions(action, batchInterval) =>
+      ExecutedCommand(
+        StreamingCtxtActionsCmd(action, batchInterval)) :: Nil
+    case _ => Nil
+  }
+}
+
 private[sql] case class CreateStream(streamName: String,
     userColumns: Option[StructType],
     options: Map[String, String])
@@ -123,7 +139,119 @@ private[sql] case class StreamingCtxtActions(action: Int,
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
-private object StreamingCtxtHolder {
+private[sql] case class CreateStreamTableCmd(streamIdent: String,
+    userColumns: Option[StructType],
+    options: Map[String, String])
+    extends RunnableCommand {
+
+  def run(sqlContext: SQLContext): Seq[Row] = {
+
+    val resolved = ResolvedDataSource(sqlContext, userColumns,
+      Array.empty[String], "org.apache.spark.sql.sources.StreamSource", options)
+    val plan = LogicalRelation(resolved.relation)
+
+    val catalog = sqlContext.asInstanceOf[SnappyContext].catalog
+    val streamName = catalog.processTableIdentifier(streamIdent)
+    // add the stream to the tables in the catalog
+    catalog.tables.get(streamName) match {
+      case None => catalog.tables.put(streamName, plan)
+      case Some(x) => throw new IllegalStateException(
+        s"Stream name $streamName already defined")
+    }
+    Seq.empty
+  }
+}
+
+private[sql] case class StreamingCtxtActionsCmd(action: Int,
+    batchInterval: Option[Int])
+    extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+
+    action match {
+      case 0 =>
+        import org.apache.spark.sql.snappy._
+
+        sqlContext.sparkContext.getOrCreateStreamingContext(
+          batchInterval.getOrElse(throw new IllegalStateException()))
+
+      case 1 =>
+        // Register sampling of all the streams
+        val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
+        val catalog = snappyCtxt.catalog
+        catalog.tables.foreach {
+          case (streamTableName, LogicalRelation(sr: StreamRelation[_])) =>
+            val sampleTables = catalog.streamToStructureMap.getOrElse(
+              streamTableName, Nil)
+            // runtime type is erased to Any, but we keep the actual ClassTag
+            // around in StreamRelation so as to give the proper runtime type
+            val sra = sr.asInstanceOf[StreamRelation[Any]]
+            snappyCtxt.saveStream(sra.dStream, sampleTables, sra.formatter,
+              sra.schema)(sra.ct)
+        }
+        // start the streaming
+        StreamingCtxtHolder.streamingContext.start()
+
+      case 2 => StreamingCtxtHolder.streamingContext.stop()
+    }
+    Seq.empty[Row]
+  }
+}
+
+private[sql] case class CreateSampledTableCmd(sampledTableName: String,
+    options: Map[String, String])
+    extends RunnableCommand {
+
+  def run(sqlContext: SQLContext): Seq[Row] = {
+
+    val tableIdent = OptsUtil.getOption(OptsUtil.BASETABLE, options)
+
+    val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
+    val catalog = snappyCtxt.catalog
+
+    val tableName = catalog.processTableIdentifier(tableIdent)
+    val sr = catalog.getStreamTableRelation(tableName)
+
+    // Add the sample table to the catalog as well.
+    val strcts = catalog.streamToStructureMap.getOrElse(tableName, Nil)
+    if (strcts.contains(sampledTableName)) {
+      throw new IllegalStateException(
+        s"A structure with name $sampledTableName is already defined")
+    }
+
+    catalog.streamToStructureMap.put(tableName,
+      strcts :+ sampledTableName)
+    // Register the sample table
+    // StratifiedSampler is not expecting base table, remove it.
+    snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
+      options - OptsUtil.BASETABLE)
+
+    Seq.empty
+  }
+}
+
+object OptsUtil {
+
+  // Options while creating sample/stream table
+  val BASETABLE = "basetable"
+  val SERVER_ADDRESS = "serveraddress"
+  //val PORT = "port"
+  val FORMAT = "format"
+  val SLIDEDURATION = "slideduration"
+  val WINDOWDURATION = "windowduration"
+  val STORAGE_LEVEL = "storagelevel"
+
+  def newAnalysisException(msg: String) = new AnalysisException(msg)
+
+  def getOption(optionName: String, options: Map[String, String]): String =
+    options.getOrElse(optionName, throw newAnalysisException(
+      s"Option $optionName not defined"))
+
+  def getOptionally(optionName: String,
+      options: Map[String, String]): Option[String] = options.get(optionName)
+}
+
+private[spark] object StreamingCtxtHolder {
 
   private val atomicContext = new AtomicReference[StreamingContext]()
 
@@ -133,7 +261,7 @@ private object StreamingCtxtHolder {
       duration: Int): StreamingContext = {
     val context = atomicContext.get
     if (context != null &&
-      !context.getState().equals(StreamingContextState.STOPPED)) {
+        !context.getState().equals(StreamingContextState.STOPPED)) {
       return context
     }
     atomicContext.compareAndSet(context,

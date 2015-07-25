@@ -71,7 +71,6 @@ trait CastLongTime {
         if (timeCol >= 0 && row.isNullAt(timeCol))
           getNullMillis(getDefaultForNull)
         else throw e
-      case t => throw t
     }
   }
 }

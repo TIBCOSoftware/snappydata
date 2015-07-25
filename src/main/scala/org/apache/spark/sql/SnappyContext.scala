@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import java.util.{Properties, UUID}
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable
@@ -15,13 +15,13 @@ import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.{ExternalStoreRelation, CachedBatch, InMemoryAppendableColumnarTableScan, InMemoryAppendableRelation}
+import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.row.{JDBCUpdatableSource, DeletableRelation, RowInsertableRelation, UpdatableRelation}
+import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
-import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StreamStrategy, WeightageRule}
+import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -34,7 +34,7 @@ import org.apache.spark.{Partitioner, SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-protected[sql] final class SnappyContext(sc: SparkContext)
+final class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
   self =>
@@ -79,17 +79,25 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
+    val sampleTableNames = mutable.Set(
+      catalog.processTableIdentifier(sampleTab): _*)
 
-    val sampleTables = (catalog.sampleTables.filter {
-      case (name, df) => sampleTab.contains(name)
-    } map {
-      case (name, df) =>
-        val sample = df.logicalPlan
+    val sampleTables = catalog.tables.collect {
+      case (name, sample: StratifiedSample) if sampleTableNames.remove(name) =>
         (name, sample.options, sample.schema, sample.output,
-          cacheManager.lookupCachedData(df.logicalPlan).getOrElse(sys.error(
-            s"SnappyContext.saveStream: failed to lookup cached plan for " +
-              s"sampling table $name")).cachedRepresentation)
-    }).toSeq
+            cacheManager.lookupCachedData(sample).getOrElse(sys.error(
+              s"SnappyContext.saveStream: failed to lookup cached plan for " +
+                  s"sampling table $name")).cachedRepresentation)
+    }
+
+    val topKWrappers = catalog.topKStructures.filter {
+      case (name, topkstruct) => sampleTableNames.remove(name)
+    }
+
+    if (sampleTableNames.nonEmpty) {
+      throw new IllegalArgumentException("collectSamples: no sampling or " +
+          s"topK structures for ${sampleTableNames.mkString(", ")}")
+    }
 
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {
@@ -112,9 +120,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         }))
     }
     // TODO: A different set of job is created for topK structure
-    catalog.topKStructures.filter {
-      case (name, topkstruct) => sampleTab.contains(name)
-    } foreach {
+    topKWrappers.foreach {
       case (name, topKWrapper) =>
         val clazz = SqlUtils.getInternalType(
           topKWrapper.schema(topKWrapper.key.name).dataType)
@@ -140,18 +146,17 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def appendToCache(df: DataFrame, tableName: String,
-    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
-    val relation = cacheManager.lookupCachedData(catalog.lookupRelation(
-      Seq(tableName))).getOrElse {
-      val lookup = catalog.lookupRelation(Seq(tableName))
+    val plan = catalog.lookupRelation(tableName)
+    val relation = cacheManager.lookupCachedData(plan).getOrElse {
       cacheManager.cacheQuery(
-        DataFrame(this, lookup),
+        DataFrame(this, plan),
         Some(tableName), storageLevel)
 
-      cacheManager.lookupCachedData(lookup).getOrElse {
+      cacheManager.lookupCachedData(plan).getOrElse {
         sys.error(s"couldn't cache table $tableName")
       }
     }
@@ -186,19 +191,19 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def truncateTable(tableName: String): Unit = {
     cacheManager.lookupCachedData(catalog.lookupRelation(
-      Seq(tableName))).foreach(_.cachedRepresentation.
-      asInstanceOf[InMemoryAppendableRelation].truncate())
+      tableName)).foreach(_.cachedRepresentation.
+        asInstanceOf[InMemoryAppendableRelation].truncate())
   }
 
-  def registerTable[A <: Product: u.TypeTag](tableName: String) = {
+  def registerTable[A <: Product : u.TypeTag](tableName: String) = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
-        "Mention type information for e.g. registerSampleTableOn[<class>]")
+          "Mention type information for e.g. registerSampleTableOn[<class>]")
     }
 
     SparkPlan.currentContext.set(self)
     val schema = ScalaReflection.schemaFor[A].dataType
-      .asInstanceOf[StructType]
+        .asInstanceOf[StructType]
 
     val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
       new DummyRDD(this))(this)
@@ -207,37 +212,40 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def registerSampleTable(tableName: String, schema: StructType,
-    samplingOptions: Map[String, Any], jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
-    catalog.registerSampleTable(schema, tableName, samplingOptions, None, jdbcSource)
+      samplingOptions: Map[String, Any],
+      jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
+    catalog.registerSampleTable(schema, tableName, samplingOptions,
+      None, jdbcSource)
   }
 
-  def registerSampleTableOn[A <: Product: u.TypeTag](tableName: String,
-    samplingOptions: Map[String, Any], jdbcSource: Option[JDBCUpdatableSource] = None): DataFrame = {
+  def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String,
+      samplingOptions: Map[String, Any],
+      jdbcSource: Option[JDBCUpdatableSource] = None): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
-        "Mention type information for e.g. registerSampleTableOn[<class>]")
+          "Mention type information for e.g. registerSampleTableOn[<class>]")
     }
     SparkPlan.currentContext.set(self)
     val schemaExtract = ScalaReflection.schemaFor[A].dataType
-      .asInstanceOf[StructType]
+        .asInstanceOf[StructType]
     registerSampleTable(tableName, schemaExtract, samplingOptions, jdbcSource)
   }
 
   def registerAndInsertIntoExternalStore(df: DataFrame, tableName: String,
-    schema: StructType, jdbcSource: JDBCUpdatableSource): Unit = {
+      schema: StructType, jdbcSource: JDBCUpdatableSource): Unit = {
     catalog.registerAndInsertIntoExternalStore(df, tableName, schema, jdbcSource)
   }
 
   def registerTopK(tableName: String, streamTableName: String,
-    topkOptions: Map[String, Any]) = {
+      topkOptions: Map[String, Any]) = {
     catalog.registerTopK(tableName, streamTableName,
-      catalog.getStreamTable(streamTableName).schema, topkOptions)
+      catalog.getStreamTableRelation(streamTableName).schema, topkOptions)
   }
 
   // insert/update/delete/drop operations on an external table
 
   def insert(tableName: String, rows: Row*): Int = {
-    catalog.lookupRelation(Seq(tableName)) match {
+    catalog.lookupRelation(tableName) match {
       case LogicalRelation(r: RowInsertableRelation) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
@@ -246,7 +254,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
-    catalog.lookupRelation(Seq(tableName)) match {
+    catalog.lookupRelation(tableName) match {
       case LogicalRelation(u: UpdatableRelation) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
@@ -255,7 +263,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def delete(tableName: String, filterExpr: String): Int = {
-    catalog.lookupRelation(Seq(tableName)) match {
+    catalog.lookupRelation(tableName) match {
       case LogicalRelation(d: DeletableRelation) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
@@ -343,8 +351,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       startTime: Long, endTime: Long): DataFrame =
     queryTopK[T](topKName, startTime, endTime, -1)
 
-  def queryTopK[T: ClassTag](topKName: String,
+  def queryTopK[T: ClassTag](topKIdent: String,
       startTime: Long, endTime: Long, k: Int): DataFrame = {
+    val topKName = catalog.processTableIdentifier(topKIdent)
     val topk: TopKWrapper = catalog.topKStructures(topKName)
 
     val size = if (k > 0) k else topk.size
@@ -417,17 +426,22 @@ object snappy extends Serializable {
     }
   }
 
+  private def stratifiedSampleOrError(plan: LogicalPlan): StratifiedSample = {
+    plan match {
+      case ss: StratifiedSample => ss
+      case Subquery(_, child) => stratifiedSampleOrError(child)
+      case s => throw new AnalysisException("Stratified sampling " +
+          "operations require stratifiedSample plan and not " +
+          s"${s.getClass.getSimpleName}")
+    }
+  }
+
   implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
     df.sqlContext match {
       case sc: SnappyContext =>
-        df.logicalPlan match {
-          case ss: StratifiedSample => new SampleDataFrame(sc, ss)
-          case s => throw new AnalysisException("Stratified sampling " +
-            "operations require stratifiedSample plan and not " +
-            s"${s.getClass.getSimpleName}")
-        }
+        new SampleDataFrame(sc, stratifiedSampleOrError(df.logicalPlan))
       case sc => throw new AnalysisException("Extended snappy operations " +
-        s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
     }
   }
 
@@ -604,7 +618,8 @@ private[sql] case class SnappyOperations(context: SnappyContext,
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
     new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan)())
 
-  def createTopK(name: String, options: Map[String, Any]): Unit = {
+  def createTopK(ident: String, options: Map[String, Any]): Unit = {
+    val name = context.catalog.processTableIdentifier(ident)
     val schema = df.logicalPlan.schema
 
     // Create a very long timeInterval when the topK is being created
@@ -633,19 +648,10 @@ private[sql] case class SnappyOperations(context: SnappyContext,
    */
   def appendToCache(tableName: String) = context.appendToCache(df, tableName)
 
-  /**
-   * Insert into existing sample table or create one if necessary.
-   */
-  def createAndInsertIntoSampleTables(in: (String, Map[String, String])*) {
-    in.map {
-      case (tableName, options) => context.catalog.getOrAddStreamTable(
-        tableName, df.schema, options)
-    }
-    context.collectSamples(df, in.map(_._1))
-  }
-
-  def registerAndInsertIntoExternalStore(tableName: String, jdbcSource: JDBCUpdatableSource): Unit = {
-    context.registerAndInsertIntoExternalStore(df, tableName, df.schema, jdbcSource)
+  def registerAndInsertIntoExternalStore(tableName: String,
+      jdbcSource: JDBCUpdatableSource): Unit = {
+    context.registerAndInsertIntoExternalStore(df, tableName,
+        df.schema, jdbcSource)
   }
 }
 
