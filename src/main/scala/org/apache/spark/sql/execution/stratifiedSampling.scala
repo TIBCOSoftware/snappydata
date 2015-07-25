@@ -19,7 +19,8 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
 case class StratifiedSample(var options: Map[String, Any],
-    @transient override val child: logical.LogicalPlan)
+    @transient override val child: logical.LogicalPlan,
+    streamTable: Option[String] = None)
     // pre-compute QCS because it is required by
     // other API invoked from driver
     (val qcs: Array[Int] = resolveQCS(options, child.schema.fieldNames,

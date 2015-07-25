@@ -6,7 +6,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
-import org.apache.spark.sql.execution.{ExecutedCommand, SparkPlan, RunnableCommand}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming._
@@ -179,15 +179,26 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
         // Register sampling of all the streams
         val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
         val catalog = snappyCtxt.catalog
-        catalog.tables.foreach {
+        val streamTables = catalog.tables.collect {
+          // runtime type is erased to Any, but we keep the actual ClassTag
+          // around in StreamRelation so as to give the proper runtime type
           case (streamTableName, LogicalRelation(sr: StreamRelation[_])) =>
-            val sampleTables = catalog.streamToStructureMap.getOrElse(
-              streamTableName, Nil)
-            // runtime type is erased to Any, but we keep the actual ClassTag
-            // around in StreamRelation so as to give the proper runtime type
-            val sra = sr.asInstanceOf[StreamRelation[Any]]
-            snappyCtxt.saveStream(sra.dStream, sampleTables, sra.formatter,
-              sra.schema)(sra.ct)
+            (streamTableName, sr.asInstanceOf[StreamRelation[Any]])
+        }
+        streamTables.foreach {
+          case (streamTableName, sr) =>
+            val streamTable = Some(streamTableName)
+            val aqpTables = catalog.tables.collect {
+              case (sampleTableName, sr: StratifiedSample)
+                if sr.streamTable == streamTable => sampleTableName
+            } ++ catalog.topKStructures.collect {
+              case (topKName, topK: TopKWrapper)
+                if topK.streamTable == streamTable => topKName
+            }
+            if (aqpTables.nonEmpty) {
+              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
+                sr.schema)(sr.ct)
+            }
         }
         // start the streaming
         StreamingCtxtHolder.streamingContext.start()
@@ -213,18 +224,9 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     val sr = catalog.getStreamTableRelation(tableName)
 
     // Add the sample table to the catalog as well.
-    val strcts = catalog.streamToStructureMap.getOrElse(tableName, Nil)
-    if (strcts.contains(sampledTableName)) {
-      throw new IllegalStateException(
-        s"A structure with name $sampledTableName is already defined")
-    }
-
-    catalog.streamToStructureMap.put(tableName,
-      strcts :+ sampledTableName)
-    // Register the sample table
     // StratifiedSampler is not expecting base table, remove it.
     snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
-      options - OptsUtil.BASETABLE)
+      options - OptsUtil.BASETABLE, Some(tableName))
 
     Seq.empty
   }

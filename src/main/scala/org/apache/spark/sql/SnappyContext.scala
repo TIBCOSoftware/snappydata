@@ -56,7 +56,7 @@ final class SnappyContext(sc: SparkContext)
   override protected[sql] val cacheManager = new SnappyCacheManager(this)
 
   def saveStream[T: ClassTag](stream: DStream[T],
-    sampleTab: Seq[String],
+    aqpTables: Seq[String],
     formatter: (RDD[T], StructType) => RDD[Row],
     schema: StructType,
     transform: DataFrame => DataFrame = null) {
@@ -70,20 +70,19 @@ final class SnappyContext(sc: SparkContext)
         transform(rDF)
       } else rDF
 
-      collectSamples(tDF, sampleTab)
-
+      collectSamples(tDF, aqpTables)
     })
   }
 
-  def collectSamples(tDF: DataFrame, sampleTab: Seq[String],
+  def collectSamples(tDF: DataFrame, aqpTables: Seq[String],
     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
-    val sampleTableNames = mutable.Set(
-      catalog.processTableIdentifier(sampleTab): _*)
+    val aqpTableNames = mutable.Set(
+      catalog.processTableIdentifier(aqpTables): _*)
 
     val sampleTables = catalog.tables.collect {
-      case (name, sample: StratifiedSample) if sampleTableNames.remove(name) =>
+      case (name, sample: StratifiedSample) if aqpTableNames.remove(name) =>
         (name, sample.options, sample.schema, sample.output,
             cacheManager.lookupCachedData(sample).getOrElse(sys.error(
               s"SnappyContext.saveStream: failed to lookup cached plan for " +
@@ -91,12 +90,12 @@ final class SnappyContext(sc: SparkContext)
     }
 
     val topKWrappers = catalog.topKStructures.filter {
-      case (name, topkstruct) => sampleTableNames.remove(name)
+      case (name, topkstruct) => aqpTableNames.remove(name)
     }
 
-    if (sampleTableNames.nonEmpty) {
+    if (aqpTableNames.nonEmpty) {
       throw new IllegalArgumentException("collectSamples: no sampling or " +
-          s"topK structures for ${sampleTableNames.mkString(", ")}")
+          s"topK structures for ${aqpTableNames.mkString(", ")}")
     }
 
     // TODO: this iterates rows multiple times
@@ -212,14 +211,14 @@ final class SnappyContext(sc: SparkContext)
   }
 
   def registerSampleTable(tableName: String, schema: StructType,
-      samplingOptions: Map[String, Any],
+      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
       jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
     catalog.registerSampleTable(schema, tableName, samplingOptions,
-      None, jdbcSource)
+      None, streamTable, jdbcSource)
   }
 
   def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String,
-      samplingOptions: Map[String, Any],
+      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
       jdbcSource: Option[JDBCUpdatableSource] = None): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
@@ -228,7 +227,8 @@ final class SnappyContext(sc: SparkContext)
     SparkPlan.currentContext.set(self)
     val schemaExtract = ScalaReflection.schemaFor[A].dataType
         .asInstanceOf[StructType]
-    registerSampleTable(tableName, schemaExtract, samplingOptions, jdbcSource)
+    registerSampleTable(tableName, schemaExtract, samplingOptions,
+      streamTable, jdbcSource)
   }
 
   def registerAndInsertIntoExternalStore(df: DataFrame, tableName: String,
@@ -308,7 +308,7 @@ final class SnappyContext(sc: SparkContext)
 
     object SnappyStrategies extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-        case s @ StratifiedSample(options, child) =>
+        case s @ StratifiedSample(options, child, _) =>
           s.getExecution(planLater(child)) :: Nil
         case PhysicalOperation(projectList, filters,
           mem: columnar.InMemoryAppendableRelation) =>

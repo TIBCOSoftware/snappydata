@@ -9,13 +9,15 @@ import org.apache.spark.sql.types.{ DataType, StructField, StructType }
 import org.apache.spark.sql.Row
 
 protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
-  val size: Int, val timeSeriesColumn: Int,
-  val timeInterval: Long, val schema: StructType, val key: StructField,
-  val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
-  val stsummary: Boolean) extends CastLongTime with Serializable {
-  
-  val rowToTupleConverter: Row => (Any, Any) = TopKWrapper.getRowToTupleConverter(this)
-  
+    val size: Int, val timeSeriesColumn: Int,
+    val timeInterval: Long, val schema: StructType, val key: StructField,
+    val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
+    val stsummary: Boolean, val streamTable: Option[String])
+    extends CastLongTime with Serializable {
+
+  val rowToTupleConverter: Row => (Any, Any) =
+    TopKWrapper.getRowToTupleConverter(this)
+
   override protected def getNullMillis(getDefaultForNull: Boolean) =
     if (getDefaultForNull) System.currentTimeMillis() else -1L
 
@@ -33,7 +35,7 @@ protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
 object TopKWrapper {
 
   def apply(name: String, opts: Map[String, Any],
-    schema: StructType): TopKWrapper = {
+    schema: StructType, streamTable: Option[String] = None): TopKWrapper = {
 
     val keyOpt = "key".normalize
     val depthOpt = "depth".normalize
@@ -161,11 +163,12 @@ object TopKWrapper {
     val cms =
       if (epsAndcf) CMSParams(eps, confidence) else CMSParams(width, depth)
 
-    new TopKWrapper(name, cms, size, tsCol, timeInterval,
-      schema, schema(key), frequencyCol, epoch, maxInterval, stSummary)
+    new TopKWrapper(name, cms, size, tsCol, timeInterval, schema, schema(key),
+      frequencyCol, epoch, maxInterval, stSummary, streamTable)
   }
 
-  private def getRowToTupleConverter(topkWrapper: TopKWrapper): Row => (Any, Any) = {
+  private def getRowToTupleConverter(
+      topkWrapper: TopKWrapper): Row => (Any, Any) = {
 
     val tsCol = if (topkWrapper.timeInterval > 0)
       topkWrapper.timeSeriesColumn
@@ -176,23 +179,21 @@ object TopKWrapper {
       topkWrapper.frequencyCol match {
         case None =>
           (row: Row) => (row(topKKeyIndex), null)
-          case Some(freqCol) =>
+
+        case Some(freqCol) =>
           (row: Row) => {
             val freq = row(freqCol) match {
+              case num: Long => num
               case num: Double => num.toLong
+              case num: Int => num.toLong
               case num: Float => num.toLong
-              case num: java.lang.Double => num.longValue().toLong
-              case num: java.lang.Float => num.longValue().toLong
-              case num: java.lang.Integer => num.intValue().toLong
-              case num: java.lang.Long => num.longValue().toLong
-              case x =>x
+              case num: java.lang.Number => num.longValue()
+              case x => x
             }
             (row(topKKeyIndex), freq)
           }
-
       }
     } else {
-
       topkWrapper.frequencyCol match {
         case None =>
           (row: Row) => {
@@ -201,16 +202,15 @@ object TopKWrapper {
             (key, timeVal)
           }
 
-          case Some(freqCol) =>
+        case Some(freqCol) =>
           (row: Row) => {
 
             val freq = row(freqCol) match {
+              case num: Long => num
               case num: Double => num.toLong
+              case num: Int => num.toLong
               case num: Float => num.toLong
-              case num: java.lang.Double => num.longValue().toLong
-              case num: java.lang.Float => num.longValue().toLong
-              case num: java.lang.Integer => num.intValue().toLong
-              case num: java.lang.Long => num.longValue().toLong
+              case num: java.lang.Number => num.longValue()
               case x => x
             }
             val key = row(topKKeyIndex)
@@ -218,8 +218,6 @@ object TopKWrapper {
             (key, (freq, timeVal))
           }
       }
-
     }
-
   }
 }

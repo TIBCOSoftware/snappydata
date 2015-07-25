@@ -26,9 +26,6 @@ final class SnappyStoreCatalog(context: SnappyContext,
 
   protected val currentDatabase: String = "snappydata"
 
-  // This keeps the stream table to Sample Table mapping
-  val streamToStructureMap = new mutable.HashMap[String, Seq[String]]()
-
   val topKStructures = new mutable.HashMap[String, TopKWrapper]()
 
   def processTableIdentifier(tableIdentifier: String): String = {
@@ -50,7 +47,6 @@ final class SnappyStoreCatalog(context: SnappyContext,
 
   override def unregisterAllTables(): Unit = {
     super.unregisterAllTables()
-    streamToStructureMap.clear()
     topKStructures.clear()
   }
 
@@ -60,19 +56,8 @@ final class SnappyStoreCatalog(context: SnappyContext,
     if (tables.contains(tblName)) {
       context.truncateTable(tblName)
       tables -= tblName
-    }
-    streamToStructureMap.get(tblName) match {
-      case Some(x) => if (x.nonEmpty)
-        throw new IllegalStateException(s"Stream $tblName has structure(s)" +
-            s" ${x.mkString(",")} associated with it")
-      else
-        streamToStructureMap -= tblName
-      case None => // do nothing
-    }
-    streamToStructureMap filter { p: (String, Seq[String]) =>
-      p._2.exists(tblName.equals(_))
-    } foreach { s => val difflist = s._2.diff(List(tblName))
-      streamToStructureMap.put(s._1, difflist)
+    } else if (topKStructures.contains(tblName)) {
+      topKStructures -= tblName
     }
   }
 
@@ -95,11 +80,18 @@ final class SnappyStoreCatalog(context: SnappyContext,
 
   def registerSampleTable(schema: StructType, tableIdent: String,
       samplingOptions: Map[String, Any], df: Option[SampleDataFrame] = None,
+      streamTableIdent: Option[String] = None,
       jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
     require(tableIdent != null && tableIdent.length > 0,
       "registerSampleTable: expected non-empty table name")
 
     val tableName = processTableIdentifier(tableIdent)
+
+    if (tables.contains(tableName)) {
+      throw new IllegalStateException(
+        s"A structure with name $tableName is already defined")
+    }
+
     // add or overwrite existing name attribute
     val opts = Utils.normalizeOptions(samplingOptions)
         .filterKeys(_ != "name") + ("name" -> tableName)
@@ -111,7 +103,9 @@ final class SnappyStoreCatalog(context: SnappyContext,
     val sampleDF = df.getOrElse {
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
         new DummyRDD(context))(context)
-      val newDF = new SampleDataFrame(context, StratifiedSample(opts, plan)())
+      val streamTable = streamTableIdent.map(processTableIdentifier)
+      val newDF = new SampleDataFrame(context,
+        StratifiedSample(opts, plan, streamTable)())
       if (jdbcSource.isEmpty) {
         context.cacheManager.cacheQuery(newDF, Some(tableName))
       } else {
@@ -125,15 +119,17 @@ final class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def registerTopK(tableIdent: String, streamTableIdent: String,
-      schema: StructType, topkOptions: Map[String, Any]) = {
+      schema: StructType, topkOptions: Map[String, Any]): Unit = {
     val tableName = processTableIdentifier(tableIdent)
     val streamTableName = processTableIdentifier(streamTableIdent)
 
-    topKStructures.put(tableName, TopKWrapper(tableName, topkOptions, schema))
+    if (topKStructures.contains(tableName)) {
+      throw new IllegalStateException(
+        s"A structure with name $tableName is already defined")
+    }
 
-    streamToStructureMap.put(streamTableName,
-      streamToStructureMap.getOrElse(streamTableName, Nil) :+ tableName)
-    ()
+    topKStructures.put(tableName, TopKWrapper(tableName, topkOptions, schema,
+      Some(streamTableName)))
   }
 
   def registerAndInsertIntoExternalStore(df: DataFrame, tableIdent: String,
