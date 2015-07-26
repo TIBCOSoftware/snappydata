@@ -4,7 +4,6 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
@@ -15,7 +14,7 @@ import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
@@ -62,9 +61,8 @@ final class SnappyContext(sc: SparkContext)
     transform: DataFrame => DataFrame = null) {
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
-      val row = formatter(rdd, schema)
-
-      val rDF = createDataFrame(row, schema)
+      val rows = formatter(rdd, schema)
+      val rDF = createDataFrame(rows, schema)
 
       val tDF = if (transform != null) {
         transform(rDF)
@@ -105,17 +103,11 @@ final class SnappyContext(sc: SparkContext)
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
-          val batches = InMemoryAppendableRelation(useCompression,
+          val batches = ExternalStoreRelation(useCompression,
             columnBatchSize, name, schema, relation, output)
           sampler.append(rowIterator, null, (),
             batches.appendRow, batches.endRows)
-          val x = batches.forceEndOfBatch()
-          relation match {
-            case _: ExternalStoreRelation =>
-              x.asInstanceOf[ArrayBuffer[UUID]].iterator
-            case _: InMemoryAppendableRelation =>
-              x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
-          }
+          batches.forceEndOfBatch().iterator
         }))
     }
     // TODO: A different set of job is created for topK structure
@@ -164,17 +156,11 @@ final class SnappyContext(sc: SparkContext)
 
     val cached = df.mapPartitions { rowIterator =>
 
-      val batches = InMemoryAppendableRelation(useCompression,
-        columnBatchSize, tableName, schema, relation.cachedRepresentation, output)
+      val batches = ExternalStoreRelation(useCompression, columnBatchSize,
+        tableName, schema, relation.cachedRepresentation, output)
 
       rowIterator.foreach(batches.appendRow((), _))
-      val x = batches.forceEndOfBatch()
-      relation.cachedRepresentation match {
-        case _: ExternalStoreRelation =>
-          x.asInstanceOf[ArrayBuffer[UUID]].iterator
-        case _: InMemoryAppendableRelation =>
-          x.asInstanceOf[ArrayBuffer[CachedBatch]].iterator
-      }
+      batches.forceEndOfBatch().iterator
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch

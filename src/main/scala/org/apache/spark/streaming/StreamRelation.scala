@@ -22,12 +22,10 @@ case class StreamRelation[T](
     dStream: DStream[T],
     options: Map[String, Any],
     formatter: (RDD[T], StructType) => RDD[Row],
-    streamschema: StructType)(
-    @transient val sqlContext: SQLContext)(implicit val ct: ClassTag[T])
-    extends BaseRelation
-    with TableScan
-    with Logging {
-  override def schema: StructType = streamschema
+    override val schema: StructType,
+    @transient override val sqlContext: SQLContext)
+    (implicit val ct: ClassTag[T])
+    extends BaseRelation with TableScan with Logging {
 
   override def buildScan(): RDD[Row] =
     throw new IllegalAccessException("Take it easy boy!! It's a prototype. ")
@@ -51,22 +49,25 @@ final class StreamSource extends SchemaRelationProvider {
         f.asInstanceOf[UserDefinedInterpreter[Any]]
       case f => throw OptsUtil.newAnalysisException(s"Incorrect interpreter $f")
     }
-    val classTag = interpreter.classTag
 
     val storageLevel = OptsUtil.getOptionally(OptsUtil.STORAGE_LEVEL, options)
         .map(StorageLevel.fromString)
         .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
 
+    val context = StreamingCtxtHolder.streamingContext
+    val classTag = interpreter.classTag
+    val converter = {
+      input: InputStream => interpreter.converter(input, schema)
+    }
+
     // Create a DStream here based on the parameters passed
     // as part of create stream
-    val stream = StreamingCtxtHolder.streamingContext.union(
-      (urls map { url =>
-        val context = StreamingCtxtHolder.streamingContext
-        context.withNamedScope("socket stream") {
-          context.socketStream(url(0), url(1).toInt, interpreter.converter,
-            storageLevel)(classTag)
-        }
-      }).toSeq)
+    val stream = context.union(urls.map { url =>
+      context.withNamedScope("socket stream") {
+        context.socketStream(url(0), url(1).toInt, converter,
+          storageLevel)(classTag)
+      }
+    }.toSeq)
 
     val dstream = options.get(OptsUtil.WINDOWDURATION) match {
       case Some(wd) => options.get(OptsUtil.SLIDEDURATION) match {
@@ -76,8 +77,8 @@ final class StreamSource extends SchemaRelationProvider {
       case None => stream
     }
 
-    new StreamRelation(dstream, options, interpreter.formatter,
-      schema)(sqlContext)(classTag)
+    StreamRelation(dstream, options, interpreter.formatter,
+      schema, sqlContext)(classTag)
   }
 
   def loadFormatClass(provider: String): Class[_] = {
@@ -92,11 +93,15 @@ final class StreamSource extends SchemaRelationProvider {
 }
 
 /**
- * User has to implement this trait to convert the InputStream to RDD[Row].
+ * User has to implement this trait to convert the InputStream to RDD[T]
+ * and then format to RDD[Row].
  */
 trait UserDefinedInterpreter[T] {
+
   def classTag: ClassTag[T]
-  val converter: InputStream => Iterator[T]
+
+  def converter(input: InputStream, schema: StructType): Iterator[T]
+
   def formatter(rdd: RDD[T], schema: StructType): RDD[Row]
 }
 
@@ -104,6 +109,9 @@ trait UserDefinedInterpreter[T] {
  * Extension to `UserDefinedInterpreter` for string streams.
  */
 trait UserDefinedStringInterpreter extends UserDefinedInterpreter[String] {
-  override final val classTag: ClassTag[String] = ClassTag(classOf[String])
-  override val converter = SocketReceiver.bytesToLines _
+
+  override final val classTag = scala.reflect.classTag[String]
+
+  override def converter(input: InputStream, schema: StructType) =
+    SocketReceiver.bytesToLines(input)
 }

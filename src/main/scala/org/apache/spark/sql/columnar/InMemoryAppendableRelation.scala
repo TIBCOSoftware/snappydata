@@ -26,7 +26,6 @@ package org.apache.spark.sql.columnar
  * limitations under the License.
  */
 
-import java.util.UUID
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable.ArrayBuffer
@@ -38,7 +37,6 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{CachedRDD, Row}
 import org.apache.spark.storage.StorageLevel
 
@@ -86,8 +84,8 @@ private[sql] class InMemoryAppendableRelation(
     }
   }
 
-  // If the cached column buffers were not passed in, we calculate them in the constructor.
-  // As in Spark, the actual work of caching is lazy.
+  // If the cached column buffers were not passed in, we calculate them
+  // in the constructor. As in Spark, the actual work of caching is lazy.
   if (super.cachedColumnBuffers != null) writeLock {
     if (_cachedBufferList.isEmpty) _cachedBufferList += super.cachedColumnBuffers
   }
@@ -103,7 +101,8 @@ private[sql] class InMemoryAppendableRelation(
     _cachedBufferList.clear()
   }
 
-  def batchAggregate(accumulated: ArrayBuffer[CachedBatch], batch: CachedBatch): ArrayBuffer[CachedBatch] = {
+  def batchAggregate(accumulated: ArrayBuffer[CachedBatch],
+      batch: CachedBatch): ArrayBuffer[CachedBatch] = {
     accumulated += batch
   }
 
@@ -112,7 +111,7 @@ private[sql] class InMemoryAppendableRelation(
       s"InMemoryAppendableRelation: unexpected call to recache for $tableName")
   }
 
-  override def withOutput(newOutput: Seq[Attribute]): InMemoryAppendableRelation = {
+  override def withOutput(newOutput: Seq[Attribute]) = {
     new InMemoryAppendableRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable)(super.cachedColumnBuffers,
           super.statisticsToBePropagated, batchStats, _cachedBufferList)
@@ -162,6 +161,7 @@ private[sql] object InMemoryAppendableRelation {
     var columnBuilders = getColumnBuilders
 
     var result = init
+
     /**
      * Append a single row to the current CachedBatch (creating a new one
      * if not present or has exceeded its capacity)
@@ -190,7 +190,8 @@ private[sql] object InMemoryAppendableRelation {
         val stats = Row.merge(columnBuilders.map(
           _.columnStats.collectedStatistics): _*)
         // TODO: somehow push into global batchStats
-        result = batchAggregate(result, CachedBatch(columnBuilders.map(_.build().array()), stats))
+        result = batchAggregate(result,
+          CachedBatch(columnBuilders.map(_.build().array()), stats))
         // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
         if (newBuilders) columnBuilders = getColumnBuilders
       }
@@ -220,33 +221,6 @@ private[sql] object InMemoryAppendableRelation {
       isSampledTable: Boolean): InMemoryAppendableRelation =
     new InMemoryAppendableRelation(child.output, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable)()
-
-  def apply(useCompression: Boolean,
-      batchSize: Int,
-      tableName: String,
-      schema: StructType,
-      relation: InMemoryRelation,
-      output: Seq[Attribute]): CachedBatchHolder[ArrayBuffer[Serializable]] = {
-    def columnBuilders = output.map { attribute =>
-      val columnType = ColumnType(attribute.dataType)
-      val initialBufferSize = columnType.defaultSize * batchSize
-      ColumnBuilder(attribute.dataType, initialBufferSize,
-        attribute.name, useCompression)
-    }.toArray
-
-    if (relation.isInstanceOf[ExternalStoreRelation]) {
-      val esr = relation.asInstanceOf[ExternalStoreRelation]
-      new CachedBatchHolder(columnBuilders, 0, batchSize,
-        new ArrayBuffer[UUID](1), esr.uuidBatchAggregate)
-    }
-    else {
-      val imar = relation.asInstanceOf[InMemoryAppendableRelation]
-      new CachedBatchHolder(columnBuilders, 0, batchSize,
-        new ArrayBuffer[CachedBatch](1), imar.batchAggregate)
-    }
-    throw new IllegalStateException(
-      s"InMemoryAppendableRelation: unknown relation $relation for table $tableName")
-  }
 }
 
 private[sql] class InMemoryAppendableColumnarTableScan(

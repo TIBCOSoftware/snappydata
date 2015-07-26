@@ -1,12 +1,10 @@
 package org.apache.spark.sql
 
-import java.util.Properties
+import scala.collection.mutable
 
 import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.execution.row.JDBCUpdatableSource
 import org.apache.spark.storage.StorageLevel
-
-import scala.collection.mutable
 
 /**
  * Snappy CacheManager extension to allow for appending data to cache.
@@ -27,8 +25,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     val alreadyCached = lookupCachedData(query.logicalPlan)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")
-    }
-    else {
+    } else {
       val isSampledTable = query.logicalPlan match {
         case s: StratifiedSample => true
         case _ => false
@@ -44,12 +41,11 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   }
 
   private[sql] def cacheQuery_ext(query: DataFrame,
-      tableName: Option[String] = None, jdbcSource: JDBCUpdatableSource) = writeLock {
+      tableName: Option[String], jdbcSource: JDBCUpdatableSource) = writeLock {
     val alreadyCached = lookupCachedData(query.logicalPlan)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")
-    }
-    else {
+    } else {
       val isSampledTable = query.logicalPlan match {
         case s: StratifiedSample => true
         case _ => false
@@ -60,7 +56,8 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
           sqlContext.conf.columnBatchSize,
           StorageLevel.NONE, // storage level is meaningless in external store. set anything
           query.queryExecution.executedPlan,
-          tableName, isSampledTable, jdbcSource)) // all the properties inclusing url should be in props
+          // all the properties including url should be in props
+          tableName, isSampledTable, jdbcSource))
     }
   }
 

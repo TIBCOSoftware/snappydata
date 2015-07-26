@@ -20,7 +20,7 @@ object ConnectionPool {
 
   /**
    * Type of the key used to search for matching pool. Tuple of pool properties,
-   * connection properties, and whether pool uses Tomcat pool or HikariCP pool.
+   * connection properties, and whether pool uses Tomcat pool or HikariCP.
    */
   private[this] type PoolKey = (Properties, Properties, Boolean)
 

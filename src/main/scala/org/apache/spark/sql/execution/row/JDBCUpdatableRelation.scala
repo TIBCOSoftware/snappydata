@@ -398,7 +398,7 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     val url = parameters.remove("url").getOrElse(
       sys.error("Option 'url' not specified"))
     // TODO: this should be optional with new DDL where tableName itself
-    // will be passed and used if dbtable has not been provided
+    // will be passed and used if DBTable has not been provided
     val table = parameters.remove("dbtable").getOrElse(
       sys.error("Option 'dbtable' not specified"))
     val driver = parameters.remove("driver")
