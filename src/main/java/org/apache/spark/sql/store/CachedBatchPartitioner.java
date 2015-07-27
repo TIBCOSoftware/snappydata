@@ -1,6 +1,8 @@
 package org.apache.spark.sql.store;
 
 import com.gemstone.gemfire.cache.Region;
+import com.gemstone.gemfire.internal.cache.PartitionedRegion;
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionResolver;
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException;
 import com.pivotal.gemfirexd.internal.iapi.sql.Activation;
@@ -9,14 +11,23 @@ import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor;
 import com.pivotal.gemfirexd.internal.impl.sql.compile.FromList;
 import com.pivotal.gemfirexd.internal.impl.sql.compile.SubqueryList;
 import com.pivotal.gemfirexd.internal.shared.common.SingleHopInformation;
+import org.apache.spark.sql.collection.UUIDRegionKey;
 
 import java.io.Serializable;
+import java.util.Set;
 import java.util.Vector;
 
 /**
  * Created by soubhikc on 21/7/15.
  */
 public class CachedBatchPartitioner extends GfxdPartitionResolver {
+
+    public final static String resolver = CachedBatchPartitioner.class.getName();
+
+    public CachedBatchPartitioner() {
+        super();
+        this.isPrimaryKeyPartitioningKey = true;
+    }
 
     @Override
     public void bindExpression(FromList fromList, SubqueryList subqueryList, Vector<?> aggregateVector) throws StandardException {
@@ -25,7 +36,10 @@ public class CachedBatchPartitioner extends GfxdPartitionResolver {
 
     @Override
     public Object getRoutingObject(Object key, Object val, Region<?, ?> region) {
-        return null;
+        if (key instanceof String) {
+            return UUIDRegionKey.parseAndGetBucketId((String) key);
+        }
+        return key;
     }
 
     @Override
@@ -45,7 +59,7 @@ public class CachedBatchPartitioner extends GfxdPartitionResolver {
 
     @Override
     public String getDDLString() {
-        return null;
+        return "PARTITION BY RESOLVER '" + resolver + "'";
     }
 
     @Override
@@ -111,5 +125,9 @@ public class CachedBatchPartitioner extends GfxdPartitionResolver {
     @Override
     public String getName() {
         return "snappy-spark-cached-batch-partition-resolver";
+    }
+
+    public String toString() {
+        return resolver;
     }
 }

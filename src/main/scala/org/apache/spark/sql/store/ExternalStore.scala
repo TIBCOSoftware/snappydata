@@ -1,7 +1,6 @@
 package org.apache.spark.sql.store
 
-import java.util.UUID
-
+import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.CachedBatch
 
 /**
@@ -9,9 +8,9 @@ import org.apache.spark.sql.columnar.CachedBatch
  */
 trait ExternalStore {
   def initSource(): Unit
-  def storeCachedBatch(batch: CachedBatch, tablename: String): UUID
-  def truncate(tablename: String)
+  def storeCachedBatch(batch: CachedBatch, tableName: String) : UUIDRegionKey
+  def truncate(tableName: String)
   def cleanup(): Unit
-  def getCachedBatchIterator(tableName: String, itr:
-    Iterator[UUID], getAll: Boolean = false): Iterator[CachedBatch]
+  def getCachedBatchIterator(tableName: String, itr: Iterator[UUIDRegionKey],
+                             getAll: Boolean = false): Iterator[CachedBatch]
 }

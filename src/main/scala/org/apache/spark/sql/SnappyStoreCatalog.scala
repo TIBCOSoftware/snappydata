@@ -1,6 +1,10 @@
 package org.apache.spark.sql
 
+import java.sql.Connection
+
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.columnar.ExternalStoreUtils
+import org.apache.spark.sql.store.CachedBatchPartitioner
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -10,7 +14,6 @@ import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.row.JDBCUpdatableSource
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopKWrapper}
 import org.apache.spark.sql.sources.LogicalRelation
 import org.apache.spark.sql.types.StructType
@@ -140,9 +143,19 @@ final class SnappyStoreCatalog(context: SnappyContext,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     val tableName = processTableIdentifier(tableIdent)
-    createExternalTableForCachedBatches(tableName, jdbcSource)
+
     tables.put(tableName, df.logicalPlan)
     context.cacheManager.cacheQuery_ext(df, Some(tableName), jdbcSource)
+  }
+
+
+  def createTable(conn: Connection, tableStr: String) = {
+    val statement = conn.createStatement();
+    try {
+      statement.execute(tableStr)
+    } finally {
+      statement.close()
+    }
   }
 
   private def createExternalTableForCachedBatches(tableIdent: String,
@@ -153,7 +166,18 @@ final class SnappyStoreCatalog(context: SnappyContext,
     //val tableName = processTableIdentifier(tableIdent)
     val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
     val conn = ExternalStoreUtils.getPoolConnection(tableIdent, driver, poolProps, connProps, hikariCP)
-    conn.createStatement().execute(s"create table $tableIdent(uuid varchar(100) not null primary key, cachedbatch Blob not null) partition by primary key")
+    val partitionStrategy = conn match {
+      case embedConn: EmbedConnection => {
+        "partition by column (bucketId)"
+      }
+      case _ => "partition by primary key"
+    }
+
+    createTable(conn, s"create table $tableIdent (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
+                      s"primary key (uuid, bucketId)" +
+                      s") $partitionStrategy")
+
+    conn.close()
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */

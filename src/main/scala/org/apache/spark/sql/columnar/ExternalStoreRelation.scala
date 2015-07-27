@@ -1,6 +1,6 @@
 package org.apache.spark.sql.columnar
 
-import java.util.UUID
+import org.apache.spark.sql.collection.UUIDRegionKey
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -36,8 +36,7 @@ private[sql] final class ExternalStoreRelation(
         _stats: Statistics,
         _bstats: Accumulable[ArrayBuffer[Row], Row]) {
 
-  private var _uuidList: ArrayBuffer[RDD[UUID]] =
-    new ArrayBuffer[RDD[UUID]]()
+  private val _uuidList = new ArrayBuffer[RDD[UUIDRegionKey]]()
 
   private lazy val externalStore: ExternalStore = {
     new JDBCSourceAsStore(jdbcSource)
@@ -48,7 +47,7 @@ private[sql] final class ExternalStoreRelation(
       s"did not expect appendBatch of ExternalStoreRelation to be called")
   }
 
-  def appendUUIDBatch(batch: RDD[UUID]) = writeLock {
+  def appendUUIDBatch(batch: RDD[UUIDRegionKey]) = writeLock {
     _uuidList += batch
   }
 
@@ -85,7 +84,7 @@ private[sql] final class ExternalStoreRelation(
           batchStats, null).asInstanceOf[this.type]
   }
 
-  private def getCachedBatchIteratorFromuuidItr(itr: Iterator[UUID]) = {
+  private def getCachedBatchIteratorFromUUIDItr(itr: Iterator[UUIDRegionKey]) = {
     externalStore.getCachedBatchIterator(tableName.get, itr, getAll = false)
   }
 
@@ -94,7 +93,7 @@ private[sql] final class ExternalStoreRelation(
     var rddList = new ArrayBuffer[RDD[CachedBatch]]()
       _uuidList.foreach(x => {
         val y = x.mapPartitions { uuidItr =>
-          getCachedBatchIteratorFromuuidItr(uuidItr)
+          getCachedBatchIteratorFromUUIDItr(uuidItr)
         }
         rddList += y
       })
@@ -117,8 +116,8 @@ private[sql] final class ExternalStoreRelation(
     _uuidList
   }
 
-  def uuidBatchAggregate(accumulated: ArrayBuffer[UUID],
-      batch: CachedBatch): ArrayBuffer[UUID] = {
+  def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
+      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
     val uuid = externalStore.storeCachedBatch(batch,
       tableName.getOrElse(throw new IllegalStateException("missing tableName")))
     accumulated += uuid
@@ -153,7 +152,7 @@ private[sql] object ExternalStoreRelation {
     val holder = relation match {
       case esr: ExternalStoreRelation =>
         new CachedBatchHolder(columnBuilders, 0, batchSize,
-          new ArrayBuffer[UUID](1), esr.uuidBatchAggregate)
+          new ArrayBuffer[UUIDRegionKey](1), esr.uuidBatchAggregate)
       case imar: InMemoryAppendableRelation =>
         new CachedBatchHolder(columnBuilders, 0, batchSize,
           new ArrayBuffer[CachedBatch](1), imar.batchAggregate)
