@@ -28,10 +28,12 @@ private[sql] class SnappyParser extends SqlParser {
 
   protected val ERROR = Keyword("ERROR")
   protected val ESTIMATE = Keyword("ESTIMATE")
+  protected val DELETE = Keyword("DELETE")
+  protected val UPDATE = Keyword("UPDATE")
 
   protected val defaultConfidence = 0.75
 
-  override  protected lazy val start: Parser[LogicalPlan] = start1 | insert | cte |insertIntoExternalTable
+  override  protected lazy val start: Parser[LogicalPlan] = start1 | insert | cte | insertIntoExternalTable
 
   override protected lazy val function = functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> floatLit <~ ")").? ~
@@ -44,8 +46,8 @@ private[sql] class SnappyParser extends SqlParser {
       }
 
   protected lazy val insertIntoExternalTable: Parser[LogicalPlan] =
-    INSERT ~> (INTO ~> ident) ~ wholeInput ^^ {
-     case r ~ s => InsertIntoExternalTable(r,UnresolvedRelation(Seq(r)),s)
+    (INSERT ~> INTO | DELETE ~> FROM | UPDATE ) ~> ident ~ wholeInput ^^ {
+     case r ~ s => DMLExternalTable(r,UnresolvedRelation(Seq(r)),s)
     }
 
 }
@@ -159,11 +161,11 @@ object StreamStrategy extends Strategy {
 }
 
 
-case class InsertIntoExternalTable(
+case class DMLExternalTable(
                                     tableName : String,
                                     child: LogicalPlan,
                                     command: String)
-  extends LogicalPlan {
+  extends LogicalPlan  with Command{
 
   override def children: Seq[LogicalPlan] =  child :: Nil
   override def output: Seq[Attribute] = child.output

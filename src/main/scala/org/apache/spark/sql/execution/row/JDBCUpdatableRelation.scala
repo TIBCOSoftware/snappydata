@@ -73,7 +73,6 @@ case class JDBCUpdatableRelation(
     val conn = JdbcUtils.createConnection(url, connProperties)
     try {
       var tableExists = JdbcUtils.tableExists(conn, table)
-
       if (mode == SaveMode.Ignore && tableExists) {
         return
       }
@@ -163,11 +162,11 @@ case class JDBCUpdatableRelation(
     }
   }
 
-  def insert(insertCommand : String): Int = {
+  def dmlCommand(dmlCommand : String): Int = {
     val connection = ConnectionPool.getPoolConnection(table,
       poolProperties, connProperties, hikariCP)
     try {
-      val stmt = connection.prepareStatement(insertCommand)
+      val stmt = connection.prepareStatement(dmlCommand)
       val result = stmt.executeUpdate()
       stmt.close()
       result

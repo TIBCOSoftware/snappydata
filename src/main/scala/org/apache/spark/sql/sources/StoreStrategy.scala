@@ -19,8 +19,8 @@ object StoreStrategy extends Strategy {
     case CreateExternalTableUsing(tableName, userSpecifiedSchema, provider, options) =>
       ExecutedCommand(
         CreateExternalTableCmd(tableName, userSpecifiedSchema, provider, options)) :: Nil
-    case InsertIntoExternalTable(name, storeRelation: ExternalUpdatableStoreRelation, insertCommand) =>
-      ExecutedCommand(InsertExternalTableCmd(storeRelation, insertCommand)):: Nil
+    case DMLExternalTable(name, storeRelation: ExternalUpdatableStoreRelation, insertCommand) =>
+      ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)):: Nil
     case _ => Nil
   }
 }
@@ -41,10 +41,10 @@ private[sql] case class CreateExternalTableCmd(
   }
 }
 
-private[sql] case class InsertExternalTableCmd(storeRelation: ExternalUpdatableStoreRelation, insertCommand: String) extends RunnableCommand {
+private[sql] case class ExternalTableDMLCmd(storeRelation: ExternalUpdatableStoreRelation, command: String) extends RunnableCommand {
 
   def run(sqlContext: SQLContext): Seq[Row] = {
-    storeRelation.relation.insert(insertCommand)
+    storeRelation.relation.dmlCommand(command)
     Seq.empty
   }
 }
