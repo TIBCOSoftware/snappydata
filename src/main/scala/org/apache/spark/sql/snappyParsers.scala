@@ -3,15 +3,17 @@ package org.apache.spark.sql
 import java.util.concurrent.atomic.AtomicReference
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{ Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources._
 
-import org.apache.spark.sql.types.StructType
+
+
 import org.apache.spark.streaming._
-import org.apache.spark.sql.types.{StructField, StructType}
+import org.apache.spark.sql.types.{DataType,StructField, StructType}
 import org.apache.spark.streaming.{StreamingContextState, Seconds, StreamingContext}
 
 
@@ -29,6 +31,8 @@ private[sql] class SnappyParser extends SqlParser {
 
   protected val defaultConfidence = 0.75
 
+  override  protected lazy val start: Parser[LogicalPlan] = start1 | insert | cte |insertIntoExternalTable
+
   override protected lazy val function = functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> floatLit <~ ")").? ~
           (AVG | SUM) ~ ("(" ~> expression <~ ")") ^^ {
@@ -38,6 +42,12 @@ private[sql] class SnappyParser extends SqlParser {
             op.toUpperCase(java.util.Locale.ENGLISH))
           ErrorEstimateAggregate(exp, confidence, null, c.isEmpty, aggType)
       }
+
+  protected lazy val insertIntoExternalTable: Parser[LogicalPlan] =
+    INSERT ~> (INTO ~> ident) ~ wholeInput ^^ {
+     case r ~ s => InsertIntoExternalTable(r,UnresolvedRelation(Seq(r)),s)
+    }
+
 }
 
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
@@ -98,22 +108,23 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     }
   protected lazy val createExternalTable: Parser[LogicalPlan] =
     (CREATE ~> (EXTERNAL ~> (TABLE ~> ident)) ~
-      externalTableInput ~ (USING ~> className) ~ (OPTIONS ~> options)) ^^ {
-      case tableName ~ userSpecifiedSchema ~ provider ~ opts =>
-        val newOpts = opts +  ("tableschema" ->  userSpecifiedSchema)
+      externalTableInput ~ (OPTIONS ~> options)) ^^ {
+      case tableName ~ userSpecifiedSchema ~ opts =>
+        val newOpts = opts +  ("tableschema" ->  userSpecifiedSchema, "dbtable" -> tableName)
         CreateExternalTableUsing(
           tableName,
           None,
-          provider,
+          "org.apache.spark.sql.execution.row.JDBCUpdatableSource",
           new CaseInsensitiveMap(newOpts))
     }
 
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
     def apply(in: Input): ParseResult[String] = {
       val remaining = in.source.subSequence(in.offset, in.source.length()).toString
-      assert(remaining.contains(USING.str))
-      val externalTableDefinition = remaining.substring(0, remaining.indexOf(USING.str))
+            assert(remaining.contains(OPTIONS.normalize))
+      val externalTableDefinition = remaining.substring(0, remaining.indexOf(OPTIONS.normalize))
       val others = remaining.substring(externalTableDefinition.length)
+      println(others)
       val reader = new PackratReader(new lexical.Scanner(others))
       Success(
         externalTableDefinition,reader)
@@ -147,6 +158,16 @@ object StreamStrategy extends Strategy {
   }
 }
 
+
+case class InsertIntoExternalTable(
+                                    tableName : String,
+                                    child: LogicalPlan,
+                                    command: String)
+  extends LogicalPlan {
+
+  override def children: Seq[LogicalPlan] =  child :: Nil
+  override def output: Seq[Attribute] = child.output
+}
 
 private[sql] case class CreateStream(streamName: String,
     userColumns: Option[StructType],

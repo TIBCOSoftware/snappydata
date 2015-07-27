@@ -60,7 +60,7 @@ case class JDBCUpdatableRelation(
   // backend as well (or can provide in OPTIONS for user-configured mode)
   createTable(SaveMode.ErrorIfExists)
 
-  override val schema: StructType = resolveTable
+  override val schema: StructType = JDBCRDD.resolveTable(url, table, connProperties)
 
   final val schemaFields = Map(schema.fields.flatMap { f =>
     val name =
@@ -72,43 +72,6 @@ case class JDBCUpdatableRelation(
       Iterator((name, f))
     }
   }: _*)
-
-  final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
-
-  def resolveTable: StructType = {
-     val conn: Connection = DriverManager.getConnection(url, connProperties)
-    try {
-      val rs = conn.prepareStatement(s"SELECT * FROM $table WHERE 1=0").executeQuery()
-      try {
-        val rsmd = rs.getMetaData
-        val ncols = rsmd.getColumnCount
-        val fields = new Array[StructField](ncols)
-        var i = 0
-        while (i < ncols) {
-          val columnName = rsmd.getColumnLabel(i + 1)
-          val dataType = rsmd.getColumnType(i + 1)
-          val typeName = rsmd.getColumnTypeName(i + 1)
-          val fieldSize = rsmd.getPrecision(i + 1)
-          val fieldScale = rsmd.getScale(i + 1)
-          val isSigned = rsmd.isSigned(i + 1)
-          val nullable = rsmd.isNullable(i + 1) != ResultSetMetaData.columnNoNulls
-          val metadata = new MetadataBuilder().putString("name", columnName)
-          val columnType =
-            dialect.getCatalystType(dataType, typeName, fieldSize, metadata).getOrElse(
-            getCatalystType(dataType, fieldSize, fieldScale, isSigned))
-          fields(i) = StructField(columnName, columnType, nullable, metadata.build())
-          i = i + 1
-        }
-        return new StructType(fields)
-      } finally {
-        rs.close()
-      }
-    } finally {
-      conn.close()
-    }
-
-    throw new RuntimeException("This line is unreachable.")
-  }
 
   private def getCatalystType(
                                sqlType: Int,
@@ -165,6 +128,8 @@ case class JDBCUpdatableRelation(
     answer
   }
 
+
+
   def createTable(mode: SaveMode): Unit = {
     val conn = JdbcUtils.createConnection(url, connProperties)
     try {
@@ -217,6 +182,8 @@ case class JDBCUpdatableRelation(
       connProperties)
   }
 
+  final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     jdbc(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
   }
@@ -249,6 +216,19 @@ case class JDBCUpdatableRelation(
         JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
           rows.head, dialect)
       }
+      val result = stmt.executeUpdate()
+      stmt.close()
+      result
+    } finally {
+      connection.close()
+    }
+  }
+
+  def insert(insertCommand : String): Int = {
+    val connection = ConnectionPool.getPoolConnection(table,
+      poolProperties, connProperties, hikariCP)
+    try {
+      val stmt = connection.prepareStatement(insertCommand)
       val result = stmt.executeUpdate()
       stmt.close()
       result
