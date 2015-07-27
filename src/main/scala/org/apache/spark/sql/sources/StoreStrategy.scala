@@ -1,9 +1,8 @@
 package org.apache.spark.sql.sources
 
 
-import org.apache.spark.rdd.RDD
+
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions.{AttributeMap, AttributeReference, Row}
 import org.apache.spark.sql.catalyst.plans.logical.{Statistics, LeafNode, LogicalPlan}
@@ -20,7 +19,7 @@ object StoreStrategy extends Strategy {
     case CreateExternalTableUsing(tableName, userSpecifiedSchema, provider, options) =>
       ExecutedCommand(
         CreateExternalTableCmd(tableName, userSpecifiedSchema, provider, options)) :: Nil
-    case InsertIntoExternalTable(name, storeRelation: ExternalStoreRelation, insertCommand) =>
+    case InsertIntoExternalTable(name, storeRelation: ExternalUpdatableStoreRelation, insertCommand) =>
       ExecutedCommand(InsertExternalTableCmd(storeRelation, insertCommand)):: Nil
     case _ => Nil
   }
@@ -37,12 +36,12 @@ private[sql] case class CreateExternalTableCmd(
     val resolved = ResolvedDataSource(
       sqlContext, userSpecifiedSchema, Array.empty[String], provider, options)
     snc.registerExternalTable(
-      DataFrame(sqlContext, ExternalStoreRelation(resolved.relation.asInstanceOf[JDBCUpdatableRelation])), tableName)
+      DataFrame(sqlContext, ExternalUpdatableStoreRelation(resolved.relation.asInstanceOf[JDBCUpdatableRelation])), tableName)
     Seq.empty
   }
 }
 
-private[sql] case class InsertExternalTableCmd(storeRelation: ExternalStoreRelation, insertCommand: String) extends RunnableCommand {
+private[sql] case class InsertExternalTableCmd(storeRelation: ExternalUpdatableStoreRelation, insertCommand: String) extends RunnableCommand {
 
   def run(sqlContext: SQLContext): Seq[Row] = {
     storeRelation.relation.insert(insertCommand)
@@ -50,14 +49,14 @@ private[sql] case class InsertExternalTableCmd(storeRelation: ExternalStoreRelat
   }
 }
 
-case class ExternalStoreRelation(relation: JDBCUpdatableRelation)
+case class ExternalUpdatableStoreRelation(relation: JDBCUpdatableRelation)
   extends LeafNode with MultiInstanceRelation {
 
   override val output: Seq[AttributeReference] = relation.schema.toAttributes
 
   // Logical Relations are distinct if they have different output for the sake of transformations.
   override def equals(other: Any): Boolean = other match {
-    case l@ExternalStoreRelation(otherRelation) => relation == otherRelation && output == l.output
+    case l@ExternalUpdatableStoreRelation(otherRelation) => relation == otherRelation && output == l.output
     case _ => false
   }
 
@@ -66,7 +65,7 @@ case class ExternalStoreRelation(relation: JDBCUpdatableRelation)
   }
 
   override def sameResult(otherPlan: LogicalPlan): Boolean = otherPlan match {
-    case ExternalStoreRelation(otherRelation) => relation == otherRelation
+    case ExternalUpdatableStoreRelation(otherRelation) => relation == otherRelation
     case _ => false
   }
 
@@ -77,9 +76,9 @@ case class ExternalStoreRelation(relation: JDBCUpdatableRelation)
   /** Used to lookup original attribute capitalization */
   val attributeMap: AttributeMap[AttributeReference] = AttributeMap(output.map(o => (o, o)))
 
-  def newInstance(): this.type = ExternalStoreRelation(relation).asInstanceOf[this.type]
+  def newInstance(): this.type = ExternalUpdatableStoreRelation(relation).asInstanceOf[this.type]
 
-  override def simpleString: String = s"ExternalStoreRelation[${output.mkString(",")}] $relation"
+  override def simpleString: String = s"ExternalUpdatableStoreRelation[${output.mkString(",")}] $relation"
 
 }
 
