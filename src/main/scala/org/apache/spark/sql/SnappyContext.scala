@@ -80,7 +80,8 @@ final class SnappyContext(sc: SparkContext)
       catalog.processTableIdentifier(aqpTables): _*)
 
     val sampleTables = catalog.tables.collect {
-      case (name, sample: StratifiedSample) if aqpTableNames.remove(name) =>
+      case (name, sample: StratifiedSample) if aqpTableNames.contains(name) =>
+        aqpTableNames.remove(name)
         (name, sample.options, sample.schema, sample.output,
             cacheManager.lookupCachedData(sample).getOrElse(sys.error(
               s"SnappyContext.saveStream: failed to lookup cached plan for " +
