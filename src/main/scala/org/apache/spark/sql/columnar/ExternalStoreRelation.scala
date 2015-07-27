@@ -25,7 +25,7 @@ private[sql] final class ExternalStoreRelation(
     override val child: SparkPlan,
     override val tableName: Option[String],
     val isSampledTable: Boolean,
-    val jdbcSource: JDBCUpdatableSource)(
+    val jdbcSource: Map[String, String])(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
@@ -40,7 +40,6 @@ private[sql] final class ExternalStoreRelation(
     new ArrayBuffer[RDD[UUID]]()
 
   private lazy val externalStore: ExternalStore = {
-    // For now construct GemXD_LC source as the method can resolve from the url
     new JDBCSourceAsStore(jdbcSource)
   }
 
@@ -134,7 +133,7 @@ private[sql] object ExternalStoreRelation {
       child: SparkPlan,
       tableName: Option[String],
       isSampledTable: Boolean,
-      jdbcSource: JDBCUpdatableSource): ExternalStoreRelation =
+      jdbcSource: Map[String, String]): ExternalStoreRelation =
     new ExternalStoreRelation(child.output, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable, jdbcSource)()
 

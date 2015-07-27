@@ -200,14 +200,14 @@ final class SnappyContext(sc: SparkContext)
 
   def registerSampleTable(tableName: String, schema: StructType,
       samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
+      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
     catalog.registerSampleTable(schema, tableName, samplingOptions,
       None, streamTable, jdbcSource)
   }
 
   def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String,
       samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[JDBCUpdatableSource] = None): DataFrame = {
+      jdbcSource: Option[Map[String, String]] = None): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
           "Mention type information for e.g. registerSampleTableOn[<class>]")
@@ -220,7 +220,7 @@ final class SnappyContext(sc: SparkContext)
   }
 
   def registerAndInsertIntoExternalStore(df: DataFrame, tableName: String,
-      schema: StructType, jdbcSource: JDBCUpdatableSource): Unit = {
+      schema: StructType, jdbcSource: Map[String, String]): Unit = {
     catalog.registerAndInsertIntoExternalStore(df, tableName, schema, jdbcSource)
   }
 
@@ -644,7 +644,7 @@ private[sql] case class SnappyOperations(context: SnappyContext,
   def appendToCache(tableName: String) = context.appendToCache(df, tableName)
 
   def registerAndInsertIntoExternalStore(tableName: String,
-      jdbcSource: JDBCUpdatableSource): Unit = {
+      jdbcSource: Map[String, String]): Unit = {
     context.registerAndInsertIntoExternalStore(df, tableName,
         df.schema, jdbcSource)
   }

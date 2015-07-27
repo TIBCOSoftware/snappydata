@@ -1,5 +1,7 @@
 package org.apache.spark.sql
 
+import org.apache.spark.sql.columnar.ExternalStoreUtils
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 
@@ -81,7 +83,7 @@ final class SnappyStoreCatalog(context: SnappyContext,
   def registerSampleTable(schema: StructType, tableIdent: String,
       samplingOptions: Map[String, Any], df: Option[SampleDataFrame] = None,
       streamTableIdent: Option[String] = None,
-      jdbcSource: Option[JDBCUpdatableSource] = None): SampleDataFrame = {
+      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
     require(tableIdent != null && tableIdent.length > 0,
       "registerSampleTable: expected non-empty table name")
 
@@ -133,7 +135,7 @@ final class SnappyStoreCatalog(context: SnappyContext,
   }
 
   def registerAndInsertIntoExternalStore(df: DataFrame, tableIdent: String,
-      schema: StructType, jdbcSource: JDBCUpdatableSource): Unit = {
+      schema: StructType, jdbcSource: Map[String, String]): Unit = {
     require(tableIdent != null && tableIdent.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
@@ -144,11 +146,14 @@ final class SnappyStoreCatalog(context: SnappyContext,
   }
 
   private def createExternalTableForCachedBatches(tableIdent: String,
-      jdbcSource: JDBCUpdatableSource): Unit = {
+      jdbcSource: Map[String, String]): Unit = {
     require(tableIdent != null && tableIdent.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     //val tableName = processTableIdentifier(tableIdent)
+    val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+    val conn = ExternalStoreUtils.getPoolConnection(tableIdent, driver, poolProps, connProps, hikariCP)
+    conn.createStatement().execute(s"create table $tableIdent(uuid varchar(100) not null primary key, cachedbatch Blob not null) partition by primary key")
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */
