@@ -33,7 +33,7 @@ private[sql] class SnappyParser extends SqlParser {
 
   protected val defaultConfidence = 0.75
 
-  override  protected lazy val start: Parser[LogicalPlan] = start1 | insert | cte | insertIntoExternalTable
+  override  protected lazy val start: Parser[LogicalPlan] = start1 | insert | cte | dmlForExternalTable
 
   override protected lazy val function = functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> floatLit <~ ")").? ~
@@ -45,7 +45,7 @@ private[sql] class SnappyParser extends SqlParser {
           ErrorEstimateAggregate(exp, confidence, null, c.isEmpty, aggType)
       }
 
-  protected lazy val insertIntoExternalTable: Parser[LogicalPlan] =
+  protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE ) ~> ident ~ wholeInput ^^ {
      case r ~ s => DMLExternalTable(r,UnresolvedRelation(Seq(r)),s)
     }
