@@ -3,7 +3,8 @@ package org.apache.spark.sql.store.impl
 import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
 import java.sql.{Statement, Connection, Blob}
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.gemstone.gemfire.cache.Region
+import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.Row
@@ -46,13 +47,12 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
       val uuid = connection match {
         case embedConn: EmbedConnection => {
           val region = Misc.getRegionForTable(tableName, true)
-          if (region.isInstanceOf[PartitionedRegion]) {
-            val pr: PartitionedRegion = region.asInstanceOf[PartitionedRegion]
-            val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](10))
-            genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
-          }
-          else {
-            genUUIDRegionKey()
+          region.asInstanceOf[AbstractRegion] match {
+            case pr: PartitionedRegion =>
+              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](10))
+              genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
+            case _ =>
+              genUUIDRegionKey()
           }
         }
         case _ => genUUIDRegionKey()
