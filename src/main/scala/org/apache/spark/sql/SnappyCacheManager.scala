@@ -41,7 +41,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   }
 
   private[sql] def cacheQuery_ext(query: DataFrame,
-      tableName: Option[String], jdbcSource: JDBCUpdatableSource) = writeLock {
+      tableName: Option[String], jdbcSource: Map[String, String]) = writeLock {
     val alreadyCached = lookupCachedData(query.logicalPlan)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")

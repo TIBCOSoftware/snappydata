@@ -13,7 +13,7 @@ import scala.language.implicitConversions
 
 import org.apache.spark.{SparkEnv, SparkConf, SparkContext}
 
-import org.apache.spark.sql.columnar.CachedBatch
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch}
 import org.apache.spark.sql.store.ExternalStore
 
 import scala.collection.mutable
@@ -24,9 +24,11 @@ import scala.language.implicitConversions
  *
  * Created by Neeraj on 16/7/15.
  */
-class JDBCSourceAsStore(jdbcSource: JDBCUpdatableSource) extends ExternalStore {
+class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalStore {
 
 private val serializer = SparkEnv.get.serializer
+
+  private lazy val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
 
   override def initSource() = {
 
@@ -50,13 +52,12 @@ private val serializer = SparkEnv.get.serializer
     istr
   }
 
-  private def getConnection : Connection = {
-    // TODO: implement
-    null
+  private def getConnection(tableName: String) : Connection = {
+    ExternalStoreUtils.getPoolConnection(tableName, driver, poolProps, connProps, hikariCP)
   }
 
   override def storeCachedBatch(batch: CachedBatch, tableName: String): UUID = {
-    val connection = getConnection
+    val connection = getConnection(tableName)
     val ser = serializer.newInstance()
     var blob = prepareCachedBatchAsBlob(batch, connection)
     try {
@@ -127,7 +128,7 @@ private val serializer = SparkEnv.get.serializer
 
   override def getCachedBatchIterator(tableName: String,
    itr: Iterator[UUID], getAll: Boolean = false): Iterator[CachedBatch] = {
-    val connection = getConnection
+    val connection = getConnection(tableName)
     val sb = new StringBuilder()
     if (getAll) {
       val alluuids = itr.foreach(u => {
@@ -151,7 +152,14 @@ private val serializer = SparkEnv.get.serializer
         executeQuery(s"select cachedbatch from $tableName where uuid IN (${sb.toString()})")
         new Iterator[CachedBatch] {
 
-          override def hasNext: Boolean = rs.next()
+          override def hasNext: Boolean = {
+            val hn = rs.next()
+            if (!hn) {
+              rs.close()
+              connection.close()
+            }
+            hn
+          }
 
           override def next() = {
             val blob = rs.getBlob(1)
@@ -164,13 +172,21 @@ private val serializer = SparkEnv.get.serializer
 
       new Iterator[CachedBatch] {
 
-        override def hasNext: Boolean = itr.hasNext
+        override def hasNext: Boolean = {
+          val hn = itr.hasNext
+          if (!hn) {
+            ps.close()
+            connection.close()
+          }
+          hn
+        }
 
         override def next() = {
           val u = itr.next()
           ps.setString(1, u)
           val rs = ps.executeQuery()
           val blob = rs.getBlob(1)
+          rs.close()
           getCachedBatchFromBlob(blob)
         }
       }
