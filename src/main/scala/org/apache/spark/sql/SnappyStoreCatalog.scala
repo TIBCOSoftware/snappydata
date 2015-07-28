@@ -143,15 +143,16 @@ final class SnappyStoreCatalog(context: SnappyContext,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     val tableName = processTableIdentifier(tableIdent)
-
+    createExternalTableForCachedBatches(tableName, jdbcSource)
     tables.put(tableName, df.logicalPlan)
     context.cacheManager.cacheQuery_ext(df, Some(tableName), jdbcSource)
   }
 
 
-  def createTable(conn: Connection, tableStr: String) = {
+  def createTable(conn: Connection, tableStr: String, tableName: String, dropIfExists: Boolean) = {
     val statement = conn.createStatement();
     try {
+      statement.execute(s"drop table if exists $tableName")
       statement.execute(tableStr)
     } finally {
       statement.close()
@@ -166,17 +167,16 @@ final class SnappyStoreCatalog(context: SnappyContext,
     //val tableName = processTableIdentifier(tableIdent)
     val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
     val conn = ExternalStoreUtils.getPoolConnection(tableIdent, driver, poolProps, connProps, hikariCP)
-    val partitionStrategy = conn match {
+    val (primarykey, partitionStrategy) = conn match {
       case embedConn: EmbedConnection => {
-        "partition by column (bucketId)"
+        ("primary key (uuid, bucketId)", "partition by column (bucketId)")
       }
-      case _ => "partition by primary key"
+      case _ => ("primary key (uuid)", "partition by primary key")
     }
 
     createTable(conn, s"create table $tableIdent (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
-                      s"primary key (uuid, bucketId)" +
-                      s") $partitionStrategy")
-
+                      s"$primarykey" +
+                      s") $partitionStrategy", tableIdent, true)
     conn.close()
   }
 

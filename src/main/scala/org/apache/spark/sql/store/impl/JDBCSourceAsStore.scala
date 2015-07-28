@@ -2,8 +2,8 @@ package org.apache.spark.sql.store.impl
 
 import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
 import java.sql.{Statement, Connection, Blob}
+import java.util.concurrent.locks.ReentrantLock
 
-import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
@@ -77,12 +77,12 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
   }
 
   override def truncate(tableName: String) = tryExecute(tableName, {
-    case (conn, st) => {
+    case (conn) => {
+      val st = conn.createStatement()
       st.executeQuery(s"truncate table $tableName")
       st.close()
-      conn.close()
     }
-  })
+  }, true)
 
   override def getCachedBatchIterator(tableName: String,
                                       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
@@ -103,9 +103,15 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
     bucketId.append(-1)
 
     tryExecute(tableName, {
-      case (conn, st) =>
-        val rs = st.executeQuery(s"select cachedBatch from $tableName where uuid IN (${uuid.toString}) " +
-          s"and bucketId IN (${bucketId.toString})")
+      case conn =>
+        val st = conn.createStatement()
+        val rs = conn match {
+          case embedConn: EmbedConnection =>
+            st.executeQuery(s"select cachedBatch from $tableName where uuid IN (${uuid.toString}) " +
+              s"and bucketId IN (${bucketId.toString})")
+          case _ => st.executeQuery(s"select cachedBatch from $tableName where uuid IN (${uuid.toString})")
+        }
+
         new Iterator[CachedBatch] {
           override def hasNext: Boolean = rs.next() match {
             case false =>
@@ -115,10 +121,23 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
             case _ => true
           }
 
+          //          override def next() = {
+          //            //val u = itr.next()
+          //            //ps.setString(1, u)
+          //            //val rs = ps.executeQuery()
+          //            // We should always get some proper value so blindly doing rs.next
+          //            rs.next()
+          //            val blob = rs.getBlob(1)
+          //            val cb = getCachedBatchFromBlob(blob)
+          //            rs.close()
+          //            cb
+          //          }
+
           override def next() = getCachedBatchFromBlob(rs.getBlob(1))
         }
 
-    })
+
+    }, false)
   }
 
 
@@ -137,12 +156,14 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
     val bf = ser.serialize(batch.stats)
     dos.write(bf.array())
     val barr = outputStream.toByteArray
-    blob.setBytes(0, barr)
+    blob.setBytes(1, barr)
+    println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
     blob
   }
 
   private def getCachedBatchFromBlob(blob: Blob): CachedBatch = {
     val totBytes = blob.length()
+    println("KN: length of blob get = " + blob.length())
     val dis = new DataInputStream(blob.getBinaryStream)
     var offset = 0
     val numCols = dis.readInt()
@@ -168,37 +189,57 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
     uuid.toString
   }
 
-  private val insertStrings: mutable.HashMap[String, String] =
-    new mutable.HashMap[String, String]()
-
-  private def getRowInsertStr(tableName: String): String = {
-    insertStrings.getOrElse(tableName, {
-      synchronized(insertStrings) {
-        val s = insertStrings.getOrElse(tableName, s"insert into $tableName values(?, ?, ?")
-        insertStrings.put(tableName, s)
-        s
-      }
-    })
-  }
-
   private def getConnection(tableName: String): Connection = {
+    // TODO: KN look at pool later
     ExternalStoreUtils.getPoolConnection(tableName, driver, poolProps, connProps, hikariCP)
+    //ExternalStoreUtils.getConnection(url, connProps)
   }
 
   private def genUUIDRegionKey(bucketId: Integer = 0) = new UUIDRegionKey(bucketId)
 
-  private def tryExecute[T: ClassTag](tableName: String, f: PartialFunction[(Connection, Statement), T]): T = {
+  private def tryExecute[T: ClassTag](tableName: String, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean): T = {
     val conn = getConnection(tableName)
-    val st = conn.createStatement()
+    var isClosed = false;
     try {
-      f(conn, st)
+      f(conn)
     } catch {
       case t: Throwable => {
-        st.close()
         conn.close()
+        isClosed = true
         throw t;
+      }
+    } finally {
+      if (closeOnSuccess && !isClosed) {
+        conn.close()
       }
     }
   }
 
+  private var insertStrings: mutable.HashMap[String, String] =
+    new mutable.HashMap[String, String]()
+
+  private def getRowInsertStr(tableName: String): String = {
+    val istr = insertStrings.getOrElse(tableName, {
+      lock(makeInsertStmnt(tableName))
+    })
+    istr
+  }
+
+  private def makeInsertStmnt(tableName: String) = {
+    if (!insertStrings.contains(tableName)) {
+      val s = insertStrings.getOrElse(tableName, s"insert into $tableName values(?, ?, ?)")
+      insertStrings.put(tableName, s)
+    }
+    insertStrings.get(tableName).get
+  }
+
+  private val insertStmntLock = new ReentrantLock()
+
+  /** Acquires a read lock on the cache for the duration of `f`. */
+  private[sql] def lock[A](f: => A): A = {
+    insertStmntLock.lock()
+    try f finally {
+      insertStmntLock.unlock()
+    }
+  }
 }
