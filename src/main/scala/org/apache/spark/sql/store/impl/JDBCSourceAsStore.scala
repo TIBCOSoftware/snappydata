@@ -1,12 +1,13 @@
 package org.apache.spark.sql.store.impl
 
 import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
-import java.sql.{Statement, Connection, Blob}
+import java.sql.{ResultSet, Statement, Connection, Blob, PreparedStatement}
 import java.util.concurrent.locks.ReentrantLock
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import org.apache.spark.serializer.Serializer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.UUIDRegionKey
 
@@ -77,7 +78,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
   }
 
   override def truncate(tableName: String) = tryExecute(tableName, {
-    case (conn) => {
+    case conn => {
       val st = conn.createStatement()
       st.executeQuery(s"truncate table $tableName")
       st.close()
@@ -86,58 +87,56 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
 
   override def getCachedBatchIterator(tableName: String,
                                       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
-    val (uuid, bucketId) = itr.foldLeft((new StringBuilder("'"), new StringBuilder)) { (output, key) =>
-      output match {
-        case (uuid, bucketId) =>
-          uuid.append(key.getUUID).append("','")
-          bucketId.append(key.getBucketId).append(",")
-      }
-      output
-    }
 
-    if (bucketId.isEmpty) {
-      return Iterator.empty
-    }
-
-    uuid.append("'")
-    bucketId.append(-1)
-
-    tryExecute(tableName, {
+    val ret = tryExecute(tableName, {
       case conn =>
-        val st = conn.createStatement()
-        val rs = conn match {
-          case embedConn: EmbedConnection =>
-            st.executeQuery(s"select cachedBatch from $tableName where uuid IN (${uuid.toString}) " +
-              s"and bucketId IN (${bucketId.toString})")
-          case _ => st.executeQuery(s"select cachedBatch from $tableName where uuid IN (${uuid.toString})")
-        }
+        itr.sliding(10, 10).map(kIter => {
 
-        new Iterator[CachedBatch] {
-          override def hasNext: Boolean = rs.next() match {
-            case false =>
-              rs.close()
-              st.close()
-              false
-            case _ => true
+          val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
+
+          val uuidParams = uuidIter.foldRight(new StringBuilder)({ case (_, o) => o.append("?,") })
+          if (uuidParams.nonEmpty) {
+            uuidParams.setCharAt(uuidParams.length - 1, ' ')
+          }
+          else {
+            return Iterator.empty
           }
 
-          //          override def next() = {
-          //            //val u = itr.next()
-          //            //ps.setString(1, u)
-          //            //val rs = ps.executeQuery()
-          //            // We should always get some proper value so blindly doing rs.next
-          //            rs.next()
-          //            val blob = rs.getBlob(1)
-          //            val cb = getCachedBatchFromBlob(blob)
-          //            rs.close()
-          //            cb
-          //          }
+          val ps = conn match {
+            case eC: EmbedConnection =>
+              val bucketParams = bucketIter.foldRight(new StringBuilder)({ case (_, o) => o.append("?,") })
+              if (bucketParams.nonEmpty) bucketParams.setCharAt(bucketParams.length - 1, ' ')
 
-          override def next() = getCachedBatchFromBlob(rs.getBlob(1))
-        }
+              val ps = conn.prepareStatement(s"select cachedBatch from $tableName where uuid IN ($uuidParams) " +
+                s"and bucketId IN ($bucketParams)")
 
+              uuidIter.zipWithIndex.foreach({
+                case (_id, idx) => ps.setString(idx + 1, _id.toString)
+              })
 
+              val offset = uuidIter.length
+
+              bucketIter.zipWithIndex.foreach({
+                case (_bucket, idx) => ps.setInt(idx + offset + 1, _bucket)
+              })
+              ps
+
+            case _ =>
+              val ps = conn.prepareStatement(s"select cachedBatch from $tableName where uuid IN ($uuidParams)")
+
+              uuidIter.zipWithIndex.foreach({
+                case (_id, idx) => ps.setString(idx + 1, _id.toString)
+              })
+              ps
+          }
+
+          val rs = ps.executeQuery()
+
+          new CachedBatchIteratorFromRS(conn, ps, rs)
+        }).flatten
     }, false)
+
+    ret
   }
 
 
@@ -157,32 +156,8 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
     dos.write(bf.array())
     val barr = outputStream.toByteArray
     blob.setBytes(1, barr)
-    println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
+//    println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
     blob
-  }
-
-  private def getCachedBatchFromBlob(blob: Blob): CachedBatch = {
-    val totBytes = blob.length()
-    println("KN: length of blob get = " + blob.length())
-    val dis = new DataInputStream(blob.getBinaryStream)
-    var offset = 0
-    val numCols = dis.readInt()
-    offset = offset + 4
-    val colBuffers = new ArrayBuffer[Array[Byte]]()
-    for (i <- 0 until numCols) {
-      val lenOfByteArr = dis.readInt()
-      offset = offset + 4
-      val colBuffer = Array.fill[Byte](lenOfByteArr)(0)
-      dis.read(colBuffer)
-      offset = offset + lenOfByteArr
-      colBuffers += colBuffer
-    }
-    val remainingLength = totBytes - offset
-    val bytes = Array.fill[Byte](remainingLength.asInstanceOf[Int])(0)
-    dis.read(bytes)
-    val deserializationStream = serializer.newInstance.deserializeStream(new ByteArrayInputStream(bytes))
-    val stats = deserializationStream.readValue[Row]()
-    CachedBatch(colBuffers.toArray, stats)
   }
 
   implicit def uuidToString(uuid: UUIDRegionKey): String = {
@@ -241,5 +216,57 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
     try f finally {
       insertStmntLock.unlock()
     }
+  }
+}
+
+private[sql] final class CachedBatchIteratorFromRS(conn: Connection,
+                                             ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
+
+  private val serializer = SparkEnv.get.serializer
+  var _hasNext = moveNext()
+
+  override def hasNext: Boolean = _hasNext
+
+  override def next() = {
+    val result = getCachedBatchFromBlob(rs.getBlob(1))
+    _hasNext = moveNext()
+    result
+  }
+
+  private def moveNext(): Boolean = {
+    if (rs.next()) {
+      true
+    } else {
+      rs.close()
+      ps.close()
+      conn.close()
+      false
+    }
+  }
+
+  private def getCachedBatchFromBlob(blob: Blob): CachedBatch = {
+    val totBytes = blob.length().toInt
+//    println("KN: length of blob get = " + blob.length())
+    val bis = new ByteArrayInputStream(blob.getBytes(1, totBytes))
+    blob.free()
+    val dis = new DataInputStream(bis)
+    var offset = 0
+    val numCols = dis.readInt()
+    offset = offset + 4
+    val colBuffers = new ArrayBuffer[Array[Byte]]()
+    for (i <- 0 until numCols) {
+      val lenOfByteArr = dis.readInt()
+      offset = offset + 4
+      val colBuffer = new Array[Byte](lenOfByteArr)
+      dis.read(colBuffer)
+      offset = offset + lenOfByteArr
+      colBuffers += colBuffer
+    }
+    val remainingLength = totBytes - offset
+    val bytes = new Array[Byte](remainingLength)
+    dis.read(bytes)
+    val deserializationStream = serializer.newInstance.deserializeStream(new ByteArrayInputStream(bytes))
+    val stats = deserializationStream.readValue[Row]()
+    CachedBatch(colBuffers.toArray, stats)
   }
 }
