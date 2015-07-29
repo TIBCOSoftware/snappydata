@@ -88,10 +88,8 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
   override def getCachedBatchIterator(tableName: String,
                                       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
 
-    val ret = tryExecute(tableName, {
+    val ret = itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
       case conn =>
-        itr.sliding(10, 10).map(kIter => {
-
           val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
 
           val uuidParams = uuidIter.foldRight(new StringBuilder)({ case (_, o) => o.append("?,") })
@@ -133,9 +131,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
           val rs = ps.executeQuery()
 
           new CachedBatchIteratorFromRS(conn, ps, rs)
-        }).flatten
-    }, false)
-
+        }, false))
     ret
   }
 
@@ -167,7 +163,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
   private def getConnection(tableName: String): Connection = {
     // TODO: KN look at pool later
     ExternalStoreUtils.getPoolConnection(tableName, driver, poolProps, connProps, hikariCP)
-    //ExternalStoreUtils.getConnection(url, connProps)
+//    ExternalStoreUtils.getConnection(url, connProps)
   }
 
   private def genUUIDRegionKey(bucketId: Integer = 0) = new UUIDRegionKey(bucketId)
@@ -219,7 +215,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
   }
 }
 
-private[sql] final class CachedBatchIteratorFromRS(conn: Connection,
+private final class CachedBatchIteratorFromRS(conn: Connection,
                                              ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
