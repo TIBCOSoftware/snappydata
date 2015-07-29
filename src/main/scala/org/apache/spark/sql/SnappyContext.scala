@@ -3,6 +3,7 @@ package org.apache.spark.sql
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.StringBuilder
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -63,18 +64,18 @@ final class SnappyContext(sc: SparkContext)
     transform: DataFrame => DataFrame = null) {
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
-      val rows = formatter(rdd, schema)
-      val rDF = createDataFrame(rows, schema)
+      val rddRows = formatter(rdd, schema)
 
-      val tDF = if (transform != null) {
-        transform(rDF)
-      } else rDF
+      val rows = if (transform != null) {
+        val rDF = createDataFrame(rddRows, schema, needsConversion = false)
+        transform(rDF).rdd
+      } else rddRows
 
-      collectSamples(tDF, aqpTables)
+      collectSamples(rows, aqpTables)
     })
   }
 
-  def collectSamples(tDF: DataFrame, aqpTables: Seq[String],
+  protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
@@ -102,7 +103,7 @@ final class SnappyContext(sc: SparkContext)
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {
       case (name, samplingOptions, schema, output, relation) =>
-        (relation, tDF.mapPartitions(rowIterator => {
+        (relation, rows.mapPartitions(rowIterator => {
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
@@ -111,6 +112,7 @@ final class SnappyContext(sc: SparkContext)
           sampler.append(rowIterator, null, (),
             batches.appendRow, batches.endRows)
           batches.forceEndOfBatch().iterator
+
         }))
     }
     // TODO: A different set of job is created for topK structure
@@ -119,7 +121,7 @@ final class SnappyContext(sc: SparkContext)
         val clazz = SqlUtils.getInternalType(
           topKWrapper.schema(topKWrapper.key.name).dataType)
         val ct = ClassTag(clazz)
-        SnappyContext.populateTopK(tDF, topKWrapper, this, name)(ct)
+        SnappyContext.populateTopK(rows, topKWrapper, this, name)(ct)
     }
 
     // add to list in relation
@@ -587,9 +589,9 @@ object SnappyContext {
     }
   }
 
-  def populateTopK[T: ClassTag](df: DataFrame, topkWrapper: TopKWrapper,
+  def populateTopK[T: ClassTag](rdd : RDD[Row], topkWrapper: TopKWrapper,
     context: SnappyContext, name: String) {
-    val pairRDD = df.rdd.map[(Any, Any)](topkWrapper.rowToTupleConverter(_))
+    val pairRDD = rdd.map[(Any, Any)](topkWrapper.rowToTupleConverter(_))
     val partCount = Utils.getAllExecutorsMemoryStatus(context.sparkContext).
       keySet.size
     pairRDD.partitionBy(new Partitioner() {
@@ -625,7 +627,7 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     val clazz = SqlUtils.getInternalType(
       topKWrapper.schema(topKWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
-    SnappyContext.populateTopK(df, topKWrapper, context, name)(ct)
+    SnappyContext.populateTopK(df.rdd, topKWrapper, context, name)(ct)
 
     /*df.foreachPartition((x: Iterator[Row]) => {
       context.addDataForTopK(name, topKWrapper, x)(ct)
@@ -636,7 +638,7 @@ private[sql] case class SnappyOperations(context: SnappyContext,
    * Table must be registered using #registerSampleTable.
    */
   def insertIntoSampleTables(sampleTableName: String*) =
-    context.collectSamples(df, sampleTableName)
+    context.collectSamples(df.rdd, sampleTableName)
 
   /**
    * Append to an existing cache table.

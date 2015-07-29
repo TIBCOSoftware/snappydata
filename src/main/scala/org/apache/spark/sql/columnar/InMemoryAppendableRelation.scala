@@ -28,6 +28,9 @@ package org.apache.spark.sql.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.types.StructType
+
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
@@ -154,11 +157,12 @@ private[sql] class InMemoryAppendableRelation(
 private[sql] object InMemoryAppendableRelation {
 
   final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
-      var rowCount: Int, val batchSize: Int,
-      val init: T,
-      val batchAggregate: (T, CachedBatch) => T) {
+      var rowCount: Int, val batchSize: Int, schema: StructType,
+      val init: T, val batchAggregate: (T, CachedBatch) => T) {
 
     var columnBuilders = getColumnBuilders
+
+    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
 
     var result = init
 
@@ -179,7 +183,7 @@ private[sql] object InMemoryAppendableRelation {
 
         var i = 0
         while (i < rowLength) {
-          columnBuilders(i).appendFrom(row, i)
+          columnBuilders(i).appendFrom(converter(row).asInstanceOf[Row], i)
           i += 1
         }
         rowCount += 1
