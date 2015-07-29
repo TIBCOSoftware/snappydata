@@ -461,7 +461,7 @@ final class JDBCUpdatableSource extends RelationProvider {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    new JDBCUpdatableRelation(url, table,userSpecifiedString, parts, poolProps, connProps,
+    new JDBCUpdatableRelation(url, table, userSpecifiedString, parts, poolProps, connProps,
       hikariCP, ddlExtensions, sqlContext)
   }
 }

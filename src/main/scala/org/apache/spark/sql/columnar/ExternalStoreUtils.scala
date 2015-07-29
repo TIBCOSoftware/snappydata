@@ -1,12 +1,12 @@
 package org.apache.spark.sql.columnar
 
-import java.sql.Connection
+import java.sql.{DriverManager, Connection}
 import java.util.Properties
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.row.JDBCUpdatableRelation._
-import org.apache.spark.sql.jdbc.{JdbcUtils, JDBCRelation, JDBCPartitioningInfo, DriverRegistry}
+import org.apache.spark.sql.execution.row.JDBCUpdatableRelation
+import org.apache.spark.sql.jdbc.{JdbcUtils, DriverRegistry}
 
 import scala.collection.mutable
 
@@ -50,7 +50,8 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    (url, driver, poolProps, connProps, hikariCP)
+    val allPoolProps = JDBCUpdatableRelation.getAllPoolProperties(url, driver.getOrElse(null), poolProps, hikariCP)
+    (url, driver, allPoolProps, connProps, hikariCP)
   }
 
   def getPoolConnection(id: String, driver: Option[String], poolProps: Map[String, String],
@@ -65,6 +66,8 @@ private[sql] object ExternalStoreUtils {
   }
 
   def getConnection(url: String, connProperties: Properties) = {
+    connProperties.remove("poolProps")
     JdbcUtils.createConnection(url, connProperties)
+    //DriverManager.getConnection(url)
   }
 }

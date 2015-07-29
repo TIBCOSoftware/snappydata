@@ -135,6 +135,8 @@ private[sql] class InMemoryAppendableRelation(
           batchStats, _cachedBufferList).asInstanceOf[this.type]
   }
 
+  def getInMemoryRelationCachedColumnBuffers: RDD[CachedBatch] = super.cachedColumnBuffers
+
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
     // toArray call below is required to take a snapshot of buffer
     new UnionRDD[CachedBatch](child.sqlContext.sparkContext,

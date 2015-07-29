@@ -16,7 +16,7 @@ import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row._
@@ -133,7 +133,7 @@ final class SnappyContext(sc: SparkContext)
         if (cached.count() > 0) {
           relation match {
             case externalStore: ExternalStoreRelation =>
-              externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+              externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
             case appendable: InMemoryAppendableRelation =>
               appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
           }
@@ -172,7 +172,7 @@ final class SnappyContext(sc: SparkContext)
     if (cached.count() > 0) {
       relation.cachedRepresentation match {
         case externalStore: ExternalStoreRelation =>
-          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUID]])
+          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>
           appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
       }
