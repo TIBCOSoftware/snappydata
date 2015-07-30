@@ -30,15 +30,18 @@ import scala.util.Random
  *
  * Created by Neeraj on 16/7/15.
  */
-final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalStore {
+final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializable with ExternalStore {
 
+  @transient
   private val serializer = SparkEnv.get.serializer
 
+  @transient
   private val rand = new Random
 
-  private lazy val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+  private val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
 
-  private lazy val connectionType = ExternalStoreUtils.getConnectionType(url, connProps)
+  @transient
+  private lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
   override def initSource() = {
 
@@ -61,7 +64,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
               val primaryBuckets = {
                 val localBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
                 localBuckets.size match {
-                  case 0 =>
+                  case -1 =>
                     val statement = connection.createStatement()
                     statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
                     statement.close()

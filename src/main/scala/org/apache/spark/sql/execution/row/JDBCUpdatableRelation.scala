@@ -38,9 +38,6 @@ case class JDBCUpdatableRelation(
 
   override val needConversion: Boolean = false
 
-  // initialize GemFireXDDialect so that it gets registered
-  GemFireXDDialect.init()
-
   val driver = DriverRegistry.getDriverClassName(url)
 
   private[this] val poolProperties = JDBCUpdatableRelation

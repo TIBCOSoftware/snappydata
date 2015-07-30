@@ -1,7 +1,9 @@
 package org.apache.spark.sql.execution.row
 
+import java.util.Properties
+
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{SQLContext, Row}
 import org.apache.spark.sql.jdbc.JdbcDialect
 
 @DeveloperApi
@@ -56,4 +58,6 @@ trait DeletableRelation {
 abstract class JdbcExtendedDialect extends JdbcDialect {
   /** DDL to truncate a table, or null/empty if truncate is not supported */
   def truncateTable(tableName: String): String = s"TRUNCATE TABLE $tableName"
+
+  def extraCreateTableProperties(sqlContext: SQLContext) : Properties = new Properties()
 }

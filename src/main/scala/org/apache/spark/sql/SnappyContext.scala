@@ -41,6 +41,9 @@ final class SnappyContext(sc: SparkContext)
 
   self =>
 
+  // initialize GemFireXDDialect so that it gets registered
+  GemFireXDDialect.init()
+
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
 

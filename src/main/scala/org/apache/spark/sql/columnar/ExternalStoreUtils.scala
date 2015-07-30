@@ -7,8 +7,8 @@ import com.pivotal.gemfirexd.internal.client.net.NetConnection
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.row.JDBCUpdatableRelation
-import org.apache.spark.sql.jdbc.{JdbcUtils, DriverRegistry}
+import org.apache.spark.sql.execution.row.{GemFireXDClientDialect, GemFireXDDialect, JDBCUpdatableRelation}
+import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcUtils, DriverRegistry}
 
 import scala.collection.mutable
 
@@ -74,13 +74,12 @@ private[sql] object ExternalStoreUtils {
     //DriverManager.getConnection(url)
   }
 
-  def getConnectionType(url: String, connProps: Properties) = {
-    val conn = ExternalStoreUtils.getConnection(url, connProps)
-    conn match {
-      case ec: EmbedConnection => ConnectionType.Embedded
-      case nc: NetConnection => ConnectionType.Net
-      case _ => ConnectionType.Unknown
-    }
+  def getConnectionType(url: String) = {
+      JdbcDialects.get(url) match {
+        case GemFireXDDialect => ConnectionType.Embedded
+        case GemFireXDClientDialect => ConnectionType.Net
+        case _ => ConnectionType.Unknown
+      }
   }
 }
 

@@ -4,16 +4,18 @@ import java.sql.Connection
 
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.row.JdbcExtendedDialect
+import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.store.CachedBatchPartitioner
 
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-import org.apache.spark.Logging
+import org.apache.spark.{TaskContext, Partition, Logging}
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopKWrapper}
 import org.apache.spark.sql.sources.LogicalRelation
 import org.apache.spark.sql.types.StructType
@@ -149,11 +151,32 @@ final class SnappyStoreCatalog(context: SnappyContext,
   }
 
 
-  def createTable(conn: Connection, tableStr: String, tableName: String, dropIfExists: Boolean) = {
+  def createTable(conn: Connection, jdbcSource: Map[String, String], tableStr: String, tableName: String, dropIfExists: Boolean) = {
+    val rdd = new DummyRDD(context: SQLContext) {
+      override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
+        val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+        ExternalStoreUtils.getConnection(url, connProps)
+        Iterator.empty
+      }
+
+      override protected def getPartitions: Array[Partition] = {
+        val partitions = new Array[Partition](1000)
+        for (p <- 0 until 1000) {
+          partitions(p) = new ExecutorLocalPartition(p, null)
+        }
+        partitions
+      }
+    }
+
+    rdd.collect
+
     val statement = conn.createStatement();
     try {
       statement.execute(s"drop table if exists $tableName")
       statement.execute(tableStr)
+
+      statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
+
     } finally {
       statement.close()
     }
@@ -166,8 +189,12 @@ final class SnappyStoreCatalog(context: SnappyContext,
 
     //val tableName = processTableIdentifier(tableIdent)
     val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
-    val conn = ExternalStoreUtils.getPoolConnection(tableName, driver, poolProps, connProps, hikariCP)
-    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(url, connProps) match {
+    JdbcDialects.get(url) match {
+      case d: JdbcExtendedDialect =>
+        connProps.putAll(d.extraCreateTableProperties(context))
+    }
+    val conn = ExternalStoreUtils.getConnection(url, connProps)
+    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(url) match {
       case ConnectionType.Embedded => {
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), primary key (uuid, bucketId)",
           "partition by column (bucketId)")
@@ -175,7 +202,7 @@ final class SnappyStoreCatalog(context: SnappyContext,
       case _ => ("primary key (uuid)", "partition by primary key")
     }
 
-    createTable(conn, s"create table $tableName (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
+    createTable(conn, jdbcSource, s"create table $tableName (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
                       s"$primarykey" +
                       s") $partitionStrategy", tableName, true)
     conn.close()
