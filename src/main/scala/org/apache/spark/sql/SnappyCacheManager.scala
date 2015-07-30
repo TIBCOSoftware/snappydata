@@ -54,7 +54,8 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
         columnar.ExternalStoreRelation(
           sqlContext.conf.useCompression,
           sqlContext.conf.columnBatchSize,
-          StorageLevel.NONE, // storage level is meaningless in external store. set anything
+          StorageLevel.MEMORY_AND_DISK, // soubhik: RDD[UUID] should spill to disk. No ?
+          // StorageLevel.NONE, // storage level is meaningless in external store. set anything
           query.queryExecution.executedPlan,
           // all the properties including url should be in props
           tableName, isSampledTable, jdbcSource))

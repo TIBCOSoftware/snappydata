@@ -2,12 +2,13 @@ package org.apache.spark.sql.store.impl
 
 import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
 import java.sql.{ResultSet, Statement, Connection, Blob, PreparedStatement}
+import java.sql.DriverManager
 import java.util.concurrent.locks.ReentrantLock
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.client.net.NetConnection
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import org.apache.spark.serializer.Serializer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.UUIDRegionKey
 
@@ -16,7 +17,7 @@ import scala.language.implicitConversions
 
 import org.apache.spark.SparkEnv
 
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch}
+import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, CachedBatch}
 import org.apache.spark.sql.store.ExternalStore
 
 import scala.collection.mutable
@@ -37,20 +38,38 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
 
   private lazy val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
 
+  private lazy val connectionType = ExternalStoreUtils.getConnectionType(url, connProps)
+
   override def initSource() = {
 
   }
 
   override def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey = {
     val connection = getConnection(tableName)
-    val blob = prepareCachedBatchAsBlob(batch, connection)
     try {
-      val uuid = connection match {
-        case embedConn: EmbedConnection => {
-          val region = Misc.getRegionForTable(tableName, true)
+      val uuid = connectionType match {
+        case ConnectionType.Embedded => {
+          val lookupName = {
+            if (tableName.indexOf(".") <= 0) {
+              connection.getSchema + "." + tableName
+            } else tableName
+          }.toUpperCase
+
+          val region = Misc.getRegionForTable(lookupName, true)
           region.asInstanceOf[AbstractRegion] match {
             case pr: PartitionedRegion =>
-              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](10))
+              val primaryBuckets = {
+                val localBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
+                localBuckets.size match {
+                  case 0 =>
+                    val statement = connection.createStatement()
+                    statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
+                    statement.close()
+                    pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
+                  case _ => localBuckets
+                }
+              }
+
               genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
             case _ =>
               genUUIDRegionKey()
@@ -59,6 +78,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
         case _ => genUUIDRegionKey()
       }
 
+      val blob = prepareCachedBatchAsBlob(batch, connection)
       val rowInsertStr = getRowInsertStr(tableName)
       val stmt = connection.prepareStatement(rowInsertStr)
       stmt.setString(1, uuid.getUUID.toString)
@@ -83,12 +103,12 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
       st.executeQuery(s"truncate table $tableName")
       st.close()
     }
-  }, true)
+  })
 
   override def getCachedBatchIterator(tableName: String,
                                       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
 
-    val ret = itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
+    itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
       case conn =>
           val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
 
@@ -131,8 +151,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
           val rs = ps.executeQuery()
 
           new CachedBatchIteratorFromRS(conn, ps, rs)
-        }, false))
-    ret
+        }, closeOnSuccess = false))
   }
 
 
@@ -162,13 +181,13 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends ExternalS
 
   private def getConnection(tableName: String): Connection = {
     // TODO: KN look at pool later
-    ExternalStoreUtils.getPoolConnection(tableName, driver, poolProps, connProps, hikariCP)
+    ExternalStoreUtils.getPoolConnection(tableName, None, poolProps, connProps, hikariCP)
 //    ExternalStoreUtils.getConnection(url, connProps)
   }
 
-  private def genUUIDRegionKey(bucketId: Integer = 0) = new UUIDRegionKey(bucketId)
+  private def genUUIDRegionKey(bucketId: Integer = -1) = new UUIDRegionKey(bucketId)
 
-  private def tryExecute[T: ClassTag](tableName: String, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean): T = {
+  private def tryExecute[T: ClassTag](tableName: String, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean = true): T = {
     val conn = getConnection(tableName)
     var isClosed = false;
     try {

@@ -3,6 +3,8 @@ package org.apache.spark.sql.columnar
 import java.sql.{DriverManager, Connection}
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.client.net.NetConnection
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.row.JDBCUpdatableRelation
@@ -62,6 +64,7 @@ private[sql] object ExternalStoreUtils {
       case cnfe: ClassNotFoundException =>
         throw new IllegalArgumentException(s"Couldn't find driver class $driver", cnfe)
     }
+
     ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
   }
 
@@ -70,4 +73,19 @@ private[sql] object ExternalStoreUtils {
     JdbcUtils.createConnection(url, connProperties)
     //DriverManager.getConnection(url)
   }
+
+  def getConnectionType(url: String, connProps: Properties) = {
+    val conn = ExternalStoreUtils.getConnection(url, connProps)
+    conn match {
+      case ec: EmbedConnection => ConnectionType.Embedded
+      case nc: NetConnection => ConnectionType.Net
+      case _ => ConnectionType.Unknown
+    }
+  }
 }
+
+object ConnectionType extends Enumeration {
+  type ConnectionType = Value
+  val Embedded, Net, Unknown = Value
+}
+

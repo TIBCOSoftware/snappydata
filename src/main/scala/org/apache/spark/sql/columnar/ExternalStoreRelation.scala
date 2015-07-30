@@ -29,14 +29,13 @@ private[sql] final class ExternalStoreRelation(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
-    private var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] = null)
+    private var _uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
+     = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends InMemoryAppendableRelation(
      output, useCompression, batchSize, storageLevel, child, tableName,
      isSampledTable)(_ccb: RDD[CachedBatch],
         _stats: Statistics,
         _bstats: Accumulable[ArrayBuffer[Row], Row]) {
-
-  private val _uuidList = new ArrayBuffer[RDD[UUIDRegionKey]]()
 
   private lazy val externalStore: ExternalStore = {
     new JDBCSourceAsStore(jdbcSource)
@@ -66,7 +65,7 @@ private[sql] final class ExternalStoreRelation(
   override def withOutput(newOutput: Seq[Attribute]) = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable, jdbcSource)(
-          cachedColumnBuffers, super.statisticsToBePropagated, batchStats, null)
+          cachedColumnBuffers, super.statisticsToBePropagated, batchStats, _uuidList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -81,7 +80,7 @@ private[sql] final class ExternalStoreRelation(
       tableName,
       isSampledTable,
       jdbcSource)(cachedColumnBuffers, super.statisticsToBePropagated,
-          batchStats, null).asInstanceOf[this.type]
+          batchStats, _uuidList).asInstanceOf[this.type]
   }
 
   private def getCachedBatchIteratorFromUUIDItr(itr: Iterator[UUIDRegionKey]) = {

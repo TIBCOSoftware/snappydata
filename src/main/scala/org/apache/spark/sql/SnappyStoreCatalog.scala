@@ -3,7 +3,7 @@ package org.apache.spark.sql
 import java.sql.Connection
 
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import org.apache.spark.sql.columnar.ExternalStoreUtils
+import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.store.CachedBatchPartitioner
 
 import scala.collection.mutable
@@ -159,24 +159,25 @@ final class SnappyStoreCatalog(context: SnappyContext,
     }
   }
 
-  private def createExternalTableForCachedBatches(tableIdent: String,
+  private def createExternalTableForCachedBatches(tableName: String,
       jdbcSource: Map[String, String]): Unit = {
-    require(tableIdent != null && tableIdent.length > 0,
+    require(tableName != null && tableName.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     //val tableName = processTableIdentifier(tableIdent)
     val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
-    val conn = ExternalStoreUtils.getPoolConnection(tableIdent, driver, poolProps, connProps, hikariCP)
-    val (primarykey, partitionStrategy) = conn match {
-      case embedConn: EmbedConnection => {
-        ("primary key (uuid, bucketId)", "partition by column (bucketId)")
+    val conn = ExternalStoreUtils.getPoolConnection(tableName, driver, poolProps, connProps, hikariCP)
+    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(url, connProps) match {
+      case ConnectionType.Embedded => {
+        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), primary key (uuid, bucketId)",
+          "partition by column (bucketId)")
       }
       case _ => ("primary key (uuid)", "partition by primary key")
     }
 
-    createTable(conn, s"create table $tableIdent (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
+    createTable(conn, s"create table $tableName (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
                       s"$primarykey" +
-                      s") $partitionStrategy", tableIdent, true)
+                      s") $partitionStrategy", tableName, true)
     conn.close()
   }
 
