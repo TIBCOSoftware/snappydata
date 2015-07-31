@@ -161,8 +161,10 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
-            for (p <- d.extraCreateTableProperties(context).propertyNames()) {
-              if (externalStore.connProps.getProperty(p) != null) {
+            val extraProps = d.extraCreateTableProperties(context).propertyNames()
+            while (extraProps.hasMoreElements) {
+              val p = extraProps.nextElement()
+              if (externalStore.connProps.get(p) != null) {
                 sys.error(s"Master specific property ${p} shouldn't exist here in Executors")
               }
             }

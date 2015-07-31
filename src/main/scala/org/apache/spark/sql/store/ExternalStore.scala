@@ -18,7 +18,7 @@ trait ExternalStore extends Serializable {
   def getCachedBatchIterator(tableName: String, itr: Iterator[UUIDRegionKey],
                              getAll: Boolean = false): Iterator[CachedBatch]
 
-  def getConnection(id: String, onMaster: Boolean = false): java.sql.Connection
+  def getConnection(id: String): java.sql.Connection
 
   def url: String
 
