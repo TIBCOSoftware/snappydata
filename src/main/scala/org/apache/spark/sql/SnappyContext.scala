@@ -3,6 +3,8 @@ package org.apache.spark.sql
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
+import org.apache.spark.scheduler.local.LocalBackend
+
 import scala.StringBuilder
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -415,6 +417,12 @@ final class SnappyContext(sc: SparkContext)
   def getExternalStoreConfig: Map[String, String] = {
     storeConfig
   }
+
+  def isLoner = sparkContext.schedulerBackend match {
+    case lb: LocalBackend => true
+    case _ => false
+  }
+
 }
 
 object snappy extends Serializable {

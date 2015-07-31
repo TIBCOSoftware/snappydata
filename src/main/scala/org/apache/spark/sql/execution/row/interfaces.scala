@@ -60,5 +60,5 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   /** DDL to truncate a table, or null/empty if truncate is not supported */
   def truncateTable(tableName: String): String = s"TRUNCATE TABLE $tableName"
 
-  def extraCreateTableProperties(sparkContext: SparkContext) : Properties = new Properties()
+  def extraCreateTableProperties(isLoner: Boolean) : Properties = new Properties()
 }

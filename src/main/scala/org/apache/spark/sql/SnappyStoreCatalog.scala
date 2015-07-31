@@ -155,13 +155,15 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
 
 
   def createTable(externalStore: ExternalStore, tableStr: String, tableName: String, dropIfExists: Boolean) = {
+    val isLoner = snappyContext.isLoner
+
     val rdd = new DummyRDD(snappyContext) {
       override def compute(split: Partition, taskContext: TaskContext): Iterator[Row] = {
         GemFireXDDialect.init()
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
-            val extraProps = d.extraCreateTableProperties(context).propertyNames()
+            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames()
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
@@ -176,8 +178,8 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
       }
 
       override protected def getPartitions: Array[Partition] = {
-        val partitions = new Array[Partition](1000)
-        for (p <- 0 until 1000) {
+        val partitions = new Array[Partition](100)
+        for (p <- 0 until 100) {
           partitions(p) = new ExecutorLocalPartition(p, null)
         }
         partitions
@@ -191,7 +193,7 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
     val connProps = externalStore.connProps
     JdbcDialects.get(externalStore.url) match {
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(snappyContext.sparkContext))
+        connProps.putAll(d.extraCreateTableProperties(isLoner))
     }
 
     externalStore.tryExecute(tableName, {
