@@ -3,6 +3,7 @@ package org.apache.spark.sql.execution.row
 import java.sql.Types
 import java.util.Properties
 
+import org.apache.spark.SparkContext
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.SQLContext
@@ -23,8 +24,8 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
   def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd:") &&
     !url.startsWith("jdbc:gemfirexd://")
 
-  override def extraCreateTableProperties(sqlContext: SQLContext): Properties = {
-    sqlContext.sparkContext.schedulerBackend match {
+  override def extraCreateTableProperties(sparkContext: SparkContext): Properties = {
+    sparkContext.schedulerBackend match {
       case lb: LocalBackend => new Properties()
       case _ =>
         val props = new Properties()

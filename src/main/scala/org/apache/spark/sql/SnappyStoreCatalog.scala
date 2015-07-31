@@ -4,8 +4,8 @@ import java.sql.Connection
 
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.row.JdbcExtendedDialect
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.execution.row.{GemFireXDDialect, JdbcExtendedDialect}
+import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects}
 import org.apache.spark.sql.store.{ExternalStore, CachedBatchPartitioner}
 import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 
@@ -28,7 +28,7 @@ import org.apache.spark.streaming.StreamRelation
  *
  * Created by Soubhik on 5/13/15.
  */
-final class SnappyStoreCatalog(context: SnappyContext,
+final class SnappyStoreCatalog(snappyContext: SnappyContext,
     override val conf: CatalystConf)
     extends SimpleCatalog(conf) with Logging {
 
@@ -62,7 +62,7 @@ final class SnappyStoreCatalog(context: SnappyContext,
     val tableIdent = processTableIdentifier(tableIdentifier)
     val tblName = getDbTableName(tableIdent)
     if (tables.contains(tblName)) {
-      context.truncateTable(tblName)
+      snappyContext.truncateTable(tblName)
       tables -= tblName
     } else if (topKStructures.contains(tblName)) {
       topKStructures -= tblName
@@ -110,16 +110,16 @@ final class SnappyStoreCatalog(context: SnappyContext,
     // (currently for streaming case)
     val sampleDF = df.getOrElse {
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
-        new DummyRDD(context))(context)
+        new DummyRDD(snappyContext))(snappyContext)
       val streamTable = streamTableIdent.map(processTableIdentifier)
-      val newDF = new SampleDataFrame(context,
+      val newDF = new SampleDataFrame(snappyContext,
         StratifiedSample(opts, plan, streamTable)())
       if (jdbcSource.isEmpty) {
-        context.cacheManager.cacheQuery(newDF, Some(tableName))
+        snappyContext.cacheManager.cacheQuery(newDF, Some(tableName))
       } else {
         val externalStore = new JDBCSourceAsStore(jdbcSource.get);
         createExternalTableForCachedBatches(tableName, externalStore)
-        context.cacheManager.cacheQuery_ext(newDF, Some(tableName), externalStore)
+        snappyContext.cacheManager.cacheQuery_ext(newDF, Some(tableName), externalStore)
       }
       newDF
     }
@@ -150,14 +150,26 @@ final class SnappyStoreCatalog(context: SnappyContext,
     val externalStore = new JDBCSourceAsStore(jdbcSource);
     createExternalTableForCachedBatches(tableName, externalStore)
     tables.put(tableName, df.logicalPlan)
-    context.cacheManager.cacheQuery_ext(df, Some(tableName), externalStore)
+    snappyContext.cacheManager.cacheQuery_ext(df, Some(tableName), externalStore)
   }
 
 
   def createTable(externalStore: ExternalStore, tableStr: String, tableName: String, dropIfExists: Boolean) = {
-    val rdd = new DummyRDD(context: SQLContext) {
-      override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-        ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
+    val rdd = new DummyRDD(snappyContext) {
+      override def compute(split: Partition, taskContext: TaskContext): Iterator[Row] = {
+        GemFireXDDialect.init()
+        DriverRegistry.register(externalStore.driver)
+        JdbcDialects.get(externalStore.url) match {
+          case d: JdbcExtendedDialect =>
+            for (p <- d.extraCreateTableProperties(context).propertyNames()) {
+              if (externalStore.connProps.getProperty(p) != null) {
+                sys.error(s"Master specific property ${p} shouldn't exist here in Executors")
+              }
+            }
+        }
+
+        val conn = ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
+        conn.close()
         Iterator.empty
       }
 
@@ -171,6 +183,14 @@ final class SnappyStoreCatalog(context: SnappyContext,
     }
 
     rdd.collect
+
+    //val tableName = processTableIdentifier(tableIdent)
+    //val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+    val connProps = externalStore.connProps
+    JdbcDialects.get(externalStore.url) match {
+      case d: JdbcExtendedDialect =>
+        connProps.putAll(d.extraCreateTableProperties(snappyContext.sparkContext))
+    }
 
     externalStore.tryExecute(tableName, {
       case conn => {
@@ -193,14 +213,6 @@ final class SnappyStoreCatalog(context: SnappyContext,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
-
-    //val tableName = processTableIdentifier(tableIdent)
-    //val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
-    val connProps = externalStore.connProps
-    JdbcDialects.get(externalStore.url) match {
-      case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(context))
-    }
 
     val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(externalStore.url) match {
       case ConnectionType.Embedded => {
