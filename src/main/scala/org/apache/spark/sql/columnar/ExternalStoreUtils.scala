@@ -26,7 +26,7 @@ private[sql] object ExternalStoreUtils {
       sys.error("Option 'url' not specified"))
     val driver = parameters.remove("driver")
     val poolImpl = parameters.remove("poolImpl")
-    val poolProperties = parameters.remove("poolproperties")
+    val poolProperties = parameters.remove("poolProperties")
 
     driver.foreach(DriverRegistry.register)
 
@@ -69,7 +69,7 @@ private[sql] object ExternalStoreUtils {
   }
 
   def getConnection(url: String, connProperties: Properties) = {
-    connProperties.remove("poolProps")
+    connProperties.remove("poolProperties")
     JdbcUtils.createConnection(url, connProperties)
     //DriverManager.getConnection(url)
   }

@@ -25,7 +25,7 @@ private[sql] final class ExternalStoreRelation(
     override val child: SparkPlan,
     override val tableName: Option[String],
     val isSampledTable: Boolean,
-    val jdbcSource: Map[String, String])(
+    val externalStore: ExternalStore)(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
@@ -36,10 +36,6 @@ private[sql] final class ExternalStoreRelation(
      isSampledTable)(_ccb: RDD[CachedBatch],
         _stats: Statistics,
         _bstats: Accumulable[ArrayBuffer[Row], Row]) {
-
-  private lazy val externalStore: ExternalStore = {
-    new JDBCSourceAsStore(jdbcSource)
-  }
 
   override def appendBatch(batch: RDD[CachedBatch]) = writeLock {
     throw new IllegalStateException(
@@ -64,7 +60,7 @@ private[sql] final class ExternalStoreRelation(
 
   override def withOutput(newOutput: Seq[Attribute]) = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable, jdbcSource)(
+      storageLevel, child, tableName, isSampledTable, externalStore)(
           cachedColumnBuffers, super.statisticsToBePropagated, batchStats, _uuidList)
   }
 
@@ -79,7 +75,7 @@ private[sql] final class ExternalStoreRelation(
       child,
       tableName,
       isSampledTable,
-      jdbcSource)(cachedColumnBuffers, super.statisticsToBePropagated,
+      externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
           batchStats, _uuidList).asInstanceOf[this.type]
   }
 
@@ -151,7 +147,7 @@ private[sql] object ExternalStoreRelation {
       child: SparkPlan,
       tableName: Option[String],
       isSampledTable: Boolean,
-      jdbcSource: Map[String, String]): ExternalStoreRelation =
+      jdbcSource: ExternalStore): ExternalStoreRelation =
     new ExternalStoreRelation(child.output, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable, jdbcSource)()
 

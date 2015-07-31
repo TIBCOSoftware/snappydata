@@ -2,15 +2,14 @@ package org.apache.spark.sql.store.impl
 
 import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
 import java.sql.{ResultSet, Statement, Connection, Blob, PreparedStatement}
-import java.sql.DriverManager
 import java.util.concurrent.locks.ReentrantLock
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.client.net.NetConnection
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedBlob, EmbedConnection}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -22,7 +21,6 @@ import org.apache.spark.sql.store.ExternalStore
 
 import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.util.Random
 
 /**
@@ -30,15 +28,15 @@ import scala.util.Random
  *
  * Created by Neeraj on 16/7/15.
  */
-final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializable with ExternalStore {
+final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends ExternalStore {
 
   @transient
-  private val serializer = SparkEnv.get.serializer
+  private lazy val serializer = SparkEnv.get.serializer
 
   @transient
-  private val rand = new Random
+  private lazy val rand = new Random
 
-  private val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+  private val (_url, _driver, _poolProps, _connProps, _hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
 
   @transient
   private lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
@@ -48,7 +46,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializa
   }
 
   override def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey = {
-    val connection = getConnection(tableName)
+    val connection: java.sql.Connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
         case ConnectionType.Embedded => {
@@ -61,18 +59,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializa
           val region = Misc.getRegionForTable(lookupName, true)
           region.asInstanceOf[AbstractRegion] match {
             case pr: PartitionedRegion =>
-              val primaryBuckets = {
-                val localBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
-                localBuckets.size match {
-                  case -1 =>
-                    val statement = connection.createStatement()
-                    statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
-                    statement.close()
-                    pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
-                  case _ => localBuckets
-                }
-              }
-
+              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
               genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
             case _ =>
               genUUIDRegionKey()
@@ -86,7 +73,8 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializa
       val stmt = connection.prepareStatement(rowInsertStr)
       stmt.setString(1, uuid.getUUID.toString)
       stmt.setInt(2, uuid.getBucketId)
-      stmt.setBlob(3, blob)
+      //stmt.setBlob(3, blob)
+      stmt.setBytes(3, blob)
       val result = stmt.executeUpdate()
       stmt.close()
       uuid
@@ -153,15 +141,15 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializa
 
           val rs = ps.executeQuery()
 
-          new CachedBatchIteratorFromRS(conn, ps, rs)
+          new CachedBatchIteratorFromRS(conn, connectionType, ps, rs)
         }, closeOnSuccess = false))
   }
 
 
-  private def prepareCachedBatchAsBlob(batch: CachedBatch, conn: Connection): Blob = {
+  private def prepareCachedBatchAsBlob(batch: CachedBatch, conn: Connection) = {
     val outputStream = new ByteArrayOutputStream()
     val dos = new DataOutputStream(outputStream)
-    val blob = conn.createBlob()
+
     val numCols = batch.buffers.length
     dos.writeInt(numCols)
 
@@ -172,41 +160,21 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializa
     val ser = serializer.newInstance()
     val bf = ser.serialize(batch.stats)
     dos.write(bf.array())
-    val barr = outputStream.toByteArray
-    blob.setBytes(1, barr)
-//    println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
-    blob
+    // println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
+    outputStream.toByteArray
   }
 
   implicit def uuidToString(uuid: UUIDRegionKey): String = {
     uuid.toString
   }
 
-  private def getConnection(tableName: String): Connection = {
+  override def getConnection(id: String): Connection = {
     // TODO: KN look at pool later
-    ExternalStoreUtils.getPoolConnection(tableName, None, poolProps, connProps, hikariCP)
+    ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
 //    ExternalStoreUtils.getConnection(url, connProps)
   }
 
   private def genUUIDRegionKey(bucketId: Integer = -1) = new UUIDRegionKey(bucketId)
-
-  private def tryExecute[T: ClassTag](tableName: String, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean = true): T = {
-    val conn = getConnection(tableName)
-    var isClosed = false;
-    try {
-      f(conn)
-    } catch {
-      case t: Throwable => {
-        conn.close()
-        isClosed = true
-        throw t;
-      }
-    } finally {
-      if (closeOnSuccess && !isClosed) {
-        conn.close()
-      }
-    }
-  }
 
   private var insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
@@ -235,9 +203,17 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String]) extends Serializa
       insertStmntLock.unlock()
     }
   }
+
+  override def url = _url
+
+  override def driver = _driver.get
+
+  override def poolProps = _poolProps
+
+  override def connProps = _connProps
 }
 
-private final class CachedBatchIteratorFromRS(conn: Connection,
+private final class CachedBatchIteratorFromRS(conn: Connection, connType: ConnectionType,
                                              ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
@@ -246,7 +222,7 @@ private final class CachedBatchIteratorFromRS(conn: Connection,
   override def hasNext: Boolean = _hasNext
 
   override def next() = {
-    val result = getCachedBatchFromBlob(rs.getBlob(1))
+    val result = getCachedBatchFromBlob(rs.getBlob(1), connType)
     _hasNext = moveNext()
     result
   }
@@ -262,11 +238,15 @@ private final class CachedBatchIteratorFromRS(conn: Connection,
     }
   }
 
-  private def getCachedBatchFromBlob(blob: Blob): CachedBatch = {
+  private def getCachedBatchFromBlob(blob: Blob, connType: ConnectionType): CachedBatch = {
     val totBytes = blob.length().toInt
 //    println("KN: length of blob get = " + blob.length())
-    val bis = new ByteArrayInputStream(blob.getBytes(1, totBytes))
-    blob.free()
+    val bis = connType match {
+      case ConnectionType.Embedded =>
+        blob.getBinaryStream
+      case _ =>
+        new ByteArrayInputStream(blob.getBytes(1, totBytes))
+    }
     val dis = new DataInputStream(bis)
     var offset = 0
     val numCols = dis.readInt()
@@ -285,6 +265,8 @@ private final class CachedBatchIteratorFromRS(conn: Connection,
     dis.read(bytes)
     val deserializationStream = serializer.newInstance.deserializeStream(new ByteArrayInputStream(bytes))
     val stats = deserializationStream.readValue[Row]()
+    blob.free()
     CachedBatch(colBuffers.toArray, stats)
   }
+
 }

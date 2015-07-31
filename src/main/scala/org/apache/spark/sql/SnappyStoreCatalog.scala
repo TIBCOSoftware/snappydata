@@ -6,7 +6,8 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.row.JdbcExtendedDialect
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.store.CachedBatchPartitioner
+import org.apache.spark.sql.store.{ExternalStore, CachedBatchPartitioner}
+import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -116,8 +117,9 @@ final class SnappyStoreCatalog(context: SnappyContext,
       if (jdbcSource.isEmpty) {
         context.cacheManager.cacheQuery(newDF, Some(tableName))
       } else {
-        createExternalTableForCachedBatches(tableName, jdbcSource.get)
-        context.cacheManager.cacheQuery_ext(newDF, Some(tableName), jdbcSource.get)
+        val externalStore = new JDBCSourceAsStore(jdbcSource.get);
+        createExternalTableForCachedBatches(tableName, externalStore)
+        context.cacheManager.cacheQuery_ext(newDF, Some(tableName), externalStore)
       }
       newDF
     }
@@ -145,17 +147,17 @@ final class SnappyStoreCatalog(context: SnappyContext,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     val tableName = processTableIdentifier(tableIdent)
-    createExternalTableForCachedBatches(tableName, jdbcSource)
+    val externalStore = new JDBCSourceAsStore(jdbcSource);
+    createExternalTableForCachedBatches(tableName, externalStore)
     tables.put(tableName, df.logicalPlan)
-    context.cacheManager.cacheQuery_ext(df, Some(tableName), jdbcSource)
+    context.cacheManager.cacheQuery_ext(df, Some(tableName), externalStore)
   }
 
 
-  def createTable(conn: Connection, jdbcSource: Map[String, String], tableStr: String, tableName: String, dropIfExists: Boolean) = {
+  def createTable(externalStore: ExternalStore, tableStr: String, tableName: String, dropIfExists: Boolean) = {
     val rdd = new DummyRDD(context: SQLContext) {
       override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
-        val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
-        ExternalStoreUtils.getConnection(url, connProps)
+        ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
         Iterator.empty
       }
 
@@ -170,31 +172,37 @@ final class SnappyStoreCatalog(context: SnappyContext,
 
     rdd.collect
 
-    val statement = conn.createStatement();
-    try {
-      statement.execute(s"drop table if exists $tableName")
-      statement.execute(tableStr)
+    externalStore.tryExecute(tableName, {
+      case conn => {
+        val statement = conn.createStatement();
+        try {
+          if (dropIfExists) {
+            statement.execute(s"drop table if exists $tableName")
+          }
+          statement.execute(tableStr)
+          statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
 
-      statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
-
-    } finally {
-      statement.close()
-    }
+        } finally {
+          statement.close()
+        }
+      }
+    })
   }
 
   private def createExternalTableForCachedBatches(tableName: String,
-      jdbcSource: Map[String, String]): Unit = {
+      externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     //val tableName = processTableIdentifier(tableIdent)
-    val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
-    JdbcDialects.get(url) match {
+    //val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+    val connProps = externalStore.connProps
+    JdbcDialects.get(externalStore.url) match {
       case d: JdbcExtendedDialect =>
         connProps.putAll(d.extraCreateTableProperties(context))
     }
-    val conn = ExternalStoreUtils.getConnection(url, connProps)
-    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(url) match {
+
+    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(externalStore.url) match {
       case ConnectionType.Embedded => {
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), primary key (uuid, bucketId)",
           "partition by column (bucketId)")
@@ -202,10 +210,9 @@ final class SnappyStoreCatalog(context: SnappyContext,
       case _ => ("primary key (uuid)", "partition by primary key")
     }
 
-    createTable(conn, jdbcSource, s"create table $tableName (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
+    createTable(externalStore, s"create table $tableName (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
                       s"$primarykey" +
                       s") $partitionStrategy", tableName, true)
-    conn.close()
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */
