@@ -90,19 +90,22 @@ private[sql] final class ExternalStoreRelation(
   // If the cached column buffers were not passed in, we calculate them
   // in the constructor. As in Spark, the actual work of caching is lazy.
   if (super.getInMemoryRelationCachedColumnBuffers != null) writeLock {
-    if (_uuidList.isEmpty) _uuidList += super.getInMemoryRelationCachedColumnBuffers mapPartitions ( { cachedIter =>
-      new Iterator[UUIDRegionKey] {
-        override def hasNext: Boolean = {
-          cachedIter.hasNext
-        }
+    if (_uuidList.isEmpty) {
+      val uuidR = super.getInMemoryRelationCachedColumnBuffers mapPartitions ( { cachedIter =>
+        new Iterator[UUIDRegionKey] {
+          override def hasNext: Boolean = {
+            cachedIter.hasNext
+          }
 
-        override def next() = {
-          externalStore.storeCachedBatch(cachedIter.next(), tableName.get)
+          override def next() = {
+            externalStore.storeCachedBatch(cachedIter.next(), tableName.get)
+          }
         }
-      }
-    })
+      })
+
+      _uuidList += uuidR.persist(StorageLevel.MEMORY_AND_DISK)
+    }
   }
-
 
   // TODO: Check if this is correct
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
