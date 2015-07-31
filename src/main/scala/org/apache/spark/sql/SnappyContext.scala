@@ -1,11 +1,7 @@
 package org.apache.spark.sql
 
-import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 
-import org.apache.spark.scheduler.local.LocalBackend
-
-import scala.StringBuilder
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -13,19 +9,18 @@ import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.util.SqlUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.ScalaReflection
+import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
-import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, WeightageRule}
-
-import org.apache.spark.sql.sources._
+import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StoreStrategy, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -72,8 +67,10 @@ final class SnappyContext(sc: SparkContext)
       val rddRows = formatter(rdd, schema)
 
       val rows = if (transform != null) {
+        // avoid conversion to Catalyst rows and back for both calls below,
+        // so not using DataFrame.rdd call directly in second step below
         val rDF = createDataFrame(rddRows, schema, needsConversion = false)
-        transform(rDF).rdd
+        transform(rDF).queryExecution.toRdd
       } else rddRows
 
       collectSamples(rows, aqpTables)
@@ -111,10 +108,12 @@ final class SnappyContext(sc: SparkContext)
         (relation, rows.mapPartitions(rowIterator => {
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
+          val catalystConverters = schema.fields.map(f =>
+            CatalystTypeConverters.createToCatalystConverter(f.dataType))
           // create a new holder for set of CachedBatches
           val batches = ExternalStoreRelation(useCompression,
             columnBatchSize, name, schema, relation, output)
-          sampler.append(rowIterator, null, (),
+          sampler.append(rowIterator, catalystConverters, (),
             batches.appendRow, batches.endRows)
           batches.forceEndOfBatch().iterator
 

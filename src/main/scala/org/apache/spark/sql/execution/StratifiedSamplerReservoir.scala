@@ -17,7 +17,7 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
     private val reservoirSize: Int)
     extends StratifiedSampler(qcs, name, schema) {
 
-  private final class ProcessRows(val processSelected: Any => Any)
+  private final class ProcessRows(val processSelected: Array[Any => Any])
       extends ChangeValue[Row, StratumReservoir] {
 
     override def keyCopy(row: Row) = row.copy()
@@ -53,9 +53,9 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
 
   override protected def strataReservoirSize: Int = reservoirSize
 
-  override def append[U](rows: Iterator[Row], processSelected: Any => Any,
-      init: U, processFlush: (U, Row) => U,
-      endBatch: U => U): U = {
+  override def append[U](rows: Iterator[Row],
+      processSelected: Array[Any => Any],
+      init: U, processFlush: (U, Row) => U, endBatch: U => U): U = {
     if (rows.hasNext) {
       strata.bulkChangeValues(rows, new ProcessRows(processSelected))
     }

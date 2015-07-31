@@ -442,32 +442,42 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
 
   protected def strataReservoirSize: Int
 
-  protected final def newMutableRow(parentRow: Row,
-      process: Any => Any): MutableRow = {
-    val row =
-      if (process == null) parentRow else process(parentRow).asInstanceOf[Row]
+  protected final def newMutableRow(row: Row,
+      process: Array[Any => Any]): MutableRow = {
     // add the weight column
-    row match {
-      case r: GenericRow =>
-        val lastIndex = r.length
-        val newRow = new Array[Any](lastIndex + 1)
-        System.arraycopy(r.values, 0, newRow, 0, lastIndex)
-        newRow(lastIndex) = LONG_ONE
-        new GenericMutableRow(newRow)
-      case _ =>
-        val lastIndex = row.length
-        val newRow = new GenericMutableRow(lastIndex + 1)
-        var index = 0
-        while (index < lastIndex) {
-          newRow(index) = row(index)
-          index += 1
-        }
-        newRow(lastIndex) = LONG_ONE
-        newRow
+    if (process != null) {
+      val lastIndex = row.length
+      val newRow = new Array[Any](lastIndex + 1)
+      var index = 0
+      while (index < lastIndex) {
+        newRow(index) = process(index)(row(index))
+        index += 1
+      }
+      newRow(lastIndex) = LONG_ONE
+      new GenericMutableRow(newRow)
+    } else {
+      row match {
+        case r: GenericRow =>
+          val lastIndex = r.length
+          val newRow = new Array[Any](lastIndex + 1)
+          System.arraycopy(r.values, 0, newRow, 0, lastIndex)
+          newRow(lastIndex) = LONG_ONE
+          new GenericMutableRow(newRow)
+        case _ =>
+          val lastIndex = row.length
+          val newRow = new Array[Any](lastIndex + 1)
+          var index = 0
+          while (index < lastIndex) {
+            newRow(index) = row(index)
+            index += 1
+          }
+          newRow(lastIndex) = LONG_ONE
+          new GenericMutableRow(newRow)
+      }
     }
   }
 
-  def append[U](rows: Iterator[Row], processSelected: Any => Any,
+  def append[U](rows: Iterator[Row], processSelected: Array[Any => Any],
       init: U, processFlush: (U, Row) => U, endBatch: U => U): U
 
   def sample(items: Iterator[Row], flush: Boolean): Iterator[Row]

@@ -65,7 +65,7 @@ final class StratifiedSamplerErrorLimit(override val qcs: Array[Int],
     }
   }
 
-  private final class ProcessRows[U](val processSelected: Any => Any,
+  private final class ProcessRows[U](val processSelected: Array[Any => Any],
       val processFlush: (U, Row) => U,
       val endBatch: U => U, var result: U)
       extends ChangeValue[Row, StratumReservoir] with CastDouble {
@@ -478,9 +478,9 @@ final class StratifiedSamplerErrorLimit(override val qcs: Array[Int],
   /** not used for this implementation so return init size */
   override protected def strataReservoirSize: Int = initCacheSize
 
-  override def append[U](rows: Iterator[Row], processSelected: Any => Any,
-      init: U, processFlush: (U, Row) => U,
-      endBatch: U => U): U = {
+  override def append[U](rows: Iterator[Row],
+      processSelected: Array[Any => Any],
+      init: U, processFlush: (U, Row) => U, endBatch: U => U): U = {
     if (rows.hasNext) {
       val processedResult = new ProcessRows(processSelected, processFlush,
         endBatch, init)

@@ -28,9 +28,6 @@ package org.apache.spark.sql.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
-import org.apache.spark.sql.types.StructType
-
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
@@ -40,6 +37,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{CachedRDD, Row}
 import org.apache.spark.storage.StorageLevel
 
@@ -164,8 +162,6 @@ private[sql] object InMemoryAppendableRelation {
 
     var columnBuilders = getColumnBuilders
 
-    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-
     var result = init
 
     /**
@@ -185,7 +181,7 @@ private[sql] object InMemoryAppendableRelation {
 
         var i = 0
         while (i < rowLength) {
-          columnBuilders(i).appendFrom(converter(row).asInstanceOf[Row], i)
+          columnBuilders(i).appendFrom(row, i)
           i += 1
         }
         rowCount += 1
