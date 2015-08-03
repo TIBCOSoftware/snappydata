@@ -1,7 +1,5 @@
 package org.apache.spark.sql.columnar
 
-import org.apache.spark.sql.collection.UUIDRegionKey
-
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.Accumulable
@@ -9,11 +7,10 @@ import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
+import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.InMemoryAppendableRelation.CachedBatchHolder
 import org.apache.spark.sql.execution.SparkPlan
-import org.apache.spark.sql.execution.row.JDBCUpdatableSource
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 
@@ -29,7 +26,7 @@ private[sql] final class ExternalStoreRelation(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
-    private var _uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
+    private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
      = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends InMemoryAppendableRelation(
      output, useCompression, batchSize, storageLevel, child, tableName,
@@ -43,14 +40,14 @@ private[sql] final class ExternalStoreRelation(
   }
 
   def appendUUIDBatch(batch: RDD[UUIDRegionKey]) = writeLock {
-    _uuidList += batch
+    uuidList += batch
   }
 
   override def truncate() = writeLock {
-    for (batch <- _uuidList) {
+    for (batch <- uuidList) {
       // TODO: Go to GemXD and remove
     }
-    _uuidList.clear()
+    uuidList.clear()
   }
 
   override def recache(): Unit = {
@@ -61,7 +58,7 @@ private[sql] final class ExternalStoreRelation(
   override def withOutput(newOutput: Seq[Attribute]) = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable, externalStore)(
-          cachedColumnBuffers, super.statisticsToBePropagated, batchStats, _uuidList)
+          cachedColumnBuffers, super.statisticsToBePropagated, batchStats, uuidList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -76,7 +73,7 @@ private[sql] final class ExternalStoreRelation(
       tableName,
       isSampledTable,
       externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
-          batchStats, _uuidList).asInstanceOf[this.type]
+          batchStats, uuidList).asInstanceOf[this.type]
   }
 
   private def getCachedBatchIteratorFromUUIDItr(itr: Iterator[UUIDRegionKey]) = {
@@ -86,9 +83,9 @@ private[sql] final class ExternalStoreRelation(
   // If the cached column buffers were not passed in, we calculate them
   // in the constructor. As in Spark, the actual work of caching is lazy.
   if (super.getInMemoryRelationCachedColumnBuffers != null) writeLock {
-    if (_uuidList.isEmpty) {
-      val uuidR = super.getInMemoryRelationCachedColumnBuffers mapPartitions ( { cachedIter =>
-        new Iterator[UUIDRegionKey] {
+    if (uuidList.isEmpty) {
+      val uuidR = super.getInMemoryRelationCachedColumnBuffers.mapPartitions {
+        cachedIter => new Iterator[UUIDRegionKey] {
           override def hasNext: Boolean = {
             cachedIter.hasNext
           }
@@ -97,16 +94,16 @@ private[sql] final class ExternalStoreRelation(
             externalStore.storeCachedBatch(cachedIter.next(), tableName.get)
           }
         }
-      })
+      }
 
-      _uuidList += uuidR.persist(StorageLevel.MEMORY_AND_DISK)
+      uuidList += uuidR.persist(storageLevel)
     }
   }
 
   // TODO: Check if this is correct
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
     var rddList = new ArrayBuffer[RDD[CachedBatch]]()
-      _uuidList.foreach(x => {
+      uuidList.foreach(x => {
         val y = x.mapPartitions { uuidItr =>
           getCachedBatchIteratorFromUUIDItr(uuidItr)
         }
@@ -125,10 +122,6 @@ private[sql] final class ExternalStoreRelation(
     writeLock {
       // TODO: Go to GemXD and truncate or drop
     }
-  }
-
-  def getUUIDList = {
-    _uuidList
   }
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],

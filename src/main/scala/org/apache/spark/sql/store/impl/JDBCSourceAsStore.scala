@@ -92,7 +92,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
       stmt.setInt(2, uuid.getBucketId)
       //stmt.setBlob(3, blob)
       stmt.setBytes(3, blob)
-      val result = stmt.executeUpdate()
+      stmt.executeUpdate()
       stmt.close()
       uuid
     } finally {
