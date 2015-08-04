@@ -4,7 +4,8 @@ import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, Da
 import java.sql.{ResultSet, Statement, Connection, Blob, PreparedStatement}
 import java.util.concurrent.locks.ReentrantLock
 
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
+import com.gemstone.gemfire.cache.{EntryOperation, PartitionResolver}
+import com.gemstone.gemfire.internal.cache.{RegionEntry, AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedBlob, EmbedConnection}
 import org.apache.spark.sql.Row
@@ -46,9 +47,24 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   }
 
   override def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey = {
+    connectionType match {
+      case ConnectionType.Embedded =>
+        val pr = Misc.getRegion(tableName, true).asInstanceOf[PartitionedRegion]
+        val bucketIdSet = pr.getDataStore.getAllLocalPrimaryBucketIds
+        val bucketItr = bucketIdSet.iterator()
+        var index = rand.nextInt(bucketIdSet.size())
+        while (index > 0) {
+          bucketItr.next()
+          index -= 1
+        }
+        val key = genUUIDRegionKey(bucketItr.next())
+        Misc.getRegion(tableName, true).put(key, batch)
+        return key
+    }
     val connection: java.sql.Connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
+        /*
         case ConnectionType.Embedded => {
           val lookupName = {
             if (tableName.indexOf(".") <= 0) {
@@ -65,6 +81,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
               genUUIDRegionKey()
           }
         }
+        */
         case _ => genUUIDRegionKey()
       }
 
@@ -83,7 +100,6 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
     }
   }
 
-
   override def cleanup(): Unit = {
 
   }
@@ -99,6 +115,23 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   override def getCachedBatchIterator(tableName: String,
                                       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
 
+    connectionType match {
+      case ConnectionType.Embedded =>
+        return new Iterator[CachedBatch] {
+          val region = Misc.getRegion(tableName, true).asInstanceOf[PartitionedRegion]
+          //val itr = region.localEntriesIterator(null, true, false, true)
+
+          override def hasNext: Boolean = itr.hasNext
+
+          override def next(): CachedBatch =
+            region.get(itr.next()).asInstanceOf[CachedBatch]
+          /*
+          override def next(): CachedBatch = itr.next().
+            asInstanceOf[RegionEntry].getValueInVMOrDiskWithoutFaultIn(region).
+            asInstanceOf[CachedBatch]
+          */
+        }
+    }
     itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
       case conn =>
           val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
@@ -132,6 +165,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 
             case _ =>
               val ps = conn.prepareStatement(s"select cachedBatch from $tableName where uuid IN ($uuidParams)")
+
 
               uuidIter.zipWithIndex.foreach({
                 case (_id, idx) => ps.setString(idx + 1, _id.toString)
@@ -174,7 +208,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 //    ExternalStoreUtils.getConnection(url, connProps)
   }
 
-  private def genUUIDRegionKey(bucketId: Integer = -1) = new UUIDRegionKey(bucketId)
+  private def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
   private var insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
@@ -269,4 +303,15 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
     CachedBatch(colBuffers.toArray, stats)
   }
 
+}
+
+final class UUIDKeyResolver extends PartitionResolver[UUIDRegionKey, CachedBatch] {
+
+  override def getRoutingObject(entryOperation: EntryOperation[UUIDRegionKey, CachedBatch]): AnyRef = {
+    Int.box(entryOperation.getKey.getBucketId)
+  }
+
+  override def getName: String = "UUIDKeyResolver"
+
+  override def close(): Unit = {}
 }

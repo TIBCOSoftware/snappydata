@@ -2,12 +2,14 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import com.gemstone.gemfire.cache._
+import com.gemstone.gemfire.cache.partition.PartitionRegionHelper
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.row.{GemFireXDDialect, JdbcExtendedDialect}
 import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects}
 import org.apache.spark.sql.store.{ExternalStore, CachedBatchPartitioner}
-import org.apache.spark.sql.store.impl.JDBCSourceAsStore
+import org.apache.spark.sql.store.impl.{UUIDKeyResolver, JDBCSourceAsStore}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -16,7 +18,7 @@ import org.apache.spark.{TaskContext, Partition, Logging}
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
+import org.apache.spark.sql.collection.{UUIDRegionKey, ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopKWrapper}
 import org.apache.spark.sql.sources.LogicalRelation
 import org.apache.spark.sql.types.StructType
@@ -158,6 +160,7 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
     val isLoner = snappyContext.isLoner
 
     val rdd = new DummyRDD(snappyContext) {
+
       override def compute(split: Partition, taskContext: TaskContext): Iterator[Row] = {
         GemFireXDDialect.init()
         DriverRegistry.register(externalStore.driver)
@@ -174,6 +177,23 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
 
         val conn = ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
         conn.close()
+        ExternalStoreUtils.getConnectionType(externalStore.url) match {
+          case ConnectionType.Embedded =>
+            val cf = CacheFactory.getAnyInstance
+            if (cf.getRegion(tableName) == null) {
+              val rf = cf.createRegionFactory()
+                //val rf = cf.createRegionFactory(RegionShortcut.PARTITION_REDUNDANT)
+              val paf = new PartitionAttributesFactory[UUIDRegionKey, CachedBatch]()
+              paf.setPartitionResolver(new UUIDKeyResolver)
+              rf.setPartitionAttributes(paf.create())
+              try {
+                val pr = rf.create(tableName)
+                PartitionRegionHelper.assignBucketsToPartitions(pr)
+              } catch {
+                case ree: RegionExistsException => // ignore
+              }
+            }
+        }
         Iterator.empty
       }
 

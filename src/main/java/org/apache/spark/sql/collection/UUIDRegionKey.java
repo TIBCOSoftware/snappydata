@@ -9,9 +9,9 @@ import java.util.UUID;
  */
 public final class UUIDRegionKey implements java.io.Serializable, Comparable<UUIDRegionKey> {
     private final UUID uuid;
-    private final Integer bucketId;
+    private final int bucketId;
 
-    public UUIDRegionKey(Integer bucketId) {
+    public UUIDRegionKey(int bucketId) {
         this.uuid = UUID.randomUUID();
         this.bucketId = bucketId;
     }
@@ -42,7 +42,7 @@ public final class UUIDRegionKey implements java.io.Serializable, Comparable<UUI
         return uuid;
     }
 
-    public Integer getBucketId() {
+    public int getBucketId() {
         return bucketId;
     }
 }
