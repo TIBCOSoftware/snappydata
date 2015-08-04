@@ -1,17 +1,17 @@
 package org.apache.spark.sql.execution.row
 
-import java.sql.{ResultSetMetaData, DriverManager, Connection, PreparedStatement}
+import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql._
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -27,7 +27,7 @@ case class JDBCUpdatableRelation(
     connProperties: Properties,
     hikariCP: Boolean,
     ddlExtensions: Option[String],
-    @transient val sqlContext: SQLContext)
+    @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
@@ -313,7 +313,7 @@ object JDBCUpdatableRelation extends Logging {
             case DateType => "DATE"
             case DecimalType.Fixed(precision, scale) =>
               s"DECIMAL($precision,$scale)"
-            case DecimalType.Unlimited => "DECIMAL(38,19)"
+            case DecimalType.Unlimited => "DECIMAL(38,18)"
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })

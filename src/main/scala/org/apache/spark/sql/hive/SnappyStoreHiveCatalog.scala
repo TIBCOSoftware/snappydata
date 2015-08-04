@@ -1,36 +1,33 @@
-package org.apache.spark.sql
-
-import java.sql.Connection
-
-import com.gemstone.gemfire.cache._
-import com.gemstone.gemfire.cache.partition.PartitionRegionHelper
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.row.{GemFireXDDialect, JdbcExtendedDialect}
-import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects}
-import org.apache.spark.sql.store.{ExternalStore, CachedBatchPartitioner}
-import org.apache.spark.sql.store.impl.{UUIDKeyResolver, JDBCSourceAsStore}
+package org.apache.spark.sql.hive
 
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-import org.apache.spark.{TaskContext, Partition, Logging}
+import com.gemstone.gemfire.cache.partition.PartitionRegionHelper
+import com.gemstone.gemfire.cache.{CacheFactory, PartitionAttributesFactory, RegionExistsException}
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.CatalystConf
 import org.apache.spark.sql.catalyst.analysis.SimpleCatalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.{UUIDRegionKey, ExecutorLocalPartition, Utils}
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.row.{GemFireXDDialect, JdbcExtendedDialect}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopKWrapper}
+import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects}
 import org.apache.spark.sql.sources.LogicalRelation
+import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.impl.{JDBCSourceAsStore, UUIDKeyResolver}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.StreamRelation
+import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
- * Catalog primarily tracking stream/topK tables and returning LogicalPlan
- * to materialize these entities.
+ * Catalog using Hive for persistence and adding Snappy extensions like
+ * stream/topK tables and returning LogicalPlan to materialize these entities.
  *
- * Created by Soubhik on 5/13/15.
+ * Created by Sumedh on 7/27/15.
  */
-final class SnappyStoreCatalog(snappyContext: SnappyContext,
+final class SnappyStoreHiveCatalog(context: SnappyContext,
     override val conf: CatalystConf)
     extends SimpleCatalog(conf) with Logging {
 
@@ -64,7 +61,7 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
     val tableIdent = processTableIdentifier(tableIdentifier)
     val tblName = getDbTableName(tableIdent)
     if (tables.contains(tblName)) {
-      snappyContext.truncateTable(tblName)
+      context.truncateTable(tblName)
       tables -= tblName
     } else if (topKStructures.contains(tblName)) {
       topKStructures -= tblName
@@ -112,16 +109,16 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
     // (currently for streaming case)
     val sampleDF = df.getOrElse {
       val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
-        new DummyRDD(snappyContext))(snappyContext)
+        new DummyRDD(context))(context)
       val streamTable = streamTableIdent.map(processTableIdentifier)
-      val newDF = new SampleDataFrame(snappyContext,
+      val newDF = new SampleDataFrame(context,
         StratifiedSample(opts, plan, streamTable)())
       if (jdbcSource.isEmpty) {
-        snappyContext.cacheManager.cacheQuery(newDF, Some(tableName))
+        context.cacheManager.cacheQuery(newDF, Some(tableName))
       } else {
-        val externalStore = new JDBCSourceAsStore(jdbcSource.get);
+        val externalStore = new JDBCSourceAsStore(jdbcSource.get)
         createExternalTableForCachedBatches(tableName, externalStore)
-        snappyContext.cacheManager.cacheQuery_ext(newDF, Some(tableName), externalStore)
+        context.cacheManager.cacheQuery_ext(newDF, Some(tableName), externalStore)
       }
       newDF
     }
@@ -149,17 +146,17 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     val tableName = processTableIdentifier(tableIdent)
-    val externalStore = new JDBCSourceAsStore(jdbcSource);
+    val externalStore = new JDBCSourceAsStore(jdbcSource)
     createExternalTableForCachedBatches(tableName, externalStore)
     tables.put(tableName, df.logicalPlan)
-    snappyContext.cacheManager.cacheQuery_ext(df, Some(tableName), externalStore)
+    context.cacheManager.cacheQuery_ext(df, Some(tableName), externalStore)
   }
 
+  def createTable(externalStore: ExternalStore, tableStr: String,
+      tableName: String, dropIfExists: Boolean) = {
+    val isLoner = context.isLoner
 
-  def createTable(externalStore: ExternalStore, tableStr: String, tableName: String, dropIfExists: Boolean) = {
-    val isLoner = snappyContext.isLoner
-
-    val rdd = new DummyRDD(snappyContext) {
+    val rdd = new DummyRDD(context) {
 
       override def compute(split: Partition, taskContext: TaskContext): Iterator[Row] = {
         GemFireXDDialect.init()
@@ -170,19 +167,21 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
-                sys.error(s"Master specific property ${p} shouldn't exist here in Executors")
+                sys.error(s"Master specific property $p " +
+                    "shouldn't exist here in Executors")
               }
             }
         }
 
-        val conn = ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
+        val conn = ExternalStoreUtils.getConnection(externalStore.url,
+          externalStore.connProps)
         conn.close()
         ExternalStoreUtils.getConnectionType(externalStore.url) match {
           case ConnectionType.Embedded =>
             val cf = CacheFactory.getAnyInstance
             if (cf.getRegion(tableName) == null) {
               val rf = cf.createRegionFactory()
-                //val rf = cf.createRegionFactory(RegionShortcut.PARTITION_REDUNDANT)
+              //val rf = cf.createRegionFactory(RegionShortcut.PARTITION_REDUNDANT)
               val paf = new PartitionAttributesFactory[UUIDRegionKey, CachedBatch]()
               paf.setPartitionResolver(new UUIDKeyResolver)
               rf.setPartitionAttributes(paf.create())
@@ -206,10 +205,9 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
       }
     }
 
-    rdd.collect
+    rdd.collect()
 
     //val tableName = processTableIdentifier(tableIdent)
-    //val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
     val connProps = externalStore.connProps
     JdbcDialects.get(externalStore.url) match {
       case d: JdbcExtendedDialect =>
@@ -217,19 +215,20 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
     }
 
     externalStore.tryExecute(tableName, {
-      case conn => {
-        val statement = conn.createStatement();
+      case conn =>
+        val statement = conn.createStatement()
         try {
+          // TODO: [sumedh] if exists should come from dialect
           if (dropIfExists) {
             statement.execute(s"drop table if exists $tableName")
           }
           statement.execute(tableStr)
+          // TODO: [sumedh] below should come from dialect
           statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
 
         } finally {
           statement.close()
         }
-      }
     })
   }
 
@@ -238,17 +237,18 @@ final class SnappyStoreCatalog(snappyContext: SnappyContext,
     require(tableName != null && tableName.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
+    //val tableName = processTableIdentifier(tableIdent)
     val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(externalStore.url) match {
-      case ConnectionType.Embedded => {
+      case ConnectionType.Embedded =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), primary key (uuid, bucketId)",
-          "partition by column (bucketId)")
-      }
+            "partition by column (bucketId)")
+      // TODO: [sumedh] Neeraj, the partition clause should come from JdbcDialect or something
       case _ => ("primary key (uuid)", "partition by primary key")
     }
 
-    createTable(externalStore, s"create table $tableName (uuid varchar(36) not null, bucketId integer, cachedBatch Blob not null," +
-                      s"$primarykey" +
-                      s") $partitionStrategy", tableName, true)
+    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
+        s"not null, bucketId integer, cachedBatch Blob not null, $primarykey) " +
+        s"$partitionStrategy", tableName, dropIfExists = true)
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */

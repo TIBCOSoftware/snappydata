@@ -20,6 +20,7 @@ import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StoreStrategy, WeightageRule}
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -52,7 +53,7 @@ final class SnappyContext(sc: SparkContext)
 
   @transient
   override protected[sql] lazy val catalog =
-    new SnappyStoreCatalog(this, conf)
+    new SnappyStoreHiveCatalog(this, conf)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(this)
