@@ -53,7 +53,7 @@ final class SnappyContext(sc: SparkContext)
 
   @transient
   override protected[sql] lazy val catalog =
-    new SnappyStoreHiveCatalog(this, conf)
+    new SnappyStoreHiveCatalog(this)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(this)
@@ -82,8 +82,8 @@ final class SnappyContext(sc: SparkContext)
     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
-    val aqpTableNames = mutable.Set(
-      catalog.processTableIdentifier(aqpTables): _*)
+    val aqpTableNames = mutable.Set(aqpTables.map(
+      catalog.newQualifiedTableName): _*)
 
     val sampleTables = catalog.tables.collect {
       case (name, sample: StratifiedSample) if aqpTableNames.contains(name) =>
@@ -126,7 +126,8 @@ final class SnappyContext(sc: SparkContext)
         val clazz = SqlUtils.getInternalType(
           topKWrapper.schema(topKWrapper.key.name).dataType)
         val ct = ClassTag(clazz)
-        SnappyContext.populateTopK(rows, topKWrapper, this, name)(ct)
+        SnappyContext.populateTopK(rows, topKWrapper, this,
+          name.qualifiedName)(ct)
     }
 
     // add to list in relation
@@ -146,16 +147,16 @@ final class SnappyContext(sc: SparkContext)
     }
   }
 
-  def appendToCache(df: DataFrame, tableName: String,
+  def appendToCache(df: DataFrame, tableIdent: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
-    val plan = catalog.lookupRelation(tableName)
+    val tableName = catalog.newQualifiedTableName(tableIdent)
+    val plan = catalog.lookupRelation(tableName, None)
     val relation = cacheManager.lookupCachedData(plan).getOrElse {
-      cacheManager.cacheQuery(
-        DataFrame(this, plan),
-        Some(tableName), storageLevel)
+      cacheManager.cacheQuery(DataFrame(this, plan),
+        Some(tableName.qualifiedName), storageLevel)
 
       cacheManager.lookupCachedData(plan).getOrElse {
         sys.error(s"couldn't cache table $tableName")
@@ -209,8 +210,8 @@ final class SnappyContext(sc: SparkContext)
   def registerSampleTable(tableName: String, schema: StructType,
       samplingOptions: Map[String, Any], streamTable: Option[String] = None,
       jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
-    catalog.registerSampleTable(schema, tableName, samplingOptions,
-      None, streamTable, jdbcSource)
+    catalog.registerSampleTable(tableName, schema, samplingOptions,
+      None, streamTable.map(catalog.newQualifiedTableName), jdbcSource)
   }
 
   def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String,
@@ -356,10 +357,11 @@ final class SnappyContext(sc: SparkContext)
 
   def queryTopK[T: ClassTag](topKIdent: String,
       startTime: Long, endTime: Long, k: Int): DataFrame = {
-    val topKName = catalog.processTableIdentifier(topKIdent)
-    val topk: TopKWrapper = catalog.topKStructures(topKName)
-
+    val topKTableName = catalog.newQualifiedTableName(topKIdent)
+    val topk: TopKWrapper = catalog.topKStructures(topKTableName)
     val size = if (k > 0) k else topk.size
+
+    val topKName = topKTableName.qualifiedName
     if (topk.stsummary) {
       queryTopkStreamSummary(topKName, startTime, endTime, topk, size)
     }
@@ -497,6 +499,12 @@ object snappy extends Serializable {
 
 object SnappyContext {
 
+  /** The default version of hive used internally by Spark SQL. */
+  val hiveDefaultVersion: String = "0.13.1"
+
+  val HIVE_METASTORE_VERSION: String = "spark.sql.hive.metastore.version"
+  val HIVE_METASTORE_JARS: String = "spark.sql.hive.metastore.jars"
+
   private val atomicContext = new AtomicReference[SnappyContext]()
 
   def apply(sc: SparkContext,
@@ -628,7 +636,7 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan)())
 
   def createTopK(ident: String, options: Map[String, Any]): Unit = {
-    val name = context.catalog.processTableIdentifier(ident)
+    val name = context.catalog.newQualifiedTableName(ident)
     val schema = df.logicalPlan.schema
 
     // Create a very long timeInterval when the topK is being created
@@ -638,7 +646,8 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     val clazz = SqlUtils.getInternalType(
       topKWrapper.schema(topKWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
-    SnappyContext.populateTopK(df.rdd, topKWrapper, context, name)(ct)
+    SnappyContext.populateTopK(df.rdd, topKWrapper, context,
+      name.qualifiedName)(ct)
 
     /*df.foreachPartition((x: Iterator[Row]) => {
       context.addDataForTopK(name, topKWrapper, x)(ct)

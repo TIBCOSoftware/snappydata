@@ -5,17 +5,12 @@ import java.util.concurrent.atomic.AtomicReference
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.{ Command, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.sources._
-
-
-
-import org.apache.spark.streaming._
-import org.apache.spark.sql.types.{DataType,StructField, StructType}
-import org.apache.spark.streaming.{StreamingContextState, Seconds, StreamingContext}
-
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.{StreamRelation, Seconds, StreamingContext, StreamingContextState}
 
 /**
  * Snappy SQL extensions. Includes:
@@ -33,7 +28,8 @@ private[sql] class SnappyParser extends SqlParser {
 
   protected val defaultConfidence = 0.75
 
-  override  protected lazy val start: Parser[LogicalPlan] = start1 | insert | cte | dmlForExternalTable
+  override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
+      cte | dmlForExternalTable
 
   override protected lazy val function = functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> floatLit <~ ")").? ~
@@ -46,8 +42,8 @@ private[sql] class SnappyParser extends SqlParser {
       }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | DELETE ~> FROM | UPDATE ) ~> ident ~ wholeInput ^^ {
-     case r ~ s => DMLExternalTable(r,UnresolvedRelation(Seq(r)),s)
+    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
+      case r ~ s => DMLExternalTable(r, UnresolvedRelation(Seq(r)), s)
     }
 
 }
@@ -110,9 +106,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     }
   protected lazy val createExternalTable: Parser[LogicalPlan] =
     (CREATE ~> (EXTERNAL ~> (TABLE ~> ident)) ~
-      externalTableInput ~ (OPTIONS ~> options)) ^^ {
+        externalTableInput ~ (OPTIONS ~> options)) ^^ {
       case tableName ~ userSpecifiedSchema ~ opts =>
-        val newOpts = opts +  ("tableschema" ->  userSpecifiedSchema, "dbtable" -> tableName)
+        val newOpts = opts +("tableschema" -> userSpecifiedSchema,
+            "dbtable" -> tableName)
         CreateExternalTableUsing(
           tableName,
           None,
@@ -122,26 +119,29 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
     def apply(in: Input): ParseResult[String] = {
-      val remaining = in.source.subSequence(in.offset, in.source.length()).toString
-            assert(remaining.contains(OPTIONS.normalize))
-      val externalTableDefinition = remaining.substring(0, remaining.indexOf(OPTIONS.normalize))
+      val remaining =
+        in.source.subSequence(in.offset, in.source.length()).toString
+      assert(remaining.contains(OPTIONS.normalize))
+      val externalTableDefinition =
+        remaining.substring(0, remaining.indexOf(OPTIONS.normalize))
       val others = remaining.substring(externalTableDefinition.length)
       println(others)
       val reader = new PackratReader(new lexical.Scanner(others))
       Success(
-        externalTableDefinition,reader)
+        externalTableDefinition, reader)
     }
   }
 }
 
 private[sql] case class CreateExternalTableUsing(
-                                                  tableName: String,
-                                                  userSpecifiedSchema: Option[StructType],
-                                                  provider: String,
-                                                  options: Map[String, String]
-                                                  ) extends LogicalPlan with Command {
+    tableName: String,
+    userSpecifiedSchema: Option[StructType],
+    provider: String,
+    options: Map[String, String]
+    ) extends LogicalPlan with Command {
 
   override def output: Seq[Attribute] = Seq.empty
+
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
@@ -162,12 +162,13 @@ object StreamStrategy extends Strategy {
 
 
 case class DMLExternalTable(
-                                    tableName : String,
-                                    child: LogicalPlan,
-                                    command: String)
-  extends LogicalPlan  with Command{
+    tableName: String,
+    child: LogicalPlan,
+    command: String)
+    extends LogicalPlan with Command {
 
-  override def children: Seq[LogicalPlan] =  child :: Nil
+  override def children: Seq[LogicalPlan] = child :: Nil
+
   override def output: Seq[Attribute] = child.output
 }
 
@@ -214,12 +215,12 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val plan = LogicalRelation(resolved.relation)
 
     val catalog = sqlContext.asInstanceOf[SnappyContext].catalog
-    val streamName = catalog.processTableIdentifier(streamIdent)
+    val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
-    catalog.tables.get(streamName) match {
-      case None => catalog.tables.put(streamName, plan)
+    catalog.tables.get(streamTable) match {
+      case None => catalog.tables.put(streamTable, plan)
       case Some(x) => throw new IllegalStateException(
-        s"Stream name $streamName already defined")
+        s"Stream name $streamTable already defined")
     }
     Seq.empty
   }
@@ -252,11 +253,11 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
           case (streamTableName, sr) =>
             val streamTable = Some(streamTableName)
             val aqpTables = catalog.tables.collect {
-              case (sampleTableName, sr: StratifiedSample)
-                if sr.streamTable == streamTable => sampleTableName
+              case (sampleTable, sr: StratifiedSample)
+                if sr.streamTable == streamTable => sampleTable.qualifiedName
             } ++ catalog.topKStructures.collect {
               case (topKName, topK: TopKWrapper)
-                if topK.streamTable == streamTable => topKName
+                if topK.streamTable == streamTable => topKName.qualifiedName
             }
             if (aqpTables.nonEmpty) {
               snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
@@ -283,13 +284,13 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snappyCtxt.catalog
 
-    val tableName = catalog.processTableIdentifier(tableIdent)
+    val tableName = catalog.newQualifiedTableName(tableIdent)
     val sr = catalog.getStreamTableRelation(tableName)
 
     // Add the sample table to the catalog as well.
     // StratifiedSampler is not expecting base table, remove it.
     snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
-      options - OptsUtil.BASETABLE, Some(tableName))
+      options - OptsUtil.BASETABLE, Some(tableName.qualifiedName))
 
     Seq.empty
   }

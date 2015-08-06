@@ -4,15 +4,16 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types.{ DataType, StructField, StructType }
 import org.apache.spark.sql.Row
 
-protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
-    val size: Int, val timeSeriesColumn: Int,
+protected[sql] final class TopKWrapper(val name: QualifiedTableName,
+    val cms: CMSParams, val size: Int, val timeSeriesColumn: Int,
     val timeInterval: Long, val schema: StructType, val key: StructField,
     val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
-    val stsummary: Boolean, val streamTable: Option[String])
+    val stsummary: Boolean, val streamTable: Option[QualifiedTableName])
     extends CastLongTime with Serializable {
 
   val rowToTupleConverter: Row => (Any, Any) =
@@ -34,8 +35,8 @@ protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
 
 object TopKWrapper {
 
-  def apply(name: String, opts: Map[String, Any],
-    schema: StructType, streamTable: Option[String] = None): TopKWrapper = {
+  def apply(name: QualifiedTableName, opts: Map[String, Any],
+      schema: StructType, streamTable: Option[QualifiedTableName] = None) = {
 
     val keyOpt = "key".normalize
     val depthOpt = "depth".normalize

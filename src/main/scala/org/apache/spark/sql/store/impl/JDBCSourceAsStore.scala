@@ -1,28 +1,24 @@
 package org.apache.spark.sql.store.impl
 
-import java.io.{DataInputStream, ByteArrayInputStream, ByteArrayOutputStream, DataOutputStream}
-import java.sql.{ResultSet, Statement, Connection, Blob, PreparedStatement}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
+import java.sql.{Blob, Connection, PreparedStatement, ResultSet}
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.util.Random
+
 import com.gemstone.gemfire.cache.{EntryOperation, PartitionResolver}
-import com.gemstone.gemfire.internal.cache.{RegionEntry, AbstractRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedBlob, EmbedConnection}
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import org.apache.spark.SparkEnv
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
-
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-
-import org.apache.spark.SparkEnv
-
-import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, CachedBatch}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.store.ExternalStore
-
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.util.Random
 
 /**
  * ExternalStore implementation for GemFireXD.
@@ -105,11 +101,10 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   }
 
   override def truncate(tableName: String) = tryExecute(tableName, {
-    case conn => {
+    case conn =>
       val st = conn.createStatement()
       st.executeQuery(s"truncate table $tableName")
       st.close()
-    }
   })
 
   override def getCachedBatchIterator(tableName: String,
@@ -203,14 +198,12 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   }
 
   override def getConnection(id: String): Connection = {
-    // TODO: KN look at pool later
     ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
-//    ExternalStoreUtils.getConnection(url, connProps)
   }
 
   private def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
-  private var insertStrings: mutable.HashMap[String, String] =
+  private val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
 
   private def getRowInsertStr(tableName: String): String = {
@@ -297,7 +290,8 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
     val remainingLength = totBytes - offset
     val bytes = new Array[Byte](remainingLength)
     dis.read(bytes)
-    val deserializationStream = serializer.newInstance.deserializeStream(new ByteArrayInputStream(bytes))
+    val deserializationStream = serializer.newInstance().deserializeStream(
+      new ByteArrayInputStream(bytes))
     val stats = deserializationStream.readValue[Row]()
     blob.free()
     CachedBatch(colBuffers.toArray, stats)

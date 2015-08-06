@@ -1,11 +1,9 @@
 package org.apache.spark.sql
 
-import org.apache.spark.sql.store.ExternalStore
-
 import scala.collection.mutable
 
 import org.apache.spark.sql.execution.StratifiedSample
-import org.apache.spark.sql.execution.row.JDBCUpdatableSource
+import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.storage.StorageLevel
 
 /**
@@ -42,8 +40,8 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     }
   }
 
-  private[sql] def cacheQuery_ext(query: DataFrame,
-      tableName: Option[String], jdbcSource: ExternalStore) = writeLock {
+  private[sql] def cacheQuery_ext(query: DataFrame, tableName: Option[String],
+      jdbcSource: ExternalStore) = writeLock {
     val alreadyCached = lookupCachedData(query.logicalPlan)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")

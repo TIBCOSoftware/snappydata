@@ -13,6 +13,7 @@ import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.storage.BlockManagerId
@@ -20,7 +21,7 @@ import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
 case class StratifiedSample(var options: Map[String, Any],
     @transient override val child: logical.LogicalPlan,
-    streamTable: Option[String] = None)
+    streamTable: Option[QualifiedTableName] = None)
     // pre-compute QCS because it is required by
     // other API invoked from driver
     (val qcs: Array[Int] = resolveQCS(options, child.schema.fieldNames,

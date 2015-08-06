@@ -60,9 +60,9 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-jdbc</artifactId>
-      <version>8.0.24</version>
+      <groupId>org.apache.spark</groupId>
+      <artifactId>snappy-spark-hive_${scala.binary.version}</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>com.pivotal</groupId>
@@ -83,9 +83,32 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-jdbc</artifactId>
+      <version>8.0.24</version>
+    </dependency>
+    <dependency>
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP-java6</artifactId>
       <version>2.3.9</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>${hive.group}</groupId>
+      <artifactId>hive-metastore</artifactId>
+      <version>${hive.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>${hive.group}</groupId>
+      <artifactId>hive-exec</artifactId>
+      <version>${hive.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>${hive.group}</groupId>
+      <artifactId>hive-serde</artifactId>
+      <version>${hive.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>

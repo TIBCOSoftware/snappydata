@@ -10,6 +10,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.InMemoryAppendableRelation.CachedBatchHolder
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
@@ -146,7 +147,7 @@ private[sql] object ExternalStoreRelation {
 
   def apply(useCompression: Boolean,
       batchSize: Int,
-      tableName: String,
+      tableName: QualifiedTableName,
       schema: StructType,
       relation: InMemoryRelation,
       output: Seq[Attribute]): CachedBatchHolder[ArrayBuffer[Serializable]] = {
