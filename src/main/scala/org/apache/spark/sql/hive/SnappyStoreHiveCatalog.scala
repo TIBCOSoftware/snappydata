@@ -467,6 +467,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
                 case ree: RegionExistsException => // ignore
               }
             }
+          case _ => Nil
         }
         Iterator.empty
       }

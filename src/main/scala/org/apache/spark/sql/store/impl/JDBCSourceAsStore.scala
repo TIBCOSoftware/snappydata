@@ -56,6 +56,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
         val key = genUUIDRegionKey(bucketItr.next())
         Misc.getRegion(tableName, true).put(key, batch)
         return key
+      case _ => Nil
     }
     val connection: java.sql.Connection = getConnection(tableName)
     try {
@@ -126,6 +127,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
             asInstanceOf[CachedBatch]
           */
         }
+      case _ => Nil
     }
     itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
       case conn =>
