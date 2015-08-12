@@ -85,8 +85,8 @@ private[sql] class InMemoryAppendableRelation(
     }
   }
 
-  // If the cached column buffers were not passed in, we calculate them in the constructor.
-  // As in Spark, the actual work of caching is lazy.
+  // If the cached column buffers were not passed in, we calculate them
+  // in the constructor. As in Spark, the actual work of caching is lazy.
   if (super.cachedColumnBuffers != null) writeLock {
     if (_cachedBufferList.isEmpty) _cachedBufferList += super.cachedColumnBuffers
   }
@@ -102,12 +102,17 @@ private[sql] class InMemoryAppendableRelation(
     _cachedBufferList.clear()
   }
 
+  def batchAggregate(accumulated: ArrayBuffer[CachedBatch],
+      batch: CachedBatch): ArrayBuffer[CachedBatch] = {
+    accumulated += batch
+  }
+
   override def recache(): Unit = {
     sys.error(
       s"InMemoryAppendableRelation: unexpected call to recache for $tableName")
   }
 
-  override def withOutput(newOutput: Seq[Attribute]): InMemoryAppendableRelation = {
+  override def withOutput(newOutput: Seq[Attribute]) = {
     new InMemoryAppendableRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable)(super.cachedColumnBuffers,
           super.statisticsToBePropagated, batchStats, _cachedBufferList)
@@ -127,6 +132,8 @@ private[sql] class InMemoryAppendableRelation(
           super.statisticsToBePropagated,
           batchStats, _cachedBufferList).asInstanceOf[this.type]
   }
+
+  def getInMemoryRelationCachedColumnBuffers: RDD[CachedBatch] = super.cachedColumnBuffers
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
     // toArray call below is required to take a snapshot of buffer
@@ -149,11 +156,13 @@ private[sql] class InMemoryAppendableRelation(
 
 private[sql] object InMemoryAppendableRelation {
 
-  final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
-      var rowCount: Int, val batchSize: Int,
-      val batches: ArrayBuffer[CachedBatch]) {
+  final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
+      var rowCount: Int, val batchSize: Int, schema: StructType,
+      val init: T, val batchAggregate: (T, CachedBatch) => T) {
 
     var columnBuilders = getColumnBuilders
+
+    var result = init
 
     /**
      * Append a single row to the current CachedBatch (creating a new one
@@ -183,7 +192,9 @@ private[sql] object InMemoryAppendableRelation {
         val stats = Row.merge(columnBuilders.map(
           _.columnStats.collectedStatistics): _*)
         // TODO: somehow push into global batchStats
-        batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
+        result = batchAggregate(result,
+          CachedBatch(columnBuilders.map(_.build().array()), stats))
+        // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
         if (newBuilders) columnBuilders = getColumnBuilders
       }
     }
@@ -193,14 +204,14 @@ private[sql] object InMemoryAppendableRelation {
     // empty for now
     def endRows(u: Unit): Unit = {}
 
-    def forceEndOfBatch(): ArrayBuffer[CachedBatch] = {
+    def forceEndOfBatch(): T = {
       if (rowCount > 0) {
         // setting rowCount to batchSize temporarily will automatically
         // force creation of a new batch in appendRow
         rowCount = batchSize
         appendRow_(newBuilders = false, EmptyRow)
       }
-      this.batches
+      result
     }
   }
 
@@ -212,22 +223,6 @@ private[sql] object InMemoryAppendableRelation {
       isSampledTable: Boolean): InMemoryAppendableRelation =
     new InMemoryAppendableRelation(child.output, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable)()
-
-  def apply(useCompression: Boolean,
-      batchSize: Int,
-      tableName: String,
-      schema: StructType,
-      output: Seq[Attribute]): CachedBatchHolder = {
-    def columnBuilders = output.map { attribute =>
-      val columnType = ColumnType(attribute.dataType)
-      val initialBufferSize = columnType.defaultSize * batchSize
-      ColumnBuilder(attribute.dataType, initialBufferSize,
-        attribute.name, useCompression)
-    }.toArray
-
-    new CachedBatchHolder(columnBuilders, 0, batchSize,
-      new ArrayBuffer[CachedBatch](1))
-  }
 }
 
 private[sql] class InMemoryAppendableColumnarTableScan(

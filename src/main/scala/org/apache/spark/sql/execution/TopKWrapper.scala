@@ -4,16 +4,19 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.collection.Utils._
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types.{ DataType, StructField, StructType }
 import org.apache.spark.sql.Row
 import org.apache.spark.Partitioner
 
-protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
-  val size: Int, val timeSeriesColumn: Int,
-  val timeInterval: Long, val schema: StructType, val key: StructField,
-  val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
-  val stsummary: Boolean) extends CastLongTime with Serializable {
+
+protected[sql] final class TopKWrapper(val name: QualifiedTableName,
+    val cms: CMSParams, val size: Int, val timeSeriesColumn: Int,
+    val timeInterval: Long, val schema: StructType, val key: StructField,
+    val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
+    val stsummary: Boolean, val streamTable: Option[QualifiedTableName])
+    extends CastLongTime with Serializable {
 
   val rowToTupleConverter: (Row, Partitioner) => (Int, (Any, Any)) = TopKWrapper.getRowToTupleConverter(this)
 
@@ -33,8 +36,8 @@ protected[sql] final class TopKWrapper(val name: String, val cms: CMSParams,
 
 object TopKWrapper {
 
-  def apply(name: String, opts: Map[String, Any],
-    schema: StructType): TopKWrapper = {
+  def apply(name: QualifiedTableName, opts: Map[String, Any],
+      schema: StructType, streamTable: Option[QualifiedTableName] = None) = {
 
     val keyOpt = "key".normalize
     val depthOpt = "depth".normalize
@@ -162,11 +165,12 @@ object TopKWrapper {
     val cms =
       if (epsAndcf) CMSParams(eps, confidence) else CMSParams(width, depth)
 
-    new TopKWrapper(name, cms, size, tsCol, timeInterval,
-      schema, schema(key), frequencyCol, epoch, maxInterval, stSummary)
+    new TopKWrapper(name, cms, size, tsCol, timeInterval, schema, schema(key),
+      frequencyCol, epoch, maxInterval, stSummary, streamTable)
   }
 
   private def getRowToTupleConverter(topkWrapper: TopKWrapper): (Row, Partitioner) => (Int, (Any, Any)) = {
+
 
     val tsCol = if (topkWrapper.timeInterval > 0)
       topkWrapper.timeSeriesColumn
@@ -179,21 +183,20 @@ object TopKWrapper {
           (row: Row, partitioner: Partitioner) => partitioner.getPartition(row(topKKeyIndex)) -> (row(topKKeyIndex), null)
           case Some(freqCol) =>
           (row: Row, partitioner: Partitioner) => {
+
             val freq = row(freqCol) match {
+              case num: Long => num
               case num: Double => num.toLong
+              case num: Int => num.toLong
               case num: Float => num.toLong
-              case num: java.lang.Double => num.longValue().toLong
-              case num: java.lang.Float => num.longValue().toLong
-              case num: java.lang.Integer => num.intValue().toLong
-              case num: java.lang.Long => num.longValue().toLong
+
+              case num: java.lang.Number => num.longValue()
               case x => x
             }
             partitioner.getPartition(row(topKKeyIndex)) -> (row(topKKeyIndex), freq)
           }
-
       }
     } else {
-
       topkWrapper.frequencyCol match {
         case None =>
           (row: Row, partitioner: Partitioner) => {
@@ -205,13 +208,13 @@ object TopKWrapper {
           case Some(freqCol) =>
           (row: Row, partitioner: Partitioner) => {
 
+
             val freq = row(freqCol) match {
+              case num: Long => num
               case num: Double => num.toLong
+              case num: Int => num.toLong
               case num: Float => num.toLong
-              case num: java.lang.Double => num.longValue().toLong
-              case num: java.lang.Float => num.longValue().toLong
-              case num: java.lang.Integer => num.intValue().toLong
-              case num: java.lang.Long => num.longValue().toLong
+              case num: java.lang.Number => num.longValue()
               case x => x
             }
             val key = row(topKKeyIndex)
@@ -219,8 +222,6 @@ object TopKWrapper {
             partitioner.getPartition(key) -> (key, (freq, timeVal))
           }
       }
-
     }
-
   }
 }

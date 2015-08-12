@@ -1,6 +1,7 @@
 package org.apache.spark.sql.execution.row
 
 import java.sql.Types
+import java.util.Properties
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.collection.Utils._
@@ -12,30 +13,59 @@ import org.apache.spark.sql.types._
  * Contains specific type conversions to and from Spark SQL catalyst types.
  */
 @DeveloperApi
-case object GemFireXDDialect extends JdbcExtendedDialect {
+case object GemFireXDDialect extends GemFireXDBaseDialect {
 
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDDialect)
 
+  def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd:") &&
+    !url.startsWith("jdbc:gemfirexd://")
+
+  override def extraCreateTableProperties(isLoner: Boolean): Properties = {
+    isLoner match {
+      case true => new Properties
+      case false =>
+        val props = new Properties()
+        props.setProperty("host-data", "false")
+        props
+    }
+  }
+}
+
+/**
+ * Default dialect for GemFireXD >= 1.4.0.
+ * Contains specific type conversions to and from Spark SQL catalyst types.
+ */
+@DeveloperApi
+case object GemFireXDClientDialect extends GemFireXDBaseDialect {
+
+  // register the dialect
+  JdbcDialects.registerDialect(GemFireXDClientDialect)
+
+  def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd://")
+}
+
+abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
+
   def init(): Unit = {
-    // do nothing; just forces one-time invocation of registerDialect
+    // do nothing; just forces one-time invocation of various registerDialects
+    GemFireXDDialect.getClass
+    GemFireXDClientDialect.getClass
   }
 
-  def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd:")
-
-  private val bitTypeName = "bit".normalize
-  private val floatTypeName = "float".normalize
-  private val realTypeName = "real".normalize
+  protected val bitTypeName = "bit".normalize
+  protected val floatTypeName = "float".normalize
+  protected val realTypeName = "real".normalize
 
   override def getCatalystType(sqlType: Int, typeName: String,
-      size: Int, md: MetadataBuilder): Option[DataType] = {
+                      size: Int, md: MetadataBuilder): Option[DataType] = {
     if (sqlType == Types.FLOAT && typeName.normalize.equals(floatTypeName)) {
       Some(DoubleType)
     } else if (sqlType == Types.REAL &&
-        typeName.normalize.equals(realTypeName)) {
+      typeName.normalize.equals(realTypeName)) {
       Some(FloatType)
     } else if (sqlType == Types.BIT && size > 1 &&
-        typeName.normalize.equals(bitTypeName)) {
+      typeName.normalize.equals(bitTypeName)) {
       Some(BinaryType)
     } else None
   }

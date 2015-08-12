@@ -26,7 +26,7 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
   // TODO: concurrency of the catalog?
 
   def registerSampleTable(tableName: String): Unit =
-    sqlContext.catalog.registerSampleTable(schema, tableName,
+    sqlContext.catalog.registerSampleTable(tableName, schema,
       logicalPlan.options, Some(this))
 
   override def registerTempTable(tableName: String): Unit =

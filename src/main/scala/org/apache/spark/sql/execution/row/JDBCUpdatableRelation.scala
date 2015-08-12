@@ -6,57 +6,70 @@ import java.util.Properties
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{ConnectionPool, PoolProperty}
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
 import org.apache.spark.{Logging, Partition}
 
 /**
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-class JDBCUpdatableRelation(
+case class JDBCUpdatableRelation(
     url: String,
     table: String,
-    override val schema: StructType,
+    userSpecifiedString : String,
     parts: Array[Partition],
-    properties: Properties,
+    _poolProps: Map[String, String],
+    connProperties: Properties,
+    hikariCP: Boolean,
     ddlExtensions: Option[String],
-    @transient val sqlContext: SQLContext)
+    @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
+    with RowInsertableRelation
     with UpdatableRelation
+    with DeletableRelation
     with Logging {
 
   override val needConversion: Boolean = false
 
   val driver = DriverRegistry.getDriverClassName(url)
 
+  private[this] val poolProperties = JDBCUpdatableRelation
+      .getAllPoolProperties(url, driver, _poolProps, hikariCP)
+
   final val dialect = JdbcDialects.get(url)
 
-  final val schemaFields = Map(schema.fields.map { f =>
-    (Utils.normalizeOptionKey(f.name), f)
+  // create table in external store once upfront
+  // TODO: currently ErrorIfExists mode is being used to ensure that we do not
+  // end up invoking this multiple times in Spark execution workflow. Later
+  // should make it "Ignore" so that it will work with existing tables in
+  // backend as well (or can provide in OPTIONS for user-configured mode)
+  createTable(SaveMode.ErrorIfExists)
+
+  override val schema: StructType = JDBCRDD.resolveTable(url, table, connProperties)
+
+  final val schemaFields = Map(schema.fields.flatMap { f =>
+    val name =
+      if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
+    val nname = Utils.normalizeId(name)
+    if (name != nname) {
+      Iterator((name, f), (Utils.normalizeId(name), f))
+    } else {
+      Iterator((name, f))
+    }
   }: _*)
 
-  final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
 
-  // initialize GemFireXDDialect to that it gets registered
-  GemFireXDDialect.init()
-
-  // create table in external store once upfront
-  createTable(url, table, properties, SaveMode.ErrorIfExists)
-
-  def createTable(url: String, table: String,
-      connectionProperties: Properties, mode: SaveMode): Unit = {
-    val conn = JdbcUtils.createConnection(url, connectionProperties)
+  def createTable(mode: SaveMode): Unit = {
+    val conn = JdbcUtils.createConnection(url, connProperties)
     try {
       var tableExists = JdbcUtils.tableExists(conn, table)
-
       if (mode == SaveMode.Ignore && tableExists) {
         return
       }
@@ -82,8 +95,7 @@ class JDBCUpdatableRelation(
 
       // Create the table if the table didn't exist.
       if (!tableExists) {
-        val extensions = ddlExtensions.map(" " + _).getOrElse("")
-        val sql = s"CREATE TABLE $table ($schema) $extensions"
+        val sql = s"CREATE TABLE $table $userSpecifiedString"
         conn.prepareStatement(sql).executeUpdate()
       }
     } finally {
@@ -95,35 +107,50 @@ class JDBCUpdatableRelation(
       filters: Array[Filter]): RDD[Row] = {
     new JDBCRDD(
       sqlContext.sparkContext,
-      JDBCUpdatableRelation.getConnector(table, url, driver, properties),
-      JDBCUpdatableRelation.pruneSchema(schema, requiredColumns),
+      JDBCUpdatableRelation.getConnector(table, driver, poolProperties,
+        connProperties, hikariCP),
+      JDBCUpdatableRelation.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
       filters,
       parts,
-      properties)
+      connProperties)
   }
+
+  final val rowInsertStr = JDBCUpdatableRelation.getInsertString(table, schema)
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    jdbc(data, url, table, properties,
-      if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    jdbc(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
   }
 
-  def jdbc(df: DataFrame, url: String, table: String,
-      connectionProperties: Properties, mode: SaveMode): Unit = {
-    createTable(url, table, connectionProperties, mode)
-    JDBCWriteDetails.saveTable(df, url, table, connectionProperties)
+  def jdbc(df: DataFrame, mode: SaveMode): Unit = {
+    createTable(mode)
+    JDBCWriteDetails.saveTable(df, url, table, connProperties)
   }
 
   // TODO: SW: should below all be executed from driver or some random executor?
+  // at least the insert can be split into batches and modelled as an RDD
 
-  override def insert(row: Row): Int = {
-    val connection = JDBCUpdatableRelation.createConnection(table, url,
-      driver, properties)
+  override def insert(rows: Seq[Row]): Int = {
+    val numRows = rows.length
+    if (numRows == 0) {
+      throw new IllegalArgumentException(
+        "JDBCUpdatableRelation.insert: no rows provided")
+    }
+    val connection = ConnectionPool.getPoolConnection(table,
+      poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
-      JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
-        row, dialect)
+      if (numRows > 1) {
+        for (row <- rows) {
+          JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
+            row, dialect)
+          stmt.addBatch()
+        }
+      } else {
+        JDBCUpdatableRelation.setStatementParameters(stmt, schema.fields,
+          rows.head, dialect)
+      }
       val result = stmt.executeUpdate()
       stmt.close()
       result
@@ -132,31 +159,47 @@ class JDBCUpdatableRelation(
     }
   }
 
-  override def update(updatedColumns: Row, setColumns: Seq[String],
-      filterExpr: String): Int = {
-    val ncols = setColumns.length
+  def dmlCommand(dmlCommand : String): Int = {
+    val connection = ConnectionPool.getPoolConnection(table,
+      poolProperties, connProperties, hikariCP)
+    try {
+      val stmt = connection.prepareStatement(dmlCommand)
+      val result = stmt.executeUpdate()
+      stmt.close()
+      result
+    } finally {
+      connection.close()
+    }
+  }
+
+  override def update(filterExpr: String, newColumnValues: Row,
+      updateColumns: Seq[String]): Int = {
+    val ncols = updateColumns.length
     if (ncols == 0) {
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.update: no columns provided")
     }
     val setFields = new Array[StructField](ncols)
     var index = 0
-    setColumns.foreach { col =>
-      setFields(index) = schemaFields.getOrElse(Utils.normalizeOptionKey(col),
-        throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
-            s"column name '$col' among (${schema.fieldNames.mkString(", ")})"))
+    // not using loop over index below because incoming Seq[...]
+    // may not have efficient index lookup
+    updateColumns.foreach { col =>
+      setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
+        Utils.normalizeId(col), throw new AnalysisException(
+          "JDBCUpdatableRelation: Cannot resolve column name " +
+              s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
     }
-    val connection = JDBCUpdatableRelation.createConnection(table, url,
-      driver, properties)
+    val connection = ConnectionPool.getPoolConnection(table,
+      poolProperties, connProperties, hikariCP)
     try {
-      val setStr = setColumns.mkString("SET ", "=?, ", "=?")
+      val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
-        else "WHERE " + filterExpr
-      val stmt = connection.prepareStatement(s"UPDATE $table $setStr $whereStr")
+        else " WHERE " + filterExpr
+      val stmt = connection.prepareStatement(s"UPDATE $table $setStr$whereStr")
       JDBCUpdatableRelation.setStatementParameters(stmt, setFields,
-        updatedColumns, dialect)
+        newColumnValues, dialect)
       val result = stmt.executeUpdate()
       stmt.close()
       result
@@ -166,8 +209,8 @@ class JDBCUpdatableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = JDBCUpdatableRelation.createConnection(table, url,
-      driver, properties)
+    val connection = ConnectionPool.getPoolConnection(table,
+      poolProperties, connProperties, hikariCP)
     try {
       val whereStr =
         if (filterExpr == null || filterExpr.isEmpty) ""
@@ -186,9 +229,9 @@ class JDBCUpdatableRelation(
     Utils.mapExecutors(sqlContext, { () =>
       ConnectionPool.removePoolReference(table)
       Iterator.empty
-    })
+    }).count()
     // drop the external table using a non-pool connection
-    val conn = JdbcUtils.createConnection(url, properties)
+    val conn = JdbcUtils.createConnection(url, connProperties)
     try {
       conn.createStatement().executeUpdate(s"DROP TABLE $table")
     } finally {
@@ -199,8 +242,25 @@ class JDBCUpdatableRelation(
 
 object JDBCUpdatableRelation extends Logging {
 
-  def getConnector(id: String, driver: String, url: String,
-      properties: Properties): () => Connection = {
+  def getAllPoolProperties(url: String, driver: String,
+      poolProps: Map[String, String], hikariCP: Boolean) = {
+    val urlProp = if (hikariCP) "jdbcUrl" else "url"
+    val driverClassProp = "driverClassName"
+    if (driver == null || driver.isEmpty) {
+      if (poolProps.isEmpty) {
+        Map(urlProp -> url)
+      } else {
+        poolProps + (urlProp -> url)
+      }
+    } else if (poolProps.isEmpty) {
+      Map(urlProp -> url, driverClassProp -> driver)
+    } else {
+      poolProps + (urlProp -> url) + (driverClassProp -> driver)
+    }
+  }
+
+  def getConnector(id: String, driver: String, poolProps: Map[String, String],
+      connProps: Properties, hikariCP: Boolean): () => Connection = {
     () => {
       try {
         if (driver != null) DriverRegistry.register(driver)
@@ -208,37 +268,65 @@ object JDBCUpdatableRelation extends Logging {
         case cnfe: ClassNotFoundException =>
           logWarning(s"Couldn't find driver class $driver", cnfe)
       }
-      createConnection(id, url, driver, properties)
+      ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
     }
   }
 
   /**
    * Prune all but the specified columns from the specified Catalyst schema.
    *
-   * @param schema - The Catalyst schema of the master table
+   * @param fieldMap - The Catalyst column name to metadata of the master table
    * @param columns - The list of desired columns
    *
    * @return A Catalyst schema corresponding to columns in the given order.
    */
-  def pruneSchema(schema: StructType, columns: Array[String]): StructType = {
-    val fieldMap = Map(schema.fields map { x =>
-      x.metadata.getString("name") -> x
-    }: _*)
-    new StructType(columns map { name => fieldMap(name) })
+  def pruneSchema(fieldMap: Map[String, StructField],
+      columns: Array[String]): StructType = {
+    new StructType(columns.map { col =>
+      fieldMap.getOrElse(col, fieldMap.getOrElse(Utils.normalizeId(col),
+        throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
+            s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
+      ))
+    })
   }
 
-  def createConnection(id: String, url: String, driver: String,
-      properties: Properties): Connection = {
-    ConnectionPool.getPoolDataSource(id, Map(
-      PoolProperty.URL -> url,
-      PoolProperty.DriverClass -> driver), properties,
-      hikariCP = false).getConnection
+  /**
+   * Compute the schema string for this RDD.
+   */
+  def schemaString(schema: StructType, dialect: JdbcDialect): String = {
+    val sb = new StringBuilder()
+    schema.fields.foreach { field =>
+      val dataType = field.dataType
+      val typeString: String =
+        dialect.getJDBCType(dataType).map(_.databaseTypeDefinition).getOrElse(
+          dataType match {
+            case IntegerType => "INTEGER"
+            case LongType => "BIGINT"
+            case DoubleType => "DOUBLE PRECISION"
+            case FloatType => "REAL"
+            case ShortType => "INTEGER"
+            case ByteType => "BYTE"
+            case BooleanType => "BIT(1)"
+            case StringType => "TEXT"
+            case BinaryType => "BLOB"
+            case TimestampType => "TIMESTAMP"
+            case DateType => "DATE"
+            case DecimalType.Fixed(precision, scale) =>
+              s"DECIMAL($precision,$scale)"
+            case DecimalType.Unlimited => "DECIMAL(38,18)"
+            case _ => throw new IllegalArgumentException(
+              s"Don't know how to save $field to JDBC")
+          })
+      val nullable = if (field.nullable) "" else "NOT NULL"
+      sb.append(s", ${field.name} $typeString $nullable")
+    }
+    if (sb.length < 2) "" else sb.substring(2)
   }
 
   def getInsertString(table: String, schema: StructType) = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
-    (0 until (schema.length - 1)).foreach(sb.append("?,"))
+    (1 until schema.length).foreach(sb.append("?,"))
     sb.append("?)").toString()
   }
 
@@ -270,12 +358,13 @@ object JDBCUpdatableRelation extends Logging {
             case s: String => stmt.setString(col + 1, s)
             case o => stmt.setObject(col + 1, o)
           }
-          case DecimalType.Fixed(_, _) | DecimalType.Unlimited => row(col) match {
-            case d: Decimal => stmt.setBigDecimal(col + 1, d.toJavaBigDecimal)
-            case bd: java.math.BigDecimal => stmt.setBigDecimal(col + 1, bd)
-            case s: String => stmt.setString(col + 1, s)
-            case o => stmt.setObject(col + 1, o)
-          }
+          case DecimalType.Fixed(_, _) | DecimalType.Unlimited =>
+            row(col) match {
+              case d: Decimal => stmt.setBigDecimal(col + 1, d.toJavaBigDecimal)
+              case bd: java.math.BigDecimal => stmt.setBigDecimal(col + 1, bd)
+              case s: String => stmt.setString(col + 1, s)
+              case o => stmt.setObject(col + 1, o)
+            }
           case _ => stmt.setObject(col + 1, row(col))
         }
       } else {
@@ -309,33 +398,55 @@ object JDBCUpdatableRelation extends Logging {
   }
 }
 
-final class JDBCUpdatableSource extends SchemaRelationProvider {
+final class JDBCUpdatableSource extends RelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
-
+      options: Map[String, String]) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
     val url = parameters.remove("url").getOrElse(
       sys.error("Option 'url' not specified"))
     // TODO: this should be optional with new DDL where tableName itself
-    // will be passed and used if dbtable has not been provided
+    // will be passed and used if DBTable has not been provided
     val table = parameters.remove("dbtable").getOrElse(
       sys.error("Option 'dbtable' not specified"))
     val driver = parameters.remove("driver")
+    val poolImpl = parameters.remove("poolImpl")
+    val poolProperties = parameters.remove("poolproperties")
     val ddlExtensions = parameters.remove("ddlextensions")
     val partitionColumn = parameters.remove("partitionColumn")
     val lowerBound = parameters.remove("lowerBound")
     val upperBound = parameters.remove("upperBound")
     val numPartitions = parameters.remove("numPartitions")
-
+    val userSpecifiedString = parameters.remove("tableschema").getOrElse(
+      sys.error("Option 'tableschema' not specified"))
     driver.foreach(DriverRegistry.register)
+
+    val hikariCP = poolImpl.map(Utils.normalizeId) match {
+      case Some("hikari") => true
+      case Some("tomcat") => false
+      case Some(p) =>
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            s"unsupported pool implementation '$p' " +
+            s"(supported values: tomcat, hikari)")
+      case None => false
+    }
+    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+      val eqIndex = s.indexOf('=')
+      if (eqIndex >= 0) {
+        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
+      } else {
+        // assume a boolean property to be enabled
+        (s.trim, "true")
+      }
+    }: _*)).getOrElse(Map.empty)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
     } else {
       if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
-        sys.error("Partitioning incompletely specified")
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            "incomplete partitioning specified")
       }
       JDBCPartitioningInfo(
         partitionColumn.get,
@@ -345,9 +456,9 @@ final class JDBCUpdatableSource extends SchemaRelationProvider {
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
     // remaining parameters are passed as properties to getConnection
-    val properties = new Properties()
-    parameters.foreach(kv => properties.setProperty(kv._1, kv._2))
-    new JDBCUpdatableRelation(url, table, schema, parts, properties,
-      ddlExtensions, sqlContext)
+    val connProps = new Properties()
+    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+    new JDBCUpdatableRelation(url, table, userSpecifiedString, parts, poolProps, connProps,
+      hikariCP, ddlExtensions, sqlContext)
   }
 }

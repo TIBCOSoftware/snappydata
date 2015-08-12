@@ -24,8 +24,7 @@ object CachedRDD {
 }
 
 private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
-    prev: RDD[T],
-    f: (TaskContext, Int, Iterator[T]) => Iterator[U],
+    prev: RDD[T], f: (TaskContext, Int, Iterator[T]) => Iterator[U],
     preservesPartitioning: Boolean = false)
     extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
 

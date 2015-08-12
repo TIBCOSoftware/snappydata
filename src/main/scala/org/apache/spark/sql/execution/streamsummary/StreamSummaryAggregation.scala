@@ -46,6 +46,7 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
                 streamAggregates(interval - 1).offer(item.key,
                   item.frequency.toInt)
               } // else IGNORE
+            case None => // IGNORE
           }
         } else {
           throw new UnsupportedOperationException("Support for intervals " +
@@ -103,7 +104,7 @@ object StreamSummaryAggregation {
     lookupOrAdd[T](name, size, tsCol, timeInterval, epoch0, maxInterval, partitionID)
   }
 
-  private[sql] def lookupOrAddDummy(name: String, partitionID: Int): TopK = {
+  def lookupOrAddDummy(name: String, partitionID: Int): TopK = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {

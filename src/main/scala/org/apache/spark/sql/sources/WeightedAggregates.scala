@@ -158,7 +158,6 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
         }
       } catch {
         case NonFatal(e) => 1.0
-        case t => throw t
       }
     }
     else {
