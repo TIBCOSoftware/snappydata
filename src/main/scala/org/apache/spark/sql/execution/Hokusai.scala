@@ -3,7 +3,7 @@ package org.apache.spark.sql.execution
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.{ Timer, TimerTask }
 
-import org.apache.spark.sql.{TimeEpoch, LockUtils}
+import org.apache.spark.sql.{ TimeEpoch, LockUtils }
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 
 import scala.collection.mutable.{ ArrayBuffer, ListBuffer, MutableList, Stack }
@@ -54,7 +54,7 @@ import org.apache.spark.sql.execution.cms.CountMinSketch
 class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
   startIntervalGenerator: Boolean = false) {
   //assert(NumberUtils.isPowerOfTwo(numIntervals))
- 
+
   private val intervalGenerator = new Timer()
 
   val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators) => CountMinSketch.merge[T](estimators: _*)
@@ -222,7 +222,6 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   }
 
-
   //def accummulate(data: Seq[Long]): Unit = mBar = mBar ++ cmsMonoid.create(data)
   def accummulate(data: Seq[T]): Unit = this.rwlock.executeInWriteLock {
     data.foreach(i => mBar.add(i, 1L))
@@ -245,7 +244,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
           timeEpoch.timestampToInterval(epoch) match {
             case Some(interval) =>
               // first check if it lies in current mBar
-              
+
               if (interval > timeEpoch.t) {
                 // check if new slot has to be created
                 if (interval > (timeEpoch.t + 1)) {
@@ -302,7 +301,7 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
 
   def createZeroCMS(intervalFromLast: Int): CountMinSketch[T] =
     Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, cmsParams.confidence,
-        cmsParams.eps)
+      cmsParams.eps)
 
   override def toString = s"Hokusai[ta=${taPlusIa}, mBar=${mBar}]"
 
@@ -806,7 +805,7 @@ def algo3(): Unit = {
 
       return if (res == scala.Long.MaxValue) {
         Approximate.zeroApproximate(cmsParams.confidence)
-      } else {        
+      } else {
         cmsAtT.wrapAsApproximate(res)
       }
 
@@ -815,10 +814,9 @@ def algo3(): Unit = {
   }
 }
 
-
 // TODO Better handling of params and construction (both delta/eps and d/w support)
 class CMSParams private (val width: Int, val depth: Int, val eps: Double,
-  val confidence: Double, val seed: Int = 123) extends  Serializable{
+  val confidence: Double, val seed: Int = 123) extends Serializable {
 
   val hashA = createHashA
 
@@ -1047,8 +1045,8 @@ object Hokusai {
 
   def log2X(X: Long): Double = math.log10(X) / math.log10(2)
 
-  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], 
-      confidence: Double, eps: Double) =
+  def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long],
+    confidence: Double, eps: Double) =
     new CountMinSketch[T](depth, width, hashA, confidence, eps)
 
   // @return the max i such that t % 2^i is zero

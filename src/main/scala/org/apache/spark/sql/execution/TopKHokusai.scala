@@ -12,8 +12,8 @@ import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
 import org.apache.spark.util.collection.OpenHashSet
 
 final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
-  val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean)
-  extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) {
+  val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean, partitionID: Int)
+  extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) with TopK {
   val topKInternal = topKActual * 2
 
   private val queryTillLastNTopK_Case1: (Array[T]) => () => Array[(T, Approximate)] = (combinedKeys: Array[T]) => {
@@ -252,7 +252,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
   def getTopKInCurrentInterval[T](): Array[(T, Approximate)] =
     this.rwlock.executeInReadLock({
-       this.mBar.asInstanceOf[TopKCMS[T]].getTopK      
+      this.mBar.asInstanceOf[TopKCMS[T]].getTopK
     }, true)
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
@@ -284,6 +284,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       }), true)
 
   }
+
+  override def getPartitionID: Int = this.partitionID
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
@@ -423,7 +425,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   private def sortAndBound[U](
-      topKs: mutable.Map[U, Approximate]): Array[(U, Approximate)] = {
+    topKs: mutable.Map[U, Approximate]): Array[(U, Approximate)] = {
     val sortedData = new BoundedSortedSet[U, Approximate](this.topKActual, false)
     topKs.foreach(sortedData.add)
     val iter = sortedData.iterator
@@ -444,7 +446,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
         this.topKInternal
       }
       TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual, x,
-          cmsParams.confidence, cmsParams.eps)
+        cmsParams.confidence, cmsParams.eps)
     } else {
       TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual,
         topKInternal * (powerOf2 + 1), cmsParams.confidence, cmsParams.eps)
@@ -453,13 +455,14 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
 
 object TopKHokusai {
   // TODO: Resolve the type of TopKHokusai
-  private final val topKMap = new mutable.HashMap[String, TopKHokusai[_]]
+  private final val topKMap = new mutable.HashMap[String, mutable.HashMap[Int, TopK]]
   private final val mapLock = new ReentrantReadWriteLock
 
   def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int,
-      topKInternal: Int, confidence: Double, eps: Double) =
-  new TopKCMS[T](topKActual, topKInternal, depth, width, hashA, confidence, eps)
+    topKInternal: Int, confidence: Double, eps: Double) =
+    new TopKCMS[T](topKActual, topKInternal, depth, width, hashA, confidence, eps)
 
+  /*
   def apply[T](name: String): Option[TopKHokusai[T]] = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name) match {
@@ -467,30 +470,90 @@ object TopKHokusai {
         case None => None
       }
     }
-  }
+  }*/
 
   def apply[T: ClassTag](name: String, cms: CMSParams, size: Int,
-    tsCol: Int, timeInterval: Long, epoch0: () => Long) = {
-    lookupOrAdd[T](name, cms, size, tsCol, timeInterval, epoch0)
+    tsCol: Int, timeInterval: Long, epoch0: () => Long, partitionID: Int): TopK = {
+    lookupOrAdd[T](name, cms, size, tsCol, timeInterval, epoch0, partitionID)
   }
 
-  private[sql] def lookupOrAdd[T: ClassTag](name: String, cms : CMSParams,
+  private[sql] def lookupOrAdd[T: ClassTag](name: String, cms: CMSParams,
     size: Int, tsCol: Int, timeInterval: Long,
-    epoch0: () => Long): TopKHokusai[T] = {
+    epoch0: () => Long, partitionID: Int): TopK = {
     SegmentMap.lock(mapLock.readLock) {
       topKMap.get(name)
     } match {
-      case Some(topk) => topk.asInstanceOf[TopKHokusai[T]]
+      case Some(partMap) => {
+        SegmentMap.lock(mapLock.writeLock) {
+          partMap.get(partitionID) match {
+            case Some(topK) => topK match {
+              case x: TopKHokusai[_] => x
+              case _ =>
+                val topKK = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
+                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, partitionID)
+                partMap(partitionID) = topKK
+                topKK
+            }
+            case None =>
+              partMap.getOrElse(partitionID, {
+                val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
+                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, partitionID)
+                partMap(partitionID) = topk
+                topk
+              })
+          }
+        }
+      }
       case None =>
         // insert into global map but double-check after write lock
         SegmentMap.lock(mapLock.writeLock) {
-          topKMap.getOrElse(name, {
+          val partMap = topKMap.getOrElse(name, {
+            val newPartMap = new mutable.HashMap[Int, TopK]
+            topKMap(name) = newPartMap
+            newPartMap
+          })
+          partMap.getOrElse(partitionID, {
             val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-              timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0)
-            topKMap(name) = topk
+              timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, partitionID)
+            partMap(partitionID) = topk
             topk
-          }).asInstanceOf[TopKHokusai[T]]
+          })
         }
     }
   }
+
+  private[sql] def lookupOrAddDummy(name: String, partitionID: Int): TopK = {
+    SegmentMap.lock(mapLock.readLock) {
+      topKMap.get(name)
+    } match {
+      case Some(partMap) => partMap.get(partitionID) match {
+        case Some(topK) => topK
+        case None =>
+          SegmentMap.lock(mapLock.writeLock) {
+            partMap.getOrElse(partitionID, {
+              val topK = new TopKStub(partitionID)
+              partMap(partitionID) = topK
+              topK
+            })
+          }
+      }
+      case None =>
+        // insert into global map but double-check after write lock
+        SegmentMap.lock(mapLock.writeLock) {
+          val partMap = topKMap.getOrElse(name, {
+            val newPartMap = new mutable.HashMap[Int, TopK]
+            topKMap(name) = newPartMap
+            newPartMap
+          })
+          partMap.getOrElse(partitionID, {
+            val topK = new TopKStub(partitionID)
+            partMap(partitionID) = topK
+            topK
+          })
+        }
+    }
+  }
+
 }
+
+

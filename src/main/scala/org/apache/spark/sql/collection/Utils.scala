@@ -13,7 +13,7 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, AnalysisException, Row}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext, Partitioner}
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
@@ -240,6 +240,12 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     val cleanedF = sc.clean(f)
     new ExecutorLocalRDD[T](sc, cleanedF)
   }
+  
+  def getFixedPartitionRDD[T: ClassTag](sc: SparkContext,
+      f: (TaskContext, Partition) => Iterator[T], partitioner: Partitioner, numPartitions: Int): RDD[T] = {
+    val cleanedF = sc.clean(f)
+    new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
+  }
 
   def normalizeOptionKey(k: String): String = {
     var index = 0
@@ -307,6 +313,28 @@ class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext,
     f(context, part)
   }
 }
+
+class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
+  f: (TaskContext, Partition) => Iterator[T], numPartitions: Int, @Override partitioner: Option[Partitioner])
+  extends RDD[T](_sc, Nil) {
+
+  override def getPartitions: Array[Partition] = {
+    var i = 0
+    Array.fill[Partition](numPartitions)({
+      i = i + 1
+      new Partition() {
+        override val index = i
+      }
+    })
+
+  }
+
+  override def compute(split: Partition, context: TaskContext): Iterator[T] = {
+    f(context, split)
+  }
+}
+
+
 
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {
