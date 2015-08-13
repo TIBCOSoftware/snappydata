@@ -256,7 +256,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
               case (sampleTable, sr: StratifiedSample)
                 if sr.streamTable == streamTable => sampleTable.qualifiedName
             } ++ catalog.topKStructures.collect {
-              case (topKName, topK: TopKWrapper)
+              case (topKName, (topK, _))
                 if topK.streamTable == streamTable => topKName.qualifiedName
             }
             if (aqpTables.nonEmpty) {
