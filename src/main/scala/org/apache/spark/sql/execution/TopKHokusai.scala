@@ -12,7 +12,8 @@ import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
 import org.apache.spark.util.collection.OpenHashSet
 
 final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
-  val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean, partitionID: Int)
+  val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean,
+  partitionID: Int, name: String)
   extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) with TopK {
   val topKInternal = topKActual * 2
 
@@ -286,6 +287,8 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
   }
 
   override def getPartitionID: Int = this.partitionID
+  override def getName: String = this.name
+  override def isStreamSummary: Boolean = false
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
@@ -477,6 +480,10 @@ object TopKHokusai {
     lookupOrAdd[T](name, cms, size, tsCol, timeInterval, epoch0, partitionID)
   }
 
+  def get(name: String, partitionID: Int): TopK = {
+    topKMap.get(name).getOrElse(throw new IllegalStateException("TopK should have been present"))
+    .get(partitionID).getOrElse(throw new IllegalStateException("TopK should have been present"))
+  }
   private[sql] def lookupOrAdd[T: ClassTag](name: String, cms: CMSParams,
     size: Int, tsCol: Int, timeInterval: Long,
     epoch0: () => Long, partitionID: Int): TopK = {
@@ -490,14 +497,16 @@ object TopKHokusai {
               case x: TopKHokusai[_] => x
               case _ =>
                 val topKK = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, partitionID)
+                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, 
+                  partitionID, name)
                 partMap(partitionID) = topKK
                 topKK
             }
             case None =>
               partMap.getOrElse(partitionID, {
                 val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, partitionID)
+                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, 
+                  partitionID, name)
                 partMap(partitionID) = topk
                 topk
               })
@@ -514,7 +523,8 @@ object TopKHokusai {
           })
           partMap.getOrElse(partitionID, {
             val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-              timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, partitionID)
+              timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, 
+              partitionID, name)
             partMap(partitionID) = topk
             topk
           })
@@ -531,7 +541,7 @@ object TopKHokusai {
         case None =>
           SegmentMap.lock(mapLock.writeLock) {
             partMap.getOrElse(partitionID, {
-              val topK = new TopKStub(partitionID)
+              val topK = new TopKStub(name, partitionID)
               partMap(partitionID) = topK
               topK
             })
@@ -546,7 +556,7 @@ object TopKHokusai {
             newPartMap
           })
           partMap.getOrElse(partitionID, {
-            val topK = new TopKStub(partitionID)
+            val topK = new TopKStub(name, partitionID)
             partMap(partitionID) = topK
             topK
           })

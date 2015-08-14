@@ -20,7 +20,7 @@ import org.apache.spark.sql.execution.{ TopK, TopKStub }
  */
 class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
   val epoch0: Long, val maxIntervals: Int,
-  val startIntervalGenerator: Boolean = false, partitionID: Int) extends TopK {
+  val startIntervalGenerator: Boolean = false, partitionID: Int, name: String) extends TopK {
 
   val rwlock = new ReadWriteLock()
 
@@ -57,6 +57,8 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
   }
 
   override def getPartitionID: Int = this.partitionID
+  override def getName: String = this.name
+  override def isStreamSummary: Boolean = true
 
   def queryIntervals(start: Int, end: Int, k: Int) = {
     val topkFromAllIntervals = new mutable.MutableList[Counter[T]]
@@ -103,6 +105,11 @@ object StreamSummaryAggregation {
     timeInterval: Long, epoch0: () => Long, maxInterval: Int, partitionID: Int) = {
     lookupOrAdd[T](name, size, tsCol, timeInterval, epoch0, maxInterval, partitionID)
   }
+  
+  def get(name: String, partitionID: Int): TopK = {
+    topKMap.get(name).getOrElse(throw new IllegalStateException("TopK should have been present"))
+    .get(partitionID).getOrElse(throw new IllegalStateException("TopK should have been present"))
+  }
 
   def lookupOrAddDummy(name: String, partitionID: Int): TopK = {
     SegmentMap.lock(mapLock.readLock) {
@@ -113,7 +120,7 @@ object StreamSummaryAggregation {
         case None =>
           SegmentMap.lock(mapLock.writeLock) {
             partMap.getOrElse(partitionID, {
-              val topK = new TopKStub(partitionID)
+              val topK = new TopKStub(name,partitionID, true)
               partMap(partitionID) = topK
               topK
             })
@@ -128,7 +135,7 @@ object StreamSummaryAggregation {
             newPartMap
           })
           partMap.getOrElse(partitionID, {
-            val topK = new TopKStub(partitionID)
+            val topK = new TopKStub(name, partitionID, true)
             partMap(partitionID) = topK
             topK
           })
@@ -149,14 +156,14 @@ object StreamSummaryAggregation {
               case x: StreamSummaryAggregation[_] => x
               case _ =>
                 val topKK = new StreamSummaryAggregation[T](size, timeInterval,
-                  epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID)
+                  epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID, name)
                 partMap(partitionID) = topKK
                 topKK
             }
             case None =>
               partMap.getOrElse(partitionID, {
                 val topk = new StreamSummaryAggregation[T](size, timeInterval,
-                  epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID)
+                  epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID, name)
                 partMap(partitionID) = topk
                 topk
               })
@@ -173,7 +180,7 @@ object StreamSummaryAggregation {
           })
           partMap.getOrElse(partitionID, {
             val topk = new StreamSummaryAggregation[T](size, timeInterval,
-              epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID)
+              epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID, name)
             partMap(partitionID) = topk
             topk
           })
