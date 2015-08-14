@@ -541,7 +541,7 @@ object TopKHokusai {
         case None =>
           SegmentMap.lock(mapLock.writeLock) {
             partMap.getOrElse(partitionID, {
-              val topK = new TopKStub(name, partitionID)
+              val topK = new TopKStub(name, partitionID, false)
               partMap(partitionID) = topK
               topK
             })
@@ -556,7 +556,7 @@ object TopKHokusai {
             newPartMap
           })
           partMap.getOrElse(partitionID, {
-            val topK = new TopKStub(name, partitionID)
+            val topK = new TopKStub(name, partitionID, false)
             partMap(partitionID) = topK
             topK
           })
