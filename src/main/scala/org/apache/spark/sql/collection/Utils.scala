@@ -321,9 +321,10 @@ class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
   override def getPartitions: Array[Partition] = {
     var i = 0
     Array.fill[Partition](numPartitions)({
+      val x = i
       i = i + 1
       new Partition() {
-        override val index = i
+        override val index = x
       }
     })
 
