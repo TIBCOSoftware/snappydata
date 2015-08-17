@@ -25,6 +25,7 @@ trait TopK extends Serializable{
 
 private class TopKStub(var name: String, var partitionID: Int, var ss: Boolean) extends TopK with Externalizable{
   
+  def this() = this(null, -1, false)
   override def getPartitionID: Int = this.partitionID
   override def getName: String = this.name
   override def isStreamSummary: Boolean = this.ss

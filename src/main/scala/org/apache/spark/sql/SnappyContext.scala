@@ -438,9 +438,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
     val topKRDD = rdd.reduceByKey(_ + _).mapPreserve {
       case (key, approx) =>
-        Row(key, approx.estimate, approx)
-
-       
+        Row(key, approx.estimate, approx)       
     }
 
     val aggColumn = "EstimatedValue"
@@ -685,8 +683,8 @@ object SnappyContext {
 
   def populateTopK[T: ClassTag](rows: RDD[Row], topkWrapper: TopKWrapper,
     context: SnappyContext, name: String, topKRDD: RDD[(Int, TopK)]) {
-
-    val pairRDD = rows.map[(Int, (Any, Any))](topkWrapper.rowToTupleConverter(_, topKRDD.partitioner.get))
+    val partitioner = topKRDD.partitioner.get
+    val pairRDD = rows.map[(Int, (Any, Any))](topkWrapper.rowToTupleConverter(_, partitioner))
 
     topKRDD.cogroup(pairRDD).foreach {
       case (key, (topKIter, dataIterable)) => {
