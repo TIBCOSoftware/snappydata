@@ -29,7 +29,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
   /////////////////////////////////////////////////////////////////////////////
   "TopK elements  for each interval  " should "be correct" in {
     val cmsParams = CMSParams(8192, 7, SEED)
-    val topK = new TopKHokusai[Int](cmsParams, 1, 0, 5, false,1)
+    val topK = new TopKHokusai[Int](cmsParams, 1, 0, 5, false,1, "test3")
     //1st interval
     topK.addEpochData(Map[Int, Long](1 -> 13, 2 -> 8, 3 -> 9, 4 -> 10, 5 -> 4, 6 -> 7, 7 -> 1, 8 -> 19, 9 -> 0, 10 -> 11))
     topK.increment()
@@ -108,7 +108,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
   "TopK expansion with increased time intervals " should "be correct" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
     val topKCount = 4
-    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false,1)
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false,1, "test4")
 
     {
       //1st interval add 10 keys
@@ -175,7 +175,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
   "TopK expansion with increased time intervals in generic manner " should "be correct" in {
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
     val topKCount = 4
-    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false,1)
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false,1, "test5")
     val numIntervals = 1000
     val keyWidth = 10
 
@@ -218,7 +218,7 @@ class TopKHokusaiSpec extends FlatSpec with Matchers {
     //val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(100000),12, SEED)
     val cmsParams = CMSParams(scala.math.pow(2,18).asInstanceOf[Int],12, SEED)
     val topKCount = 200
-    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false,1)
+    val topK = new TopKHokusai[Int](cmsParams, 10, 0, topKCount, false,1, "test6")
     val randomKey = new scala.util.Random(41)
     val numIntervalsToAdd = 50
     val keyRange = 200000
