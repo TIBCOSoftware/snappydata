@@ -423,9 +423,16 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val externalStore = new JDBCSourceAsStore(jdbcSource)
     createExternalTableForCachedBatches(qualifiedTable.qualifiedName,
       externalStore)
-    tables.put(qualifiedTable, df.logicalPlan)
-    context.cacheManager.cacheQuery_ext(df, Some(qualifiedTable.qualifiedName),
+    val dummyDF = {
+      val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
+        new DummyRDD(context))(context)
+      DataFrame(context, plan)
+    }
+
+    tables.put(qualifiedTable, dummyDF.logicalPlan)
+    context.cacheManager.cacheQuery_ext(dummyDF, Some(qualifiedTable.qualifiedName),
       externalStore)
+    context.appendToCache(df, qualifiedTable.qualifiedName)
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,

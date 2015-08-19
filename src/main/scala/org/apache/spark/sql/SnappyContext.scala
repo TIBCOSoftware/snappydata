@@ -178,7 +178,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableName, schema, relation.cachedRepresentation, output)
 
-      rowIterator.foreach(batches.appendRow((), _))
+      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+      rowIterator.map(converter(_).asInstanceOf[Row])
+        .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
     }.persist(storageLevel)
 

@@ -196,6 +196,7 @@ private[sql] object InMemoryAppendableRelation {
           CachedBatch(columnBuilders.map(_.build().array()), stats))
         // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
         if (newBuilders) columnBuilders = getColumnBuilders
+        rowCount = 0
       }
     }
 
