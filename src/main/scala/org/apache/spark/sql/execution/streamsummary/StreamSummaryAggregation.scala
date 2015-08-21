@@ -12,6 +12,9 @@ import org.apache.spark.sql.TimeEpoch
 import org.apache.spark.sql.collection.SegmentMap
 import org.apache.spark.sql.execution.{ Approximate, KeyFrequencyWithTimestamp }
 import org.apache.spark.sql.execution.{ TopK, TopKStub }
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Input
+import com.esotericsoftware.kryo.io.Output
 
 /**
  * TopK using stream summary algorithm.
@@ -20,44 +23,42 @@ import org.apache.spark.sql.execution.{ TopK, TopKStub }
  */
 class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
   val epoch0: Long, val maxIntervals: Int,
-  val startIntervalGenerator: Boolean = false, partitionID: Int, name: String) extends TopK {
+  val streamAggregates: mutable.MutableList[StreamSummary[T]], initInterval: Long) extends TopK {
 
-  val rwlock = new ReadWriteLock()
+  def this(capacity: Int, intervalSize: Long,
+    epoch0: Long, maxIntervals: Int) = this(capacity, intervalSize,
+    epoch0, maxIntervals, new mutable.MutableList[StreamSummary[T]](), 0)
 
-  val streamAggregates = new mutable.MutableList[StreamSummary[T]]()
+  val timeEpoch = new TimeEpoch(intervalSize, epoch0, initInterval)
 
-  val timeEpoch = new TimeEpoch(intervalSize, epoch0)
-
-  for (x <- 1 to maxIntervals) {
-    streamAggregates += new StreamSummary[T](capacity)
-    timeEpoch.increment()
+  if (streamAggregates.length == 0) {
+    for (x <- 1 to maxIntervals) {
+      streamAggregates += new StreamSummary[T](capacity)
+      timeEpoch.increment()
+    }
   }
 
   def addItems(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]) = {
-    this.rwlock.executeInWriteLock({
-
-      data.foreach(item => {
-        val epoch = item.epoch
-        if (epoch > 0) {
-          // find the appropriate time and item aggregates and update them
-          timeEpoch.timestampToInterval(epoch) match {
-            case Some(interval) =>
-              if (interval <= maxIntervals) {
-                streamAggregates(interval - 1).offer(item.key,
-                  item.frequency.toInt)
-              } // else IGNORE
-            case None => // IGNORE
-          }
-        } else {
-          throw new UnsupportedOperationException("Support for intervals " +
-            "for wall clock time for streams not available yet.")
+    data.foreach(item => {
+      val epoch = item.epoch
+      if (epoch > 0) {
+        // find the appropriate time and item aggregates and update them
+        timeEpoch.timestampToInterval(epoch) match {
+          case Some(interval) =>
+            if (interval <= maxIntervals) {
+              streamAggregates(interval - 1).offer(item.key,
+                item.frequency.toInt)
+            } // else IGNORE
+          case None => // IGNORE
         }
-      })
+      } else {
+        throw new UnsupportedOperationException("Support for intervals " +
+          "for wall clock time for streams not available yet.")
+      }
     })
+
   }
 
-  override def getPartitionID: Int = this.partitionID
-  override def getName: String = this.name
   override def isStreamSummary: Boolean = true
 
   def queryIntervals(start: Int, end: Int, k: Int) = {
@@ -78,114 +79,45 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     k: Int): Option[Array[(T, Approximate)]] =
-    this.rwlock.executeInReadLock({
+    {
       val (end, start) = this.timeEpoch.convertEpochToIntervals(epochFrom,
         epochTo) match {
           case Some(x) => x
           case None => return None
         }
       Some(this.queryIntervals(start - 1, end - 1, k).toArray)
-    }, true)
+    }
+
 }
 
 object StreamSummaryAggregation {
-  private final val topKMap = new mutable.HashMap[String, mutable.HashMap[Int, TopK]]
-  private final val mapLock = new ReentrantReadWriteLock()
-  /*
-  def apply[T](name: String): Option[StreamSummaryAggregation[T]] = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name) match {
-        case Some(tk) => Some(tk.asInstanceOf[StreamSummaryAggregation[T]])
-        case None => None
-      }
-    }
-  }*/
 
-  def apply[T: ClassTag](name: String, size: Int, tsCol: Int,
-    timeInterval: Long, epoch0: () => Long, maxInterval: Int, partitionID: Int) = {
-    lookupOrAdd[T](name, size, tsCol, timeInterval, epoch0, maxInterval, partitionID)
-  }
-  
-  def get(name: String, partitionID: Int): TopK = {
-    topKMap.get(name).getOrElse(throw new IllegalStateException("TopK should have been present"))
-    .get(partitionID).getOrElse(throw new IllegalStateException("TopK should have been present"))
+  def create[T: ClassTag](size: Int,
+    timeInterval: Long, epoch0: () => Long, maxInterval: Int): TopK =
+    new StreamSummaryAggregation[T](size, timeInterval,
+      epoch0(), maxInterval)
+
+  def write(kryo: Kryo, output: Output, obj: StreamSummaryAggregation[_]) {
+    output.writeInt(obj.capacity)
+    output.writeLong(obj.intervalSize)
+    output.writeLong(obj.epoch0)
+    output.writeInt(obj.maxIntervals)
+    output.writeInt(obj.streamAggregates.length)
+    obj.streamAggregates.foreach { x => StreamSummary.write(kryo, output, x) }
+    output.writeLong(obj.timeEpoch.t)
   }
 
-  def lookupOrAddDummy(name: String, partitionID: Int): TopK = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
-    } match {
-      case Some(partMap) => partMap.get(partitionID) match {
-        case Some(topK) => topK
-        case None =>
-          SegmentMap.lock(mapLock.writeLock) {
-            partMap.getOrElse(partitionID, {
-              val topK = new TopKStub(name,partitionID, true)
-              partMap(partitionID) = topK
-              topK
-            })
-          }
-      }
-      case None =>
-        // insert into global map but double-check after write lock
-        SegmentMap.lock(mapLock.writeLock) {
-          val partMap = topKMap.getOrElse(name, {
-            val newPartMap = new mutable.HashMap[Int, TopK]
-            topKMap(name) = newPartMap
-            newPartMap
-          })
-          partMap.getOrElse(partitionID, {
-            val topK = new TopKStub(name, partitionID, true)
-            partMap(partitionID) = topK
-            topK
-          })
-        }
-    }
-  }
+  def read(kryo: Kryo, input: Input): StreamSummaryAggregation[_] = {
 
-  private[sql] def lookupOrAdd[T: ClassTag](name: String, size: Int,
-    tsCol: Int, timeInterval: Long, epoch0: () => Long,
-    maxInterval: Int, partitionID: Int): TopK = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
-    } match {
-      case Some(partMap) =>
-        SegmentMap.lock(mapLock.writeLock) {
-          partMap.get(partitionID) match {
-            case Some(topK) => topK match {
-              case x: StreamSummaryAggregation[_] => x
-              case _ =>
-                val topKK = new StreamSummaryAggregation[T](size, timeInterval,
-                  epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID, name)
-                partMap(partitionID) = topKK
-                topKK
-            }
-            case None =>
-              partMap.getOrElse(partitionID, {
-                val topk = new StreamSummaryAggregation[T](size, timeInterval,
-                  epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID, name)
-                partMap(partitionID) = topk
-                topk
-              })
-          }
-        }
-
-      //topk.asInstanceOf[StreamSummaryAggregation[T]]
-      case None =>
-        SegmentMap.lock(mapLock.writeLock) {
-          val partMap = topKMap.getOrElse(name, {
-            val newPartMap = new mutable.HashMap[Int, TopK]
-            topKMap(name) = newPartMap
-            newPartMap
-          })
-          partMap.getOrElse(partitionID, {
-            val topk = new StreamSummaryAggregation[T](size, timeInterval,
-              epoch0(), maxInterval, timeInterval > 0 && tsCol < 0, partitionID, name)
-            partMap(partitionID) = topk
-            topk
-          })
-        }
-    }
+    val capacity = input.readInt
+    val intervalSize = input.readLong
+    val epoch0 = input.readLong
+    val maxIntervals = input.readInt
+    val len = input.readInt
+    val streamAggregates = mutable.MutableList.fill[StreamSummary[Any]](len)(StreamSummary.read[Any](kryo, input))
+    val t = input.readLong
+    new StreamSummaryAggregation[Any](capacity, intervalSize, epoch0: Long, maxIntervals,
+      streamAggregates, t)
 
   }
 }

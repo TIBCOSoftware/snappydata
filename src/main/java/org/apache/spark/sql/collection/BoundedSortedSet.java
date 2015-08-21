@@ -1,5 +1,10 @@
 package org.apache.spark.sql.collection;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -38,6 +43,11 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
   @Override
   public boolean contains(Object key) {
     return this.map.containsKey(key);
+  }
+
+  private void addBypassCheck(K key, V value) {
+    this.map.put(key, value);
+    super.add(new Tuple2<K, V>(key, value));
   }
 
   @Override
@@ -99,6 +109,64 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
 
   public int getBound() {
     return this.bound;
+  }
+
+  public void serialize(DataOutputStream dos) throws IOException {
+    dos.writeInt(this.bound);
+    dos.writeBoolean(this.isRelaxedBound);
+    dos.writeInt(this.map.size());
+    ObjectOutputStream oos = null;
+    int i = 0;
+    boolean isString = false;
+    for (Map.Entry<K, V> entry : this.map.entrySet()) {
+      if (i == 0) {
+        if (entry.getKey() instanceof String) {
+          isString = true;
+        } else {
+          oos = new ObjectOutputStream(dos);
+        }
+        dos.writeBoolean(isString);
+      }
+      if (isString) {
+        dos.writeUTF((String) entry.getKey());
+        dos.writeLong((Long) entry.getValue());
+      } else {
+        oos.writeObject(entry.getKey());
+        oos.writeLong((Long) entry.getValue());
+      }
+    }
+    if(oos != null) {
+      oos.flush();
+    }
+  }
+
+  public static <K, V extends Comparable<V>> BoundedSortedSet<K, V> deserialize(
+      DataInputStream dis) throws Exception {
+    int bound = dis.readInt();
+    boolean relaxedBound = dis.readBoolean();
+    BoundedSortedSet<K, V> bs = new BoundedSortedSet<>(bound, relaxedBound);
+    int mapSize = dis.readInt();
+
+    if (mapSize > 0) {
+      boolean isString = dis.readBoolean();
+      ObjectInputStream ois = null;
+      if (!isString) {
+        ois = new ObjectInputStream(dis);
+      }
+      for (int i = 0; i < mapSize; ++i) {
+        if (isString) {
+          String key = dis.readUTF();
+          Long value = dis.readLong();
+          bs.addBypassCheck((K) key, (V) value);
+
+        } else {
+          Object key = ois.readObject();
+          Long value = ois.readLong();
+          bs.addBypassCheck((K) key, (V) value);
+        }
+      }
+    }
+    return bs;
   }
 
 }

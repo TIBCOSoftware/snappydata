@@ -1,7 +1,6 @@
 package io.snappydata.core
 
 import org.apache.spark.sql.execution.{ CMSParams, Hokusai }
-
 import scala.io.Source
 import org.scalatest._
 import Inspectors._
@@ -9,6 +8,9 @@ import scala.collection.Map
 import scala.collection.SortedSet
 import scala.math.abs
 import io.snappydata.util.NumberUtils
+import org.apache.spark.sql.execution.cms.CountMinSketch
+import scala.collection.mutable.MutableList
+import org.apache.spark.sql.execution.IntervalTracker
 
 /**
  * Spec for Hokusai TimeAggregation
@@ -24,10 +26,13 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   val TEST_APRROXIMATE_INTERVALS_2 = 20
   val TEST_NUM_KEYS = 100000
 
+  
+  
   /////////////////////////////////////////////////////////////////////////////
   "Hokusai interval conversion between last nth interval to interval from begining " should "be correct" in {
     val cmsParams = CMSParams(512, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     val intervalsToAdd = 100
     for (i <- 1 to intervalsToAdd) {
       h.addEpochData(Map[Int, Long](1 -> 7))
@@ -46,7 +51,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai Linked Interval" should "be correct after n intervals" in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(512, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     h.addEpochData(Map[Int, Long](1 -> 7)) // 1st interval
     h.increment()
 
@@ -303,7 +309,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries for n intervals" should "be correct for all paths" in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(1024, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     (1 to TEST_ACCURATE_INTERVALS) foreach {
       i =>
         val count = 7 * i;
@@ -324,7 +331,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val ERROR_PERCENTAGE = 0
     val cmsParams = CMSParams(1024, 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     (1 to TEST_APRROXIMATE_INTERVALS_1) foreach {
       i =>
         val count = 7 * i;
@@ -360,7 +368,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries for n past intervals using interpolation for " + TEST_NUM_KEYS + " keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(816096), 10, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     val ERROR_PERCENTAGE = 25
     (1 to TEST_APRROXIMATE_INTERVALS_2) foreach {
       k =>
@@ -411,7 +420,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries at a given time in past  using interpolation for keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(1024), 5, SEED)
-    val h = new Hokusai[Int](cmsParams, 1, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     val KEYS = 100
     val ERROR_PERCENTAGE = 0
     (1 to TEST_APRROXIMATE_INTERVALS_1) foreach {
@@ -456,7 +466,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries between two time intervals in past  using interpolation for keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 5, SEED)
-    val h = new Hokusai[Int](cmsParams, 10, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
 
     //For each interval in past check some keys
 
@@ -513,7 +524,8 @@ class HokusaiIntervalTrackerSpec extends FlatSpec with Matchers {
   "Hokusai queries between two time intervals (generic test) in past  using interpolation for keys" should "be approximately correct " in {
     /// 7, 14 ,  28, 35, 42, 49, 56, 63, 70, 77, 84, 91
     val cmsParams = CMSParams(NumberUtils.nearestPowerOf2GE(8192), 7, SEED)
-    val h = new Hokusai[Int](cmsParams, 10, 0, false)
+    val h = new Hokusai[Int](cmsParams, 1, 0, MutableList[CountMinSketch[Int]](),
+        MutableList[CountMinSketch[Int]](), new IntervalTracker(), 0)
     val KEYS = 1
     val ERROR_PERCENTAGE = 0
     val TEST_NUM_INTERVALS = 1000

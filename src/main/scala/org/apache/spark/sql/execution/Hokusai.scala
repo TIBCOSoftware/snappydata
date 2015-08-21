@@ -2,16 +2,17 @@ package org.apache.spark.sql.execution
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import java.util.{ Timer, TimerTask }
-
 import org.apache.spark.sql.{ TimeEpoch, LockUtils }
 import org.apache.spark.sql.LockUtils.ReadWriteLock
-
 import scala.collection.mutable.{ ArrayBuffer, ListBuffer, MutableList, Stack }
 import scala.reflect.ClassTag
 import scala.util.Random
-
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.execution.cms.CountMinSketch
+import com.esotericsoftware.kryo.KryoSerializable
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.io.Input
 
 /**
  * Implements the algorithms and data structures from "Hokusai -- Sketching
@@ -51,25 +52,19 @@ import org.apache.spark.sql.execution.cms.CountMinSketch
  * 4. Decide if we want to be mutable or functional in this datastruct.
  *    Current version is mutable.
  */
-class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
-  startIntervalGenerator: Boolean = false) {
-  //assert(NumberUtils.isPowerOfTwo(numIntervals))
-
-  private val intervalGenerator = new Timer()
-
+class Hokusai[T: ClassTag](val cmsParams: CMSParams, val windowSize: Long, val epoch0: Long,
+  taList: MutableList[CountMinSketch[T]],
+  itemList: MutableList[CountMinSketch[T]],
+  intervalTracker: IntervalTracker,
+  intitalInterval: Long) {
   val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = (estimators) => CountMinSketch.merge[T](estimators: _*)
 
-  val timeEpoch = new TimeEpoch(windowSize, epoch0)
+  val timeEpoch = new TimeEpoch(windowSize, epoch0, intitalInterval)
 
-  val taPlusIa = new TimeAndItemAggregation()
+  val taPlusIa = new TimeAndItemAggregation(taList, itemList, intervalTracker)
   // Current data accummulates into mBar until the next time tick
+  //To Do fix the external initialization in serialization
   var mBar: CountMinSketch[T] = createZeroCMS(0)
-
-  val rwlock = new ReadWriteLock()
-
-  if (startIntervalGenerator) {
-    intervalGenerator.schedule(createTimerTask(this.increment), 0, windowSize)
-  }
 
   private val queryTillLastN_Case2: (T, Int) => Option[Approximate] = (item: T, sumUpTo: Int) => Some(this.taPlusIa.queryBySummingTimeAggregates(item, sumUpTo))
 
@@ -153,11 +148,10 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     Some(total)
   }
 
-  def increment(): Unit = this.rwlock.executeInWriteLock {
+  def increment(): Unit = {
     timeEpoch.increment()
     this.taPlusIa.increment(mBar, timeEpoch.t)
     mBar = createZeroCMS(0)
-
   }
 
   // For testing.  This follows spark one update per batch model?  But
@@ -166,12 +160,16 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     accummulate(data)
   }
 
+  def addEpochData(data: scala.collection.Map[T, Long], time: Long) = {
+    accummulate[(T, Long)](data.toIterable, e => (e._1, e._2, time))
+  }
+
   def addEpochData(data: scala.collection.Map[T, Long]) = {
     accummulate(data)
   }
 
   def addTimestampedData(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]) = {
-    accummulate(data)
+    accummulate[KeyFrequencyWithTimestamp[T]](data, kft => (kft.key, kft.frequency, kft.epoch))
   }
 
   // Get the frequency estimate for key in epoch from the CMS
@@ -181,64 +179,57 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     timeEpoch.jForTimestamp(epoch, numIntervals).flatMap(ta.query(_, key))*/
 
   def queryTillTime(epoch: Long, key: T): Option[Approximate] = {
-    this.rwlock.executeInReadLock(
-      this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
 
-        if (x > timeEpoch.t) {
-          None
-        } else {
-          this.queryTillLastNIntervals(
-            this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
-            key)
-        }),
-      true)
+    this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
+
+      if (x > timeEpoch.t) {
+        None
+      } else {
+        this.queryTillLastNIntervals(
+          this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
+          key)
+      })
 
   }
 
   def queryAtTime(epoch: Long, key: T): Option[Approximate] = {
 
-    this.rwlock.executeInReadLock(
-      this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
-        if (x > timeEpoch.t) {
-          // cannot query the current mBar
-          None
-        } else {
-          this.taPlusIa.queryAtInterval(this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
-            key)
-        }), true)
+    this.timeEpoch.timestampToInterval(epoch).flatMap(x =>
+      if (x > timeEpoch.t) {
+        // cannot query the current mBar
+        None
+      } else {
+        this.taPlusIa.queryAtInterval(this.taPlusIa.convertIntervalBySwappingEnds(x.asInstanceOf[Int]).asInstanceOf[Int],
+          key)
+      })
 
   }
 
   def queryBetweenTime(epochFrom: Long, epochTo: Long, key: T): Option[Approximate] = {
 
-    this.rwlock.executeInReadLock(
-      {
-        val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
-          case Some(x) => x
-          case None => return None
-        }
-        this.taPlusIa.queryBetweenIntervals(later, earlier, key)
-      }, true)
+    val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
+      case Some(x) => x
+      case None => return None
+    }
+    this.taPlusIa.queryBetweenIntervals(later, earlier, key)
 
   }
 
   //def accummulate(data: Seq[Long]): Unit = mBar = mBar ++ cmsMonoid.create(data)
-  def accummulate(data: Seq[T]): Unit = this.rwlock.executeInWriteLock {
+  def accummulate(data: Seq[T]): Unit =
     data.foreach(i => mBar.add(i, 1L))
-  }
 
   def accummulate(data: scala.collection.Map[T, Long]): Unit =
-    this.rwlock.executeInWriteLock {
-      data.foreach { case (item, count) => mBar.add(item, count) }
-    }
 
-  def accummulate(data: ArrayBuffer[KeyFrequencyWithTimestamp[T]]): Unit =
-    this.rwlock.executeInWriteLock {
+    data.foreach { case (item, count) => mBar.add(item, count) }
+
+  def accummulate[K](data: Iterable[K], extractor: K => (T, Long, Long)): Unit =
+    {
 
       val iaAggs = this.taPlusIa.ia.aggregates
       val taAggs = this.taPlusIa.ta.aggregates
       data.foreach { v =>
-        val epoch = v.epoch
+        val (key, frequency, epoch) = extractor(v)
         if (epoch > 0) {
           // find the appropriate time and item aggregates and update them
           timeEpoch.timestampToInterval(epoch) match {
@@ -256,24 +247,24 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
                     increment()
                   }
                 }
-                mBar.add(v.key, v.frequency)
+                mBar.add(key, frequency)
               } else {
                 //we have to update CMS in past
                 //identify all the intervals which store data for this interval
                 if (interval == timeEpoch.t) {
-                  taAggs(0).add(v.key, v.frequency)
+                  taAggs(0).add(key, frequency)
                   if (!taAggs(0).eq(iaAggs(interval - 1))) {
-                    iaAggs(interval - 1).add(v.key, v.frequency)
+                    iaAggs(interval - 1).add(key, frequency)
                   }
                 } else {
                   val timeIntervalsToModify = this.taPlusIa.intervalTracker
                     .identifyIntervalsContaining(this.taPlusIa.convertIntervalBySwappingEnds(interval))
                   timeIntervalsToModify.foreach { x =>
                     taAggs(NumberUtils.isPowerOf2(x) + 1)
-                      .add(v.key, v.frequency)
+                      .add(key, frequency)
                   }
                   if (!(timeIntervalsToModify(0) == 1 && taAggs(1).eq(iaAggs(interval - 1)))) {
-                    iaAggs(interval - 1).add(v.key, v.frequency)
+                    iaAggs(interval - 1).add(key, frequency)
                   }
                 }
 
@@ -281,10 +272,9 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
             case None => println(s"SW: WARNING: got epoch=$epoch with epoch0 as ${timeEpoch.epoch0}")
           }
         } else {
-          mBar.add(v.key, v.frequency)
+          mBar.add(key, frequency)
         }
       }
-
     }
 
   def queryTillLastNIntervals(lastNIntervals: Int, item: T): Option[Approximate] =
@@ -293,20 +283,14 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
       queryTillLastN_Case3(item, _, _, _, _),
       queryTillLastN_Case4(item, _, _, _, _))
 
-  private def createTimerTask(taskBody: => Unit): TimerTask = new TimerTask() {
-    override def run() {
-      taskBody
-    }
-  }
-
   def createZeroCMS(intervalFromLast: Int): CountMinSketch[T] =
     Hokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, cmsParams.confidence,
       cmsParams.eps)
 
   override def toString = s"Hokusai[ta=${taPlusIa}, mBar=${mBar}]"
 
-  class ItemAggregation {
-    val aggregates = new MutableList[CountMinSketch[T]]()
+  class ItemAggregation(val aggregates: MutableList[CountMinSketch[T]]) {
+    //val aggregates = new MutableList[CountMinSketch[T]]()
 
     def increment(cms: CountMinSketch[T], t: Long): Unit = {
       //TODo :Asif : Take care of long being casted to int
@@ -322,33 +306,6 @@ class Hokusai[T: ClassTag](cmsParams: CMSParams, windowSize: Long, epoch0: Long,
     }
 
   }
-  /*
-val a: Array[Option[CountMinSketch]] = Array.fill(numIntervals) { None } // This is A from the paper
-def algo3(): Unit = {
-
-  val ln = a.length
-  val l = Hokusai.ilog2(h.timeUnits - 1)
-
-      h.liveItems++
-
-      if h.liveItems >= 1<<h.intervals {
-        // kill off the oldest live interval
-        h.itemAggregate[ln-h.liveItems+1] = nil
-        h.liveItems--
-      }
-
-      for k := 1; k < l; k++ {
-        // itemAggregation[t] is the data array for time t
-        sk := h.itemAggregate[ln-1<<uint(k)]
-        // FIXME(dgryski): can we avoid this check by be smarter about loop bounds?
-        if sk != nil {
-          sk.Compress()
-        }
-      }
-      h.itemAggregate = append(h.itemAggregate, h.sk.Clone())
-
-      }
-    */
 
   /**
    * Data Structures and Algorithms to maintain Time Aggregation from the paper.
@@ -409,39 +366,7 @@ def algo3(): Unit = {
    * @param numIntervals The number of sketches to keep in the exponential backoff.
    *        the last one will have a sketch of all data.  Default value is 16.
    */
-  class TimeAggregation {
-    val aggregates = new MutableList[CountMinSketch[T]]()
-    // The terse variable names follow the variable names in the paper
-    // (minus capitalization)
-
-    // The array of exponentially decaying CMSs. In the paper, this is called
-    // M^j, but here we call it m(j). Each subsequent one covers a time
-    // period twice as long as the previous We will lazily initialize as time
-    // progresses, to keep memory down
-
-    // Increments time step by one unit, and compresses the sketches to
-    // maintain the invariants.  This is Algorithm 2 in the paper.
-    /*override def increment(cms: CountMinSketch[T], t: Long): Unit = {
-    if (NumberUtils.isPowerOfTwo(t.asInstanceOf[Int])) {
-      // Make a dummy  entry at the last  position
-      this.aggregates += new CountMinSketch[T](cmsParams.depth, cmsParams.width, cmsParams.hashA)
-    }
-    var mBar = cms
-    (0 to Hokusai.maxJ(t)) foreach ({ j =>
-      val temp = mBar
-      val mj = this.aggregates.get(j) match {
-        case Some(map) => map
-        case None => {
-          //make a place so update can happen correctly
-          throw new IllegalStateException("The index should have had a CMS")
-          //new CountMinSketch[T](cmsParams.depth, cmsParams.width, cmsParams.hashA) //mZero
-        }
-      }
-      mBar = CountMinSketch.merge[T](mBar, mj)
-      this.aggregates.update(j, temp)
-    })
-
-  }*/
+  class TimeAggregation(val aggregates: MutableList[CountMinSketch[T]]) {
 
     def query(index: Int, key: T): Option[Long] = this.aggregates.get(index).map(_.estimateCount(key))
 
@@ -482,11 +407,12 @@ def algo3(): Unit = {
       s"TimeAggregation[${this.aggregates.mkString("M=[", ", ", "]")}]"
   }
 
-  class TimeAndItemAggregation {
+  class TimeAndItemAggregation(taList: MutableList[CountMinSketch[T]],
+    itemList: MutableList[CountMinSketch[T]], val intervalTracker: IntervalTracker) {
     // val aggregates = new MutableList[CountMinSketch[T]]()
-    val ta = new TimeAggregation()
-    val ia = new ItemAggregation()
-    val intervalTracker: IntervalTracker = new IntervalTracker()
+    val ta = new TimeAggregation(taList)
+    val ia = new ItemAggregation(itemList)
+    // val intervalTracker: IntervalTracker = new IntervalTracker()
 
     def increment(mBar: CountMinSketch[T], t: Long): Unit = {
       val rangeToAggregate = if (NumberUtils.isPowerOfTwo(t.asInstanceOf[Int])) {
@@ -501,82 +427,6 @@ def algo3(): Unit = {
       //this.basicIncrement(mBar, t, rangeToAggregate)
       this.intervalTracker.updateIntervalLinks(t)
     }
-    /*
-  private def basicIncrement(cms: CountMinSketch[T], t: Long, rangeToAggregate: Int): Unit = {
-    if (t == 1 ) {
-      cms +=: this.aggregates
-    }else if(t ==2) {
-      cms +=: this.aggregates
-      this.aggregates.update(1, this.aggregates.last.compress)
-    }
-    else if (t > 2) {
-      var s = cms
-      (0 to rangeToAggregate) foreach { j =>
-        
-        val temp = s
-        val sJ = this.aggregates.get(j) match {
-          case Some(map) => map
-          case None => {
-            this.aggregates += null
-            new CountMinSketch[T](cmsParams.depth, s.width, cmsParams.hashA)
-          }
-        }
-        if (j != 0) {
-         s = CountMinSketch.merge(s, sJ)
-         if(s.width >1) {
-         s = s.compress
-         }
-        } else {
-          s = sJ.compress
-          
-        }
-        
-        this.aggregates.update(j, temp)
-      }
-
-    }
-
-    
-
-    //this.intervalTracker.updateIntervalLinks(t)
-
-  }*/
-    /*
-  private def basicIncrement(cms: CountMinSketch[T], t: Long, rangeToAggregate: Int): Unit = {
-    if (t == 1) {
-      cms.compress +=: this.aggregates
-    } else if (t == 2) {
-      val prev = this.aggregates.head.compress
-      this.aggregates.update(0, prev)
-      cms.compress +=: this.aggregates
-    } else {
-      var s = cms
-      (0 to rangeToAggregate) foreach { j =>
-        if (s.width > 1) {
-          s = s.compress
-        }
-        val temp = s
-        val sJ = this.aggregates.get(j) match {
-          case Some(map) => map
-          case None => {
-            this.aggregates += null
-            new CountMinSketch[T](cmsParams.depth, s.width, cmsParams.hashA)
-          }
-        }
-        if (j != 0) {
-          s = CountMinSketch.merge(s, sJ)
-        } else {
-          s = sJ
-        }
-
-        this.aggregates.update(j, temp)
-      }
-
-    }
-
-    //this.intervalTracker.updateIntervalLinks(t)
-
-  }*/
 
     def queryAtInterval(lastNthInterval: Int, key: T): Option[Approximate] = {
       if (lastNthInterval == 1) {
@@ -816,14 +666,11 @@ def algo3(): Unit = {
 
 // TODO Better handling of params and construction (both delta/eps and d/w support)
 class CMSParams private (val width: Int, val depth: Int, val eps: Double,
-  val confidence: Double, val seed: Int = 123) extends Serializable {
+  val confidence: Double, val seed: Int, val hashA: Array[Long]) extends Serializable {
 
-  val hashA = createHashA
-
-  private def createHashA: Array[Long] = {
-    val r = new Random(seed)
-    Array.fill[Long](depth)(r.nextInt(Int.MaxValue))
-  }
+  def this(width: Int, depth: Int, eps: Double,
+    confidence: Double, seed: Int = 123) = this(width, depth, eps,
+    confidence, seed, CMSParams.createHashA(seed, depth))
 
 }
 
@@ -852,14 +699,42 @@ object CMSParams {
       depth, CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), seed)
 
   }
+
+  private def createHashA(seed: Int, depth: Int): Array[Long] = {
+    val r = new Random(seed)
+    Array.fill[Long](depth)(r.nextInt(Int.MaxValue))
+  }
+
+  def write(kryo: Kryo, output: Output, obj: CMSParams) {
+    output.writeInt(obj.width)
+    output.writeInt(obj.depth)
+    output.writeDouble(obj.eps)
+    output.writeDouble(obj.confidence)
+    output.writeInt(obj.seed)
+    output.writeInt(obj.hashA.length)
+    obj.hashA.foreach(output.writeLong(_))
+
+  }
+
+  def read(kryo: Kryo, input: Input): CMSParams = {
+    val width = input.readInt
+    val depth = input.readInt
+    val eps = input.readDouble
+    val confidence = input.readDouble
+    val seed = input.readInt
+    val hashA = Array.fill[Long](input.readInt)(input.readLong)
+    new CMSParams(width, depth, eps, confidence, seed, hashA)
+  }
+
 }
 
 final class KeyFrequencyWithTimestamp[T](val key: T, val frequency: Long,
   val epoch: Long)
 
 class IntervalTracker {
-  private var head: IntervalLink = null
   private val unsaturatedIntervals: Stack[IntervalLink] = new Stack[IntervalLink]()
+  private var head: IntervalLink = null
+  //private val unsaturatedIntervals: Stack[IntervalLink] = new Stack[IntervalLink]()
 
   def identifyBestPath(lastNIntervals: Int,
     encompassLastInterval: Boolean = false,
@@ -947,7 +822,7 @@ class IntervalTracker {
     all
   }
 
-  private class IntervalLink(val intervals: ListBuffer[Long]) {
+  class IntervalLink(val intervals: ListBuffer[Long]) {
 
     def this(interval: Long) = this(ListBuffer(interval))
     // intervals having same start
@@ -1041,6 +916,46 @@ class IntervalTracker {
   }
 
 }
+
+object IntervalTracker {
+
+  def write(kryo: Kryo, output: Output, obj: IntervalTracker) {
+    //write head
+    if (obj.head != null) {
+      output.writeInt(obj.head.intervals.length)
+      obj.head.intervals.foreach { x => output.writeLong(x) }
+    } else {
+      output.writeInt(-1)
+    }
+    //write unsaturated levels
+    output.writeInt(obj.unsaturatedIntervals.size)
+    obj.unsaturatedIntervals.reverseIterator.foreach(x => {
+      output.writeInt(x.intervals.length)
+      x.intervals.foreach { y => output.writeLong(y) }
+    })
+
+  }
+
+  def read(kryo: Kryo, input: Input): IntervalTracker = {
+    val tracker = new IntervalTracker()
+    val headLength = input.readInt
+    tracker.head = if (headLength == -1) {
+      null
+    } else {
+      val intervals: ListBuffer[Long] = ListBuffer.fill(headLength)(input.readLong)
+      new tracker.IntervalLink(intervals)
+    }
+    val len = input.readInt
+    for (i <- 1 to len) {
+      val lenn = input.readInt
+      val intervals: ListBuffer[Long] = ListBuffer.fill(lenn)(input.readLong)
+      tracker.unsaturatedIntervals.push(new tracker.IntervalLink(intervals))
+    }
+    tracker
+
+  }
+}
+
 object Hokusai {
 
   def log2X(X: Long): Double = math.log10(X) / math.log10(2)

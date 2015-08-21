@@ -1,12 +1,10 @@
 package org.apache.spark.sql
 
 import java.util.concurrent.atomic.AtomicReference
-
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => u}
-
+import scala.reflect.runtime.{ universe => u }
 import io.snappydata.util.SqlUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.Partition
@@ -14,24 +12,23 @@ import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.catalyst.plans.logical.{ LogicalPlan, Subquery }
+import org.apache.spark.sql.catalyst.{ CatalystTypeConverters, ScalaReflection }
+import org.apache.spark.sql.collection.{ UUIDRegionKey, Utils }
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
-
 import org.apache.spark.Partitioner
 import org.apache.spark.rdd.PairRDDFunctions
-
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.{CastLongTime, LogicalRelation, StoreStrategy, WeightageRule}
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.sources.{ CastLongTime, LogicalRelation, StoreStrategy, WeightageRule }
+import org.apache.spark.sql.types.{ LongType, StructField, StructType }
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{Partitioner, SparkContext, TaskContext}
+import org.apache.spark.streaming.{ StreamingContext, Time }
+import org.apache.spark.{ Partitioner, SparkContext, TaskContext }
+import org.apache.spark.sql.hive.QualifiedTableName
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -80,11 +77,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         transform(rDF).queryExecution.toRdd
       } else rddRows
 
-      collectSamples(rows, aqpTables)
+      collectSamples(rows, aqpTables, time.milliseconds)
     })
   }
 
   protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
+    time: Long,
     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
@@ -95,9 +93,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       case (name, sample: StratifiedSample) if aqpTableNames.contains(name) =>
         aqpTableNames.remove(name)
         (name, sample.options, sample.schema, sample.output,
-            cacheManager.lookupCachedData(sample).getOrElse(sys.error(
-              s"SnappyContext.saveStream: failed to lookup cached plan for " +
-                  s"sampling table $name")).cachedRepresentation)
+          cacheManager.lookupCachedData(sample).getOrElse(sys.error(
+            s"SnappyContext.saveStream: failed to lookup cached plan for " +
+              s"sampling table $name")).cachedRepresentation)
     }
 
     val topKWrappers = catalog.topKStructures.filter {
@@ -106,7 +104,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
     if (aqpTableNames.nonEmpty) {
       throw new IllegalArgumentException("collectSamples: no sampling or " +
-          s"topK structures for ${aqpTableNames.mkString(", ")}")
+        s"topK structures for ${aqpTableNames.mkString(", ")}")
     }
 
     // TODO: this iterates rows multiple times
@@ -129,12 +127,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     // TODO: A different set of job is created for topK structure
 
     topKWrappers.foreach {
-      case (name, (topKWrapper,topkRDD)) =>
+      case (name, (topKWrapper, topkRDD)) =>
         val clazz = SqlUtils.getInternalType(
           topKWrapper.schema(topKWrapper.key.name).dataType)
         val ct = ClassTag(clazz)
         SnappyContext.populateTopK(rows, topKWrapper, this,
-          name.qualifiedName, topkRDD)(ct)
+          name, topkRDD, time)(ct)
 
     }
 
@@ -156,7 +154,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def appendToCache(df: DataFrame, tableIdent: String,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
+    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
@@ -198,18 +196,18 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   def truncateTable(tableName: String): Unit = {
     cacheManager.lookupCachedData(catalog.lookupRelation(
       tableName)).foreach(_.cachedRepresentation.
-        asInstanceOf[InMemoryAppendableRelation].truncate())
+      asInstanceOf[InMemoryAppendableRelation].truncate())
   }
 
-  def registerTable[A <: Product : u.TypeTag](tableName: String) = {
+  def registerTable[A <: Product: u.TypeTag](tableName: String) = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
-          "Mention type information for e.g. registerSampleTableOn[<class>]")
+        "Mention type information for e.g. registerSampleTableOn[<class>]")
     }
 
     SparkPlan.currentContext.set(self)
     val schema = ScalaReflection.schemaFor[A].dataType
-        .asInstanceOf[StructType]
+      .asInstanceOf[StructType]
 
     val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
       new DummyRDD(this))(this)
@@ -218,33 +216,33 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def registerSampleTable(tableName: String, schema: StructType,
-      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
+    samplingOptions: Map[String, Any], streamTable: Option[String] = None,
+    jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
     catalog.registerSampleTable(tableName, schema, samplingOptions,
       None, streamTable.map(catalog.newQualifiedTableName), jdbcSource)
   }
 
-  def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String,
-      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): DataFrame = {
+  def registerSampleTableOn[A <: Product: u.TypeTag](tableName: String,
+    samplingOptions: Map[String, Any], streamTable: Option[String] = None,
+    jdbcSource: Option[Map[String, String]] = None): DataFrame = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
-          "Mention type information for e.g. registerSampleTableOn[<class>]")
+        "Mention type information for e.g. registerSampleTableOn[<class>]")
     }
     SparkPlan.currentContext.set(self)
     val schemaExtract = ScalaReflection.schemaFor[A].dataType
-        .asInstanceOf[StructType]
+      .asInstanceOf[StructType]
     registerSampleTable(tableName, schemaExtract, samplingOptions,
       streamTable, jdbcSource)
   }
 
   def registerAndInsertIntoExternalStore(df: DataFrame, tableName: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
+    schema: StructType, jdbcSource: Map[String, String]): Unit = {
     catalog.registerAndInsertIntoExternalStore(df, tableName, schema, jdbcSource)
   }
 
   def registerTopK(tableName: String, streamTableName: String,
-   topkOptions: Map[String, Any], isStreamSummary: Boolean) = {
+    topkOptions: Map[String, Any], isStreamSummary: Boolean) = {
     val topKRDD = SnappyContext.createTopKRDD(tableName, this.sc, isStreamSummary)
     catalog.registerTopK(tableName, streamTableName,
       catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
@@ -258,7 +256,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     catalog.registerTable(Seq(tableName), df.logicalPlan)
   }
 
-    // insert/update/delete/drop operations on an external table
+  // insert/update/delete/drop operations on an external table
 
   def insert(tableName: String, rows: Row*): Int = {
     catalog.lookupRelation(tableName) match {
@@ -268,9 +266,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
   }
 
-
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
-      updateColumns: String*): Int = {
+    updateColumns: String*): Int = {
     catalog.lookupRelation(tableName) match {
       case LogicalRelation(u: UpdatableRelation) =>
         u.update(filterExpr, newColumnValues, updateColumns)
@@ -353,8 +350,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
    * @return returns the top K elements with their respective frequencies between two time
    */
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: String = null, endTime: String = null,
-      k: Int = -1): DataFrame = {
+    startTime: String = null, endTime: String = null,
+    k: Int = -1): DataFrame = {
     val stime = if (startTime == null) 0L
     else CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
 
@@ -365,23 +362,27 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   def queryTopK[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long): DataFrame =
+    startTime: Long, endTime: Long): DataFrame =
     queryTopK[T](topKName, startTime, endTime, -1)
 
   def queryTopK[T: ClassTag](topKIdent: String,
-      startTime: Long, endTime: Long, k: Int): DataFrame = {
-        val topKTableName = catalog.newQualifiedTableName(topKIdent)
-    val (topkWrapper, rdd) = catalog.topKStructures(topKTableName)
-    val size = if (k > 0) k else topkWrapper.size
+    startTime: Long, endTime: Long, k: Int): DataFrame = {
+    val topKTableName = catalog.newQualifiedTableName(topKIdent)
 
-    val topKName = topKTableName.qualifiedName
-    if (topkWrapper.stsummary) {
+    val (topkWrapper, _) = catalog.topKStructures(topKTableName)
+    topkWrapper.rwlock.executeInReadLock {
+      //requery the catalog to obtain the TopKRDD
+      val (_, rdd) = catalog.topKStructures(topKTableName)
+      val size = if (k > 0) k else topkWrapper.size
 
-      queryTopkStreamSummary(topKName, startTime, endTime, topkWrapper, size, rdd)
-    }
-    else {
-      queryTopkHokusai(topKName, startTime, endTime, topkWrapper,  rdd, size)
+      val topKName = topKTableName.qualifiedName
+      if (topkWrapper.stsummary) {
 
+        queryTopkStreamSummary(topKName, startTime, endTime, topkWrapper, size, rdd)
+      } else {
+        queryTopkHokusai(topKName, startTime, endTime, topkWrapper, rdd, size)
+
+      }
     }
   }
 
@@ -402,8 +403,10 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         }
       }
     }
-    val topKRDD = rdd.reduceByKey(_ + _).mapPreserve{case (key, approx) =>
-      Row(key, approx.estimate, approx.lowerBound)}
+    val topKRDD = rdd.reduceByKey(_ + _).mapPreserve {
+      case (key, approx) =>
+        Row(key, approx.estimate, approx.lowerBound)
+    }
 
     val aggColumn = "EstimatedValue"
     val errorBounds = "DeltaError"
@@ -440,7 +443,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
     val topKRDD = rdd.reduceByKey(_ + _).mapPreserve {
       case (key, approx) =>
-        Row(key, approx.estimate, approx)       
+        Row(key, approx.estimate, approx)
     }
 
     val aggColumn = "EstimatedValue"
@@ -485,8 +488,8 @@ object snappy extends Serializable {
       case ss: StratifiedSample => ss
       case Subquery(_, child) => stratifiedSampleOrError(child)
       case s => throw new AnalysisException("Stratified sampling " +
-          "operations require stratifiedSample plan and not " +
-          s"${s.getClass.getSimpleName}")
+        "operations require stratifiedSample plan and not " +
+        s"${s.getClass.getSimpleName}")
     }
   }
 
@@ -495,7 +498,7 @@ object snappy extends Serializable {
       case sc: SnappyContext =>
         new SampleDataFrame(sc, stratifiedSampleOrError(df.logicalPlan))
       case sc => throw new AnalysisException("Extended snappy operations " +
-          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+        s"require SnappyContext and not ${sc.getClass.getSimpleName}")
     }
   }
 
@@ -561,18 +564,12 @@ object SnappyContext {
     }
   }
 
-
   def createTopKRDD(name: String, context: SparkContext, isStreamSummary: Boolean): RDD[(Int, TopK)] = {
     val partCount = Utils.getAllExecutorsMemoryStatus(context).
       keySet.size
     Utils.getFixedPartitionRDD[(Int, TopK)](context,
       (tc: TaskContext, part: Partition) => {
-        val topK = if (isStreamSummary) {
-          StreamSummaryAggregation.lookupOrAddDummy(name, part.index)
-        } else {
-          TopKHokusai.lookupOrAddDummy(name, part.index)
-        }
-        scala.collection.Iterator(part.index -> topK)
+        scala.collection.Iterator(part.index -> TopKHokusai.createDummy(isStreamSummary))
       }, new Partitioner() {
         override def numPartitions: Int = partCount
         override def getPartition(key: Any) = scala.math.abs(key.hashCode()) % partCount
@@ -615,13 +612,11 @@ object SnappyContext {
       (epoch, tupleIterator, tsCol)
     } else {
       null
-
-      
     }
   }
 
   def addDataForTopK[T: ClassTag](name: String, topKWrapper: TopKWrapper,
-    tupleIterator: Iterator[(T, Any)], topK: TopK, tsCol: Int, epoch: () => Long): Unit = {
+    tupleIterator: Iterator[(T, Any)], topK: TopK, tsCol: Int, time: Long): Unit = {
 
     val streamSummaryAggr: StreamSummaryAggregation[T] = if (topKWrapper.stsummary) {
       topK.asInstanceOf[StreamSummaryAggregation[T]]
@@ -656,7 +651,7 @@ object SnappyContext {
               }
 
           }
-          topKHokusai.addEpochData(datamap)
+          topKHokusai.addEpochData(datamap, time)
       }
     } else {
       val dataBuffer = new mutable.ArrayBuffer[KeyFrequencyWithTimestamp[T]]
@@ -684,34 +679,51 @@ object SnappyContext {
   }
 
   def populateTopK[T: ClassTag](rows: RDD[Row], topkWrapper: TopKWrapper,
-    context: SnappyContext, name: String, topKRDD: RDD[(Int, TopK)]) {
+    context: SnappyContext, name: QualifiedTableName, topKRDD: RDD[(Int, TopK)],
+    time: Long) {
     val partitioner = topKRDD.partitioner.get
     val pairRDD = rows.map[(Int, (Any, Any))](topkWrapper.rowToTupleConverter(_, partitioner))
+    val nameAsString = name.toString
+    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitions[(Int, TopK)](
+      iterator => {
+        val (key, (topkIterable, dataIterable)) = iterator.next()
 
-    topKRDD.cogroup(pairRDD).foreach {
-      case (key, (topKIter, dataIterable)) => {
-        val (epoch0, iter, tsCol) = getEpoch0AndIterator[T](name, topkWrapper,
-          dataIterable.iterator.asInstanceOf[Iterator[(T, Any)]])
-
-        val topK = topKIter.head match {
+        val topK = topkIterable.head match {
           case x: TopKHokusai[_] => x
           case y: StreamSummaryAggregation[_] => y
-          case y =>
+          case z =>
+
+            val (epoch0, iter, tsCol) = getEpoch0AndIterator[T](nameAsString, topkWrapper,
+              dataIterable.asInstanceOf[Iterable[(T, Any)]].iterator)
             if (topkWrapper.stsummary) {
-              StreamSummaryAggregation[T](name, topkWrapper.size,
-                tsCol, topkWrapper.timeInterval, epoch0, topkWrapper.maxinterval, y.getPartitionID)
+              StreamSummaryAggregation.create[T](topkWrapper.size,
+                topkWrapper.timeInterval, epoch0, topkWrapper.maxinterval)
             } else {
-              TopKHokusai[T](name, topkWrapper.cms, topkWrapper.size,
-                tsCol, topkWrapper.timeInterval, epoch0, y.getPartitionID)
+              TopKHokusai.create[T](topkWrapper.cms, topkWrapper.size,
+                tsCol, topkWrapper.timeInterval, epoch0)
             }
         }
-        SnappyContext.addDataForTopK[T](name, topkWrapper, dataIterable.iterator.asInstanceOf[Iterator[(T, Any)]],
-          topK, tsCol, epoch0)
-      }
+        val tsCol = if (topkWrapper.timeInterval > 0)
+          topkWrapper.timeSeriesColumn
+        else -1
+
+        SnappyContext.addDataForTopK[T](nameAsString, topkWrapper,
+          dataIterable.asInstanceOf[Iterable[(T, Any)]].iterator,
+          topK, tsCol, time)
+
+        scala.collection.Iterator(key -> topK)
+      }, true)
+
+    newTopKRDD.persist()
+    //To allow execution of RDD
+    newTopKRDD.count
+    context.catalog.topKStructures.put(name, topkWrapper -> newTopKRDD)
+    //Unpersist old rdd in a write lock
+
+    topkWrapper.rwlock.executeInWriteLock {
+      topKRDD.unpersist(false)
     }
   }
-
-
 }
 
 //end of SnappyContext
@@ -736,25 +748,26 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     // on a DataFrame.
 
     val topKWrapper = TopKWrapper(name, options, schema)
-    
+
     val clazz = SqlUtils.getInternalType(
       topKWrapper.schema(topKWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
     val topKRDD = SnappyContext.createTopKRDD(name.toString, context.sparkContext, topKWrapper.stsummary)
-    context.catalog.topKStructures.put(name, topKWrapper-> topKRDD)
+    context.catalog.topKStructures.put(name, topKWrapper -> topKRDD)
     SnappyContext.populateTopK(df.rdd, topKWrapper, context,
-      name.qualifiedName, topKRDD)(ct)
+      name, topKRDD, System.currentTimeMillis())(ct)
 
     /*df.foreachPartition((x: Iterator[Row]) => {
       context.addDataForTopK(name, topKWrapper, x)(ct)
     })*/
+
   }
 
   /**
    * Table must be registered using #registerSampleTable.
    */
   def insertIntoSampleTables(sampleTableName: String*) =
-    context.collectSamples(df.rdd, sampleTableName)
+    context.collectSamples(df.rdd, sampleTableName, System.currentTimeMillis())
 
   /**
    * Append to an existing cache table.
@@ -763,9 +776,9 @@ private[sql] case class SnappyOperations(context: SnappyContext,
   def appendToCache(tableName: String) = context.appendToCache(df, tableName)
 
   def registerAndInsertIntoExternalStore(tableName: String,
-      jdbcSource: Map[String, String]): Unit = {
+    jdbcSource: Map[String, String]): Unit = {
     context.registerAndInsertIntoExternalStore(df, tableName,
-        df.schema, jdbcSource)
+      df.schema, jdbcSource)
   }
 }
 

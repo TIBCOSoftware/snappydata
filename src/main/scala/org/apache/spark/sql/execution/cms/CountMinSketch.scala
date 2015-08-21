@@ -472,6 +472,14 @@ object CountMinSketch {
   def deserialize[T: ClassTag](data: Array[Byte]): CountMinSketch[T] = {
     val bis: ByteArrayInputStream = new ByteArrayInputStream(data);
     val s: DataInputStream = new DataInputStream(bis);
+      val(size, depth, width, eps, confidence, hashA, table) = this.read(s)
+
+      return new CountMinSketch[T](depth, width, 0, eps, confidence, size, table, hashA);
+   
+  }
+  
+  def read(s: DataInputStream): (Long, Int, Int, Double, Double, Array[Long], Array[Array[Long]]) = {
+    
     try {
 
       val size = s.readLong();
@@ -488,16 +496,20 @@ object CountMinSketch {
         }
       }
 
-      return new CountMinSketch[T](depth, width, 0, eps, confidence, size, table, hashA);
+      (size, depth, width, eps, confidence, hashA, table)
     } catch {
       case ex: IOException => throw new RuntimeException(ex)
     }
-
   }
 
   def serialize(sketch: CountMinSketch[_]): Array[Byte] = {
     val bos = new ByteArrayOutputStream();
     val s = new DataOutputStream(bos);
+    this.write(sketch, s)
+    return bos.toByteArray();
+  }
+  
+  def write(sketch: CountMinSketch[_], s: DataOutputStream) {
     try {
       s.writeLong(sketch.size);
       s.writeInt(sketch.depth);
@@ -508,7 +520,7 @@ object CountMinSketch {
           s.writeLong(sketch.table(i)(j));
         }
       }
-      return bos.toByteArray();
+      
     } catch {
       // Shouldn't happen
       case ex: IOException => throw new RuntimeException(ex)

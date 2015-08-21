@@ -315,31 +315,19 @@ class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext,
 }
 
 class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
-  f: (TaskContext, Partition) => Iterator[T], numPartitions: Int, override val partitioner: Option[Partitioner])
+  f: (TaskContext, Partition) => Iterator[T], numPartitions: Int, 
+  override val partitioner: Option[Partitioner])
   extends RDD[T](_sc, Nil) {
-  @transient val partitionIDToExecutorMap = scala.collection.mutable.Map[Int, BlockManagerId ]()
- 
+  
   override def getPartitions: Array[Partition] = {
     var i = 0
-    val blockIDs = Utils.getAllExecutorsMemoryStatus(sparkContext).keySet
-    val blockIDsAsList = blockIDs.toList
+  
     Array.fill[Partition](numPartitions)({
       val x = i
-      i = i + 1
-      val tempBlockID = this.partitionIDToExecutorMap.getOrElseUpdate(x, blockIDsAsList(x%blockIDsAsList.length))
-      val blockID = if(blockIDs.contains(tempBlockID)) {
-        tempBlockID
-      }else {
-        val newBlockIDs = blockIDs -- partitionIDToExecutorMap.values
-        val newBid = if(!newBlockIDs.isEmpty) {
-           newBlockIDs.iterator.next()          
-        }else {
-          blockIDsAsList(x%blockIDsAsList.length)
-        }
-        this.partitionIDToExecutorMap.update(x, newBid)
-        newBid
-      }
-      new ExecutorLocalPartition(x,blockID) 
+      i = i + 1     
+      new Partition(){
+        override def index: Int = x
+      } 
     })
 
   }
@@ -348,17 +336,9 @@ class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
     f(context, split)
   }
   
-  override def getPreferredLocations(split: Partition): Seq[String] =
-    Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)
+ 
 }
 
-class FixedPartition(override val index: Int,
-    val blockId: BlockManagerId) extends Partition {
-
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
-
-  override def toString = s"ExecutorLocalPartition($index, $blockId)"
-}
 
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {

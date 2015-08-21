@@ -7,33 +7,40 @@ import org.apache.spark.sql.collection.BoundedSortedSet
 import CountMinSketch._
 import org.apache.spark.util.collection.OpenHashSet
 import org.apache.spark.sql.execution.Approximate
+import java.io.ByteArrayInputStream
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 
 final class TopKCMS[T: ClassTag](val topKActual: Int, val topKInternal: Int, depth: Int, width: Int, seed: Int,
   eps: Double, confidence: Double, size: Long, table: Array[Array[Long]],
-  hashA: Array[Long]) extends CountMinSketch[T](depth, width, seed,
+  hashA: Array[Long], val topkSet: BoundedSortedSet[T, java.lang.Long]) extends CountMinSketch[T](depth, width, seed,
   eps, confidence, size, table, hashA) {
 
-  val topkSet: BoundedSortedSet[T, java.lang.Long] = new BoundedSortedSet[T, java.lang.Long](topKInternal, true)
+  //val topkSet: BoundedSortedSet[T, java.lang.Long] = new BoundedSortedSet[T, java.lang.Long](topKInternal, true)
 
   def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, seed: Int) = this(topKActual, topKInternal, depth, width, seed,
     CountMinSketch.initEPS(width), CountMinSketch.initConfidence(depth), 0,
-    CountMinSketch.initTable(depth, width), CountMinSketch.initHash(depth, seed))
+    CountMinSketch.initTable(depth, width), CountMinSketch.initHash(depth, seed),
+  new BoundedSortedSet[T, java.lang.Long](topKInternal, true)  
+  )
 
   def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, hashA: Array[Long],
       confidence: Double, eps: Double) = this(topKActual, topKInternal, depth, width, 0,
     eps,confidence, 0,
-    CountMinSketch.initTable(depth, width), hashA)
+    CountMinSketch.initTable(depth, width), hashA, new BoundedSortedSet[T, java.lang.Long](topKInternal, true))
 
   def this(topKActual: Int, topKInternal: Int, epsOfTotalCount: Double, confidence: Double, seed: Int) =
     this(topKActual, topKInternal,CountMinSketch.initDepth(confidence), CountMinSketch.initWidth(epsOfTotalCount),
       seed, epsOfTotalCount, confidence, 0,
       CountMinSketch.initTable(CountMinSketch.initDepth(confidence),
         CountMinSketch.initWidth(epsOfTotalCount)),
-      CountMinSketch.initHash(CountMinSketch.initDepth(confidence), seed))
+      CountMinSketch.initHash(CountMinSketch.initDepth(confidence), seed), new BoundedSortedSet[T, java.lang.Long](topKInternal, true))
 
   def this(topKActual: Int, topKInternal: Int, depth: Int, width: Int, size: Long, hashA: Array[Long], table: Array[Array[Long]],
       confidence: Double, eps: Double) = this(topKActual, topKInternal, depth, width, 0, eps, confidence,
-    size, table, hashA)
+    size, table, hashA, new BoundedSortedSet[T, java.lang.Long](topKInternal, true))
 
   override def add(item: T, count: Long): Long = {
     val totalCount = super.add(item, count)
@@ -147,5 +154,32 @@ object TopKCMS {
       }
     }
     topkKeysVals
+  }
+  
+   def deserialize[T: ClassTag](data: Array[Byte]): TopKCMS[T] = {
+     val bis: ByteArrayInputStream = new ByteArrayInputStream(data);
+     val s: DataInputStream = new DataInputStream(bis);
+     val topKActual = s.readInt
+     val topKInternal = s.readInt
+     val topKSet = BoundedSortedSet.deserialize(s)
+     val(size, depth, width, eps, confidence, hashA, table) = CountMinSketch.read(s)
+     new TopKCMS(topKActual, topKInternal, depth, width, 0,  eps,
+         confidence, size, table,  hashA, topKSet.asInstanceOf[BoundedSortedSet[T, java.lang.Long]])
+
+   }
+   
+   def serialize(sketch: TopKCMS[_]): Array[Byte] = {
+    val bos = new ByteArrayOutputStream();
+    val s = new DataOutputStream(bos);
+    try {
+      s.writeInt(sketch.topKActual)
+      s.writeInt(sketch.topKInternal)
+      sketch.topkSet.serialize(s);
+      CountMinSketch.write(sketch, s)      
+      return bos.toByteArray();
+    } catch {
+      // Shouldn't happen
+      case ex: IOException => throw new RuntimeException(ex)
+    }
   }
 }

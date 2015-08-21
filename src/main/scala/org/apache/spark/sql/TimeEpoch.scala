@@ -3,10 +3,10 @@ package org.apache.spark.sql
 /**
  * Manages a time epoch and how to index into it.
  */
-class TimeEpoch(val windowSize: Long, val epoch0: Long) {
+class TimeEpoch(val windowSize: Long, val epoch0: Long, var t: Long) {
   val MAX_J = 16 // Using Int.MaxValue is waayyyyyyyyyyyy to computationally expensive
   // we are talking exponents here, so 2^64 ought to be big enough for anyone?
-  var t: Long = 0 // t: The current time epoch
+  //var t: Long = 0 // t: The current time epoch
 
   // TODO: Right now, we treat time as going up one tick per batch, but
   // windowSize and epoch0 are put in place so we can have a time-tick be

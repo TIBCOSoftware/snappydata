@@ -5,17 +5,29 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
-
+import scala.reflect.runtime.{ universe => ru }
 import io.snappydata.util.NumberUtils
 import org.apache.spark.sql.collection.{ BoundedSortedSet, SegmentMap }
 import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
 import org.apache.spark.util.collection.OpenHashSet
+import com.esotericsoftware.kryo.KryoSerializable
+import com.esotericsoftware.kryo.Kryo
+import com.esotericsoftware.kryo.io.Output
+import com.esotericsoftware.kryo.io.Input
+import scala.collection.mutable.MutableList
 
-final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
-  val epoch0: Long, val topKActual: Int, startIntervalGenerator: Boolean,
-  partitionID: Int, name: String)
-  extends Hokusai[T](cmsParams, windowSize, epoch0, startIntervalGenerator) with TopK {
-  val topKInternal = topKActual * 2
+final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
+  epoch0: Long, val topKActual: Int, taAgg: MutableList[CountMinSketch[T]],
+  iaAgg: MutableList[CountMinSketch[T]], intervalTracker: IntervalTracker, initialInterval: Long)(implicit val ev: ClassTag[T])
+  extends Hokusai[T](cmsParams, windowSize, epoch0, taAgg, iaAgg, intervalTracker,
+    initialInterval) with TopK {
+
+  def this(cmsParams: CMSParams, windowSize: Long,
+    epoch0: Long, topKActual: Int)(implicit t: ClassTag[T]) = this(cmsParams, windowSize,
+    epoch0, topKActual, new MutableList[CountMinSketch[T]],
+    new MutableList[CountMinSketch[T]], new IntervalTracker(), 0)
+
+  var topKInternal = topKActual * 2
 
   private val queryTillLastNTopK_Case1: (Array[T]) => () => Array[(T, Approximate)] = (combinedKeys: Array[T]) => {
     () =>
@@ -224,86 +236,77 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
     TopKCMS.merge[T](estimators(1).asInstanceOf[TopKCMS[T]].topKInternal * 2, estimators)
 
   def getTopKTillTime(epoch: Long, combinedKeys: Array[T] = null): Option[Array[(T, Approximate)]] = {
-    this.rwlock.executeInReadLock(
-      this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
-        val interval = if (x > timeEpoch.t) {
-          timeEpoch.t
-        } else {
-          x
-        }
-        Some(this.taPlusIa.queryLastNIntervals[Array[(T, Approximate)]](
-          this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
-          queryTillLastNTopK_Case1(combinedKeys), queryTillLastNTopK_Case2(_, combinedKeys),
-          queryTillLastNTopK_Case3(_, _, _, _, combinedKeys),
-          queryTillLastNTopK_Case4(_, _, _, _, combinedKeys)))
 
-      }), true)
+    this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
+      val interval = if (x > timeEpoch.t) {
+        timeEpoch.t
+      } else {
+        x
+      }
+      Some(this.taPlusIa.queryLastNIntervals[Array[(T, Approximate)]](
+        this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
+        queryTillLastNTopK_Case1(combinedKeys), queryTillLastNTopK_Case2(_, combinedKeys),
+        queryTillLastNTopK_Case3(_, _, _, _, combinedKeys),
+        queryTillLastNTopK_Case4(_, _, _, _, combinedKeys)))
+
+    })
 
   }
 
   def getTopKForCurrentInterval: Option[Array[(T, Approximate)]] =
-    this.rwlock.executeInReadLock({
-      Some(this.mBar.asInstanceOf[TopKCMS[T]].getTopK)
-    }, true)
+    Some(this.mBar.asInstanceOf[TopKCMS[T]].getTopK)
 
   def getTopKKeysForCurrentInterval: OpenHashSet[T] =
-    this.rwlock.executeInReadLock({
-      this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
-    }, true)
+    this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
 
   def getTopKInCurrentInterval[T](): Array[(T, Approximate)] =
-    this.rwlock.executeInReadLock({
-      this.mBar.asInstanceOf[TopKCMS[T]].getTopK
-    }, true)
+    this.mBar.asInstanceOf[TopKCMS[T]].getTopK
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
     epochTo: Long): Option[mutable.Set[T]] = {
-    this.rwlock.executeInReadLock(
-      {
-        val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
-          case Some(x) => x
-          case None => return None
-        }
-        Some(this.getCombinedTopKKeysBetween(later, earlier))
-      }, true)
+
+    val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
+      case Some(x) => x
+      case None => return None
+    }
+    Some(this.getCombinedTopKKeysBetween(later, earlier))
+
   }
 
   def getCombinedTopKKeysTillTime(epoch: Long): Option[Array[T]] = {
-    this.rwlock.executeInReadLock(
-      this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
-        val interval = if (x > timeEpoch.t) {
-          timeEpoch.t
-        } else {
-          x
-        }
-        Some(this.taPlusIa.queryLastNIntervals[Array[T]](
-          this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
-          combinedKeysTillLastNTopK_Case1, combinedKeysTillLastNTopK_Case2(_),
-          combinedKeysTillLastNTopK_Case3(_, _, _, _),
-          combinedKeysTillLastNTopK_Case4(_, _, _, _)))
 
-      }), true)
+    this.timeEpoch.timestampToInterval(epoch).flatMap(x => {
+      val interval = if (x > timeEpoch.t) {
+        timeEpoch.t
+      } else {
+        x
+      }
+      Some(this.taPlusIa.queryLastNIntervals[Array[T]](
+        this.taPlusIa.convertIntervalBySwappingEnds(interval.asInstanceOf[Int]).asInstanceOf[Int],
+        combinedKeysTillLastNTopK_Case1, combinedKeysTillLastNTopK_Case2(_),
+        combinedKeysTillLastNTopK_Case3(_, _, _, _),
+        combinedKeysTillLastNTopK_Case4(_, _, _, _)))
+
+    })
 
   }
 
-  override def getPartitionID: Int = this.partitionID
-  override def getName: String = this.name
   override def isStreamSummary: Boolean = false
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
-    this.rwlock.executeInReadLock({
+    {
       val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) if x._1 > taPlusIa.ia.aggregates.size => (taPlusIa.ia.aggregates.size, x._2)
         case Some(x) => x
         case None => return None
       }
       Some(this.getTopKBetweenTime(later, earlier, combinedTopKKeys))
-    }, true)
+    }
 
   def getTopKKeysBetweenTime(epochFrom: Long,
     epochTo: Long): Option[OpenHashSet[T]] =
-    this.rwlock.executeInReadLock({
+    {
       val (later, earlier) = this.timeEpoch.convertEpochToIntervals(epochFrom, epochTo) match {
         case Some(x) => x
         case None => return None
@@ -316,7 +319,7 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       } else {
         None
       }
-    }, true)
+    }
 
   def getTopKBetweenTime(later: Int, earlier: Int, combinedTopKKeys: Array[T]): Array[(T, Approximate)] = {
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
@@ -454,11 +457,12 @@ final class TopKHokusai[T: ClassTag](cmsParams: CMSParams, val windowSize: Long,
       TopKHokusai.newZeroCMS[T](cmsParams.depth, cmsParams.width, cmsParams.hashA, topKActual,
         topKInternal * (powerOf2 + 1), cmsParams.confidence, cmsParams.eps)
     }
+
 }
 
 object TopKHokusai {
   // TODO: Resolve the type of TopKHokusai
-  private final val topKMap = new mutable.HashMap[String, mutable.HashMap[Int, TopK]]
+  // private final val topKMap = new mutable.HashMap[String, mutable.HashMap[Int, TopK]]
   private final val mapLock = new ReentrantReadWriteLock
 
   def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int,
@@ -475,94 +479,69 @@ object TopKHokusai {
     }
   }*/
 
-  def apply[T: ClassTag](name: String, cms: CMSParams, size: Int,
-    tsCol: Int, timeInterval: Long, epoch0: () => Long, partitionID: Int): TopK = {
-    lookupOrAdd[T](name, cms, size, tsCol, timeInterval, epoch0, partitionID)
+  def write(kryo: Kryo, output: Output, obj: TopKHokusai[_]) {
+    //TopK params
+    kryo.writeObject(output, obj.ev)
+    output.writeInt(obj.topKActual)
+    CMSParams.write(kryo, output, obj.cmsParams)
+    output.writeLong(obj.windowSize)
+    output.writeLong(obj.epoch0)
+
+    //Hokusai params
+    val taAggs = obj.taPlusIa.ta.aggregates
+    output.writeInt(taAggs.length)
+    taAggs.foreach { x =>
+      val bytes = CountMinSketch.serialize(x)
+      output.writeInt(bytes.length)
+      output.writeBytes(bytes)
+    }
+
+    val itemAggs = obj.taPlusIa.ia.aggregates
+    output.writeInt(itemAggs.length)
+    itemAggs.foreach { x =>
+      val bytes = CountMinSketch.serialize(x)
+      output.writeInt(bytes.length)
+      output.writeBytes(bytes)
+    }
+    IntervalTracker.write(kryo, output, obj.taPlusIa.intervalTracker)
+    val bytes = TopKCMS.serialize(obj.mBar.asInstanceOf[TopKCMS[_]])
+    output.writeInt(bytes.length)
+    output.writeBytes(bytes)
+    output.writeLong(obj.timeEpoch.t)
+
   }
 
-  def get(name: String, partitionID: Int): TopK = {
-    topKMap.get(name).getOrElse(throw new IllegalStateException("TopK should have been present"))
-    .get(partitionID).getOrElse(throw new IllegalStateException("TopK should have been present"))
+  def read(kryo: Kryo, input: Input): TopKHokusai[_] = {
+    val classTag = kryo.readObject[ClassTag[Any]](input, classOf[ClassTag[Any]])
+    val topKActual = input.readInt
+    val cmsParams = CMSParams.read(kryo, input)
+    val windowSize = input.readLong
+    val epoch0 = input.readLong
+    val lenTA = input.readInt
+    val aggregatesTA = MutableList.fill(lenTA)({
+      val bytes = input.readBytes(input.readInt)
+      CountMinSketch.deserialize(bytes)(classTag)
+    })
+    val lenIA = input.readInt
+    val aggregatesIA = MutableList.fill(lenIA)({
+      val bytes = input.readBytes(input.readInt)
+      CountMinSketch.deserialize(bytes)(classTag)
+    })
+    val intervalTracker = IntervalTracker.read(kryo, input)
+    val bytes = input.readBytes(input.readInt)
+    val mBar = TopKCMS.deserialize(bytes)(classTag)
+    val t = input.readLong
+
+    new TopKHokusai(cmsParams, windowSize,
+      epoch0, topKActual, aggregatesTA, aggregatesIA,
+      intervalTracker, t)(classTag)
   }
-  private[sql] def lookupOrAdd[T: ClassTag](name: String, cms: CMSParams,
+
+  def create[T: ClassTag](cms: CMSParams,
     size: Int, tsCol: Int, timeInterval: Long,
-    epoch0: () => Long, partitionID: Int): TopK = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
-    } match {
-      case Some(partMap) => {
-        SegmentMap.lock(mapLock.writeLock) {
-          partMap.get(partitionID) match {
-            case Some(topK) => topK match {
-              case x: TopKHokusai[_] => x
-              case _ =>
-                val topKK = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, 
-                  partitionID, name)
-                partMap(partitionID) = topKK
-                topKK
-            }
-            case None =>
-              partMap.getOrElse(partitionID, {
-                val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-                  timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, 
-                  partitionID, name)
-                partMap(partitionID) = topk
-                topk
-              })
-          }
-        }
-      }
-      case None =>
-        // insert into global map but double-check after write lock
-        SegmentMap.lock(mapLock.writeLock) {
-          val partMap = topKMap.getOrElse(name, {
-            val newPartMap = new mutable.HashMap[Int, TopK]
-            topKMap(name) = newPartMap
-            newPartMap
-          })
-          partMap.getOrElse(partitionID, {
-            val topk = new TopKHokusai[T](cms, timeInterval, epoch0(), size,
-              timeInterval > 0 && timeInterval != Long.MaxValue && tsCol < 0, 
-              partitionID, name)
-            partMap(partitionID) = topk
-            topk
-          })
-        }
-    }
-  }
+    epoch0: () => Long): TopK = new TopKHokusai[T](cms, timeInterval, epoch0(), size)
 
-  private[sql] def lookupOrAddDummy(name: String, partitionID: Int): TopK = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name)
-    } match {
-      case Some(partMap) => partMap.get(partitionID) match {
-        case Some(topK) => topK
-        case None =>
-          SegmentMap.lock(mapLock.writeLock) {
-            partMap.getOrElse(partitionID, {
-              val topK = new TopKStub(name, partitionID, false)
-              partMap(partitionID) = topK
-              topK
-            })
-          }
-      }
-      case None =>
-        // insert into global map but double-check after write lock
-        SegmentMap.lock(mapLock.writeLock) {
-          val partMap = topKMap.getOrElse(name, {
-            val newPartMap = new mutable.HashMap[Int, TopK]
-            topKMap(name) = newPartMap
-            newPartMap
-          })
-          partMap.getOrElse(partitionID, {
-            val topK = new TopKStub(name, partitionID, false)
-            partMap(partitionID) = topK
-            topK
-          })
-        }
-    }
-  }
+  def createDummy[T: ClassTag](isStreamSummary: Boolean): TopK = new TopKStub(isStreamSummary)
 
 }
 

@@ -5,6 +5,11 @@ import org.apache.spark.sql.execution.{ CMSParams, Hokusai }
 import scala.io.Source
 import org.scalatest._
 import Inspectors._ // picks up forAll () {}
+import org.apache.spark.sql.execution.cms.CountMinSketch
+import scala.collection.mutable.MutableList
+import org.apache.spark.sql.execution.IntervalTracker
+
+
 
 /**
  * Spec for Hokusai TimeAggregation
@@ -136,7 +141,8 @@ class HokusaiSpec extends FlatSpec with Matchers {
 */
 
   "Hokusai TimeAggregation" should "be correct after n epochs" in {
-    val h = new Hokusai[Long](cmsParams, 1, 0, false)
+    val h = new Hokusai[Long](cmsParams, 1, 0, MutableList[CountMinSketch[Long]](),
+        MutableList[CountMinSketch[Long]](), new IntervalTracker(), 0)
     // Every epoch, we will count 5 occurrences of 1L
     // So, each successive m(j) should have 2^j * 5?
 
