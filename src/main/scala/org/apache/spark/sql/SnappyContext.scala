@@ -42,7 +42,7 @@ import org.apache.spark.sql.LockUtils.ReadWriteLock
 
 protected[sql] final class SnappyContext(sc: SparkContext)
   extends SQLContext(sc) with Serializable {
-  
+
   self =>
 
   // initialize GemFireXDDialect so that it gets registered
@@ -50,7 +50,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
-  
+
   @transient
   val topKLocks = scala.collection.mutable.Map[String, ReadWriteLock]()
 
@@ -375,9 +375,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     startTime: Long, endTime: Long, k: Int): DataFrame = {
     val topKTableName = catalog.newQualifiedTableName(topKIdent)
     topKLocks(topKTableName.toString()).executeInReadLock {
-      val (topkWrapper, rdd) = catalog.topKStructures(topKTableName)   
+      val (topkWrapper, rdd) = catalog.topKStructures(topKTableName)
       //requery the catalog to obtain the TopKRDD
-     
+
       val size = if (k > 0) k else topkWrapper.size
 
       val topKName = topKTableName.qualifiedName
@@ -582,7 +582,7 @@ object SnappyContext {
   }
 
   def getEpoch0AndIterator[T: ClassTag](name: String, topkWrapper: TopKWrapper,
-    iterator: Iterator[(T, Any)]): (() => Long, Iterator[(T, Any)], Int) = {
+    iterator: Iterator[Any]): (() => Long, Iterator[Any], Int) = {
     if (iterator.hasNext) {
       var tupleIterator = iterator
       val tsCol = if (topkWrapper.timeInterval > 0)
@@ -593,8 +593,8 @@ object SnappyContext {
           topkWrapper.epoch
         } else if (tsCol >= 0) {
           var epoch0 = -1L
-          val iter = tupleIterator.asInstanceOf[Iterator[(T, (Long, Long))]]
-          val tupleBuf = new mutable.ArrayBuffer[(T, (Long, Long))](4)
+          val iter = tupleIterator.asInstanceOf[Iterator[(T, Any)]]
+          val tupleBuf = new mutable.ArrayBuffer[(T, Any)](4)
 
           // assume first row will have the least time
           // TODO: this assumption may not be correct and we may need to
@@ -602,7 +602,8 @@ object SnappyContext {
           do {
             val tuple = iter.next()
             epoch0 = tuple match {
-              case (_, (_, epochh)) => epochh
+              case (_, (_, epochh: Long)) => epochh
+              case (_, epochh: Long) => epochh
             }
 
             tupleBuf += tuple.copy()
@@ -621,7 +622,7 @@ object SnappyContext {
   }
 
   def addDataForTopK[T: ClassTag](topKWrapper: TopKWrapper,
-    tupleIterator: Iterator[(T, Any)], topK: TopK, tsCol: Int, time: Long): Unit = {
+    tupleIterator: Iterator[Any], topK: TopK, tsCol: Int, time: Long): Unit = {
 
     val streamSummaryAggr: StreamSummaryAggregation[T] = if (topKWrapper.stsummary) {
       topK.asInstanceOf[StreamSummaryAggregation[T]]
@@ -641,11 +642,13 @@ object SnappyContext {
       }
       topKWrapper.frequencyCol match {
         case None =>
-          topKHokusai.addEpochData(
-            tupleIterator.map(_._1).toSeq)
+           topKHokusai.addEpochData(tupleIterator.asInstanceOf[Iterator[T]].
+               toSeq.foldLeft(
+                   scala.collection.mutable.Map.empty[T, Long]){ 
+             (m,x) => m +  ((x,m.getOrElse(x, 0l) + 1 )) 
+             }, time)
         case Some(freqCol) =>
           val datamap = mutable.Map[T, Long]()
-
           tupleIterator.asInstanceOf[Iterator[(T, Long)]] foreach {
             case (key, freq) =>
               datamap.get(key) match {
@@ -687,7 +690,7 @@ object SnappyContext {
     context: SnappyContext, name: QualifiedTableName, topKRDD: RDD[(Int, TopK)],
     time: Long) {
     val partitioner = topKRDD.partitioner.get
-    val pairRDD = rows.map[(Int, (Any, Any))](topkWrapper.rowToTupleConverter(_, partitioner))
+    val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
     val nameAsString = name.toString
     val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitions[(Int, TopK)](
       iterator => {
@@ -698,7 +701,7 @@ object SnappyContext {
           case y: StreamSummaryAggregation[_] => y
           case z =>
             val (epoch0, iter, tsCol) = getEpoch0AndIterator[T](nameAsString, topkWrapper,
-              dataIterable.asInstanceOf[Iterable[(T, Any)]].iterator)
+              dataIterable.iterator)
             if (topkWrapper.stsummary) {
               StreamSummaryAggregation.create[T](topkWrapper.size,
                 topkWrapper.timeInterval, epoch0, topkWrapper.maxinterval)
@@ -712,7 +715,7 @@ object SnappyContext {
         else -1
 
         SnappyContext.addDataForTopK[T](topkWrapper,
-          dataIterable.asInstanceOf[Iterable[(T, Any)]].iterator,
+          dataIterable.iterator,
           topK, tsCol, time)
 
         scala.collection.Iterator(key -> topK)
