@@ -469,16 +469,7 @@ object TopKHokusai {
     topKInternal: Int, confidence: Double, eps: Double) =
     new TopKCMS[T](topKActual, topKInternal, depth, width, hashA, confidence, eps)
 
-  /*
-  def apply[T](name: String): Option[TopKHokusai[T]] = {
-    SegmentMap.lock(mapLock.readLock) {
-      topKMap.get(name) match {
-        case Some(tk) => Some(tk.asInstanceOf[TopKHokusai[T]])
-        case None => None
-      }
-    }
-  }*/
-
+  
   def write(kryo: Kryo, output: Output, obj: TopKHokusai[_]) {
     //TopK params
     kryo.writeObject(output, obj.ev)
@@ -508,7 +499,6 @@ object TopKHokusai {
     output.writeInt(bytes.length)
     output.writeBytes(bytes)
     output.writeLong(obj.timeEpoch.t)
-
   }
 
   def read(kryo: Kryo, input: Input): TopKHokusai[_] = {

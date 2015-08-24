@@ -29,6 +29,9 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{ StreamingContext, Time }
 import org.apache.spark.{ Partitioner, SparkContext, TaskContext }
 import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.LockUtils.ReadWriteLock
+import org.apache.spark.sql.LockUtils.ReadWriteLock
+import org.apache.spark.sql.LockUtils.ReadWriteLock
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -39,7 +42,7 @@ import org.apache.spark.sql.hive.QualifiedTableName
 
 protected[sql] final class SnappyContext(sc: SparkContext)
   extends SQLContext(sc) with Serializable {
-
+  
   self =>
 
   // initialize GemFireXDDialect so that it gets registered
@@ -47,6 +50,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
+  
+  @transient
+  val topKLocks = scala.collection.mutable.Map[String, ReadWriteLock]()
 
   override protected[sql] def dialectClassName = if (conf.dialect == "sql") {
     classOf[SnappyParserDialect].getCanonicalName
@@ -368,11 +374,10 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   def queryTopK[T: ClassTag](topKIdent: String,
     startTime: Long, endTime: Long, k: Int): DataFrame = {
     val topKTableName = catalog.newQualifiedTableName(topKIdent)
-
-    val (topkWrapper, _) = catalog.topKStructures(topKTableName)
-    topkWrapper.rwlock.executeInReadLock {
+    topKLocks(topKTableName.toString()).executeInReadLock {
+      val (topkWrapper, rdd) = catalog.topKStructures(topKTableName)   
       //requery the catalog to obtain the TopKRDD
-      val (_, rdd) = catalog.topKStructures(topKTableName)
+     
       val size = if (k > 0) k else topkWrapper.size
 
       val topKName = topKTableName.qualifiedName
@@ -615,7 +620,7 @@ object SnappyContext {
     }
   }
 
-  def addDataForTopK[T: ClassTag](name: String, topKWrapper: TopKWrapper,
+  def addDataForTopK[T: ClassTag](topKWrapper: TopKWrapper,
     tupleIterator: Iterator[(T, Any)], topK: TopK, tsCol: Int, time: Long): Unit = {
 
     val streamSummaryAggr: StreamSummaryAggregation[T] = if (topKWrapper.stsummary) {
@@ -692,7 +697,6 @@ object SnappyContext {
           case x: TopKHokusai[_] => x
           case y: StreamSummaryAggregation[_] => y
           case z =>
-
             val (epoch0, iter, tsCol) = getEpoch0AndIterator[T](nameAsString, topkWrapper,
               dataIterable.asInstanceOf[Iterable[(T, Any)]].iterator)
             if (topkWrapper.stsummary) {
@@ -707,7 +711,7 @@ object SnappyContext {
           topkWrapper.timeSeriesColumn
         else -1
 
-        SnappyContext.addDataForTopK[T](nameAsString, topkWrapper,
+        SnappyContext.addDataForTopK[T](topkWrapper,
           dataIterable.asInstanceOf[Iterable[(T, Any)]].iterator,
           topK, tsCol, time)
 
@@ -720,7 +724,7 @@ object SnappyContext {
     context.catalog.topKStructures.put(name, topkWrapper -> newTopKRDD)
     //Unpersist old rdd in a write lock
 
-    topkWrapper.rwlock.executeInWriteLock {
+    context.topKLocks(name.toString()).executeInWriteLock {
       topKRDD.unpersist(false)
     }
   }
@@ -752,6 +756,7 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     val clazz = SqlUtils.getInternalType(
       topKWrapper.schema(topKWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
+    context.topKLocks += name.toString() -> new ReadWriteLock()
     val topKRDD = SnappyContext.createTopKRDD(name.toString, context.sparkContext, topKWrapper.stsummary)
     context.catalog.topKStructures.put(name, topKWrapper -> topKRDD)
     SnappyContext.populateTopK(df.rdd, topKWrapper, context,

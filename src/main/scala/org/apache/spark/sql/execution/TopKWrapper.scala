@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.{ DataType, StructField, StructType }
 import org.apache.spark.sql.Row
 import org.apache.spark.Partitioner
 import org.apache.spark.sql.{ TimeEpoch, LockUtils }
-import org.apache.spark.sql.LockUtils.ReadWriteLock
+
 
 
 protected[sql] final class TopKWrapper(val name: QualifiedTableName,
@@ -19,7 +19,7 @@ protected[sql] final class TopKWrapper(val name: QualifiedTableName,
     val frequencyCol: Option[Int], val epoch: Long, val maxinterval: Int,
     val stsummary: Boolean, val streamTable: Option[QualifiedTableName])
     extends CastLongTime with Serializable {
-  @transient val rwlock = new ReadWriteLock()
+  
   val rowToTupleConverter: (Row, Partitioner) => (Int, (Any, Any)) = TopKWrapper.getRowToTupleConverter(this)
 
   override protected def getNullMillis(getDefaultForNull: Boolean) =
