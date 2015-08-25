@@ -32,6 +32,7 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.LockUtils.ReadWriteLock
+import org.apache.spark.sql.execution.TopKStub
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -382,7 +383,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
       val topKName = topKTableName.qualifiedName
       if (topkWrapper.stsummary) {
-
         queryTopkStreamSummary(topKName, startTime, endTime, topkWrapper, size, rdd)
       } else {
         queryTopkHokusai(topKName, startTime, endTime, topkWrapper, rdd, size)
@@ -571,10 +571,10 @@ object SnappyContext {
 
   def createTopKRDD(name: String, context: SparkContext, isStreamSummary: Boolean): RDD[(Int, TopK)] = {
     val partCount = Utils.getAllExecutorsMemoryStatus(context).
-      keySet.size
+      keySet.size * Runtime.getRuntime.availableProcessors()*2
     Utils.getFixedPartitionRDD[(Int, TopK)](context,
       (tc: TaskContext, part: Partition) => {
-        scala.collection.Iterator(part.index -> TopKHokusai.createDummy(isStreamSummary))
+        scala.collection.Iterator(part.index -> TopKHokusai.createDummy)
       }, new Partitioner() {
         override def numPartitions: Int = partCount
         override def getPartition(key: Any) = scala.math.abs(key.hashCode()) % partCount
@@ -690,35 +690,61 @@ object SnappyContext {
     context: SnappyContext, name: QualifiedTableName, topKRDD: RDD[(Int, TopK)],
     time: Long) {
     val partitioner = topKRDD.partitioner.get
-    val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
+    //val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
+    val batches = mutable.ArrayBuffer.empty[(Int, mutable.ArrayBuffer[Any])]
+    val pairRDD = rows.mapPartitions[(Int, mutable.ArrayBuffer[Any])](iter=> {
+       val map =  iter.foldLeft(mutable.Map.empty[Int, mutable.ArrayBuffer[Any]])((m,x) => {
+         val(partitionID, elem) = topkWrapper.rowToTupleConverter(x, partitioner)
+         val list =  m.getOrElse(partitionID, mutable.ArrayBuffer[Any]()) += elem
+         if(list.size > 1000) {
+           batches += partitionID -> list
+           m -= partitionID
+         }else {
+           m += (partitionID -> list)
+         }
+         m
+       })
+       map.toIterator ++ batches.iterator      
+     }, true)
+    
     val nameAsString = name.toString
     val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitions[(Int, TopK)](
       iterator => {
         val (key, (topkIterable, dataIterable)) = iterator.next()
-
-        val topK = topkIterable.head match {
-          case x: TopKHokusai[_] => x
-          case y: StreamSummaryAggregation[_] => y
-          case z =>
+        val tsCol = if (topkWrapper.timeInterval > 0)
+          topkWrapper.timeSeriesColumn
+        else -1
+        
+        topkIterable.head match {         
+          case z: TopKStub =>
+            val totalDataIterable = dataIterable.foldLeft[mutable.ArrayBuffer[Any]](mutable.ArrayBuffer.empty[Any])( (m,x) => {
+            if(m.size > x.size) {
+              m ++= x
+            }else {
+              x ++= m
+            }
+            })
             val (epoch0, iter, tsCol) = getEpoch0AndIterator[T](nameAsString, topkWrapper,
-              dataIterable.iterator)
-            if (topkWrapper.stsummary) {
+              totalDataIterable.iterator)
+            val topK =  if (topkWrapper.stsummary) {
               StreamSummaryAggregation.create[T](topkWrapper.size,
                 topkWrapper.timeInterval, epoch0, topkWrapper.maxinterval)
             } else {
               TopKHokusai.create[T](topkWrapper.cms, topkWrapper.size,
                 tsCol, topkWrapper.timeInterval, epoch0)
             }
+            SnappyContext.addDataForTopK[T](topkWrapper,
+            iter, topK, tsCol, time)
+            scala.collection.Iterator(key -> topK)
+           
+          case topK: TopK =>   
+            dataIterable.foreach { x =>  SnappyContext.addDataForTopK[T](topkWrapper,
+             x.iterator,  topK, tsCol, time) 
+          }
+            
+          scala.collection.Iterator(key -> topK)
         }
-        val tsCol = if (topkWrapper.timeInterval > 0)
-          topkWrapper.timeSeriesColumn
-        else -1
-
-        SnappyContext.addDataForTopK[T](topkWrapper,
-          dataIterable.iterator,
-          topK, tsCol, time)
-
-        scala.collection.Iterator(key -> topK)
+        
       }, true)
 
     newTopKRDD.persist()

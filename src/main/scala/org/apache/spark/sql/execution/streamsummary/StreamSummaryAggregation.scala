@@ -59,8 +59,7 @@ class StreamSummaryAggregation[T](val capacity: Int, val intervalSize: Long,
 
   }
 
-  override def isStreamSummary: Boolean = true
-
+  
   def queryIntervals(start: Int, end: Int, k: Int) = {
     val topkFromAllIntervals = new mutable.MutableList[Counter[T]]
 

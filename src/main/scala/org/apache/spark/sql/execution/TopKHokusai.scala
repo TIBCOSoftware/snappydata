@@ -291,7 +291,7 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
 
   }
 
-  override def isStreamSummary: Boolean = false
+  
 
   def getTopKBetweenTime(epochFrom: Long, epochTo: Long,
     combinedTopKKeys: Array[T] = null): Option[Array[(T, Approximate)]] =
@@ -531,7 +531,7 @@ object TopKHokusai {
     size: Int, tsCol: Int, timeInterval: Long,
     epoch0: () => Long): TopK = new TopKHokusai[T](cms, timeInterval, epoch0(), size)
 
-  def createDummy[T: ClassTag](isStreamSummary: Boolean): TopK = new TopKStub(isStreamSummary)
+  def createDummy: TopK = new TopKStub()
 
 }
 
