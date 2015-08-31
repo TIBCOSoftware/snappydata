@@ -1,38 +1,33 @@
 package org.apache.spark.sql
 
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{ universe => u }
+import scala.reflect.runtime.{universe => u}
+
 import io.snappydata.util.SqlUtils
 import org.apache.spark.rdd.RDD
-import org.apache.spark.Partition
 import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
-import org.apache.spark.sql.catalyst.plans.logical.{ LogicalPlan, Subquery }
-import org.apache.spark.sql.catalyst.{ CatalystTypeConverters, ScalaReflection }
-import org.apache.spark.sql.collection.{ UUIDRegionKey, Utils }
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
-import org.apache.spark.Partitioner
-import org.apache.spark.rdd.PairRDDFunctions
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.sources.{ CastLongTime, LogicalRelation, StoreStrategy, WeightageRule }
-import org.apache.spark.sql.types.{ LongType, StructField, StructType }
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.sources._
+import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{ StreamingContext, Time }
-import org.apache.spark.{ Partitioner, SparkContext, TaskContext }
-import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.LockUtils.ReadWriteLock
-import org.apache.spark.sql.LockUtils.ReadWriteLock
-import org.apache.spark.sql.LockUtils.ReadWriteLock
-import org.apache.spark.sql.execution.TopKStub
+import org.apache.spark.streaming.{StreamingContext, Time}
+import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied SQLContext
@@ -253,17 +248,82 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val topKRDD = SnappyContext.createTopKRDD(tableName, this.sc, isStreamSummary)
     catalog.registerTopK(tableName, streamTableName,
       catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
+  }
 
+  override def createExternalTable(
+      tableName: String,
+      provider: String,
+      options: Map[String, String]): DataFrame = {
+    createExternalTable(tableName, provider, None, options,
+      allowExisting = false)
+  }
+
+  override def createExternalTable(
+      tableName: String,
+      provider: String,
+      schema: StructType,
+      options: Map[String, String]): DataFrame = {
+    createExternalTable(tableName, provider, Some(schema), options,
+      allowExisting = false)
   }
 
   /**
-   * Registers the given [[DataFrame]] as a external table in the catalog.
+   * Create an external table with given options.
    */
-  private[sql] def registerExternalTable(df: DataFrame, tableName: String): Unit = {
-    catalog.registerTable(Seq(tableName), df.logicalPlan)
+  def createExternalTable(
+      tableName: String,
+      provider: String,
+      userSpecifiedSchema: Option[StructType],
+      options: Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+
+    if (catalog.tableExists(tableName)) {
+      if (allowExisting) {
+        return table(tableName)
+      } else {
+        throw new AnalysisException(
+          s"createExternalTable: Table $tableName already exists.")
+      }
+    }
+
+    // add tableName in properties if not already present
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val params = options.keysIterator.collectFirst {
+      case key if key.equalsIgnoreCase(dbtableProp) => options
+    }.getOrElse(options + (dbtableProp -> tableName))
+    val resolved = ResolvedDataSource(
+      this, userSpecifiedSchema, Array.empty[String], provider, params)
+
+    val plan = LogicalRelation(resolved.relation)
+    catalog.registerExternalTable(tableName, userSpecifiedSchema,
+      provider, options, LogicalRelation(resolved.relation))
+    DataFrame(this, plan)
   }
 
-  // insert/update/delete/drop operations on an external table
+  /**
+   * Drop an external table created by a call to createExternalTable.
+   */
+  def dropExternalTable(tableName: String, ifExists: Boolean): Unit = {
+    val df = try {
+      table(tableName)
+    } catch {
+      case ae: AnalysisException =>
+        if (ifExists) return else throw ae
+    }
+    // additional cleanup for external tables, if required
+    snappy.unwrapSubquery(df.logicalPlan) match {
+      case LogicalRelation(br) =>
+        cacheManager.tryUncacheQuery(df)
+        catalog.unregisterExternalTable(tableName)
+        br match {
+          case d: DeletableRelation => d.destroy(ifExists)
+        }
+      case _ => throw new AnalysisException(
+        s"dropExternalTable: Table $tableName not an external table")
+    }
+  }
+
+  // insert/update/delete operations on an external table
 
   def insert(tableName: String, rows: Row*): Int = {
     catalog.lookupRelation(tableName) match {
@@ -291,22 +351,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
   }
 
-  def dropExternalTable(tableName: String): Unit = {
-    val df = table(tableName)
-    // additional cleanup for external tables, if required
-    df.logicalPlan match {
-      case LogicalRelation(br) =>
-        cacheManager.tryUncacheQuery(df)
-        catalog.unregisterTable(Seq(tableName))
-        br match {
-          case d: DeletableRelation => d.destroy()
-        }
-      case _ => throw new AnalysisException(
-        s"Table $tableName not an external table")
-    }
-  }
-
-  // end of insert/update/delete/drop operations
+  // end of insert/update/delete operations
 
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
@@ -488,22 +533,25 @@ object snappy extends Serializable {
     }
   }
 
-  private def stratifiedSampleOrError(plan: LogicalPlan): StratifiedSample = {
+  def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case ss: StratifiedSample => ss
-      case Subquery(_, child) => stratifiedSampleOrError(child)
-      case s => throw new AnalysisException("Stratified sampling " +
-        "operations require stratifiedSample plan and not " +
-        s"${s.getClass.getSimpleName}")
+      case Subquery(_, child) => unwrapSubquery(child)
+      case _ => plan
     }
   }
 
   implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
     df.sqlContext match {
       case sc: SnappyContext =>
-        new SampleDataFrame(sc, stratifiedSampleOrError(df.logicalPlan))
+        unwrapSubquery(df.logicalPlan) match {
+          case ss: StratifiedSample =>
+            new SampleDataFrame(sc, ss)
+          case s => throw new AnalysisException("Stratified sampling " +
+              "operations require stratifiedSample plan and not " +
+              s"${s.getClass.getSimpleName}")
+        }
       case sc => throw new AnalysisException("Extended snappy operations " +
-        s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
     }
   }
 
@@ -549,12 +597,6 @@ object snappy extends Serializable {
 }
 
 object SnappyContext {
-
-  /** The default version of hive used internally by Spark SQL. */
-  val hiveDefaultVersion: String = "0.13.1"
-
-  val HIVE_METASTORE_VERSION: String = "spark.sql.hive.metastore.version"
-  val HIVE_METASTORE_JARS: String = "spark.sql.hive.metastore.jars"
 
   private val atomicContext = new AtomicReference[SnappyContext]()
 

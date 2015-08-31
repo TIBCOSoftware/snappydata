@@ -240,7 +240,8 @@ class Hokusai[T: ClassTag](val cmsParams: CMSParams, val windowSize: Long, val e
                 // check if new slot has to be created
                 if (interval > (timeEpoch.t + 1)) {
                   if (interval > (timeEpoch.t + 2)) {
-                    println(s"SW: WARNING: got time stamp = $epoch more than twice beyond current")
+                    println(s"WARNING: got time stamp = $epoch " +
+                        s"more than twice beyond current")
                   }
                   val incrementAmount = interval - timeEpoch.t.asInstanceOf[Int] - 1
                   0 until incrementAmount foreach { _ =>
@@ -269,7 +270,8 @@ class Hokusai[T: ClassTag](val cmsParams: CMSParams, val windowSize: Long, val e
                 }
 
               }
-            case None => println(s"SW: WARNING: got epoch=$epoch with epoch0 as ${timeEpoch.epoch0}")
+            case None => println(s"WARNING: got epoch=$epoch with " +
+                s"epoch0 as ${timeEpoch.epoch0}")
           }
         } else {
           mBar.add(key, frequency)

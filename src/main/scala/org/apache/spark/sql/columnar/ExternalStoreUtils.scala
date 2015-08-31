@@ -1,19 +1,17 @@
 package org.apache.spark.sql.columnar
 
-import java.sql.{DriverManager, Connection}
+import java.sql.Connection
 import java.util.Properties
-
-import com.pivotal.gemfirexd.internal.client.net.NetConnection
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.row.{GemFireXDClientDialect, GemFireXDDialect, JDBCUpdatableRelation}
-import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcUtils, DriverRegistry}
 
 import scala.collection.mutable
 
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.row.{GemFireXDClientDialect, GemFireXDDialect, JDBCUpdatableRelation}
+import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects, JdbcUtils}
+
 /**
- * Created by kneeraj on 27/7/15.
+ * Utility methods used by external storage layers.
  */
 private[sql] object ExternalStoreUtils {
   // TODO: KN: copy of the method JDBCUpdatableSource.createStreamTable. Need to merge the two code.
@@ -35,8 +33,8 @@ private[sql] object ExternalStoreUtils {
       case Some("tomcat") => false
       case Some(p) =>
         throw new IllegalArgumentException("JDBCUpdatableRelation: " +
-          s"unsupported pool implementation '$p' " +
-          s"(supported values: tomcat, hikari)")
+            s"unsupported pool implementation '$p' " +
+            s"(supported values: tomcat, hikari)")
       case None => false
     }
     val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
@@ -52,19 +50,20 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    val allPoolProps = JDBCUpdatableRelation.getAllPoolProperties(url, driver.getOrElse(null), poolProps, hikariCP)
+    val allPoolProps = JDBCUpdatableRelation.getAllPoolProperties(url,
+      driver.orNull, poolProps, hikariCP)
     (url, driver, allPoolProps, connProps, hikariCP)
   }
 
-  def getPoolConnection(id: String, driver: Option[String], poolProps: Map[String, String],
-                        connProps: Properties, hikariCP: Boolean): Connection = {
+  def getPoolConnection(id: String, driver: Option[String],
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): Connection = {
     try {
       if (driver.isDefined) DriverRegistry.register(driver.get)
     } catch {
-      case cnfe: ClassNotFoundException =>
-        throw new IllegalArgumentException(s"Couldn't find driver class $driver", cnfe)
+      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
+        s"Couldn't find driver class $driver", cnfe)
     }
-
     ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
   }
 
@@ -75,11 +74,11 @@ private[sql] object ExternalStoreUtils {
   }
 
   def getConnectionType(url: String) = {
-      JdbcDialects.get(url) match {
-        case GemFireXDDialect => ConnectionType.Embedded
-        case GemFireXDClientDialect => ConnectionType.Net
-        case _ => ConnectionType.Unknown
-      }
+    JdbcDialects.get(url) match {
+      case GemFireXDDialect => ConnectionType.Embedded
+      case GemFireXDClientDialect => ConnectionType.Net
+      case _ => ConnectionType.Unknown
+    }
   }
 }
 
@@ -87,4 +86,3 @@ object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
 }
-

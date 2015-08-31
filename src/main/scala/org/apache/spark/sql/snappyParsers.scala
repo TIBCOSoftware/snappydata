@@ -4,13 +4,14 @@ import java.util.concurrent.atomic.AtomicReference
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.row.{JDBCUpdatableSource, JdbcExtendedUtils}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.{StreamRelation, Seconds, StreamingContext, StreamingContextState}
+import org.apache.spark.streaming.{Seconds, StreamRelation, StreamingContext, StreamingContextState}
 
 /**
  * Snappy SQL extensions. Includes:
@@ -67,7 +68,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable |
-        createStream | createSampled | strmctxt | createExternalTable
+        createStream | createSampled | strmctxt |
+        createExternalTable | dropExternalTable
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -77,6 +79,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val STOP = Keyword("STOP")
   protected val INIT = Keyword("INIT")
   protected val EXTERNAL = Keyword("EXTERNAL")
+  protected val DROP = Keyword("DROP")
 
 
   protected lazy val createStream: Parser[LogicalPlan] =
@@ -104,17 +107,28 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           StreamingCtxtActions(action, None)
 
     }
+
   protected lazy val createExternalTable: Parser[LogicalPlan] =
-    (CREATE ~> (EXTERNAL ~> (TABLE ~> ident)) ~
-        externalTableInput ~ (OPTIONS ~> options)) ^^ {
-      case tableName ~ userSpecifiedSchema ~ opts =>
-        val newOpts = opts +("tableschema" -> userSpecifiedSchema,
-            "dbtable" -> tableName)
+    (CREATE ~> EXTERNAL ~> TABLE ~> (IF ~> NOT <~ EXISTS).?) ~ ident ~
+        externalTableInput ~ (OPTIONS ~> options) ^^ {
+      case allowExisting ~ tableName ~ userSpecifiedSchema ~ opts =>
+        val newOpts = opts +(
+            JdbcExtendedUtils.DBTABLE_PROPERTY -> tableName,
+            JdbcExtendedUtils.SCHEMA_PROPERTY -> userSpecifiedSchema,
+            JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> String.valueOf(
+              allowExisting.isDefined))
         CreateExternalTableUsing(
           tableName,
           None,
-          "org.apache.spark.sql.execution.row.JDBCUpdatableSource",
+          classOf[JDBCUpdatableSource].getCanonicalName,
+          allowExisting.isDefined,
           new CaseInsensitiveMap(newOpts))
+    }
+
+  protected lazy val dropExternalTable: Parser[LogicalPlan] =
+    (DROP ~> EXTERNAL ~> TABLE ~> (IF ~> EXISTS).?) ~ ident ^^ {
+      case allowExisting ~ tableName =>
+        DropExternalTable(tableName, allowExisting.isDefined)
     }
 
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
@@ -125,7 +139,6 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
       val externalTableDefinition =
         remaining.substring(0, remaining.indexOf(OPTIONS.normalize))
       val others = remaining.substring(externalTableDefinition.length)
-      println(others)
       val reader = new PackratReader(new lexical.Scanner(others))
       Success(
         externalTableDefinition, reader)
@@ -137,12 +150,45 @@ private[sql] case class CreateExternalTableUsing(
     tableName: String,
     userSpecifiedSchema: Option[StructType],
     provider: String,
-    options: Map[String, String]
-    ) extends LogicalPlan with Command {
+    allowExisting: Boolean,
+    options: Map[String, String]) extends RunnableCommand {
 
   override def output: Seq[Attribute] = Seq.empty
 
   override def children: Seq[LogicalPlan] = Seq.empty
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    snc.createExternalTable(tableName, provider, userSpecifiedSchema, options,
+      allowExisting)
+    Seq.empty
+  }
+}
+
+private[sql] case class DropExternalTable(
+    tableName: String,
+    ifExists: Boolean) extends RunnableCommand {
+
+  override def output: Seq[Attribute] = Seq.empty
+
+  override def children: Seq[LogicalPlan] = Seq.empty
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    snc.dropExternalTable(tableName, ifExists)
+    Seq.empty
+  }
+}
+
+case class DMLExternalTable(
+    tableName: String,
+    child: LogicalPlan,
+    command: String)
+    extends LogicalPlan with Command {
+
+  override def children: Seq[LogicalPlan] = child :: Nil
+
+  override def output: Seq[Attribute] = child.output
 }
 
 object StreamStrategy extends Strategy {
@@ -158,18 +204,6 @@ object StreamStrategy extends Strategy {
         StreamingCtxtActionsCmd(action, batchInterval)) :: Nil
     case _ => Nil
   }
-}
-
-
-case class DMLExternalTable(
-    tableName: String,
-    child: LogicalPlan,
-    command: String)
-    extends LogicalPlan with Command {
-
-  override def children: Seq[LogicalPlan] = child :: Nil
-
-  override def output: Seq[Attribute] = child.output
 }
 
 private[sql] case class CreateStream(streamName: String,
@@ -214,7 +248,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
       Array.empty[String], "org.apache.spark.sql.sources.StreamSource", options)
     val plan = LogicalRelation(resolved.relation)
 
-    val catalog = sqlContext.asInstanceOf[SnappyContext].catalog
+    val catalog = SnappyContext(sqlContext.sparkContext).catalog
     val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
@@ -241,7 +275,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
       case 1 =>
         // Register sampling of all the streams
-        val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
+        val snappyCtxt = SnappyContext(sqlContext.sparkContext)
         val catalog = snappyCtxt.catalog
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
@@ -281,7 +315,7 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
 
     val tableIdent = OptsUtil.getOption(OptsUtil.BASETABLE, options)
 
-    val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
+    val snappyCtxt = SnappyContext(sqlContext.sparkContext)
     val catalog = snappyCtxt.catalog
 
     val tableName = catalog.newQualifiedTableName(tableIdent)

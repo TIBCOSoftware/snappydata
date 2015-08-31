@@ -1,38 +1,38 @@
 package org.apache.spark.sql.execution
 
-import java.util.concurrent.locks.ReentrantReadWriteLock
-
 import scala.collection.mutable
+import scala.language.existentials
 import scala.language.reflectiveCalls
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{ universe => ru }
-import io.snappydata.util.NumberUtils
-import org.apache.spark.sql.collection.{ BoundedSortedSet, SegmentMap }
-import org.apache.spark.sql.execution.cms.{ CountMinSketch, TopKCMS }
-import org.apache.spark.util.collection.OpenHashSet
-import com.esotericsoftware.kryo.KryoSerializable
+
 import com.esotericsoftware.kryo.Kryo
-import com.esotericsoftware.kryo.io.Output
-import com.esotericsoftware.kryo.io.Input
-import scala.collection.mutable.MutableList
+import com.esotericsoftware.kryo.io.{Input, Output}
+import io.snappydata.util.NumberUtils
+import org.apache.spark.sql.collection.BoundedSortedSet
+import org.apache.spark.sql.execution.cms.{CountMinSketch, TopKCMS}
+import org.apache.spark.util.collection.OpenHashSet
 
 final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
-  epoch0: Long, val topKActual: Int, taAgg: MutableList[CountMinSketch[T]],
-  iaAgg: MutableList[CountMinSketch[T]], intervalTracker: IntervalTracker, initialInterval: Long)(implicit val ev: ClassTag[T])
-  extends Hokusai[T](cmsParams, windowSize, epoch0, taAgg, iaAgg, intervalTracker,
-    initialInterval) with TopK {
+    epoch0: Long, val topKActual: Int,
+    taAgg: mutable.MutableList[CountMinSketch[T]],
+    iaAgg: mutable.MutableList[CountMinSketch[T]],
+    intervalTracker: IntervalTracker, initialInterval: Long)
+    (implicit val ev: ClassTag[T])
+    extends Hokusai[T](cmsParams, windowSize, epoch0, taAgg, iaAgg,
+      intervalTracker, initialInterval) with TopK {
 
   def this(cmsParams: CMSParams, windowSize: Long,
-    epoch0: Long, topKActual: Int)(implicit t: ClassTag[T]) = this(cmsParams, windowSize,
-    epoch0, topKActual, new MutableList[CountMinSketch[T]],
-    new MutableList[CountMinSketch[T]], new IntervalTracker(), 0)
+    epoch0: Long, topKActual: Int)(implicit t: ClassTag[T]) = this(cmsParams,
+    windowSize, epoch0, topKActual, new mutable.MutableList[CountMinSketch[T]],
+    new mutable.MutableList[CountMinSketch[T]], new IntervalTracker(), 0)
 
   var topKInternal = topKActual * 2
 
-  private val queryTillLastNTopK_Case1: (Array[T]) => () => Array[(T, Approximate)] = (combinedKeys: Array[T]) => {
+  private val queryTillLastNTopK_Case1: (Array[T]) => () =>
+      Array[(T, Approximate)] = (combinedKeys: Array[T]) => {
     () =>
       {
-        val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
+        val topKCMS = this.taPlusIa.ta.aggregates.head.asInstanceOf[TopKCMS[T]]
         if (combinedKeys != null) {
           sortAndBound(TopKCMS.getCombinedTopKFromEstimators(Array(topKCMS),
             combinedKeys))
@@ -52,8 +52,9 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
       sortAndBound(getTopKBySummingTimeAggregates(sumUpTo, combinedKeys))
     }
 
-  private val queryTillLastNTopK_Case3: (Int, Int, Int, Int, Array[T]) => Array[(T, Approximate)] = (lastNIntervals: Int,
-    totalIntervals: Int, n: Int, nQueried: Int, combinedTopKKeys: Array[T]) =>
+  private val queryTillLastNTopK_Case3: (Int, Int, Int, Int,
+      Array[T]) => Array[(T, Approximate)] = (lastNIntervals: Int,
+      totalIntervals: Int, n: Int, nQueried: Int, combinedTopKKeys: Array[T]) =>
     if (lastNIntervals > totalIntervals) {
       val topKKeys: Iterable[T] = if (combinedTopKKeys != null) {
         combinedTopKKeys
@@ -84,8 +85,9 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
         //it would be better to find the time aggregation of last interval - the other intervals)
         unionedTopKKeys.foreach { item: T =>
           var total = this.queryTimeAggregateForInterval(item, lengthOfLastInterval)
-          val count = this.taPlusIa.basicQuery(lastNIntervals + 1 to (2 * nearestPowerOf2Num).asInstanceOf[Int],
-            item, nearestPowerOf2Num.asInstanceOf[Int], nearestPowerOf2Num.asInstanceOf[Int] * 2)
+          val count = this.taPlusIa.basicQuery(lastNIntervals +
+              1 to (2 * nearestPowerOf2Num).asInstanceOf[Int], item,
+            nearestPowerOf2Num.toInt, nearestPowerOf2Num.toInt * 2)
           if (count < total) {
             total = total - count
           } else {
@@ -122,11 +124,15 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
           lastNIntervals
         }
 
-        val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker.identifyBestPath(lastNIntervalsToQuery,
-          true)
+        val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker
+            .identifyBestPath(lastNIntervalsToQuery,
+              encompassLastInterval = true)
         // get all the unified top k keys of all the intervals in the path
-        var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]] }
-        estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
+        var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(
+          NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
+        }
+        estimators = this.taPlusIa.ta.aggregates.head.asInstanceOf[
+            TopKCMS[T]] +: estimators
         val unifiedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
           combinedTopKKeys
         } else {
@@ -189,7 +195,7 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
       }
 
   private val combinedKeysTillLastNTopK_Case1: () => Array[T] = () => {
-    val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
+    val topKCMS = this.taPlusIa.ta.aggregates.head.asInstanceOf[TopKCMS[T]]
     TopKCMS.getUnionedTopKKeysFromEstimators(Array(topKCMS)).toArray
   }
 
@@ -223,13 +229,15 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
           lastNIntervals
         }
 
-        val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker.identifyBestPath(lastNIntervalsToQuery,
-          true)
+        val (bestPath, _) = this.taPlusIa.intervalTracker.identifyBestPath(
+          lastNIntervalsToQuery, encompassLastInterval = true)
         // get all the unified top k keys of all the intervals in the path
-        var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]] }
-        estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
+        var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(
+          NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
+        }
+        estimators = this.taPlusIa.ta.aggregates.head.asInstanceOf[
+            TopKCMS[T]] +: estimators
         TopKCMS.getUnionedTopKKeysFromEstimators(estimators).toArray
-
       }
 
   override val mergeCreator: ((Array[CountMinSketch[T]]) => CountMinSketch[T]) = estimators =>
@@ -259,7 +267,7 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
   def getTopKKeysForCurrentInterval: OpenHashSet[T] =
     this.mBar.asInstanceOf[TopKCMS[T]].getTopKKeys
 
-  def getTopKInCurrentInterval[T](): Array[(T, Approximate)] =
+  def getTopKInCurrentInterval: Array[(T, Approximate)] =
     this.mBar.asInstanceOf[TopKCMS[T]].getTopK
 
   def getCombinedTopKKeysBetweenTime(epochFrom: Long,
@@ -328,11 +336,15 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
       queryTillLastNTopK_Case1(combinedTopKKeys)()
     } else {
       // Identify the best path
-      val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker.identifyBestPath(tillLastNInterval.asInstanceOf[Int],
-        true, 1, fromLastNInterval.asInstanceOf[Int])
-      var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]] }
+      val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker
+          .identifyBestPath(tillLastNInterval.asInstanceOf[Int],
+            encompassLastInterval = true, 1, fromLastNInterval.asInstanceOf[Int])
+      var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(
+        NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
+      }
       if (fromLastNInterval == 1) {
-        estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
+        estimators = this.taPlusIa.ta.aggregates.head.asInstanceOf[
+            TopKCMS[T]] +: estimators
       }
       val unifiedTopKKeys: Iterable[T] = if (combinedTopKKeys != null) {
         combinedTopKKeys
@@ -379,8 +391,8 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
 
       if (fromLastNInterval == 1) {
         TopKCMS.getCombinedTopKFromEstimators(
-          Array(this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]), unifiedTopKKeys, topKs)
-
+          Array(this.taPlusIa.ta.aggregates.head.asInstanceOf[TopKCMS[T]]),
+          unifiedTopKKeys, topKs)
       }
       sortAndBound(topKs)
     }
@@ -390,15 +402,19 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
     val fromLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(later)
     val tillLastNInterval = this.taPlusIa.convertIntervalBySwappingEnds(earlier)
     if (fromLastNInterval == 1 && tillLastNInterval == 1) {
-      val topKCMS = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]]
+      val topKCMS = this.taPlusIa.ta.aggregates.head.asInstanceOf[TopKCMS[T]]
       TopKCMS.getUnionedTopKKeysFromEstimators(Array(topKCMS))
     } else {
       // Identify the best path
-      val (bestPath, computedIntervalLength) = this.taPlusIa.intervalTracker.identifyBestPath(tillLastNInterval.asInstanceOf[Int],
-        true, 1, fromLastNInterval.asInstanceOf[Int])
-      var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]] }
+      val (bestPath, _) = this.taPlusIa.intervalTracker.identifyBestPath(
+        tillLastNInterval.asInstanceOf[Int], encompassLastInterval = true, 1,
+        fromLastNInterval.asInstanceOf[Int])
+      var estimators = bestPath.map { interval => taPlusIa.ta.aggregates(
+        NumberUtils.isPowerOf2(interval) + 1).asInstanceOf[TopKCMS[T]]
+      }
       if (fromLastNInterval == 1) {
-        estimators = this.taPlusIa.ta.aggregates(0).asInstanceOf[TopKCMS[T]] +: estimators
+        estimators = this.taPlusIa.ta.aggregates.head.asInstanceOf[
+            TopKCMS[T]] +: estimators
       }
       TopKCMS.getUnionedTopKKeysFromEstimators(estimators)
     }
@@ -463,7 +479,7 @@ final class TopKHokusai[T](cmsParams: CMSParams, windowSize: Long,
 object TopKHokusai {
   // TODO: Resolve the type of TopKHokusai
   // private final val topKMap = new mutable.HashMap[String, mutable.HashMap[Int, TopK]]
-  private final val mapLock = new ReentrantReadWriteLock
+  //private final val mapLock = new ReentrantReadWriteLock
 
   def newZeroCMS[T: ClassTag](depth: Int, width: Int, hashA: Array[Long], topKActual: Int,
     topKInternal: Int, confidence: Double, eps: Double) =
@@ -508,17 +524,18 @@ object TopKHokusai {
     val windowSize = input.readLong
     val epoch0 = input.readLong
     val lenTA = input.readInt
-    val aggregatesTA = MutableList.fill(lenTA)({
+    val aggregatesTA = mutable.MutableList.fill(lenTA)({
       val bytes = input.readBytes(input.readInt)
       CountMinSketch.deserialize(bytes)(classTag)
     })
     val lenIA = input.readInt
-    val aggregatesIA = MutableList.fill(lenIA)({
+    val aggregatesIA = mutable.MutableList.fill(lenIA)({
       val bytes = input.readBytes(input.readInt)
       CountMinSketch.deserialize(bytes)(classTag)
     })
     val intervalTracker = IntervalTracker.read(kryo, input)
     val bytes = input.readBytes(input.readInt)
+    // TODO: mBar not used??
     val mBar = TopKCMS.deserialize(bytes)(classTag)
     val t = input.readLong
 
@@ -534,5 +551,3 @@ object TopKHokusai {
   def createDummy: TopK = new TopKStub()
 
 }
-
-

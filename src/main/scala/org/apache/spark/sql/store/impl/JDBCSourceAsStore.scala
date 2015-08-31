@@ -18,6 +18,8 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.row.{JdbcExtendedUtils, JdbcExtendedDialect}
+import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.store.ExternalStore
 
 /**
@@ -34,6 +36,9 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   private lazy val rand = new Random
 
   private val (_url, _driver, _poolProps, _connProps, _hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+
+  @transient
+  private val dialect = JdbcDialects.get(url)
 
   @transient
   private lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
@@ -103,9 +108,11 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 
   override def truncate(tableName: String) = tryExecute(tableName, {
     case conn =>
-      val st = conn.createStatement()
-      st.executeQuery(s"truncate table $tableName")
-      st.close()
+    dialect match {
+      case d: JdbcExtendedDialect => d.truncateTable(tableName)
+      case _ =>
+        JdbcExtendedUtils.executeUpdate(s"truncate table $tableName", conn)
+    }
   })
 
   override def getCachedBatchIterator(tableName: String,

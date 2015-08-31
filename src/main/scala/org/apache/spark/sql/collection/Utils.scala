@@ -259,6 +259,18 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     k
   }
 
+  def normalizeIdUpperCase(k: String): String = {
+    var index = 0
+    val len = k.length
+    while (index < len) {
+      if (Character.isLowerCase(k.charAt(index))) {
+        return k.toUpperCase(java.util.Locale.ENGLISH)
+      }
+      index += 1
+    }
+    k
+  }
+
   def normalizeOptions[T](opts: Map[String, Any])
       (implicit bf: CanBuildFrom[Map[String, Any], (String, Any), T]): T =
     opts.map[(String, Any), T] {

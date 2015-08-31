@@ -1,9 +1,13 @@
 package org.apache.spark.sql.execution.row
 
-import java.sql.Types
+import java.sql.{Connection, Types}
 import java.util.Properties
 
+import scala.util.control.NonFatal
+
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.types._
@@ -83,5 +87,53 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       // GemFireXD supports maximum precision of 127
       Some(JdbcType("DECIMAL(127,63)", java.sql.Types.DECIMAL))
     case _ => None
+  }
+
+  private def normalize(id: String, context: SQLContext): String = {
+    // backend DB is always using case-insensitive names
+    Utils.normalizeIdUpperCase(id)
+  }
+
+  override def tableExists(table: String, conn: Connection,
+      context: SQLContext): Boolean = {
+    // using the JDBC meta-data API
+    val dotIndex = table.indexOf('.')
+    val schemaName = if (dotIndex > 0) {
+      normalize(table.substring(0, dotIndex), context)
+    } else {
+      // get the current schema
+      try {
+        val stmt = conn.createStatement()
+        val rs = stmt.executeQuery("VALUES CURRENT SCHEMA")
+        val result = if (rs.next()) rs.getString(1) else null
+        rs.close()
+        stmt.close()
+        result
+      } catch {
+        case NonFatal(e) => null
+      }
+    }
+    val tableName = normalize(if (dotIndex > 0)
+      table.substring(dotIndex + 1) else table, context)
+    try {
+      val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
+      rs.next()
+    } catch {
+      case t: java.sql.SQLException => false
+    }
+  }
+
+  override def dropTable(tableName: String, conn: Connection,
+      context: SQLContext, ifExists: Boolean): Unit = {
+    if (ifExists) {
+      JdbcExtendedUtils.executeUpdate(s"DROP TABLE IF EXISTS $tableName", conn)
+    } else {
+      JdbcExtendedUtils.executeUpdate(s"DROP TABLE $tableName", conn)
+    }
+  }
+
+  override def initializeTable(tableName: String, conn: Connection): Unit = {
+    JdbcExtendedUtils.executeUpdate(
+      s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
   }
 }
