@@ -503,9 +503,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val isLoner = context.isLoner
 
     val rdd = new DummyRDD(context) {
-
-      override def compute(split: Partition,
-          taskContext: TaskContext): Iterator[Row] = {
+      override def compute(split: Partition, taskContext: TaskContext): Iterator[Row] = {
         GemFireXDDialect.init()
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
@@ -514,37 +512,18 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
-                sys.error(s"Master specific property $p " +
-                    "shouldn't exist here in Executors")
+                sys.error(s"Master specific property ${p} shouldn't exist here in Executors")
               }
             }
         }
 
-        ExternalStoreUtils.getConnectionType(externalStore.url) match {
-          case ConnectionType.Embedded =>
-            val conn = ExternalStoreUtils.getConnection(externalStore.url,
-              externalStore.connProps)
-            conn.close()
-            val cf = CacheFactory.getAnyInstance
-            if (cf.getRegion(tableName) == null) {
-              val rf = cf.createRegionFactory()
-              val paf = new PartitionAttributesFactory[UUIDRegionKey,
-                  CachedBatch]()
-              paf.setPartitionResolver(new UUIDKeyResolver)
-              rf.setPartitionAttributes(paf.create())
-              try {
-                val pr = rf.create(tableName)
-                PartitionRegionHelper.assignBucketsToPartitions(pr)
-              } catch {
-                case ree: RegionExistsException => // ignore
-              }
-            }
-          case _ =>
-        }
+        val conn = ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
+        conn.close()
         Iterator.empty
       }
 
       override protected def getPartitions: Array[Partition] = {
+        //TODO : Find a cleaner way of starting all executors.
         val partitions = new Array[Partition](100)
         for (p <- 0 until 100) {
           partitions(p) = new ExecutorLocalPartition(p, null)
@@ -553,30 +532,34 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       }
     }
 
-    rdd.collect()
+    rdd.collect
 
     //val tableName = processTableIdentifier(tableIdent)
+    //val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
     val connProps = externalStore.connProps
-    val dialect = JdbcDialects.get(externalStore.url)
-    dialect match {
+    JdbcDialects.get(externalStore.url) match {
       case d: JdbcExtendedDialect =>
         connProps.putAll(d.extraCreateTableProperties(isLoner))
     }
 
     externalStore.tryExecute(tableName, {
-      case conn =>
-        if (dropIfExists) {
-          JdbcExtendedUtils.dropTable(conn, tableName, dialect, context,
-            ifExists = true)
+      case conn => {
+        val statement = conn.createStatement();
+        try {
+          if (dropIfExists) {
+            statement.execute(s"drop table if exists $tableName")
+          }
+          statement.execute(tableStr)
+          statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
+
+        } finally {
+          statement.close()
         }
-        JdbcExtendedUtils.executeUpdate(tableStr, conn)
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
-        }
+      }
     })
   }
 
-  private def createExternalTableForCachedBatches(tableName: String,
+  def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "registerAndInsertIntoExternalStore: expected non-empty table name")

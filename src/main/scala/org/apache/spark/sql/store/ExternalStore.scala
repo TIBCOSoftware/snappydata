@@ -2,6 +2,10 @@ package org.apache.spark.sql.store
 
 import java.sql.Connection
 
+import scala.collection.mutable.ArrayBuffer
+
+import org.apache.spark.SparkContext
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.CachedBatch
 
@@ -17,6 +21,9 @@ trait ExternalStore extends Serializable {
   def cleanup(): Unit
   def getCachedBatchIterator(tableName: String, itr: Iterator[UUIDRegionKey],
                              getAll: Boolean = false): Iterator[CachedBatch]
+
+  def getCachedBatchRDD(tableName : String,uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
+                             sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String): java.sql.Connection
 

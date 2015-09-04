@@ -6,6 +6,7 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
+import scala.reflect.runtime.universe.TypeTag
 
 import io.snappydata.util.SqlUtils
 import org.apache.spark.rdd.RDD
@@ -23,6 +24,7 @@ import org.apache.spark.sql.execution.row._
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -82,6 +84,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       collectSamples(rows, aqpTables, time.milliseconds)
     })
   }
+
+  def externalTable(tableName: String): DataFrame =
+    DataFrame(this, catalog.lookupRelation(Seq(tableName)))
 
   protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
     time: Long,
@@ -181,6 +186,46 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[Row])
         .foreach(batches.appendRow((), _))
+      batches.forceEndOfBatch().iterator
+    }.persist(storageLevel)
+
+    // trigger an Action to materialize 'cached' batch
+    if (cached.count() > 0) {
+      relation.cachedRepresentation match {
+        case externalStore: ExternalStoreRelation =>
+          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
+        case appendable: InMemoryAppendableRelation =>
+          appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
+      }
+    }
+  }
+
+  def appendToCacheRDD(rdd: RDD[_], tableIdent: String, schema: StructType,
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
+    val useCompression = conf.useCompression
+    val columnBatchSize = conf.columnBatchSize
+
+    val tableName = catalog.newQualifiedTableName(tableIdent)
+    val plan = catalog.lookupRelation(tableName, None)
+    val relation = cacheManager.lookupCachedData(plan).getOrElse {
+      cacheManager.cacheQuery(DataFrame(this, plan),
+        Some(tableName.qualifiedName), storageLevel)
+
+      cacheManager.lookupCachedData(plan).getOrElse {
+        sys.error(s"couldn't cache table $tableName")
+      }
+    }
+
+
+
+    val cached = rdd.mapPartitions { rowIterator =>
+
+      val batches = ExternalStoreRelation(useCompression, columnBatchSize,
+        tableName, schema, relation.cachedRepresentation, schema.toAttributes)
+
+      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+      rowIterator.map(converter(_).asInstanceOf[Row])
+          .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
     }.persist(storageLevel)
 
@@ -866,4 +911,39 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag](
     schema: StructType,
     transform: DataFrame => DataFrame = null): Unit =
     context.saveStream(ds, sampleTab, formatter, schema, transform)
+
+  def saveToExternalTable[A <: Product : TypeTag](externalTable : String, jdbcSource : Map[String, String]): Unit = {
+
+    val schema : StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+    saveStreamToExternalTable(externalTable, schema, jdbcSource)
+  }
+
+  def saveToExternalTable(externalTable : String, schema: StructType, jdbcSource : Map[String, String]): Unit = {
+    saveStreamToExternalTable(externalTable, schema, jdbcSource)
+  }
+
+  private def saveStreamToExternalTable(externalTable : String, schema: StructType, jdbcSource : Map[String, String]): Unit = {
+    require(externalTable != null && externalTable.length > 0,
+      "saveToExternalTable: expected non-empty table name")
+
+    val qualifiedTable = context.catalog.newQualifiedTableName(externalTable)
+    val externalStore = new JDBCSourceAsStore(jdbcSource)
+    context.catalog.createExternalTableForCachedBatches(qualifiedTable.qualifiedName,
+      externalStore)
+    val attributeSeq = schema.toAttributes
+
+    val dummyDF = {
+      val plan: LogicalRDD = LogicalRDD(attributeSeq,
+        new DummyRDD(context))(context)
+      DataFrame(context, plan)
+    }
+
+    context.catalog.tables.put(qualifiedTable, dummyDF.logicalPlan)
+    context.cacheManager.cacheQuery_ext(dummyDF, Some(qualifiedTable.qualifiedName),
+      externalStore)
+
+    ds.foreachRDD((rdd: RDD[T], time: Time) => {
+      context.appendToCacheRDD(rdd, qualifiedTable.qualifiedName, schema)
+    })
+  }
 }
