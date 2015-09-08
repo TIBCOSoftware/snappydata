@@ -7,23 +7,21 @@ import scala.collection.convert.Wrappers
 import scala.collection.mutable
 import scala.language.implicitConversions
 
-import com.gemstone.gemfire.cache.partition.PartitionRegionHelper
-import com.gemstone.gemfire.cache.{CacheFactory, PartitionAttributesFactory, RegionExistsException}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
+import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.store.impl.{JDBCSourceAsStore, UUIDKeyResolver}
+import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.streaming.StreamRelation
 import org.apache.spark.{Logging, Partition, TaskContext}
@@ -526,8 +524,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
 
     tables.put(qualifiedTable, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(qualifiedTable.qualifiedName),
-      externalStore)
+    context.cacheManager.cacheQuery_ext(dummyDF,
+      Some(qualifiedTable.qualifiedName), externalStore)
     context.appendToCache(df, qualifiedTable.qualifiedName)
   }
 
@@ -541,16 +539,18 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
-            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames()
+            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
-                sys.error(s"Master specific property ${p} shouldn't exist here in Executors")
+                sys.error(s"Master specific property $p " +
+                    "shouldn't exist here in Executors")
               }
             }
         }
 
-        val conn = ExternalStoreUtils.getConnection(externalStore.url, externalStore.connProps)
+        val conn = ExternalStoreUtils.getConnection(externalStore.url,
+          externalStore.connProps)
         conn.close()
         Iterator.empty
       }
@@ -565,30 +565,26 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       }
     }
 
-    rdd.collect
+    rdd.collect()
 
     //val tableName = processTableIdentifier(tableIdent)
-    //val (url, driver, poolProps, connProps, hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
     val connProps = externalStore.connProps
-    JdbcDialects.get(externalStore.url) match {
+    val dialect = JdbcDialects.get(externalStore.url)
+    dialect match {
       case d: JdbcExtendedDialect =>
         connProps.putAll(d.extraCreateTableProperties(isLoner))
     }
 
     externalStore.tryExecute(tableName, {
-      case conn => {
-        val statement = conn.createStatement();
-        try {
-          if (dropIfExists) {
-            statement.execute(s"drop table if exists $tableName")
-          }
-          statement.execute(tableStr)
-          statement.execute(s"call sys.CREATE_ALL_BUCKETS('$tableName')")
-
-        } finally {
-          statement.close()
+      case conn =>
+        if (dropIfExists) {
+          JdbcExtendedUtils.dropTable(conn, tableName, dialect, context,
+            ifExists = true)
         }
-      }
+        JdbcExtendedUtils.executeUpdate(tableStr, conn)
+        dialect match {
+          case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
+        }
     })
   }
 
@@ -598,10 +594,11 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     //val tableName = processTableIdentifier(tableIdent)
-    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(externalStore.url) match {
+    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(
+      externalStore.url) match {
       case ConnectionType.Embedded =>
-        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), primary key (uuid, bucketId)",
-            "partition by column (bucketId)")
+        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
+            "primary key (uuid, bucketId)", "partition by column (bucketId)")
       // TODO: [sumedh] Neeraj, the partition clause should come from JdbcDialect or something
       case _ => ("primary key (uuid)", "partition by primary key")
     }
