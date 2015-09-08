@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import java.util.concurrent.atomic.AtomicReference
+import java.util.regex.Pattern
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
@@ -8,10 +8,9 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.row.{JDBCUpdatableSource, JdbcExtendedUtils}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.{Seconds, StreamRelation, StreamingContext, StreamingContextState}
+import org.apache.spark.streaming._
 
 /**
  * Snappy SQL extensions. Includes:
@@ -67,9 +66,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     extends DDLParser(parseQuery) {
 
   override protected lazy val ddl: Parser[LogicalPlan] =
-    createTable | describeTable | refreshTable |
-        createStream | createSampled | strmctxt |
-        createExternalTable | dropExternalTable
+    createTable | describeTable | refreshTable | dropTable |
+        createStream | createSampled | strmctxt
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -78,21 +76,82 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val START = Keyword("START")
   protected val STOP = Keyword("STOP")
   protected val INIT = Keyword("INIT")
-  protected val EXTERNAL = Keyword("EXTERNAL")
   protected val DROP = Keyword("DROP")
 
+  private val DDLEnd = Pattern.compile(USING.str + ".*" + OPTIONS.str,
+    Pattern.CASE_INSENSITIVE)
+
+
+  protected override lazy val createTable: Parser[LogicalPlan] =
+    (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~ ident ~
+        externalTableInput ~ (USING ~> className) ~ (OPTIONS ~> options) ~
+        (AS ~> restInput).? ^^ {
+      case temporary ~ allowExisting ~ tableName ~ schemaString ~
+          providerName ~ opts ~ query =>
+
+        val provider = SnappyContext.getProvider(providerName)
+        if (query.isDefined) {
+          if (schemaString.length > 0) {
+            throw new DDLException("CREATE TABLE AS SELECT statement " +
+                "does not allow column definitions.")
+          }
+          // When IF NOT EXISTS clause appears in the query,
+          // the save mode will be ignore.
+          val mode = if (allowExisting.isDefined) SaveMode.Ignore
+          else SaveMode.ErrorIfExists
+          val queryPlan = parseQuery(query.get)
+
+          if (temporary.isDefined) {
+            CreateTableUsingAsSelect(tableName, provider, temporary = true,
+              Array.empty[String], mode, opts, queryPlan)
+          } else {
+            CreateExternalTableUsingSelect(tableName, provider,
+              Array.empty[String], mode, opts, queryPlan)
+          }
+        } else {
+          val hasExternalSchema = if (temporary.isDefined) false
+          else {
+            // check if provider class implements ExternalSchemaRelationProvider
+            val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
+            classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
+          }
+          val userSpecifiedSchema = if (hasExternalSchema) None
+          else {
+            phrase(tableCols)(new lexical.Scanner(schemaString)) match {
+              case Success(columns, _) => Some(StructType(columns))
+              case failure => throw new DDLException(failure.toString)
+            }
+          }
+          val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
+
+          if (temporary.isDefined) {
+            CreateTableUsing(tableName, userSpecifiedSchema, provider,
+              temporary = true, opts, allowExisting.isDefined,
+              managedIfNoPath = false)
+          } else {
+            CreateExternalTableUsing(tableName, userSpecifiedSchema,
+              schemaDDL, provider, allowExisting.isDefined, opts)
+          }
+        }
+    }
+
+  protected lazy val dropTable: Parser[LogicalPlan] =
+    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ ident ^^ {
+      case temporary ~ allowExisting ~ tableName =>
+        DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
+    }
 
   protected lazy val createStream: Parser[LogicalPlan] =
-    (CREATE ~> (STREAM ~> (TABLE ~> ident)) ~
-        tableCols.? ~ (OPTIONS ~> options)) ^^ {
+    (CREATE ~> STREAM ~> TABLE ~> ident) ~
+        tableCols.? ~ (OPTIONS ~> options) ^^ {
       case streamname ~ cols ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
         CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
-    (CREATE ~> (SAMPLED ~> (TABLE ~> ident)) ~
-        (OPTIONS ~> options)) ^^ {
+    (CREATE ~> SAMPLED ~> TABLE ~> ident) ~
+        (OPTIONS ~> options) ^^ {
       case samplename ~ opts =>
         CreateSampledTable(samplename, new CaseInsensitiveMap(opts))
     }
@@ -108,40 +167,20 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
     }
 
-  protected lazy val createExternalTable: Parser[LogicalPlan] =
-    (CREATE ~> EXTERNAL ~> TABLE ~> (IF ~> NOT <~ EXISTS).?) ~ ident ~
-        externalTableInput ~ (OPTIONS ~> options) ^^ {
-      case allowExisting ~ tableName ~ userSpecifiedSchema ~ opts =>
-        val newOpts = opts +(
-            JdbcExtendedUtils.DBTABLE_PROPERTY -> tableName,
-            JdbcExtendedUtils.SCHEMA_PROPERTY -> userSpecifiedSchema,
-            JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> String.valueOf(
-              allowExisting.isDefined))
-        CreateExternalTableUsing(
-          tableName,
-          None,
-          classOf[JDBCUpdatableSource].getCanonicalName,
-          allowExisting.isDefined,
-          new CaseInsensitiveMap(newOpts))
-    }
-
-  protected lazy val dropExternalTable: Parser[LogicalPlan] =
-    (DROP ~> EXTERNAL ~> TABLE ~> (IF ~> EXISTS).?) ~ ident ^^ {
-      case allowExisting ~ tableName =>
-        DropExternalTable(tableName, allowExisting.isDefined)
-    }
-
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
     def apply(in: Input): ParseResult[String] = {
-      val remaining =
-        in.source.subSequence(in.offset, in.source.length()).toString
-      assert(remaining.contains(OPTIONS.normalize))
-      val externalTableDefinition =
-        remaining.substring(0, remaining.indexOf(OPTIONS.normalize))
-      val others = remaining.substring(externalTableDefinition.length)
-      val reader = new PackratReader(new lexical.Scanner(others))
-      Success(
-        externalTableDefinition, reader)
+      val source = in.source
+      val remaining = source.subSequence(in.offset, source.length).toString
+      val m = DDLEnd.matcher(remaining)
+      if (m.find) {
+        val index = m.start()
+        val externalTableDefinition = remaining.substring(0, index).trim
+        val others = remaining.substring(index)
+        val reader = new PackratReader(new lexical.Scanner(others))
+        Success(externalTableDefinition, reader)
+      } else {
+        Failure("USING missing", in)
+      }
     }
   }
 }
@@ -149,33 +188,48 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 private[sql] case class CreateExternalTableUsing(
     tableName: String,
     userSpecifiedSchema: Option[StructType],
+    schemaDDL: Option[String],
     provider: String,
     allowExisting: Boolean,
     options: Map[String, String]) extends RunnableCommand {
 
-  override def output: Seq[Attribute] = Seq.empty
-
-  override def children: Seq[LogicalPlan] = Seq.empty
-
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = SnappyContext(sqlContext.sparkContext)
-    snc.createExternalTable(tableName, provider, userSpecifiedSchema, options,
-      allowExisting)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    snc.createTable(tableName, provider, userSpecifiedSchema,
+      schemaDDL, mode, options)
     Seq.empty
   }
 }
 
-private[sql] case class DropExternalTable(
+private[sql] case class CreateExternalTableUsingSelect(
     tableName: String,
-    ifExists: Boolean) extends RunnableCommand {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  override def children: Seq[LogicalPlan] = Seq.empty
+    provider: String,
+    partitionColumns: Array[String],
+    mode: SaveMode,
+    options: Map[String, String],
+    query: LogicalPlan) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = SnappyContext(sqlContext.sparkContext)
-    snc.dropExternalTable(tableName, ifExists)
+    snc.createTable(tableName, provider, partitionColumns, mode,
+      options, query)
+    // refresh cache of the table in catalog
+    val catalog = snc.catalog
+    catalog.invalidateTable(catalog.newQualifiedTableName(tableName))
+    Seq.empty
+  }
+}
+
+private[sql] case class DropTable(
+    tableName: String,
+    temporary: Boolean,
+    ifExists: Boolean) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    if (temporary) snc.dropTempTable(tableName, ifExists)
+    else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
   }
 }
@@ -245,7 +299,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
   def run(sqlContext: SQLContext): Seq[Row] = {
 
     val resolved = ResolvedDataSource(sqlContext, userColumns,
-      Array.empty[String], "org.apache.spark.sql.sources.StreamSource", options)
+      Array.empty[String], classOf[StreamSource].getCanonicalName, options)
     val plan = LogicalRelation(resolved.relation)
 
     val catalog = SnappyContext(sqlContext.sparkContext).catalog
@@ -353,20 +407,27 @@ object OptsUtil {
 
 private[spark] object StreamingCtxtHolder {
 
-  private val atomicContext = new AtomicReference[StreamingContext]()
+  @volatile private[this] var globalContext: StreamingContext = _
+  private[this] val contextLock = new AnyRef
 
-  def streamingContext = atomicContext.get()
+  def streamingContext = globalContext
 
   def apply(sparkCtxt: SparkContext,
       duration: Int): StreamingContext = {
-    val context = atomicContext.get
+    val context = globalContext
     if (context != null &&
-        !context.getState().equals(StreamingContextState.STOPPED)) {
-      return context
+        context.getState() != StreamingContextState.STOPPED) {
+      context
+    } else contextLock.synchronized {
+      val context = globalContext
+      if (context != null &&
+          context.getState() != StreamingContextState.STOPPED) {
+        context
+      } else {
+        val context = new StreamingContext(sparkCtxt, Seconds(duration))
+        globalContext = context
+        context
+      }
     }
-    atomicContext.compareAndSet(context,
-      new StreamingContext(sparkCtxt, Seconds(duration)))
-    atomicContext.get
-
   }
 }

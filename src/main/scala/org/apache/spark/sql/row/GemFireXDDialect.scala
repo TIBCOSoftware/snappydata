@@ -1,4 +1,4 @@
-package org.apache.spark.sql.execution.row
+package org.apache.spark.sql.row
 
 import java.sql.{Connection, Types}
 import java.util.Properties
@@ -10,6 +10,7 @@ import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
+import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 
 /**

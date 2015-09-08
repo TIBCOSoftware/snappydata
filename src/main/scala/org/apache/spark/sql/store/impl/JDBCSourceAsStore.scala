@@ -19,8 +19,8 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey}
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.row.{JdbcExtendedUtils, JdbcExtendedDialect}
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect}
 import org.apache.spark.sql.store.ExternalStore
 
 /**

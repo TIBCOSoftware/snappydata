@@ -17,13 +17,11 @@ import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.row.{GemFireXDDialect, JDBCUpdatableRelation}
-import org.apache.spark.sql.execution.row.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects}
-import org.apache.spark.sql.sources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.store.impl.{JDBCSourceAsStore, UUIDKeyResolver}
 import org.apache.spark.sql.types.{DataType, StructType}
@@ -231,13 +229,21 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
           schemaString.map(s => DataType.fromJson(s).asInstanceOf[StructType])
 
         val partitionColumns = table.partitionColumns.map(_.name)
-        val options = table.serdeProperties +
-            (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")
+        val provider = table.properties(HIVE_PROVIDER)
+        val options = table.serdeProperties
 
-        val resolvedRelation = ResolvedDataSource(context, userSpecifiedSchema,
-          partitionColumns.toArray, table.properties(HIVE_PROVIDER), options)
+        val resolved = options.get(JdbcExtendedUtils.SCHEMA_PROPERTY) match {
+          case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(
+            context, schema, provider, SaveMode.Ignore, options)
 
-        LogicalRelation(resolvedRelation.relation)
+          case None =>
+            // add allowExisting in properties used by some implementations
+            ResolvedDataSource(context, userSpecifiedSchema,
+              partitionColumns.toArray, provider, options +
+                  (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true"))
+        }
+
+        LogicalRelation(resolved.relation)
       }
     }
 
@@ -291,11 +297,11 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     // the cache. it is better at here to invalidate the cache to avoid
     // confusing warning logs from the cache loader (e.g. cannot find data
     // source provider, which is only defined for data source table).
-    invalidateTable(dbName, tableName)
+    invalidateTable(newQualifiedTableName(dbName, tableName))
   }
 
-  def invalidateTable(dbName: String, tableName: String): Unit = {
-    cachedDataSourceTables.invalidate(newQualifiedTableName(dbName, tableName))
+  def invalidateTable(tableName: QualifiedTableName): Unit = {
+    cachedDataSourceTables.invalidate(tableName)
   }
 
   override def unregisterAllTables(): Unit = {
@@ -304,12 +310,15 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
-    val qualifiedTable = newQualifiedTableName(tableIdentifier)
-    if (tables.contains(qualifiedTable)) {
-      context.truncateTable(qualifiedTable.qualifiedName)
-      tables -= qualifiedTable
-    } else if (topKStructures.contains(qualifiedTable)) {
-      topKStructures -= qualifiedTable
+    unregisterTable(newQualifiedTableName(tableIdentifier))
+  }
+
+  def unregisterTable(tableName: QualifiedTableName): Unit = {
+    if (tables.contains(tableName)) {
+      context.truncateTable(tableName.qualifiedName)
+      tables -= tableName
+    } else if (topKStructures.contains(tableName)) {
+      topKStructures -= tableName
     }
   }
 
@@ -347,15 +356,16 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   override def tableExists(tableIdentifier: Seq[String]): Boolean = {
-    val qualifiedTable = newQualifiedTableName(tableIdentifier)
-    tables.contains(qualifiedTable) ||
-        qualifiedTable.getTableOption(client).isDefined
+    tableExists(newQualifiedTableName(tableIdentifier))
   }
 
   def tableExists(tableIdentifier: String): Boolean = {
-    val qualifiedTable = newQualifiedTableName(tableIdentifier)
-    tables.contains(qualifiedTable) ||
-        qualifiedTable.getTableOption(client).isDefined
+    tableExists(newQualifiedTableName(tableIdentifier))
+  }
+
+  def tableExists(tableName: QualifiedTableName): Boolean = {
+    tables.contains(tableName) ||
+        tableName.getTableOption(client).isDefined
   }
 
   override def registerTable(tableIdentifier: Seq[String],
@@ -363,17 +373,16 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     tables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
-  def registerExternalTable(tableIdentifier: String,
-      userSpecifiedSchema: Option[StructType], provider: String,
-      options: Map[String, String], plan: LogicalRelation): Unit = {
-    val relation = plan.relation.asInstanceOf[JDBCUpdatableRelation]
-    createDataSourceTable(tableIdentifier, ExternalTableType.Row,
-      None, relation.provider, relation.origOptions)
+  def registerExternalTable(tableName: QualifiedTableName,
+      userSpecifiedSchema: Option[StructType],
+      partitionColumns: Array[String], provider: String,
+      options: Map[String, String]): Unit = {
+    createDataSourceTable(tableName, ExternalTableType.Row,
+      userSpecifiedSchema, partitionColumns, provider, options)
   }
 
-  def unregisterExternalTable(tableIdentifier: String): Unit = {
-    val qualifiedTable = newQualifiedTableName(tableIdentifier)
-    client.dropTable(qualifiedTable.dbName, qualifiedTable.qualifiedName)
+  def unregisterExternalTable(tableName: QualifiedTableName): Unit = {
+    client.dropTable(tableName.dbName, tableName.qualifiedName)
   }
 
   /**
@@ -383,9 +392,10 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
    * @param tableType the type of external table: ROW, COLUMNAR, SAMPLE etc
    */
   def createDataSourceTable(
-      tableIdentifier: String,
+      tableName: QualifiedTableName,
       tableType: ExternalTableType.Type,
       userSpecifiedSchema: Option[StructType],
+      partitionColumns: Array[String],
       provider: String,
       options: Map[String, String]): Unit = {
     val tableProperties = new mutable.HashMap[String, String]
@@ -406,15 +416,38 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       }
     }
 
+    val metastorePartitionColumns = userSpecifiedSchema.map { schema =>
+      val fields = Utils.getFields(partitionColumns, schema,
+        "createDataSourceTable")
+      fields.map { field =>
+        HiveColumn(
+          name = field.name,
+          hiveType = HiveMetastoreTypes.toMetastoreType(field.dataType),
+          comment = "")
+      }.toSeq
+    }.getOrElse {
+      if (partitionColumns.length > 0) {
+        // The table does not have a specified schema, which means that the
+        // schema will be inferred when we load the table. So, we are not
+        // expecting partition columns and we will discover partitions
+        // when we load the table. However, if there are specified partition
+        // columns, we simply ignore them and provide a warning message..
+        logWarning(s"The schema and partitions of table " +
+            s"${tableName.qualifiedName} will be inferred when it is " +
+            s"loaded. Specified partition columns " +
+            s"(${partitionColumns.mkString(",")}) will be ignored.")
+      }
+      Seq.empty[HiveColumn]
+    }
+
     tableProperties.put("EXTERNAL", tableType.toString)
 
-    val qualifiedTable = newQualifiedTableName(tableIdentifier)
     client.createTable(
       HiveTable(
-        specifiedDatabase = Option(qualifiedTable.dbName),
-        name = qualifiedTable.qualifiedName,
+        specifiedDatabase = Option(tableName.dbName),
+        name = tableName.qualifiedName,
         schema = Seq.empty,
-        partitionColumns = Seq.empty,
+        partitionColumns = metastorePartitionColumns,
         tableType = ExternalTable,
         properties = tableProperties.toMap,
         serdeProperties = options))
@@ -503,8 +536,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val isLoner = context.isLoner
 
     val rdd = new DummyRDD(context) {
-      override def compute(split: Partition, taskContext: TaskContext): Iterator[Row] = {
-        GemFireXDDialect.init()
+      override def compute(split: Partition,
+          taskContext: TaskContext): Iterator[Row] = {
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
@@ -670,6 +703,7 @@ object ExternalTableType extends Enumeration {
 
   val Row = Value("ROW")
   val Columnar = Value("COLUMNAR")
+  val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
 }

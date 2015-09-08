@@ -7,15 +7,30 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.row.{GemFireXDClientDialect, GemFireXDDialect, JDBCUpdatableRelation}
 import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects, JdbcUtils}
+import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 
 /**
  * Utility methods used by external storage layers.
  */
 private[sql] object ExternalStoreUtils {
-  // TODO: KN: copy of the method JDBCUpdatableSource.createStreamTable. Need to merge the two code.
-  // Need to understand whether that class can have some utils method also
+
+  def getAllPoolProperties(url: String, driver: String,
+      poolProps: Map[String, String], hikariCP: Boolean) = {
+    val urlProp = if (hikariCP) "jdbcUrl" else "url"
+    val driverClassProp = "driverClassName"
+    if (driver == null || driver.isEmpty) {
+      if (poolProps.isEmpty) {
+        Map(urlProp -> url)
+      } else {
+        poolProps + (urlProp -> url)
+      }
+    } else if (poolProps.isEmpty) {
+      Map(urlProp -> url, driverClassProp -> driver)
+    } else {
+      poolProps + (urlProp -> url) + (driverClassProp -> driver)
+    }
+  }
 
   def validateAndGetAllProps(options: Map[String, String]) = {
     val parameters = new mutable.HashMap[String, String]
@@ -32,7 +47,7 @@ private[sql] object ExternalStoreUtils {
       case Some("hikari") => true
       case Some("tomcat") => false
       case Some(p) =>
-        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+        throw new IllegalArgumentException("ExternalStoreUtils: " +
             s"unsupported pool implementation '$p' " +
             s"(supported values: tomcat, hikari)")
       case None => false
@@ -50,8 +65,8 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    val allPoolProps = JDBCUpdatableRelation.getAllPoolProperties(url,
-      driver.orNull, poolProps, hikariCP)
+    val allPoolProps = getAllPoolProperties(url, driver.orNull,
+      poolProps, hikariCP)
     (url, driver, allPoolProps, connProps, hikariCP)
   }
 

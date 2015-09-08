@@ -47,6 +47,20 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     }
   }
 
+  def getFields(cols: Array[String], schema: StructType,
+      module: String) = {
+    cols.map { col =>
+      val colT = normalizeId(col.trim)
+      schema.fields.collectFirst {
+        case field if colT == normalizeId(field.name) => field
+      }.getOrElse {
+        throw new AnalysisException(
+          s"""$module: Cannot resolve column name "$col" among
+            (${cols.mkString(", ")})""")
+      }
+    }
+  }
+
   def getAllExecutorsMemoryStatus(
       sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
     val memoryStatus = sc.env.blockManager.master.getMemoryStatus
