@@ -2,7 +2,8 @@ package org.apache.spark.sql.execution
 
 import scala.language.reflectiveCalls
 
-import org.apache.spark.sql.catalyst.expressions.{MutableRow, Row}
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.{InternalRow, MutableRow}
 import org.apache.spark.sql.collection.{ChangeValue, Utils}
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.types.StructType
@@ -30,7 +31,8 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
       new StratumReservoir(reservoir, 1, 1)
     }
 
-    override def mergeValue(row: Row, sr: StratumReservoir): StratumReservoir = {
+    override def mergeValue(row: Row,
+        sr: StratumReservoir): StratumReservoir = {
       // else update meta information in current stratum
       sr.batchTotalSize += 1
       val stratumSize = sr.reservoirSize
@@ -55,14 +57,15 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
 
   override def append[U](rows: Iterator[Row],
       processSelected: Array[Any => Any],
-      init: U, processFlush: (U, Row) => U, endBatch: U => U): U = {
+      init: U, processFlush: (U, InternalRow) => U, endBatch: U => U): U = {
     if (rows.hasNext) {
       strata.bulkChangeValues(rows, new ProcessRows(processSelected))
     }
     init
   }
 
-  override def sample(items: Iterator[Row], flush: Boolean): Iterator[Row] = {
+  override def sample(items: Iterator[InternalRow],
+      flush: Boolean): Iterator[InternalRow] = {
     val processRow = new ProcessRows(null)
     for (row <- items) {
       strata.changeValue(row, processRow)

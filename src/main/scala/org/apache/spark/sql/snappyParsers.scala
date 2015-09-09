@@ -25,6 +25,8 @@ private[sql] class SnappyParser extends SqlParser {
   protected val ESTIMATE = Keyword("ESTIMATE")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
+  protected val AVG = Keyword("AVG")
+  protected val SUM = Keyword("SUM")
 
   protected val defaultConfidence = 0.75
 

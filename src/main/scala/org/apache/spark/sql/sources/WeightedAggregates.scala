@@ -99,7 +99,7 @@ case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression 
 
   override def toString: String = s"CoalesceDisparateTypes(${children.mkString(",")})"
 
-  override def eval(input: Row): Any = {
+  override def eval(input: InternalRow): Any = {
     throw new IllegalStateException("Children of CoalesceDisparateTypes " +
         "should be evaluated by its parent based on their types")
   }
@@ -141,7 +141,7 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
     case _ => null
   }
 
-  override final def eval(input: Row): Double = {
+  override final def eval(input: InternalRow): Double = {
     val boundRef = boundReference
     if (boundRef != null) {
       try {
@@ -211,7 +211,7 @@ final class WeightedCountFunction(override val expr: Expression,
   val expr1 = expr.asInstanceOf[CoalesceDisparateTypes].children(1).
       asInstanceOf[MapColumnToWeight]
 
-  override def update(input: Row): Unit = {
+  override def update(input: InternalRow): Unit = {
     if (isNonNullLiteral) {
       countDouble += expr1.eval(input)
     }
@@ -230,7 +230,7 @@ final class WeightedCountFunction(override val expr: Expression,
     }
   }
 
-  override def eval(input: Row): Any = countDouble.toLong
+  override def eval(input: InternalRow): Any = countDouble.toLong
 }
 
 class WeightedAverage(child: Expression)

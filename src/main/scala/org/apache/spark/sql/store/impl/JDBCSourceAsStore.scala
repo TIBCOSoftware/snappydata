@@ -13,15 +13,15 @@ import scala.util.Random
 import com.gemstone.gemfire.cache.{EntryOperation, PartitionResolver}
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import org.apache.spark.{TaskContext, Partition, SparkContext, SparkEnv}
-import org.apache.spark.rdd.{UnionRDD, RDD}
-import org.apache.spark.sql.Row
+import org.apache.spark.rdd.{RDD, UnionRDD}
+import org.apache.spark.sql.catalyst.expressions.InternalRow
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey}
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect}
+import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
 /**
  * ExternalStore implementation for GemFireXD.
@@ -57,13 +57,15 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
     lookupName
   }
 
-  def getCachedBatchRDD(tableName: String, uuidList: ArrayBuffer[RDD[UUIDRegionKey]], sparkContext: SparkContext): RDD[CachedBatch] = {
+  def getCachedBatchRDD(tableName: String,
+      uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
+      sparkContext: SparkContext): RDD[CachedBatch] = {
     val connection: java.sql.Connection = getConnection(tableName)
     connectionType match {
-      case ConnectionType.Embedded => {
-        new ExternalStorePartitionedRDD[CachedBatch](sparkContext, connection.getSchema, tableName, this)
-      }
-      case _ => {
+      case ConnectionType.Embedded =>
+        new ExternalStorePartitionedRDD[CachedBatch](sparkContext,
+          connection.getSchema, tableName, this)
+      case _ =>
         var rddList = new ArrayBuffer[RDD[CachedBatch]]()
         uuidList.foreach(x => {
           val y = x.mapPartitions { uuidItr =>
@@ -72,27 +74,26 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
           rddList += y
         })
         new UnionRDD[CachedBatch](sparkContext, rddList)
-      }
     }
   }
 
-
-  override def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey = {
+  override def storeCachedBatch(batch: CachedBatch,
+      tableName: String): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
 
-        case ConnectionType.Embedded => {
+        case ConnectionType.Embedded =>
           val resolvedName = lookupName(tableName,connection.getSchema)
           val region = Misc.getRegionForTable(resolvedName, true)
           region.asInstanceOf[AbstractRegion] match {
             case pr: PartitionedRegion =>
-              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds.toArray(new Array[Integer](0))
+              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds
+                  .toArray(new Array[Integer](0))
               genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
             case _ =>
               genUUIDRegionKey()
           }
-        }
 
         case _ => genUUIDRegionKey()
       }
@@ -130,21 +131,24 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 
     itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
       case conn =>
-        val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
+        //val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
+        val uuidIter = kIter.map(_.getUUID)
 
-        val uuidParams = uuidIter.foldRight(new StringBuilder)({ case (_, o) => o.append("?,") })
+        val uuidParams = uuidIter.foldRight(new StringBuilder) {
+          case (_, o) => o.append("?,")
+        }
         if (uuidParams.nonEmpty) {
           uuidParams.setCharAt(uuidParams.length - 1, ' ')
         }
         else {
           return Iterator.empty
         }
-        val ps = conn.prepareStatement(s"select cachedBatch from $tableName where uuid IN ($uuidParams)")
+        val ps = conn.prepareStatement(
+          s"select cachedBatch from $tableName where uuid IN ($uuidParams)")
 
-
-        uuidIter.zipWithIndex.foreach({
+        uuidIter.zipWithIndex.foreach {
           case (_id, idx) => ps.setString(idx + 1, _id.toString)
-        })
+        }
         val rs = ps.executeQuery()
 
         new CachedBatchIteratorFromRS(conn, connectionType, ps, rs)
@@ -269,7 +273,7 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
     dis.read(bytes)
     val deserializationStream = serializer.newInstance().deserializeStream(
       new ByteArrayInputStream(bytes))
-    val stats = deserializationStream.readValue[Row]()
+    val stats = deserializationStream.readValue[InternalRow]()
     blob.free()
     CachedBatch(colBuffers.toArray, stats)
   }
@@ -295,7 +299,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext, sch
       case conn =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
         val resolvedName = store.lookupName(tableName, schema)
-        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+        //val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val par = split.index
         val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
         ps1.execute()

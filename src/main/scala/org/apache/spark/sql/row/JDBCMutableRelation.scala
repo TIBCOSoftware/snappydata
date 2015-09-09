@@ -127,7 +127,7 @@ class JDBCMutableRelation(
       requiredColumns,
       filters,
       parts,
-      connProperties)
+      connProperties).asInstanceOf[RDD[Row]]
   }
 
   final val rowInsertStr = JDBCMutableRelation.getInsertString(table, schema)

@@ -15,7 +15,7 @@ import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.{Row, AnalysisException}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
@@ -44,7 +44,7 @@ case class StratifiedSample(var options: Map[String, Any],
   case class Execute(override val child: SparkPlan,
       override val output: Seq[Attribute]) extends UnaryNode {
 
-    protected override def doExecute(): RDD[Row] =
+    protected override def doExecute(): RDD[InternalRow] =
       new StratifiedSampledRDD(child.execute(), qcs,
         sqlContext.conf.columnBatchSize, options, schema)
   }
@@ -83,12 +83,12 @@ final class SamplePartition(val parent: Partition, override val index: Int,
     s"SamplePartition($index, $blockId, isLast=$isLastHostPartition)"
 }
 
-final class StratifiedSampledRDD(@transient parent: RDD[Row],
+final class StratifiedSampledRDD(@transient parent: RDD[InternalRow],
     qcs: Array[Int],
     cacheBatchSize: Int,
     options: Map[String, Any],
     schema: StructType)
-    extends RDD[Row](parent) with Serializable {
+    extends RDD[InternalRow](parent) with Serializable {
 
   var executorPartitions: Map[BlockManagerId, IndexedSeq[Int]] = Map.empty
 
@@ -131,7 +131,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
       })
       val partitions = (0 until numPartitions).map { index =>
         val ppart = parentPartitions(index)
-        val plocs = firstParent[Row].preferredLocations(ppart)
+        val plocs = firstParent[InternalRow].preferredLocations(ppart)
         // get the "best" one as per the maximum number of remaining partitions
         // to be assigned from among the parent partition's preferred locations
         // (that can be hosts or executors), else if none found then use the
@@ -183,7 +183,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
   }
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[Row] = {
+      context: TaskContext): Iterator[InternalRow] = {
     val part = split.asInstanceOf[SamplePartition]
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     // use -ve cacheBatchSize to indicate that no additional batching is to be
@@ -211,7 +211,7 @@ final class StratifiedSampledRDD(@transient parent: RDD[Row],
     }
     sampler.numThreads.incrementAndGet()
     try {
-      sampler.sample(firstParent[Row].iterator(part.parent, context),
+      sampler.sample(firstParent[InternalRow].iterator(part.parent, context),
         // If we are the last partition on this host, then wait for all
         // others to finish and then drain the remaining cache. The flag
         // is set persistently by this last thread so that any other stray
@@ -439,7 +439,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
    * buffer replaced if required. This should happen only inside flushCache.
    */
   protected final val pendingBatch = new AtomicReference[
-      mutable.ArrayBuffer[Row]](new mutable.ArrayBuffer[Row])
+      mutable.ArrayBuffer[InternalRow]](new mutable.ArrayBuffer[InternalRow])
 
   protected def strataReservoirSize: Int
 
@@ -479,17 +479,18 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
   }
 
   def append[U](rows: Iterator[Row], processSelected: Array[Any => Any],
-      init: U, processFlush: (U, Row) => U, endBatch: U => U): U
+      init: U, processFlush: (U, InternalRow) => U, endBatch: U => U): U
 
-  def sample(items: Iterator[Row], flush: Boolean): Iterator[Row]
+  def sample(items: Iterator[InternalRow],
+      flush: Boolean): Iterator[InternalRow]
 
   private[sql] final val flushStatus = new AtomicBoolean
 
   def setFlushStatus(doFlush: Boolean) = flushStatus.set(doFlush)
 
-  def iterator: Iterator[Row] = {
-    val sampleBuffer = new mutable.ArrayBuffer[Row](BUFSIZE)
-    strata.foldSegments(Iterator[Row]()) { (iter, seg) =>
+  def iterator: Iterator[InternalRow] = {
+    val sampleBuffer = new mutable.ArrayBuffer[InternalRow](BUFSIZE)
+    strata.foldSegments(Iterator[InternalRow]()) { (iter, seg) =>
       iter ++ {
         if (sampleBuffer.nonEmpty) sampleBuffer.clear()
         SegmentMap.lock(seg.readLock()) {
@@ -507,14 +508,14 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
 
   protected final def foldDrainSegment[U](prevReservoirSize: Int,
       fullReset: Boolean,
-      process: (U, Row) => U)
+      process: (U, InternalRow) => U)
       (init: U, seg: ReservoirSegment): U = {
     seg.foldValues(init, foldReservoir(prevReservoirSize, doReset = true,
       fullReset, process))
   }
 
   protected final def foldReservoir[U](prevReservoirSize: Int,
-      doReset: Boolean, fullReset: Boolean, process: (U, Row) => U)
+      doReset: Boolean, fullReset: Boolean, process: (U, InternalRow) => U)
       (sr: StratumReservoir, init: U): U = {
     // imperative code segment below for best efficiency
     var v = init

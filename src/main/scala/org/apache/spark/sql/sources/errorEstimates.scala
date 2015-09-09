@@ -185,7 +185,7 @@ case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
     case _ => null
   }
 
-  override def update(input: Row): Unit = {
+  override def update(input: InternalRow): Unit = {
     val boundRef = boundReference
     if (boundRef != null) {
       val v = toDouble(input, boundRef.ordinal, Double.NegativeInfinity)
@@ -204,7 +204,7 @@ case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
     }
   }
 
-  override def eval(input: Row): Any = {
+  override def eval(input: InternalRow): Any = {
     if (partial) errorStats
     else StatCounterUDT.finalizeEvaluation(errorStats,
       confidence, confFactor, aggType)
@@ -237,11 +237,11 @@ case class ErrorStatsMergeFunction(expr: Expression, base: AggregateExpression,
 
   private val errorStats = new StatCounterWithFullCount()
 
-  override def update(input: Row): Unit = {
+  override def update(input: InternalRow): Unit = {
     val result = expr.eval(input)
     errorStats.merge(result.asInstanceOf[StatCounterWithFullCount])
   }
 
-  override def eval(input: Row) = StatCounterUDT.finalizeEvaluation(errorStats,
-    confidence, confFactor, aggType)
+  override def eval(input: InternalRow) = StatCounterUDT.finalizeEvaluation(
+    errorStats, confidence, confFactor, aggType)
 }

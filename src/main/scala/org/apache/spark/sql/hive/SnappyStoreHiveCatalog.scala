@@ -12,6 +12,7 @@ import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
+import org.apache.spark.sql.catalyst.expressions.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
@@ -535,7 +536,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
     val rdd = new DummyRDD(context) {
       override def compute(split: Partition,
-          taskContext: TaskContext): Iterator[Row] = {
+          taskContext: TaskContext): Iterator[InternalRow] = {
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>

@@ -3,6 +3,7 @@ package org.apache.spark.sql
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.{MapPartitionsRDD, RDD}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.StratifiedSampler
 import org.apache.spark.{Partition, TaskContext}
@@ -34,13 +35,13 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
 }
 
 class DummyRDD(sqlContext: SQLContext)
-    extends RDD[Row](sqlContext.sparkContext, Nil) {
+    extends RDD[InternalRow](sqlContext.sparkContext, Nil) {
 
   /**
    * Implemented by subclasses to compute a given partition.
    */
-  override def compute(split: Partition, context: TaskContext): Iterator[Row] =
-    Iterator.empty
+  override def compute(split: Partition,
+      context: TaskContext): Iterator[InternalRow] = Iterator.empty
 
   /**
    * Implemented by subclasses to return the set of partitions in this RDD.

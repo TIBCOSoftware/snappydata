@@ -3,8 +3,7 @@ package org.apache.spark.sql.columnar
 import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.Accumulable
-import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.sql.Row
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.collection.UUIDRegionKey
@@ -26,14 +25,14 @@ private[sql] final class ExternalStoreRelation(
     val externalStore: ExternalStore)(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
-    private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
+    private var _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null,
     private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
      = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends InMemoryAppendableRelation(
      output, useCompression, batchSize, storageLevel, child, tableName,
      isSampledTable)(_ccb: RDD[CachedBatch],
         _stats: Statistics,
-        _bstats: Accumulable[ArrayBuffer[Row], Row]) {
+        _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow]) {
 
   override def appendBatch(batch: RDD[CachedBatch]) = writeLock {
     throw new IllegalStateException(

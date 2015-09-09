@@ -5,7 +5,8 @@ import java.util.concurrent.atomic.{AtomicInteger, AtomicLong}
 import scala.collection.mutable
 import scala.language.reflectiveCalls
 
-import org.apache.spark.sql.catalyst.expressions.{MutableRow, Row}
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.expressions.{InternalRow, MutableRow}
 import org.apache.spark.sql.collection.{ChangeValue, GenerateFlatIterator, SegmentMap, Utils}
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.sources.CastLongTime
@@ -57,7 +58,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     compareOrderAndSet(timeSlotEnd, timeSlot, getMax = true)
   }
 
-  private def updateTimeSlot(row: Row, useCurrentTimeIfNoColumn: Boolean) {
+  private def updateTimeSlot(row: Row,
+      useCurrentTimeIfNoColumn: Boolean): Unit = {
     val tsCol = timeSeriesColumn
     if (tsCol >= 0) {
       val timeVal = parseMillis(row, tsCol)
@@ -71,7 +73,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
   }
 
   private final class ProcessRows[U](val processSelected: Array[Any => Any],
-      val processFlush: (U, Row) => U,
+      val processFlush: (U, InternalRow) => U,
       val endBatch: U => U, var result: U)
       extends ChangeValue[Row, StratumReservoir] {
 
@@ -164,7 +166,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     }
   }
 
-  private def flushCache[U](init: U, process: (U, Row) => U,
+  private def flushCache[U](init: U, process: (U, InternalRow) => U,
       // first acquire all the segment write locks
       // so no concurrent processors are in progress
       endBatch: U => U): U = strata.writeLock { segs =>
@@ -237,19 +239,18 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         if (((totalSamples % batchSize) << 1) > batchSize) {
           // full flush of samples and pendingBatch
           val u = pbatch.foldLeft(init)(process)
-          val newPBatch = new mutable.ArrayBuffer[Row](pendingLen)
+          val newPBatch = new mutable.ArrayBuffer[InternalRow](pendingLen)
           pendingBatch.set(newPBatch)
           endBatch(segs.foldLeft(u)(processSegment(prevCacheSize, fullReset)))
         } else if ((totalSamples << 1) > batchSize) {
           // some batches can be flushed but rest to be moved to pendingBatch
           val u = pbatch.foldLeft(init)(process)
-          val newPBatch = new mutable.ArrayBuffer[Row](pendingLen)
+          val newPBatch = new mutable.ArrayBuffer[InternalRow](pendingLen)
           // now apply process on the reservoir cache as much as required
           // (as per the maximum multiple of batchSize) and copy remaining
           // into pendingBatch
           def processAndCopyToBuffer(cacheSize: Int, fullReset: Boolean,
-              numToFlush: Int,
-              buffer: mutable.ArrayBuffer[Row]) = {
+              numToFlush: Int, buffer: mutable.ArrayBuffer[InternalRow]) = {
             var remaining = numToFlush
             foldDrainSegment(cacheSize, fullReset, { (u: U, row) =>
               if (remaining == 0) {
@@ -272,7 +273,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
           res
         } else {
           // copy existing to newBatch
-          val newPBatch = new mutable.ArrayBuffer[Row](pendingLen)
+          val newPBatch = new mutable.ArrayBuffer[InternalRow](pendingLen)
           pbatch.copyToBuffer(newPBatch)
           // move collected samples into new pendingBatch
           segs.foldLeft(newPBatch)(foldDrainSegment(prevCacheSize,
@@ -295,7 +296,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
 
   override def append[U](rows: Iterator[Row],
       processSelected: Array[Any => Any],
-      init: U, processFlush: (U, Row) => U, endBatch: U => U): U = {
+      init: U, processFlush: (U, InternalRow) => U, endBatch: U => U): U = {
     if (rows.hasNext) {
       val processedResult = new ProcessRows(processSelected, processFlush,
         endBatch, init)
@@ -304,13 +305,14 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     } else init
   }
 
-  override def sample(items: Iterator[Row], flush: Boolean): Iterator[Row] = {
+  override def sample(items: Iterator[InternalRow],
+      flush: Boolean): Iterator[InternalRow] = {
     // use "batchSize" to determine the sample buffer size
     val batchSize = BUFSIZE
-    val sampleBuffer = new mutable.ArrayBuffer[Row](math.min(batchSize,
+    val sampleBuffer = new mutable.ArrayBuffer[InternalRow](math.min(batchSize,
       (batchSize * fraction * 10).toInt))
 
-    new GenerateFlatIterator[Row, Boolean](finished => {
+    new GenerateFlatIterator[InternalRow, Boolean](finished => {
       val sbuffer = sampleBuffer
       if (sbuffer.nonEmpty) sbuffer.clear()
       val processRows = new ProcessRows[Unit](null, (_, sampledRow) => {

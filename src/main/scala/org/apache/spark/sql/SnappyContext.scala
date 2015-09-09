@@ -11,7 +11,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.expressions.{InternalRow, Expression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
@@ -66,16 +66,13 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       aqpTables: Seq[String],
       formatter: (RDD[T], StructType) => RDD[Row],
       schema: StructType,
-      transform: DataFrame => DataFrame = null) {
+      transform: RDD[Row] => RDD[Row] = null) {
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
       val rddRows = formatter(rdd, schema)
 
       val rows = if (transform != null) {
-        // avoid conversion to Catalyst rows and back for both calls below,
-        // so not using DataFrame.rdd call directly in second step below
-        val rDF = createDataFrame(rddRows, schema, needsConversion = false)
-        transform(rDF).queryExecution.toRdd
+        transform(rddRows)
       } else rddRows
 
       collectSamples(rows, aqpTables, time.milliseconds)
@@ -181,7 +178,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         tableName, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowIterator.map(converter(_).asInstanceOf[Row])
+      rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
     }.persist(storageLevel)
@@ -221,7 +218,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         tableName, schema, relation.cachedRepresentation, schema.toAttributes)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowIterator.map(converter(_).asInstanceOf[Row])
+      rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
     }.persist(storageLevel)
@@ -379,7 +376,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
           // existing table schema could have nullable columns
           val schema = data.schema
           if (schema.exists(!_.nullable)) {
-            data = createDataFrame(data.queryExecution.toRdd, schema.asNullable)
+            data = internalCreateDataFrame(data.queryExecution.toRdd,
+              schema.asNullable)
           }
       }
     }
@@ -994,7 +992,7 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag](
   def saveStream(sampleTab: Seq[String],
       formatter: (RDD[T], StructType) => RDD[Row],
       schema: StructType,
-      transform: DataFrame => DataFrame = null): Unit =
+      transform: RDD[Row] => RDD[Row] = null): Unit =
     context.saveStream(ds, sampleTab, formatter, schema, transform)
 
   def saveToExternalTable[A <: Product : TypeTag](externalTable : String, jdbcSource : Map[String, String]): Unit = {

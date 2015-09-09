@@ -38,7 +38,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{CachedRDD, Row}
+import org.apache.spark.sql.CachedRDD
 import org.apache.spark.storage.StorageLevel
 
 private[sql] class InMemoryAppendableRelation(
@@ -51,13 +51,13 @@ private[sql] class InMemoryAppendableRelation(
     private val isSampledTable: Boolean)(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
-    private var _bstats: Accumulable[ArrayBuffer[Row], Row] = null,
+    private var _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null,
     private var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
     new ArrayBuffer[RDD[CachedBatch]]())
     extends InMemoryRelation(output, useCompression, batchSize,
       storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
           _stats: Statistics,
-          _bstats: Accumulable[ArrayBuffer[Row], Row])
+          _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow])
     with MultiInstanceRelation {
 
   private[sql] val reservoirRDD =
@@ -168,7 +168,7 @@ private[sql] object InMemoryAppendableRelation {
      * Append a single row to the current CachedBatch (creating a new one
      * if not present or has exceeded its capacity)
      */
-    private def appendRow_(newBuilders: Boolean, row: Row): Unit = {
+    private def appendRow_(newBuilders: Boolean, row: InternalRow): Unit = {
       val rowLength = row.length
       if (rowLength > 0) {
         // Added for SPARK-6082. This assertion can be useful for scenarios when
@@ -189,7 +189,7 @@ private[sql] object InMemoryAppendableRelation {
       if (rowCount >= batchSize) {
         // create a new CachedBatch and push into the array of
         // CachedBatches so far in this iteration
-        val stats = Row.merge(columnBuilders.map(
+        val stats = InternalRow.merge(columnBuilders.map(
           _.columnStats.collectedStatistics): _*)
         // TODO: somehow push into global batchStats
         result = batchAggregate(result,
@@ -200,7 +200,8 @@ private[sql] object InMemoryAppendableRelation {
       }
     }
 
-    def appendRow(u: Unit, row: Row): Unit = appendRow_(newBuilders = true, row)
+    def appendRow(u: Unit, row: InternalRow): Unit =
+      appendRow_(newBuilders = true, row)
 
     // empty for now
     def endRows(u: Unit): Unit = {}
@@ -232,13 +233,13 @@ private[sql] class InMemoryAppendableColumnarTableScan(
     override val relation: InMemoryAppendableRelation)
     extends InMemoryColumnarTableScan(attributes, predicates, relation) {
 
-  protected override def doExecute(): RDD[Row] = {
+  protected override def doExecute(): RDD[InternalRow] = {
 
     val rdd = relation.reservoirRDD
     if (rdd.isEmpty) {
       return super.doExecute()
     }
-    val reservoirRows: RDD[Row] = rdd.get.mapPartitionsPreserve { rows =>
+    val reservoirRows: RDD[InternalRow] = rdd.get.mapPartitionsPreserve { rows =>
 
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
@@ -259,7 +260,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
 
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
 
-      new Iterator[Row] {
+      new Iterator[InternalRow] {
 
         override def hasNext: Boolean = rows.hasNext
 
@@ -275,7 +276,8 @@ private[sql] class InMemoryAppendableColumnarTableScan(
       }
     }
 
-    new UnionRDD[Row](this.sparkContext, Seq(super.doExecute(), reservoirRows))
+    new UnionRDD[InternalRow](this.sparkContext, Seq(super.doExecute(),
+      reservoirRows))
   }
 }
 
