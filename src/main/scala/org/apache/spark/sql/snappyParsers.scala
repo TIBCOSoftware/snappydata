@@ -25,8 +25,6 @@ private[sql] class SnappyParser extends SqlParser {
   protected val ESTIMATE = Keyword("ESTIMATE")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
-  protected val AVG = Keyword("AVG")
-  protected val SUM = Keyword("SUM")
 
   protected val defaultConfidence = 0.75
 
@@ -35,12 +33,18 @@ private[sql] class SnappyParser extends SqlParser {
 
   override protected lazy val function = functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> floatLit <~ ")").? ~
-          (AVG | SUM) ~ ("(" ~> expression <~ ")") ^^ {
+          ident ~ ("(" ~> expression <~ ")") ^^ {
         case c ~ op ~ exp =>
-          val confidence = c.map(_.toDouble).getOrElse(defaultConfidence)
-          val aggType = ErrorAggregate.withName(
-            op.toUpperCase(java.util.Locale.ENGLISH))
-          ErrorEstimateAggregate(exp, confidence, null, c.isEmpty, aggType)
+          try {
+            val aggType = ErrorAggregate.withName(
+              op.toUpperCase(java.util.Locale.ENGLISH))
+            val confidence = c.map(_.toDouble).getOrElse(defaultConfidence)
+            ErrorEstimateAggregate(exp, confidence, null, c.isEmpty, aggType)
+          } catch {
+            case _: java.util.NoSuchElementException =>
+              throw new AnalysisException(
+                s"No error estimate implemented for $op")
+          }
       }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =

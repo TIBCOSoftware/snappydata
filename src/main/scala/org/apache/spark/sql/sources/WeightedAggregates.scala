@@ -34,8 +34,8 @@ object WeightageRule extends Rule[LogicalPlan] {
 
       aggr transformExpressions {
         // cheat code to run the query on sample table without applying weightages
-        case alias@Alias(_, name) if name.startsWith("sample_") =>
-          alias
+        case alias@Alias(_, name)
+          if Utils.normalizeId(name).startsWith("sample_") => alias
         // TODO: Extractors should be used to find the difference between the aggregate
         // and weighted aggregate functions instead of the unclean isInstance function
         case alias@Alias(e, name) =>
@@ -48,7 +48,7 @@ object WeightageRule extends Rule[LogicalPlan] {
   def transformAggExprToWeighted(e: Expression,
       mapExpr: MapColumnToWeight): Expression = {
     e transform {
-      case aggr@Count(args) if !aggr.isInstanceOf[WeightedCount] =>
+      case aggr@Count(args) =>
         WeightedCount(new CoalesceDisparateTypes(Seq(args, mapExpr)))
       case aggr@Sum(args) if !aggr.isInstanceOf[WeightedSum] =>
         WeightedSum(Multiply(args, mapExpr))
@@ -102,13 +102,6 @@ case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression 
   override def eval(input: InternalRow): Any = {
     throw new IllegalStateException("Children of CoalesceDisparateTypes " +
         "should be evaluated by its parent based on their types")
-  }
-}
-
-object WeightedCount {
-
-  def apply(child: Expression): WeightedCount = {
-    new WeightedCount(child)
   }
 }
 
@@ -176,20 +169,26 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
   }
 }
 
-class WeightedSum(child: Expression) extends Sum(child) with trees.UnaryNode[Expression] {
-
+class WeightedSum(child: Expression)
+    extends Sum(child) with trees.UnaryNode[Expression] {
 }
 
-class WeightedCount(child: Expression) extends Count(child) with trees.UnaryNode[Expression] {
+// TODO: hemant, can this be made to work with codegen==true (the default now)?
+case class WeightedCount(child: Expression)
+    extends PartialAggregate with trees.UnaryNode[Expression] {
 
+  override def nullable: Boolean = false
+  override def dataType: LongType.type = LongType
   override def toString: String = s"WeightedCount($child)"
 
   override def asPartial: SplitEvaluation = {
     val partialCount = Alias(new WeightedCount(child), "WeightedPartialCount")()
-    SplitEvaluation(Coalesce(Seq(Sum(partialCount.toAttribute), Literal(0L))), partialCount :: Nil)
+    SplitEvaluation(Coalesce(Seq(Sum(partialCount.toAttribute), Literal(0L))),
+      partialCount :: Nil)
   }
 
-  override def newInstance(): CountFunction = new WeightedCountFunction(child, this)
+  override def newInstance(): CountFunction =
+    new WeightedCountFunction(child, this)
 }
 
 final class WeightedCountFunction(override val expr: Expression,
