@@ -80,8 +80,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val INIT = Keyword("INIT")
   protected val DROP = Keyword("DROP")
 
-  private val DDLEnd = Pattern.compile(USING.str + ".*" + OPTIONS.str,
-    Pattern.CASE_INSENSITIVE)
+  private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s+" +
+      OPTIONS.str, Pattern.CASE_INSENSITIVE)
 
 
   protected override lazy val createTable: Parser[LogicalPlan] =
