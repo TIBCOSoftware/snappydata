@@ -10,6 +10,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
@@ -142,7 +143,7 @@ class JDBCMutableRelation(
   }
 
   def insert(data: DataFrame): Unit = {
-    JDBCWriteDetails.saveTable(data, url, table, connProperties)
+    JdbcUtils.saveTable(data, url, table, connProperties)
   }
 
   // TODO: SW: should below all be executed from driver or some random executor?
@@ -328,7 +329,7 @@ object JDBCMutableRelation extends Logging {
             case s: String => stmt.setString(col + 1, s)
             case o => stmt.setObject(col + 1, o)
           }
-          case DecimalType.Fixed(_, _) | DecimalType.Unlimited =>
+          case d: DecimalType =>
             row(col) match {
               case d: Decimal => stmt.setBigDecimal(col + 1, d.toJavaBigDecimal)
               case bd: java.math.BigDecimal => stmt.setBigDecimal(col + 1, bd)
@@ -359,8 +360,7 @@ object JDBCMutableRelation extends Logging {
         case BinaryType => java.sql.Types.BLOB
         case TimestampType => java.sql.Types.TIMESTAMP
         case DateType => java.sql.Types.DATE
-        case DecimalType.Fixed(_, _) | DecimalType.Unlimited =>
-          java.sql.Types.DECIMAL
+        case d: DecimalType => java.sql.Types.DECIMAL
         case NullType => java.sql.Types.NULL
         case _ => throw new IllegalArgumentException(
           s"Can't translate to JDBC value for type $dataType")

@@ -4,6 +4,7 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark.Accumulable
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.collection.UUIDRegionKey
@@ -58,7 +59,8 @@ private[sql] final class ExternalStoreRelation(
   override def withOutput(newOutput: Seq[Attribute]) = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, isSampledTable, externalStore)(
-          cachedColumnBuffers, super.statisticsToBePropagated, batchStats, uuidList)
+          cachedColumnBuffers, super.statisticsToBePropagated,
+          batchStats, uuidList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -77,7 +79,8 @@ private[sql] final class ExternalStoreRelation(
   }
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-    externalStore.getCachedBatchRDD(tableName.get, uuidList, this.child.sqlContext.sparkContext)
+    externalStore.getCachedBatchRDD(tableName.get, uuidList,
+      this.child.sqlContext.sparkContext)
   }
 
   // TODO: Do this later...understand whats the need of this function

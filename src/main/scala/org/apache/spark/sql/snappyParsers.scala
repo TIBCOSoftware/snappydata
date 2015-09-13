@@ -6,8 +6,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
-import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser}
+import org.apache.spark.sql.catalyst.{TableIdentifier, ParserDialect, SqlParser}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming._
@@ -32,7 +33,7 @@ private[sql] class SnappyParser extends SqlParser {
       cte | dmlForExternalTable
 
   override protected lazy val function = functionDef |
-      ERROR ~> ESTIMATE ~> ("(" ~> floatLit <~ ")").? ~
+      ERROR ~> ESTIMATE ~> ("(" ~> unsignedFloat <~ ")").? ~
           ident ~ ("(" ~> expression <~ ")") ^^ {
         case c ~ op ~ exp =>
           try {
@@ -87,14 +88,14 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s+" +
       OPTIONS.str, Pattern.CASE_INSENSITIVE)
 
-
   protected override lazy val createTable: Parser[LogicalPlan] =
-    (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~ ident ~
-        externalTableInput ~ (USING ~> className) ~ (OPTIONS ~> options) ~
-        (AS ~> restInput).? ^^ {
-      case temporary ~ allowExisting ~ tableName ~ schemaString ~
+    (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
+        tableIdentifier ~ externalTableInput ~ (USING ~> className) ~
+        (OPTIONS ~> options).? ~ (AS ~> restInput).? ^^ {
+      case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
+        val options = opts.getOrElse(Map.empty[String, String])
         val provider = SnappyContext.getProvider(providerName)
         if (query.isDefined) {
           if (schemaString.length > 0) {
@@ -108,11 +109,11 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           val queryPlan = parseQuery(query.get)
 
           if (temporary.isDefined) {
-            CreateTableUsingAsSelect(tableName, provider, temporary = true,
-              Array.empty[String], mode, opts, queryPlan)
+            CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
+              Array.empty[String], mode, options, queryPlan)
           } else {
-            CreateExternalTableUsingSelect(tableName, provider,
-              Array.empty[String], mode, opts, queryPlan)
+            CreateExternalTableUsingSelect(tableIdent, provider,
+              Array.empty[String], mode, options, queryPlan)
           }
         } else {
           val hasExternalSchema = if (temporary.isDefined) false
@@ -131,12 +132,12 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
 
           if (temporary.isDefined) {
-            CreateTableUsing(tableName, userSpecifiedSchema, provider,
-              temporary = true, opts, allowExisting.isDefined,
+            CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
+              temporary = true, options, allowExisting.isDefined,
               managedIfNoPath = false)
           } else {
-            CreateExternalTableUsing(tableName, userSpecifiedSchema,
-              schemaDDL, provider, allowExisting.isDefined, opts)
+            CreateExternalTableUsing(tableIdent, userSpecifiedSchema,
+              schemaDDL, provider, allowExisting.isDefined, options)
           }
         }
     }
@@ -173,6 +174,13 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
     }
 
+  protected override lazy val tableIdentifier: Parser[TableIdentifier] =
+    (ident <~ ".").? ~ (ident <~ ".").? ~ ident ^^ {
+      case maybeDbName ~ maybeSchemaName ~ tableName =>
+        val schemaPrefix = maybeSchemaName.map(_ + '.').getOrElse("")
+        TableIdentifier(schemaPrefix + tableName, maybeDbName)
+    }
+
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
     def apply(in: Input): ParseResult[String] = {
       val source = in.source
@@ -192,7 +200,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 }
 
 private[sql] case class CreateExternalTableUsing(
-    tableName: String,
+    tableIdent: TableIdentifier,
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
@@ -202,14 +210,14 @@ private[sql] case class CreateExternalTableUsing(
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = SnappyContext(sqlContext.sparkContext)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(tableName, provider, userSpecifiedSchema,
-      schemaDDL, mode, options)
+    snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
+      userSpecifiedSchema, schemaDDL, mode, options)
     Seq.empty
   }
 }
 
 private[sql] case class CreateExternalTableUsingSelect(
-    tableName: String,
+    tableIdent: TableIdentifier,
     provider: String,
     partitionColumns: Array[String],
     mode: SaveMode,
@@ -218,11 +226,11 @@ private[sql] case class CreateExternalTableUsingSelect(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = SnappyContext(sqlContext.sparkContext)
-    snc.createTable(tableName, provider, partitionColumns, mode,
-      options, query)
-    // refresh cache of the table in catalog
     val catalog = snc.catalog
-    catalog.invalidateTable(catalog.newQualifiedTableName(tableName))
+    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
+      partitionColumns, mode, options, query)
+    // refresh cache of the table in catalog
+    catalog.invalidateTable(tableIdent)
     Seq.empty
   }
 }
@@ -347,11 +355,11 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
           case (streamTableName, sr) =>
             val streamTable = Some(streamTableName)
             val aqpTables = catalog.tables.collect {
-              case (sampleTable, sr: StratifiedSample)
-                if sr.streamTable == streamTable => sampleTable.qualifiedName
+              case (sampleTableIdent, sr: StratifiedSample)
+                if sr.streamTable == streamTable => sampleTableIdent.table
             } ++ catalog.topKStructures.collect {
-              case (topKName, (topK, _))
-                if topK.streamTable == streamTable => topKName.qualifiedName
+              case (topKIdent, (topK, _))
+                if topK.streamTable == streamTable => topKIdent.table
             }
             if (aqpTables.nonEmpty) {
               snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
@@ -373,18 +381,18 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
 
   def run(sqlContext: SQLContext): Seq[Row] = {
 
-    val tableIdent = OptsUtil.getOption(OptsUtil.BASETABLE, options)
+    val table = OptsUtil.getOption(OptsUtil.BASETABLE, options)
 
     val snappyCtxt = SnappyContext(sqlContext.sparkContext)
     val catalog = snappyCtxt.catalog
 
-    val tableName = catalog.newQualifiedTableName(tableIdent)
-    val sr = catalog.getStreamTableRelation(tableName)
+    val tableIdent = catalog.newQualifiedTableName(table)
+    val sr = catalog.getStreamTableRelation(tableIdent)
 
     // Add the sample table to the catalog as well.
     // StratifiedSampler is not expecting base table, remove it.
     snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
-      options - OptsUtil.BASETABLE, Some(tableName.qualifiedName))
+      options - OptsUtil.BASETABLE, Some(tableIdent.table))
 
     Seq.empty
   }

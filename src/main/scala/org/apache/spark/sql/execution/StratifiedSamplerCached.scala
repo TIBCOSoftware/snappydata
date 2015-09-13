@@ -6,8 +6,9 @@ import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.expressions.{InternalRow, MutableRow}
-import org.apache.spark.sql.collection.{ChangeValue, GenerateFlatIterator, SegmentMap, Utils}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.GenericMutableRow
+import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types.{DataType, StructType}
@@ -22,15 +23,15 @@ import org.apache.spark.sql.types.{DataType, StructType}
  * rows are equally divided among the current stratum (for those that received
  * any rows, that is).
  */
-final class StratifiedSamplerCached(override val qcs: Array[Int],
-    override val name: String,
-    override val schema: StructType,
+final class StratifiedSamplerCached(_qcs: Array[Int],
+    _name: String,
+    _schema: StructType,
     private val cacheSize: AtomicInteger,
     val fraction: Double,
     val cacheBatchSize: Int,
     val timeSeriesColumn: Int,
     val timeInterval: Long)
-    extends StratifiedSampler(qcs, name, schema) with CastLongTime {
+    extends StratifiedSampler(_qcs, _name, _schema) with CastLongTime {
 
   private val batchSamples, slotSize = new AtomicInteger
   /** Keeps track of the maximum number of samples in a stratum seen so far */
@@ -72,8 +73,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     }
   }
 
-  private final class ProcessRows[U](val processSelected: Array[Any => Any],
-      val processFlush: (U, InternalRow) => U,
+  private final class ProcessRows[U](val processFlush: (U, InternalRow) => U,
       val endBatch: U => U, var result: U)
       extends ChangeValue[Row, StratumReservoir] {
 
@@ -81,8 +81,8 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
 
     override def defaultValue(row: Row): StratumCache = {
       val capacity = cacheSize.get
-      val reservoir = new Array[MutableRow](capacity)
-      reservoir(0) = newMutableRow(row, processSelected)
+      val reservoir = new Array[GenericMutableRow](capacity)
+      reservoir(0) = newMutableRow(row)
       Utils.fillArray(reservoir, EMPTY_ROW, 1, capacity)
       // for time-series data don't start with shortfall since this indicates
       // that a new stratum has appeared which can remain under-sampled for
@@ -109,8 +109,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
         // pick up this row with probability of reservoirCapacity/totalSize
         if (rnd < reservoirCapacity) {
           // replace a random row in reservoir
-          sc.reservoir(rng.nextInt(reservoirCapacity)) =
-              newMutableRow(row, processSelected)
+          sc.reservoir(rng.nextInt(reservoirCapacity)) = newMutableRow(row)
           // update timeSlot start and end
           if (timeInterval > 0) {
             updateTimeSlot(row, useCurrentTimeIfNoColumn = false)
@@ -126,7 +125,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
           // increases only in steps of 1 and the expression
           // reservoirLen + (reservoirLen >>> 1) + 1 will certainly be
           // greater than reservoirLen
-          val newReservoir = new Array[MutableRow](math.max(math.min(
+          val newReservoir = new Array[GenericMutableRow](math.max(math.min(
             reservoirCapacity, reservoirLen + (reservoirLen >>> 1) + 1),
             cacheSize.get))
           Utils.fillArray(newReservoir, EMPTY_ROW, reservoirLen,
@@ -135,7 +134,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
             0, reservoirLen)
           sc.reservoir = newReservoir
         }
-        sc.reservoir(sc.reservoirSize) = newMutableRow(row, processSelected)
+        sc.reservoir(sc.reservoirSize) = newMutableRow(row)
         sc.reservoirSize += 1
         sc.totalSamples += 1
 
@@ -295,11 +294,9 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
   override protected def strataReservoirSize: Int = cacheSize.get
 
   override def append[U](rows: Iterator[Row],
-      processSelected: Array[Any => Any],
       init: U, processFlush: (U, InternalRow) => U, endBatch: U => U): U = {
     if (rows.hasNext) {
-      val processedResult = new ProcessRows(processSelected, processFlush,
-        endBatch, init)
+      val processedResult = new ProcessRows(processFlush, endBatch, init)
       strata.bulkChangeValues(rows, processedResult)
       processedResult.result
     } else init
@@ -311,17 +308,20 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
     val batchSize = BUFSIZE
     val sampleBuffer = new mutable.ArrayBuffer[InternalRow](math.min(batchSize,
       (batchSize * fraction * 10).toInt))
+    val wrappedRow = new WrappedInternalRow(schema,
+      WrappedInternalRow.createConverters(schema))
 
     new GenerateFlatIterator[InternalRow, Boolean](finished => {
       val sbuffer = sampleBuffer
       if (sbuffer.nonEmpty) sbuffer.clear()
-      val processRows = new ProcessRows[Unit](null, (_, sampledRow) => {
+      val processRows = new ProcessRows[Unit]((_, sampledRow) => {
         sbuffer += sampledRow
       }, identity, ())
 
       var flushed = false
       while (!flushed && items.hasNext) {
-        if (strata.changeValue(items.next(), processRows) == null) {
+        wrappedRow.internalRow = items.next()
+        if (strata.changeValue(wrappedRow, processRows) == null) {
           processRows.segmentAbort(null)
           flushed = sbuffer.nonEmpty
         }
@@ -359,7 +359,7 @@ final class StratifiedSamplerCached(override val qcs: Array[Int],
  * An extension to StratumReservoir to also track total samples seen since
  * last time slot and short fall from previous rounds.
  */
-private final class StratumCache(_reservoir: Array[MutableRow],
+private final class StratumCache(_reservoir: Array[GenericMutableRow],
     _reservoirSize: Int, _batchTotalSize: Int, var totalSamples: Int,
     var prevShortFall: Int) extends StratumReservoir(_reservoir,
   _reservoirSize, _batchTotalSize) {

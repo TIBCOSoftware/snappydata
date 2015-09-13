@@ -7,7 +7,8 @@ import scala.collection.mutable
 
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.jdbc.{DriverRegistry, JdbcDialects, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 
 /**

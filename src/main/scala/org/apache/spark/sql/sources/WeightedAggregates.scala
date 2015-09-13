@@ -2,10 +2,11 @@ package org.apache.spark.sql.sources
 
 import scala.util.control.NonFatal
 
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenContext, GeneratedExpressionCode}
 import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.trees
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.types._
@@ -86,7 +87,8 @@ object WeightageRule extends Rule[LogicalPlan] {
   }
 }
 
-case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression {
+case class CoalesceDisparateTypes(children: Seq[Expression])
+    extends Unevaluable {
 
   override lazy val resolved = childrenResolved
 
@@ -97,12 +99,8 @@ case class CoalesceDisparateTypes(children: Seq[Expression]) extends Expression 
   // Coalesce is foldable if all children are foldable.
   override def foldable: Boolean = !children.exists(!_.foldable)
 
-  override def toString: String = s"CoalesceDisparateTypes(${children.mkString(",")})"
-
-  override def eval(input: InternalRow): Any = {
-    throw new IllegalStateException("Children of CoalesceDisparateTypes " +
-        "should be evaluated by its parent based on their types")
-  }
+  override def toString: String =
+    s"CoalesceDisparateTypes(${children.mkString(",")})"
 }
 
 object WeightedSum {
@@ -119,7 +117,7 @@ object WeightedAverage {
   }
 }
 
-case class MapColumnToWeight(child: Expression) extends UnaryExpression {
+final case class MapColumnToWeight(child: Expression) extends UnaryExpression {
 
   override def dataType: DataType = DoubleType
 
@@ -129,12 +127,28 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
 
   override def toString: String = s"MapColumnToWeight($child)"
 
-  private[this] final val boundReference = child match {
+  private[this] val boundReference = child match {
     case b: BoundReference => b
     case _ => null
   }
 
-  override final def eval(input: InternalRow): Double = {
+  override protected def genCode(ctx: CodeGenContext,
+      ev: GeneratedExpressionCode): String = {
+    val eval = child.gen(ctx)
+    s"""
+      ${eval.code}
+      boolean ${ev.isNull} = false;
+      double ${ev.primitive} = 1.0;
+      final long value;
+      if (!${eval.isNull} && (value = ${eval.primitive}) != 0L) {
+        final long left = (value >> 32) & 0xffffffffL;
+        final long right = value & 0xffffffffL;
+        ${ev.primitive} = (left != 0) ? ((double)right / (double)left) : 1.0;
+      }
+    """
+  }
+
+  override def eval(input: InternalRow): Double = {
     val boundRef = boundReference
     if (boundRef != null) {
       try {
@@ -169,13 +183,14 @@ case class MapColumnToWeight(child: Expression) extends UnaryExpression {
   }
 }
 
-class WeightedSum(child: Expression)
-    extends Sum(child) with trees.UnaryNode[Expression] {
+final class WeightedSum(private[this] val _child: Expression)
+    extends Sum(_child) {
 }
 
-// TODO: hemant, can this be made to work with codegen==true (the default now)?
+// TODO: hemant, change all these to work with codegen==true (the default now)
+// (see org.apache.spark.sql.catalyst.expressions.aggregate.Utils.doConvert)
 case class WeightedCount(child: Expression)
-    extends PartialAggregate with trees.UnaryNode[Expression] {
+    extends UnaryExpression with PartialAggregate1 {
 
   override def nullable: Boolean = false
   override def dataType: LongType.type = LongType
@@ -187,13 +202,11 @@ case class WeightedCount(child: Expression)
       partialCount :: Nil)
   }
 
-  override def newInstance(): CountFunction =
-    new WeightedCountFunction(child, this)
+  override def newInstance() = new WeightedCountFunction(child, this)
 }
 
-final class WeightedCountFunction(override val expr: Expression,
-    override val base: AggregateExpression)
-    extends CountFunction(expr, base) {
+final class WeightedCountFunction(_expr: Expression,
+    _base: AggregateExpression1) extends CountFunction(_expr, _base) {
   def this() = this(null, null) // Required for serialization.
 
   var countDouble: Double = 0.0
@@ -232,8 +245,8 @@ final class WeightedCountFunction(override val expr: Expression,
   override def eval(input: InternalRow): Any = countDouble.toLong
 }
 
-class WeightedAverage(child: Expression)
-    extends Average(child) with trees.UnaryNode[Expression] {
+final class WeightedAverage(private[this] val _child: Expression)
+    extends Average(_child) {
 
   override def toString: String = s"WeightedAverage($child)"
 
@@ -243,15 +256,15 @@ class WeightedAverage(child: Expression)
     child.dataType match {
       //TODO: Given that the child will always have the data type of double,
       // Is this block really required?
-      case DecimalType.Fixed(_, _) | DecimalType.Unlimited =>
+      case d: DecimalType =>
         // Turn the child to unlimited decimals for calculation, before going back to fixed
-        val partialSum = Alias(Sum(Multiply(Cast(child, DecimalType.Unlimited),
+        val partialSum = Alias(Sum(Multiply(Cast(child, d),
           children(1))), "PartialSum")()
         val partialCount = Alias(WeightedCount(
           new CoalesceDisparateTypes(Seq(children.head, children(1)))), "PartialCount")()
 
-        val castedSum = Cast(Sum(partialSum.toAttribute), DecimalType.Unlimited)
-        val castedCount = Cast(Sum(partialCount.toAttribute), DecimalType.Unlimited)
+        val castedSum = Cast(Sum(partialSum.toAttribute), d)
+        val castedCount = Cast(Sum(partialCount.toAttribute), d)
         SplitEvaluation(
           Cast(Divide(castedSum, castedCount), dataType),
           partialCount :: partialSum :: Nil)

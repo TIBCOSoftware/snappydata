@@ -32,13 +32,14 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
 import org.apache.spark.rdd.{RDD, UnionRDD}
+import org.apache.spark.sql.CachedRDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.CachedRDD
 import org.apache.spark.storage.StorageLevel
 
 private[sql] class InMemoryAppendableRelation(
@@ -169,7 +170,7 @@ private[sql] object InMemoryAppendableRelation {
      * if not present or has exceeded its capacity)
      */
     private def appendRow_(newBuilders: Boolean, row: InternalRow): Unit = {
-      val rowLength = row.length
+      val rowLength = row.numFields
       if (rowLength > 0) {
         // Added for SPARK-6082. This assertion can be useful for scenarios when
         // something like Hive TRANSFORM is used. The external data generation
@@ -189,8 +190,8 @@ private[sql] object InMemoryAppendableRelation {
       if (rowCount >= batchSize) {
         // create a new CachedBatch and push into the array of
         // CachedBatches so far in this iteration
-        val stats = InternalRow.merge(columnBuilders.map(
-          _.columnStats.collectedStatistics): _*)
+        val stats = InternalRow.fromSeq(columnBuilders.map(
+          _.columnStats.collectedStatistics).flatMap(_.values))
         // TODO: somehow push into global batchStats
         result = batchAggregate(result,
           CachedBatch(columnBuilders.map(_.build().array()), stats))
@@ -268,7 +269,8 @@ private[sql] class InMemoryAppendableColumnarTableScan(
           val row = rows.next()
 
           requestedColumnIndices.indices.foreach { i =>
-            nextRow(i) = row(requestedColumnIndices(i))
+            nextRow(i) = row.get(requestedColumnIndices(i),
+              null /* returned GenericMutableRow does not use DataType */)
           }
 
           nextRow

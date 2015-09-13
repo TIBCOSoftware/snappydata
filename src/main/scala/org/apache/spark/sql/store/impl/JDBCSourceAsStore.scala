@@ -14,7 +14,7 @@ import com.gemstone.gemfire.cache.{EntryOperation, PartitionResolver}
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.sql.catalyst.expressions.InternalRow
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey}
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
@@ -277,7 +277,6 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
     blob.free()
     CachedBatch(colBuffers.toArray, stats)
   }
-
 }
 
 final class UUIDKeyResolver extends PartitionResolver[UUIDRegionKey, CachedBatch] {

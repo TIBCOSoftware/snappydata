@@ -6,9 +6,10 @@ import java.util.Properties
 import scala.util.control.NonFatal
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SaveMode, Row, SQLContext}
+import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode}
 
 @DeveloperApi
 trait RowInsertableRelation {
@@ -120,7 +121,8 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   def initializeTable(tableName: String, conn: Connection): Unit = {}
 
-  def extraCreateTableProperties(isLoner: Boolean): Properties = new Properties()
+  def extraCreateTableProperties(isLoner: Boolean): Properties =
+    new Properties()
 }
 
 object JdbcExtendedUtils {
@@ -161,7 +163,6 @@ object JdbcExtendedUtils {
             case DateType => "DATE"
             case DecimalType.Fixed(precision, scale) =>
               s"DECIMAL($precision,$scale)"
-            case DecimalType.Unlimited => "DECIMAL(38,18)"
             case _ => throw new IllegalArgumentException(
               s"Don't know how to save $field to JDBC")
           })

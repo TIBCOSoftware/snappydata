@@ -2,6 +2,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, CreateTableUsing, CreateTableUsingAsSelect}
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
 
 /**
@@ -12,15 +13,15 @@ import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPl
 object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
-    case CreateTableUsing(tableName, userSpecifiedSchema, provider,
+    case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
     false, opts, allowExisting, _) =>
-      ExecutedCommand(CreateExternalTableUsing(tableName,
+      ExecutedCommand(CreateExternalTableUsing(tableIdent,
         userSpecifiedSchema, None, provider, allowExisting, opts)) :: Nil
 
-    case CreateTableUsingAsSelect(tableName, provider, false,
+    case CreateTableUsingAsSelect(tableIdent, provider, false,
     partitionCols, mode, opts, query) =>
       ExecutedCommand(CreateExternalTableUsingSelect(
-        tableName, provider, partitionCols, mode, opts, query)) :: Nil
+        tableIdent, provider, partitionCols, mode, opts, query)) :: Nil
 
     case create: CreateExternalTableUsing =>
       ExecutedCommand(create) :: Nil

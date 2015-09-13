@@ -22,7 +22,6 @@ import scala.collection.{IterableLike, Iterator, mutable}
 import scala.reflect.ClassTag
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.MultiColumnOpenHashSet._
 import org.apache.spark.sql.types.DataType
 
@@ -94,7 +93,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   }
 
   /** Tests whether this map contains a binding for a projected row. */
-  def contains(r: SpecificMutableRow): Boolean = {
+  def contains(r: WrappedInternalRow): Boolean = {
     if (r != null) {
       contains_(r, _keySet.getColumnHandler(r))
     } else {
@@ -134,7 +133,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   }
 
   /** Get the value for a given row */
-  def apply(r: SpecificMutableRow): V = {
+  def apply(r: WrappedInternalRow): V = {
     get_(r, _keySet.getColumnHandler(r))
   }
 
@@ -157,7 +156,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   override def get(r: Row): Option[V] = Option(apply(r))
 
   /** Optionally get the value for a given row */
-  def get(r: SpecificMutableRow): Option[V] = Option(apply(r))
+  def get(r: WrappedInternalRow): Option[V] = Option(apply(r))
 
   /** Set the value for a row */
   private def putValue(r: Row, v: V, hash: Int,
@@ -211,7 +210,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
   }
 
   /** Set the value for a row */
-  def update(r: SpecificMutableRow, v: V) {
+  def update(r: WrappedInternalRow, v: V) {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
@@ -288,15 +287,27 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    * If the row doesn't exist yet in the hash map, set its value to
    * defaultValue; otherwise, set its value to mergeValue(oldValue).
    *
-   * @return the newly updated value.
+   * @return true if new value was added, false if it was merged and null
+   *         if the default/merge calls returned null and nothing was done
    */
-  def changeValue(r: Row, change: ChangeValue[Row, V]): java.lang.Boolean = {
-    if (r != null) {
-      val keySet = _keySet
-      val columnHandler = keySet.getColumnHandler(r)
-      changeValue(r, keySet.getHash(r, columnHandler), columnHandler, change)
+  private def changeValue(r: WrappedInternalRow, hash: Int,
+      columnHandler: ColumnHandler,
+      change: ChangeValue[Row, V]): java.lang.Boolean = {
+    val keySet = _keySet
+    val pos = keySet.addWithoutResize(r, hash, columnHandler)
+    if ((pos & NONEXISTENCE_MASK) != 0) {
+      val v = change.defaultValue(r)
+      if (v != null) {
+        _values(pos & POSITION_MASK) = v
+        keySet.rehashIfNeeded(r, grow, move)
+        java.lang.Boolean.TRUE
+      } else null
     } else {
-      changeValueForNull(change)
+      val v = change.mergeValue(r, _values(pos))
+      if (v != null) {
+        _values(pos) = v
+        java.lang.Boolean.FALSE
+      } else null
     }
   }
 
@@ -306,8 +317,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    *
    * @return the newly updated value.
    */
-  def changeValue(r: SpecificMutableRow,
-      change: ChangeValue[Row, V]): java.lang.Boolean = {
+  def changeValue(r: Row, change: ChangeValue[Row, V]): java.lang.Boolean = {
     if (r != null) {
       val keySet = _keySet
       val columnHandler = keySet.getColumnHandler(r)
@@ -325,6 +335,22 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
    *         if the default/merge calls returned null and nothing was done
    */
   override def changeValue(r: Row, hash: Int,
+      change: ChangeValue[Row, V]): java.lang.Boolean = {
+    if (r != null) {
+      changeValue(r, hash, _keySet.getColumnHandler(r), change)
+    } else {
+      changeValueForNull(change)
+    }
+  }
+
+  /**
+   * If the row doesn't exist yet in the hash map, set its value to
+   * defaultValue; otherwise, set its value to mergeValue(oldValue).
+   *
+   * @return true if new value was added, false if it was merged and null
+   *         if the default/merge calls returned null and nothing was done
+   */
+  def changeValue(r: WrappedInternalRow, hash: Int,
       change: ChangeValue[Row, V]): java.lang.Boolean = {
     if (r != null) {
       changeValue(r, hash, _keySet.getColumnHandler(r), change)
@@ -452,9 +478,9 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
     def valueForNullKey: A
 
-    def newEmptyRow(): SpecificMutableRow
+    def newEmptyRow(): ReusableRow
 
-    def buildResult(row: SpecificMutableRow, v: V): A
+    def buildResult(row: ReusableRow, v: V): A
 
     /**
      * Get the next value we should return from next(),
@@ -491,17 +517,17 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
     def newEmptyRow() = _keySet.newEmptyValueAsRow()
 
-    def buildResult(row: SpecificMutableRow, v: V) = (row.asInstanceOf[Row], v)
+    def buildResult(row: ReusableRow, v: V) = (row.asInstanceOf[Row], v)
   }
 
-  def iteratorRowReuse: Iterator[(SpecificMutableRow, V)] =
-    new HashIterator[(SpecificMutableRow, V)](true) {
+  def iteratorRowReuse: Iterator[(ReusableRow, V)] =
+    new HashIterator[(ReusableRow, V)](true) {
 
-      def valueForNullKey = (null.asInstanceOf[SpecificMutableRow], nullValue)
+      def valueForNullKey = (null.asInstanceOf[ReusableRow], nullValue)
 
       def newEmptyRow() = null
 
-      def buildResult(row: SpecificMutableRow, v: V) = (row, v)
+      def buildResult(row: ReusableRow, v: V) = (row, v)
     }
 
   override def foreach[U](f: ((Row, V)) => U) = iteratorRowReuse.foreach(f)
@@ -513,17 +539,17 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
     def newEmptyRow() = _keySet.newEmptyValueAsRow()
 
-    def buildResult(row: SpecificMutableRow, v: V): Row = row
+    def buildResult(row: ReusableRow, v: V): Row = row
   }
 
-  def keysIteratorRowReuse: Iterator[SpecificMutableRow] =
-    new HashIterator[SpecificMutableRow](true) {
+  def keysIteratorRowReuse: Iterator[ReusableRow] =
+    new HashIterator[ReusableRow](true) {
 
-      def valueForNullKey = null.asInstanceOf[SpecificMutableRow]
+      def valueForNullKey = null.asInstanceOf[ReusableRow]
 
       def newEmptyRow() = null
 
-      def buildResult(row: SpecificMutableRow, v: V) = row
+      def buildResult(row: ReusableRow, v: V) = row
     }
 
   /* Override to avoid tuple allocation */
@@ -533,7 +559,7 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
 
     def newEmptyRow() = null
 
-    def buildResult(row: SpecificMutableRow, v: V) = v
+    def buildResult(row: ReusableRow, v: V) = v
   }
 
   override def clear() {

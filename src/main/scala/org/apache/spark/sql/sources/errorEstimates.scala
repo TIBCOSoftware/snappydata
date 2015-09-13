@@ -5,14 +5,14 @@ package org.apache.spark.sql.sources
 
 import org.apache.commons.math3.distribution.{NormalDistribution, TDistribution}
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.trees
 import org.apache.spark.sql.types._
 
 case class ErrorEstimateAggregate(child: Expression, confidence: Double,
     ratioExpr: MapColumnToWeight, isDefault: Boolean,
     aggregateType: ErrorAggregate.Type)
-    extends PartialAggregate with trees.UnaryNode[Expression] {
+    extends UnaryExpression with PartialAggregate1 {
 
   override def nullable = true
 
@@ -22,7 +22,6 @@ case class ErrorEstimateAggregate(child: Expression, confidence: Double,
       inverseCumulativeProbability(0.5 + confidence / 2.0)
 
   override def asPartial: SplitEvaluation = {
-    this.otherCopyArgs
     val partialStats = Alias(ErrorStatsPartition(child :: ratioExpr :: Nil,
       confidence, isDefault, confFactor, aggregateType),
       s"PartialStats$aggregateType")()
@@ -97,12 +96,12 @@ private[spark] case object StatCounterUDT
   override def serialize(obj: Any): Row = {
     obj match {
       case s: StatCounterWithFullCount =>
-        val row = new GenericMutableRow(4)
-        row.setLong(0, s.count)
-        row.setDouble(1, s.mean)
-        row.setDouble(2, s.nvariance)
-        row.setDouble(3, s.weightedCount)
-        row
+        val row = new Array[Any](4)
+        row(0) = s.count
+        row(1) = s.mean
+        row(2) = s.nvariance
+        row(3) = s.weightedCount
+        new GenericRow(row)
       // due to bugs in UDT serialization (SPARK-7186)
       case row: Row => row
     }
@@ -152,7 +151,7 @@ private[spark] case object StatCounterUDT
 
 case class ErrorStatsPartition(children: Seq[Expression], confidence: Double,
     isDefault: Boolean, confFactor: Double, aggType: ErrorAggregate.Type)
-    extends AggregateExpression {
+    extends Expression with AggregateExpression1 {
 
   override def nullable: Boolean = false
 
@@ -169,21 +168,23 @@ case class ErrorStatsPartition(children: Seq[Expression], confidence: Double,
 }
 
 case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
-    base: AggregateExpression, confidence: Double, confFactor: Double,
+    base: AggregateExpression1, confidence: Double, confFactor: Double,
     aggType: ErrorAggregate.Type, partial: Boolean)
-    extends AggregateFunction with CastDouble {
+    extends AggregateFunction1 with CastDouble {
 
   // Required for serialization
   def this() = this(null, null, null, 0, 0, null, false)
 
   private[this] final val errorStats = new StatCounterWithFullCount()
 
-  override def doubleColumnType: DataType = expr.dataType
+  override val doubleColumnType: DataType = expr.dataType
 
   private[this] final val boundReference = expr match {
     case b: BoundReference => b
     case _ => null
   }
+
+  init()
 
   override def update(input: InternalRow): Unit = {
     val boundRef = boundReference
@@ -213,7 +214,7 @@ case class ErrorStatsFunction(expr: Expression, ratioExpr: MapColumnToWeight,
 
 case class ErrorStatsMerge(child: Expression, confidence: Double,
     isDefault: Boolean, confFactor: Double, aggType: ErrorAggregate.Type)
-    extends AggregateExpression with trees.UnaryNode[Expression] {
+    extends UnaryExpression with AggregateExpression1 {
 
   override def nullable: Boolean = false
 
@@ -228,9 +229,9 @@ case class ErrorStatsMerge(child: Expression, confidence: Double,
     ErrorStatsMergeFunction(child, this, confidence, confFactor, aggType)
 }
 
-case class ErrorStatsMergeFunction(expr: Expression, base: AggregateExpression,
-    confidence: Double, confFactor: Double, aggType: ErrorAggregate.Type)
-    extends AggregateFunction {
+case class ErrorStatsMergeFunction(expr: Expression,
+    base: AggregateExpression1, confidence: Double, confFactor: Double,
+    aggType: ErrorAggregate.Type) extends AggregateFunction1 {
 
   // Required for serialization
   def this() = this(null, null, 0, 0, null)

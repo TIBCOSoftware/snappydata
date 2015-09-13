@@ -11,12 +11,13 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.{InternalRow, Expression}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, ScalaReflection}
+import org.apache.spark.sql.catalyst.{InternalRow, CatalystTypeConverters, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -114,15 +115,11 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         (relation, rows.mapPartitions(rowIterator => {
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
-          val catalystConverters = schema.fields.map(f =>
-            CatalystTypeConverters.createToCatalystConverter(f.dataType))
           // create a new holder for set of CachedBatches
           val batches = ExternalStoreRelation(useCompression,
             columnBatchSize, name, schema, relation, output)
-          sampler.append(rowIterator, catalystConverters, (),
-            batches.appendRow, batches.endRows)
+          sampler.append(rowIterator, (), batches.appendRow, batches.endRows)
           batches.forceEndOfBatch().iterator
-
         }))
     }
     // TODO: A different set of job is created for topK structure
@@ -134,7 +131,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         val ct = ClassTag(clazz)
         SnappyContext.populateTopK(rows, topKWrapper, self,
           name, topkRDD, time)(ct)
-
     }
 
     // add to list in relation
@@ -154,19 +150,19 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
   }
 
-  def appendToCache(df: DataFrame, tableIdent: String,
+  def appendToCache(df: DataFrame, table: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
-    val tableName = catalog.newQualifiedTableName(tableIdent)
-    val plan = catalog.lookupRelation(tableName, None)
+    val tableIdent = catalog.newQualifiedTableName(table)
+    val plan = catalog.lookupRelation(tableIdent, None)
     val relation = cacheManager.lookupCachedData(plan).getOrElse {
       cacheManager.cacheQuery(DataFrame(self, plan),
-        Some(tableName.qualifiedName), storageLevel)
+        Some(tableIdent.table), storageLevel)
 
       cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableName")
+        sys.error(s"couldn't cache table $tableIdent")
       }
     }
 
@@ -175,7 +171,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val cached = df.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableName, schema, relation.cachedRepresentation, output)
+        tableIdent, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
@@ -194,19 +190,19 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
   }
 
-  def appendToCacheRDD(rdd: RDD[_], tableIdent: String, schema: StructType,
+  def appendToCacheRDD(rdd: RDD[_], table: String, schema: StructType,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
-    val tableName = catalog.newQualifiedTableName(tableIdent)
-    val plan = catalog.lookupRelation(tableName, None)
+    val tableIdent = catalog.newQualifiedTableName(table)
+    val plan = catalog.lookupRelation(tableIdent, None)
     val relation = cacheManager.lookupCachedData(plan).getOrElse {
       cacheManager.cacheQuery(DataFrame(this, plan),
-        Some(tableName.qualifiedName), storageLevel)
+        Some(tableIdent.table), storageLevel)
 
       cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableName")
+        sys.error(s"couldn't cache table $tableIdent")
       }
     }
 
@@ -215,7 +211,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val cached = rdd.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableName, schema, relation.cachedRepresentation, schema.toAttributes)
+        tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
@@ -293,8 +289,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       tableName: String,
       provider: String,
       options: Map[String, String]): DataFrame = {
-    val plan = createTable(tableName, provider, userSpecifiedSchema = None,
-      schemaDDL = None, SaveMode.ErrorIfExists, options)
+    val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
+      userSpecifiedSchema = None, schemaDDL = None,
+      SaveMode.ErrorIfExists, options)
     DataFrame(self, plan)
   }
 
@@ -303,8 +300,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       provider: String,
       schema: StructType,
       options: Map[String, String]): DataFrame = {
-    val plan = createTable(tableName, provider, Some(schema),
-      schemaDDL = None, SaveMode.ErrorIfExists, options)
+    val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
+      Some(schema), schemaDDL = None, SaveMode.ErrorIfExists, options)
     DataFrame(self, plan)
   }
 
@@ -312,21 +309,20 @@ protected[sql] final class SnappyContext(sc: SparkContext)
    * Create an external table with given options.
    */
   private[sql] def createTable(
-      tableName: String,
+      tableIdent: QualifiedTableName,
       provider: String,
       userSpecifiedSchema: Option[StructType],
       schemaDDL: Option[String],
       mode: SaveMode,
       options: Map[String, String]): LogicalPlan = {
 
-    val qualifiedTable = catalog.newQualifiedTableName(tableName)
-    if (catalog.tableExists(qualifiedTable)) {
+    if (catalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
           throw new AnalysisException(
-            s"createExternalTable: Table $tableName already exists.")
+            s"createExternalTable: Table $tableIdent already exists.")
         case _ =>
-          return catalog.lookupRelation(qualifiedTable, None)
+          return catalog.lookupRelation(tableIdent, None)
       }
     }
 
@@ -334,7 +330,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
       dbtableProp))) options
-    else options + (dbtableProp -> tableName)
+    else options + (dbtableProp -> tableIdent.toString)
 
     val source = SnappyContext.getProvider(provider)
     val resolved = schemaDDL match {
@@ -348,7 +344,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
               (mode != SaveMode.ErrorIfExists).toString))
     }
 
-    catalog.registerExternalTable(qualifiedTable, userSpecifiedSchema,
+    catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params)
     LogicalRelation(resolved.relation)
   }
@@ -357,21 +353,20 @@ protected[sql] final class SnappyContext(sc: SparkContext)
    * Create an external table with given options.
    */
   private[sql] def createTable(
-      tableName: String,
+      tableIdent: QualifiedTableName,
       provider: String,
       partitionColumns: Array[String],
       mode: SaveMode,
       options: Map[String, String],
       query: LogicalPlan): LogicalPlan = {
 
-    val qualifiedTable = catalog.newQualifiedTableName(tableName)
     var data = DataFrame(self, query)
-    if (catalog.tableExists(qualifiedTable)) {
+    if (catalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
-          throw new AnalysisException(s"Table $tableName already exists. " +
+          throw new AnalysisException(s"Table $tableIdent already exists. " +
               "If using SQL CREATE EXTERNAL TABLE, you need to use the " +
-              s"APPEND or OVERWRITE mode, or drop $tableName first.")
+              s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
         case _ =>
           // existing table schema could have nullable columns
           val schema = data.schema
@@ -386,13 +381,13 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
       dbtableProp))) options
-    else options + (dbtableProp -> tableName)
+    else options + (dbtableProp -> tableIdent.toString)
 
     val source = SnappyContext.getProvider(provider)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
 
-    catalog.registerExternalTable(qualifiedTable, Some(data.schema),
+    catalog.registerExternalTable(tableIdent, Some(data.schema),
       partitionColumns, source, params)
     LogicalRelation(resolved.relation)
   }
@@ -470,13 +465,13 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   override protected[sql] lazy val analyzer: Analyzer =
     new Analyzer(catalog, functionRegistry, conf) {
       override val extendedResolutionRules =
-        ExtractPythonUdfs ::
-            sources.PreInsertCastAndRename ::
+        ExtractPythonUDFs ::
+            datasources.PreInsertCastAndRename ::
             WeightageRule ::
             Nil
 
       override val extendedCheckRules = Seq(
-        sources.PreWriteCheck(catalog))
+        datasources.PreWriteCheck(catalog))
     }
 
   @transient override protected[sql] val planner = new SparkPlanner {
@@ -530,16 +525,16 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       startTime: Long, endTime: Long): DataFrame =
     queryTopK[T](topKName, startTime, endTime, -1)
 
-  def queryTopK[T: ClassTag](topKIdent: String,
+  def queryTopK[T: ClassTag](topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame = {
-    val topKTableName = catalog.newQualifiedTableName(topKIdent)
-    topKLocks(topKTableName.toString()).executeInReadLock {
-      val (topkWrapper, rdd) = catalog.topKStructures(topKTableName)
+    val topKIdent = catalog.newQualifiedTableName(topK)
+    topKLocks(topKIdent.toString()).executeInReadLock {
+      val (topkWrapper, rdd) = catalog.topKStructures(topKIdent)
       //requery the catalog to obtain the TopKRDD
 
       val size = if (k > 0) k else topkWrapper.size
 
-      val topKName = topKTableName.qualifiedName
+      val topKName = topKIdent.table
       if (topkWrapper.stsummary) {
         queryTopkStreamSummary(topKName, startTime, endTime, topkWrapper, size, rdd)
       } else {
@@ -995,23 +990,25 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag](
       transform: RDD[Row] => RDD[Row] = null): Unit =
     context.saveStream(ds, sampleTab, formatter, schema, transform)
 
-  def saveToExternalTable[A <: Product : TypeTag](externalTable : String, jdbcSource : Map[String, String]): Unit = {
-
-    val schema : StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
+      jdbcSource: Map[String, String]): Unit = {
+    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     saveStreamToExternalTable(externalTable, schema, jdbcSource)
   }
 
-  def saveToExternalTable(externalTable : String, schema: StructType, jdbcSource : Map[String, String]): Unit = {
+  def saveToExternalTable(externalTable: String, schema: StructType,
+      jdbcSource: Map[String, String]): Unit = {
     saveStreamToExternalTable(externalTable, schema, jdbcSource)
   }
 
-  private def saveStreamToExternalTable(externalTable : String, schema: StructType, jdbcSource : Map[String, String]): Unit = {
+  private def saveStreamToExternalTable(externalTable: String,
+      schema: StructType, jdbcSource: Map[String, String]): Unit = {
     require(externalTable != null && externalTable.length > 0,
       "saveToExternalTable: expected non-empty table name")
 
-    val qualifiedTable = context.catalog.newQualifiedTableName(externalTable)
+    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
     val externalStore = new JDBCSourceAsStore(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(qualifiedTable.qualifiedName,
+    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
       externalStore)
     val attributeSeq = schema.toAttributes
 
@@ -1021,12 +1018,12 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag](
       DataFrame(context, plan)
     }
 
-    context.catalog.tables.put(qualifiedTable, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(qualifiedTable.qualifiedName),
+    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
+    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
       externalStore)
 
     ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, qualifiedTable.qualifiedName, schema)
+      context.appendToCacheRDD(rdd, tableIdent.table, schema)
     })
   }
 }

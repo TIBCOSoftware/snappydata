@@ -84,9 +84,6 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     case ShortType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))
     case DecimalType.Fixed(precision, scale) =>
       Some(JdbcType(s"DECIMAL($precision,$scale)", java.sql.Types.DECIMAL))
-    case DecimalType.Unlimited =>
-      // GemFireXD supports maximum precision of 127
-      Some(JdbcType("DECIMAL(127,63)", java.sql.Types.DECIMAL))
     case _ => None
   }
 

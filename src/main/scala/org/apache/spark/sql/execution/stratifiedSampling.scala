@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical
 import org.apache.spark.sql.collection.Utils._
@@ -15,7 +16,7 @@ import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.types.{LongType, StructType}
-import org.apache.spark.sql.{Row, AnalysisException}
+import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkEnv, TaskContext}
 
@@ -236,7 +237,7 @@ object StratifiedSampler {
   private final val flushedMaps = new mutable.LinkedHashMap[String, Long]
 
   final val BUFSIZE = 1000
-  final val EMPTY_RESERVOIR = Array.empty[MutableRow]
+  final val EMPTY_RESERVOIR = Array.empty[GenericMutableRow]
   final val EMPTY_ROW = new GenericMutableRow(Array[Any]())
   final val LONG_ONE = Long.box(1).asInstanceOf[AnyRef]
 
@@ -389,19 +390,19 @@ object StratifiedSampler {
     false
   }
 
-  def fillWeightageIfAbsent(reservoir: Array[MutableRow], pos: Int,
+  def fillWeightageIfAbsent(reservoir: Array[GenericMutableRow], pos: Int,
       ratio: Long, lastIndex: Int) = {
     // fill in the weight ratio column if required
     val row = reservoir(pos)
-    if (LONG_ONE eq row(lastIndex).asInstanceOf[AnyRef]) {
-      row(lastIndex) = Long.box(ratio).asInstanceOf[AnyRef]
+    if (LONG_ONE eq row.get(lastIndex, LongType)) {
+      row(lastIndex) = Long.box(ratio)
     }
     row
   }
 }
 
-abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
-    val schema: StructType)
+abstract class StratifiedSampler(final val qcs: Array[Int],
+    final val name: String, final val schema: StructType)
     extends Serializable with Cloneable with Logging {
 
   type ReservoirSegment = MultiColumnOpenHashMap[StratumReservoir]
@@ -419,8 +420,8 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
       types, numColumns)
     val hasher: Row => Int = columnHandler.hash
     new ConcurrentSegmentedHashMap[Row, StratumReservoir, ReservoirSegment](
-      (initialCapacity, loadFactor) => new ReservoirSegment(qcs, types,
-        numColumns, initialCapacity, loadFactor), hasher)
+          (initialCapacity, loadFactor) => new ReservoirSegment(qcs, types,
+            numColumns, initialCapacity, loadFactor), hasher)
   }
 
   /** Random number generator for sampling. */
@@ -443,43 +444,53 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
 
   protected def strataReservoirSize: Int
 
-  protected final def newMutableRow(row: Row,
-      process: Array[Any => Any]): MutableRow = {
-    // add the weight column
-    if (process != null) {
-      val lastIndex = row.length
-      val newRow = new Array[Any](lastIndex + 1)
-      var index = 0
-      while (index < lastIndex) {
-        newRow(index) = process(index)(row(index))
-        index += 1
-      }
-      newRow(lastIndex) = LONG_ONE
-      new GenericMutableRow(newRow)
-    } else {
-      row match {
-        case r: GenericRow =>
-          val lastIndex = r.length
-          val newRow = new Array[Any](lastIndex + 1)
-          System.arraycopy(r.values, 0, newRow, 0, lastIndex)
-          newRow(lastIndex) = LONG_ONE
-          new GenericMutableRow(newRow)
-        case _ =>
-          val lastIndex = row.length
-          val newRow = new Array[Any](lastIndex + 1)
-          var index = 0
-          while (index < lastIndex) {
-            newRow(index) = row(index)
-            index += 1
-          }
-          newRow(lastIndex) = LONG_ONE
-          new GenericMutableRow(newRow)
-      }
+  protected final val catalystConverters = schema.fields.map(f =>
+    CatalystTypeConverters.createToCatalystConverter(f.dataType))
+
+  protected final def newMutableRow(row: Row): GenericMutableRow = {
+    row match {
+      case wrappedRow: WrappedInternalRow =>
+        newMutableRow(wrappedRow.internalRow)
+      case _ =>
+        val converters = catalystConverters
+        // add the weight column
+        val lastIndex = row.length
+        val newRow = new Array[Any](lastIndex + 1)
+        var index = 0
+        while (index < lastIndex) {
+          newRow(index) = converters(index)(row(index))
+          index += 1
+        }
+        newRow(lastIndex) = LONG_ONE
+        new GenericMutableRow(newRow)
     }
   }
 
-  def append[U](rows: Iterator[Row], processSelected: Array[Any => Any],
-      init: U, processFlush: (U, InternalRow) => U, endBatch: U => U): U
+  protected final def newMutableRow(row: InternalRow): GenericMutableRow = {
+    val schema = this.schema
+    // add the weight column
+    row match {
+      case r: GenericInternalRow =>
+        val lastIndex = r.numFields
+        val newRow = new Array[Any](lastIndex + 1)
+        System.arraycopy(r.values, 0, newRow, 0, lastIndex)
+        newRow(lastIndex) = LONG_ONE
+        new GenericMutableRow(newRow)
+      case _ =>
+        val lastIndex = row.numFields
+        val newRow = new Array[Any](lastIndex + 1)
+        var index = 0
+        while (index < lastIndex) {
+          newRow(index) = row.get(index, schema(index).dataType)
+          index += 1
+        }
+        newRow(lastIndex) = LONG_ONE
+        new GenericMutableRow(newRow)
+    }
+  }
+
+  def append[U](rows: Iterator[Row], init: U,
+      processFlush: (U, InternalRow) => U, endBatch: U => U): U
 
   def sample(items: Iterator[InternalRow],
       flush: Boolean): Iterator[InternalRow]
@@ -560,7 +571,7 @@ abstract class StratifiedSampler(val qcs: Array[Int], val name: String,
  * meta-data including number of samples collected, total number of rows
  * in the stratum seen so far, the QCS key, reservoir of samples etc.
  */
-class StratumReservoir(final var reservoir: Array[MutableRow],
+class StratumReservoir(final var reservoir: Array[GenericMutableRow],
     final var reservoirSize: Int,
     final var batchTotalSize: Int) {
 
@@ -570,8 +581,8 @@ class StratumReservoir(final var reservoir: Array[MutableRow],
 
   final def iterator(prevReservoirSize: Int, newReservoirSize: Int,
       columns: Int, doReset: Boolean,
-      fullReset: Boolean): Iterator[MutableRow] = {
-    new Iterator[MutableRow] {
+      fullReset: Boolean): Iterator[GenericMutableRow] = {
+    new Iterator[GenericMutableRow] {
 
       final val reservoir = self.reservoir
       final val reservoirSize = self.reservoirSize
@@ -623,7 +634,7 @@ class StratumReservoir(final var reservoir: Array[MutableRow],
         // empty the reservoir since it did not receive much data in last round
         reservoir = EMPTY_RESERVOIR
       } else {
-        reservoir = new Array[MutableRow](newReservoirSize)
+        reservoir = new Array[GenericMutableRow](newReservoirSize)
       }
       reservoirSize = 0
       batchTotalSize = 0

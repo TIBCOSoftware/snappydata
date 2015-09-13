@@ -3,8 +3,9 @@ package org.apache.spark.sql.execution
 import scala.language.reflectiveCalls
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.expressions.{InternalRow, MutableRow}
-import org.apache.spark.sql.collection.{ChangeValue, Utils}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.GenericMutableRow
+import org.apache.spark.sql.collection.{WrappedInternalRow, ChangeValue, Utils}
 import org.apache.spark.sql.execution.StratifiedSampler._
 import org.apache.spark.sql.types.StructType
 
@@ -12,21 +13,19 @@ import org.apache.spark.sql.types.StructType
  * A simple reservoir based stratified sampler that will use the provided
  * reservoir size for every stratum present in the incoming rows.
  */
-final class StratifiedSamplerReservoir(override val qcs: Array[Int],
-    override val name: String,
-    override val schema: StructType,
+final class StratifiedSamplerReservoir(_qcs: Array[Int],
+    _name: String, _schema: StructType,
     private val reservoirSize: Int)
-    extends StratifiedSampler(qcs, name, schema) {
+    extends StratifiedSampler(_qcs, _name, _schema) {
 
-  private final class ProcessRows(val processSelected: Array[Any => Any])
-      extends ChangeValue[Row, StratumReservoir] {
+  private final class ProcessRows extends ChangeValue[Row, StratumReservoir] {
 
     override def keyCopy(row: Row) = row.copy()
 
     override def defaultValue(row: Row) = {
       // create new stratum if required
-      val reservoir = new Array[MutableRow](reservoirSize)
-      reservoir(0) = newMutableRow(row, processSelected)
+      val reservoir = new Array[GenericMutableRow](reservoirSize)
+      reservoir(0) = newMutableRow(row)
       Utils.fillArray(reservoir, EMPTY_ROW, 1, reservoirSize)
       new StratumReservoir(reservoir, 1, 1)
     }
@@ -41,12 +40,11 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
         val rnd = rng.nextInt(sr.batchTotalSize)
         if (rnd < stratumSize) {
           // pick up this row and replace a random one from reservoir
-          sr.reservoir(rng.nextInt(stratumSize)) = newMutableRow(row,
-            processSelected)
+          sr.reservoir(rng.nextInt(stratumSize)) = newMutableRow(row)
         }
       } else {
         // always copy into the reservoir for this case
-        sr.reservoir(stratumSize) = newMutableRow(row, processSelected)
+        sr.reservoir(stratumSize) = newMutableRow(row)
         sr.reservoirSize += 1
       }
       sr
@@ -55,20 +53,24 @@ final class StratifiedSamplerReservoir(override val qcs: Array[Int],
 
   override protected def strataReservoirSize: Int = reservoirSize
 
-  override def append[U](rows: Iterator[Row],
-      processSelected: Array[Any => Any],
-      init: U, processFlush: (U, InternalRow) => U, endBatch: U => U): U = {
+  override def append[U](rows: Iterator[Row], init: U,
+      processFlush: (U, InternalRow) => U, endBatch: U => U): U = {
     if (rows.hasNext) {
-      strata.bulkChangeValues(rows, new ProcessRows(processSelected))
+      strata.bulkChangeValues(rows, new ProcessRows)
     }
     init
   }
 
   override def sample(items: Iterator[InternalRow],
       flush: Boolean): Iterator[InternalRow] = {
-    val processRow = new ProcessRows(null)
+    val processRow = new ProcessRows
+    val wrappedRow = new WrappedInternalRow(schema,
+      WrappedInternalRow.createConverters(schema))
     for (row <- items) {
-      strata.changeValue(row, processRow)
+      wrappedRow.internalRow = row
+      // TODO: also allow invoking the optimized methods in
+      // MultiColumnOpenHash* classes for WrappedInternalRow
+      strata.changeValue(wrappedRow, processRow)
     }
 
     if (flush) {

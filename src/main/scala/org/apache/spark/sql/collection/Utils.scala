@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.spark.sql.collection
 
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
@@ -254,9 +271,10 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     val cleanedF = sc.clean(f)
     new ExecutorLocalRDD[T](sc, cleanedF)
   }
-  
+
   def getFixedPartitionRDD[T: ClassTag](sc: SparkContext,
-      f: (TaskContext, Partition) => Iterator[T], partitioner: Partitioner, numPartitions: Int): RDD[T] = {
+      f: (TaskContext, Partition) => Iterator[T], partitioner: Partitioner,
+      numPartitions: Int): RDD[T] = {
     val cleanedF = sc.clean(f)
     new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
   }
@@ -341,30 +359,26 @@ class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext,
 }
 
 class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
-  f: (TaskContext, Partition) => Iterator[T], numPartitions: Int, 
-  override val partitioner: Option[Partitioner])
-  extends RDD[T](_sc, Nil) {
-  
+    f: (TaskContext, Partition) => Iterator[T], numPartitions: Int,
+    override val partitioner: Option[Partitioner])
+    extends RDD[T](_sc, Nil) {
+
   override def getPartitions: Array[Partition] = {
     var i = 0
-  
+
     Array.fill[Partition](numPartitions)({
       val x = i
-      i = i + 1     
-      new Partition(){
+      i += 1
+      new Partition() {
         override def index: Int = x
-      } 
+      }
     })
-
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     f(context, split)
   }
-  
- 
 }
-
 
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {
