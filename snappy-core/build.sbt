@@ -10,7 +10,9 @@ organizationHomepage := Some(url("http://snappydata.io"))
 
 version := "0.0.1-SNAPSHOT"
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.10.4"
+
+val sparkVersion = "1.5.0-SNAPSHOT.1"
 
 // If we want to run the spark app by issuing the sbt "run" command, we
 // don't want Spark to actually run inside the SBT process / jvm (there are
@@ -23,10 +25,30 @@ scalaVersion := "2.11.6"
 
 fork in run := true
 
+resolvers += "Ooyala Bintray" at "http://dl.bintray.com/ooyala/maven"
+externalResolvers += "Local Snappy Maven Repository" at "file://" + baseDirectory.value + "/local-repo"
+
 // A plausible list of dependencies (For conditional dependencies use BuildSnappy.scala).
 libraryDependencies ++= Seq(
+  "org.apache.spark"         %% "snappy-spark-sql"           % sparkVersion % "provided",
+  "org.apache.spark"         %% "snappy-spark-catalyst"      % sparkVersion % "provided",
+  "org.apache.spark"         %% "snappy-spark-hive"          % sparkVersion % "provided",
+  "org.apache.spark"         %% "snappy-spark-streaming"     % sparkVersion % "provided",
+  "org.apache.spark"         %% "snappy-spark-mllib"         % sparkVersion % "provided",
+
+  "com.pivotal"              %% "gemfirexd-client"  % "2.0-Beta"      % "provided",
+  "com.pivotal"              %% "gemfirexd"  % "2.0-Beta"      % "provided",
+  "com.pivotal"              %% "gemfirexd-tools"  % "2.0-Beta"      % "provided",
+
+  "ooyala.cnd"                % "job-server"      % "0.3.1"      % "provided",
+  "org.apache.tomcat"         % "tomcat-jdbc"     % "8.0.24"     % "provided",
+  "com.zaxxer"                % "HikariCP-java6"  % "2.3.9"      % "provided",
+
   "com.typesafe" % "config" % "1.2.1",
-  "org.scalatest" %% "scalatest" % "2.2.1" % "test"
+  "org.scalatest" %% "scalatest" % "2.2.1" % "test",
+  "org.scala-lang"            % "scala-actors"               % scalaVersion.value % "provided",
+  "org.scala-lang"            % "scala-reflect"              % scalaVersion.value % "provided"
+
 )
 
 // This bit of magic from stackoverflow adds the spark jars into the

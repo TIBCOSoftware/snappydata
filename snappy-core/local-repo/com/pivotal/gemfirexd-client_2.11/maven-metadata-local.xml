@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.pivotal</groupId>
+  <artifactId>gemfirexd-client_2.11</artifactId>
+  <versioning>
+    <release>2.0-Beta</release>
+    <versions>
+      <version>2.0-Beta</version>
+    </versions>
+    <lastUpdated>20150922155143</lastUpdated>
+  </versioning>
+</metadata>
