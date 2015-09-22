@@ -12,7 +12,7 @@ object SnappyBuild extends Build {
   val depSettings =
     if (localSparkBuild.isEmpty) {
       Seq(libraryDependencies ++= Seq(
-        "org.apache.spark" %% "snappy-core" % sparkVersion % "provided",
+        "org.apache.spark" %% "snappy-core" % sparkVersion % "provided"
       ))
     }
     else {
