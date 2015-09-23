@@ -24,9 +24,10 @@ object Dependencies {
   lazy val scalaTest = "org.scalatest" %% "scalatest" % "2.2.1" % "test"
   lazy val scalaActors = "org.scala-lang" % "scala-actors" % scalaVer % "provided"
   lazy val scalaReflect = "org.scala-lang" % "scala-reflect" % scalaVer % "provided"
+  lazy val junitJar = "junit" % "junit" % "4.10" % "test"
 
   lazy val commonDeps = Seq(scalaTest, scalaActors, scalaReflect, typesafeConfig, 
-                     sparkSql, sparkCatalyst, sparkHive, sparkStreaming, sparkMllib)
+                     sparkSql, sparkCatalyst, sparkHive, sparkStreaming, sparkMllib, junitJar)
 
   lazy val toolsDeps = Seq(gemxdClient, gemxd, gemxdTools, jobServer, tomcat, hikariCP) ++ commonDeps
 

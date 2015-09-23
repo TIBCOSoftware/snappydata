@@ -1,7 +1,5 @@
 package org.apache.spark.sql.collection;
 
-import com.pivotal.gemfirexd.internal.iapi.services.sanity.SanityManager;
-
 import java.util.UUID;
 
 /**
