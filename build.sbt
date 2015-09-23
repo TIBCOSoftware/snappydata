@@ -34,6 +34,7 @@ lazy val root = (project in file(".")).
 
 resolvers in ThisBuild += Resolver.mavenLocal 
 resolvers in ThisBuild += "Ooyala Bintray" at "http://dl.bintray.com/ooyala/maven"
+resolvers in ThisBuild += "Snappy Local Repo" at "file://" + baseDirectory.value + "/local-repo"
 
 fork in run := true
 
