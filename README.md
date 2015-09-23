@@ -1,9 +1,9 @@
-There were few proposals about how to manage the various repositories mentioned in this document (https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document. 
+There were few proposals about how to manage the various repositories mentioned in [this document](https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document. 
 
 According to "Proposal 4" gemxd and snappy-spark repositories will be independent of any other repository. There will be a third repository that will hold the code of Snappy - snappy-commons. Snappy-Commons will have two projects: 
  
-(a) snappy-core - Any code that is an extension to Spark code and is not dependent on gemxd, job server etc. should go in here. For e.g. SnappyContext, cluster manager etc. 
-(b) snappy-tools - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc. 
+(a) **snappy-core** - Any code that is an extension to Spark code and is not dependent on gemxd, job server etc. should go in here. For e.g. SnappyContext, cluster manager etc. 
+(b) **snappy-tools** - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc. 
 
 Code in snappy-tools can depend on snappy-core but it cannot happen other way round. 
 
@@ -11,6 +11,7 @@ For building these two projects, we are using sbt's feature of multi project bui
 
 On sbt shell, if compile is fired, it compiles root, core and tools. To build an individual project, on sbt shell, you can write - "project core" and then fire compile.  
   
+'''
 ../snappy-commons>sbt 
 [info] Loading project definition from /hemantb1/snappy/repos/snappy-commons/project
 [info] Set current project to root (in build file:/hemantb1/snappy/repos/snappy-commons/)
@@ -28,4 +29,5 @@ On sbt shell, if compile is fired, it compiles root, core and tools. To build an
 [info] Set current project to root (in build file:/hemantb1/snappy/repos/snappy-commons/)
 > compile 
 [success] Total time: 0 s, completed Sep 23, 2015 5:29:26 PM
+'''
 > 
