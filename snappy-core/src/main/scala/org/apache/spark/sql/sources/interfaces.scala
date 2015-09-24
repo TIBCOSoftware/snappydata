@@ -169,7 +169,7 @@ object JdbcExtendedUtils {
       val nullable = if (field.nullable) "" else "NOT NULL"
       sb.append(s", ${field.name} $typeString $nullable")
     }
-    if (sb.length < 2) "" else sb.substring(2)
+    if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
   }
 
   /**

@@ -393,6 +393,9 @@ final class DefaultSource
     val numPartitions = parameters.remove("numpartitions")
     // remove ALLOW_EXISTING property, if remaining
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
+
+    parameters.remove("serialization.format")
 
     driver.foreach(DriverRegistry.register)
 

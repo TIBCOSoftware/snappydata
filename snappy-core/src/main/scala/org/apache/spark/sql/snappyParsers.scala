@@ -95,7 +95,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
       case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
-        val options = opts.getOrElse(Map.empty[String, String])
+        val options = new CaseInsensitiveMap(opts.getOrElse(Map.empty[String, String]))
         val provider = SnappyContext.getProvider(providerName)
         if (query.isDefined) {
           if (schemaString.length > 0) {
