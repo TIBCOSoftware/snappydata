@@ -169,8 +169,12 @@ private[sql] object InMemoryAppendableRelation {
      * Append a single row to the current CachedBatch (creating a new one
      * if not present or has exceeded its capacity)
      */
-    private def appendRow_(newBuilders: Boolean, row: InternalRow): Unit = {
-      val rowLength = row.numFields
+    private def appendRow_(newBuilders: Boolean, row: Option[InternalRow]): Unit = {
+      val rowLength = row match {
+        case Some(r) => r.numFields
+        case None => 0
+
+      }
       if (rowLength > 0) {
         // Added for SPARK-6082. This assertion can be useful for scenarios when
         // something like Hive TRANSFORM is used. The external data generation
@@ -182,7 +186,7 @@ private[sql] object InMemoryAppendableRelation {
 
         var i = 0
         while (i < rowLength) {
-          columnBuilders(i).appendFrom(row, i)
+          columnBuilders(i).appendFrom(row.get, i)
           i += 1
         }
         rowCount += 1
@@ -202,7 +206,7 @@ private[sql] object InMemoryAppendableRelation {
     }
 
     def appendRow(u: Unit, row: InternalRow): Unit =
-      appendRow_(newBuilders = true, row)
+      appendRow_(newBuilders = true, Option(row))
 
     // empty for now
     def endRows(u: Unit): Unit = {}
@@ -212,7 +216,7 @@ private[sql] object InMemoryAppendableRelation {
         // setting rowCount to batchSize temporarily will automatically
         // force creation of a new batch in appendRow
         rowCount = batchSize
-        appendRow_(newBuilders = false, EmptyRow)
+        appendRow_(newBuilders = false, Option(EmptyRow))
       }
       result
     }
