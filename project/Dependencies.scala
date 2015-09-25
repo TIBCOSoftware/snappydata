@@ -12,9 +12,9 @@ object Dependencies {
   lazy val sparkStreaming = "org.apache.spark" %% "snappy-spark-streaming" % sparkVersion % "provided"
   lazy val sparkMllib = "org.apache.spark" %% "snappy-spark-mllib" % sparkVersion % "provided"
 
-  lazy val gemxdClient = "com.pivotal" %% "gemfirexd-client" % "2.0-Beta" % "provided"
-  lazy val gemxd = "com.pivotal" %% "gemfirexd" % "2.0-Beta" % "provided"
-  lazy val gemxdTools = "com.pivotal" %% "gemfirexd-tools" % "2.0-Beta" % "provided"
+  lazy val gemxdClient = "com.pivotal" % "gemfirexd-client" % "2.0-Beta" % "provided"
+  lazy val gemxd = "com.pivotal" % "gemfirexd" % "2.0-Beta" % "provided"
+  lazy val gemxdTools = "com.pivotal" % "gemfirexd-tools" % "2.0-Beta" % "provided"
 
   lazy val jobServer = "ooyala.cnd" % "job-server" % "0.3.1" % "provided"
   lazy val tomcat = "org.apache.tomcat" % "tomcat-jdbc" % "8.0.24" % "provided"
