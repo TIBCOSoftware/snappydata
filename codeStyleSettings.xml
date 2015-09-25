@@ -4,6 +4,9 @@
     <option name="PER_PROJECT_SETTINGS">
       <value>
         <option name="AUTODETECT_INDENTS" value="false" />
+        <JavaCodeStyleSettings>
+          <option name="SPACE_AROUND_TYPE_BOUNDS_IN_TYPE_PARAMETERS" value="false" />
+        </JavaCodeStyleSettings>
         <ScalaCodeStyleSettings>
           <option name="importLayout">
             <array>
@@ -19,6 +22,14 @@
         <XML>
           <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
         </XML>
+        <codeStyleSettings language="JAVA">
+          <option name="SPACE_AFTER_TYPE_CAST" value="false" />
+          <indentOptions>
+            <option name="INDENT_SIZE" value="2" />
+            <option name="CONTINUATION_INDENT_SIZE" value="4" />
+            <option name="TAB_SIZE" value="2" />
+          </indentOptions>
+        </codeStyleSettings>
         <codeStyleSettings language="Scala">
           <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
           <option name="ALIGN_MULTILINE_FOR" value="false" />

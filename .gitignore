@@ -1,5 +1,6 @@
 *.class
 *.log
+snappy-spark
 
 # sbt specific
 .cache/
@@ -16,6 +17,7 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 .idea
+*.iml
 
 # Emacs files
 .#*
