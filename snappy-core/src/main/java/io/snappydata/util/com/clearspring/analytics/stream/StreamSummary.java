@@ -32,8 +32,7 @@ import com.esotericsoftware.kryo.io.Output;
  * structure as described in: <i>Efficient Computation of Frequent and Top-k
  * Elements in Data Streams</i> by Metwally, Agrawal, and Abbadi
  *
- * @param <T>
- *          type of data in the stream to be summarized
+ * @param <T> type of data in the stream to be summarized
  */
 public class StreamSummary<T> implements ITopK<T> {
 
@@ -45,7 +44,7 @@ public class StreamSummary<T> implements ITopK<T> {
 
     public Bucket(long count) {
       this.count = count;
-      this.counterList = new DoublyLinkedList<Counter<T>>();
+      this.counterList = new DoublyLinkedList<>();
     }
   }
 
@@ -54,13 +53,12 @@ public class StreamSummary<T> implements ITopK<T> {
   protected final DoublyLinkedList<Bucket> bucketList;
 
   /**
-   * @param capacity
-   *          maximum size (larger capacities improve accuracy)
+   * @param capacity maximum size (larger capacities improve accuracy)
    */
   public StreamSummary(int capacity) {
     this.capacity = capacity;
-    counterMap = new HashMap<T, ListNode2<Counter<T>>>();
-    bucketList = new DoublyLinkedList<Bucket>();
+    counterMap = new HashMap<>();
+    bucketList = new DoublyLinkedList<>();
 
   }
 
@@ -71,8 +69,7 @@ public class StreamSummary<T> implements ITopK<T> {
   /**
    * Algorithm: <i>Space-Saving</i>
    *
-   * @param item
-   *          stream element (<i>e</i>)
+   * @param item stream element (<i>e</i>)
    * @return false if item was already in the stream summary, true otherwise
    */
   @Override
@@ -83,8 +80,7 @@ public class StreamSummary<T> implements ITopK<T> {
   /**
    * Algorithm: <i>Space-Saving</i>
    *
-   * @param item
-   *          stream element (<i>e</i>)
+   * @param item stream element (<i>e</i>)
    * @return false if item was already in the stream summary, true otherwise
    */
   @Override
@@ -93,8 +89,7 @@ public class StreamSummary<T> implements ITopK<T> {
   }
 
   /**
-   * @param item
-   *          stream element (<i>e</i>)
+   * @param item stream element (<i>e</i>)
    * @return item dropped from summary if an item was dropped, null otherwise
    */
   public T offerReturnDropped(T item, int incrementCount) {
@@ -102,10 +97,9 @@ public class StreamSummary<T> implements ITopK<T> {
   }
 
   /**
-   * @param item
-   *          stream element (<i>e</i>)
-   * @return Pair<isNewItem, itemDropped> where isNewItem is the return value of
-   *         offer() and itemDropped is null if no item was dropped
+   * @param item stream element (<i>e</i>)
+   * @return Pair&lt;isNewItem, itemDropped&gt; where isNewItem is the return
+   * value of offer() and itemDropped is null if no item was dropped
    */
   public Pair<Boolean, T> offerReturnAll(T item, int incrementCount) {
     ListNode2<Counter<T>> counterNode = counterMap.get(item);
@@ -115,7 +109,7 @@ public class StreamSummary<T> implements ITopK<T> {
 
       if (size() < capacity) {
         counterNode = bucketList.enqueue(new Bucket(0)).getValue().counterList
-            .add(new Counter<T>(bucketList.tail(), item));
+            .add(new Counter<>(bucketList.tail(), item));
       } else {
         Bucket min = bucketList.first();
         counterNode = min.counterList.tail();
@@ -130,16 +124,16 @@ public class StreamSummary<T> implements ITopK<T> {
 
     incrementCounter(counterNode, incrementCount);
 
-    return new Pair<Boolean, T>(isNewItem, droppedItem);
+    return new Pair<>(isNewItem, droppedItem);
   }
 
   protected void incrementCounter(ListNode2<Counter<T>> counterNode,
-      int incrementCount) {
+                                  int incrementCount) {
     Counter<T> counter = counterNode.getValue(); // count_i
     ListNode2<Bucket> oldNode = counter.bucketNode;
     Bucket bucket = oldNode.getValue(); // Let Bucket_i be the bucket of count_i
     bucket.counterList.remove(counterNode); // Detach count_i from Bucket_i's
-                                            // child-list
+    // child-list
     counter.count = counter.count + incrementCount;
 
     // Finding the right bucket for count_i
@@ -149,16 +143,15 @@ public class StreamSummary<T> implements ITopK<T> {
     ListNode2<Bucket> bucketNodeNext = bucketNodePrev.getNext();
     while (bucketNodeNext != null) {
       Bucket bucketNext = bucketNodeNext.getValue(); // Let Bucket_i^+ be
-                                                     // Bucket_i's neighbor of
-                                                     // larger value
+      // Bucket_i's neighbor of larger value
       if (counter.count == bucketNext.count) {
         bucketNext.counterList.add(counterNode); // Attach count_i to
-                                                 // Bucket_i^+'s child-list
+        // Bucket_i^+'s child-list
         break;
       } else if (counter.count > bucketNext.count) {
         bucketNodePrev = bucketNodeNext;
         bucketNodeNext = bucketNodePrev.getNext(); // Continue hunting for an
-                                                   // appropriate bucket
+        // appropriate bucket
       } else {
         // A new bucket has to be created
         bucketNodeNext = null;
@@ -173,15 +166,14 @@ public class StreamSummary<T> implements ITopK<T> {
     counter.bucketNode = bucketNodeNext;
 
     // Cleaning up
-    if (bucket.counterList.isEmpty()) // If Bucket_i's child-list is empty
-    {
+    if (bucket.counterList.isEmpty()) { // If Bucket_i's child-list is empty
       bucketList.remove(oldNode); // Detach Bucket_i from the Stream-Summary
     }
   }
 
   @Override
   public List<T> peek(int k) {
-    List<T> topK = new ArrayList<T>(k);
+    List<T> topK = new ArrayList<>(k);
 
     for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode
         .getPrev()) {
@@ -198,10 +190,10 @@ public class StreamSummary<T> implements ITopK<T> {
   }
 
   public List<Counter<T>> topK(int k) {
-    List<Counter<T>> topK = new ArrayList<Counter<T>>(k);
+    List<Counter<T>> topK = new ArrayList<>(k);
 
-    for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode
-        .getPrev()) {
+    for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null;
+         bNode = bNode.getPrev()) {
       Bucket b = bNode.getValue();
       for (Counter<T> c : b.counterList) {
         if (topK.size() == k) {
@@ -225,8 +217,8 @@ public class StreamSummary<T> implements ITopK<T> {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append('[');
-    for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null; bNode = bNode
-        .getPrev()) {
+    for (ListNode2<Bucket> bNode = bucketList.head(); bNode != null;
+         bNode = bNode.getPrev()) {
       Bucket b = bNode.getValue();
       sb.append('{');
       sb.append(b.count);
@@ -253,8 +245,8 @@ public class StreamSummary<T> implements ITopK<T> {
   public static <T> void write(Kryo kryo, Output output, StreamSummary<T> obj) {
     output.writeInt(obj.capacity);
     output.writeInt(obj.size());
-    for (ListNode2<StreamSummary<T>.Bucket> bNode = obj.bucketList.tail(); bNode != null; bNode = bNode
-        .getNext()) {
+    for (ListNode2<StreamSummary<T>.Bucket> bNode = obj.bucketList.tail();
+         bNode != null; bNode = bNode.getNext()) {
       StreamSummary<T>.Bucket b = bNode.getValue();
       for (Counter<T> c : b.counterList) {
         kryo.writeObject(output, c);
@@ -265,12 +257,13 @@ public class StreamSummary<T> implements ITopK<T> {
   public static <T> StreamSummary<T> read(Kryo kryo, Input input) {
     int capacity = input.readInt();
     int size = input.readInt();
-    StreamSummary<T> deser = new StreamSummary<T>(capacity);
+    StreamSummary<T> deser = new StreamSummary<>(capacity);
     StreamSummary<T>.Bucket currentBucket = null;
     ListNode2<StreamSummary<T>.Bucket> currentBucketNode = null;
 
     for (int i = 0; i < size; i++) {
-      Counter<T> c = (Counter<T>) kryo.readObject(input, Counter.class);
+      @SuppressWarnings("unchecked")
+      Counter<T> c = (Counter<T>)kryo.readObject(input, Counter.class);
       if (currentBucket == null || c.count != currentBucket.count) {
         currentBucket = deser.new Bucket(c.count);
         currentBucketNode = deser.bucketList.add(currentBucket);
@@ -280,5 +273,4 @@ public class StreamSummary<T> implements ITopK<T> {
     }
     return deser;
   }
-
 }
