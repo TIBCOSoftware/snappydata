@@ -67,10 +67,10 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
         // value
         // && not approximate value
         Iterator<Tuple2<K, V>> iter = this.descendingIterator();
-        Tuple2<K, V> last = iter.next();
-
+        //Tuple2<K, V> last = iter.next();
+        Tuple2 last = iter.next();
         if (iter.hasNext()) {
-          Tuple2<K, V> last_1 = iter.next();
+          Tuple2 last_1 = iter.next();
           if ((Math.abs((Long) last._2 - (Long) last_1._2) * 100f)
               / (Long) last_1._2 > tolerance) {
             remove = true;
