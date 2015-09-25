@@ -33,10 +33,9 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
           return 1;
         }
       }
-
     });
     this.bound = bound;
-    this.map = new HashMap<K, V>();
+    this.map = new HashMap<>();
     this.isRelaxedBound = isRelaxedBound;
   }
 
@@ -68,11 +67,11 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
         // && not approximate value
         Iterator<Tuple2<K, V>> iter = this.descendingIterator();
         //Tuple2<K, V> last = iter.next();
-        Tuple2 last = iter.next();
+        Tuple2<K, V> last = iter.next();
         if (iter.hasNext()) {
           Tuple2 last_1 = iter.next();
-          if ((Math.abs((Long) last._2 - (Long) last_1._2) * 100f)
-              / (Long) last_1._2 > tolerance) {
+          if ((Math.abs((Long)last._2 - (Long)last_1._2) * 100f)
+              / (Long)last_1._2 > tolerance) {
             remove = true;
           }
         }
@@ -116,30 +115,32 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
     dos.writeBoolean(this.isRelaxedBound);
     dos.writeInt(this.map.size());
     ObjectOutputStream oos = null;
-    int i = 0;
+    boolean firstCall = true;
     boolean isString = false;
     for (Map.Entry<K, V> entry : this.map.entrySet()) {
-      if (i == 0) {
+      if (firstCall) {
         if (entry.getKey() instanceof String) {
           isString = true;
         } else {
           oos = new ObjectOutputStream(dos);
         }
         dos.writeBoolean(isString);
+        firstCall = false;
       }
       if (isString) {
-        dos.writeUTF((String) entry.getKey());
-        dos.writeLong((Long) entry.getValue());
+        dos.writeUTF((String)entry.getKey());
+        dos.writeLong((Long)entry.getValue());
       } else {
         oos.writeObject(entry.getKey());
-        oos.writeLong((Long) entry.getValue());
+        oos.writeLong((Long)entry.getValue());
       }
     }
-    if(oos != null) {
+    if (oos != null) {
       oos.flush();
     }
   }
 
+  @SuppressWarnings("unchecked")
   public static <K, V extends Comparable<V>> BoundedSortedSet<K, V> deserialize(
       DataInputStream dis) throws Exception {
     int bound = dis.readInt();
@@ -157,16 +158,15 @@ public class BoundedSortedSet<K, V extends Comparable<V>> extends
         if (isString) {
           String key = dis.readUTF();
           Long value = dis.readLong();
-          bs.addBypassCheck((K) key, (V) value);
+          bs.addBypassCheck((K)key, (V)value);
 
         } else {
           Object key = ois.readObject();
           Long value = ois.readLong();
-          bs.addBypassCheck((K) key, (V) value);
+          bs.addBypassCheck((K)key, (V)value);
         }
       }
     }
     return bs;
   }
-
 }

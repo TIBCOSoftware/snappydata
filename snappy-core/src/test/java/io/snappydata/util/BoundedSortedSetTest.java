@@ -9,9 +9,9 @@ import junit.framework.TestCase;
 public class BoundedSortedSetTest extends TestCase {
   
   public void testBoundedSortedMapTestOrdering() {
-    BoundedSortedSet<String, Long> boundedSet = new BoundedSortedSet<String, Long>(8, false);
+    BoundedSortedSet<String, Long> boundedSet = new BoundedSortedSet<>(8, false);
     for(int i = 1; i <= 100; ++i) {
-      boundedSet.add(new Tuple2(i+"", Long.valueOf(i))) ;
+      boundedSet.add(new Tuple2<>(i + "", Long.valueOf(i))) ;
     }
     assertEquals(8,boundedSet.size());
     Iterator<Tuple2<String, Long>> iter = boundedSet.iterator();
@@ -28,7 +28,7 @@ public class BoundedSortedSetTest extends TestCase {
   public void testBoundedSortedMapTestOrderingReverseInsertion() {
     BoundedSortedSet<String, Long> boundedSet = new BoundedSortedSet<String, Long>(8, false);
     for(int i = 100; i > 0; --i) {
-      boundedSet.add(new Tuple2<String,Long>(i+"", Long.valueOf(i) ));
+      boundedSet.add(new Tuple2<>(i + "", Long.valueOf(i)));
     }
     assertEquals(8,boundedSet.size());
     Iterator<Tuple2<String, Long>> iter = boundedSet.iterator();
@@ -45,7 +45,7 @@ public class BoundedSortedSetTest extends TestCase {
   public void testContains() {
     BoundedSortedSet<String, Long> boundedSet = new BoundedSortedSet<String, Long>(8, false);
     for(int i = 100; i > 0; --i) {
-      boundedSet.add(new Tuple2<String,Long>(i+"", Long.valueOf(i)));
+      boundedSet.add(new Tuple2<>(i + "", Long.valueOf(i)));
     }
    
     for(int i =100; i  > 92; --i) {
