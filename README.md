@@ -32,3 +32,5 @@ On sbt shell, if compile is fired, it compiles root, core and tools. To build an
 [success] Total time: 0 s, completed Sep 23, 2015 5:29:26 PM
 
 ```
+
+For combined build with snappy-spark and combined import into Intellij, see README.build

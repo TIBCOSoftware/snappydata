@@ -21,10 +21,24 @@ if [ ! -h "${basedir}/snappy-spark" ]; then
 fi
 
 # Setup the default options
-DEFAULT_OPTS="-Phadoop-2.4 -Phive -Phive-thriftserver -Pyarn -DskipTests"
-if [ "$1" = "-no-defaults" ]; then
-  DEFAULT_OPTS=
-  shift
+DEFAULT_OPTS="-Phadoop-2.4 -Phive -Phive-thriftserver -Pyarn"
+SKIP_TESTS=1
+SKIP_SPARK=
+PROCESS_OPTS=1
+while [ -n "$PROCESS_OPTS" ]; do
+  case "$1" in
+    -no-defaults) DEFAULT_OPTS="" && SKIP_TESTS="" && shift ;;
+    -tests) SKIP_TESTS="" && shift ;;
+    -skip-spark) SKIP_SPARK=1 && shift ;;
+    *) PROCESS_OPTS="" ;;
+  esac
+done
+
+if [ -n "${SKIP_TESTS}" ]; then
+  DEFAULT_OPTS="${DEFAULT_OPTS} -DskipTests"
+fi
+if [ -n "${SKIP_SPARK}" ]; then
+  DEFAULT_OPTS="${DEFAULT_OPTS} -pl snappy-core,snappy-tools"
 fi
 
 # Finally execute the mvn in the snappy-spark directory for consistent builds across spark and snappy projects
