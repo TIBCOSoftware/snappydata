@@ -8,9 +8,18 @@ According to "Proposal 4" gemxd and snappy-spark repositories will be independen
 
 (b) **snappy-tools** - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc. 
 
-Code in snappy-tools can depend on snappy-core but it cannot happen other way round. 
+Code in snappy-tools can depend on snappy-core but it cannot happen other way round. Lastly the snappy-spark repository is symlinked inside snappy-commons by build/link-spark.sh script:
 
-For building these two projects, we are using sbt's feature of multi project builds. We have a build.sbt file at the root project that is snappy-commons. This build.sbt file drives the build of both the projects. We have aliases for the projects as root, core and tools. 
+(c) **snappy-spark** - This is the link to snappy-spark repository containing Snappy modifications to Spark.
+
+Note that git operations have still to be done separately on snappy-commons and snappy-spark repositories.
+
+
+## Building
+
+For combined build of all three modules including snappy-spark and also combined import of all three into Intellij, see README.build
+
+Those preferring to build just first two separately, and third separately published as jars in local maven/ivy cache, can use sbt to build the first two. For building first two projects, we are using sbt's feature of multi project builds. We have a build.sbt file at the root project that is snappy-commons. This build.sbt file drives the build of both the projects. We have aliases for the projects as root, core and tools. 
 
 On sbt shell, if compile is fired, it compiles root, core and tools. To build an individual project, on sbt shell, you can write - "project core" and then fire compile.  
   
@@ -34,8 +43,6 @@ On sbt shell, if compile is fired, it compiles root, core and tools. To build an
 [success] Total time: 0 s, completed Sep 23, 2015 5:29:26 PM
 
 ```
-
-For combined build with snappy-spark and combined import into Intellij, see README.build
 
 
 ## Git configuration to use keyring/keychain
