@@ -1,0 +1,105 @@
+diff --git build.gradle build.gradle
+index b16ce01..0bd4bf7 100755
+--- build.gradle
++++ build.gradle
+@@ -32,7 +32,7 @@ allprojects {
+   }
+ 
+   apply plugin: 'java'
+-  apply plugin: 'scala'
++  //apply plugin: 'scala'
+   apply plugin: 'maven'
+   apply plugin: 'idea'
+   apply plugin: 'eclipse'
+@@ -46,7 +46,7 @@ allprojects {
+   targetCompatibility = 1.7
+ 
+   compileJava.options.encoding = 'UTF-8'
+-  compileScala.options.encoding = 'UTF-8'
++  //compileScala.options.encoding = 'UTF-8'
+   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
+ 
+   ext {
+@@ -167,8 +167,8 @@ subprojects {
+   }
+ 
+   // fix scala+java mix to all use compileScala which use correct dependency order
+-  sourceSets.main.scala.srcDir "src/main/java"
+-  sourceSets.main.java.srcDirs = []
++  //sourceSets.main.scala.srcDir "src/main/java"
++  //sourceSets.main.java.srcDirs = []
+ 
+   dependencies {
+     compile 'org.apache.tomcat:tomcat-juli:8.0.24'
+diff --git snappy-spark/build.gradle snappy-spark.new/build.gradle
+index 8e057b4..a47cee9 100644
+--- snappy-spark/build.gradle
++++ snappy-spark.new/build.gradle
+@@ -32,7 +32,7 @@ allprojects {
+   }
+ 
+   apply plugin: 'java'
+-  apply plugin: 'scala'
++  //apply plugin: 'scala'
+   apply plugin: 'maven'
+   apply plugin: 'idea'
+   apply plugin: 'eclipse'
+@@ -43,7 +43,7 @@ allprojects {
+   targetCompatibility = 1.7
+ 
+   compileJava.options.encoding = 'UTF-8'
+-  compileScala.options.encoding = 'UTF-8'
++  //compileScala.options.encoding = 'UTF-8'
+   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
+ 
+   group = "org.apache.spark"
+@@ -142,8 +142,8 @@ subprojects {
+     }
+ 
+     // fix scala+java mix to all use compileScala which use correct dependency order
+-    sourceSets.main.scala.srcDir "src/main/java"
+-    sourceSets.main.java.srcDirs = []
++    //sourceSets.main.scala.srcDir "src/main/java"
++    //sourceSets.main.java.srcDirs = []
+   }
+ 
+   dependencies {
+diff --git snappy-spark/mllib/build.gradle snappy-spark.new/mllib/build.gradle
+index 4ca5b67..a5bff19 100644
+--- snappy-spark/mllib/build.gradle
++++ snappy-spark.new/mllib/build.gradle
+@@ -32,5 +32,5 @@ dependencies {
+ // TODO: netlib-lgpl profile
+ 
+ // fix scala+java test ordering
+-sourceSets.test.scala.srcDir "src/main/java"
+-sourceSets.test.java.srcDirs = []
++//sourceSets.test.scala.srcDir "src/main/java"
++//sourceSets.test.java.srcDirs = []
+diff --git snappy-spark/sql/core/build.gradle snappy-spark.new/sql/core/build.gradle
+index e465170..f9883c1 100644
+--- snappy-spark/sql/core/build.gradle
++++ snappy-spark.new/sql/core/build.gradle
+@@ -22,5 +22,5 @@ dependencies {
+ compileTestJava.source sourceSets.test.java, 'src/test/gen-java'
+ 
+ // fix scala+java test ordering
+-sourceSets.test.scala.srcDir "src/main/java"
+-sourceSets.test.java.srcDirs = []
++//sourceSets.test.scala.srcDir "src/main/java"
++//sourceSets.test.java.srcDirs = []
+diff --git snappy-spark/streaming/build.gradle snappy-spark.new/streaming/build.gradle
+index cfed867..7f428ad 100644
+--- snappy-spark/streaming/build.gradle
++++ snappy-spark.new/streaming/build.gradle
+@@ -9,8 +9,8 @@ dependencies {
+ }
+ 
+ // fix scala+java mix to use scala first for tests
+-sourceSets.test.scala.srcDir "src/main/java"
+-sourceSets.test.java.srcDirs = []
++//sourceSets.test.scala.srcDir "src/main/java"
++//sourceSets.test.java.srcDirs = []
+ 
+ // TODO: shadeTestJar in maven?
+ 
