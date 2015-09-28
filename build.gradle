@@ -36,9 +36,18 @@ allprojects {
   apply plugin: 'maven'
   apply plugin: 'idea'
   apply plugin: 'eclipse'
+  //apply plugin: "com.github.maiflai.scalatest"
 
   group = "io.snappydata"
   version = "0.1.0-SNAPSHOT"
+
+  // apply compiler options
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  compileJava.options.encoding = 'UTF-8'
+  compileScala.options.encoding = 'UTF-8'
+  compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
 
   ext {
     scalaBinaryVersion = "2.10"
@@ -70,16 +79,6 @@ allprojects {
 }
 
 subprojects {
-  //apply plugin: "com.github.maiflai.scalatest"
-
-  // apply compiler options
-  sourceCompatibility = 1.7
-  targetCompatibility = 1.7
-
-  compileJava.options.encoding = 'UTF-8'
-  //compileScala.options.encoding = 'UTF-8'
-  compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
-
   // apply default manifest
   jar {
     manifest {
