@@ -27,7 +27,8 @@ If the build works fine, then it is pretty straightforward to import all the pro
   * Open Run->Edit Configurations. Expand Defaults, and select Application. Add "-XX:MaxPermSize=350m" in VM options. Similarly add it to VM parameters for ScalaTest.
   * Try Run->Run... on a test like SparkSQLTest.
 
-If sources and docs were selected during initial import, then it can take a really long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. To easily download for selected jars do this:
+
+If sources and docs were selected during initial import, then it can take a really long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit Shift->Ctrl->T when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
   * Open the File->Project Structure->Libraries
   * Click on the '+' sign at the top to add new library, and choose Maven.
   * In the box, provide "scala-library-2.10.4" and click on the search tool.
