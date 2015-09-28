@@ -1,0 +1,13 @@
+dependencies {
+  compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+
+  // TODO: all these should be in snappy-tools not here but right now everything is in snappy-core
+  compile 'ooyala.cnd:job-server:0.3.1'
+
+  compile 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
+  compile 'com.pivotal:gemfirexd:' + gemfireXDVersion
+  compile 'com.pivotal:gemfirexd-tools:' + gemfireXDVersion
+}

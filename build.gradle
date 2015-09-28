@@ -1,0 +1,180 @@
+apply plugin: 'wrapper'
+
+buildscript {
+  repositories {
+    maven { url "https://plugins.gradle.org/m2" }
+  }
+  dependencies {
+    classpath "com.github.maiflai:gradle-scalatest:0.9"
+    classpath "com.commercehub.gradle.plugin:gradle-avro-plugin:0.5.0"
+  }
+}
+
+allprojects {
+  // We want to see all test results.  This is equivalatent to setting --continue
+  // on the command line.
+  gradle.startParameter.continueOnFailure = true
+
+  repositories {
+    maven { url "file://" + projectDir.getName() + "/local-repo" }
+    mavenLocal()
+    mavenCentral()
+    maven { url "https://repository.apache.org/content/repositories/releases" }
+    maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
+    maven { url "https://repo.eclipse.org/content/repositories/paho-releases" }
+    maven { url "https://repository.cloudera.com/artifactory/cloudera-repos" }
+    maven { url "https://oss.sonatype.org/content/repositories/orgspark-project-1113" }
+    maven { url "http://repository.mapr.com/maven" }
+    maven { url "https://repo.spring.io/libs-release" }
+    maven { url "http://maven.twttr.com" }
+    maven { url "http://repository.apache.org/snapshots" }
+    maven { url "http://dl.bintray.com/ooyala/maven" }
+  }
+
+  apply plugin: 'java'
+  apply plugin: 'scala'
+  apply plugin: 'maven'
+  apply plugin: 'idea'
+  apply plugin: 'eclipse'
+
+  group = "io.snappydata"
+  version = "0.1.0-SNAPSHOT"
+
+  ext {
+    scalaBinaryVersion = "2.10"
+    scalaVersion = scalaBinaryVersion + ".4"
+    sparkVersion = "1.5.0-SNAPSHOT.1"
+    slf4jVersion = "1.7.10"
+    gemfireXDVersion = "2.0-Beta"
+  }
+
+  // default output directory like in sbt/maven
+  buildDir = "target/scala-" + scalaBinaryVersion
+
+  dependencies {
+    compile 'org.scala-lang:scala-library:' + scalaVersion
+    compile 'org.scala-lang:scala-compiler:' + scalaVersion
+    compile 'org.scala-lang:scala-reflect:' + scalaVersion
+    compile 'org.scala-lang:scala-actors:' + scalaVersion
+    compile 'org.scala-lang:scalap:' + scalaVersion
+
+    compile 'log4j:log4j:1.2.17'
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+
+    testCompile 'junit:junit:4.10'
+    testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+    testRuntime 'org.pegdown:pegdown:1.1.0'
+  }
+}
+
+subprojects {
+  //apply plugin: "com.github.maiflai.scalatest"
+
+  // apply compiler options
+  sourceCompatibility = 1.7
+  targetCompatibility = 1.7
+
+  compileJava.options.encoding = 'UTF-8'
+  //compileScala.options.encoding = 'UTF-8'
+  compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
+
+  // apply default manifest
+  jar {
+    manifest {
+      attributes(
+        "Manifest-Version"  : "1.0",
+        "Created-By"        : System.getProperty("user.name"),
+        "Title"             : rootProject.name,
+        "Version"           : version,
+        "Vendor"            : "Snappy Data, Inc."
+      )
+    }
+  }
+
+  // the run task for a selected sub-project
+  task run(type:JavaExec) {
+    if (!project.hasProperty("mainClass")) {
+      main = "io.snappydata.app.SparkSQLTest"
+    } else {
+      main = mainClass
+    }
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
+    jvmArgs = [ "-Xmx2g", "-XX:MaxPermSize=512m" ]
+  }
+
+  task packageSources(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+  task packageDocs(type: Jar, dependsOn: javadoc) {
+    classifier = 'sources'
+    from javadoc.destinationDir
+  }
+  artifacts {
+    archives packageSources
+    //archives packageDocs
+  }
+
+  configurations {
+    provided {
+      description 'a dependency that is provided externally at runtime'
+      visible true
+    }
+    testOutput {
+      extendsFrom testCompile
+      description 'a dependency that exposes test artifacts'
+    }
+  }
+
+  // Here we want to disable all transitive dependencies on external artifacts.  This
+  // allows us to lock down library versions.  However, we want project dependencies to
+  // be transitive such that the libraries of a dependent project are automatically included.
+  configurations.all {
+    dependencies.all { dep ->
+      if (dep instanceof ModuleDependency && !(dep instanceof ProjectDependency)) {
+        dep.transitive = false
+      }
+    }
+  }
+
+  idea {
+    module {
+      scopes.PROVIDED.plus += [ configurations.provided ]
+    }
+  }
+  eclipse {
+    classpath {
+      plusConfigurations += [ configurations.provided ]
+    }
+  }
+
+  sourceSets {
+    main.compileClasspath += configurations.provided
+    main.runtimeClasspath -= configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+  }
+
+  javadoc.classpath += configurations.provided
+
+  task packageTests(type: Jar) {
+    from sourceSets.test.output
+    classifier = 'tests'
+  }
+  artifacts {
+    testOutput packageTests
+  }
+
+  // fix scala+java mix to all use compileScala which use correct dependency order
+  sourceSets.main.scala.srcDir "src/main/java"
+  sourceSets.main.java.srcDirs = []
+
+  dependencies {
+    compile 'org.apache.tomcat:tomcat-juli:8.0.24'
+    compile 'org.apache.tomcat:tomcat-jdbc:8.0.24'
+    compile 'com.zaxxer:HikariCP-java6:2.3.9'
+    compile 'com.typesafe:config:1.2.1'
+  }
+}

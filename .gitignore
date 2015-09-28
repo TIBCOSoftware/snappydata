@@ -13,6 +13,9 @@ src_managed/
 project/boot/
 project/plugins/project/
 
+# gradle specific
+.gradle/
+
 # Scala-IDE specific
 .scala_dependencies
 .worksheet
