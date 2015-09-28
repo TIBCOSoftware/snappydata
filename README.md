@@ -8,41 +8,54 @@ According to "Proposal 4" gemxd and snappy-spark repositories will be independen
 
 (b) **snappy-tools** - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc. 
 
-Code in snappy-tools can depend on snappy-core but it cannot happen other way round. Lastly the snappy-spark repository is symlinked inside snappy-commons by build/link-spark.sh script:
+Code in snappy-tools can depend on snappy-core but it cannot happen other way round. 
 
-(c) **snappy-spark** - This is the link to snappy-spark repository containing Snappy modifications to Spark.
+Lastly the snappy-spark repository has to be copied or moved in snappy-commons. 
+
+(c) **snappy-spark** - This is the Spark code with Snappy modifcations. 
 
 Note that git operations have still to be done separately on snappy-commons and snappy-spark repositories.
 
 
-## Building
+## Building using gradle
 
-For combined build of all three modules including snappy-spark and also combined import of all three into Intellij, see README.build
+Gradle builds have been arranged in a way so that all of snappy projects including snappy's spark variant can be built from the top-level. In addition snappy-spark can also be built separately:
+  * The full build and Intellij import has been tested with only JDK7. If you are using JDK8, then you are on your own. On Ubuntu/Mint systems, best way to get Oracle JDK7 as default:
 
-Those preferring to build just first two separately, and third separately published as jars in local maven/ivy cache, can use sbt to build the first two. For building first two projects, we are using sbt's feature of multi project builds. We have a build.sbt file at the root project that is snappy-commons. This build.sbt file drives the build of both the projects. We have aliases for the projects as root, core and tools. 
+    - add webupd8 java repository: sudo add-apt-repository ppa:webupd8team/java
+    - install and set jdk7 as default: sudo aptitude install oracle-java7-set-default
+    - you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
+    - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run "source /etc/profile.d/jdk.sh" to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
 
-On sbt shell, if compile is fired, it compiles root, core and tools. To build an individual project, on sbt shell, you can write - "project core" and then fire compile.  
-  
-```
-../snappy-commons>sbt 
-[info] Loading project definition from /hemantb1/snappy/repos/snappy-commons/project
-[info] Set current project to root (in build file:/hemantb1/snappy/repos/snappy-commons/)
-> compile 
-[info] Updating {file:/hemantb1/snappy/repos/snappy-commons/}root...
-[info] Resolving org.fusesource.jansi#jansi;1.4 ...
-[info] Done updating.
-[info] Compiling 53 Scala sources and 15 Java sources to /hemantb1/snappy/repos/snappy-commons/snappy-core/target/scala-2.10/classes...
-[success] Total time: 22 s, completed Sep 23, 2015 5:28:17 PM
-> project core 
-[info] Set current project to snappy-core (in build file:/hemantb1/snappy/repos/snappy-commons/)
-> compile 
-[success] Total time: 0 s, completed Sep 23, 2015 5:29:19 PM
-> project root 
-[info] Set current project to root (in build file:/hemantb1/snappy/repos/snappy-commons/)
-> compile 
-[success] Total time: 0 s, completed Sep 23, 2015 5:29:26 PM
+  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by that name.
+  * Test the build with: ./gradlew clean assemble
+  * Run a snappy-core test application: ./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest (TODO: this still fails due to some runtime dependencies?)
 
-```
+
+## Setting up Intellij with gradle
+
+If the build works fine, then import into Intellij:
+  * Intellij somehow fails with scala plugin in gradle import even with very simple projects but works in later refresh fine. So first apply "patch -p0 < build/gradle-idea-hack.diff" that disables scala plugin temporarily in gradle build files.
+  * First ensure that gradle plugin is enabled in Preferences->Plugins.
+  * Select import project, then point to the snappy-commons directory
+  * Use external Gradle import. You could add -XX:MaxPermSize=350m to VM options in global Gradle settings. Select defaults, next, next ... finish. Its not recommended to use auto-import since we may need to live with few manual tweaks for now (see gen-java point below).
+  * Once import finishes, copy codeStyleSettings.xml in snappy-commons to .idea directory created by Intellij
+  * Once initial import is done (indexing may still be on but that doesn't matter), reverse the above patch "patch -p0 -R < build/gradle-idea-hack.diff"
+  * Then open the Gradle tab on the right and hit the first refresh icon.
+  * Open File->Project Structure->Modules->snappy-spark-sql_2.10. Then right-click on the src->test->gen-java item and add it manually to Tests. This step has to be repeated whenever you refresh Gradle projects manually in future.
+  * Generate avro source by expanding :snappy-spark:snappy-spark-streaming-flume-sink_2.10->Tasks->source generation. Right click on "generateAvroJava" and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc.
+  * Test the full build.
+  * Open Run->Edit Configurations. Expand Defaults, and select Application. Add -XX:MaxPermSize=350m in VM options. Similarly add it to VM parameters for ScalaTest.
+  * Try Run->Run... on a test like SparkSQLTest. (TODO: this still fails like above)
+
+
+If sources and docs were selected during initial import, then it can take a really long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit Shift->Ctrl->T when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
+  * Open the File->Project Structure->Libraries
+  * Click on the '+' sign at the top to add new library, and choose Maven.
+  * In the box, provide "scala-library-2.10.4" and click on the search tool.
+  * Select the "org.scala-lang:scala-library:2.10.4" in the drop down. Then check "Sources", "JavaDocs" options and go ahead.
+  * Do the same for others like "scala-reflect-2.10.4" and "scala-compiler-2.10.4" as required.
+  * Once this is done, don't select OK on the main Project Structure box. Instead hit "Cancel" and it should be all good since we only wanted to get Maven to download the sources and docs for these jars.
 
 
 ## Git configuration to use keyring/keychain
