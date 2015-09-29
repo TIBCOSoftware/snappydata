@@ -85,9 +85,9 @@ index e465170..f9883c1 100644
  
  // fix scala+java test ordering
 -sourceSets.test.scala.srcDir "src/main/java"
--sourceSets.test.java.srcDirs = []
+-sourceSets.test.java.srcDirs = ["src/test/gen-java"]
 +//sourceSets.test.scala.srcDir "src/main/java"
-+//sourceSets.test.java.srcDirs = []
++//sourceSets.test.java.srcDirs = ["src/test/gen-java"]
 diff --git snappy-spark/streaming/build.gradle snappy-spark.new/streaming/build.gradle
 index cfed867..7f428ad 100644
 --- snappy-spark/streaming/build.gradle

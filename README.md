@@ -28,7 +28,7 @@ Gradle builds have been arranged in a way so that all of snappy projects includi
     - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run "source /etc/profile.d/jdk.sh" to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
 
   * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. The integrated build depends on its name and presence inside. DO NOT JUST SYMLINK THE DIRECTORY -- that is known to cause trouble with IDE though command-line build may go through.
-  * Test the build with: ./gradlew clean assemble
+  * Update both repos (snappy-commons and snappy-spark) to latest version. Then test the build with: ./gradlew clean && ./gradlew assemble
   * Run a snappy-core test application: ./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest (TODO: this still fails due to some runtime dependencies?)
 
 
@@ -38,11 +38,10 @@ If the build works fine, then import into Intellij:
   * Intellij somehow fails with scala plugin in gradle import even with very simple projects but works in later refresh fine. So first apply "patch -p0 < build/gradle-idea-hack.diff" that disables scala plugin temporarily in gradle build files.
   * First ensure that gradle plugin is enabled in Preferences->Plugins.
   * Select import project, then point to the snappy-commons directory.
-  * Use external Gradle import. You could add -XX:MaxPermSize=350m to VM options in global Gradle settings. Select defaults, next, next ... finish. Its not recommended to use auto-import since we may need to live with few manual tweaks for now (see gen-java point below).
+  * Use external Gradle import. You could add -XX:MaxPermSize=350m to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore "Gradle location is unknown warning". Its not recommended to use auto-import since we may need to live with few manual tweaks for now (see gen-java point below).
   * Once import finishes, copy codeStyleSettings.xml in snappy-commons to .idea directory created by Intellij
   * Once initial import is done (indexing may still be on but that doesn't matter), reverse the above patch "patch -p0 -R < build/gradle-idea-hack.diff"
   * Then open the Gradle tab on the right and hit the first refresh icon. If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
-  * Open File->Project Structure->Modules->snappy-spark-sql_2.10. Then right-click on the src->test->gen-java item and add it manually to Tests. This step has to be repeated whenever you refresh Gradle projects manually in future (will be looking into how to avoid this).
   * Generate avro source by expanding :snappy-spark:snappy-spark-streaming-flume-sink_2.10->Tasks->source generation. Right click on "generateAvroJava" and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc.
   * Test the full build.
   * Open Run->Edit Configurations. Expand Defaults, and select Application. Add -XX:MaxPermSize=350m in VM options. Similarly add it to VM parameters for ScalaTest.
