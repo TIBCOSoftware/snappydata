@@ -16,7 +16,7 @@ allprojects {
   gradle.startParameter.continueOnFailure = true
 
   repositories {
-    maven { url "file://" + projectDir.getName() + "/local-repo" }
+    maven { url "file://" + rootProject.projectDir.getAbsolutePath() + "/local-repo" }
     mavenLocal()
     mavenCentral()
     maven { url "https://repository.apache.org/content/repositories/releases" }
