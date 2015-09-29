@@ -4,6 +4,16 @@
     <option name="PER_PROJECT_SETTINGS">
       <value>
         <option name="AUTODETECT_INDENTS" value="false" />
+        <option name="IMPORT_LAYOUT_TABLE">
+          <value>
+            <package name="java" withSubpackages="true" static="false" />
+            <package name="javax" withSubpackages="true" static="false" />
+            <emptyLine />
+            <package name="" withSubpackages="true" static="false" />
+            <emptyLine />
+            <package name="" withSubpackages="true" static="true" />
+          </value>
+        </option>
         <JavaCodeStyleSettings>
           <option name="SPACE_AROUND_TYPE_BOUNDS_IN_TYPE_PARAMETERS" value="false" />
         </JavaCodeStyleSettings>
@@ -23,6 +33,7 @@
           <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
         </XML>
         <codeStyleSettings language="JAVA">
+          <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
           <option name="SPACE_AFTER_TYPE_CAST" value="false" />
           <indentOptions>
             <option name="INDENT_SIZE" value="2" />
