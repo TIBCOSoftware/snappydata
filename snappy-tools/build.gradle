@@ -1,3 +1,8 @@
 dependencies {
   compile project(':snappy-core_' + scalaBinaryVersion)
+
+  compile 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
+  compile 'com.pivotal:gemfirexd:' + gemfireXDVersion
+  compile 'com.pivotal:gemfirexd-tools:' + gemfireXDVersion
+
 }

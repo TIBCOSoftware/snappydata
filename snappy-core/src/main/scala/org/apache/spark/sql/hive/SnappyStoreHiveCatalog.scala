@@ -24,7 +24,6 @@ import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.streaming.StreamRelation
 import org.apache.spark.{Logging, Partition, TaskContext}
@@ -488,7 +487,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         case None => context.cacheManager.cacheQuery(newDF, tableOpt)
 
         case Some(jdbcOptions) =>
-          val externalStore = new JDBCSourceAsStore(jdbcOptions)
+          val externalStore = getExternalTable(jdbcOptions)
           createExternalTableForCachedBatches(tableName, externalStore)
           context.cacheManager.cacheQuery_ext(newDF, tableOpt, externalStore)
       }
@@ -518,7 +517,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       "registerAndInsertIntoExternalStore: expected non-empty table name")
 
     val tableIdent = newQualifiedTableName(table)
-    val externalStore = new JDBCSourceAsStore(jdbcSource)
+    val externalStore = getExternalTable(jdbcSource)
     createExternalTableForCachedBatches(tableIdent.table,
       externalStore)
     val dummyDF = {
@@ -531,6 +530,18 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     context.cacheManager.cacheQuery_ext(dummyDF,
       Some(tableIdent.table), externalStore)
     context.appendToCache(df, tableIdent.table)
+  }
+
+  // TODO: The JDBC source is currently reading a property jdbcStore
+  // to find out the type of the jdbc store. This is a
+  // temporary arrangement.
+  def getExternalTable(jdbcSource: Map[String, String]): ExternalStore = {
+    val externalSource = jdbcSource.get("jdbcStore") match {
+      case Some(x) => x
+      case None => "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
+    }
+    val constructor = Class.forName(externalSource).getConstructors()(0)
+    return constructor.newInstance(jdbcSource).asInstanceOf[ExternalStore]
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,

@@ -23,7 +23,6 @@ import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.impl.JDBCSourceAsStore
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -1007,7 +1006,7 @@ private[sql] case class SnappyDStreamOperations[T: ClassTag](
       "saveToExternalTable: expected non-empty table name")
 
     val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = new JDBCSourceAsStore(jdbcSource)
+    val externalStore = context.catalog.getExternalTable(jdbcSource)
     context.catalog.createExternalTableForCachedBatches(tableIdent.table,
       externalStore)
     val attributeSeq = schema.toAttributes

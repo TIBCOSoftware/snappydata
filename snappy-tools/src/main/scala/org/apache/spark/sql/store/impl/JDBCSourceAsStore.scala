@@ -292,7 +292,8 @@ final class UUIDKeyResolver extends PartitionResolver[UUIDRegionKey, CachedBatch
   override def close(): Unit = {}
 }
 
-class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: String, tableName: String, store: JDBCSourceAsStore)
+class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
+                                               schema: String, tableName: String, store: JDBCSourceAsStore)
     extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
