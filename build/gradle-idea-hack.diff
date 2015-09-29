@@ -72,22 +72,10 @@ index 4ca5b67..a5bff19 100644
  // TODO: netlib-lgpl profile
  
  // fix scala+java test ordering
--sourceSets.test.scala.srcDir "src/main/java"
+-sourceSets.test.scala.srcDir "src/test/java"
 -sourceSets.test.java.srcDirs = []
-+//sourceSets.test.scala.srcDir "src/main/java"
++//sourceSets.test.scala.srcDir "src/test/java"
 +//sourceSets.test.java.srcDirs = []
-diff --git snappy-spark/sql/core/build.gradle snappy-spark.new/sql/core/build.gradle
-index e465170..f9883c1 100644
---- snappy-spark/sql/core/build.gradle
-+++ snappy-spark.new/sql/core/build.gradle
-@@ -22,5 +22,5 @@ dependencies {
- compileTestJava.source sourceSets.test.java, 'src/test/gen-java'
- 
- // fix scala+java test ordering
--sourceSets.test.scala.srcDir "src/main/java"
--sourceSets.test.java.srcDirs = ["src/test/gen-java"]
-+//sourceSets.test.scala.srcDir "src/main/java"
-+//sourceSets.test.java.srcDirs = ["src/test/gen-java"]
 diff --git snappy-spark/streaming/build.gradle snappy-spark.new/streaming/build.gradle
 index cfed867..7f428ad 100644
 --- snappy-spark/streaming/build.gradle
@@ -96,10 +84,31 @@ index cfed867..7f428ad 100644
  }
  
  // fix scala+java mix to use scala first for tests
--sourceSets.test.scala.srcDir "src/main/java"
+-sourceSets.test.scala.srcDir "src/test/java"
 -sourceSets.test.java.srcDirs = []
-+//sourceSets.test.scala.srcDir "src/main/java"
++//sourceSets.test.scala.srcDir "src/test/java"
 +//sourceSets.test.java.srcDirs = []
  
  // TODO: shadeTestJar in maven?
  
+--- snappy-spark/sql/hive/build.gradle	2015-09-29 22:21:31.496629989 +0530
++++ snappy-spark.new/sql/hive/build.gradle	2015-09-29 22:23:43.976631556 +0530
+@@ -79,7 +79,7 @@
+   testCompile group: 'commons-lang', name: 'commons-lang', version: '2.6'
+ }
+ 
+-sourceSets.test.scala.srcDirs = ["src/test/scala", "compatibility/src/test/scala"]
++//sourceSets.test.scala.srcDirs = ["src/test/scala", "compatibility/src/test/scala"]
+ 
+ // TODO: additional options to scalatest
+ // TODO: deploy datanucleus jars task in maven?
+--- snappy-spark/sql/core/build.gradle	2015-09-29 22:21:31.500629990 +0530
++++ snappy-spark.new/sql/core/build.gradle	2015-09-29 22:26:46.624633716 +0530
+@@ -20,5 +20,5 @@
+ }
+ 
+ // fix scala+java test ordering
+-sourceSets.test.scala.srcDir "src/test/java"
+-sourceSets.test.java.srcDirs = ["src/test/gen-java"]
++//sourceSets.test.scala.srcDir "src/test/java"
++//sourceSets.test.java.srcDirs = ["src/test/gen-java"]
