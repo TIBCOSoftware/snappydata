@@ -10,7 +10,7 @@ According to "Proposal 4" gemxd and snappy-spark repositories will be independen
 
 Code in snappy-tools can depend on snappy-core but it cannot happen other way round. 
 
-Lastly the snappy-spark repository has to be copied or moved in snappy-commons. 
+Lastly the snappy-spark repository has to be copied or moved inside snappy-commons for an integrated build.
 
 (c) **snappy-spark** - This is the Spark code with Snappy modifcations. 
 
@@ -27,7 +27,7 @@ Gradle builds have been arranged in a way so that all of snappy projects includi
     - you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
     - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run "source /etc/profile.d/jdk.sh" to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
 
-  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by that name.
+  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. The integrated build depends on its name and presence inside. DO NOT JUST SYMLINK THE DIRECTORY -- that is known to cause trouble with IDE though command-line build may go through.
   * Test the build with: ./gradlew clean assemble
   * Run a snappy-core test application: ./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest (TODO: this still fails due to some runtime dependencies?)
 
@@ -37,12 +37,12 @@ Gradle builds have been arranged in a way so that all of snappy projects includi
 If the build works fine, then import into Intellij:
   * Intellij somehow fails with scala plugin in gradle import even with very simple projects but works in later refresh fine. So first apply "patch -p0 < build/gradle-idea-hack.diff" that disables scala plugin temporarily in gradle build files.
   * First ensure that gradle plugin is enabled in Preferences->Plugins.
-  * Select import project, then point to the snappy-commons directory
+  * Select import project, then point to the snappy-commons directory.
   * Use external Gradle import. You could add -XX:MaxPermSize=350m to VM options in global Gradle settings. Select defaults, next, next ... finish. Its not recommended to use auto-import since we may need to live with few manual tweaks for now (see gen-java point below).
   * Once import finishes, copy codeStyleSettings.xml in snappy-commons to .idea directory created by Intellij
   * Once initial import is done (indexing may still be on but that doesn't matter), reverse the above patch "patch -p0 -R < build/gradle-idea-hack.diff"
-  * Then open the Gradle tab on the right and hit the first refresh icon.
-  * Open File->Project Structure->Modules->snappy-spark-sql_2.10. Then right-click on the src->test->gen-java item and add it manually to Tests. This step has to be repeated whenever you refresh Gradle projects manually in future.
+  * Then open the Gradle tab on the right and hit the first refresh icon. If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
+  * Open File->Project Structure->Modules->snappy-spark-sql_2.10. Then right-click on the src->test->gen-java item and add it manually to Tests. This step has to be repeated whenever you refresh Gradle projects manually in future (will be looking into how to avoid this).
   * Generate avro source by expanding :snappy-spark:snappy-spark-streaming-flume-sink_2.10->Tasks->source generation. Right click on "generateAvroJava" and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc.
   * Test the full build.
   * Open Run->Edit Configurations. Expand Defaults, and select Application. Add -XX:MaxPermSize=350m in VM options. Similarly add it to VM parameters for ScalaTest.
@@ -61,8 +61,11 @@ If sources and docs were selected during initial import, then it can take a real
 ## Git configuration to use keyring/keychain
 
 Snappy is currently hosting private repositories and will continue to do
-so for foreseable future. It is possible to configure git to enable
-using gnome-keyring on Linux platforms, and KeyChain on OSX
+so for foreseable future. One way to avoid passing credentials everytime could
+have been to upload the public SSH key and use git:// URL. However, that doesn't
+work at least in Pune network due to firewall issue (and proxy server not
+supporting proxying ssh). However, it is possible to configure git to enable
+using gnome-keyring on Linux platforms, and KeyChain on OSX to avoid it.
 (sumedh: latter not verified by me yet, so someone who uses OSX should do it)
 
 On Linux Ubuntu/Mint:
@@ -71,8 +74,8 @@ Install gnome-keyring dev files: sudo aptitude install libgnome-keyring-dev
 
 Build git-credential-gnome-keyring:
 
-    cd /usr/share/doc/git/contrib/credential/gnome-keyring
-    sudo make
+    cd build/git-gnome-keyring
+    make
 
 Copy to PATH (optional):
 
@@ -80,7 +83,7 @@ Copy to PATH (optional):
     sudo make clean
 
 Note that if you skip this step then need to give full path in the next
-step i.e. /usr/share/doc/git/contrib/credential/gnome-keyring/git-credential-gnome-keyring
+step i.e. /path-to-snappy-commons/build/git-gnome-keyring/git-credential-gnome-keyring
 
 Configure git: git config --global credential.helper gnome-keyring
 
