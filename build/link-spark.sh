@@ -5,20 +5,29 @@
 
 # Get the parent base directory of this script
 scriptdir="`dirname "$0"`"
-basedir="`cd "${scriptdir}/.." && pwd`"
 
-if [ ! -h "${basedir}/snappy-spark" ]; then
-  [ -e "${basedir}/snappy-spark" ] && echo "${basedir}/snappy-spark exists but is not a symlink" && exit 1
+realpath() {
+  ( cd "$1" && pwd )
+}
+
+basedir="`realpath "${scriptdir}/.."`"
+destdir="${basedir}/snappy-spark"
+
+if [ ! -d "${destdir}" ]; then
+  [ -e "${destdir}" ] && echo "${destdir} exists but is not a directory" && exit 1
 
   sspdir="${basedir}/../snappy-spark"
   # Search for snappy-spark first in SPARK_HOME
-  if [ -n "${SPARK_HOME}" ]; then
-    ln -s "${SPARK_HOME}" "${basedir}"
+  if [ -n "${SPARK_HOME}" -a -d "${SPARK_HOME}" ]; then
+    if [ "`realpath "${SPARK_HOME}"`" != "${destdir}" ]; then
+      cp -a "${SPARK_HOME}" "${basedir}"
+    fi
   # Then one level up
   elif [ -d "${sspdir}" ]; then
-    ln -s ../snappy-spark "${basedir}"
+    sspdir="`realpath "${sspdir}"`"
+    cp -a "${sspdir}" "${destdir}"
   else
-    echo "Failed to find ${basedir}/../snappy-spark. Either set SPARK_HOME to its location or place it in the same directory as snappy-commons."
+    echo "Failed to find ${sspdir}. Either set SPARK_HOME to its location or place it in the same directory as snappy-commons."
     exit 1
   fi
 fi
