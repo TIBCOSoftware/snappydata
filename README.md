@@ -80,7 +80,7 @@ Build git-credential-gnome-keyring:
 Copy to PATH (optional):
 
     sudo cp git-credential-gnome-keyring /usr/local/bin
-    sudo make clean
+    make clean
 
 Note that if you skip this step then need to give full path in the next
 step i.e. /path-to-snappy-commons/build/git-gnome-keyring/git-credential-gnome-keyring
@@ -88,7 +88,7 @@ step i.e. /path-to-snappy-commons/build/git-gnome-keyring/git-credential-gnome-k
 Configure git: git config --global credential.helper gnome-keyring
 
 Similarly on OSX locate git-credential-osxkeychain, build it if not present
-(it is named "osxkeychain" instead of gnome-keyring), then set in git config
+(it is named "osxkeychain" instead of gnome-keyring), then set in git config.
 
 Now your git password will be stored in keyring/keychain which is normally
 unlocked automatically on login (or you will be asked to unlock on first use).

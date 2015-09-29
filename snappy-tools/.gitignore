@@ -23,3 +23,5 @@ project/plugins/project/
 
 # Spark Files
 metastore_db/
+
+local-repo

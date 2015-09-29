@@ -4,8 +4,8 @@
 scriptdir="`dirname "$0"`"
 basedir="`cd "${scriptdir}/.." && pwd`"
 
-# First create the snappy-spark symlink
-if ! "${scriptdir}/link-spark.sh"; then
+# First create the snappy-spark directory
+if ! "${scriptdir}/create-tree-structure.sh"; then
   exit 1
 fi
 

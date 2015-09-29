@@ -1,6 +1,7 @@
 #!/bin/sh
 #
-# Create the snappy-spark symlink in top-level snappy-commons directory.
+# Create the snappy-spark copy in top-level snappy-commons directory
+# and local-repo links in directories.
 #
 
 # Get the parent base directory of this script
@@ -31,5 +32,10 @@ if [ ! -d "${destdir}" ]; then
     exit 1
   fi
 fi
+
+for localRepo in "${basedir}/snappy-core" "${basedir}/snappy-tools"; do
+  rm -rf "${localRepo}/local-repo"
+  ln -s ../local-repo "${localRepo}/local-repo"
+done
 
 exit 0
