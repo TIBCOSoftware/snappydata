@@ -31,10 +31,6 @@
   <packaging>jar</packaging>
   <name>SnappyData Core</name>
 
-  <properties>
-    <gemfirexd.version>2.0-Beta</gemfirexd.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.apache.spark</groupId>
@@ -72,23 +68,10 @@
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-actors</artifactId>
     </dependency>
-    <!-- TODO: the relevant classes should be refactored and GemXD dependencies should only be in snappy-tools -->
     <dependency>
-      <groupId>com.pivotal</groupId>
-      <artifactId>gemfirexd-client</artifactId>
-      <version>${gemfirexd.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.pivotal</groupId>
-      <artifactId>gemfirexd</artifactId>
-      <version>${gemfirexd.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.pivotal</groupId>
-      <artifactId>gemfirexd-tools</artifactId>
-      <version>${gemfirexd.version}</version>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+      <version>14.0.1</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

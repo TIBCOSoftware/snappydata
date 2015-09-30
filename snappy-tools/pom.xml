@@ -30,6 +30,9 @@
   <artifactId>snappy-tools_2.10</artifactId>
   <packaging>jar</packaging>
   <name>SnappyData Tools</name>
+  <properties>
+    <gemfirexd.version>2.0-Beta</gemfirexd.version>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -37,6 +40,38 @@
       <artifactId>snappy-core_${scala.binary.version}</artifactId>
       <version>${project.version}</version>
     </dependency>
+      <dependency>
+      <groupId>com.pivotal</groupId>
+      <artifactId>gemfirexd-client</artifactId>
+      <version>${gemfirexd.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.pivotal</groupId>
+      <artifactId>gemfirexd</artifactId>
+      <version>${gemfirexd.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.pivotal</groupId>
+      <artifactId>gemfirexd-tools</artifactId>
+      <version>${gemfirexd.version}</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-actors</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP-java6</artifactId>
+    </dependency>
+
+ 
   </dependencies>
 
   <build>
