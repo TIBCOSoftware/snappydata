@@ -17,4 +17,6 @@ dependencies {
 
   // TODO: all these should be in snappy-tools not here but right now everything is in snappy-core
   compile 'ooyala.cnd:job-server:0.3.1'
+
+  testRuntime 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
 }
