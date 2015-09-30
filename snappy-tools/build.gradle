@@ -5,4 +5,5 @@ dependencies {
   compile 'com.pivotal:gemfirexd:' + gemfireXDVersion
   compile 'com.pivotal:gemfirexd-tools:' + gemfireXDVersion
 
+  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }
