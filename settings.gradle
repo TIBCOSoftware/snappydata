@@ -4,67 +4,68 @@ rootProject.name = 'snappy-commons_' + scalaBinaryVersion
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-tools_' + scalaBinaryVersion
 
-include ':snappy-spark'
-// sub-projects of snappy-spark
-include ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-flume-assembly_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-mqtt-assembly_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion
-include ':snappy-spark:snappy-spark-streaming-kafka-assembly_' + scalaBinaryVersion
-
-
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
 project(':snappy-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-tools" as File
 
-// sub-project directories of snappy-spark
-project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/core" as File
-project(':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/bagel" as File
-project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/graphx" as File
-project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/mllib" as File
-project(':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/tools" as File
-project(':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/common" as File
-project(':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/shuffle" as File
-project(':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/yarn" as File
-project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/yarn" as File
-project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/streaming" as File
-project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/catalyst" as File
-project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/core" as File
-project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/hive" as File
-project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/hive-thriftserver" as File
-project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/unsafe" as File
-project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/assembly" as File
-project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/twitter" as File
-project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume" as File
-project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-sink" as File
-project(':snappy-spark:snappy-spark-streaming-flume-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-assembly" as File
-project(':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt" as File
-project(':snappy-spark:snappy-spark-streaming-mqtt-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt-assembly" as File
-project(':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/zeromq" as File
-project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/examples" as File
-project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/repl" as File
-project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/launcher" as File
-project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
-project(':snappy-spark:snappy-spark-streaming-kafka-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka-assembly" as File
+if (new File(rootDir, "snappy-spark").exists()) {
+  include ':snappy-spark'
+  // sub-projects of snappy-spark
+  include ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-flume-assembly_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-mqtt-assembly_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion
+  include ':snappy-spark:snappy-spark-streaming-kafka-assembly_' + scalaBinaryVersion
+
+  // sub-project directories of snappy-spark
+  project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/core" as File
+  project(':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/bagel" as File
+  project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/graphx" as File
+  project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/mllib" as File
+  project(':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/tools" as File
+  project(':snappy-spark:snappy-spark-network-common_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/common" as File
+  project(':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/shuffle" as File
+  project(':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/network/yarn" as File
+  project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/yarn" as File
+  project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/streaming" as File
+  project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/catalyst" as File
+  project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/core" as File
+  project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/hive" as File
+  project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/sql/hive-thriftserver" as File
+  project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/unsafe" as File
+  project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/assembly" as File
+  project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/twitter" as File
+  project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume" as File
+  project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-sink" as File
+  project(':snappy-spark:snappy-spark-streaming-flume-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-assembly" as File
+  project(':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt" as File
+  project(':snappy-spark:snappy-spark-streaming-mqtt-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt-assembly" as File
+  project(':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/zeromq" as File
+  project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/examples" as File
+  project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/repl" as File
+  project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/launcher" as File
+  project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
+  project(':snappy-spark:snappy-spark-streaming-kafka-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka-assembly" as File
+}
