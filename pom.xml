@@ -55,6 +55,7 @@
     <module>snappy-spark</module>
     <module>snappy-core</module>
     <module>snappy-tools</module>
+    <module>snappy-dunits</module>
   </modules>
 
   <properties>
