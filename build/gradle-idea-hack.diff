@@ -112,3 +112,15 @@ index cfed867..7f428ad 100644
 -sourceSets.test.java.srcDirs = ["src/test/gen-java"]
 +//sourceSets.test.scala.srcDir "src/test/java"
 +//sourceSets.test.java.srcDirs = ["src/test/gen-java"]
+--- snappy-spark/external/flume/build.gradle
++++ snappy-spark.new/external/flume/build.gradle
+@@ -28,7 +28,7 @@ dependencies {
+   //netty group: 'io.netty', name: 'netty', version: '3.5.12.Final'
+ }
+
+-sourceSets.test.scala.srcDirs = []
++//sourceSets.test.scala.srcDirs = []
+
+ // force required netty jar to be before other referenced netty jars
+ //sourceSets.test.compileClasspath = configurations.netty + sourceSets.test.compileClasspath
+
