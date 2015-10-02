@@ -35,8 +35,6 @@ allprojects {
   apply plugin: 'java'
   apply plugin: 'scala'
   apply plugin: 'maven'
-  apply plugin: 'idea'
-  apply plugin: 'eclipse'
   apply plugin: 'scalaStyle'
   //apply plugin: "com.github.maiflai.scalatest"
 
@@ -55,7 +53,8 @@ allprojects {
     scalaBinaryVersion = "2.10"
     scalaVersion = scalaBinaryVersion + ".4"
     sparkVersion = "1.5.0-SNAPSHOT.1"
-    slf4jVersion = "1.7.10"
+    log4jVersion = "1.2.17"
+    slf4jVersion = "1.7.12"
     gemfireXDVersion = "2.0-Beta"
   }
 
@@ -64,12 +63,9 @@ allprojects {
 
   dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
-    compile 'org.scala-lang:scala-compiler:' + scalaVersion
     compile 'org.scala-lang:scala-reflect:' + scalaVersion
-    compile 'org.scala-lang:scala-actors:' + scalaVersion
-    compile 'org.scala-lang:scalap:' + scalaVersion
 
-    compile 'log4j:log4j:1.2.17'
+    compile 'log4j:log4j:' + log4jVersion
     compile 'org.slf4j:slf4j-api:' + slf4jVersion
     compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
 
@@ -128,35 +124,21 @@ subprojects {
   }
 
   configurations {
-    provided {
-      description 'a dependency that is provided externally at runtime'
-      visible true
-    }
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
     }
   }
 
-  idea {
-    module {
-      scopes.PROVIDED.plus += [ configurations.provided ]
+  /*
+  configurations.all {
+    resolutionStrategy {
+      // fail eagerly on version conflict (includes transitive dependencies)
+      // e.g. multiple different versions of the same dependency (group and name are equal)
+      failOnVersionConflict()
     }
   }
-  eclipse {
-    classpath {
-      plusConfigurations += [ configurations.provided ]
-    }
-  }
-
-  sourceSets {
-    main.compileClasspath += configurations.provided
-    main.runtimeClasspath -= configurations.provided
-    test.compileClasspath += configurations.provided
-    test.runtimeClasspath += configurations.provided
-  }
-
-  javadoc.classpath += configurations.provided
+  */
 
   task packageTests(type: Jar) {
     from sourceSets.test.output
@@ -166,14 +148,7 @@ subprojects {
     testOutput packageTests
   }
 
-  // fix scala+java mix to all use compileScala which use correct dependency order
+  // fix scala+java mix to all use compileScala which uses correct dependency order
   sourceSets.main.scala.srcDir "src/main/java"
   sourceSets.main.java.srcDirs = []
-
-  dependencies {
-    compile 'org.apache.tomcat:tomcat-juli:8.0.24'
-    compile 'org.apache.tomcat:tomcat-jdbc:8.0.24'
-    compile 'com.zaxxer:HikariCP-java6:2.3.9'
-    compile 'com.typesafe:config:1.2.1'
-  }
 }

@@ -30,15 +30,12 @@ if (new File(rootDir, "snappy-spark").exists()) {
   include ':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-flume-assembly_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-mqtt-assembly_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-kafka-assembly_' + scalaBinaryVersion
 
   // sub-project directories of snappy-spark
   project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/core" as File
@@ -60,13 +57,10 @@ if (new File(rootDir, "snappy-spark").exists()) {
   project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/twitter" as File
   project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume" as File
   project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-sink" as File
-  project(':snappy-spark:snappy-spark-streaming-flume-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/flume-assembly" as File
   project(':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt" as File
-  project(':snappy-spark:snappy-spark-streaming-mqtt-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/mqtt-assembly" as File
   project(':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/zeromq" as File
   project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/examples" as File
   project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/repl" as File
   project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/launcher" as File
   project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
-  project(':snappy-spark:snappy-spark-streaming-kafka-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka-assembly" as File
 }
