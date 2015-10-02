@@ -3,7 +3,6 @@
   <component name="ProjectCodeStyleSettingsManager">
     <option name="PER_PROJECT_SETTINGS">
       <value>
-        <option name="AUTODETECT_INDENTS" value="false" />
         <option name="IMPORT_LAYOUT_TABLE">
           <value>
             <package name="java" withSubpackages="true" static="false" />
@@ -14,9 +13,6 @@
             <package name="" withSubpackages="true" static="true" />
           </value>
         </option>
-        <JavaCodeStyleSettings>
-          <option name="SPACE_AROUND_TYPE_BOUNDS_IN_TYPE_PARAMETERS" value="false" />
-        </JavaCodeStyleSettings>
         <ScalaCodeStyleSettings>
           <option name="importLayout">
             <array>
@@ -26,12 +22,11 @@
               <option value="scala" />
               <option value="_______ blank line _______" />
               <option value="all other imports" />
+              <option value="_______ blank line _______" />
+              <option value="org.apache.spark" />
             </array>
           </option>
         </ScalaCodeStyleSettings>
-        <XML>
-          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
-        </XML>
         <codeStyleSettings language="JAVA">
           <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
           <option name="SPACE_AFTER_TYPE_CAST" value="false" />
@@ -43,10 +38,6 @@
         </codeStyleSettings>
         <codeStyleSettings language="Scala">
           <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
-          <option name="ALIGN_MULTILINE_FOR" value="false" />
-          <indentOptions>
-            <option name="CONTINUATION_INDENT_SIZE" value="4" />
-          </indentOptions>
         </codeStyleSettings>
       </value>
     </option>
