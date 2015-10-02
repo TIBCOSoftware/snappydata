@@ -27,6 +27,9 @@
             </array>
           </option>
         </ScalaCodeStyleSettings>
+        <XML>
+          <option name="XML_LEGACY_SETTINGS_IMPORTED" value="true" />
+        </XML>
         <codeStyleSettings language="JAVA">
           <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
           <option name="SPACE_AFTER_TYPE_CAST" value="false" />
@@ -38,6 +41,9 @@
         </codeStyleSettings>
         <codeStyleSettings language="Scala">
           <option name="ALIGN_MULTILINE_PARAMETERS" value="false" />
+          <indentOptions>
+            <option name="CONTINUATION_INDENT_SIZE" value="4" />
+          </indentOptions>
         </codeStyleSettings>
       </value>
     </option>
