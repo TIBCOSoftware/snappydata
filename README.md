@@ -41,12 +41,20 @@ If the build works fine, then import into Intellij:
   * Select import project, then point to the snappy-commons directory. Use external Gradle import. Add -XX:MaxPermSize=350m to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore "Gradle location is unknown warning". Ensure that a JDK7 installation has been selected.
   * Once import finishes, copy codeStyleSettings.xml in snappy-commons to .idea directory created by Intellij
   * If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently. Generate avro source by expanding :snappy-spark:snappy-spark-streaming-flume-sink_2.10->Tasks->source generation. Right click on "generateAvroJava" and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc.
+  * Increase the compiler heap sizes else build can take quite long especially with integrated GemFireXD. In File->Settings->Build, Execution, Deployment->Compiler increase "Build process heap size" to say 1536 or 2048. Similarly increase JVM maximum heap size in "Languages & Frameworks->Scala Compiler Server".
   * Test the full build.
   * Open Run->Edit Configurations. Expand Defaults, and select Application. Add -XX:MaxPermSize=350m in VM options. Similarly add it to VM parameters for ScalaTest.
   * Try Run->Run... on a test like SparkSQLTest.
 
 
-If sources and docs were selected during initial import, then it can take a really long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit Shift->Ctrl->T when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
+### Running a junit/scala test
+
+When selecting a run configuration, avoid selecting the green gradle one otherwise that will launch an external gradle process that will again start building the project again. Use the normal junit (red+green arrows) or scalatest (red overlay)
+
+
+### Manual sources and docs imports
+
+If sources and docs were selected during initial import, then it can take a long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit Shift->Ctrl->T when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
   * Open the File->Project Structure->Libraries
   * Click on the '+' sign at the top to add new library, and choose Maven.
   * In the box, provide "scala-library-2.10.4" and click on the search tool.

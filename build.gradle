@@ -58,8 +58,12 @@ allprojects {
     gemfireXDVersion = "2.0-Beta"
   }
 
-  // default output directory like in sbt/maven
-  buildDir = "target/scala-" + scalaBinaryVersion
+  if (!buildRoot.isEmpty()) {
+    buildDir = new File(buildRoot, 'scala-' + scalaBinaryVersion + '/' +  project.path.replace(":", "/"))
+  } else {
+    // default output directory like in sbt/maven
+    buildDir = "target/scala-" + scalaBinaryVersion
+  }
 
   dependencies {
     compile 'org.scala-lang:scala-library:' + scalaVersion
@@ -101,13 +105,13 @@ subprojects {
 
   // the run task for a selected sub-project
   task run(type:JavaExec) {
-    if (!project.hasProperty("mainClass")) {
-      main = "io.snappydata.app.SparkSQLTest"
+    if (!project.hasProperty('mainClass')) {
+      main = 'io.snappydata.app.SparkSQLTest'
     } else {
       main = mainClass
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs = [ "-Xmx2g", "-XX:MaxPermSize=512m" ]
+    jvmArgs = [ '-Xmx2g', '-XX:MaxPermSize=512m' ]
   }
 
   task packageSources(type: Jar, dependsOn: classes) {
