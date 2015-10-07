@@ -14,7 +14,7 @@ The snappy-spark repository has to be copied or moved inside snappy-commons for 
 
 (c) **snappy-spark** - This is the Spark code with Snappy modifcations. 
 
-Similarly the GemfireXD repository can be copied or moved inside snappy-commons by name *snappy-store* for an integrated build with GemFireXD. The branch of GemFireXD to use is *snappy-gemxd* that has been branched from rebrand_Dec13 recently for this purpose.
+Similarly the GemfireXD repository can be copied or moved inside snappy-commons by name *snappy-store* for an integrated build with GemFireXD. The branch of GemFireXD to use is also *snappy-store* that has been branched from rebrand_Dec13 recently for this purpose.
 
 (d) **snappy-store** - This is the GemFireXD with Snappy additions.
 
@@ -31,8 +31,8 @@ Gradle builds have been arranged in a way so that all of snappy projects includi
     - you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
     - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run "source /etc/profile.d/jdk.sh" to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
 
-  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. Similarly move the GemFireXD (snappy-gemxd branch) repository inside snappy-commons by "snappy-store" name. The integrated build depends on its name and presence inside else it will use the local artifacts as mentioned before. DO NOT JUST SYMLINK THE DIRECTORIES -- that is known to cause trouble with IDE though command-line build may go through.
-  * Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-gemxd branch. Then test the build with: ./gradlew clean && ./gradlew assemble
+  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. Similarly move the GemFireXD (snappy-store branch) repository inside snappy-commons by "snappy-store" name. The integrated build depends on its name and presence inside else it will use the local artifacts as mentioned before. DO NOT JUST SYMLINK THE DIRECTORIES -- that is known to cause trouble with IDE though command-line build may go through.
+  * Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-store branch. Then test the build with: ./gradlew clean && ./gradlew assemble
   * If you see an error like "Could not find hadoop-common-tests.jar", then clear maven cache artifacts: rm -rf ~/.m2/repository/org/apache/hadoop, so that gradle can download all required depedencies, then run assemble target again.
   * Run a snappy-core test application: ./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest
     AND/OR a GemFireXD junit test: ./gradlew :snappy-store:gemfirexd:tools:test -Dtest.single=\*\*/BugsTest
