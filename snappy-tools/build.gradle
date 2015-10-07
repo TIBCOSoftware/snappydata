@@ -1,4 +1,5 @@
 apply plugin: 'scala'
+apply plugin: 'com.github.maiflai.scalatest'
 
 compileScala.options.encoding = 'UTF-8'
 
