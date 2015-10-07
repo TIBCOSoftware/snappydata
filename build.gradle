@@ -147,3 +147,8 @@ subprojects {
     testOutput packageTests
   }
 }
+
+task generateSources {
+  dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':generateAvroJava'
+  dependsOn ':snappy-store:gemfirexd:generateSources'
+}
