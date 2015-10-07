@@ -10,16 +10,20 @@ According to "Proposal 4" gemxd and snappy-spark repositories will be independen
 
 Code in snappy-tools can depend on snappy-core but it cannot happen other way round. 
 
-Lastly the snappy-spark repository has to be copied or moved inside snappy-commons for an integrated build.
+The snappy-spark repository has to be copied or moved inside snappy-commons for an integrated build.
 
 (c) **snappy-spark** - This is the Spark code with Snappy modifcations. 
 
-Note that git operations have still to be done separately on snappy-commons and snappy-spark repositories.
+Similarly the GemfireXD repository can be copied or moved inside snappy-commons by name *snappy-store* for an integrated build with GemFireXD. The branch of GemFireXD to use is *snappy-gemxd* that has been branched from rebrand_Dec13 recently for this purpose.
+
+(d) **snappy-store** - This is the GemFireXD with Snappy additions.
+
+Note that git operations have still to be done separately on snappy-commons, snappy-spark and snappy-store(GemFireXD) repositories.
 
 
 ## Building using gradle
 
-Gradle builds have been arranged in a way so that all of snappy projects including snappy's spark variant can be built from the top-level. In addition snappy-spark can also be built separately. If the snappy-spark directory is not present inside snappy-commons, then it will try to use locally published snappy-spark artifacts instead:
+Gradle builds have been arranged in a way so that all of snappy projects including snappy's spark variant can be built from the top-level. In addition snappy-spark and GemFireXD (inside snappy-store) can also be built separately. If the snappy-spark directory is not present inside snappy-commons, then it will try to use locally published snappy-spark artifacts instead. Likewise if there is no snappy-store directory, then it will use the local artifacts inside local-repo in snappy-commons:
   * The full build and Intellij import has been tested with only JDK7. If you are using JDK8, then you are on your own (though it will likely work). On Ubuntu/Mint systems, best way to get Oracle JDK7 as default:
 
     - add webupd8 java repository: sudo add-apt-repository ppa:webupd8team/java
@@ -27,10 +31,11 @@ Gradle builds have been arranged in a way so that all of snappy projects includi
     - you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
     - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run "source /etc/profile.d/jdk.sh" to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
 
-  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. The integrated build depends on its name and presence inside. DO NOT JUST SYMLINK THE DIRECTORY -- that is known to cause trouble with IDE though command-line build may go through.
-  * Update both repos (snappy-commons and snappy-spark) to latest version. Then test the build with: ./gradlew clean && ./gradlew assemble
+  * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. Similarly move the GemFireXD (snappy-gemxd branch) repository inside snappy-commons by "snappy-store" name. The integrated build depends on its name and presence inside else it will use the local artifacts as mentioned before. DO NOT JUST SYMLINK THE DIRECTORIES -- that is known to cause trouble with IDE though command-line build may go through.
+  * Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-gemxd branch. Then test the build with: ./gradlew clean && ./gradlew assemble
   * If you see an error like "Could not find hadoop-common-tests.jar", then clear maven cache artifacts: rm -rf ~/.m2/repository/org/apache/hadoop, so that gradle can download all required depedencies, then run assemble target again.
   * Run a snappy-core test application: ./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest
+    AND/OR a GemFireXD junit test: ./gradlew :snappy-store:gemfirexd:tools:test -Dtest.single=\*\*/BugsTest
 
 
 ## Setting up Intellij with gradle
@@ -40,16 +45,21 @@ If the build works fine, then import into Intellij:
   * Double check that Scala plugin is enabled in File->Settings->Plugins, as also the Gradle plugin. Note that update in previous step could have disabled either or both, so don't assume it would be enabled.
   * Select import project, then point to the snappy-commons directory. Use external Gradle import. Add -XX:MaxPermSize=350m to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore "Gradle location is unknown warning". Ensure that a JDK7 installation has been selected.
   * Once import finishes, go to File->Settings->Editor->Code Style->Scala. Set the scheme as "Project. Check that the same has been set in Java's Code Stype too. Then OK to close it. Next copy codeStyleSettings.xml in snappy-commons to .idea directory created by Intellij and then File->Synchronize just to be sure. Check that settings are now applied in File->Settings->Editor->Code Style->Java which should show TabSize, Indent as 2 and continuation indent as 4 (same for Scala).
-  * If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently. Generate avro source by expanding :snappy-spark:snappy-spark-streaming-flume-sink_2.10->Tasks->source generation. Right click on "generateAvroJava" and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc.
-  * Increase the compiler heap sizes else build can take quite long especially with integrated GemFireXD. In File->Settings->Build, Execution, Deployment->Compiler increase "Build process heap size" to say 1536 or 2048. Similarly increase JVM maximum heap size in "Languages & Frameworks->Scala Compiler Server".
+  * If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
+  * Generate avro and GemFireXD required sources by expanding :snappy-commons_2.10->Tasks->other. Right click on "generateSources" and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done only first time, or if ./gradlew clean has been run, or you have made changes to javacc/avro source files.
+  * Increase the compiler heap sizes else build can take quite long especially with integrated GemFireXD. In File->Settings->Build, Execution, Deployment->Compiler increase "Build process heap size" to say 1536 or 2048. Similarly increase JVM maximum heap size in "Languages & Frameworks->Scala Compiler Server" to 1536 or 2048.
   * Test the full build.
-  * Open Run->Edit Configurations. Expand Defaults, and select Application. Add -XX:MaxPermSize=350m in VM options. Similarly add it to VM parameters for ScalaTest.
+  * Open Run->Edit Configurations. Expand Defaults, and select Application. Add -XX:MaxPermSize=350m in VM options. Similarly add it to VM parameters for ScalaTest and JUnit.
+  * For JUnit configuration also append "/build-artifacts" to the working directory i.e. the directory should be "$MODULE_DIR$/build-artifacts". If integrated GemFireXD is not being used then this can be skipped.
   * Try Run->Run... on a test like SparkSQLTest.
 
 
-### Running a junit/scala test
+### Running a junit/scalatest
 
-When selecting a run configuration, avoid selecting the green gradle one otherwise that will launch an external gradle process that will again start building the project again. Use the normal junit (red+green arrows) or scalatest (red overlay)
+Running an application like SparkSQLTest should be straightforward -- just ensure that MaxPermSize has been increased as mentioned above especially for Spark/Snappy tests. For running junit/scalatest:
+
+ * When selecting a run configuration for junit/scalatest, avoid selecting the gradle one (green round icon) otherwise that will launch an external gradle process that will start building the project all over again. Use the normal junit (red+green arrows icon) or scalatest (junit like with red overlay).
+ * For JUnit tests, ensure that working directory is "$MODULE_DIR$/build-artifacts" as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in many tests. They will also pollute the checkouts with large number of log files etc, so this will allow those to go into build-artifacts that can also be cleaned up easily. If you are not using integrated GemFireXD then this doesn't matter.
 
 
 ### Manual sources and docs imports
