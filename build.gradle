@@ -36,10 +36,10 @@ allprojects {
   apply plugin: 'scalaStyle'
   apply plugin: 'idea'
   apply plugin: 'eclipse'
-  //apply plugin: "com.github.maiflai.scalatest"
+  //apply plugin: 'com.github.maiflai.scalatest'
 
-  group = "io.snappydata"
-  version = "0.1.0-SNAPSHOT"
+  group = 'io.snappydata'
+  version = '0.1.0-SNAPSHOT'
 
   // apply compiler options
   sourceCompatibility = 1.7
@@ -49,19 +49,20 @@ allprojects {
   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
 
   ext {
-    scalaBinaryVersion = "2.10"
-    scalaVersion = scalaBinaryVersion + ".4"
-    sparkVersion = "1.5.0-SNAPSHOT.1"
-    log4jVersion = "1.2.17"
-    slf4jVersion = "1.7.12"
-    gemfireXDVersion = "2.0-Beta"
+    scalaBinaryVersion = '2.10'
+    scalaVersion = scalaBinaryVersion + '.4'
+    sparkVersion = '1.5.0-SNAPSHOT.1'
+    log4jVersion = '1.2.17'
+    slf4jVersion = '1.7.12'
+    junitVersion = '4.10'
+    gemfireXDVersion = '2.0-Beta'
   }
 
   if (!buildRoot.isEmpty()) {
-    buildDir = new File(buildRoot, 'scala-' + scalaBinaryVersion + '/' +  project.path.replace(":", "/"))
+    buildDir = new File(buildRoot, 'scala-' + scalaBinaryVersion + '/' +  project.path.replace(':', '/'))
   } else {
     // default output directory like in sbt/maven
-    buildDir = "build-artifacts/scala-" + scalaBinaryVersion
+    buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
   }
 
   dependencies {
@@ -69,7 +70,7 @@ allprojects {
     compile 'org.slf4j:slf4j-api:' + slf4jVersion
     compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
 
-    testCompile 'junit:junit:4.11'
+    testCompile "junit:junit:${junitVersion}"
     testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
 
     testRuntime 'org.pegdown:pegdown:1.1.0'

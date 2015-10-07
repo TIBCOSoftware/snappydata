@@ -88,7 +88,9 @@ final class WrappedInternalRow(override val schema: StructType,
   override def get(ordinal: Int) = {
     val v = cache(ordinal)
     if (v == null) {
-      cache(ordinal) = converters(ordinal)(_internalRow, ordinal)
+      val s = converters(ordinal)(_internalRow, ordinal)
+      cache(ordinal) = s
+      s
     } else {
       v
     }
@@ -102,7 +104,6 @@ final class WrappedInternalRow(override val schema: StructType,
 }
 
 object WrappedInternalRow {
-
   def createConverters(schema: StructType) = schema.fields.map { f =>
     CatalystTypeConverters.createRowToScalaConverter(f.dataType)
   }
