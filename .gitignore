@@ -1,13 +1,14 @@
 *.class
 *.log
 snappy-spark
+snappy-store
 
 # sbt specific
 .cache/
 .history
 .lib/
 dist/*
-target/
+build-artifacts/
 lib_managed/
 src_managed/
 project/boot/

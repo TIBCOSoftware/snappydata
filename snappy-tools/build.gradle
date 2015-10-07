@@ -1,9 +1,22 @@
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.java.srcDirs = []
+
 dependencies {
   compile project(':snappy-core_' + scalaBinaryVersion)
 
-  compile 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
-  compile 'com.pivotal:gemfirexd:' + gemfireXDVersion
-  compile 'com.pivotal:gemfirexd-tools:' + gemfireXDVersion
+  if (new File(rootDir, "snappy-spark").exists()) {
+    compile project(':snappy-store:gemfirexd:client')
+    compile project(':snappy-store:gemfirexd:core')
+    compile project(':snappy-store:gemfirexd:tools')
+  } else {
+    compile 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
+    compile 'com.pivotal:gemfirexd:' + gemfireXDVersion
+    compile 'com.pivotal:gemfirexd-tools:' + gemfireXDVersion
+  }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }

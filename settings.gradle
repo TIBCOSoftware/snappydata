@@ -64,3 +64,22 @@ if (new File(rootDir, "snappy-spark").exists()) {
   project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/launcher" as File
   project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
 }
+
+if (new File(rootDir, "snappy-store").exists()) {
+  include ':snappy-store'
+  // sub-projects of snappy-spark
+  include ':snappy-store:gemfire-joptsimple'
+  include ':snappy-store:gemfire-json'
+  include ':snappy-store:gemfire-junit'
+  include ':snappy-store:gemfire-shared'
+  include ':snappy-store:gemfire-core'
+  include ':snappy-store:gemfire-web'
+  include ':snappy-store:gemfire-examples'
+  include ':snappy-store:gemfirexd:shared'
+  include ':snappy-store:gemfirexd:prebuild'
+  include ':snappy-store:gemfirexd:core'
+  include ':snappy-store:gemfirexd:client'
+  include ':snappy-store:gemfirexd:tools'
+  include ':snappy-store:testing:core'
+  include ':snappy-store:testing:sql'
+}
