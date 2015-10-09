@@ -29,5 +29,9 @@ dependencies {
   compile 'ooyala.cnd:job-server:0.3.1'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
-  testRuntime 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
+  if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+    testRuntime project(':snappy-store:gemfirexd:client')
+  } else {
+    testRuntime 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
+  }
 }
