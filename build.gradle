@@ -18,7 +18,7 @@ allprojects {
   repositories {
     maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
     mavenLocal()
-    mavenCentral()
+    jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "https://repo.eclipse.org/content/repositories/paho-releases" }
@@ -56,6 +56,7 @@ allprojects {
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
+    hadoopVersion = '2.4.1'
     gemfireXDVersion = '2.0-Beta'
   }
 
