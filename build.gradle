@@ -47,6 +47,7 @@ allprojects {
 
   compileJava.options.encoding = 'UTF-8'
   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
+  javadoc.options.charSet = 'UTF-8'
 
   ext {
     scalaBinaryVersion = '2.10'
@@ -118,10 +119,12 @@ subprojects {
     classifier = 'sources'
     from javadoc.destinationDir
   }
+  /*
   artifacts {
     archives packageSources
-    //archives packageDocs
+    archives packageDocs
   }
+  */
 
   configurations {
     testOutput {
@@ -151,5 +154,5 @@ subprojects {
 
 task generateSources {
   dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':generateAvroJava'
-  dependsOn ':snappy-store:gemfirexd:generateSources'
+  dependsOn ':snappy-store:generateSources'
 }
