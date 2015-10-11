@@ -16,9 +16,9 @@ dependencies {
     compile project(':snappy-store:gemfirexd:core')
     compile project(':snappy-store:gemfirexd:tools')
   } else {
-    compile 'com.pivotal:gemfirexd-client:' + gemfireXDVersion
-    compile 'com.pivotal:gemfirexd:' + gemfireXDVersion
-    compile 'com.pivotal:gemfirexd-tools:' + gemfireXDVersion
+    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
+    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
+    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
