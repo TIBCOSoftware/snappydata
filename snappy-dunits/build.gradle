@@ -1,8 +1,33 @@
-dependencies {
-  compile project(':snappy-tools_' + scalaBinaryVersion)
-  compile 'org.apache.logging.log4j:log4j-api:2.1'
-  compile 'org.apache.logging.log4j:log4j-core:2.1'
-  compile 'commons-io:commons-io:2.4'
-  compile "junit:junit:${junitVersion}"
-}
+apply plugin: 'scala'
+//apply plugin: 'com.github.maiflai.scalatest'
+apply plugin: 'java'
 
+//allprojects {
+  compileScala.options.encoding = 'UTF-8'
+
+  // fix scala+java mix to all use compileScala which uses correct dependency order
+  //sourceSets.main.scala.srcDir "src/main/java"
+  //sourceSets.main.java.srcDirs = []
+
+  dependencies {
+    compile project(':snappy-tools_' + scalaBinaryVersion)
+    compile 'org.apache.logging.log4j:log4j-api:2.1'
+    compile 'org.apache.logging.log4j:log4j-core:2.1'
+    compile 'commons-io:commons-io:2.4'
+    compile "junit:junit:${junitVersion}"
+    //testCompile "junit:junit:${junitVersion}"
+  }
+
+  test {
+    minHeapSize '128m'
+    maxHeapSize '1g'
+    maxParallelForks 8
+
+    include '**/*DUnitTest.class'
+  }
+
+  task distributedTest(type:Test) {
+    include '**/*DUnitTest.class'
+  }
+
+//}
