@@ -118,6 +118,9 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     logInfo("default warehouse location is " + warehouse)
 
+    val sparkConf = context.sparkContext.conf
+    //val dburl = sparkConf.get("gemfirexd.db.url")
+    //val driver = sparkConf.get("gemfirexd.db.driver")
     /*
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
       "jdbc:gemfirexd://localhost:1527")
@@ -126,11 +129,20 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     */
     // `configure` goes second to override other settings.
     // `configure` goes second to override other settings.
+    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
+        "gemfirexd.db.url")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+        "gemfirexd.db.driver")
+    }
+    //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
+
+
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
 
     val hiveMetastoreJars = this.hiveMetastoreJars()
-    val isolatedLoader = if (hiveMetastoreJars == "builtin") {
+    if (hiveMetastoreJars == "builtin") {
       if (hiveExecutionVersion != hiveMetastoreVersion) {
         throw new IllegalArgumentException("Builtin jars can only be used " +
             "when hive default version == hive metastore version. Execution: " +
@@ -159,6 +171,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
+      new ClientWrapper(metaVersion, allConfig, classLoader)
+      /*
       new IsolatedClientLoader(
         version = metaVersion,
         execJars = jars.toSeq,
@@ -166,6 +180,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
         sharedPrefixes = hiveMetastoreSharedPrefixes())
+      */
     } else if (hiveMetastoreJars == "maven") {
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using maven.")
@@ -173,7 +188,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         version = hiveMetastoreVersion,
         config = allConfig,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes())
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).client
     } else {
       // Convert to files and expand any directories.
       val jars = hiveMetastoreJars.split(File.pathSeparator).flatMap {
@@ -197,9 +212,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         config = allConfig,
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes())
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).client
     }
-    isolatedLoader.client
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
