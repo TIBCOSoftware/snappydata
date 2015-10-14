@@ -24,12 +24,6 @@ object ExternalStoreTest extends App {
   var executorExtraJavaOptions: String = null
   var setMaster: String = "local[6]"
 
-  if (args.length > 0) {
-    option(args.toList)
-  }
-
-  //val conn = DriverManager.getConnection("jdbc:snappydata://10.112.204.101:2000")
-  //println(conn)
   val conf = new org.apache.spark.SparkConf().setAppName("ExternalStoreTest")
     .set("spark.logConf", "true")
     //.set("spark.shuffle.sort.serializeMapOutputs", "true")
@@ -85,132 +79,33 @@ object ExternalStoreTest extends App {
   val snContext = org.apache.spark.sql.SnappyContext(sc)
   snContext.sql("set spark.sql.shuffle.partitions=6")
 
-  if (loadData) {
-    val airlineDataFrame: DataFrame =
-      if (hfile.endsWith(".parquet")) {
-        snContext.read.load(hfile)
-      } else {
-        val airlineData = sc.textFile(hfile)
+  val props = Map(
+    "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
+    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
+    "poolImpl" -> "tomcat",
+    "user" -> "app",
+    "password" -> "app"
+  )
 
-        val schemaString = "Year,Month,DayOfMonth,DayOfWeek,DepTime,CRSDepTime," +
-          "ArrTime,CRSArrTime,UniqueCarrier,FlightNum,TailNum,ActualElapsedTime," +
-          "CRSElapsedTime,AirTime,ArrDelay,DepDelay,Origin,Dest,Distance,TaxiIn," +
-          "TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay," +
-          "WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,ArrDelaySlot"
-        val schemaArr = schemaString.split(",")
-        val schemaTypes = List(IntegerType, IntegerType, IntegerType, IntegerType,
-          IntegerType, IntegerType, IntegerType, IntegerType, StringType,
-          IntegerType, StringType, IntegerType, IntegerType, IntegerType,
-          IntegerType, IntegerType, StringType, StringType, IntegerType,
-          IntegerType, IntegerType, IntegerType, StringType, IntegerType,
-          IntegerType, IntegerType, IntegerType, IntegerType, IntegerType,
-          IntegerType)
+  val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
 
-        val schema = StructType(schemaArr.zipWithIndex.map {
-          case (fieldName, i) => StructField(
-            fieldName, schemaTypes(i), i >= 4)
-        })
+  val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+  val dataDF = snContext.createDataFrame(rdd)
+  //dataDF.write.format("jdbc").options(props).saveAsTable("Order20")
+  //dataDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("Order20")
 
-        val columnTypes = schemaTypes.map {
-          _ == IntegerType
-        }.toArray
-        val arrDelayIndex = schemaArr.indexOf("ArrDelay")
-        val arrDelaySlotIndex = schemaArr.indexOf("ArrDelaySlot")
-        val rowRDD = airlineData.mapPartitions { iter =>
-          val row = new ReusableRow(schemaTypes)
-          iter.map { s =>
-            ParseUtils.parseRow(s, ',', columnTypes, row)
-            addArrDelaySlot(row, arrDelayIndex, arrDelaySlotIndex)
-          }
-        }
-        snContext.createDataFrame(rowRDD, schema)
-      }
-    val props = Map(
-      //"url" -> "jdbc:snappydata:;mcast-port=45672;persist-dd=false;",
-      "url" -> "jdbc:gemfirexd:;mcast-port=45672;persist-dd=false;",
-      "poolImpl" -> "tomcat",
-      //"single-hop-enabled" -> "true",
-      //"poolProps" -> "",
-      //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "user" -> "app",
-      "password" -> "app"
-    )
+  snContext.createColumnTable("ColumnTable53", dataDF.schema, "jdbcColumnar", props)
 
-    airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
+  dataDF.write.format("jdbcColumnar").mode(SaveMode.Append).options(props).saveAsTable("ColumnTable53")
 
-    /*
-    val airlineSampled = airlineDataFrame.stratifiedSample(Map(
-      "qcs" -> "UniqueCarrier,Year,Month",
-      "fraction" -> 0.01,
-      "strataReservoirSize" -> 50))
-    airlineSampled.registerAndInsertIntoExternalStore("airline_sampled", props)
-    */
 
-    results = snContext.sql("SELECT count(*) FROM airline")
-    results.map(t => "Count: " + t(0)).collect().foreach(println)
-    /*
-    results_sampled = snContext.sql(
-      "SELECT count(*) as sample_count FROM airline_sampled")
-    results_sampled.map(t => "Count sampled: " + t(0)).collect().foreach(println)
-    results_sampled = snContext.sql("SELECT count(*) FROM airline_sampled")
-    results_sampled.map(t => "Count approx: " + t(0)).collect().foreach(println)
-    */
-  }
+  val result = snContext.sql("SELECT col1, col2 FROM ColumnTable53")
 
-  results = snContext.sql(
-    """SELECT SUM(ArrDelay) as SArrDelay FROM airline
-       WHERE ArrDelay >= 0""")
-  println("=============== EXACT RESULTS ===============")
-  resultsC = results.collect()
-  resultsC.foreach(println)
+  result.collect.foreach(println)
+  //snc.insert("ColumnTable2",dataDF);
 
-  results = snContext.sql(
-    """SELECT UniqueCarrier, SUM(ArrDelay) as SArrDelay FROM airline
-       WHERE ArrDelay >= 0 GROUP BY UniqueCarrier
-       ORDER BY SArrDelay DESC LIMIT 10""")
-  println("=============== EXACT RESULTS ===============")
-  resultsC = results.collect()
-  resultsC.foreach(println)
+  //
+  //snc.createColumnTable("Order20","jdbc" , props)
+  println("Successful")
 
-  def option(list: List[String]): Boolean = {
-    list match {
-      case "-hfile" :: value :: tail =>
-        hfile = value
-        print(" hfile " + hfile)
-        option(tail)
-      case "-noload" :: tail =>
-        loadData = false
-        print(" loadData " + loadData)
-        option(tail)
-      case "-set-master" :: value :: tail =>
-        setMaster = value
-        print(" setMaster " + setMaster)
-        option(tail)
-      case "-nomaster" :: tail =>
-        setMaster = null
-        print(" setMaster " + setMaster)
-        option(tail)
-      case "-set-jars" :: value :: tail =>
-        setJars = value
-        print(" setJars " + setJars)
-        option(tail)
-      case "-executor-extraClassPath" :: value :: tail =>
-        executorExtraClassPath = value
-        print(" executor-extraClassPath " + executorExtraClassPath)
-        option(tail)
-      case "-executor-extraJavaOptions" :: value :: tail =>
-        executorExtraJavaOptions = value
-        print(" executor-extraJavaOptions " + executorExtraJavaOptions)
-        option(tail)
-      case "-debug" :: tail =>
-        debug = true
-        print(" debug " + debug)
-        option(tail)
-      case opt :: tail =>
-        println(" Unknown option " + opt)
-        sys.exit(1)
-      case Nil => true
-    }
-  } // end of option
 }

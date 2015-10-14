@@ -37,6 +37,7 @@ import org.apache.spark.{Logging, Partition, TaskContext}
 final class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
 
+
   override val conf = context.conf
 
   val tables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
@@ -398,6 +399,19 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       userSpecifiedSchema, partitionColumns, provider, options)
   }
 
+
+  // copy of the above , may remove in future
+  def registerColumnTable(tableName: QualifiedTableName,
+                          userSpecifiedSchema: Option[StructType],
+                          partitionColumns: Array[String],
+                          provider: String,
+                          options: Map[String, String]): Unit = {
+
+    //TODO: Suranjan understand this why are we doing this or we can register using tables??
+    createDataSourceTable(tableName, ExternalTableType.Columnar,
+      userSpecifiedSchema, partitionColumns, provider, options)
+  }
+
   def unregisterExternalTable(tableIdent: QualifiedTableName): Unit = {
     client.dropTable(tableIdent.getDatabase(client), tableIdent.table)
   }
@@ -545,6 +559,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     tables.put(tableIdent, dummyDF.logicalPlan)
     context.cacheManager.cacheQuery_ext(dummyDF,
       Some(tableIdent.table), externalStore)
+
     context.appendToCache(df, tableIdent.table)
   }
 

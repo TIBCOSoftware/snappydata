@@ -173,7 +173,6 @@ private[sql] object InMemoryAppendableRelation {
       val rowLength = row match {
         case Some(r) => r.numFields
         case None => 0
-
       }
       if (rowLength > 0) {
         // Added for SPARK-6082. This assertion can be useful for scenarios when
