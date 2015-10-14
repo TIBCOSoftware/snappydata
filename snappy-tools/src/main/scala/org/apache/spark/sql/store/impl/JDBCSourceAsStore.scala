@@ -303,8 +303,8 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val resolvedName = store.lookupName(tableName, schema)
         //val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val par = split.index
-        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
-        ps1.execute()
+//        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+ //       ps1.execute()
         val ps = conn.prepareStatement(s"select cachedBatch from $tableName")
 
         val rs = ps.executeQuery()
@@ -320,7 +320,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   override protected def getPartitions: Array[Partition] = {
     val resolvedName = store.lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-    val numPartitions = region.getTotalNumberOfBuckets
+    val numPartitions = 1 //region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
 
     val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sparkContext).

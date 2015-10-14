@@ -3,9 +3,11 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
+//import com.gemstone.gemfire.internal.cache.{PartitionedRegion, AbstractRegion}
+
 import scala.collection.mutable
 
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -34,41 +36,46 @@ private[sql] object ExternalStoreUtils {
   }
 
   def validateAndGetAllProps(options: Map[String, String]) = {
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
-    val url = parameters.remove("url").getOrElse(
-      sys.error("Option 'url' not specified"))
-    val driver = parameters.remove("driver")
-    val poolImpl = parameters.remove("poolImpl")
-    val poolProperties = parameters.remove("poolProperties")
+    if (!options.contains("AA")) {
+      val parameters = new mutable.HashMap[String, String]
+      parameters ++= options
+      val url = parameters.remove("url").getOrElse(
+        sys.error("Option 'url' not specified"))
+      val driver = parameters.remove("driver")
+      val poolImpl = parameters.remove("poolimpl")
+      val poolProperties = parameters.remove("poolproperties")
 
-    driver.foreach(DriverRegistry.register)
+      driver.foreach(DriverRegistry.register)
 
-    val hikariCP = poolImpl.map(Utils.normalizeId) match {
-      case Some("hikari") => true
-      case Some("tomcat") => false
-      case Some(p) =>
-        throw new IllegalArgumentException("ExternalStoreUtils: " +
+      val hikariCP = poolImpl.map(Utils.normalizeId) match {
+        case Some("hikari") => true
+        case Some("tomcat") => false
+        case Some(p) =>
+          throw new IllegalArgumentException("ExternalStoreUtils: " +
             s"unsupported pool implementation '$p' " +
             s"(supported values: tomcat, hikari)")
-      case None => false
-    }
-    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
-      val eqIndex = s.indexOf('=')
-      if (eqIndex >= 0) {
-        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
-      } else {
-        // assume a boolean property to be enabled
-        (s.trim, "true")
+        case None => false
       }
-    }: _*)).getOrElse(Map.empty)
+      val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+        val eqIndex = s.indexOf('=')
+        if (eqIndex >= 0) {
+          (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
+        } else {
+          // assume a boolean property to be enabled
+          (s.trim, "true")
+        }
+      }: _*)).getOrElse(Map.empty)
 
-    // remaining parameters are passed as properties to getConnection
-    val connProps = new Properties()
-    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    val allPoolProps = getAllPoolProperties(url, driver.orNull,
-      poolProps, hikariCP)
-    (url, driver, allPoolProps, connProps, hikariCP)
+      // remaining parameters are passed as properties to getConnection
+      val connProps = new Properties()
+      parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+      val allPoolProps = getAllPoolProperties(url, driver.orNull,
+        poolProps, hikariCP)
+      (url, driver, allPoolProps, connProps, hikariCP)
+    }
+    else {
+      ("url", None, Map("aaaa" -> "bbbb"), new Properties(), false )
+    }
   }
 
   def getPoolConnection(id: String, driver: Option[String],

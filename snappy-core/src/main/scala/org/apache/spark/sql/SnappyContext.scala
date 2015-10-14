@@ -173,6 +173,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         tableIdent, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
@@ -181,6 +182,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
       relation.cachedRepresentation match {
+        case columnStore: JDBCAppendableRelation =>
+          columnStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case externalStore: ExternalStoreRelation =>
           externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>
@@ -294,6 +297,18 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     DataFrame(self, plan)
   }
 
+  def createColumnTable(
+      tableName: String,
+      userSpecifiedSchema: StructType,
+      provider: String,
+      options: Map[String, String]): DataFrame = {
+
+    val plan = createColumnTable(catalog.newQualifiedTableName(tableName), provider,
+      Some(userSpecifiedSchema), schemaDDL = None,
+      SaveMode.Append, options)
+    DataFrame(self, plan)
+  }
+
   override def createExternalTable(
       tableName: String,
       provider: String,
@@ -332,6 +347,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     else options + (dbtableProp -> tableIdent.toString)
 
     val source = SnappyContext.getProvider(provider)
+
     val resolved = schemaDDL match {
       case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
         schema, source, mode, params)
@@ -346,8 +362,55 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params)
     LogicalRelation(resolved.relation)
+
+
   }
 
+  /**
+   * Create an external table with given options.
+   */
+  private[sql] def createColumnTable(
+                                tableIdent: QualifiedTableName,
+                                provider: String,
+                                userSpecifiedSchema: Option[StructType],
+                                schemaDDL: Option[String],
+                                mode: SaveMode,
+                                options: Map[String, String]): LogicalPlan = {
+
+    if (catalog.tableExists(tableIdent)) {
+      mode match {
+        case SaveMode.ErrorIfExists =>
+          throw new AnalysisException(
+            s"createExternalTable: Table $tableIdent already exists.")
+        case _ =>
+          return catalog.lookupRelation(tableIdent, None)
+      }
+    }
+
+    // add tableName in properties if not already present
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
+      dbtableProp))) options
+    else options + (dbtableProp -> tableIdent.toString)
+
+    val source = SnappyContext.getProvider(provider)
+    // get the data source and register the table in hive catalog.
+    val resolved = schemaDDL match {
+      case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
+        schema, source, mode, params)
+
+      case None =>
+        // add allowExisting in properties used by some implementations
+        ResolvedDataSource(self, userSpecifiedSchema, Array.empty[String],
+          source, params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
+            (mode != SaveMode.ErrorIfExists).toString))
+    }
+
+    catalog.registerColumnTable(tableIdent, userSpecifiedSchema,
+      Array.empty[String], source, params)
+
+    LogicalRelation(resolved.relation)
+  }
   /**
    * Create an external table with given options.
    */
@@ -382,6 +445,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       dbtableProp))) options
     else options + (dbtableProp -> tableIdent.toString)
 
+    // this gives the provider..
     val source = SnappyContext.getProvider(provider)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
@@ -705,8 +769,8 @@ object SnappyContext {
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
-    "jdbc" -> classOf[row.DefaultSource].getCanonicalName
-    //"jdbcColumnar" -> classOf[columnar.DefaultSource].getCanonicalName
+    "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
+    "jdbcColumnar" -> classOf[columnar.DefaultSource].getCanonicalName
   )
 
   def apply(sc: SparkContext,

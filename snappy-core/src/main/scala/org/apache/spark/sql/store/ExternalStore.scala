@@ -1,5 +1,6 @@
 package org.apache.spark.sql.store
 
+import java.io.Externalizable
 import java.sql.Connection
 
 import scala.collection.mutable.ArrayBuffer

@@ -65,18 +65,16 @@ private[sql] final class ExternalStoreRelation(
 
   override def children: Seq[LogicalPlan] = Seq.empty
 
-  override def newInstance(): this.type = {
-    new ExternalStoreRelation(
-      output.map(_.newInstance()),
-      useCompression,
-      batchSize,
-      storageLevel,
-      child,
-      tableName,
-      isSampledTable,
-      externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
-          batchStats, uuidList).asInstanceOf[this.type]
-  }
+  override def newInstance(): this.type = new ExternalStoreRelation(
+    output.map(_.newInstance()),
+    useCompression,
+    batchSize,
+    storageLevel,
+    child,
+    tableName,
+    isSampledTable,
+    externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
+        batchStats, uuidList).asInstanceOf[this.type]
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
     externalStore.getCachedBatchRDD(tableName.get, uuidList,
