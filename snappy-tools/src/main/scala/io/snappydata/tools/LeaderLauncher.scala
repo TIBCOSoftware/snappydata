@@ -1,6 +1,10 @@
 package io.snappydata.tools
 
+import java.util
 import java.util.Properties
+
+import scala.collection.JavaConversions._
+import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.cache.Cache
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
@@ -27,58 +31,43 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   private var gfCache: Option[Cache] = None
 
-  private var startupArgs: Array[String] = null
-
   private lazy val dls = initPrimaryLeaderLockService()
 
   private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
-  def addOrAppendImplicitArg(attr: String, value: String, overwrite: Boolean = false) = {
-    startupArgs.indexWhere(_.indexOf(attr) > 0) match {
-      case -1 => startupArgs = startupArgs :+ s"""-${attr}=${value}"""
-      case idx if overwrite => startupArgs(idx) =  startupArgs(idx).takeWhile(_ != '=') + s"""=${value}"""
-      case idx => startupArgs(idx) = startupArgs(idx) ++ s""",${value}"""
+
+  def initStartupArgs(args: ArrayBuffer[String]) = {
+
+    assert(args.length > 0, LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
+
+    def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {
+      args.indexWhere(_.indexOf(attr) > 0) match {
+        case -1 => args += s"""-${attr}=${value}"""
+        case idx if overwrite => args(idx) =  args(idx).takeWhile(_ != '=') + s"""=${value}"""
+        case idx => args(idx) = args(idx) ++ s""",${value}"""
+      }
     }
-  }
 
-  def initStartupArgs(args: Array[String]) = {
-    startupArgs = args
 
-    assert(startupArgs.length > 0, LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
-
-    startupArgs(0).equalsIgnoreCase("start") match {
+    args(0).equalsIgnoreCase("start") match {
       case true =>
-        addOrAppendImplicitArg(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
-        addOrAppendImplicitArg(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", true)
-        addOrAppendImplicitArg(GfxdServerLauncher.RUN_NETSERVER, "false", true)
+        changeOrAppend(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
+        changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", true)
+        changeOrAppend(GfxdServerLauncher.RUN_NETSERVER, "false", true)
       case _ =>
     }
 
-    startupArgs
+    args.toArray[String]
   }
 
   override protected def run(args: Array[String]): Unit = {
-    super.run(initStartupArgs(args))
-  }
-
-  override protected def getBaseName (name: String) = "snappyleader"
-
-  def initPrimaryLeaderLockService() = {
-    val dSys = gfCache.map(_.getDistributedSystem.asInstanceOf[InternalDistributedSystem]).getOrElse {
-      throw new Exception("GemFire Cache not initialized")
-    }
-
-    DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
-  }
-
-  def startJobServer(options: Map[String, AnyRef], props: Properties): Unit = {
-    JobServer.main(startupArgs)
+    super.run(initStartupArgs(ArrayBuffer(args: _*)))
   }
 
   @throws(classOf[Exception])
-  protected def startAdditionalServices(cache: Cache, options: Map[String, AnyRef], props: Properties): Unit = {
+  override protected def startAdditionalServices(cache: Cache, options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.
     // We don't want to init net-server in leader.
 
@@ -97,8 +86,27 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
     super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STARTING, getProcessId))
 
-    startJobServer(options, props)
+    startJobServer(options.toMap, props)
   }
+
+
+  override protected def getBaseName (name: String) = "snappyleader"
+
+  def initPrimaryLeaderLockService() = {
+    val dSys = gfCache.map(_.getDistributedSystem.asInstanceOf[InternalDistributedSystem]).getOrElse {
+      throw new Exception("GemFire Cache not initialized")
+    }
+
+    DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
+  }
+
+  def startJobServer(options: Map[String, AnyRef], props: Properties): Unit = {
+    val args = options.filter({ case (k, _) => k.equalsIgnoreCase("jobserver.config") })
+        .map({ case (_, v) => v.asInstanceOf[String] }).toArray
+
+    JobServer.main(args)
+  }
+
 }
 
 object LeaderLauncher {

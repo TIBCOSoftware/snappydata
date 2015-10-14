@@ -18,6 +18,7 @@ allprojects {
   repositories {
     maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
     mavenLocal()
+    maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
@@ -28,7 +29,6 @@ allprojects {
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "http://maven.twttr.com" }
     maven { url "http://repository.apache.org/snapshots" }
-    maven { url "http://dl.bintray.com/ooyala/maven" }
   }
 
   apply plugin: 'java'

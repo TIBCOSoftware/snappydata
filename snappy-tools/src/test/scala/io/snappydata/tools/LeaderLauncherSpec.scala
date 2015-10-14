@@ -1,5 +1,7 @@
 package io.snappydata.tools
 
+import scala.collection.mutable.ArrayBuffer
+
 import io.snappydata.LocalizedMessages
 import org.scalatest.{Matchers, WordSpec}
 
@@ -17,7 +19,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
       "have host-data as false" in {
         {
           val l = new LeaderLauncher("Test default host-data")
-          val opts = l.initStartupArgs(Array("start"))
+          val opts = l.initStartupArgs(ArrayBuffer("start"))
 
           val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA))
 
@@ -27,7 +29,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeaderLauncher("Test override host-data")
-          val opts = l.initStartupArgs(Array("start", "host-data=true"))
+          val opts = l.initStartupArgs(ArrayBuffer("start", "host-data=true"))
 
           val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA))
 
@@ -40,7 +42,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
       "always add implicit server group" in {
         {
           val l = new LeaderLauncher("Test default server group")
-          val opts = l.initStartupArgs(Array("start"))
+          val opts = l.initStartupArgs(ArrayBuffer("start"))
 
           val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.SERVER_GROUPS))
 
@@ -50,7 +52,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeaderLauncher("Test server group addition")
-          val opts = l.initStartupArgs(Array("start", "-" + com.pivotal.gemfirexd.Attribute.SERVER_GROUPS + "=DUMMY,GRP"))
+          val opts = l.initStartupArgs(ArrayBuffer("start", "-" + com.pivotal.gemfirexd.Attribute.SERVER_GROUPS + "=DUMMY,GRP"))
 
           val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.SERVER_GROUPS))
 
@@ -65,7 +67,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeaderLauncher("Test default net server")
-          val opts = l.initStartupArgs(Array("start"))
+          val opts = l.initStartupArgs(ArrayBuffer("start"))
 
           val hdProp = opts.filter(doExtract(_, netServerProp))
 
@@ -75,7 +77,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeaderLauncher("Test overwrite net server")
-          val opts = l.initStartupArgs(Array("start", "-run-netserver=true"))
+          val opts = l.initStartupArgs(ArrayBuffer("start", "-run-netserver=true"))
 
           val hdProp = opts.filter(doExtract(_, netServerProp))
 
@@ -86,7 +88,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
       "assert no zero arg message " in {
         intercept[AssertionError] {
-          new LeaderLauncher("Test default net server").initStartupArgs(Array())
+          new LeaderLauncher("Test default net server").initStartupArgs(ArrayBuffer())
         }.getMessage.equals(LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
       }
 
