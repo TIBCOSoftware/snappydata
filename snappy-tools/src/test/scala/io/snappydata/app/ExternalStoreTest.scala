@@ -1,5 +1,7 @@
 package io.snappydata.app
 
+import java.sql.DriverManager
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.snappy._
@@ -26,6 +28,8 @@ object ExternalStoreTest extends App {
     option(args.toList)
   }
 
+  //val conn = DriverManager.getConnection("jdbc:snappydata://10.112.204.101:2000")
+  //println(conn)
   val conf = new org.apache.spark.SparkConf().setAppName("ExternalStoreTest")
     .set("spark.logConf", "true")
     //.set("spark.shuffle.sort.serializeMapOutputs", "true")
