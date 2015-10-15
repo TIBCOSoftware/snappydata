@@ -20,10 +20,13 @@ trait ExternalStore extends Serializable {
   def storeCachedBatch(batch: CachedBatch, tableName: String) : UUIDRegionKey
   def truncate(tableName: String)
   def cleanup(): Unit
-  def getCachedBatchIterator(tableName: String, itr: Iterator[UUIDRegionKey],
+  def getCachedBatchIterator(tableName: String,
+                             requiredColumns: Array[String],
+                             itr: Iterator[UUIDRegionKey],
                              getAll: Boolean = false): Iterator[CachedBatch]
 
-  def getCachedBatchRDD(tableName : String,uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
+  def getCachedBatchRDD(tableName : String,  requiredColumns: Array[String],
+                        uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
                              sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String): java.sql.Connection
