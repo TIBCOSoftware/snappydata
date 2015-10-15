@@ -77,7 +77,7 @@ private[sql] final class ExternalStoreRelation(
         batchStats, uuidList).asInstanceOf[this.type]
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-    externalStore.getCachedBatchRDD(tableName.get, uuidList,
+    externalStore.getCachedBatchRDD(tableName.get, null, uuidList,
       this.child.sqlContext.sparkContext)
   }
 

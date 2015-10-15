@@ -66,14 +66,6 @@ class JDBCAppendableRelation(
     }
   }
 
-  //private[sql] val storeRDD : RDD[InternalRow] = ???
-  // no need for a UUID list as we have to iterate over all the UUIDs
-  def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-    externalStore.getCachedBatchRDD(table, uuidList,
-      sqlContext.sparkContext)
-    //TODO: suranjan provide required columnd to getCachedBatchRDD
-  }
-
 //  val partitionFilters: Seq[Expression] = {
 //    predicates.flatMap { p =>
 //      val filter = buildFilter.lift(p)
@@ -112,6 +104,14 @@ class JDBCAppendableRelation(
     if (enableAccumulators) {
       readPartitions.setValue(0)
       readBatches.setValue(0)
+    }
+
+    //private[sql] val storeRDD : RDD[InternalRow] = ???
+    // no need for a UUID list as we have to iterate over all the UUIDs
+    def cachedColumnBuffers: RDD[CachedBatch] = readLock {
+      externalStore.getCachedBatchRDD(table, requiredColumns, uuidList,
+        sqlContext.sparkContext)
+      //TODO: suranjan provide required columnd to getCachedBatchRDD
     }
 
     cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
@@ -281,8 +281,9 @@ class JDBCAppendableRelation(
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-      s"not null, bucketId integer, cachedBatch Blob not null, $primarykey) " +
-      s"$partitionStrategy", tableName, dropIfExists = false) //for test make it false
+      "not null, bucketId integer, stats blob, "+
+      userSchema.fields.map(structField => structField.name + " blob").mkString(" ", "," ," ")   +
+      s", $primarykey) $partitionStrategy", tableName, dropIfExists = false) //for test make it false
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
@@ -444,7 +445,7 @@ final class DefaultSource extends SchemaRelationProvider {
   def getExternalTable(jdbcSource: Map[String, String]): ExternalStore = {
     val externalSource = jdbcSource.get("jdbcStore") match {
       case Some(x) => x
-      case None => "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
+      case None => "org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore"
     }
     val constructor = Class.forName(externalSource).getConstructors()(0)
     return constructor.newInstance(jdbcSource).asInstanceOf[ExternalStore]
