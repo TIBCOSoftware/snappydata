@@ -15,7 +15,17 @@ apply plugin: 'java'
     compile 'org.apache.logging.log4j:log4j-core:2.1'
     compile 'commons-io:commons-io:2.4'
     compile "junit:junit:${junitVersion}"
-    //testCompile "junit:junit:${junitVersion}"
+
+    if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+      compile project(':snappy-store:gemfirexd:client')
+      compile project(':snappy-store:gemfirexd:core')
+      compile project(':snappy-store:gemfirexd:tools')
+      testCompile project(path: ':snappy-store:gemfirexd:tools', configuration: 'testOutput')
+    } else {
+      compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
+      compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
+      compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
+    }
   }
 
   test {
