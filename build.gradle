@@ -88,6 +88,17 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/)}) {
 }
 
 subprojects {
+  // the run task for a selected sub-project
+  task run(type:JavaExec) {
+    if (!project.hasProperty('mainClass')) {
+      main = 'io.snappydata.app.SparkSQLTest'
+    } else {
+      main = mainClass
+    }
+    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
+    jvmArgs = [ '-Xmx2g', '-XX:MaxPermSize=512m' ]
+  }
+
   // apply default manifest
   jar {
     manifest {
@@ -99,17 +110,6 @@ subprojects {
         "Vendor"            : "Snappy Data, Inc."
       )
     }
-  }
-
-  // the run task for a selected sub-project
-  task run(type:JavaExec) {
-    if (!project.hasProperty('mainClass')) {
-      main = 'io.snappydata.app.SparkSQLTest'
-    } else {
-      main = mainClass
-    }
-    classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs = [ '-Xmx2g', '-XX:MaxPermSize=512m' ]
   }
 
   task packageSources(type: Jar, dependsOn: classes) {
@@ -156,4 +156,60 @@ subprojects {
 task generateSources {
   dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':generateAvroJava'
   dependsOn ':snappy-store:generateSources'
+}
+
+task assembly(type: Jar) {
+  dependsOn ":snappy-tools_${scalaBinaryVersion}:jar"
+  baseName = 'snappy-spark-assembly'
+  classifier = "hadoop${hadoopVersion}"
+  zip64 = true
+
+  def assemblyDir = file("${buildDir}/assembly/target")
+
+  inputs.files project(":snappy-tools_${scalaBinaryVersion}").jar.outputs.files
+  outputs.file "${assemblyDir}/scala-${scalaBinaryVersion}/${archiveName}"
+
+  from {
+    def allJars = new HashSet<File>()
+    project(":snappy-tools_${scalaBinaryVersion}").configurations.runtime.each {
+      allJars.add(it)
+    }
+    allJars.collect {
+      it.isDirectory() ? it : zipTree(it).matching {
+        exclude {
+          it.path.contains('META-INF')
+        }
+      }
+    }
+  }
+
+  manifest {
+    attributes(
+      "Manifest-Version"  : "1.0",
+      "Created-By"        : System.getProperty("user.name"),
+      "Title"             : rootProject.name,
+      "Version"           : version,
+      "Vendor"            : "Snappy Data, Inc."
+    )
+  }
+
+  doLast {
+    assemblyDir.mkdirs()
+    file("${buildDir}/libs").renameTo("${assemblyDir}/scala-${scalaBinaryVersion}")
+    copy {
+      from "${project(':snappy-spark').projectDir}/bin"
+      into "${buildDir}/bin"
+      filter { line ->
+        line.replaceAll('assembly/target/scala-2.10', 'lib')
+      }
+    }
+    copy {
+      from "${project(':snappy-spark').projectDir}/sbin"
+      into "${buildDir}/sbin"
+    }
+    copy {
+      from "${project(':snappy-spark').projectDir}/conf"
+      into "${buildDir}/conf"
+    }
+  }
 }
