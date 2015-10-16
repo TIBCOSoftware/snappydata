@@ -45,7 +45,7 @@ class JDBCAppendableRelation(
   self =>
 
   private val bufferLock = new ReentrantReadWriteLock()
-
+  private final val columnPrefix="Col_"
   createTable(SaveMode.Append)// for the timebeing just append the dfs
 
   /** Acquires a read lock on the cache for the duration of `f`. */
@@ -109,7 +109,7 @@ class JDBCAppendableRelation(
     //private[sql] val storeRDD : RDD[InternalRow] = ???
     // no need for a UUID list as we have to iterate over all the UUIDs
     def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table, requiredColumns, uuidList,
+      externalStore.getCachedBatchRDD(table, requiredColumns.map(column=> columnPrefix + column), uuidList,
         sqlContext.sparkContext)
       //TODO: suranjan provide required columnd to getCachedBatchRDD
     }
@@ -282,7 +282,7 @@ class JDBCAppendableRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
       "not null, bucketId integer, stats blob, "+
-      userSchema.fields.map(structField => structField.name + " blob").mkString(" ", "," ," ")   +
+      userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", "," ," ")   +
       s", $primarykey) $partitionStrategy", tableName, dropIfExists = false) //for test make it false
   }
 
