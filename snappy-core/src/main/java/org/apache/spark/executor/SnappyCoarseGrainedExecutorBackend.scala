@@ -31,7 +31,7 @@ class SnappyCoarseGrainedExecutorBackend(
     if (executor != null) {
       // kill all the running tasks
       // InterruptThread is set as true.
-      executor.killAllTasks(true)
+      //executor.killAllTasks(true)
       executor.stop()
     }
     // stop the actor system
