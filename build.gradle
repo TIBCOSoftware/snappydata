@@ -3,10 +3,12 @@ apply plugin: 'wrapper'
 buildscript {
   repositories {
     maven { url "https://plugins.gradle.org/m2" }
+    jcenter()
   }
   dependencies {
     classpath "com.github.maiflai:gradle-scalatest:0.9"
     classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.7.2"
+    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
   }
 }
 
@@ -58,6 +60,7 @@ allprojects {
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     gemfireXDVersion = '2.0-Beta'
+    buildFlags = ''
   }
 
   if (!buildRoot.isEmpty()) {
@@ -158,44 +161,35 @@ task generateSources {
   dependsOn ':snappy-store:generateSources'
 }
 
-task assembly(type: Jar) {
-  dependsOn ":snappy-tools_${scalaBinaryVersion}:jar"
-  baseName = 'snappy-spark-assembly'
-  classifier = "hadoop${hadoopVersion}"
-  zip64 = true
+task assembly {
+  dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
 
-  def assemblyDir = file("${buildDir}/assembly/target")
-
-  inputs.files project(":snappy-tools_${scalaBinaryVersion}").jar.outputs.files
-  outputs.file "${assemblyDir}/scala-${scalaBinaryVersion}/${archiveName}"
-
-  from {
-    def allJars = new HashSet<File>()
-    project(":snappy-tools_${scalaBinaryVersion}").configurations.runtime.each {
-      allJars.add(it)
-    }
-    allJars.collect {
-      it.isDirectory() ? it : zipTree(it).matching {
-        exclude {
-          it.path.contains('META-INF')
-        }
-      }
-    }
+  doFirst {
+    delete buildDir
+    buildDir.mkdirs()
+    file("${buildDir}/lib").mkdirs()
   }
-
-  manifest {
-    attributes(
-      "Manifest-Version"  : "1.0",
-      "Created-By"        : System.getProperty("user.name"),
-      "Title"             : rootProject.name,
-      "Version"           : version,
-      "Vendor"            : "Snappy Data, Inc."
-    )
-  }
-
   doLast {
-    assemblyDir.mkdirs()
-    file("${buildDir}/libs").renameTo("${assemblyDir}/scala-${scalaBinaryVersion}")
+    // copy datanucleus jars specifically since they don't work as part of fat jar
+    def datanucleusJars = project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
+      it.getName().contains('datanucleus')
+    }
+    copy {
+      from datanucleusJars
+      into "${buildDir}/lib"
+    }
+
+    // create the RELEASE file
+    def release = file("${buildDir}/RELEASE")
+    def gitCommitId = "git rev-parse HEAD".execute().text.trim()
+    release << "Snappy Spark ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
+    release << "Build flags: ${buildFlags}\n"
+
+    def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
+    def baseName = 'snappy-spark-assembly'
+    def archiveName = "snappy-spark-assembly_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
+    println "SW: renaming ${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName} to ${buildDir}/lib/${archiveName}"
+    file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${buildDir}/lib/${archiveName}")
     copy {
       from "${project(':snappy-spark').projectDir}/bin"
       into "${buildDir}/bin"
@@ -211,5 +205,22 @@ task assembly(type: Jar) {
       from "${project(':snappy-spark').projectDir}/conf"
       into "${buildDir}/conf"
     }
+    copy {
+      from "${project(':snappy-spark').projectDir}/python"
+      into "${buildDir}/python"
+    }
+    copy {
+      from "${project(':snappy-spark').projectDir}/data"
+      into "${buildDir}/data"
+    }
+
+    def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
+    if (file(sparkR).exists()) {
+      copy {
+        from sparkR
+        into "${buildDir}/R/lib"
+      }
+    }
   }
 }
+
