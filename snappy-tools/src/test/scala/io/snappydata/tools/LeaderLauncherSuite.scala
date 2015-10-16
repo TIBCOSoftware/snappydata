@@ -115,7 +115,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val start = Try {
       LeaderLauncher.main(Array(
         "start",
-        "-dir=" + leader1.dirname,g 
+        "-dir=" + leader1.dirname,
         s"-locators=localhost[${availablePort}]"
       ))
     } transform(_ => Try {
