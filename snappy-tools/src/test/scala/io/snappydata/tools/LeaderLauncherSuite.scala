@@ -2,7 +2,8 @@ package io.snappydata.tools
 
 import java.io.{PrintStream, ByteArrayOutputStream}
 
-import scala.util.{Failure, Try}
+import scala.util.matching.Regex
+import scala.util.{Success, Failure, Try}
 
 import com.gemstone.gemfire.internal.{DistributionLocator, AvailablePort}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
@@ -63,8 +64,8 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
           val outputLines = stream.toString
           assert(outputLines.replaceAll("\n", "").matches(
             "SnappyData Leader pid: [0-9]+ status: running" +
-                "  Distributed system now has [0-9]+ members." +
-                "  Other members: .*([0-9]+:.*)<.*>:[0-9]+".r), outputLines)
+              "  Distributed system now has [0-9]+ members." +
+              "  Other members: .*([0-9]+:.*)<.*>:[0-9]+".r), outputLines)
 
         }
       }, {
@@ -84,7 +85,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("leader standby") {
+  test("leader standby") {
 
     class conf(val dirname: String) {
       def createDir(): conf = {
@@ -93,56 +94,76 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
 
+    def verifyStatus(workingDir: String, expectedOutput: String) = {
+      val stream = new ByteArrayOutputStream()
+      Try {
+        System.setOut(new PrintStream(stream))
+        LeaderLauncher.main(Array(
+          "status",
+          "-dir=" + workingDir))
+      } map { _ =>
+        val outputLines = stream.toString
+        assert(outputLines.replaceAll("\n", "").matches(expectedOutput),
+          workingDir + " returned with: \n" + outputLines)
+      }
+    }
+
     val leader1 = new conf("snappy-leader-1").createDir()
     val leader2 = new conf("snappy-leader-2").createDir()
+    val currentOut = System.out
 
     val start = Try {
       LeaderLauncher.main(Array(
         "start",
-        "-dir=" + leader1.dirname,
+        "-dir=" + leader1.dirname,g 
         s"-locators=localhost[${availablePort}]"
       ))
     } transform(_ => Try {
+
+      verifyStatus(leader1.dirname, "SnappyData Leader pid: [0-9]+ status: running.*").get
+
       LeaderLauncher.main(Array(
-        "server",
-        "-log-file=" + leader2.dirname + "leader2.log",
+        "start",
+        "-dir=" + leader2.dirname,
         s"-locators=localhost[${availablePort}]"
       ))
-    }, throw _) orElse
-        // stop the first leader when second leader failed to start
-        Try {
-          LeaderLauncher.main(Array(
-            "stop",
-            "-dir=" + leader1.dirname))
-        }
+    }, {
+      throw _
+    })
 
-    val stream = new ByteArrayOutputStream()
-    val currentOut = System.out
-
+    var isLeader1NotStopped = true
     try {
-      start transform(_ =>
-        Try {
-          System.setOut(new PrintStream(stream))
-          LeaderLauncher.main(Array(
-            "status",
-            "-dir=" + leader2.dirname))
-        } map { _ =>
-          val outputLines = stream.toString
-          assert(outputLines.replaceAll("\n", "").matches(
-            "SnappyData Leader pid: [0-9]+ status: standby" + "".r), outputLines)
+      val checkStandby = start transform(_ => {
+        verifyStatus(leader2.dirname, "SnappyData Leader pid: [0-9]+ status: standby.*")
+      }, throw _)
 
-        }
-          , throw _) match {
+
+      val leader2TakeOver = checkStandby match {
+        case Success(v) =>
+          Try {
+            LeaderLauncher.main(Array(
+              "stop",
+              "-dir=" + leader1.dirname))
+            isLeader1NotStopped = false
+          } transform(_ => {
+            verifyStatus(leader2.dirname, "SnappyData Leader pid: [0-9]+ status: running.*")
+          }, throw _)
+
+        case Failure(t) => throw t
+      }
+
+      leader2TakeOver match {
         case Failure(t) => throw t
         case _ =>
       }
 
     } finally {
       System.setOut(currentOut)
-      LeaderLauncher.main(Array(
-        "stop",
-        "-dir=" + leader1.dirname
-      ))
+      if (isLeader1NotStopped)
+        LeaderLauncher.main(Array(
+          "stop",
+          "-dir=" + leader1.dirname
+        ))
 
       LeaderLauncher.main(Array(
         "stop",
