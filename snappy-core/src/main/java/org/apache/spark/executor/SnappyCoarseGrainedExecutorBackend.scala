@@ -3,12 +3,7 @@ package org.apache.spark.executor
 import java.net.URL
 
 import org.apache.spark.SparkEnv
-import org.apache.spark.rpc.{RpcAddress, RpcEnv}
-import org.apache.spark.scheduler.TaskDescription
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages._
-import org.apache.spark.util.{ThreadUtils, Utils}
-
-import scala.util.{Failure, Success}
+import org.apache.spark.rpc.RpcEnv
 
 /**
  * Created by hemantb on 10/5/15.
@@ -25,8 +20,6 @@ class SnappyCoarseGrainedExecutorBackend(
     executorId, hostPort, cores, userClassPath, env) {
 
 
-
-
   /**
    * Snappy addition (Replace System.exit with exitExecutor). We could have
    * added functions calling System.exit to SnappyCoarseGrainedExecutorBackend
@@ -34,8 +27,14 @@ class SnappyCoarseGrainedExecutorBackend(
    * after every merge.
    */
   override def exitExecutor(): Unit = {
-    if (executor != null)
+
+    if (executor != null) {
+      // kill all the running tasks
+      // InterruptThread is set as true.
+      executor.killAllTasks(true)
       executor.stop()
+    }
+    // stop the actor system
     stop()
     if (rpcEnv != null)
       rpcEnv.shutdown()

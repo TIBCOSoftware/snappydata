@@ -1,6 +1,8 @@
 package io.snappydata.gemxd
 
 import com.pivotal.gemfirexd.internal.snappy.ClusterCallbacks
+import io.snappydata.cluster.ExecutorInitiator
+import org.apache.spark.scheduler.cluster.SnappyClusterManager
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -9,11 +11,18 @@ import com.pivotal.gemfirexd.internal.snappy.ClusterCallbacks
  */
 object ClusterCallbacksImpl extends ClusterCallbacks {
 
-  def launchExecutor = {
+  def launchExecutor(driver_url: String) = {
+    val url = if (driver_url == null || driver_url == "")
+      None
+    else Some(driver_url)
+    ExecutorInitiator.transmuteExecutor(url)
 
   }
 
-  def killExecutor ={
-
+  def getDriverURL: String = {
+    return SnappyClusterManager.schedulerBackend match {
+      case Some(x) => x.driverUrl
+      case None => null
+    }
   }
 }
