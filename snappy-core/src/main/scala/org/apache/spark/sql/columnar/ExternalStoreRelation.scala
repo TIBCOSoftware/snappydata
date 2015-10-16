@@ -8,7 +8,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.InMemoryAppendableRelation.CachedBatchHolder
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.store.ExternalStore

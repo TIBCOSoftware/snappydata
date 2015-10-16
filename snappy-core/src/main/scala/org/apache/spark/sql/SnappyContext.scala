@@ -21,7 +21,7 @@ import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedData
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -182,8 +182,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
       relation.cachedRepresentation match {
-        case columnStore: JDBCAppendableRelation =>
-          columnStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case externalStore: ExternalStoreRelation =>
           externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>
@@ -207,8 +205,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         sys.error(s"couldn't cache table $tableIdent")
       }
     }
-
-
 
     val cached = rdd.mapPartitions { rowIterator =>
 
@@ -236,6 +232,23 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     cacheManager.lookupCachedData(catalog.lookupRelation(
       tableName)).foreach(_.cachedRepresentation.
         asInstanceOf[InMemoryAppendableRelation].truncate())
+  }
+
+  def truncateExternalTable(tableName: String): Unit = {
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    val plan = catalog.lookupRelation(qualifiedTable, None)
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(br) =>
+        // only uncache the query
+        cacheManager.tryUncacheQuery(DataFrame(self, plan))
+        br match {
+          case columnTable: JDBCAppendableRelation => columnTable.truncate
+          case rowTable: JDBCMutableRelation => rowTable.truncate
+        }
+      case _ => throw new AnalysisException(
+        s"truncateExternalTable: Table $tableName not an external table")
+    }
+
   }
 
   def registerTable[A <: Product : u.TypeTag](tableName: String) = {
@@ -291,21 +304,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       tableName: String,
       provider: String,
       options: Map[String, String]): DataFrame = {
+    if (provider.equalsIgnoreCase("column")) {
+      throw new IllegalArgumentException("Column table cannot be created without provided Schema.")
+    }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
       SaveMode.ErrorIfExists, options)
-    DataFrame(self, plan)
-  }
-
-  def createColumnTable(
-      tableName: String,
-      userSpecifiedSchema: StructType,
-      provider: String,
-      options: Map[String, String]): DataFrame = {
-
-    val plan = createColumnTable(catalog.newQualifiedTableName(tableName), provider,
-      Some(userSpecifiedSchema), schemaDDL = None,
-      SaveMode.Append, options)
     DataFrame(self, plan)
   }
 
@@ -369,51 +373,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   /**
    * Create an external table with given options.
    */
-  private[sql] def createColumnTable(
-                                tableIdent: QualifiedTableName,
-                                provider: String,
-                                userSpecifiedSchema: Option[StructType],
-                                schemaDDL: Option[String],
-                                mode: SaveMode,
-                                options: Map[String, String]): LogicalPlan = {
-
-    if (catalog.tableExists(tableIdent)) {
-      mode match {
-        case SaveMode.ErrorIfExists =>
-          throw new AnalysisException(
-            s"createExternalTable: Table $tableIdent already exists.")
-        case _ =>
-          return catalog.lookupRelation(tableIdent, None)
-      }
-    }
-
-    // add tableName in properties if not already present
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
-      dbtableProp))) options
-    else options + (dbtableProp -> tableIdent.toString)
-
-    val source = SnappyContext.getProvider(provider)
-    // get the data source and register the table in hive catalog.
-    val resolved = schemaDDL match {
-      case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
-        schema, source, mode, params)
-
-      case None =>
-        // add allowExisting in properties used by some implementations
-        ResolvedDataSource(self, userSpecifiedSchema, Array.empty[String],
-          source, params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
-            (mode != SaveMode.ErrorIfExists).toString))
-    }
-
-    catalog.registerColumnTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params)
-
-    LogicalRelation(resolved.relation)
-  }
-  /**
-   * Create an external table with given options.
-   */
   private[sql] def createTable(
       tableIdent: QualifiedTableName,
       provider: String,
@@ -450,15 +409,21 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
 
-    catalog.registerExternalTable(tableIdent, Some(data.schema),
-      partitionColumns, source, params)
+    if (catalog.tableExists(tableIdent) && mode == SaveMode.Overwrite) {
+      // uncache the previous results and don't register again
+      cacheManager.tryUncacheQuery(data)
+    }
+    else {
+      catalog.registerExternalTable(tableIdent, Some(data.schema),
+        partitionColumns, source, params)
+    }
     LogicalRelation(resolved.relation)
   }
 
   /**
    * Drop an external table created by a call to createExternalTable.
    */
-  def dropExternalTable(tableName: String, ifExists: Boolean): Unit = {
+  def dropExternalTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -770,7 +735,7 @@ object SnappyContext {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "jdbcColumnar" -> classOf[columnar.DefaultSource].getCanonicalName
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName
   )
 
   def apply(sc: SparkContext,

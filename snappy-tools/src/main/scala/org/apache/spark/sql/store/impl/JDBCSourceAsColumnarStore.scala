@@ -47,7 +47,7 @@ final class JDBCSourceAsColumnarStore(jdbcSource: Map[String, String])  extends 
 
   }
 
-  def lookupName(tableName :String, schema : String): String ={
+  def lookupName(tableName :String, schema : String): String = {
     val lookupName = {
       if (tableName.indexOf(".") <= 0) {
         schema + "." + tableName
@@ -122,7 +122,7 @@ final class JDBCSourceAsColumnarStore(jdbcSource: Map[String, String])  extends 
   override def truncate(tableName: String) = tryExecute(tableName, {
     case conn =>
     dialect match {
-      case d: JdbcExtendedDialect => d.truncateTable(tableName)
+      case d: JdbcExtendedDialect => JdbcExtendedUtils.executeUpdate(d.truncateTable(tableName), conn)
       case _ =>
         JdbcExtendedUtils.executeUpdate(s"truncate table $tableName", conn)
     }
@@ -259,7 +259,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName, {
       case conn =>
-        conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+        //conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
         val resolvedName = store.lookupName(tableName, schema)
         //val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val par = split.index

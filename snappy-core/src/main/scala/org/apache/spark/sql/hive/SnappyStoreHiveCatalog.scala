@@ -399,19 +399,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       userSpecifiedSchema, partitionColumns, provider, options)
   }
 
-
-  // copy of the above , may remove in future
-  def registerColumnTable(tableName: QualifiedTableName,
-                          userSpecifiedSchema: Option[StructType],
-                          partitionColumns: Array[String],
-                          provider: String,
-                          options: Map[String, String]): Unit = {
-
-    //TODO: Suranjan understand this why are we doing this or we can register using tables??
-    createDataSourceTable(tableName, ExternalTableType.Columnar,
-      userSpecifiedSchema, partitionColumns, provider, options)
-  }
-
   def unregisterExternalTable(tableIdent: QualifiedTableName): Unit = {
     client.dropTable(tableIdent.getDatabase(client), tableIdent.table)
   }
@@ -420,7 +407,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
    * Creates a data source table (a table created with USING clause) in Hive's
    * meta-store. Returns true when the table has been created else false.
    *
-   * @param tableType the type of external table: ROW, COLUMNAR, SAMPLE etc
+   * @param tableType the type of external table: ROW, COLUMN, SAMPLE etc
    */
   def createDataSourceTable(
       tableIdent: QualifiedTableName,
@@ -744,7 +731,7 @@ object ExternalTableType extends Enumeration {
   type Type = Value
 
   val Row = Value("ROW")
-  val Columnar = Value("COLUMNAR")
+  val Columnar = Value("COLUMN")
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")

@@ -6,7 +6,7 @@ import org.apache.spark.sql.types.StructType
 /**
  * Created by skumar on 9/10/15.
  */
-private[sql] class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
+private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
                                  var rowCount: Int, val batchSize: Int, schema: StructType,
                                  val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {
 

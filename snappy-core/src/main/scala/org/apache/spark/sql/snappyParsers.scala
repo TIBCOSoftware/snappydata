@@ -74,7 +74,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream | createSampled | strmctxt
+        createStream | createSampled | strmctxt | truncateTable
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -84,6 +84,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val STOP = Keyword("STOP")
   protected val INIT = Keyword("INIT")
   protected val DROP = Keyword("DROP")
+  protected val TRUNCATE = Keyword("TRUNCATE")
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s+" +
       OPTIONS.str, Pattern.CASE_INSENSITIVE)
@@ -119,8 +120,13 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           val hasExternalSchema = if (temporary.isDefined) false
           else {
             // check if provider class implements ExternalSchemaRelationProvider
-            val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
-            classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
+            try {
+              val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
+              classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
+            } catch {
+              case cnfe: ClassNotFoundException => throw new DDLException(cnfe.toString)
+              case t: Throwable => throw t
+            }
           }
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
@@ -146,6 +152,12 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ ident ^^ {
       case temporary ~ allowExisting ~ tableName =>
         DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
+    }
+
+  protected lazy val truncateTable: Parser[LogicalPlan] =
+    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ ident ^^ {
+      case temporary ~ tableName =>
+        TruncateTable(tableName, temporary.isDefined)
     }
 
   protected lazy val createStream: Parser[LogicalPlan] =
@@ -248,6 +260,17 @@ private[sql] case class DropTable(
   }
 }
 
+private[sql] case class TruncateTable(
+    tableName: String,
+    temporary: Boolean) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    if (temporary) snc.truncateTable(tableName)
+    else snc.truncateExternalTable(tableName)
+    Seq.empty
+  }
+}
 case class DMLExternalTable(
     tableName: String,
     child: LogicalPlan,

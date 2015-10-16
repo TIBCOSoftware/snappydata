@@ -255,6 +255,15 @@ class JDBCMutableRelation(
       conn.close()
     }
   }
+
+  def truncate(): Unit = {
+    val conn = JdbcUtils.createConnection(url, connProperties)
+    try {
+      JdbcExtendedUtils.executeUpdate(s"truncate table $table", conn)
+    } finally {
+      conn.close()
+    }
+  }
 }
 
 object JDBCMutableRelation extends Logging {
