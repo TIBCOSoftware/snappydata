@@ -131,9 +131,11 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     // `configure` goes second to override other settings.
     if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-        "gemfirexd.db.url")
+        sparkConf.get("gemfirexd.db.url"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        "gemfirexd.db.driver")
+        sparkConf.get("gemfirexd.db.driver"))
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        "APP")
     }
     //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
 
