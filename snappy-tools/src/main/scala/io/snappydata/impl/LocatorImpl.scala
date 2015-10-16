@@ -4,10 +4,9 @@ import java.sql.SQLException
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.fabricservice.{FabricLocatorImpl}
-import io.snappydata.Locator
+import io.snappydata.{ProtocolOverrides, Locator}
 
-class LocatorImpl extends FabricLocatorImpl
-  with  Locator{
+class LocatorImpl extends FabricLocatorImpl with Locator with ProtocolOverrides {
 
   @throws(classOf[SQLException])
   override def start(bindAddress: String, port: Int,

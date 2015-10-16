@@ -5,11 +5,10 @@ import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.fabricservice.{FabricServerImpl}
 import com.pivotal.gemfirexd.internal.snappy.CallbackFactoryProvider
-import io.snappydata.Server
+import io.snappydata.{ProtocolOverrides, Server}
 import io.snappydata.gemxd.ClusterCallbacksImpl
 
-class ServerImpl extends FabricServerImpl
-  with  Server{
+class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   override def start(bootProperties: Properties) = {
     start(bootProperties, false)

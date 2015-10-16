@@ -1,18 +1,16 @@
 package io.snappydata.dunit
 
-import java.net.InetAddress
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
-import com.pivotal.gemfirexd.FabricServiceManager
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.fabricservice.{FabricServiceImpl, FabricServiceUtils}
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import dunit.{AvailablePortHelper, Host, DistributedTestBase}
-import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.{StructField, StructType, StringType, IntegerType}
-import org.apache.spark.sql.{DataFrame, Row}
+import dunit.{DistributedTestBase, Host}
+import io.snappydata.ServiceManager
 import org.apache.spark.sql.collection.ReusableRow
+import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.{DataFrame, Row}
 
 /**
  * Created by kneeraj on 15/10/15.
@@ -53,7 +51,7 @@ class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestB
 
 
   def startHiveMetaClientInGfxdPeerNode(locatorStr: String, netPort: Int): Unit = {
-    val dataStoreService = FabricServiceManager.getFabricServerInstance
+    val dataStoreService = ServiceManager.getServerInstance
     val bootProperties = new Properties()
     bootProperties.setProperty("locators", locatorStr)
     bootProperties.setProperty("persist-dd", "false")
@@ -91,11 +89,11 @@ object HiveMetastoreClientAccessDUnitTest {
   }
 
   def startLocator(bindAddress: String, netport: Int, peerDiscoveryPort: Int): Unit = {
-    val locatorService = FabricServiceManager.getFabricLocatorInstance
+    val locatorService = ServiceManager.getLocatorInstance
     val bootProps = new Properties()
     bootProps.setProperty("persist-dd", "false")
     //locatorService.start(localHost.getHostAddress, peerDiscoveryPort, bootProps)
-    println("KN: startlocator params peerDiscoveryPort = " + peerDiscoveryPort + ", netport = " + netport)
+    //println("KN: startlocator params peerDiscoveryPort = " + peerDiscoveryPort + ", netport = " + netport)
     locatorService.start("localhost", peerDiscoveryPort, bootProps)
     locatorService.startNetworkServer("localhost", netport, bootProps)
     println("Loc vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
@@ -177,8 +175,8 @@ object HiveMetastoreClientAccessDUnitTest {
       row
     }
 
-    //val hfile: String = getClass.getResource("/2015.parquet").getPath
-    val hfile: String = "/home/kneeraj/snappy/snappy-commons/snappy-core/src/test/resources/2015.parquet"
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    //val hfile: String = "/home/kneeraj/snappy/snappy-commons/snappy-core/src/test/resources/2015.parquet"
     val loadData: Boolean = true
     val setMaster: String = "local[6]"
 

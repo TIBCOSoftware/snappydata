@@ -4,7 +4,6 @@ import java.util.Properties
 
 import com.pivotal.gemfirexd.{FabricService, FabricLocator, TestUtil}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.Server
 import org.scalatest.BeforeAndAfterAll
 
 /**
