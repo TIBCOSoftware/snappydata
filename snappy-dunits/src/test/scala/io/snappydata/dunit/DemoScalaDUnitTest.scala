@@ -10,7 +10,7 @@ import junit.framework.AssertionFailedError
  *
  * Created by amogh on 14/10/15.
  */
-class DemoScalaDUnitTest(s: String) extends DistributedTestBase(s) {
+class DemoScalaDUnitTest(val s: String) extends DistributedTestBase(s) {
 
   import DemoScalaDUnitTest._
 
