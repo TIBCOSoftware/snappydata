@@ -11,6 +11,7 @@ sourceSets.main.java.srcDirs = []
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
+  compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
@@ -36,6 +37,9 @@ dependencies {
     exclude(module: 'akka-actor_' + scalaBinaryVersion)
     exclude(module: 'akka-remote_' + scalaBinaryVersion)
     exclude(module: 'akka-slf4j_' + scalaBinaryVersion)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
