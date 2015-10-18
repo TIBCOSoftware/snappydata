@@ -79,7 +79,7 @@ if (new File(rootDir, "snappy-store").exists()) {
   include ':snappy-store:gemfirexd:prebuild'
   include ':snappy-store:gemfirexd:core'
   include ':snappy-store:gemfirexd:client'
-  //include ':snappy-store:gemfirexd:native'
+  include ':snappy-store:gemfirexd:native'
   include ':snappy-store:gemfirexd:tools'
   include ':snappy-store:testing:core'
   include ':snappy-store:testing:sql'
