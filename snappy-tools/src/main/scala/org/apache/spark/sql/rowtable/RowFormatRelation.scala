@@ -1,21 +1,23 @@
 package org.apache.spark.sql.rowtable
 
-import java.sql.{Connection, PreparedStatement}
+
 import java.util.Properties
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
+import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.ConnectionPool
+
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc._
+
 import org.apache.spark.sql.row.{MutableRelationProvider, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{StoreInitRDD, StoreRDD, ColumnPartitioner}
-import org.apache.spark.sql.types._
-import org.apache.spark.{Logging, Partition}
+import org.apache.spark.sql.store.{StoreInitRDD, StoreRDD}
+
+import org.apache.spark.{ Partition}
 
 import scala.collection.mutable
 
@@ -109,7 +111,6 @@ final class DefaultSource
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-    println("options = "+ options)
     val url = parameters.remove("url")
       .getOrElse(sys.error("JDBC URL option 'url' not specified"))
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
@@ -159,11 +160,16 @@ final class DefaultSource
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
 
-    println("connProps = "+ connProps)
+    val sc = sqlContext.sparkContext
+    val runStoreInit = sc.schedulerBackend match {
+      case snb: SnappyCoarseGrainedSchedulerBackend => false
+      case lb : LocalBackend => false
+      case _ => true
+    }
+    if(runStoreInit){
+      new StoreInitRDD(sc, url, connProps).collect()
+    }
 
-    val rdd = new StoreInitRDD(sqlContext.sparkContext, url, connProps)
-
-    //rdd.collect()
 
     new RowFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),

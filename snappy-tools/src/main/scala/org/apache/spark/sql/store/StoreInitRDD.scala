@@ -39,8 +39,6 @@ class StoreInitRDD(sc : SparkContext, url : String,  val connProperties: Propert
           }
         }
     }
-    println(url)
-    println(connProperties)
     val conn = JdbcUtils.createConnection(url, connProperties)
     conn.close()
     Iterator.empty
