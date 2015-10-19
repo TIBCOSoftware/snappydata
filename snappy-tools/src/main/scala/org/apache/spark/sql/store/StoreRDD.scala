@@ -1,0 +1,190 @@
+package org.apache.spark.sql.store
+
+import java.sql.Connection
+
+
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
+
+import org.apache.spark._
+import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.serializer.Serializer
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.collection.{NarrowExecutorLocalSplitDep, CoGroupExecutorLocalPartition}
+import org.apache.spark.sql.store.util.StoreUtils
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.util.{ MutablePair}
+
+/**
+ * Generic RDD for doing bulk inserts in Snappy-Store. This RDD creates dependencies according to input RDD's partitioner.
+ *
+ *
+ * @param sc Snappy context
+ * @param prev the RDD which we want to save to snappy store
+ * @param tableName the table name to which we want to write
+ * @param getConnection function to get connection
+ * @param schema schema of the table
+ * @param partitionColumn partitioning column of the table
+ * @param preservePartitioning If user has specified to preserve the partitioning of incoming RDD
+ * @param numPartitions number of partitions
+ */
+
+class StoreRDD(@transient sc: SparkContext,
+               @transient prev: RDD[Row],
+               tableName: String,
+               getConnection: () => Connection,
+               schema: StructType,
+               partitionColumn: Option[String],
+               preservePartitioning: Boolean,
+               numPartitions: Int) extends RDD[Row](sc, Nil) {
+
+  private val part: Partitioner = new ColumnPartitioner(numPartitions)
+
+  private var serializer: Option[Serializer] = None // TDOD use tungsten or Spark inbuilt . Will be easy once this transform into a SparkPlan
+
+  override val partitioner = Some(part)
+
+  override def getDependencies: Seq[Dependency[_]] = {
+    if(preservePartitioning && prev.partitions.length != numPartitions){
+      throw new RuntimeException(s"Preserve partitions can be set if partition of input dataset is equal to partitions of table ")
+    }
+    if (prev.partitioner == Some(part) || preservePartitioning || !partitionColumn.isDefined) {
+      logDebug("Adding one-to-one dependency with " + prev)
+      List(new OneToOneDependency(prev))
+    } else {
+      logDebug("Adding shuffle dependency with " + prev)
+      //TDOD make this code as part of a SparkPlan so that we can map this to batch inserts and also can use Spark's code-gen feature.
+      //See Exchange.scala for more details
+      val rddWithPartitionIds: RDD[Product2[Int, Row]] = {
+
+        val partOrdinal = schema.getFieldIndex(partitionColumn.get.toUpperCase).getOrElse {
+          throw new RuntimeException(s"Partition column ${partitionColumn.get} not found in schema $schema")
+        }
+
+        val field = schema.find(_.name == partitionColumn.get.toUpperCase).getOrElse {
+          throw new RuntimeException(s"Partition column ${partitionColumn.get} not found in schema $schema")
+        }
+        prev.mapPartitions { iter =>
+          val mutablePair = new MutablePair[Int, Row]()
+          iter.map { row => mutablePair.update(part.getPartition(row.get(partOrdinal)), row) }
+        }
+      }
+
+      List(new ShuffleDependency[Int, Row, Row](rddWithPartitionIds, part, serializer))
+    }
+  }
+
+  /**
+   * :: DeveloperApi ::
+   * Implemented by subclasses to compute a given partition.
+   */
+  override def compute(split: Partition, context: TaskContext): Iterator[Row] = {
+
+    val dep = dependencies.head
+    dep match {
+      case oneToOneDependency: OneToOneDependency[_] =>
+        val dependencyPartition = split.asInstanceOf[CoGroupExecutorLocalPartition].narrowDep.get.split
+        oneToOneDependency.rdd.iterator(dependencyPartition, context).asInstanceOf[Iterator[Row]]
+
+      case shuffleDependency: ShuffleDependency[_, _, _] =>
+        SparkEnv.get.shuffleManager.getReader(shuffleDependency.shuffleHandle, split.index, split.index + 1, context)
+          .read()
+          .asInstanceOf[Iterator[Product2[Int, Row]]]
+          .map(_._2)
+
+    }
+  }
+
+  override def getPreferredLocations(split: Partition): Seq[String] = {
+    Seq(split.asInstanceOf[CoGroupExecutorLocalPartition].hostExecutorId)
+  }
+
+  private lazy val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sc).
+    keySet.zipWithIndex
+
+  private lazy val hostSet = numberedPeers.map(m => {
+    Tuple2(m._1.host, m._1)
+  }).toMap
+
+  private lazy val localBackend = sc.schedulerBackend match {
+    case lb: LocalBackend => true
+    case _ => false
+  }
+
+  /**
+   * Implemented by subclasses to return the set of partitions in this RDD. This method will only
+   * be called once, so it is safe to implement a time-consuming computation in it.
+   */
+  override protected def getPartitions: Array[Partition] = {
+    val conn = getConnection()
+    val tableSchema = conn.getSchema
+    val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+
+    if (region.isInstanceOf[PartitionedRegion]) {
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+      val numPartitions = region.getTotalNumberOfBuckets
+      val partitions = new Array[Partition](numPartitions)
+
+      for (p <- 0 until numPartitions) {
+        val distMember = region.getBucketPrimary(p)
+        partitions(p) = getPartition(p, distMember)
+      }
+      partitions
+    } else {
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
+      val partitions = new Array[Partition](prev.partitions.length)
+
+      val member = Misc.getGemFireCache.getDistributedSystem.getDistributedMember //TODO proper primary/secondary How to get
+
+      for (p <- 0 until partitions.length) {
+        val distMember = member.asInstanceOf[InternalDistributedMember]
+        partitions(p) = getPartition(p, distMember)
+      }
+      partitions
+    }
+  }
+
+  private def getPartition(index: Int, distMember: InternalDistributedMember): Partition = {
+    //TODO there should be a cleaner way to translate GemFire membership IDs to BlockManagerIds
+    //TODO apart from primary members secondary nodes should also be included in preferred node list
+
+    val prefNode = if (localBackend) {
+      Option(hostSet.head._2)
+    } else {
+      hostSet.get(distMember.getIpAddress.getHostAddress)
+    }
+    val narrowDep = dependencies.head match {
+      case s: ShuffleDependency[_, _, _] =>
+        None
+      case _ =>
+        Some(new NarrowExecutorLocalSplitDep(prev, index, prev.partitions(index)))
+    }
+    new CoGroupExecutorLocalPartition(index, prefNode.get, narrowDep)
+  }
+}
+
+/**
+ * :: DeveloperApi ::
+ * Used by test code to determine dependency..
+ */
+object StoreRDD{
+
+  def apply(sc: SparkContext, prev: RDD[Row], schema : StructType, partitionColumn: Option[String], preservePartitioning: Boolean, numPartitions: Int) : StoreRDD = {
+   new StoreRDD(
+      sc,
+      prev,
+      "",
+      null,
+      schema,
+      partitionColumn,
+      preservePartitioning,
+      numPartitions
+    )
+  }
+}
+
+
+
