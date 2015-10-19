@@ -2,9 +2,11 @@ package io.snappydata.tools
 
 import java.io.{File, IOException}
 
+import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
-import com.pivotal.gemfirexd.tools.GfxdUtilLauncher
+import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdDistributionLocator, GfxdUtilLauncher}
+import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
 import io.snappydata.LocalizedMessages
 
 /**
@@ -16,6 +18,10 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
   protected override def getTypes() : java.util.Map[String, GemFireUtilLauncher#CommandEntry] = {
     val types = super.getTypes()
+
+    types.put("server", new CommandEntry(classOf[ServerLauncher], LocalizedResource.getMessage("UTIL_Server_Usage"), false))
+    types.put("locator", new CommandEntry(classOf[LocatorLauncher], LocalizedResource.getMessage("UTIL_Locator_Usage"), false))
+
 
     types.put("leader", new CommandEntry(classOf[LeaderLauncher],
       LocalizedMessages.res.getTextMessage("UTIL_Leader_Usage"), false))

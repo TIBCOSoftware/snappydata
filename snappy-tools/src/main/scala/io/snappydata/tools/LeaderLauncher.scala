@@ -1,19 +1,16 @@
 package io.snappydata.tools
 
-import java.util
 import java.util.Properties
 
-import scala.collection.JavaConversions._
-import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.cache.Cache
-import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
-import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
+import com.pivotal.gemfirexd.FabricService
+import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
-import io.snappydata.LocalizedMessages
+import io.snappydata.{Lead, LocalizedMessages, ServiceManager}
 import org.slf4j.LoggerFactory
-import spark.jobserver.JobServer
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Extending server launcher to init Jobserver as part of lead
@@ -25,18 +22,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   val genericLogger = LoggerFactory.getLogger(getClass)
 
-  private val LOCK_SERVICE_NAME = "__PRIMARY_LEADER_LS"
-
-  val LEADER_SERVERGROUP = "IMPL_LEADER_SERVERGROUP"
-
-  private var gfCache: Option[Cache] = None
-
-  private lazy val dls = initPrimaryLeaderLockService()
-
-  private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
-    LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
-    DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
-
+  @throws(classOf[Exception])
+  override protected def getFabricServiceInstance: FabricService = ServiceManager.getLeadInstance
 
   def initStartupArgs(args: ArrayBuffer[String]) = {
 
@@ -53,8 +40,6 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
     args(0).equalsIgnoreCase("start") match {
       case true =>
-        changeOrAppend(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
-        changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", true)
         changeOrAppend(GfxdServerLauncher.RUN_NETSERVER, "false", true)
       case _ =>
     }
@@ -67,46 +52,31 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   }
 
   @throws(classOf[Exception])
-  override protected def startAdditionalServices(cache: Cache, options: java.util.Map[String, Object], props: Properties): Unit = {
+  override protected def startAdditionalServices(cache: Cache,
+                                                 options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.
     // We don't want to init net-server in leader.
+    val leadInst = getFabricServiceInstance.asInstanceOf[Lead];
 
-    gfCache = Some(cache)
+    do {
+      leadInst.startPrimaryServices()
 
-    super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STANDBY, getProcessId))
-
-    // wait for Leader's primary DLock
-    primaryLeaderLock.lockInterruptibly()
-
-    if (!gfCache.get.getDistributedSystem.isConnected) {
-      return
-    }
-
-    genericLogger.info("Starting job server...")
-
-    super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STARTING, getProcessId))
-
-    startJobServer(options.toMap, props)
+      leadInst.getPrimaryServiceStatus() match {
+        case State.STARTING =>
+          Thread.sleep(1000)
+        case State.STANDBY =>
+          super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STANDBY, getProcessId))
+          leadInst.waitForPrimaryDeparture()
+        case State.RUNNING =>
+          super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.RUNNING, getProcessId))
+          return
+        case v =>
+          super.writeStatus(CacheServerLauncher.createStatus(this.baseName, getStatus.state, getProcessId, "Unknown Leader Primary Service Status " + v, null))
+      }
+    } while (true)
   }
-
 
   override protected def getBaseName (name: String) = "snappyleader"
-
-  def initPrimaryLeaderLockService() = {
-    val dSys = gfCache.map(_.getDistributedSystem.asInstanceOf[InternalDistributedSystem]).getOrElse {
-      throw new Exception("GemFire Cache not initialized")
-    }
-
-    DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
-  }
-
-  def startJobServer(options: Map[String, AnyRef], props: Properties): Unit = {
-    val args = options.filter({ case (k, _) => k.equalsIgnoreCase("jobserver.config") })
-        .map({ case (_, v) => v.asInstanceOf[String] }).toArray
-
-    JobServer.main(args)
-  }
-
 }
 
 object LeaderLauncher {

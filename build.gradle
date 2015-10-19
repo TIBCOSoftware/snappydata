@@ -98,6 +98,9 @@ subprojects {
     } else {
       main = mainClass
     }
+    if (project.hasProperty('params')) {
+      args = params.split(",") as List
+    }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
     jvmArgs = [ '-Xmx2g', '-XX:MaxPermSize=512m' ]
   }

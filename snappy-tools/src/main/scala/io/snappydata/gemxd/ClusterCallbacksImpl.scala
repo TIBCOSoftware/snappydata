@@ -1,6 +1,6 @@
 package io.snappydata.gemxd
 
-import com.pivotal.gemfirexd.internal.snappy.ClusterCallbacks
+import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks}
 import io.snappydata.cluster.ExecutorInitiator
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 
@@ -25,4 +25,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks {
       case None => null
     }
   }
+}
+
+/**
+ * Created by soubhikc on 19/10/15.
+ */
+trait ClusterCallback {
+  CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
 }

@@ -18,13 +18,14 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
 
   override def beforeAll(): Unit = {
-    val f = new java.io.File("snappy-loc-dir");
+    val f = new java.io.File("tests-snappy-loc-dir");
     f.mkdir()
     System.setProperty("gemfire.CacheServerLauncher.dontExitAfterLaunch", "true")
 
     GfxdDistributionLocator.main(Array(
       "start",
       "-dir=" + f.getAbsolutePath,
+      s"-peer-discovery-address=localhost",
       s"-peer-discovery-port=${availablePort}"
     ))
   }
@@ -32,14 +33,14 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   override def afterAll(): Unit = {
     GfxdDistributionLocator.main(Array(
       "stop",
-      "-dir=snappy-loc-dir"
+      "-dir=tests-snappy-loc-dir"
     ))
-    new java.io.File("snappy-loc-dir").delete()
+    new java.io.File("tests-snappy-loc-dir").delete()
     System.setProperty("gemfire.CacheServerLauncher.dontExitAfterLaunch", "false")
   }
 
   test("simple leader launch") {
-    val dirname = "snappy-leader"
+    val dirname = "tests-snappy-leader"
     new java.io.File(dirname).mkdir()
     val stream = new ByteArrayOutputStream()
 
@@ -108,8 +109,8 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
 
-    val leader1 = new conf("snappy-leader-1").createDir()
-    val leader2 = new conf("snappy-leader-2").createDir()
+    val leader1 = new conf("tests-snappy-leader-1").createDir()
+    val leader2 = new conf("tests-snappy-leader-2").createDir()
     val currentOut = System.out
 
     val start = Try {
