@@ -5,6 +5,7 @@ import java.sql.{Blob, Connection, PreparedStatement, ResultSet}
 import java.util.concurrent.locks.ReentrantLock
 
 import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.sql.store.util.StoreUtils
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -50,14 +51,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 
   }
 
-  def lookupName(tableName :String, schema : String): String ={
-    val lookupName = {
-      if (tableName.indexOf(".") <= 0) {
-        schema + "." + tableName
-      } else tableName
-    }.toUpperCase
-    lookupName
-  }
+
 
   def getCachedBatchRDD(tableName: String,
                         requiredColumns: Array[String],
@@ -87,7 +81,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
       val uuid = connectionType match {
 
         case ConnectionType.Embedded =>
-          val resolvedName = lookupName(tableName,connection.getSchema)
+          val resolvedName = StoreUtils.lookupName(tableName,connection.getSchema)
           val region = Misc.getRegionForTable(resolvedName, true)
           region.asInstanceOf[AbstractRegion] match {
             case pr: PartitionedRegion =>
@@ -292,7 +286,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     store.tryExecute(tableName, {
       case conn =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
-        val resolvedName = store.lookupName(tableName, schema)
+        val resolvedName = StoreUtils.lookupName(tableName, schema)
         //val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val par = split.index
 //        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
@@ -310,33 +304,6 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
-    val resolvedName = store.lookupName(tableName, schema)
-    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-    val numPartitions = 1 //region.getTotalNumberOfBuckets
-    val partitions = new Array[Partition](numPartitions)
-
-    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
-    val hostSet = numberedPeers.map(m => {
-      Tuple2(m._1.host , m._1)
-    }).toMap
-
-    val localBackend = sparkContext.schedulerBackend match {
-      case lb: LocalBackend => true
-      case _ => false
-    }
-
-    for (p <- 0 until numPartitions) {
-      //TODO there should be a cleaner way to translate GemFire membership IDs to BlockManagerIds
-      //TODO apart from primary members secondary nodes should also be included in preferred node list
-      val distMember = region.getBucketPrimary(p)
-      val prefNode = if(localBackend){
-        Option(hostSet.head._2)
-      }else{
-        hostSet.get(distMember.getIpAddress.getHostAddress)
-      }
-      partitions(p) = new ExecutorLocalPartition(p, prefNode.get)
-    }
-    partitions
+    StoreUtils.getPartitionsPartitionedTable(_sc, tableName, schema)
   }
 }

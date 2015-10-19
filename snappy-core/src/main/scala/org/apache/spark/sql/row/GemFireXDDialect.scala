@@ -35,6 +35,8 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
         props
     }
   }
+
+
 }
 
 /**
@@ -131,7 +133,21 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   }
 
   override def initializeTable(tableName: String, conn: Connection): Unit = {
-    JdbcExtendedUtils.executeUpdate(
-      s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
+    try {
+      val stmt = conn.createStatement()
+      val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='$tableName'")
+      val result = if (rs.next()) rs.getString(1) else null
+      if(!result.equalsIgnoreCase("REPLICATE")){
+        JdbcExtendedUtils.executeUpdate(
+          s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
+      }
+      rs.close()
+      stmt.close()
+      result
+    } catch {
+      case NonFatal(e) => null
+    }
+
   }
+
 }
