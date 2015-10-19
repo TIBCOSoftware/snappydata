@@ -12,7 +12,7 @@ import org.apache.spark.sql._
  */
 class RowRelationAPISuite extends FunSuite with Logging {
 
-  private val testSparkContext = SnappySQLContext.sparkContext
+  private val sc = SnappySQLContext.sparkContext
 
   val props = Map(
     "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
@@ -23,12 +23,9 @@ class RowRelationAPISuite extends FunSuite with Logging {
   )
 
 
-  /*test("Create replicated row table with DataFrames") {
+  test("Create replicated row table with DataFrames") {
 
-    import org.apache.spark.sql._
     val snc = org.apache.spark.sql.SnappyContext(sc)
-    case class TestData(i:Int, j: String)
-
     val rdd = sc.parallelize((1 to 1000).map(i => TestData(i, s"$i")))
     val dataDF = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS row_table1")
@@ -37,12 +34,12 @@ class RowRelationAPISuite extends FunSuite with Logging {
     val countdf = snc.sql("select * from row_table1")
     val count = countdf.count()
     assert(count === 1000)
-  }*/
+  }
 
   test("Test Partitioned row tables") {
-    val snc = org.apache.spark.sql.SnappyContext(testSparkContext)
+    val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    val rdd = testSparkContext.parallelize(
+    val rdd = sc.parallelize(
       (1 to 1000).map(i => TestData(i, i.toString)))
 
     val dataDF = snc.createDataFrame(rdd)
@@ -52,7 +49,7 @@ class RowRelationAPISuite extends FunSuite with Logging {
         "USING row " +
         "options " +
         "(" +
-         "partitionColumn 'OrderId'," +
+        "partitionColumn 'OrderId'," +
         "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'," +
         "URL 'jdbc:gemfirexd:;mcast-port=33620;user=app;password=app;persist-dd=false')")
 
@@ -64,30 +61,30 @@ class RowRelationAPISuite extends FunSuite with Logging {
     assert(count === 1000)
   }
 
-  /*test("Test PreserverPartition on  row tables") {
-    val snc = org.apache.spark.sql.SnappyContext(testSparkContext)
+  test("Test PreserverPartition on  row tables") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
 
 
-    val rdd = testSparkContext.parallelize(1 to 1000 ,113).map(i => TestData(i, i.toString))
+    val rdd = sc.parallelize(1 to 1000, 113).map(i => TestData(i, i.toString))
 
-  val k= 113
+    val k = 113
     val dataDF = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS row_table3")
 
     val df = snc.sql("CREATE TABLE row_table3(OrderId INT NOT NULL,ItemId INT) PARTITION BY COLUMN (OrderId) " +
-      "USING row " +
-      "options " +
-      "(" +
-      "partitionColumn 'OrderId'," +
-      "preservepartitions 'true',"+
-      "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'," +
-      "URL 'jdbc:gemfirexd:;mcast-port=33620;user=app;password=app;persist-dd=false')")
+        "USING row " +
+        "options " +
+        "(" +
+        "partitionColumn 'OrderId'," +
+        "preservepartitions 'true'," +
+        "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'," +
+        "URL 'jdbc:gemfirexd:;mcast-port=33620;user=app;password=app;persist-dd=false')")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table3")
     val countdf = snc.sql("select * from row_table3")
     val count = countdf.count()
     assert(count === 1000)
   }
-*/
+
 
 }

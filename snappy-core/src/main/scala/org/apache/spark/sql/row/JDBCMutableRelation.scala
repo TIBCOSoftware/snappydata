@@ -71,7 +71,7 @@ class JDBCMutableRelation(
   def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
     try {
-      println("connProps = " + connProperties)
+
       conn = JdbcUtils.createConnection(url, connProperties)
       var tableExists = JdbcExtendedUtils.tableExists(conn, table,
         dialect, sqlContext)
