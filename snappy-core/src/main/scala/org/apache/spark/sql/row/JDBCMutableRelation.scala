@@ -45,7 +45,7 @@ class JDBCMutableRelation(
 
   val driver = DriverRegistry.getDriverClassName(url)
 
-  private[this] val poolProperties = ExternalStoreUtils
+  val poolProperties = ExternalStoreUtils
       .getAllPoolProperties(url, driver, _poolProps, hikariCP)
 
   final val dialect = JdbcDialects.get(url)
@@ -70,6 +70,7 @@ class JDBCMutableRelation(
   def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
     try {
+
       conn = JdbcUtils.createConnection(url, connProperties)
       var tableExists = JdbcExtendedUtils.tableExists(conn, table,
         dialect, sqlContext)
@@ -99,7 +100,11 @@ class JDBCMutableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val sql = s"CREATE TABLE $table $userSpecifiedString"
+        println(sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
+        dialect match {
+          case d: JdbcExtendedDialect => d.initializeTable(table, conn)
+        }
       }
     } catch {
       case sqle: java.sql.SQLException =>
@@ -267,6 +272,7 @@ object JDBCMutableRelation extends Logging {
         case cnfe: ClassNotFoundException =>
           logWarning(s"Couldn't find driver class $driver", cnfe)
       }
+      println(poolProps)
       ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
     }
   }
@@ -368,22 +374,20 @@ object JDBCMutableRelation extends Logging {
   }
 }
 
-final class DefaultSource
-    extends ExternalSchemaRelationProvider
-    with SchemaRelationProvider
-    with RelationProvider
-    with CreatableRelationProvider {
-
+class MutableRelationProvider extends ExternalSchemaRelationProvider
+                     with SchemaRelationProvider
+                     with RelationProvider
+                     with CreatableRelationProvider {
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String) = {
+                              options: Map[String, String], schema: String) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
     val url = parameters.remove("url")
-        .getOrElse(sys.error("JDBC URL option 'url' not specified"))
+      .getOrElse(sys.error("JDBC URL option 'url' not specified"))
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+      .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
     val driver = parameters.remove("driver")
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
@@ -404,8 +408,8 @@ final class DefaultSource
       case Some("tomcat") => false
       case Some(p) =>
         throw new IllegalArgumentException("JDBCUpdatableRelation: " +
-            s"unsupported pool implementation '$p' " +
-            s"(supported values: tomcat, hikari)")
+          s"unsupported pool implementation '$p' " +
+          s"(supported values: tomcat, hikari)")
       case None => false
     }
     val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
@@ -423,7 +427,7 @@ final class DefaultSource
     } else {
       if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
         throw new IllegalArgumentException("JDBCUpdatableRelation: " +
-            "incomplete partitioning specified")
+          "incomplete partitioning specified")
       }
       JDBCPartitioningInfo(
         partitionColumn.get,
@@ -442,28 +446,28 @@ final class DefaultSource
   }
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
+                              options: Map[String, String], schema: StructType) = {
     val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
     val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+      .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     createRelation(sqlContext, mode, options, schemaString)
   }
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String]) = {
+                              options: Map[String, String]) = {
     val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+      .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     // will work only if table is already existing
     createRelation(sqlContext, mode, options, "")
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], data: DataFrame) = {
+                              options: Map[String, String], data: DataFrame) = {
     val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
@@ -472,4 +476,10 @@ final class DefaultSource
     relation.insert(data)
     relation
   }
+}
+
+final class DefaultSource
+  extends MutableRelationProvider {
+
+
 }

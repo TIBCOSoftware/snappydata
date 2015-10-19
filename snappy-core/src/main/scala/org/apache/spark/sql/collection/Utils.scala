@@ -17,6 +17,8 @@
 
 package org.apache.spark.sql.collection
 
+import java.io.{ObjectOutputStream, IOException}
+
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
 import scala.collection.{Map => SMap, Traversable, mutable}
 import scala.reflect.ClassTag
@@ -30,6 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, AnalysisException, Row}
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.util.Utils
 import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext, Partitioner}
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
@@ -386,4 +389,40 @@ class ExecutorLocalPartition(override val index: Int,
   def hostExecutorId = Utils.getHostExecutorId(blockId)
 
   override def toString = s"ExecutorLocalPartition($index, $blockId)"
+}
+
+
+private[spark] case class NarrowExecutorLocalSplitDep(
+    @transient rdd: RDD[_],
+    @transient splitIndex: Int,
+    var split: Partition
+    ) extends Serializable {
+
+  @throws(classOf[IOException])
+  private def writeObject(oos: ObjectOutputStream): Unit = org.apache.spark.util.Utils.tryOrIOException {
+    // Update the reference to parent split at the time of task serialization
+    split = rdd.partitions(splitIndex)
+    oos.defaultWriteObject()
+  }
+}
+
+/**
+ * Stores information about the narrow dependencies used by a StoreRDD.
+ *
+ * @param narrowDep maps to the dependencies variable in the parent RDD: for each one to one
+ *                   dependency in dependencies, narrowDeps has a NarrowExecutorLocalSplitDep (describing
+ *                   the partition for that dependency) at the corresponding index. The size of
+ *                   narrowDeps should always be equal to the number of parents.
+ */
+private[spark] class CoGroupExecutorLocalPartition(
+    idx: Int, val blockId: BlockManagerId, val narrowDep: Option[NarrowExecutorLocalSplitDep])
+    extends Partition with Serializable {
+
+  override val index: Int = idx
+
+  def hostExecutorId = Utils.getHostExecutorId(blockId)
+
+  override def toString = s"CoGroupExecutorLocalPartition($index, $blockId)"
+
+  override def hashCode(): Int = idx
 }
