@@ -69,47 +69,12 @@ class JDBCAppendableRelation(
     }
   }
 
-
-
-//  val partitionFilters: Seq[Expression] = {
-//    predicates.flatMap { p =>
-//      val filter = buildFilter.lift(p)
-//      val boundFilter =
-//        filter.map(
-//          BindReferences.bindReference(
-//            _,
-//            relation.partitionStatistics.schema,
-//            allowFailures = true))
-//
-//      boundFilter.foreach(_ =>
-//        filter.foreach(f => logInfo(s"Predicate $p generates partition filter: $f")))
-//
-//      // If the filter can't be resolved then we are missing required statistics.
-//      boundFilter.filter(_.resolved)
-//    }
-//  }
-
   override def schema: StructType = userSchema
 
-  lazy val enableAccumulators: Boolean =
-    sqlContext.getConf("spark.sql.inMemoryTableScanStatistics.enable", "false").toBoolean
-
-  // Accumulators used for testing purposes
-  lazy val readPartitions: Accumulator[Int] = sqlContext.sparkContext.accumulator(0)
-  lazy val readBatches: Accumulator[Int] = sqlContext.sparkContext.accumulator(0)
-
-  private val inMemoryPartitionPruningEnabled = false //sqlContext.conf.inMemoryPartitionPruning
-
-
-  // currently doesn't apply any filters.
+  // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-
-    if (enableAccumulators) {
-      readPartitions.setValue(0)
-      readBatches.setValue(0)
-    }
 
     def cachedColumnBuffers: RDD[CachedBatch] = readLock {
       externalStore.getCachedBatchRDD(table, requiredColumns.map(column=> columnPrefix + column), uuidList,
@@ -117,10 +82,6 @@ class JDBCAppendableRelation(
     }
 
     cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
-      //           val partitionFilter = newPredicate(
-      //             partitionFilters.reduceOption(And).getOrElse(Literal(true)),
-      //              relation.partitionStatistics.schema)
-
       // Find the ordinals and data types of the requested columns.  If none are requested, use the
       // narrowest (the field with minimum default element size).
       val (requestedColumnIndices, requestedColumnDataTypes) = if (requiredColumns.isEmpty) {
@@ -136,7 +97,6 @@ class JDBCAppendableRelation(
           schema.getFieldIndex(a).get -> schema(a).dataType
         }.unzip
       }
-
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
 
       def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
@@ -147,7 +107,6 @@ class JDBCAppendableRelation(
               schema.fields(batchColumnIndex).dataType,
               ByteBuffer.wrap(cachedBatch.buffers(batchColumnIndex)))
           }
-
           // Extract rows via column accessors
           new Iterator[InternalRow] {
             private[this] val rowLen = nextRow.numFields
@@ -160,46 +119,14 @@ class JDBCAppendableRelation(
               }
               if (requiredColumns.isEmpty) InternalRow.empty else nextRow
             }
-
             override def hasNext: Boolean = columnAccessors(0).hasNext
           }
         }
-
-        if (rows.hasNext && enableAccumulators) {
-          readPartitions += 1
-        }
-
         val converter = CatalystTypeConverters.createToScalaConverter(schema)
         rows.map(converter(_).asInstanceOf[Row])
       }
-
-      // Do partition batch pruning if enabled
-      val cachedBatchesToScan =
-      //        if (inMemoryPartitionPruningEnabled) {
-      //          cachedBatchIterator.filter { cachedBatch =>
-      //            if (!partitionFilter(cachedBatch.stats)) {
-      //              def statsString: String = relation.partitionStatistics.schema.zipWithIndex.map {
-      //                case (a, i) =>
-      //                  val value = cachedBatch.stats.get(i, a.dataType)
-      //                  s"${a.name}: $value"
-      //              }.mkString(", ")
-      //              logInfo(s"Skipping partition based on stats $statsString")
-      //              false
-      //            } else {
-      //              if (enableAccumulators) {
-      //                readBatches += 1
-      //              }
-      //              true
-      //            }
-      //          }
-      //        } else {
-        cachedBatchIterator
-      //}
-
-      cachedBatchesToRows(cachedBatchesToScan)
+      cachedBatchesToRows(cachedBatchIterator)
     }
-
-
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
@@ -361,7 +288,7 @@ class JDBCAppendableRelation(
     })
   }
 
-  /**
+  /** TODO: Suranjan Throw an Exception
    * Delete a set of row matching given criteria.
    * @param filterExpr SQL WHERE criteria to select rows that will be deleted
    * @return number of rows deleted
