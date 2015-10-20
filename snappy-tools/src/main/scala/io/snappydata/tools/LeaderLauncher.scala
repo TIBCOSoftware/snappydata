@@ -7,6 +7,7 @@ import com.gemstone.gemfire.internal.cache.CacheServerLauncher
 import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
+import io.snappydata.impl.LeadImpl
 import io.snappydata.{Lead, LocalizedMessages, ServiceManager}
 import org.slf4j.LoggerFactory
 
@@ -32,7 +33,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
     def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {
       args.indexWhere(_.indexOf(attr) > 0) match {
         case -1 => args += s"""-${attr}=${value}"""
-        case idx if overwrite => args(idx) =  args(idx).takeWhile(_ != '=') + s"""=${value}"""
+        case idx if overwrite => args(idx) = args(idx).takeWhile(_ != '=') + s"""=${value}"""
         case idx => args(idx) = args(idx) ++ s""",${value}"""
       }
     }
@@ -56,27 +57,33 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
                                                  options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.
     // We don't want to init net-server in leader.
-    val leadInst = getFabricServiceInstance.asInstanceOf[Lead];
 
-    do {
-      leadInst.startPrimaryServices()
+    // disabling net server startup etc.
 
-      leadInst.getPrimaryServiceStatus() match {
-        case State.STARTING =>
-          Thread.sleep(1000)
-        case State.STANDBY =>
-          super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STANDBY, getProcessId))
-          leadInst.waitForPrimaryDeparture()
-        case State.RUNNING =>
-          super.writeStatus(CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.RUNNING, getProcessId))
-          return
-        case v =>
-          super.writeStatus(CacheServerLauncher.createStatus(this.baseName, getStatus.state, getProcessId, "Unknown Leader Primary Service Status " + v, null))
-      }
-    } while (true)
+    getFabricServiceInstance.status() match {
+      case State.STARTING =>
+        Thread.sleep(1000)
+      case State.STANDBY =>
+        status = CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STANDBY, getProcessId)
+        genericLogger.info("Parking this lead node in standby mode")
+
+        val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
+        leadImpl.notifyWhenPrimary { case _ =>
+          indicatePrimaryStatus
+        }
+      case _ =>
+        return
+    }
+
   }
 
-  override protected def getBaseName (name: String) = "snappyleader"
+  def indicatePrimaryStatus(): Unit = {
+    genericLogger.info("Becoming primary Lead Node in absence of existing primary.")
+    status = CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.RUNNING, getProcessId)
+    writeStatus(status)
+  }
+
+  override protected def getBaseName(name: String) = "snappyleader"
 }
 
 object LeaderLauncher {
