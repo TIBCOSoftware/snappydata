@@ -15,6 +15,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.{NarrowExecutorLocalSplitDep, CoGroupExecutorLocalPartition}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.{ MutablePair}
 
 /**
@@ -38,6 +39,7 @@ class StoreRDD(@transient sc: SparkContext,
                schema: StructType,
                partitionColumn: Option[String],
                preservePartitioning: Boolean,
+               blockMap : Map[InternalDistributedMember, BlockManagerId],
                numPartitions: Int) extends RDD[Row](sc, Nil) {
 
   private val part: Partitioner = new ColumnPartitioner(numPartitions)
@@ -101,14 +103,8 @@ class StoreRDD(@transient sc: SparkContext,
     Seq(split.asInstanceOf[CoGroupExecutorLocalPartition].hostExecutorId)
   }
 
-  private lazy val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sc).
-    keySet.zipWithIndex
 
-  private lazy val hostSet = numberedPeers.map(m => {
-    Tuple2(m._1.host, m._1)
-  }).toMap
-
-  private lazy val localBackend = sc.schedulerBackend match {
+  lazy val localBackend = sc.schedulerBackend match {
     case lb: LocalBackend => true
     case _ => false
   }
@@ -137,7 +133,12 @@ class StoreRDD(@transient sc: SparkContext,
       val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
       val partitions = new Array[Partition](prev.partitions.length)
 
-      val member = Misc.getGemFireCache.getDistributedSystem.getDistributedMember //TODO proper primary/secondary How to get
+      val member = if (localBackend){
+        Misc.getGemFireCache.getDistributedSystem.getDistributedMember
+      } else {
+        Misc.getGemFireCache.getMembers(region).iterator().next()
+      }
+
 
       for (p <- 0 until partitions.length) {
         val distMember = member.asInstanceOf[InternalDistributedMember]
@@ -148,14 +149,9 @@ class StoreRDD(@transient sc: SparkContext,
   }
 
   private def getPartition(index: Int, distMember: InternalDistributedMember): Partition = {
-    //TODO there should be a cleaner way to translate GemFire membership IDs to BlockManagerIds
-    //TODO apart from primary members secondary nodes should also be included in preferred node list
 
-    val prefNode = if (localBackend) {
-      Option(hostSet.head._2)
-    } else {
-      hostSet.get(distMember.getIpAddress.getHostAddress)
-    }
+    val prefNode = blockMap.get(distMember)
+
     val narrowDep = dependencies.head match {
       case s: ShuffleDependency[_, _, _] =>
         None
@@ -181,6 +177,7 @@ object StoreRDD{
       schema,
       partitionColumn,
       preservePartitioning,
+      null,
       numPartitions
     )
   }

@@ -101,7 +101,7 @@ class JDBCMutableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val sql = s"CREATE TABLE $table $userSpecifiedString"
-        println(sql)
+        logInfo("Applying DDL : "+ sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table, conn)
@@ -283,7 +283,6 @@ object JDBCMutableRelation extends Logging {
         case cnfe: ClassNotFoundException =>
           logWarning(s"Couldn't find driver class $driver", cnfe)
       }
-      println(poolProps)
       ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
     }
   }

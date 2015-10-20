@@ -3,8 +3,10 @@ package org.apache.spark.sql.rowtable
 
 import java.util.Properties
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
+import org.apache.spark.scheduler.cluster.{CoarseGrainedSchedulerBackend, SnappyCoarseGrainedSchedulerBackend}
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
@@ -12,12 +14,15 @@ import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.jdbc.JdbcDialects
 
 import org.apache.spark.sql.row.{MutableRelationProvider, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{StoreInitRDD, StoreRDD}
+import org.apache.spark.sql.store.util.StoreUtils
+import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD, StoreRDD}
+import org.apache.spark.storage.BlockManagerId
 
-import org.apache.spark.{ Partition}
+import org.apache.spark.{AccumulatorParam, Partition}
 
 import scala.collection.mutable
 
@@ -39,6 +44,7 @@ class RowFormatRelation(
                          override val connProperties: Properties,
                          override val hikariCP: Boolean,
                          override val origOptions: Map[String, String],
+                         blockMap : Map[InternalDistributedMember, BlockManagerId],
                          @transient override val sqlContext: SQLContext)
   extends JDBCMutableRelation(url,
     table,
@@ -55,7 +61,7 @@ class RowFormatRelation(
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
   override def buildScan(requiredColumns: Array[String],
-                         filters: Array[Filter]): RDD[Row] = {
+      filters: Array[Filter]): RDD[Row] = {
     connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
@@ -67,7 +73,9 @@ class RowFormatRelation(
           requiredColumns,
           filters,
           parts,
-          connProperties).asInstanceOf[RDD[Row]]
+          blockMap,
+          connProperties
+        ).asInstanceOf[RDD[Row]]
 
       case ConnectionType.Net => // TODO Non-Embedded RDD will come here
         new JDBCRDD(
@@ -93,6 +101,7 @@ class RowFormatRelation(
       schema,
       partitionColumn,
       preservepartitions,
+      blockMap,
       buckets
     )
     val storeDF = sqlContext.createDataFrame(storeRDD, schema)
@@ -161,15 +170,14 @@ final class DefaultSource
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
 
     val sc = sqlContext.sparkContext
-    val runStoreInit = sc.schedulerBackend match {
-      case snb: SnappyCoarseGrainedSchedulerBackend => false
-      case lb : LocalBackend => false
-      case _ => true
-    }
-    if(runStoreInit){
-      new StoreInitRDD(sc, url, connProps).collect()
-    }
 
+    val blockMap = StoreUtils.initStore(sc, url, connProps)
+
+    val dialect = JdbcDialects.get(url)
+    dialect match {
+      case d: JdbcExtendedDialect =>
+        connProps.putAll(d.extraCreateTableProperties(SnappyContext(sc).isLoner))
+    }
 
     new RowFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -184,6 +192,8 @@ final class DefaultSource
       connProps,
       hikariCP,
       options,
+      blockMap,
       sqlContext)
   }
 }
+

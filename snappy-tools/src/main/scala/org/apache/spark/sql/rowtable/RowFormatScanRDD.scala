@@ -4,6 +4,7 @@ import java.sql.{ResultSet, Connection}
 import java.util.Properties
 
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.commons.lang3.StringUtils
@@ -15,8 +16,9 @@ import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.{Decimal, StructType}
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{SparkContext, TaskContext, Partition}
+import org.apache.spark.{AccumulatorParam, SparkContext, TaskContext, Partition}
 
 
 /**
@@ -30,6 +32,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
                        columns: Array[String],
                        filters: Array[Filter],
                        partitions: Array[Partition],
+                       blockMap : Map[InternalDistributedMember, BlockManagerId],
                        properties: Properties)
   extends JDBCRDD(sc, getConnection, schema, tableName, columns, filters, partitions, properties) {
 
@@ -240,9 +243,9 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
     val region = Misc.getRegionForTable(resolvedName, true)
     if (region.isInstanceOf[PartitionedRegion]) {
-      StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema)
+      StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
     } else {
-      StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema)
+      StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
     }
   }
 }

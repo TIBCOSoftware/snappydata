@@ -304,6 +304,6 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
-    StoreUtils.getPartitionsPartitionedTable(_sc, tableName, schema)
+    StoreUtils.getPartitionsPartitionedTable(_sc, tableName, schema, null)
   }
 }

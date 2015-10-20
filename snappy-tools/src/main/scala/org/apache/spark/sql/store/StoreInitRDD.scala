@@ -2,21 +2,27 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.ExecutorLocalPartition
-import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import org.apache.spark.sql.sources.JdbcExtendedDialect
-import org.apache.spark.{TaskContext, Partition, SparkContext}
+import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.{Accumulator, AccumulatorParam, SparkEnv, TaskContext, Partition, SparkContext}
 import org.apache.spark.rdd.RDD
 
 /**
  * Created by rishim on 18/10/15.
  */
-class StoreInitRDD(sc : SparkContext, url : String,  val connProperties: Properties) extends  RDD[InternalRow](sc,Nil){
+class StoreInitRDD(sc : SparkContext, url : String,
+                  val connProperties: Properties)
+                  (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
+                   extends  RDD[InternalRow](sc,Nil){
 
   val snc = SnappyContext(sc)
   val driver = DriverRegistry.getDriverClassName(url)
@@ -41,6 +47,7 @@ class StoreInitRDD(sc : SparkContext, url : String,  val connProperties: Propert
     }
     val conn = JdbcUtils.createConnection(url, connProperties)
     conn.close()
+    param += Map(Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)
     Iterator.empty
   }
 

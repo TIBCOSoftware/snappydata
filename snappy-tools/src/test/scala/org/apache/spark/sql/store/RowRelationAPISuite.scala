@@ -54,7 +54,7 @@ class RowRelationAPISuite extends FunSuite with Logging {
         "URL 'jdbc:gemfirexd:;mcast-port=33620;user=app;password=app;persist-dd=false')")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
-    val exp = snc.sql("select * from row_table2").explain(true)
+    val exp = snc.sql("select * from row_table2")
 
     val countdf = snc.sql("select * from row_table2")
     val count = countdf.count()

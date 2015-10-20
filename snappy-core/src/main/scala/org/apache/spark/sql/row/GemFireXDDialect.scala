@@ -135,17 +135,17 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   override def initializeTable(tableName: String, conn: Connection): Unit = {
     try {
       val stmt = conn.createStatement()
-      val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='$tableName'")
+      val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='${tableName.toUpperCase}'")
       val result = if (rs.next()) rs.getString(1) else null
-      if(!result.equalsIgnoreCase("REPLICATE")){
+      if(!result.equalsIgnoreCase("REPLICATE") && !result.equalsIgnoreCase("EMPTY")){
         JdbcExtendedUtils.executeUpdate(
           s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
       }
       rs.close()
       stmt.close()
-      result
+
     } catch {
-      case NonFatal(e) => null
+      case NonFatal(e) => throw e;
     }
 
   }
