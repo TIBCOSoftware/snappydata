@@ -1,20 +1,19 @@
 package org.apache.spark.sql.store.util
 
+import java.util
 import java.util.Properties
 
+import com.gemstone.gemfire.distributed.DistributedMember
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.plans.physical.{SinglePartition, RangePartitioning, HashPartitioning}
+import scala.collection.JavaConversions._
 import org.apache.spark.sql.store.{StoreInitRDD, MembershipAccumulator}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{AccumulatorParam, SparkContext, Partition}
+import org.apache.spark.{SparkContext, Partition}
 import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.sql.collection.ExecutorLocalPartition
+import org.apache.spark.sql.collection.{MultiExecutorLocalPartition}
 
 /**
  * Created by rishim on 6/10/15.
@@ -40,15 +39,22 @@ object StoreUtils {
     val partitions = new Array[Partition](numPartitions)
 
     for (p <- 0 until numPartitions) {
-      val distMember = region.getBucketPrimary(p)
-      val prefNode = blockMap.get(distMember)
+      val distMembers = region.getRegionAdvisor.getBucketOwners(p)
 
-      partitions(p) = new ExecutorLocalPartition(p, prefNode.get)
+      val prefNodes = distMembers.map(
+        distMember => blockMap.get(distMember)
+      )
+
+      val prefNodeSeq = prefNodes.map(a => a.get).toSeq
+      partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
     partitions
   }
 
-  def getPartitionsReplicatedTable(sc : SparkContext , tableName : String, schema : String,  blockMap: Map[InternalDistributedMember, BlockManagerId]) : Array[Partition]= {
+  def getPartitionsReplicatedTable(sc : SparkContext ,
+      tableName : String, schema : String,
+      blockMap: Map[InternalDistributedMember, BlockManagerId]) : Array[Partition]= {
+
     val resolvedName = lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
     val numPartitions = 1
@@ -59,16 +65,21 @@ object StoreUtils {
       case _ => false
     }
 
-    val member = if(localBackend){
-      Misc.getGemFireCache.getDistributedSystem.getDistributedMember
+    val distMembers = if(localBackend){
+      val set = new util.HashSet[DistributedMember]()
+      set.add(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
+      set
     }else{
-      Misc.getGemFireCache.getMembers(region).iterator().next()
+      Misc.getGemFireCache.getMembers(region)
     }
 
     for (p <- 0 until numPartitions) {
-      val distMember = member.asInstanceOf[InternalDistributedMember]
-      val prefNode = blockMap.get(distMember)
-      partitions(p) = new ExecutorLocalPartition(p, prefNode.get)
+
+      val prefNodes = distMembers.map(
+        distMember => blockMap.get(distMember)
+      ).toSeq
+
+      partitions(p) = new MultiExecutorLocalPartition(p, prefNodes)
     }
     partitions
   }

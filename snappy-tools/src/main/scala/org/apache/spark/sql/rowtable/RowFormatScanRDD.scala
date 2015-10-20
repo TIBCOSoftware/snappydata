@@ -11,7 +11,7 @@ import org.apache.commons.lang3.StringUtils
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.ExecutorLocalPartition
+import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, ExecutorLocalPartition}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.util.StoreUtils
@@ -90,7 +90,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       var nextValue: InternalRow = null
 
       context.addTaskCompletionListener { context => close() }
-      val part = thePart.asInstanceOf[ExecutorLocalPartition]
+      val part = thePart.asInstanceOf[MultiExecutorLocalPartition]
       val conn = getConnection()
 
       conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
@@ -234,7 +234,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)
+    split.asInstanceOf[MultiExecutorLocalPartition].hostExecutorIds
   }
 
   override def getPartitions: Array[Partition] = {

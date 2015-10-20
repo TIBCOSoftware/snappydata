@@ -391,6 +391,14 @@ class ExecutorLocalPartition(override val index: Int,
   override def toString = s"ExecutorLocalPartition($index, $blockId)"
 }
 
+class MultiExecutorLocalPartition(override val index: Int,
+    val blockIds: Seq[BlockManagerId]) extends Partition {
+
+  def hostExecutorIds = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
+
+  override def toString = s"MultiExecutorLocalPartition($index, $blockIds)"
+}
+
 
 private[spark] case class NarrowExecutorLocalSplitDep(
     @transient rdd: RDD[_],
