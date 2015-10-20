@@ -191,7 +191,6 @@ task assembly {
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def baseName = 'snappy-spark-assembly'
     def archiveName = "snappy-spark-assembly_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
-    println "SW: renaming ${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName} to ${buildDir}/lib/${archiveName}"
     file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${buildDir}/lib/${archiveName}")
     copy {
       from "${project(':snappy-spark').projectDir}/bin"

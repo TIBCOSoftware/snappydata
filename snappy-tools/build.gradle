@@ -16,9 +16,11 @@ dependencies {
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
   } else {
     compile 'org.apache.spark:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'org.apache.spark:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'org.apache.spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
   }
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     compile project(':snappy-store:gemfirexd:client')
