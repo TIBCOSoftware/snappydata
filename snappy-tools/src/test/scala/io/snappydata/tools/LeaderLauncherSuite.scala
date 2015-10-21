@@ -40,8 +40,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("simple leader launch") {
-    val dirname = "tests-snappy-leader"
-    new java.io.File(dirname).mkdir()
+    val dirname = createDir("tests-snappy-leader")
     val stream = new ByteArrayOutputStream()
 
     val currentOut = System.out
@@ -88,13 +87,6 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   test("leader standby") {
 
-    class conf(val dirname: String) {
-      def createDir(): conf = {
-        new java.io.File(dirname).mkdir()
-        this
-      }
-    }
-
     def verifyStatus(workingDir: String, expectedOutput: String) = {
       val stream = new ByteArrayOutputStream()
       Try {
@@ -109,23 +101,23 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
 
-    val leader1 = new conf("tests-snappy-leader-1").createDir()
-    val leader2 = new conf("tests-snappy-leader-2").createDir()
+    val leader1 = createDir("tests-snappy-leader-1")
+    val leader2 = createDir("tests-snappy-leader-2")
     val currentOut = System.out
 
     val start = Try {
       LeaderLauncher.main(Array(
         "start",
-        "-dir=" + leader1.dirname,
+        "-dir=" + leader1,
         s"-locators=localhost[${availablePort}]"
       ))
     } transform(_ => Try {
 
-      verifyStatus(leader1.dirname, "SnappyData Leader pid: [0-9]+ status: running.*").get
+      verifyStatus(leader1, "SnappyData Leader pid: [0-9]+ status: running.*").get
 
       LeaderLauncher.main(Array(
         "start",
-        "-dir=" + leader2.dirname,
+        "-dir=" + leader2,
         s"-locators=localhost[${availablePort}]"
       ))
     }, {
@@ -135,7 +127,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
     var isLeader1NotStopped = true
     try {
       val checkStandby = start transform(_ => {
-        verifyStatus(leader2.dirname, "SnappyData Leader pid: [0-9]+ status: standby.*")
+        verifyStatus(leader2, "SnappyData Leader pid: [0-9]+ status: standby.*")
       }, throw _)
 
 
@@ -144,10 +136,10 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
           Try {
             LeaderLauncher.main(Array(
               "stop",
-              "-dir=" + leader1.dirname))
+              "-dir=" + leader1))
             isLeader1NotStopped = false
           } transform(_ => {
-            verifyStatus(leader2.dirname, "SnappyData Leader pid: [0-9]+ status: running.*")
+            verifyStatus(leader2, "SnappyData Leader pid: [0-9]+ status: running.*")
           }, throw _)
 
         case Failure(t) => throw t
@@ -163,14 +155,13 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       if (isLeader1NotStopped)
         LeaderLauncher.main(Array(
           "stop",
-          "-dir=" + leader1.dirname
+          "-dir=" + leader1
         ))
 
       LeaderLauncher.main(Array(
         "stop",
-        "-dir=" + leader2.dirname
+        "-dir=" + leader2
       ))
-
     }
 
 
