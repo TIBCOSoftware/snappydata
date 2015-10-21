@@ -80,7 +80,7 @@ class LeadImpl extends ServerImpl with Lead {
     }
   }
 
-  protected def initStartupArgs(args: Properties): Properties = {
+  private[snappydata] def initStartupArgs(args: Properties): Properties = {
 
     def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {
       val x = args.getProperty(attr)

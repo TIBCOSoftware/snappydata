@@ -34,7 +34,6 @@ dependencies {
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
   }
 
-  // TODO: all these should be in snappy-tools not here but right now everything is in snappy-core
   compile("spark.jobserver:job-server_${scalaBinaryVersion}:0.6.0") {
     exclude(module: 'akka-actor_' + scalaBinaryVersion)
     exclude(module: 'akka-remote_' + scalaBinaryVersion)
@@ -43,6 +42,7 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
+  compile 'jline:jline:2.12'
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }
