@@ -67,7 +67,6 @@ object ExecutorInitiator {
                     // Fetch the driver's Spark properties.
                     val executorConf = new SparkConf
 
-                    //TODO: Hemant: run as sparkUser
                     val port = executorConf.getInt("spark.executor.port", 0)
                     val props = SparkCallbacks.fetchDriverProperty(executorHost, executorConf, port, url)
 
@@ -88,10 +87,14 @@ object ExecutorInitiator {
                         }
                       }
                     }
+
                     //TODO: Hemant: add executor specific properties from local conf to
                     //TODO: this conf that was received from driver.
 
                     //TODO: Hemant: get the number of cores from spark conf
+
+                    //TODO: Hemant : Read app id of driver and set it in spark.app.id
+
                     val cores = 6
 
                     env = SparkCallbacks.createExecutorEnv(
@@ -104,7 +107,6 @@ object ExecutorInitiator {
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
 
-                    //TODO: Hemant: Check the parameters of this class
                     val rpcenv = SparkCallbacks.getRpcEnv(env)
 
                     val executor = new SnappyCoarseGrainedExecutorBackend(

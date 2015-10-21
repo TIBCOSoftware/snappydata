@@ -1,5 +1,6 @@
 package io.snappydata.dunit.cluster
 
+import java.io.File
 import java.net.InetAddress
 import java.util.Properties
 import com.gemstone.gemfire.internal.{DistributionLocator, SocketCreator}
@@ -78,6 +79,14 @@ class ClusterManagerTestUtils {
     val props = new Properties
     SparkContext.registerClusterManager(SnappyClusterManager)
     val conf: SparkConf = new SparkConf().setMaster("external:snappy").setAppName("myapp")
+    new File("./" + "driver").mkdir()
+    new File("./" + "driver/events").mkdir()
+
+    val dataDirForDriver = new File("./" + "driver/data").getAbsolutePath
+    val eventDirForDriver = new File("./" + "driver/events").getAbsolutePath
+    conf.set("spark.local.dir", dataDirForDriver)
+    conf.set("spark.eventLog.enabled", "true")
+    conf.set("spark.eventLog.dir", eventDirForDriver)
     sc = new SparkContext(conf)
     val localHost: InetAddress = SocketCreator.getLocalHost
     props.setProperty("locators", "localhost" + '[' + DistributionLocator.DEFAULT_LOCATOR_PORT
