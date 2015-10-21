@@ -1,6 +1,6 @@
 package io.snappydata.gemxd
 
-import com.pivotal.gemfirexd.internal.snappy.ClusterCallbacks
+import com.pivotal.gemfirexd.internal.snappy.{SparkSQLExecute, LeadNodeExecutionContext, ClusterCallbacks}
 import io.snappydata.cluster.ExecutorInitiator
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 
@@ -25,4 +25,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks {
       case None => null
     }
   }
+
+  override def getSQLExecute(sql: String, ctx: LeadNodeExecutionContext):
+    SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, null)
 }
