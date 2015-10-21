@@ -1,5 +1,9 @@
 package io.snappydata.tools
 
+import java.util.Properties
+
+import io.snappydata.impl.LeadImpl
+
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.LocalizedMessages
@@ -18,46 +22,52 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
     "started" should {
       "have host-data as false" in {
         {
-          val l = new LeaderLauncher("Test default host-data")
-          val opts = l.initStartupArgs(ArrayBuffer("start"))
 
-          val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA))
+          val l = new LeadImpl
+          val opts = l.initStartupArgs(new Properties)
 
-          assert(hdProp.length == 1)
-          assert(hdProp(0).split('=')(1).toBoolean == false)
+          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+
+          assert(hdProp != null)
+          assert(hdProp.toBoolean == false)
         }
 
         {
-          val l = new LeaderLauncher("Test override host-data")
-          val opts = l.initStartupArgs(ArrayBuffer("start", "host-data=true"))
+          val l = new LeadImpl
+          val p = new Properties()
+          p.setProperty("host-data", "true")
 
-          val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA))
+          val opts = l.initStartupArgs(p)
 
-          assert(hdProp.length == 1)
-          assert(hdProp(0).split('=')(1).toBoolean == false)
+          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+
+          assert(hdProp != null)
+          assert(hdProp.toBoolean == false)
         }
 
       }
 
       "always add implicit server group" in {
         {
-          val l = new LeaderLauncher("Test default server group")
-          val opts = l.initStartupArgs(ArrayBuffer("start"))
+          val l = new LeadImpl
+          val opts = l.initStartupArgs(new Properties())
 
-          val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.SERVER_GROUPS))
+          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
-          assert(hdProp.length == 1)
-          assert(hdProp(0).split('=')(1) == l.LEADER_SERVERGROUP)
+          assert(hdProp != null)
+          assert(hdProp == l.LEADER_SERVERGROUP)
         }
 
         {
-          val l = new LeaderLauncher("Test server group addition")
-          val opts = l.initStartupArgs(ArrayBuffer("start", "-" + com.pivotal.gemfirexd.Attribute.SERVER_GROUPS + "=DUMMY,GRP"))
+          val l = new LeadImpl
+          val p = new Properties()
+          p.setProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, "DUMMY,GRP")
+          val opts = l.initStartupArgs(p)
 
-          val hdProp = opts.filter(doExtract(_, com.pivotal.gemfirexd.Attribute.SERVER_GROUPS))
+          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
-          assert(hdProp.length == 1)
-          assert(hdProp(0).split('=')(1).endsWith("," + l.LEADER_SERVERGROUP))
+          assert(hdProp != null)
+          assert(hdProp.endsWith("," + l.LEADER_SERVERGROUP))
         }
       }
 
@@ -72,7 +82,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
           val hdProp = opts.filter(doExtract(_, netServerProp))
 
           assert(hdProp.length == 1)
-          assert(hdProp(0).split('=')(1).toBoolean == false)
+          assert(hdProp(0).toBoolean == false)
         }
 
         {
@@ -82,7 +92,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
           val hdProp = opts.filter(doExtract(_, netServerProp))
 
           assert(hdProp.length == 1)
-          assert(hdProp(0).split('=')(1).toBoolean == false)
+          assert(hdProp(0).toBoolean == false)
         }
       }
 

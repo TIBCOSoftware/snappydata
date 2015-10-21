@@ -3,6 +3,7 @@ package org.apache.spark.executor
 import java.net.URL
 
 import org.apache.spark.SparkEnv
+import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
 
 /**
@@ -20,6 +21,9 @@ class SnappyCoarseGrainedExecutorBackend(
     executorId, hostPort, cores, userClassPath, env) {
 
 
+  override def onStop() {
+    exitExecutor()
+  }
   /**
    * Snappy addition (Replace System.exit with exitExecutor). We could have
    * added functions calling System.exit to SnappyCoarseGrainedExecutorBackend
@@ -27,7 +31,6 @@ class SnappyCoarseGrainedExecutorBackend(
    * after every merge.
    */
   override def exitExecutor(): Unit = {
-
     if (executor != null) {
       // kill all the running tasks
       // InterruptThread is set as true.
@@ -38,5 +41,6 @@ class SnappyCoarseGrainedExecutorBackend(
     stop()
     if (rpcEnv != null)
       rpcEnv.shutdown()
+    SparkHadoopUtil.get.stopExecutorDelegationTokenRenewer()
   }
 }

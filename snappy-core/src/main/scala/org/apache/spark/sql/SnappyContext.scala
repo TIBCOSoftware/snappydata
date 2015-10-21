@@ -364,7 +364,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       mode match {
         case SaveMode.ErrorIfExists =>
           throw new AnalysisException(s"Table $tableIdent already exists. " +
-              "If using SQL CREATE EXTERNAL TABLE, you need to use the " +
+              "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
         case _ =>
           // existing table schema could have nullable columns

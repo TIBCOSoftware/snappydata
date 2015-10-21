@@ -3,23 +3,21 @@ package io.snappydata.impl
 import java.sql.SQLException
 import java.util.Properties
 
-import com.pivotal.gemfirexd.internal.engine.fabricservice.{FabricServerImpl}
-import com.pivotal.gemfirexd.internal.snappy.CallbackFactoryProvider
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl
 import io.snappydata.{ProtocolOverrides, Server}
-import io.snappydata.gemxd.ClusterCallbacksImpl
 
+/**
+ * This class ties up few things that is Snappy specific.
+ * for e.g. Connection url & ClusterCallback
+ */
 class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
-  override def start(bootProperties: Properties) = {
-    start(bootProperties, false)
-  }
+  @throws(classOf[SQLException])
+  override def start(bootProperties: Properties) = start(bootProperties, false)
 
   @throws(classOf[SQLException])
-  override def start(bootProperties: Properties, ignoreIfStarted: Boolean) = {
-    synchronized {
-      CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
-      super.start(bootProperties, ignoreIfStarted)
-    }
+  override def start(bootProperties: Properties, ignoreIfStarted: Boolean) = this.synchronized {
+    super.start(bootProperties, ignoreIfStarted)
   }
 
   override def isServer: Boolean = {
