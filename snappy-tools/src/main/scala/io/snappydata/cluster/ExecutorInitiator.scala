@@ -4,6 +4,8 @@ import java.io.File
 import java.net.URL
 import java.util.concurrent.locks.ReentrantLock
 
+import org.apache.spark.deploy.SparkHadoopUtil
+
 import scala.collection.mutable
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -59,55 +61,58 @@ object ExecutorInitiator {
                    * We need to track the changes there and merge them here on a regular basis.
                    */
                   val executorHost = GemFireCacheImpl.getInstance().getMyId.getHost
-
-                  // Fetch the driver's Spark properties.
-                  val executorConf = new SparkConf
                   val memberId = GemFireCacheImpl.getInstance().getMyId.toString
-                  //TODO: Hemant: run as sparkUser
-                  val port = executorConf.getInt("spark.executor.port", 0)
-                  val props = SparkCallbacks.fetchDriverProperty(executorHost, executorConf, port, url)
+                  SparkHadoopUtil.get.runAsSparkUser { () =>
+
+                    // Fetch the driver's Spark properties.
+                    val executorConf = new SparkConf
+
+                    //TODO: Hemant: run as sparkUser
+                    val port = executorConf.getInt("spark.executor.port", 0)
+                    val props = SparkCallbacks.fetchDriverProperty(executorHost, executorConf, port, url)
 
 
-                  val driverConf = new SparkConf()
-                  // Specify a default directory for executor, if the local directory for executor
-                  // is set via the executor conf, it will override this property later in the code
-                  val localDirForExecutor = new File("./" + "executor").getAbsolutePath
+                    val driverConf = new SparkConf()
+                    // Specify a default directory for executor, if the local directory for executor
+                    // is set via the executor conf, it will override this property later in the code
+                    val localDirForExecutor = new File("./" + "executor").getAbsolutePath
 
-                  driverConf.set("spark.local.dir", localDirForExecutor)
-                  for ((key, value) <- props) {
-                    // this is required for SSL in standalone mode
-                    if (!key.equals("spark.local.dir")) {
-                      if (SparkCallbacks.isExecutorStartupConf(key)) {
-                        driverConf.setIfMissing(key, value)
-                      } else {
-                        driverConf.set(key, value)
+                    driverConf.set("spark.local.dir", localDirForExecutor)
+                    for ((key, value) <- props) {
+                      // this is required for SSL in standalone mode
+                      if (!key.equals("spark.local.dir")) {
+                        if (SparkCallbacks.isExecutorStartupConf(key)) {
+                          driverConf.setIfMissing(key, value)
+                        } else {
+                          driverConf.set(key, value)
+                        }
                       }
                     }
+                    //TODO: Hemant: add executor specific properties from local conf to
+                    //TODO: this conf that was received from driver.
+
+                    //TODO: Hemant: get the number of cores from spark conf
+                    val cores = 6
+
+                    env = SparkCallbacks.createExecutorEnv(
+                      driverConf, memberId, executorHost, port, cores, false)
+
+                    // SparkEnv sets spark.executor.port so it shouldn't be 0 anymore.
+                    val boundport = env.conf.getInt("spark.executor.port", 0)
+                    assert(boundport != 0)
+
+                    // This is not required with snappy
+                    val userClassPath = new mutable.ListBuffer[URL]()
+
+                    //TODO: Hemant: Check the parameters of this class
+                    val rpcenv = SparkCallbacks.getRpcEnv(env)
+
+                    val executor = new SnappyCoarseGrainedExecutorBackend(
+                      rpcenv, url, memberId, executorHost + ":" + boundport,
+                      cores, userClassPath, env)
+
+                    val endPoint = rpcenv.setupEndpoint("Executor", executor)
                   }
-                  //TODO: Hemant: add executor specific properties from local conf to
-                  //TODO: this conf that was received from driver.
-
-                  //TODO: Hemant: get the number of cores from spark conf
-                  val cores = 6
-
-                  env = SparkCallbacks.createExecutorEnv(
-                    driverConf, memberId, executorHost, port, cores, false)
-
-                  // SparkEnv sets spark.executor.port so it shouldn't be 0 anymore.
-                  val boundport = env.conf.getInt("spark.executor.port", 0)
-                  assert(boundport != 0)
-
-                  // This is not required with snappy
-                  val userClassPath = new mutable.ListBuffer[URL]()
-
-                  //TODO: Hemant: Check the parameters of this class
-                  val rpcenv = SparkCallbacks.getRpcEnv(env)
-
-                  val executor = new SnappyCoarseGrainedExecutorBackend(
-                    rpcenv, url, memberId, executorHost + ":" + boundport,
-                    cores, userClassPath, env)
-
-                  val endPoint = rpcenv.setupEndpoint("Executor", executor)
                 case None =>
               }
             }

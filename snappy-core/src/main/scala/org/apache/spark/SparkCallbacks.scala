@@ -1,6 +1,7 @@
 package org.apache.spark
 
 import org.apache.spark
+import org.apache.spark.deploy.SparkHadoopUtil
 
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps
@@ -26,8 +27,11 @@ object SparkCallbacks {
   }
 
   def stopExecutor(env: SparkEnv): Unit = {
-    if (env != null)
-      env.stop()
+    if (env != null) {
+      SparkHadoopUtil.get.runAsSparkUser { () =>
+        env.stop()
+      }
+    }
   }
 
   def fetchDriverProperty(host: String, executorConf: SparkConf,
