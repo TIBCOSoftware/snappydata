@@ -115,9 +115,9 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-
-                    //TODO: Hemant: add executor specific properties from local conf to
-                    //TODO: this conf that was received from driver.
+                  //TODO: Hemant: add executor specific properties from local conf to
+                  //TODO: this conf that was received from driver.
+                   driverConf.set("spark.snappydata.enabled", "true")
 
                     //TODO: Hemant: get the number of cores from spark conf
 

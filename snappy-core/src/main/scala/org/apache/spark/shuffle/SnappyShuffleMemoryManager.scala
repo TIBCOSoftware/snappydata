@@ -21,6 +21,7 @@ private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory
     }
 
     if (isCriticalUp) {
+      logInfo(s"Will not store $numBytes bytes as CRITICAL UP event is received")
       0
     } else {
       super.tryToAcquire(numBytes)
@@ -36,9 +37,6 @@ private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory
     val method = instanceMirror.reflectMethod(instanceMirror.symbol.toType.declaration(ru.newTermName("isCriticalUp")).asMethod)
     val ret = method()
     ret.asInstanceOf[Boolean]
-
-//    val className = Class.forName("org.apache.spark.storage.SnappyMemoryStore$") //note the $
-//    className.getField("MODULE$").get(null).asInstanceOf[Boolean]
   }
 
 

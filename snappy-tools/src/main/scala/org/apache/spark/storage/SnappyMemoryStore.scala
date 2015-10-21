@@ -17,10 +17,7 @@ private[spark] class SnappyMemoryStore(blockManager: BlockManager, maxMemory: Lo
 
     val droppedBlocks = new ArrayBuffer[(BlockId, BlockStatus)]
 
-    println(s"GemFireStore.getBootedInstance = " + GemFireStore.getBootedInstance)
-
     if (SnappyMemoryStore.isCriticalUp()) {
-      println(s"Will not store $blockIdToAdd as CRITICAL UP event is received")
       logInfo(s"Will not store $blockIdToAdd as CRITICAL UP event is received")
       return ResultWithDroppedBlocks(success = false, droppedBlocks)
     }
