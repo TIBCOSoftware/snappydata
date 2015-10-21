@@ -27,11 +27,6 @@ private[spark] class SnappyBlockManager(
 
 
   override protected[spark] val memoryStore = Class.forName("org.apache.spark.storage.SnappyMemoryStore").
-        //getConstructors()(0).newInstance(this, maxMemory: java.lang.Long).
         getConstructors()(0).newInstance(this, BlockManager.getMaxMemory(conf): java.lang.Long).
       asInstanceOf[MemoryStore]
-}
-
-object SnappyBlockManager {
-
 }
