@@ -43,9 +43,7 @@ object SparkCallbacks {
       executorConf,
       new spark.SecurityManager(executorConf))
     val driver = fetcher.setupEndpointRefByURI(url)
-    val props = driver.askWithRetry[Seq[(String, String)]](RetrieveSparkProps) ++
-        Seq[(String, String)](("spark.app.id", "myappid"))
-    //TODO: Hemant : change my appid
+    val props = driver.askWithRetry[Seq[(String, String)]](RetrieveSparkProps)
     fetcher.shutdown()
     props
   }

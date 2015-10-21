@@ -9,11 +9,20 @@ import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, Tas
  *
  */
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
-  extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
+    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
+
+  private val snappyAppId = "snappy-app-" + System.currentTimeMillis
+
+  /**
+   * Overriding the spark app id function to provide a snappy specific app id.
+   * @return An application ID
+   */
+  override def applicationId(): String = snappyAppId
 
   var driverUrl: String = ""
 
   override def start() {
+
     super.start()
     driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
       RpcAddress(driverEndpoint.address.host, driverEndpoint.address.port),
@@ -23,6 +32,14 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   override def stop() {
     super.stop()
     driverUrl = ""
+  }
+
+  override protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
+    // keep the app id as part of driver property so that it can be retrieved
+    // by the executor when driver properties are fetched using
+    // [org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps]
+    super.createDriverEndpoint(properties ++
+        Seq[(String, String)](("spark.app.id", applicationId())))
   }
 }
 
@@ -35,7 +52,7 @@ object SnappyClusterManager extends ExternalClusterManager {
   def canCreate(masterURL: String): Boolean = if (masterURL == "snappy") true else false
 
   def createSchedulerBackend(sc: SparkContext,
-                             scheduler: TaskScheduler): SchedulerBackend = {
+      scheduler: TaskScheduler): SchedulerBackend = {
     schedulerBackend = Some(
       new SnappyCoarseGrainedSchedulerBackend(
         scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv))
@@ -43,7 +60,7 @@ object SnappyClusterManager extends ExternalClusterManager {
   }
 
   def intialize(scheduler: TaskScheduler,
-                backend: SchedulerBackend): Unit = {
+      backend: SchedulerBackend): Unit = {
     scheduler.asInstanceOf[TaskSchedulerImpl].initialize(backend)
   }
 
