@@ -35,7 +35,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       "stop",
       "-dir=tests-snappy-loc-dir"
     ))
-    new java.io.File("tests-snappy-loc-dir").delete()
+    deleteDir(new java.io.File("tests-snappy-loc-dir"))
     System.setProperty("gemfire.CacheServerLauncher.dontExitAfterLaunch", "false")
   }
 

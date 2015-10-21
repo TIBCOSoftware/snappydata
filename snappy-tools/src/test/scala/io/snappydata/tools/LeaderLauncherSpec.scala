@@ -82,7 +82,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
           val hdProp = opts.filter(doExtract(_, netServerProp))
 
           assert(hdProp.length == 1)
-          assert(hdProp(0).toBoolean == false)
+          assert(hdProp(0).split("=")(1).toBoolean == false)
         }
 
         {
@@ -92,7 +92,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
           val hdProp = opts.filter(doExtract(_, netServerProp))
 
           assert(hdProp.length == 1)
-          assert(hdProp(0).toBoolean == false)
+          assert(hdProp(0).split("=")(1).toBoolean == false)
         }
       }
 

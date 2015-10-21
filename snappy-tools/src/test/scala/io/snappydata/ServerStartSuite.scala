@@ -9,7 +9,7 @@ import org.scalatest.BeforeAndAfterAll
 /**
  * Created by hemantb on 10/14/15.
  */
-class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll{
+class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   var props: Properties = null
 
   override def beforeAll(): Unit = {
@@ -17,12 +17,13 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll{
     GemFireXDUtils.IS_TEST_MODE = true
 
   }
+
   override def afterAll(): Unit = {
 
   }
 
   test("Snappy Server start") {
-    val fs : Server = ServiceManager.getServerInstance
+    val fs: Server = ServiceManager.getServerInstance
 
     fs.start(props)
 
@@ -32,7 +33,7 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll{
   }
 
   test("Snappy Lead start") {
-    val fs : Lead = ServiceManager.getLeadInstance
+    val fs: Lead = ServiceManager.getLeadInstance
 
     fs.start(props)
 
@@ -42,9 +43,9 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll{
   }
 
   test("Snappy Locator start") {
-    val fs : Locator = ServiceManager.getLocatorInstance
+    val fs: Locator = ServiceManager.getLocatorInstance
 
-    fs.start(FabricLocator.LOCATOR_DEFAULT_BIND_ADDRESS, FabricLocator.LOCATOR_DEFAULT_PORT,  props)
+    fs.start(FabricLocator.LOCATOR_DEFAULT_BIND_ADDRESS, FabricLocator.LOCATOR_DEFAULT_PORT, props)
 
     assert(ServiceManager.getLocatorInstance.status == FabricService.State.RUNNING)
 

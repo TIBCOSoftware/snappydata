@@ -4,15 +4,12 @@ import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
 
-import io.snappydata.{Utils, Lead, LocalizedMessages}
-import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.LogWriterImpl
-import com.gemstone.gemfire.internal.LogWriterImpl.GemFireThreadGroup
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.NetworkInterface
+import io.snappydata.{Lead, LocalizedMessages, Utils}
 import org.slf4j.LoggerFactory
 import spark.jobserver.JobServer
 
@@ -98,9 +95,7 @@ class LeadImpl extends ServerImpl with Lead {
     args
   }
 
-  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit = {
-    this.notificationCallback = f
-  }
+  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit = this.notificationCallback = f
 
   private[snappydata] def scheduleWaitForPrimaryDeparture() = {
 
