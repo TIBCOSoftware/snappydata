@@ -68,16 +68,14 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
         genericLogger.info("Parking this lead node in standby mode")
 
         val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
-        leadImpl.notifyWhenPrimary { case _ =>
-          indicatePrimaryStatus
-        }
+        leadImpl.notifyWhenPrimary(writeRunningStatus)
       case _ =>
         return
     }
 
   }
 
-  def indicatePrimaryStatus(): Unit = {
+  def writeRunningStatus(): Unit = {
     genericLogger.info("Becoming primary Lead Node in absence of existing primary.")
     status = CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.RUNNING, getProcessId)
     writeStatus(status)

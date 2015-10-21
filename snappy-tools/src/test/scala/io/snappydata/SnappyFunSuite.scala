@@ -1,5 +1,8 @@
 package io.snappydata
 
+import java.io.File
+
+import com.pivotal.gemfirexd.TestUtil
 import org.apache.spark.Logging
 import org.scalatest.{FunSuite, Outcome}
 
@@ -30,6 +33,10 @@ private[snappydata] abstract class SnappyFunSuite extends FunSuite with Logging 
     } finally {
       logInfo(s"\n\n===== FINISHED $shortSuiteName: '$testName' =====\n")
     }
+  }
+
+  def deleteDir(dir: File): Boolean = {
+    return TestUtil.deleteDir(dir)
   }
 
 }
