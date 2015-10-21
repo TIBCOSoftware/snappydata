@@ -93,8 +93,6 @@ object ExecutorInitiator {
 
                     //TODO: Hemant: get the number of cores from spark conf
 
-                    //TODO: Hemant : Read app id of driver and set it in spark.app.id
-
                     val cores = 6
 
                     env = SparkCallbacks.createExecutorEnv(
