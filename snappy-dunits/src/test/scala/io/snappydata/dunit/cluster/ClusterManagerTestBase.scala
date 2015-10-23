@@ -8,7 +8,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import dunit.{SerializableRunnable, Host, DistributedTestBase}
-import io.snappydata.{Locator, Server, ServiceManager, Lead}
+import io.snappydata.{Locator, Server, ServiceManager}
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
@@ -77,6 +77,7 @@ class ClusterManagerTestUtils {
   def startSnappyLead(): Unit = {
     assert(sc == null)
     val props = new Properties
+    props.setProperty("host-data", "false")
     SparkContext.registerClusterManager(SnappyClusterManager)
     val conf: SparkConf = new SparkConf().setMaster("external:snappy").setAppName("myapp")
     new File("./" + "driver").mkdir()
@@ -94,7 +95,6 @@ class ClusterManagerTestUtils {
     val lead: Server = ServiceManager.getServerInstance
     lead.start(props)
     assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
-
   }
 
   /**

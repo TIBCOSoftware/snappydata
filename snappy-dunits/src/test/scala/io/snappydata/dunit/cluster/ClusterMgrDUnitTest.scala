@@ -1,6 +1,9 @@
 package io.snappydata.dunit.cluster
 
 import scala.math._
+import scala.util.Random
+
+import org.apache.spark.sql.{Row, SnappyContext}
 
 
 /**
@@ -15,12 +18,13 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
    */
   def testMultipleDriver(): Unit = {
     // Lead is started before other servers are started.
-    vm0.invoke(this.getClass, "startSnappyLead")
     vm1.invoke(this.getClass, "startSnappyServer")
+    vm0.invoke(this.getClass, "startSnappyLead")
     vm2.invoke(this.getClass, "startSnappyServer")
 
     // Execute the job
     vm0.invoke(this.getClass, "startSparkJob")
+    vm0.invoke(this.getClass, "startGemJob")
     Thread.sleep(10000)
 
     // Stop the lead node
@@ -33,6 +37,7 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // and join
     vm3.invoke(this.getClass, "startSnappyLead")
     vm3.invoke(this.getClass, "startSparkJob")
+    vm3.invoke(this.getClass, "startGemJob")
     Thread.sleep(10000)
 
     // Stop everything.
@@ -59,4 +64,42 @@ object ClusterMgrDUnitTest extends ClusterManagerTestUtils{
     assert(3.14 <= pi)
     assert(3.15 > pi)
   }
+
+  def startGemJob(): Unit = {
+
+    val snContext = SnappyContext(sc)
+    val externalUrl  = "jdbc:snappydata:;"
+    val ddlStr = "YearI INT NOT NULL," +
+        "MonthI INT NOT NULL," +
+        "DayOfMonth INT NOT NULL," +
+        "DepTime INT," +
+        "ArrTime INT," +
+        "UniqueCarrier CHAR(6) NOT NULL"
+
+    if (new Random().nextBoolean()) {
+      snContext.sql("drop table if exists airline")
+      snContext.sql(s"create table airline ($ddlStr) " +
+          s" using jdbc options (URL '$externalUrl'," +
+          "  Driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver')").collect()
+    } else {
+      snContext.sql(s"create table if not exists airline ($ddlStr) " +
+          s" using jdbc options (URL '$externalUrl'," +
+          "  Driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver')").collect()
+    }
+
+    snContext.sql("insert into airline values(2015, 2, 15, 1002, 1803, 'AA')")
+    snContext.sql("insert into airline values(2014, 4, 15, 1324, 1500, 'UT')")
+
+    val result = snContext.sql("select * from airline")
+    val expected = Set[Row](Row(2015, 2, 15, 1002, 1803, "AA    "),
+        Row(2014, 4, 15, 1324, 1500, "UT    "))
+    val returnedRows = result.collect()
+    println (s"Returned rows: ${returnedRows.mkString(",")} ")
+    println (s"Expected rows: ${expected.mkString(",")}")
+    assert(returnedRows.toSet == expected)
+
+    // This code needs to be removed when we use gemxd for hivemetastore.
+    snContext.sql("drop table if exists airline")
+  }
+
 }
