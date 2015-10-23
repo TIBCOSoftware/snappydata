@@ -7,7 +7,7 @@ import com.pivotal.gemfirexd.jdbc.JdbcTestBase
 /**
  * Created by vivek on 16/10/15.
  */
-class BasicStoreTest(s: String) extends JdbcTestBase(s) {
+class BasicStoreTest(s: String) extends TestUtil(s) {
 
   def testDummy(): Unit = {
   // Do nothing

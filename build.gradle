@@ -6,7 +6,7 @@ buildscript {
     jcenter()
   }
   dependencies {
-    classpath "com.github.maiflai:gradle-scalatest:0.9"
+    classpath "com.github.maiflai:gradle-scalatest:0.10"
     classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.7.2"
     classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
   }
@@ -38,7 +38,6 @@ allprojects {
   apply plugin: 'scalaStyle'
   apply plugin: 'idea'
   apply plugin: 'eclipse'
-  //apply plugin: 'com.github.maiflai.scalatest'
 
   group = 'io.snappydata'
   version = '0.1.0-SNAPSHOT'
@@ -61,6 +60,7 @@ allprojects {
     hadoopVersion = '2.4.1'
     gemfireXDVersion = '2.0-Beta'
     buildFlags = ''
+    testResultsBase = "${rootProject.buildDir}/reports"
   }
 
   if (!buildRoot.isEmpty()) {
@@ -102,8 +102,58 @@ subprojects {
       args = params.split(",") as List
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs = [ '-Xmx2g', '-XX:MaxPermSize=512m' ]
+    jvmArgs '-Xmx2g', '-XX:MaxPermSize=512m'
   }
+
+  task scalaTest(type: Test) {
+    actions = [ new com.github.maiflai.ScalaTestAction() ]
+    maxHeapSize '1g'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
+    maxParallelForks = Runtime.getRuntime().availableProcessors()
+
+    List<String> suites = []
+    extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
+    extensions.add("suite", { String name -> suites.add(name) } )
+    extensions.add("suites", { String... name -> suites.addAll(name) } )
+
+    // running a single scala suite
+    if (rootProject.hasProperty('singleSuite')) {
+      suite singleSuite
+    }
+    reports.html.destination = file("${testResultsBase}/scalatest")
+    reports.junitXml.destination = file(testResultsBase)
+    binResultsDir = file("${testResultsBase}/scalatest/binary")
+
+    workingDir = "${testResultsBase}/output"
+    workingDir.mkdirs()
+
+    testLogging.exceptionFormat = 'full'
+  }
+  test {
+    maxHeapSize '1g'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
+    maxParallelForks = Runtime.getRuntime().availableProcessors()
+
+    reports.html.destination = file("${testResultsBase}/junit")
+    reports.junitXml.destination = file(testResultsBase)
+    binResultsDir = file("${testResultsBase}/junit/binary")
+
+    workingDir = "${testResultsBase}/output"
+    workingDir.mkdirs()
+
+    testLogging.exceptionFormat = 'full'
+    def eol = System.getProperty('line.separator')
+    def progress = new File(testResultsBase, "progress.txt")
+    beforeTest { desc ->
+      def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      progress << "$now Starting test $desc.className $desc.name$eol"
+    }
+    afterTest { desc, result ->
+      def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
+      progress << "$now Completed test $desc.className $desc.name with result: ${result.resultType}$eol"
+    }
+  }
+  check.dependsOn ':product', test, scalaTest
 
   // apply default manifest
   jar {
@@ -164,13 +214,14 @@ task generateSources {
   dependsOn ':snappy-store:generateSources'
 }
 
-task assembly {
+task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
 
+  def productDir = file("${buildDir}/snappy")
   doFirst {
-    delete buildDir
-    buildDir.mkdirs()
-    file("${buildDir}/lib").mkdirs()
+    delete productDir
+    productDir.mkdirs()
+    file("${productDir}/lib").mkdirs()
   }
   doLast {
     // copy datanucleus jars specifically since they don't work as part of fat jar
@@ -179,11 +230,11 @@ task assembly {
     }
     copy {
       from datanucleusJars
-      into "${buildDir}/lib"
+      into "${productDir}/lib"
     }
 
     // create the RELEASE file
-    def release = file("${buildDir}/RELEASE")
+    def release = file("${productDir}/RELEASE")
     def gitCommitId = "git rev-parse HEAD".execute().text.trim()
     release << "Snappy Spark ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
     release << "Build flags: ${buildFlags}\n"
@@ -191,38 +242,38 @@ task assembly {
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def baseName = 'snappy-spark-assembly'
     def archiveName = "snappy-spark-assembly_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
-    file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${buildDir}/lib/${archiveName}")
+    file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${productDir}/lib/${archiveName}")
     copy {
       from "${project(':snappy-spark').projectDir}/bin"
-      into "${buildDir}/bin"
-      filter { line ->
-        line.replaceAll('assembly/target/scala-2.10', 'lib')
-      }
+      into "${productDir}/bin"
     }
     copy {
       from "${project(':snappy-spark').projectDir}/sbin"
-      into "${buildDir}/sbin"
+      into "${productDir}/sbin"
     }
     copy {
       from "${project(':snappy-spark').projectDir}/conf"
-      into "${buildDir}/conf"
+      into "${productDir}/conf"
     }
     copy {
       from "${project(':snappy-spark').projectDir}/python"
-      into "${buildDir}/python"
+      into "${productDir}/python"
     }
     copy {
       from "${project(':snappy-spark').projectDir}/data"
-      into "${buildDir}/data"
+      into "${productDir}/data"
     }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
     if (file(sparkR).exists()) {
       copy {
         from sparkR
-        into "${buildDir}/R/lib"
+        into "${productDir}/R/lib"
       }
     }
   }
 }
 
+task precheckin {
+  dependsOn clean, assemble, testClasses, product, check
+}

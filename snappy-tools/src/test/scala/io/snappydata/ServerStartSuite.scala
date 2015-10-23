@@ -7,7 +7,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.scalatest.BeforeAndAfterAll
 
 /**
- * Created by hemantb on 10/14/15.
+ * Created by hemantb.
  */
 class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   var props: Properties = null
@@ -15,11 +15,10 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     props = TestUtil.doCommonSetup(null)
     GemFireXDUtils.IS_TEST_MODE = true
-
   }
 
   override def afterAll(): Unit = {
-
+    GemFireXDUtils.IS_TEST_MODE = false
   }
 
   test("Snappy Server start") {
