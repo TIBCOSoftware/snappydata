@@ -8,7 +8,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.InMemoryAppendableRelation.CachedBatchHolder
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.store.ExternalStore
@@ -65,21 +64,19 @@ private[sql] final class ExternalStoreRelation(
 
   override def children: Seq[LogicalPlan] = Seq.empty
 
-  override def newInstance(): this.type = {
-    new ExternalStoreRelation(
-      output.map(_.newInstance()),
-      useCompression,
-      batchSize,
-      storageLevel,
-      child,
-      tableName,
-      isSampledTable,
-      externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
-          batchStats, uuidList).asInstanceOf[this.type]
-  }
+  override def newInstance(): this.type = new ExternalStoreRelation(
+    output.map(_.newInstance()),
+    useCompression,
+    batchSize,
+    storageLevel,
+    child,
+    tableName,
+    isSampledTable,
+    externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
+        batchStats, uuidList).asInstanceOf[this.type]
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-    externalStore.getCachedBatchRDD(tableName.get, uuidList,
+    externalStore.getCachedBatchRDD(tableName.get, null, uuidList,
       this.child.sqlContext.sparkContext)
   }
 

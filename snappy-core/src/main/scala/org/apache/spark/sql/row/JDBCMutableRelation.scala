@@ -39,6 +39,7 @@ class JDBCMutableRelation(
     with RowInsertableRelation
     with UpdatableRelation
     with DeletableRelation
+    with DestroyRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -254,6 +255,16 @@ class JDBCMutableRelation(
       conn.close()
     }
   }
+
+  def truncate(): Unit = {
+    val conn = JdbcUtils.createConnection(url, connProperties)
+    try {
+      JdbcExtendedUtils.truncateTable(conn, table, dialect)
+    }
+    finally {
+      conn.close()
+    }
+  }
 }
 
 object JDBCMutableRelation extends Logging {
@@ -382,6 +393,7 @@ final class DefaultSource
     val url = parameters.remove("url")
         .getOrElse(sys.error("JDBC URL option 'url' not specified"))
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    parameters.remove("serialization.format")
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
     val driver = parameters.remove("driver")
@@ -391,6 +403,7 @@ final class DefaultSource
     val lowerBound = parameters.remove("lowerbound")
     val upperBound = parameters.remove("upperbound")
     val numPartitions = parameters.remove("numpartitions")
+
     // remove ALLOW_EXISTING property, if remaining
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
     parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)

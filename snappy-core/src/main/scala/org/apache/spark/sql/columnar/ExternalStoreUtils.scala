@@ -3,9 +3,11 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
+//import com.gemstone.gemfire.internal.cache.{PartitionedRegion, AbstractRegion}
+
 import scala.collection.mutable
 
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -39,8 +41,8 @@ private[sql] object ExternalStoreUtils {
     val url = parameters.remove("url").getOrElse(
       sys.error("Option 'url' not specified"))
     val driver = parameters.remove("driver")
-    val poolImpl = parameters.remove("poolImpl")
-    val poolProperties = parameters.remove("poolProperties")
+    val poolImpl = parameters.remove("poolimpl")
+    val poolProperties = parameters.remove("poolproperties")
 
     driver.foreach(DriverRegistry.register)
 
