@@ -1,33 +1,33 @@
 package org.apache.spark.sql.store
 
-import java.io.Externalizable
 import java.sql.Connection
 
 import scala.collection.mutable.ArrayBuffer
+import scala.reflect.ClassTag
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.CachedBatch
 
-import scala.reflect.ClassTag
-
 /**
  * Created by neeraj on 16/7/15.
  */
 trait ExternalStore extends Serializable {
   def initSource(): Unit
-  def storeCachedBatch(batch: CachedBatch, tableName: String) : UUIDRegionKey
-  def truncate(tableName: String)
-  def cleanup(): Unit
-  def getCachedBatchIterator(tableName: String,
-                             requiredColumns: Array[String],
-                             itr: Iterator[UUIDRegionKey],
-                             getAll: Boolean = false): Iterator[CachedBatch]
 
-  def getCachedBatchRDD(tableName : String,  requiredColumns: Array[String],
-                        uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
-                             sparkContext: SparkContext): RDD[CachedBatch]
+  def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey
+
+  def cleanup(): Unit
+
+  def getCachedBatchIterator(tableName: String,
+      requiredColumns: Array[String],
+      itr: Iterator[UUIDRegionKey],
+      getAll: Boolean = false): Iterator[CachedBatch]
+
+  def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
+      uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
+      sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String): java.sql.Connection
 
@@ -56,6 +56,4 @@ trait ExternalStore extends Serializable {
       }
     }
   }
-
-
 }

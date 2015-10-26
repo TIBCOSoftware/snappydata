@@ -7,8 +7,8 @@ import org.apache.spark.sql.types.StructType
  * Created by skumar on 9/10/15.
  */
 private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
-                                 var rowCount: Int, val batchSize: Int, schema: StructType,
-                                 val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {
+    var rowCount: Int, val batchSize: Int, schema: StructType,
+    val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {
 
   var columnBuilders = getColumnBuilders
   var result = init
@@ -26,8 +26,8 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
       // script used in TRANSFORM may result malformed rows, causing
       // ArrayIndexOutOfBoundsException, which is somewhat hard to decipher.
       assert(rowLength == columnBuilders.length, s"Row column number " +
-        s"mismatch, expected ${columnBuilders.length} columns, " +
-        s"but got $rowLength. Row content: $row")
+          s"mismatch, expected ${columnBuilders.length} columns, " +
+          s"but got $rowLength. Row content: $row")
 
       var i = 0
       while (i < rowLength) {

@@ -10,9 +10,9 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
  */
 class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
-  private val testSparkContext = TestSQLContext.sparkContext
+  private val sc = TestSQLContext.sparkContext
 
-  private val tableName : String = "ColumnTable"
+  val tableName : String = "ColumnTable"
 
   val props = Map(
     "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
@@ -22,7 +22,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
     "password" -> "app"
   )
 
-  val snc = org.apache.spark.sql.SnappyContext(testSparkContext)
+  val snc = org.apache.spark.sql.SnappyContext(sc)
 
   after {
     snc.dropExternalTable(tableName, true)
@@ -30,12 +30,12 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
-    intercept[IllegalArgumentException] {
+    intercept[AnalysisException] {
       snc.createExternalTable(tableName, "column", props)
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
@@ -48,7 +48,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
   test("Test the creation of table using DataSource API") {
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -61,7 +61,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   test("Test the creation of table using Snappy API and then append/ignore/overwrite DF using DataSource API") {
     var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    var rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
@@ -77,7 +77,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
     // Ignore if table is present
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
-    rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("column").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
@@ -86,7 +86,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
     // Append if table is present
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
-    rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
@@ -95,7 +95,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
     // Overwrite if table is present
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
-    rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("column").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
@@ -128,7 +128,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
         options )
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("column").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
@@ -151,7 +151,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
         options
     )
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     intercept[AnalysisException] {
@@ -167,7 +167,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   test("Test the creation of table using CREATE TABLE AS STATEMENT ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -191,7 +191,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   test("Test the truncate syntax SQL and SnappyContext") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -214,7 +214,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   test("Test the drop syntax SnappyContext and SQL ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -236,7 +236,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   test("Test the drop syntax SQL and SnappyContext ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
