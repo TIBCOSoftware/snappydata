@@ -1,5 +1,7 @@
 package org.apache.spark.sql.store
 
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.SnappySQLContext
 import io.snappydata.core.TestData
 import org.scalatest.FunSuite
@@ -14,12 +16,13 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
   private val sc = SnappySQLContext.sparkContext
 
+  private val URL = "'jdbc:gemfirexd:;mcast-port=0;user=app;password=app'"
+
+  private val driver = "'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'"
+
   val props = Map(
-    "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-    "poolImpl" -> "tomcat",
-    "user" -> "app",
-    "password" -> "app"
+    "url" -> "jdbc:gemfirexd:;mcast-port=0;user=app;password=app",
+    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
   )
 
 
@@ -45,13 +48,13 @@ class RowRelationAPISuite extends FunSuite with Logging {
     val dataDF = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS row_table2")
 
-    val df = snc.sql("CREATE TABLE row_table2(OrderId INT NOT NULL,ItemId INT) PARTITION BY COLUMN (OrderId) " +
+    val df = snc.sql("CREATE TABLE row_table2(OrderId INT NOT NULL,ItemId INT)" +
         "USING row " +
         "options " +
         "(" +
-        "partitionColumn 'OrderId'," +
-        "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'," +
-        "URL 'jdbc:gemfirexd:;mcast-port=33620;user=app;password=app;persist-dd=false')")
+        "PARTITION_BY 'OrderId'," +
+        s"driver $driver," +
+        s"URL $URL)")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
     val exp = snc.sql("select * from row_table2")
@@ -71,14 +74,14 @@ class RowRelationAPISuite extends FunSuite with Logging {
     val dataDF = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS row_table3")
 
-    val df = snc.sql("CREATE TABLE row_table3(OrderId INT NOT NULL,ItemId INT) PARTITION BY COLUMN (OrderId) " +
+    val df = snc.sql("CREATE TABLE row_table3(OrderId INT NOT NULL,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
-        "partitionColumn 'OrderId'," +
+        "PARTITION_BY 'OrderId'," +
         "preservepartitions 'true'," +
-        "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'," +
-        "URL 'jdbc:gemfirexd:;mcast-port=33620;user=app;password=app;persist-dd=false')")
+        s"driver $driver," +
+        s"URL $URL)")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table3")
     val countdf = snc.sql("select * from row_table3")
@@ -86,5 +89,145 @@ class RowRelationAPISuite extends FunSuite with Logging {
     assert(count === 1000)
   }
 
+  test("Test PR with Primary Key") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
 
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE1(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'PRIMARY KEY'," +
+        "REDUNDANCY '2'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE1", true).asInstanceOf[PartitionedRegion]
+
+    val rCopy = region.getPartitionAttributes.getRedundantCopies
+    assert(rCopy === 2)
+
+  }
+
+  test("Test PR with buckets") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE2(OrderId INT NOT NULL,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "BUCKETS '213'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE2", true).asInstanceOf[PartitionedRegion]
+
+    val numPartitions = region.getTotalNumberOfBuckets
+    assert(numPartitions === 213)
+
+  }
+
+  test("Test PR with REDUNDANCY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE3(OrderId INT NOT NULL,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "BUCKETS '213'," +
+        "REDUNDANCY '2'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE3", true).asInstanceOf[PartitionedRegion]
+    snc.sql("insert into ROW_TEST_TABLE3 VALUES(1,11)")
+
+    val rCopy = region.getPartitionAttributes.getRedundantCopies
+    assert(rCopy === 2)
+
+  }
+
+  test("Test PR with RECOVERDELAY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE4(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "BUCKETS '213'," +
+        "RECOVERYDELAY '2'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE4", true).asInstanceOf[PartitionedRegion]
+
+    val rDelay = region.getPartitionAttributes.getRecoveryDelay
+    assert(rDelay === 2)
+
+  }
+
+  test("Test PR with MAXPART") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE5(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "MAXPARTSIZE '200'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE5", true).asInstanceOf[PartitionedRegion]
+
+    val rDelay = region.getPartitionAttributes.getTotalMaxMemory
+  }
+
+
+  test("Test PR with EVICTION BY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE6(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EVICTION_BY 'LRUMEMSIZE 200'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+  }
+
+  test("Test PR with PERSISTENT") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE7(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'PRIMARY KEY'," +
+        "PERSISTENT 'ASYNCHRONOUS'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE7", true).asInstanceOf[PartitionedRegion]
+  }
+
+  test("Test RR with PERSISTENT") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE8(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PERSISTENT 'ASYNCHRONOUS'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE8", true).asInstanceOf[DistributedRegion]
+    assert(region.getDiskStore != null)
+  }
 }

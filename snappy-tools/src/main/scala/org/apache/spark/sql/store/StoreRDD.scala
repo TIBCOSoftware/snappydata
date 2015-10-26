@@ -3,15 +3,18 @@ package org.apache.spark.sql.store
 import java.sql.Connection
 
 
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.serializer.Serializer
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.sql.collection.{NarrowExecutorLocalSplitDep, CoGroupExecutorLocalPartition}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
@@ -27,9 +30,8 @@ import org.apache.spark.util.{ MutablePair}
  * @param tableName the table name to which we want to write
  * @param getConnection function to get connection
  * @param schema schema of the table
- * @param partitionColumn partitioning column of the table
  * @param preservePartitioning If user has specified to preserve the partitioning of incoming RDD
- * @param numPartitions number of partitions
+
  */
 
 class StoreRDD(@transient sc: SparkContext,
@@ -37,19 +39,46 @@ class StoreRDD(@transient sc: SparkContext,
                tableName: String,
                getConnection: () => Connection,
                schema: StructType,
-               partitionColumn: Option[String],
                preservePartitioning: Boolean,
-               blockMap : Map[InternalDistributedMember, BlockManagerId],
-               numPartitions: Int) extends RDD[Row](sc, Nil) {
+               blockMap : Map[InternalDistributedMember, BlockManagerId]) extends RDD[Row](sc, Nil) {
 
-  private val part: Partitioner = new ColumnPartitioner(numPartitions)
+  val (partitionColumn, totalNumBucket) = getPartitioningInfo(getConnection, tableName)
+
+  private val part: Partitioner = new ColumnPartitioner(totalNumBucket)
 
   private var serializer: Option[Serializer] = None // TDOD use tungsten or Spark inbuilt . Will be easy once this transform into a SparkPlan
 
   override val partitioner = Some(part)
 
+  def  getPartitioningInfo(getConnection: () => Connection , tableName : String) : (Option[String], Int)  = {
+    try {
+      val conn = getConnection()
+
+      val tableSchema = conn.getSchema
+      val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+      val region = Misc.getRegionForTable(resolvedName, true)
+      val (partitionColumn, totalNumBucket) = if (region.isInstanceOf[PartitionedRegion]) {
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+        val numPartitions = region.getTotalNumberOfBuckets
+        val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+        val parColumn = resolver.getColumnNames.headOption
+        println(parColumn.get)
+
+        (parColumn, numPartitions)
+      }else{
+        (None , 0)
+      }
+
+      println(s"$partitionColumn $totalNumBucket")
+      (partitionColumn, totalNumBucket)
+
+    } catch {
+      case NonFatal(e) => throw e;
+    }
+  }
+
   override def getDependencies: Seq[Dependency[_]] = {
-    if(preservePartitioning && prev.partitions.length != numPartitions){
+    if(preservePartitioning && prev.partitions.length != totalNumBucket){
       throw new RuntimeException(s"Preserve partitions can be set if partition of input dataset is equal to partitions of table ")
     }
     if (prev.partitioner == Some(part) || preservePartitioning || !partitionColumn.isDefined) {
@@ -122,6 +151,7 @@ class StoreRDD(@transient sc: SparkContext,
     if (region.isInstanceOf[PartitionedRegion]) {
       val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
       val numPartitions = region.getTotalNumberOfBuckets
+
       val partitions = new Array[Partition](numPartitions)
 
       for (p <- 0 until numPartitions) {
@@ -175,10 +205,8 @@ object StoreRDD{
       "",
       null,
       schema,
-      partitionColumn,
       preservePartitioning,
-      null,
-      numPartitions
+      null
     )
   }
 }

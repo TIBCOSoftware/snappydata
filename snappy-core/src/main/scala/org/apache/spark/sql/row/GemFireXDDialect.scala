@@ -137,7 +137,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       val stmt = conn.createStatement()
       val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='${tableName.toUpperCase}'")
       val result = if (rs.next()) rs.getString(1) else null
-      if(!result.equalsIgnoreCase("REPLICATE") && !result.equalsIgnoreCase("EMPTY")){
+      if(result.equalsIgnoreCase("PARTITION")){
         JdbcExtendedUtils.executeUpdate(
           s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
       }
