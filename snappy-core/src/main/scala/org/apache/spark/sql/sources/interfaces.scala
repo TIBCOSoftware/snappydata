@@ -58,6 +58,15 @@ trait DeletableRelation {
    */
   def delete(filterExpr: String): Int
 
+}
+
+@DeveloperApi
+trait DestroyRelation {
+
+  /**
+   * Truncate the table represented by this relation.
+   */
+  def truncate(): Unit
   /**
    * Destroy and cleanup this relation. It may include, but not limited to,
    * dropping the external table that this relation represents.
@@ -203,6 +212,15 @@ object JdbcExtendedUtils {
         if (!ifExists || tableExists(conn, tableName, dialect, context)) {
           JdbcExtendedUtils.executeUpdate(s"DROP TABLE $tableName", conn)
         }
+    }
+  }
+
+  def truncateTable(conn: Connection, tableName: String, dialect: JdbcDialect): Unit = {
+    dialect match {
+      case d: JdbcExtendedDialect =>
+        JdbcExtendedUtils.executeUpdate(d.truncateTable(tableName), conn)
+      case _ =>
+        JdbcExtendedUtils.executeUpdate(s"TRUNCATE TABLE $tableName", conn)
     }
   }
 

@@ -120,15 +120,6 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 
   }
 
-  override def truncate(tableName: String) = tryExecute(tableName, {
-    case conn =>
-    dialect match {
-      case d: JdbcExtendedDialect => JdbcExtendedUtils.executeUpdate(d.truncateTable(tableName), conn)
-      case _ => JdbcExtendedUtils.executeUpdate(s"truncate table $tableName", conn)
-    }
-
-  })
-
   override def getCachedBatchIterator(tableName: String,  requiredColumns: Array[String],
       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
 

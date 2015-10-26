@@ -239,16 +239,13 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val plan = catalog.lookupRelation(qualifiedTable, None)
     snappy.unwrapSubquery(plan) match {
       case LogicalRelation(br) =>
-        // only uncache the query
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
-          case columnTable: JDBCAppendableRelation => columnTable.truncate
-          case rowTable: JDBCMutableRelation => rowTable.truncate
+          case d: DestroyRelation => d.truncate()
         }
       case _ => throw new AnalysisException(
         s"truncateExternalTable: Table $tableName not an external table")
     }
-
   }
 
   def registerTable[A <: Product : u.TypeTag](tableName: String) = {
@@ -304,9 +301,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       tableName: String,
       provider: String,
       options: Map[String, String]): DataFrame = {
-    if (provider.equalsIgnoreCase("column")) {
-      throw new IllegalArgumentException("Column table cannot be created without provided Schema.")
-    }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
       SaveMode.ErrorIfExists, options)
@@ -437,7 +431,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
-          case d: DeletableRelation => d.destroy(ifExists)
+          case d: DestroyRelation => d.destroy(ifExists)
         }
       case _ => throw new AnalysisException(
         s"dropExternalTable: Table $tableName not an external table")
@@ -447,7 +441,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   /**
    * Drop a temporary table.
    */
-  def dropTempTable(tableName: String, ifExists: Boolean): Unit = {
+  def dropTempTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -837,7 +831,7 @@ object SnappyContext {
         case None =>
           topKHokusai.addEpochData(tupleIterator.asInstanceOf[Iterator[T]].
               toSeq.foldLeft(
-                scala.collection.mutable.Map.empty[T, Long]) {
+            scala.collection.mutable.Map.empty[T, Long]) {
             (m, x) => m + ((x, m.getOrElse(x, 0l) + 1))
           }, time)
         case Some(freqCol) =>

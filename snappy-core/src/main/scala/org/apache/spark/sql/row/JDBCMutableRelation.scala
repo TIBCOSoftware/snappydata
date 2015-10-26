@@ -18,7 +18,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, Partition}
 
 /**
- * A LogicalPlan implementation for an external column table whose contents
+ * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
 class JDBCMutableRelation(
@@ -39,12 +39,12 @@ class JDBCMutableRelation(
     with RowInsertableRelation
     with UpdatableRelation
     with DeletableRelation
+    with DestroyRelation
     with Logging {
 
   override val needConversion: Boolean = false
 
   val driver = DriverRegistry.getDriverClassName(url)
-  println(driver)
 
   private[this] val poolProperties = ExternalStoreUtils
       .getAllPoolProperties(url, driver, _poolProps, hikariCP)
@@ -259,8 +259,9 @@ class JDBCMutableRelation(
   def truncate(): Unit = {
     val conn = JdbcUtils.createConnection(url, connProperties)
     try {
-      JdbcExtendedUtils.executeUpdate(s"truncate table $table", conn)
-    } finally {
+      JdbcExtendedUtils.truncateTable(conn, table, dialect)
+    }
+    finally {
       conn.close()
     }
   }
@@ -392,8 +393,6 @@ final class DefaultSource
     val url = parameters.remove("url")
         .getOrElse(sys.error("JDBC URL option 'url' not specified"))
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
     parameters.remove("serialization.format")
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
@@ -404,8 +403,6 @@ final class DefaultSource
     val lowerBound = parameters.remove("lowerbound")
     val upperBound = parameters.remove("upperbound")
     val numPartitions = parameters.remove("numpartitions")
-
-    driver.foreach(println)
 
     // remove ALLOW_EXISTING property, if remaining
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
