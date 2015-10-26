@@ -6,7 +6,7 @@ import io.snappydata.impl.{LeadImpl, LocatorImpl, ServerImpl}
 
 
 /**
- * Created by hemantb on 10/14/15.
+ * Created by hemantb.
  */
 object ServiceManager {
 

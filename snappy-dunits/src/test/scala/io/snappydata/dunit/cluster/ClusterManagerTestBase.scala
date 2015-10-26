@@ -44,6 +44,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   override
   def tearDown2(): Unit = {
+    GemFireXDUtils.IS_TEST_MODE = false
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {
         val loc = ServiceManager.getLocatorInstance
