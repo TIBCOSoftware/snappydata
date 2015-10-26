@@ -60,7 +60,7 @@ allprojects {
     hadoopVersion = '2.4.1'
     gemfireXDVersion = '2.0-Beta'
     buildFlags = ''
-    testResultsBase = "${rootProject.buildDir}/reports"
+    testResultsBase = "${rootProject.buildDir}/tests/snappy"
   }
 
   if (!buildRoot.isEmpty()) {
@@ -80,6 +80,18 @@ allprojects {
 
     testRuntime 'org.pegdown:pegdown:1.1.0'
   }
+}
+
+def getProcessId() {
+  def name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
+  return name[0..name.indexOf("@")-1]
+}
+
+def getStackTrace(def t) {
+  java.io.StringWriter sw = new java.io.StringWriter()
+  java.io.PrintWriter pw = new java.io.PrintWriter(sw)
+  org.codehaus.groovy.runtime.StackTraceUtils.sanitize(t).printStackTrace(pw)
+  return sw.toString()
 }
 
 // Configure scalaStyle for only non spark related modules
@@ -107,9 +119,10 @@ subprojects {
 
   task scalaTest(type: Test) {
     actions = [ new com.github.maiflai.ScalaTestAction() ]
+    maxParallelForks = Runtime.getRuntime().availableProcessors()
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
-    maxParallelForks = Runtime.getRuntime().availableProcessors()
+    testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
     extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
@@ -120,37 +133,57 @@ subprojects {
     if (rootProject.hasProperty('singleSuite')) {
       suite singleSuite
     }
-    reports.html.destination = file("${testResultsBase}/scalatest")
-    reports.junitXml.destination = file(testResultsBase)
-    binResultsDir = file("${testResultsBase}/scalatest/binary")
+    workingDir = "${testResultsBase}/scalatest"
 
-    workingDir = "${testResultsBase}/output"
-    workingDir.mkdirs()
+    binResultsDir = file("${workingDir}/binary")
+    reports.html.destination = file("${workingDir}/html")
+    reports.junitXml.destination = file(workingDir)
 
-    testLogging.exceptionFormat = 'full'
+    doFirst {
+      delete workingDir
+      file(workingDir).mkdirs()
+    }
   }
   test {
+    //maxParallelForks = Runtime.getRuntime().availableProcessors()
+    maxParallelForks = 1
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
-    maxParallelForks = Runtime.getRuntime().availableProcessors()
-
-    reports.html.destination = file("${testResultsBase}/junit")
-    reports.junitXml.destination = file(testResultsBase)
-    binResultsDir = file("${testResultsBase}/junit/binary")
-
-    workingDir = "${testResultsBase}/output"
-    workingDir.mkdirs()
-
     testLogging.exceptionFormat = 'full'
+
+    workingDir = "${testResultsBase}/junit"
+
+    binResultsDir = file("${workingDir}/binary")
+    reports.html.destination = file("${workingDir}/html")
+    reports.junitXml.destination = file(workingDir)
+    reports.junitXml.setOutputPerTestCase true
+
     def eol = System.getProperty('line.separator')
-    def progress = new File(testResultsBase, "progress.txt")
     beforeTest { desc ->
       def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
-      progress << "$now Starting test $desc.className $desc.name$eol"
+      def progress = new File(workingDir, "progress.txt")
+      def output = new File(workingDir, "output.txt")
+      progress << "${now} Starting test ${desc.className} ${desc.name}${eol}"
+      output << "${now} STARTING TEST ${desc.className} ${desc.name}${eol}${eol}"
+    }
+    onOutput { desc, event ->
+      def output = new File(workingDir, "output.txt")
+      output  << event.message
     }
     afterTest { desc, result ->
       def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
-      progress << "$now Completed test $desc.className $desc.name with result: ${result.resultType}$eol"
+      def progress = new File(workingDir, "progress.txt")
+      def output = new File(workingDir, "output.txt")
+      progress << "${now} Completed test ${desc.className} ${desc.name} with result: ${result.resultType}${eol}"
+      output << "${eol}${now} COMPLETED TEST ${desc.className} ${desc.name} with result: ${result.resultType}${eol}${eol}"
+      result.exceptions.each { t ->
+        progress << "  EXCEPTION: ${getStackTrace(t)}${eol}"
+        output << "${getStackTrace(t)}${eol}"
+      }
+    }
+    doFirst {
+      delete workingDir
+      file(workingDir).mkdirs()
     }
   }
   check.dependsOn ':product', test, scalaTest

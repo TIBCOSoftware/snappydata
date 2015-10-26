@@ -31,7 +31,6 @@ apply plugin: 'java'
   test {
     minHeapSize '128m'
     maxHeapSize '1g'
-    maxParallelForks 8
 
     include '**/*DUnitTest.class'
   }
