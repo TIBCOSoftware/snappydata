@@ -304,6 +304,34 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
-    StoreUtils.getPartitionsPartitionedTable(_sc, tableName, schema, null)
+    val resolvedName = StoreUtils.lookupName(tableName, schema)
+    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+    val numPartitions = region.getTotalNumberOfBuckets
+    val partitions = new Array[Partition](numPartitions)
+
+    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sparkContext).
+        keySet.zipWithIndex
+    val hostSet = numberedPeers.map(m => {
+      Tuple2(m._1.host, m._1)
+    }).toMap
+
+    val localBackend = sparkContext.schedulerBackend match {
+      case lb: LocalBackend => true
+      case _ => false
+    }
+
+    for (p <- 0 until numPartitions) {
+      //TODO there should be a cleaner way to translate GemFire membership IDs to BlockManagerIds
+      //TODO apart from primary members secondary nodes should also be included in preferred node list
+      val distMember = region.getBucketPrimary(p)
+      val prefNode = if (localBackend) {
+        Option(hostSet.head._2)
+      } else {
+        hostSet.get(distMember.getIpAddress.getHostAddress)
+      }
+      partitions(p) = new ExecutorLocalPartition(p, prefNode.get)
+    }
+    partitions
+
   }
 }
