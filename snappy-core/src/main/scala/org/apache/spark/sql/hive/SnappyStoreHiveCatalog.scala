@@ -3,6 +3,8 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
+import org.apache.spark.sql.streaming.SocketStreamRelation
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -25,7 +27,6 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.streaming.StreamRelation
 import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
@@ -342,6 +343,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
   def lookupRelation(tableIdent: QualifiedTableName,
       alias: Option[String]): LogicalPlan = {
+    System.out.println("YOGS tableIdent", tableIdent)
+    System.out.println("YOGS tables", tables)
     val plan = tables.getOrElse(tableIdent,
       tableIdent.getTableOption(client) match {
         case Some(table) =>
@@ -388,6 +391,9 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override def registerTable(tableIdentifier: Seq[String],
       plan: LogicalPlan): Unit = {
+    System.out.println("Yogs tablename ", newQualifiedTableName(tableIdentifier))
+    System.out.println("Yogs plan ", plan)
+
     tables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
@@ -643,18 +649,19 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */
   private[sql] def getStreamTableRelation[T](
-      tableIdentifier: String): StreamRelation[T] = {
+      tableIdentifier: String): SocketStreamRelation[T] = {
+    //TODO Yogesh, this needs to handle all types of StreamRelations
     getStreamTableRelation(newQualifiedTableName(tableIdentifier))
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */
   private[sql] def getStreamTableRelation[T](
-      tableName: QualifiedTableName): StreamRelation[T] = {
+      tableName: QualifiedTableName): SocketStreamRelation[T] = {
     val plan: LogicalPlan = tables.getOrElse(tableName,
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
 
     plan match {
-      case LogicalRelation(sr: StreamRelation[T]) => sr
+      case LogicalRelation(sr: SocketStreamRelation[T]) => sr
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }

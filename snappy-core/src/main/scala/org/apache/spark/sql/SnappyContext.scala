@@ -1,5 +1,7 @@
 package org.apache.spark.sql
 
+import org.apache.spark.sql.streaming.StreamDDLStrategy
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -28,6 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.sql.streaming.StreamingCtxtHolder
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied
@@ -35,7 +38,7 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-protected[sql] final class SnappyContext(sc: SparkContext)
+protected class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
   self =>
@@ -57,7 +60,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   @transient
   override protected[sql] lazy val catalog =
-    new SnappyStoreHiveCatalog(self)
+    new SnappyStoreHiveCatalog  (self)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
@@ -500,7 +503,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+      SnappyStrategies, StreamDDLStrategy, StoreStrategy) ++ super.strategies
 
     object SnappyStrategies extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
@@ -681,10 +684,6 @@ object snappy extends Serializable {
     }
   }
 
-  implicit def snappyOperationsOnDStream[T: ClassTag](
-      ds: DStream[T]): SnappyDStreamOperations[T] =
-    SnappyDStreamOperations(SnappyContext(ds.context.sparkContext), ds)
-
   implicit class SparkContextOperations(val s: SparkContext) {
     def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
       StreamingCtxtHolder(s, batchInterval)
@@ -729,7 +728,10 @@ object SnappyContext {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName,
+    "socket" -> classOf[streaming.SocketStreamSource].getCanonicalName,
+    "file" -> classOf[streaming.FileStreamSource].getCanonicalName,
+    "kafka" -> classOf[streaming.KafkaStreamSource].getCanonicalName
   )
 
   def apply(sc: SparkContext,
@@ -1003,49 +1005,3 @@ private[sql] case class SnappyOperations(context: SnappyContext,
   }
 }
 
-private[sql] case class SnappyDStreamOperations[T: ClassTag](
-    context: SnappyContext, ds: DStream[T]) {
-
-  def saveStream(sampleTab: Seq[String],
-      formatter: (RDD[T], StructType) => RDD[Row],
-      schema: StructType,
-      transform: RDD[Row] => RDD[Row] = null): Unit =
-    context.saveStream(ds, sampleTab, formatter, schema, transform)
-
-  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
-      jdbcSource: Map[String, String]): Unit = {
-    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  def saveToExternalTable(externalTable: String, schema: StructType,
-      jdbcSource: Map[String, String]): Unit = {
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  private def saveStreamToExternalTable(externalTable: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = context.catalog.getExternalTable(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-
-    ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
-  }
-}
