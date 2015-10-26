@@ -343,8 +343,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
   def lookupRelation(tableIdent: QualifiedTableName,
       alias: Option[String]): LogicalPlan = {
-    System.out.println("YOGS tableIdent", tableIdent)
-    System.out.println("YOGS tables", tables)
     val plan = tables.getOrElse(tableIdent,
       tableIdent.getTableOption(client) match {
         case Some(table) =>
@@ -391,9 +389,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override def registerTable(tableIdentifier: Seq[String],
       plan: LogicalPlan): Unit = {
-    System.out.println("Yogs tablename ", newQualifiedTableName(tableIdentifier))
-    System.out.println("Yogs plan ", plan)
-
     tables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 

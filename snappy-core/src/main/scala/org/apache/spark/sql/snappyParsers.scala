@@ -15,7 +15,7 @@ import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.streaming.{WindowLogicalPlan, SocketStreamRelation, StreamingCtxtHolder}
+import org.apache.spark.sql.streaming.{StreamPlan, WindowLogicalPlan, SocketStreamRelation, StreamingCtxtHolder}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming._
 import org.apache.spark.sql.catalyst.SqlParser
@@ -380,7 +380,8 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val resolved = ResolvedDataSource(sqlContext, userColumns,
       Array.empty[String], provider, options)
     val plan = LogicalRelation(resolved.relation)
-    val catalog = SnappyContext(sqlContext.sparkContext).catalog
+    //val catalog = SnappyContext(sqlContext.sparkContext).catalog
+    val catalog = StreamPlan.currentContext.get().catalog
     val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
@@ -388,11 +389,6 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
       case Some(x) => throw new IllegalStateException(
         s"Stream name $streamTable already defined")
     }
-    System.out.println("YOGS streamTable", streamTable)
-    System.out.println("YOGS provider", provider)
-    System.out.println("YOGS plan", plan)
-    System.out.println("YOGS tables", catalog.tables)
-
     Seq.empty
   }
 }
