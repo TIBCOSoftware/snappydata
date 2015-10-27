@@ -1,6 +1,8 @@
 package io.snappydata.gemxd
 
 import java.sql.{ResultSet, PreparedStatement, Statement, Connection}
+import scala.util.control.NonFatal
+
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.jdbc.JdbcTestBase
 
@@ -11,6 +13,17 @@ import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerT
  * Created by vivek on 16/10/15.
  */
 class BasicStoreTest(s: String) extends TestUtil(s) {
+
+  override protected def tearDown(): Unit = {
+    val conn = TestUtil.getConnection
+    try {
+      conn.createStatement().execute("drop table if exists t1")
+    } catch {
+      case NonFatal(e) => // ignore
+      case other => throw other
+    }
+    conn.close()
+  }
 
   @throws(classOf[Exception])
   def testStringAsDatatype_runInXD {
@@ -33,6 +46,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     //println("vivek = " + ret1)
     assert(111 == ret1)
     assert(rs.next == false)
+    conn.close()
   }
 
   @throws(classOf[Exception])
@@ -60,7 +74,8 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     )
 
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
 
     val schemaString = "col1,col2"

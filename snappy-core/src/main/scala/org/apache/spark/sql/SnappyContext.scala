@@ -3,10 +3,11 @@ package org.apache.spark.sql
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => u}
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.util.SqlUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
@@ -14,14 +15,14 @@ import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.{InternalRow, CatalystTypeConverters, ScalaReflection}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -78,9 +79,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       collectSamples(rows, aqpTables, time.milliseconds)
     })
   }
-
-  def externalTable(tableName: String): DataFrame =
-    DataFrame(this, catalog.lookupRelation(Seq(tableName)))
 
   protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
       time: Long,
@@ -360,8 +358,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params)
     LogicalRelation(resolved.relation)
-
-
   }
 
   /**
