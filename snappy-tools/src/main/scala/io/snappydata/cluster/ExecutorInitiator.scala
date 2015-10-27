@@ -150,7 +150,7 @@ object ExecutorInitiator {
               System.out.println("exception " + e)
               Misc.checkIfCacheClosing(e)
           }
-        }
+        } // end of while(true)
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
