@@ -2,7 +2,7 @@ package io.snappydata.gemxd
 
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks}
 import io.snappydata.cluster.ExecutorInitiator
-import org.apache.spark.scheduler.cluster.SnappyClusterManager
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -22,7 +22,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks {
   override def getDriverURL: String = {
     //TODO: Hemant: If the driverURL is null, GfxdProfile exchange
     //TODO: Hemant: may not change it and may point to a stale url.
-    return SnappyClusterManager.schedulerBackend match {
+    return SnappyEmbeddedModeClusterManager.schedulerBackend match {
       case Some(x) =>
         x.driverUrl
 
