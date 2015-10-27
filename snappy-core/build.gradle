@@ -32,3 +32,6 @@ dependencies {
     testRuntime files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
   }
 }
+
+test.dependsOn ':cleanJUnit'
+scalaTest.dependsOn ':cleanScalaTest'
