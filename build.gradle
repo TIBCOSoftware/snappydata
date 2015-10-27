@@ -60,7 +60,6 @@ allprojects {
     hadoopVersion = '2.4.1'
     gemfireXDVersion = '2.0-Beta'
     buildFlags = ''
-    testResultsBase = "${rootProject.buildDir}/tests/snappy"
   }
 
   if (!buildRoot.isEmpty()) {
@@ -68,6 +67,10 @@ allprojects {
   } else {
     // default output directory like in sbt/maven
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
+  }
+
+  ext {
+    testResultsBase = "${rootProject.buildDir}/tests/snappy"
   }
 
   dependencies {
@@ -102,6 +105,17 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/)}) {
   }
 }
 
+task cleanScalaTest << {
+  def workingDir = "${testResultsBase}/scalatest"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
+task cleanJUnit << {
+  def workingDir = "${testResultsBase}/junit"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
+
 subprojects {
   // the run task for a selected sub-project
   task run(type:JavaExec) {
@@ -119,7 +133,7 @@ subprojects {
 
   task scalaTest(type: Test) {
     actions = [ new com.github.maiflai.ScalaTestAction() ]
-    maxParallelForks = Runtime.getRuntime().availableProcessors()
+    maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
     testLogging.exceptionFormat = 'full'
@@ -135,28 +149,21 @@ subprojects {
     }
     workingDir = "${testResultsBase}/scalatest"
 
-    binResultsDir = file("${workingDir}/binary")
-    reports.html.destination = file("${workingDir}/html")
+    binResultsDir = file("${workingDir}/binary/${project.name}")
+    reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
-
-    doFirst {
-      delete workingDir
-      file(workingDir).mkdirs()
-    }
   }
   test {
-    //maxParallelForks = Runtime.getRuntime().availableProcessors()
-    maxParallelForks = 1
+    maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
     testLogging.exceptionFormat = 'full'
 
     workingDir = "${testResultsBase}/junit"
 
-    binResultsDir = file("${workingDir}/binary")
-    reports.html.destination = file("${workingDir}/html")
+    binResultsDir = file("${workingDir}/binary/${project.name}")
+    reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
-    reports.junitXml.setOutputPerTestCase true
 
     def eol = System.getProperty('line.separator')
     beforeTest { desc ->
@@ -181,12 +188,8 @@ subprojects {
         output << "${getStackTrace(t)}${eol}"
       }
     }
-    doFirst {
-      delete workingDir
-      file(workingDir).mkdirs()
-    }
   }
-  check.dependsOn ':product', test, scalaTest
+  check.dependsOn test, scalaTest
 
   // apply default manifest
   jar {
