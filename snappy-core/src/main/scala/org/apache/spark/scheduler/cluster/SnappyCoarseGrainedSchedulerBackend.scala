@@ -1,8 +1,8 @@
 package org.apache.spark.scheduler.cluster
 
-import org.apache.spark.{SparkEnv, SparkContext}
+import org.apache.spark.SparkEnv
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
-import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
+import org.apache.spark.scheduler.TaskSchedulerImpl
 
 /**
  * Created by hemantb on 10/5/15.
@@ -43,25 +43,3 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   }
 }
 
-object SnappyClusterManager extends ExternalClusterManager {
-
-  var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
-
-  def createTaskScheduler(sc: SparkContext): TaskScheduler = new TaskSchedulerImpl(sc)
-
-  def canCreate(masterURL: String): Boolean = if (masterURL == "snappy") true else false
-
-  def createSchedulerBackend(sc: SparkContext,
-      scheduler: TaskScheduler): SchedulerBackend = {
-    schedulerBackend = Some(
-      new SnappyCoarseGrainedSchedulerBackend(
-        scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv))
-    schedulerBackend.get
-  }
-
-  def intialize(scheduler: TaskScheduler,
-      backend: SchedulerBackend): Unit = {
-    scheduler.asInstanceOf[TaskSchedulerImpl].initialize(backend)
-  }
-
-}

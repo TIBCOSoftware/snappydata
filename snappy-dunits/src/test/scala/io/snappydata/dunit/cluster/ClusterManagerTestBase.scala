@@ -11,7 +11,7 @@ import dunit.{SerializableRunnable, Host, DistributedTestBase}
 import io.snappydata.{Locator, Server, ServiceManager}
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.scheduler.cluster.SnappyClusterManager
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 
 /**
  * Created by hemant on 19/10/15.
@@ -78,7 +78,7 @@ class ClusterManagerTestUtils {
     assert(sc == null)
     val props = new Properties
     props.setProperty("host-data", "false")
-    SparkContext.registerClusterManager(SnappyClusterManager)
+    SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf().setMaster("external:snappy").setAppName("myapp")
     new File("./" + "driver").mkdir()
     new File("./" + "driver/events").mkdir()
