@@ -311,6 +311,22 @@ task product {
   }
 }
 
+task cleanAll {
+  dependsOn getTasksByName('clean', true).collect { it.path }
+}
+task buildAll {
+  dependsOn getTasksByName('assemble', true).collect { it.path }
+  dependsOn getTasksByName('testClasses', true).collect { it.path }
+  mustRunAfter cleanAll
+}
+task checkAll {
+  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check"
+  if (project.hasProperty('spark')) {
+    dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+  }
+  mustRunAfter buildAll
+  mustRunAfter product
+}
 task precheckin {
-  dependsOn clean, assemble, testClasses, product, check
+  dependsOn cleanAll, buildAll, product, checkAll
 }

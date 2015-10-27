@@ -33,5 +33,13 @@ dependencies {
   }
 }
 
-test.dependsOn ':cleanJUnit'
-scalaTest.dependsOn ':cleanScalaTest'
+scalaTest {
+  maxParallelForks = 4
+  maxHeapSize '4g'
+  dependsOn ':cleanScalaTest'
+}
+test {
+  maxParallelForks = 4
+  maxHeapSize '4g'
+  dependsOn ':cleanJUnit'
+}
