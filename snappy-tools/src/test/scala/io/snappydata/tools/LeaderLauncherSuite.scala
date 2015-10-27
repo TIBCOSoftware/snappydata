@@ -5,6 +5,7 @@ import java.io.{PrintStream, ByteArrayOutputStream}
 import scala.util.matching.Regex
 import scala.util.{Success, Failure, Try}
 
+import com.gemstone.gemfire.internal.cache.CacheServerLauncher
 import com.gemstone.gemfire.internal.{DistributionLocator, AvailablePort}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
 import io.snappydata.SnappyFunSuite
@@ -20,8 +21,8 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     val f = new java.io.File("tests-snappy-loc-dir");
     f.mkdir()
-    System.setProperty("gemfire.CacheServerLauncher.dontExitAfterLaunch", "true")
 
+    CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = true
     GfxdDistributionLocator.main(Array(
       "start",
       "-dir=" + f.getAbsolutePath,
@@ -36,7 +37,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       "-dir=tests-snappy-loc-dir"
     ))
     deleteDir(new java.io.File("tests-snappy-loc-dir"))
-    System.setProperty("gemfire.CacheServerLauncher.dontExitAfterLaunch", "false")
+    CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
   }
 
   test("simple leader launch") {

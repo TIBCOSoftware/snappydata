@@ -6,7 +6,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
-import org.apache.spark.sql.catalyst.{TableIdentifier, ParserDialect, SqlParser}
+import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
@@ -20,7 +20,7 @@ import org.apache.spark.streaming._
  * 1) ERROR ESTIMATE AVG: error estimate for mean of a column/expression
  * 2) ERROR ESTIMATE SUM: error estimate for sum of a column/expression
  */
-private[sql] class SnappyParser extends SqlParser {
+object SnappyParser extends SqlParserBase {
 
   protected val ERROR = Keyword("ERROR")
   protected val ESTIMATE = Keyword("ESTIMATE")
@@ -58,11 +58,8 @@ private[sql] class SnappyParser extends SqlParser {
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
 private[sql] class SnappyParserDialect extends ParserDialect {
 
-  @transient
-  protected val sqlParser = new SnappyParser
-
   override def parse(sqlText: String): LogicalPlan = {
-    sqlParser.parse(sqlText)
+    SnappyParser.parse(sqlText)
   }
 }
 
@@ -96,7 +93,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
       case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
-        val options = new CaseInsensitiveMap(opts.getOrElse(Map.empty[String, String]))
+        val options = opts.getOrElse(Map.empty[String, String])
         val provider = SnappyContext.getProvider(providerName)
         if (query.isDefined) {
           if (schemaString.length > 0) {
@@ -163,16 +160,15 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected lazy val createStream: Parser[LogicalPlan] =
     (CREATE ~> STREAM ~> TABLE ~> ident) ~
         tableCols.? ~ (OPTIONS ~> options) ^^ {
-      case streamname ~ cols ~ opts =>
+      case streamName ~ cols ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-        CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
+        CreateStream(streamName, userColumns, opts)
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
     (CREATE ~> SAMPLED ~> TABLE ~> ident) ~
         (OPTIONS ~> options) ^^ {
-      case samplename ~ opts =>
-        CreateSampledTable(samplename, new CaseInsensitiveMap(opts))
+      case sampleName ~ opts => CreateSampledTable(sampleName, opts)
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
@@ -435,8 +431,10 @@ object OptsUtil {
   def newAnalysisException(msg: String) = new AnalysisException(msg)
 
   def getOption(optionName: String, options: Map[String, String]): String =
-    options.getOrElse(optionName, throw newAnalysisException(
-      s"Option $optionName not defined"))
+    options.getOrElse(optionName, options.collectFirst {
+      case (k, v) if (k.equalsIgnoreCase(optionName)) => v
+    }.getOrElse(throw newAnalysisException(
+      s"Option $optionName not defined")))
 
   def getOptionally(optionName: String,
       options: Map[String, String]): Option[String] = options.get(optionName)
