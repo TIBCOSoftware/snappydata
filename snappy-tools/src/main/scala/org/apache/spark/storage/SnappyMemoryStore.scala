@@ -11,6 +11,15 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 private[spark] class SnappyMemoryStore(blockManager: BlockManager, maxMemory: Long)
     extends MemoryStore(blockManager, maxMemory) {
 
+  override def freeMemory: Long = {
+    if(SnappyMemoryStore.isEvictionUp()) {
+      logInfo(s"Snappy-store EVICTION UP event detected")
+      0
+    } else {
+      super.freeMemory
+    }
+  }
+
   override def ensureFreeSpace(
       blockIdToAdd: BlockId,
       space: Long): ResultWithDroppedBlocks = {
@@ -18,18 +27,21 @@ private[spark] class SnappyMemoryStore(blockManager: BlockManager, maxMemory: Lo
     val droppedBlocks = new ArrayBuffer[(BlockId, BlockStatus)]
 
     if (SnappyMemoryStore.isCriticalUp()) {
-      logInfo(s"Will not store $blockIdToAdd as CRITICAL UP event is received")
+      logInfo(s"Will not store $blockIdToAdd as CRITICAL UP event is detected")
       return ResultWithDroppedBlocks(success = false, droppedBlocks)
     }
     super.ensureFreeSpace(blockIdToAdd, space)
   }
-
 }
 
 object SnappyMemoryStore {
 
   def isCriticalUp(): Boolean = {
     GemFireStore.getBootedInstance != null && GemFireStore.getBootedInstance.thresholdListener.isCritical
+  }
+
+  def isEvictionUp(): Boolean = {
+    GemFireStore.getBootedInstance != null && GemFireStore.getBootedInstance.thresholdListener.isEviction
   }
 
 }

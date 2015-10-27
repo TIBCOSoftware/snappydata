@@ -21,7 +21,7 @@ private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory
     }
 
     if (isCriticalUp) {
-      logInfo(s"Will not store $numBytes bytes as CRITICAL UP event is received")
+      logInfo(s"Will not store $numBytes bytes as CRITICAL UP event is detected")
       0
     } else {
       super.tryToAcquire(numBytes)
