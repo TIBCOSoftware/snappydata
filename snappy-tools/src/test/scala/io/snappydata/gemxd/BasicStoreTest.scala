@@ -6,7 +6,7 @@ import scala.util.control.NonFatal
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.jdbc.JdbcTestBase
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{SaveMode, Row}
 import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerType}
 
 /**
@@ -62,8 +62,8 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     snContext.sql("set spark.sql.shuffle.partitions=6")
 
     val props = Map(
-      //"url" -> "jdbc:snappydata:;mcast-port=45672;persist-dd=false;",
-      "url" -> "jdbc:gemfirexd:;mcast-port=45672;persist-dd=false;",
+      "url" -> "jdbc:snappydata:;mcast-port=45672;persist-dd=false;",
+      //"url" -> "jdbc:gemfirexd:;mcast-port=45672;persist-dd=false;",
       "poolImpl" -> "tomcat",
       //"single-hop-enabled" -> "true",
       //"poolProps" -> "",
@@ -86,8 +86,9 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
         fieldName, schemaTypes(i), i >= 4)
     })
 
-    //dataDF.registerTempTable("t1")
-    snContext.registerAndInsertIntoExternalStore(dataDF, "t1", schema, props)
+    val tableName : String = "t1"
+    snContext.createExternalTable(tableName, "column", dataDF.schema, props)
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
     //sc.createColumnTable("t1", dataDF.schema, "jdbcColumnar", props)
     //dataDF.write.format("jdbcColumnar").mode(SaveMode.Append).options(props).saveAsTable("t1")
 
@@ -96,6 +97,8 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     doPrint("=============== RESULTS START ===============")
     result.collect.foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
+
+    snContext.sql("drop table t1")
   }
 
   def verifyRows(r: Row) : Unit = {
