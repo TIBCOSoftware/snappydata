@@ -1,14 +1,17 @@
 package io.snappydata.impl
 
+import java.io.File
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
 
+import akka.actor.ActorSystem
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.NetworkInterface
+import com.typesafe.config.{ConfigFactory, Config}
 import io.snappydata.{Lead, LocalizedMessages, Utils}
 import org.slf4j.LoggerFactory
 import spark.jobserver.JobServer
@@ -36,7 +39,7 @@ class LeadImpl extends ServerImpl with Lead {
   }
 
   private val latch = new CountDownLatch(1)
-  private var notificationCallback: (() => Unit) = null
+  private var notificationCallback: (() => Unit) = _
   private lazy val primaryLeadNodeWaiter = scheduleWaitForPrimaryDeparture
 
   private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
@@ -54,7 +57,7 @@ class LeadImpl extends ServerImpl with Lead {
         // check for leader's primary election
         primaryLeaderLock.tryLock() match {
           case true =>
-            startAddOnServices()
+            startAddOnServices(bootProperties)
           case false =>
             serverstatus = State.STANDBY
             primaryLeadNodeWaiter.start()
@@ -125,21 +128,32 @@ class LeadImpl extends ServerImpl with Lead {
   }
 
   @throws(classOf[Exception])
-  private[snappydata] def startAddOnServices() = {
+  private[snappydata] def startAddOnServices(bootProperties: Properties) = {
 
     genericLogger.info("Starting job server...")
-    JobServer.main(getJobServerArgs())
-  }
 
-  def getJobServerArgs(): Array[String] = {
+    def getConfig(args: Array[String]) : Config = {
 
-    val conf = bootProperties.getProperty("jobserver.config")
+      val notConfigurable = ConfigFactory.parseResources("jobserver-overrides")
 
-    conf match {
-      case null => Array()
-      case conf => Array(conf)
+      val bootConfig = notConfigurable.withFallback(ConfigFactory.parseProperties(bootProperties))
+
+      val snappyDefaults = bootConfig.withFallback(
+          ConfigFactory.parseResources("jobserver-defaults"))
+
+      snappyDefaults.withFallback(ConfigFactory.load()).resolve()
     }
 
+    val confFile = bootProperties.getProperty("jobserver.config") match {
+      case null => Array[String]()
+      case c => Array(c)
+    }
+
+    JobServer.start(confFile, getConfig, createActorSystem)
+  }
+
+  def createActorSystem(conf: Config): ActorSystem = {
+    ActorSystem("SnappyLeadJobServer", conf)
   }
 
   @throws(classOf[SQLException])

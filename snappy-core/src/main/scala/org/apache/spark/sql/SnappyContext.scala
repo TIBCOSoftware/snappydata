@@ -35,7 +35,7 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-protected[sql] final class SnappyContext(sc: SparkContext)
+class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
   self =>
