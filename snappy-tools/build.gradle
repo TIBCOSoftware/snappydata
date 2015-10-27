@@ -47,6 +47,10 @@ dependencies {
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }
 
+test.dependsOn ':cleanJUnit'
+scalaTest.dependsOn ':cleanScalaTest'
+check.dependsOn ':product'
+
 shadowJar {
   zip64 = true
 
