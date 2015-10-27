@@ -40,6 +40,6 @@ scalaTest {
 }
 test {
   maxParallelForks = 4
-  maxHeapSize '4g'
+  maxHeapSize '2g'
   dependsOn ':cleanJUnit'
 }
