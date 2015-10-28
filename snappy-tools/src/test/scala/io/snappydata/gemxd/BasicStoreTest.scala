@@ -10,7 +10,7 @@ import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerT
 /**
  * Created by vivek on 16/10/15.
  */
-class BasicStoreTest(s: String) extends JdbcTestBase(s) {
+class BasicStoreTest(s: String) extends TestUtil(s) {
 
   @throws(classOf[Exception])
   def testStringAsDatatype_runInXD {

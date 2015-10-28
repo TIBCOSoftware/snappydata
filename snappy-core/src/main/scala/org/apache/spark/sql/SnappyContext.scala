@@ -21,7 +21,7 @@ import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedData
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -173,6 +173,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         tableIdent, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
@@ -205,8 +206,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       }
     }
 
-
-
     val cached = rdd.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
@@ -233,6 +232,20 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     cacheManager.lookupCachedData(catalog.lookupRelation(
       tableName)).foreach(_.cachedRepresentation.
         asInstanceOf[InMemoryAppendableRelation].truncate())
+  }
+
+  def truncateExternalTable(tableName: String): Unit = {
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    val plan = catalog.lookupRelation(qualifiedTable, None)
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(br) =>
+        cacheManager.tryUncacheQuery(DataFrame(self, plan))
+        br match {
+          case d: DestroyRelation => d.truncate()
+        }
+      case _ => throw new AnalysisException(
+        s"truncateExternalTable: Table $tableName not an external table")
+    }
   }
 
   def registerTable[A <: Product : u.TypeTag](tableName: String) = {
@@ -332,6 +345,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     else options + (dbtableProp -> tableIdent.toString)
 
     val source = SnappyContext.getProvider(provider)
+
     val resolved = schemaDDL match {
       case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
         schema, source, mode, params)
@@ -346,6 +360,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params)
     LogicalRelation(resolved.relation)
+
+
   }
 
   /**
@@ -382,19 +398,26 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       dbtableProp))) options
     else options + (dbtableProp -> tableIdent.toString)
 
+    // this gives the provider..
     val source = SnappyContext.getProvider(provider)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
 
-    catalog.registerExternalTable(tableIdent, Some(data.schema),
-      partitionColumns, source, params)
+    if (catalog.tableExists(tableIdent) && mode == SaveMode.Overwrite) {
+      // uncache the previous results and don't register again
+      cacheManager.tryUncacheQuery(data)
+    }
+    else {
+      catalog.registerExternalTable(tableIdent, Some(data.schema),
+        partitionColumns, source, params)
+    }
     LogicalRelation(resolved.relation)
   }
 
   /**
    * Drop an external table created by a call to createExternalTable.
    */
-  def dropExternalTable(tableName: String, ifExists: Boolean): Unit = {
+  def dropExternalTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -408,7 +431,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
-          case d: DeletableRelation => d.destroy(ifExists)
+          case d: DestroyRelation => d.destroy(ifExists)
         }
       case _ => throw new AnalysisException(
         s"dropExternalTable: Table $tableName not an external table")
@@ -418,7 +441,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   /**
    * Drop a temporary table.
    */
-  def dropTempTable(tableName: String, ifExists: Boolean): Unit = {
+  def dropTempTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -705,8 +728,8 @@ object SnappyContext {
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
-    "jdbc" -> classOf[row.DefaultSource].getCanonicalName
-    //"jdbcColumnar" -> classOf[columnar.DefaultSource].getCanonicalName
+    "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName
   )
 
   def apply(sc: SparkContext,
@@ -808,7 +831,7 @@ object SnappyContext {
         case None =>
           topKHokusai.addEpochData(tupleIterator.asInstanceOf[Iterator[T]].
               toSeq.foldLeft(
-                scala.collection.mutable.Map.empty[T, Long]) {
+            scala.collection.mutable.Map.empty[T, Long]) {
             (m, x) => m + ((x, m.getOrElse(x, 0l) + 1))
           }, time)
         case Some(freqCol) =>

@@ -28,6 +28,7 @@ class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
 
   override
   def tearDown2(): Unit = {
+    GemFireXDUtils.IS_TEST_MODE = false
   }
 
   /**

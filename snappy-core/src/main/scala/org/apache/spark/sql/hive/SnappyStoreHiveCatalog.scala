@@ -37,6 +37,7 @@ import org.apache.spark.{Logging, Partition, TaskContext}
 final class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
 
+
   override val conf = context.conf
 
   val tables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
@@ -406,7 +407,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
    * Creates a data source table (a table created with USING clause) in Hive's
    * meta-store. Returns true when the table has been created else false.
    *
-   * @param tableType the type of external table: ROW, COLUMNAR, SAMPLE etc
+   * @param tableType the type of external table: ROW, COLUMN, SAMPLE etc
    */
   def createDataSourceTable(
       tableIdent: QualifiedTableName,
@@ -545,6 +546,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     tables.put(tableIdent, dummyDF.logicalPlan)
     context.cacheManager.cacheQuery_ext(dummyDF,
       Some(tableIdent.table), externalStore)
+
     context.appendToCache(df, tableIdent.table)
   }
 
@@ -729,7 +731,7 @@ object ExternalTableType extends Enumeration {
   type Type = Value
 
   val Row = Value("ROW")
-  val Columnar = Value("COLUMNAR")
+  val Columnar = Value("COLUMN")
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")

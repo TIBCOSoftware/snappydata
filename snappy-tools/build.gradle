@@ -1,5 +1,4 @@
 apply plugin: 'scala'
-apply plugin: 'com.github.maiflai.scalatest'
 apply plugin: 'com.github.johnrengelman.shadow'
 
 compileScala.options.encoding = 'UTF-8'
@@ -16,10 +15,12 @@ dependencies {
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
   } else {
     compile 'org.apache.spark:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'org.apache.spark:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'org.apache.spark:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'org.apache.spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
   }
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
@@ -42,13 +43,15 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
-  compile 'jline:jline:2.12'
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }
 
+test.dependsOn ':cleanJUnit'
+scalaTest.dependsOn ':cleanScalaTest'
+check.dependsOn ':product'
+
 shadowJar {
-  dependsOn jar
   zip64 = true
 
   //inputs.files jar.outputs.files
