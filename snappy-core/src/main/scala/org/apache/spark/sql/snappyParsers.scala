@@ -71,7 +71,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream | createSampled | strmctxt | truncateTable
+        createStream | createSampled | strmctxt | truncateTable | createIndex
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -82,6 +82,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val INIT = Keyword("INIT")
   protected val DROP = Keyword("DROP")
   protected val TRUNCATE = Keyword("TRUNCATE")
+  protected val INDEX = Keyword("INDEX")
+  protected val ON = Keyword("ON")
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s+" +
       OPTIONS.str, Pattern.CASE_INSENSITIVE)
@@ -143,6 +145,12 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
               schemaDDL, provider, allowExisting.isDefined, options)
           }
         }
+    }
+
+  protected lazy val createIndex: Parser[LogicalPlan] =
+    (CREATE ~> INDEX ~> ON ~> tableIdentifier) ~ ("(" ~ ident ~ ("," ~ ident).* ~ ")") ^^ {
+      case tableName =>
+          DropTable(tableName.toString(), false, true)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
