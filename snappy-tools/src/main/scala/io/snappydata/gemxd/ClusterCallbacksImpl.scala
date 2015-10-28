@@ -1,5 +1,6 @@
 package io.snappydata.gemxd
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks}
 import io.snappydata.cluster.ExecutorInitiator
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
@@ -11,17 +12,15 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
  */
 object ClusterCallbacksImpl extends ClusterCallbacks {
 
-  override def launchExecutor(driver_url: String) = {
+  override def launchExecutor(driver_url: String, driverDM: InternalDistributedMember) = {
     val url = if (driver_url == null || driver_url == "")
       None
     else Some(driver_url)
-    ExecutorInitiator.startOrTransmuteExecutor(url)
+    ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
 
   }
 
   override def getDriverURL: String = {
-    //TODO: Hemant: If the driverURL is null, GfxdProfile exchange
-    //TODO: Hemant: may not change it and may point to a stale url.
     return SnappyEmbeddedModeClusterManager.schedulerBackend match {
       case Some(x) =>
         x.driverUrl
