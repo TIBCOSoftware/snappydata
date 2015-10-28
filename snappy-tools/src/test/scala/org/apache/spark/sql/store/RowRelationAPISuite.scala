@@ -2,8 +2,7 @@ package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.core.SnappySQLContext
-import io.snappydata.core.TestData
+import io.snappydata.core.{TestData2, SnappySQLContext, TestData}
 import org.scalatest.FunSuite
 
 import org.apache.spark.Logging
@@ -26,7 +25,7 @@ class RowRelationAPISuite extends FunSuite with Logging {
   )
 
 
-  test("Create replicated row table with DataFrames") {
+ test("Create replicated row table with DataFrames") {
 
     val snc = org.apache.spark.sql.SnappyContext(sc)
     val rdd = sc.parallelize((1 to 1000).map(i => TestData(i, s"$i")))
@@ -229,5 +228,32 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE8", true).asInstanceOf[DistributedRegion]
     assert(region.getDiskStore != null)
+  }
+
+
+  test("Test PR with multiple columns") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    val df = snc.sql("CREATE TABLE ROW_TEST_TABLE9(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ItemRef INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderID, ItemRef'," +
+        "PERSISTENT 'ASYNCHRONOUS'," +
+        s"driver $driver," +
+        s"URL $URL)")
+
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("ROW_TEST_TABLE9")
+    val countdf = snc.sql("select * from ROW_TEST_TABLE9")
+    val count = countdf.count()
+    assert(count === 1000)
+
+
   }
 }

@@ -14,12 +14,12 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.serializer.Serializer
-import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.{NarrowExecutorLocalSplitDep, CoGroupExecutorLocalPartition}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.util.{ MutablePair}
+import org.apache.spark.util.MutablePair
 
 /**
  * Generic RDD for doing bulk inserts in Snappy-Store. This RDD creates dependencies according to input RDD's partitioner.
@@ -50,7 +50,7 @@ class StoreRDD(@transient sc: SparkContext,
 
   override val partitioner = Some(part)
 
-  def  getPartitioningInfo(getConnection: () => Connection , tableName : String) : (Option[String], Int)  = {
+  def  getPartitioningInfo(getConnection: () => Connection , tableName : String) : (Seq[String], Int)  = {
     try {
       val conn = getConnection()
 
@@ -61,12 +61,12 @@ class StoreRDD(@transient sc: SparkContext,
         val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val numPartitions = region.getTotalNumberOfBuckets
         val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-        val parColumn = resolver.getColumnNames.headOption
-        println(parColumn.get)
+        val parColumn = resolver.getColumnNames
 
-        (parColumn, numPartitions)
+        (parColumn.toSeq, numPartitions)
+
       }else{
-        (None , 0)
+        (Seq.empty[String] , 0)
       }
 
       println(s"$partitionColumn $totalNumBucket")
@@ -81,7 +81,7 @@ class StoreRDD(@transient sc: SparkContext,
     if(preservePartitioning && prev.partitions.length != totalNumBucket){
       throw new RuntimeException(s"Preserve partitions can be set if partition of input dataset is equal to partitions of table ")
     }
-    if (prev.partitioner == Some(part) || preservePartitioning || !partitionColumn.isDefined) {
+    if (prev.partitioner == Some(part) || preservePartitioning || partitionColumn.isEmpty) {
       logDebug("Adding one-to-one dependency with " + prev)
       List(new OneToOneDependency(prev))
     } else {
@@ -90,16 +90,19 @@ class StoreRDD(@transient sc: SparkContext,
       //See Exchange.scala for more details
       val rddWithPartitionIds: RDD[Product2[Int, Row]] = {
 
-        val partOrdinal = schema.getFieldIndex(partitionColumn.get.toUpperCase).getOrElse {
-          throw new RuntimeException(s"Partition column ${partitionColumn.get} not found in schema $schema")
-        }
-
-        val field = schema.find(_.name == partitionColumn.get.toUpperCase).getOrElse {
-          throw new RuntimeException(s"Partition column ${partitionColumn.get} not found in schema $schema")
-        }
         prev.mapPartitions { iter =>
           val mutablePair = new MutablePair[Int, Row]()
-          iter.map { row => mutablePair.update(part.getPartition(row.get(partOrdinal)), row) }
+
+          val ordinals = partitionColumn.map(col => {
+               schema.getFieldIndex(col.toUpperCase).getOrElse {
+              throw new RuntimeException(s"Partition column $col} not found in schema $schema")
+            }
+
+          })
+          iter.map { row =>
+            val parKey = ordinals.map( k => row.get(k))
+            mutablePair.update(part.getPartition(parKey), row)
+          }
         }
       }
 

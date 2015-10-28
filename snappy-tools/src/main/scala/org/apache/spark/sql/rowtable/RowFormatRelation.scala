@@ -88,25 +88,6 @@ class RowFormatRelation(
     }
   }
 
-  override def insert(data: DataFrame): Unit = {
-    connectionType match {
-      case ConnectionType.Embedded =>
-        val storeRDD = new StoreRDD(
-          sqlContext.sparkContext,
-          data.rdd,
-          table,
-          connFunctor,
-          schema,
-          preservepartitions,
-          blockMap
-        )
-        val storeDF = sqlContext.createDataFrame(storeRDD, schema)
-        JdbcUtils.saveTable(storeDF, url, table, connProperties)
-      case _ => super.insert(data, false)
-    }
-  }
-
-
 }
 
 
