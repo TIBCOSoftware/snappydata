@@ -20,7 +20,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
   }
 
   def canCreate(masterURL: String): Boolean =
-    if (masterURL.toLowerCase == "snappy") true else false
+    if (masterURL == "snappy") true else false
 
   def createSchedulerBackend(sc: SparkContext,
       scheduler: TaskScheduler): SchedulerBackend = {
