@@ -35,7 +35,8 @@ final class JDBCSourceAsColumnarStore(jdbcSource: Map[String, String]) extends E
   @transient
   private lazy val rand = new Random
 
-  private val (_url, _driver, _poolProps, _connProps, _hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+  private val (_url, _driver, _poolProps, _connProps, _hikariCP) =
+    ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
 
   @transient
   private val dialect = JdbcDialects.get(url)

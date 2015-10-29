@@ -133,7 +133,9 @@ subprojects {
 
   task scalaTest(type: Test) {
     actions = [ new com.github.maiflai.ScalaTestAction() ]
-    maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
+    // top-level default is single process run since scalatest does not
+    // spawn separate JVMs
+    maxParallelForks = 1
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
     testLogging.exceptionFormat = 'full'
@@ -310,6 +312,22 @@ task product {
   }
 }
 
+task cleanAll {
+  dependsOn getTasksByName('clean', true).collect { it.path }
+}
+task buildAll {
+  dependsOn getTasksByName('assemble', true).collect { it.path }
+  dependsOn getTasksByName('testClasses', true).collect { it.path }
+  mustRunAfter cleanAll
+}
+task checkAll {
+  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check"
+  if (project.hasProperty('spark')) {
+    dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+  }
+  mustRunAfter buildAll
+  mustRunAfter product
+}
 task precheckin {
-  dependsOn clean, assemble, testClasses, product, check
+  dependsOn cleanAll, buildAll, product, checkAll
 }

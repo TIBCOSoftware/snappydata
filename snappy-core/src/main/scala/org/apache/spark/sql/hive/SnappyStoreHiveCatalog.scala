@@ -17,7 +17,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
@@ -554,12 +554,14 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   // to find out the type of the jdbc store. This is a
   // temporary arrangement.
   def getExternalTable(jdbcSource: Map[String, String]): ExternalStore = {
-    val externalSource = jdbcSource.get("jdbcStore") match {
+    val options = new CaseInsensitiveMap(jdbcSource)
+    val externalSource = options.get("jdbcstore") match {
       case Some(x) => x
       case None => "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
     }
-    val constructor = Class.forName(externalSource).getConstructors()(0)
-    return constructor.newInstance(jdbcSource).asInstanceOf[ExternalStore]
+    val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+        .loadClass(externalSource).getConstructor(classOf[Map[String, String]])
+    return constructor.newInstance(options).asInstanceOf[ExternalStore]
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
