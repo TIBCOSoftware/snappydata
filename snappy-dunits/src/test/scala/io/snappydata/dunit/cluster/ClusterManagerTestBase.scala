@@ -3,15 +3,16 @@ package io.snappydata.dunit.cluster
 import java.io.File
 import java.net.InetAddress
 import java.util.Properties
-import com.gemstone.gemfire.internal.{DistributionLocator, SocketCreator}
+
+import com.gemstone.gemfire.internal.SocketCreator
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import dunit.{SerializableRunnable, Host, DistributedTestBase}
+import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
 import io.snappydata.{Locator, Server, ServiceManager}
 
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Created by hemant on 19/10/15.
@@ -35,8 +36,11 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
       override def run(): Unit = {
         val loc: Locator = ServiceManager.getLocatorInstance
 
-        loc.start("localhost", 0, new Properties())
+        loc.start("localhost", ClusterManagerTestBase.locatorPort, new Properties())
         assert(ServiceManager.getLocatorInstance.status == FabricService.State.RUNNING)
+        if (ClusterManagerTestBase.locatorNetPort > 0) {
+          ServiceManager.getServerInstance.startNetworkServer("localhost", ClusterManagerTestBase.locatorNetPort, null)
+        }
       }
     })
 
@@ -57,6 +61,11 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   }
 
 
+}
+
+object ClusterManagerTestBase {
+  val locatorPort = AvailablePortHelper.getRandomAvailableTCPPort
+  var locatorNetPort = 0
 }
 
 /**
@@ -91,7 +100,7 @@ class ClusterManagerTestUtils {
     conf.set("spark.eventLog.dir", eventDirForDriver)
     sc = new SparkContext(conf)
     val localHost: InetAddress = SocketCreator.getLocalHost
-    props.setProperty("locators", "localhost" + '[' + DistributionLocator.DEFAULT_LOCATOR_PORT
+    props.setProperty("locators", "localhost" + '[' + ClusterManagerTestBase.locatorPort
         + ']');
     val lead: Server = ServiceManager.getServerInstance
     lead.start(props)
@@ -110,14 +119,16 @@ class ClusterManagerTestUtils {
     }
   }
 
-
+  def startSnappyServer(): Unit = {
+    startSnappyServer(0)
+  }
   /**
    * Start a snappy server. Any number of snappy servers can be started.
    */
-  def startSnappyServer(): Unit = {
+  def startSnappyServer(netPort: Int): Unit = {
     val props = new Properties
     val localHost: InetAddress = SocketCreator.getLocalHost
-    props.setProperty("locators", "localhost" + '[' + DistributionLocator.DEFAULT_LOCATOR_PORT
+    props.setProperty("locators", "localhost" + '[' + ClusterManagerTestBase.locatorPort
         + ']');
     val server: Server = ServiceManager.getServerInstance
 
@@ -125,6 +136,9 @@ class ClusterManagerTestUtils {
 
     val advisee = GemFireStore.getBootedInstance.getDistributionAdvisor.getAdvisee
     assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
+    if (netPort > 0) {
+      ServiceManager.getServerInstance.startNetworkServer("localhost", netPort, null)
+    }
   }
 
   def stopSnappyServer(): Unit = {

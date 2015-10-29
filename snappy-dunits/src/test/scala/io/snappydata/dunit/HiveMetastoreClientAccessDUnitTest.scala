@@ -5,7 +5,7 @@ import java.util.Properties
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import dunit.{DistributedTestBase, Host}
+import dunit.{AvailablePortHelper, DistributedTestBase, Host}
 import io.snappydata.ServiceManager
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.snappy._
@@ -48,8 +48,6 @@ class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestB
     assert(cc.isRowTable("row_table"))
   }
 
-
-
   def startHiveMetaClientInGfxdPeerNode(locatorStr: String, netPort: Int): Unit = {
     val dataStoreService = ServiceManager.getServerInstance
     val bootProperties = new Properties()
@@ -57,7 +55,6 @@ class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestB
     bootProperties.setProperty("persist-dd", "false")
     dataStoreService.start(bootProperties)
     println("Gfxd peer node vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    //dataStoreService.startNetworkServer("localhost", netPort, null)
   }
 
   val host = Host.getHost(0);
