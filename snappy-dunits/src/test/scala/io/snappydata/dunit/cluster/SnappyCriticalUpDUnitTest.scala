@@ -14,9 +14,8 @@ import org.apache.spark.SparkEnv
 class SnappyCriticalUpDUnitTest (s: String) extends ClusterManagerTestBase(s) {
 
   def testCriticalUp(): Unit = {
-    // Lead is started before other servers are started.
-    vm0.invoke(this.getClass, "startSnappyLead")
     vm1.invoke(this.getClass, "startSnappyServer")
+    vm0.invoke(this.getClass, "startSnappyLead")
     vm2.invoke(this.getClass, "startSnappyServer")
 
     // Execute the job
@@ -25,12 +24,14 @@ class SnappyCriticalUpDUnitTest (s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(this.getClass, "raiseMemoryEvent")
     vm0.invoke(this.getClass, "runSparkJobWithCriticalUp")
 
+    vm1.invoke(this.getClass, "raiseMemoryEvent")
+    vm2.invoke(this.getClass, "raiseMemoryEvent")
     vm1.invoke(this.getClass, "assertShuffleMemoryManagerBehavior")
     vm2.invoke(this.getClass, "assertShuffleMemoryManagerBehavior")
 
     vm0.invoke(this.getClass, "stopSnappyLead")
-    vm1.invoke(this.getClass, "stopSnappyServer")
     vm2.invoke(this.getClass, "stopSnappyServer")
+    vm1.invoke(this.getClass, "stopSnappyServer")
   }
 
 }
@@ -46,8 +47,6 @@ object SnappyCriticalUpDUnitTest extends ClusterManagerTestUtils {
   }
 
   def runSparkJobWithCriticalUp(): Unit = {
-    //val snContext = org.apache.spark.sql.SnappyContext(sc)
-    //raiseMemoryEvent(true)
     val rdd2 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8)).cache()
     rdd2.count
     assert(sc.getRDDStorageInfo.isEmpty)

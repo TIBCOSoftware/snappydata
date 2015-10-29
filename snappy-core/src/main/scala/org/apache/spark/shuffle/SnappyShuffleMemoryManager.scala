@@ -1,6 +1,6 @@
 package org.apache.spark.shuffle
 
-import scala.reflect.runtime.{universe => ru}
+import org.apache.spark.util.Utils
 
 /**
  * Created by shirishd on 15/10/15.
@@ -28,17 +28,10 @@ private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory
     }
   }
 
-  def isCriticalUp(): Boolean = {
-    val companionObject = "org.apache.spark.storage.SnappyMemoryStore"
-    val mirror = ru.runtimeMirror(getClass.getClassLoader)
-    val moduleSymbol = mirror.staticModule(companionObject)
-    val moduleMirror = mirror.reflectModule(moduleSymbol)
-    val instanceMirror = mirror.reflect(moduleMirror.instance)
-    val method = instanceMirror.reflectMethod(instanceMirror.symbol.toType.declaration(ru.newTermName("isCriticalUp")).asMethod)
-    val ret = method()
-    ret.asInstanceOf[Boolean]
+  def isCriticalUp: Boolean = {
+    Utils.getContextOrSparkClassLoader.loadClass("org.apache.spark.storage.SnappyMemoryUtils").
+        getMethod("isCriticalUp").invoke(null).asInstanceOf[Boolean]
   }
-
 
 }
 

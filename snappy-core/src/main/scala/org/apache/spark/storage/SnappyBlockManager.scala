@@ -2,6 +2,7 @@ package org.apache.spark.storage
 
 import org.apache.spark.network.{BlockDataManager, BlockTransferService}
 import org.apache.spark.shuffle.ShuffleManager
+import org.apache.spark.util.Utils
 import org.apache.spark.{SecurityManager, MapOutputTracker, SparkConf}
 import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.serializer.Serializer
@@ -25,8 +26,10 @@ private[spark] class SnappyBlockManager(
     extends BlockManager(executorId, rpcEnv, master, defaultSerializer, conf, mapOutputTracker,
       shuffleManager, blockTransferService, securityManager, numUsableCores) {
 
+  val SNAPPY_MEMORYSTORE = "org.apache.spark.storage.SnappyMemoryStore"
 
-  override protected[spark] val memoryStore = Class.forName("org.apache.spark.storage.SnappyMemoryStore").
-        getConstructors()(0).newInstance(this, BlockManager.getMaxMemory(conf): java.lang.Long).
-      asInstanceOf[MemoryStore]
+  override protected[spark] val memoryStore = Utils.getContextOrSparkClassLoader.
+      loadClass(SNAPPY_MEMORYSTORE).getConstructor(classOf[BlockManager],
+    classOf[Long]).newInstance(this, BlockManager.getMaxMemory(conf): java.lang.Long).asInstanceOf[MemoryStore]
 }
+
