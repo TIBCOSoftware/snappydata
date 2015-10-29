@@ -28,8 +28,8 @@ object DelegateClusterManager extends ExternalClusterManager {
   }
 
   def canCreate(masterURL: String): Boolean = {
-    if (masterURL.toLowerCase().startsWith("snappy:")) {
-      masterurl = masterURL.toLowerCase()
+    if (masterURL.startsWith("snappy:")) {
+      masterurl = masterURL
       true
     } else false
   }
