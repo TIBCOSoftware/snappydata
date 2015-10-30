@@ -2,6 +2,7 @@ package org.apache.spark.sql
 
 import java.util.regex.Pattern
 
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
@@ -204,26 +205,14 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   protected lazy val createStream: Parser[LogicalPlan] =
     (CREATE ~> STREAM ~> TABLE ~> ident) ~
-<<<<<<< HEAD
-        tableCols.? ~ (OPTIONS ~> options) ^^ {
-      case streamName ~ cols ~ opts =>
-||||||| merged common ancestors
-        tableCols.? ~ (OPTIONS ~> options) ^^ {
-      case streamname ~ cols ~ opts =>
-=======
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
       case streamname ~ cols ~ providerName ~ opts =>
->>>>>>> Initial implementation of streaming apis and cqs
+
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-<<<<<<< HEAD
-        CreateStream(streamName, userColumns, opts)
-||||||| merged common ancestors
-        CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
-=======
         val provider = SnappyContext.getProvider(providerName)
         val userOpts  = opts.updated(USING.str, provider)
         CreateStreamTable(streamname, userColumns, new CaseInsensitiveMap(userOpts))
->>>>>>> Initial implementation of streaming apis and cqs
+
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
@@ -463,35 +452,6 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
   }
 }
 
-//object OptsUtil {
-//
-//  // Options while creating sample/stream table
-//  final val BASETABLE = "basetable"
-//
-//
-//  def newAnalysisException(msg: String) = new AnalysisException(msg)
-//
-//  def getOption(optionName: String, options: Map[String, String]): String =
-//    options.getOrElse(optionName, throw newAnalysisException(
-//      s"Option $optionName not defined"))
-//
-//  def getOptionally(optionName: String,
-//      options: Map[String, String]): Option[String] = options.get(optionName)
-//}
-
-
-<<<<<<< HEAD
-  def newAnalysisException(msg: String) = new AnalysisException(msg)
-
-  def getOption(optionName: String, options: Map[String, String]): String =
-    options.getOrElse(optionName, options.collectFirst {
-      case (k, v) if (k.equalsIgnoreCase(optionName)) => v
-    }.getOrElse(throw newAnalysisException(
-      s"Option $optionName not defined")))
-
-  def getOptionally(optionName: String,
-      options: Map[String, String]): Option[String] = options.get(optionName)
-}
 
 private[spark] object StreamingCtxtHolder {
 
@@ -519,42 +479,4 @@ private[spark] object StreamingCtxtHolder {
     }
   }
 }
-||||||| merged common ancestors
-  def newAnalysisException(msg: String) = new AnalysisException(msg)
 
-  def getOption(optionName: String, options: Map[String, String]): String =
-    options.getOrElse(optionName, throw newAnalysisException(
-      s"Option $optionName not defined"))
-
-  def getOptionally(optionName: String,
-      options: Map[String, String]): Option[String] = options.get(optionName)
-}
-
-private[spark] object StreamingCtxtHolder {
-
-  @volatile private[this] var globalContext: StreamingContext = _
-  private[this] val contextLock = new AnyRef
-
-  def streamingContext = globalContext
-
-  def apply(sparkCtxt: SparkContext,
-      duration: Int): StreamingContext = {
-    val context = globalContext
-    if (context != null &&
-        context.getState() != StreamingContextState.STOPPED) {
-      context
-    } else contextLock.synchronized {
-      val context = globalContext
-      if (context != null &&
-          context.getState() != StreamingContextState.STOPPED) {
-        context
-      } else {
-        val context = new StreamingContext(sparkCtxt, Seconds(duration))
-        globalContext = context
-        context
-      }
-    }
-  }
-}
-=======
->>>>>>> Initial implementation of streaming apis and cqs
