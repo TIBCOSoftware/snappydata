@@ -25,7 +25,6 @@ protected final class StreamingSnappyContext(val streamingContext: StreamingCont
   self =>
 
   override def sql(sqlText: String): DataFrame = {
-    //SparkPlan.currentContext.set(this) //SQLContext
     StreamPlan.currentContext.set(this) //SnappyStreamingContext
     super.sql(sqlText)
   }

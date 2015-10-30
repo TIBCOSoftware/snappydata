@@ -13,11 +13,10 @@ import org.apache.spark.sql.catalyst.plans.logical._
 
 final class SchemaDStream(
                      @transient val streamingSnappy: StreamingSnappyContext,
-                     @transient val queryExecution: SQLContext#QueryExecution)
+                     @transient val queryExecution: org.apache.spark.sql.execution.QueryExecution)
   extends DStream[Row](streamingSnappy.streamingContext) {
 
-  def this(streamingSnappy: StreamingSnappyContext, logicalPlan: LogicalPlan) =
-    this(streamingSnappy, streamingSnappy.executePlan(logicalPlan))
+  def this(streamingSnappy: StreamingSnappyContext, logicalPlan: LogicalPlan) = this(streamingSnappy, streamingSnappy.executePlan(logicalPlan))
 
   def schema: StructType = queryExecution.analyzed.schema
 
