@@ -31,7 +31,7 @@ import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 Generic class to query column table from Snappy.
  */
 final class JDBCSourceAsStore(_url : String,
-    _driver : Option[String],
+    _driver : String,
     _poolProps: Map[String, String],
     _connProps : Properties,
     _hikariCP : Boolean)  extends ExternalStore {
@@ -67,22 +67,7 @@ final class JDBCSourceAsStore(_url : String,
       tableName: String): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
     try {
-      val uuid = connectionType match {
-
-        case ConnectionType.Embedded =>
-          val resolvedName = StoreUtils.lookupName(tableName,connection.getSchema)
-          val region = Misc.getRegionForTable(resolvedName, true)
-          region.asInstanceOf[AbstractRegion] match {
-            case pr: PartitionedRegion =>
-              val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds
-                  .toArray(new Array[Integer](0))
-              genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
-            case _ =>
-              genUUIDRegionKey()
-          }
-
-        case _ => genUUIDRegionKey()
-      }
+      val uuid = genUUIDRegionKey()
 
       val blob = prepareCachedBatchAsBlob(batch, connection)
       val rowInsertStr = getRowInsertStr(tableName)
@@ -187,7 +172,7 @@ final class JDBCSourceAsStore(_url : String,
 
   override def url = _url
 
-  override def driver = _driver.get
+  override def driver = _driver
 
   override def poolProps = _poolProps
 
@@ -226,12 +211,8 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
   private def getCachedBatchFromBlob(blob: Blob, connType: ConnectionType): CachedBatch = {
     val totBytes = blob.length().toInt
 //    println("KN: length of blob get = " + blob.length())
-    val bis = connType match {
-      case ConnectionType.Embedded =>
-        blob.getBinaryStream
-      case _ =>
-        new ByteArrayInputStream(blob.getBytes(1, totBytes))
-    }
+    val bis = new ByteArrayInputStream(blob.getBytes(1, totBytes))
+
     val dis = new DataInputStream(bis)
     var offset = 0
     val numCols = dis.readInt()

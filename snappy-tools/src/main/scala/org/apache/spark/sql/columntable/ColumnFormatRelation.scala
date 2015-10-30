@@ -65,22 +65,16 @@ final class DefaultSource
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-    val url = sqlContext.sparkContext.getConf.get("snappy.store.jdbc.url")
-    val driver = "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
-
-
 
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-
-    // remove ALLOW_EXISTING property, if remaining
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
     parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
     parameters.remove("serialization.format")
 
-    val (_url, _driver, _poolProps, _connProps, _hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(options, Option(url), Option(driver))
+    val (url, driver, poolProps, _connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
 
     val preservepartitions = parameters.remove("preservepartitions")
     val dialect = JdbcDialects.get(url)
@@ -90,16 +84,16 @@ final class DefaultSource
     val ddlExtension = StoreUtils.ddlExtensionString(coptions)
     val schemaExtension = s"$schema $ddlExtension"
 
-    val externalStore = getExternalTable(_url, _driver, _poolProps, connProps, _hikariCP)
+    val externalStore = getExternalSource(url, driver, poolProps, connProps, hikariCP)
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema, Seq.empty.toArray,
-      _poolProps, connProps, _hikariCP, options, externalStore, sqlContext)
+      poolProps, connProps, hikariCP, options, externalStore, sqlContext)
   }
 
-  override def getExternalTable(url : String,
-      driver : Option[String],
+  override def getExternalSource(url : String,
+      driver : String,
       poolProps: Map[String, String],
       connProps : Properties,
       hikariCP : Boolean): ExternalStore = {

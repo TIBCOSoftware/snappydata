@@ -296,13 +296,12 @@ class ColumnarRelationProvider extends SchemaRelationProvider
 
 
     val (url, driver, poolProps, connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(options, None, None)
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
 
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
 
-    // remove ALLOW_EXISTING property, if remaining
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
     parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
     parameters.remove("serialization.format")
@@ -323,7 +322,7 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
 
-    val externalStore = getExternalTable(url, driver, poolProps, connProps, hikariCP)
+    val externalStore = getExternalSource(url, driver, poolProps, connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -347,8 +346,8 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     relation
   }
 
-  def getExternalTable(_url : String,
-      _driver : Option[String],
+  def getExternalSource(_url : String,
+      _driver : String,
       _poolProps: Map[String, String],
       _connProps : Properties,
       _hikariCP : Boolean): ExternalStore = {

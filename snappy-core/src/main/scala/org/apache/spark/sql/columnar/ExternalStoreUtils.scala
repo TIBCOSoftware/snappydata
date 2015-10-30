@@ -3,7 +3,11 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
-//import com.gemstone.gemfire.internal.cache.{PartitionedRegion, AbstractRegion}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.store.StoreProperties
+
+
+
 
 import scala.collection.mutable
 
@@ -35,26 +39,34 @@ private[sql] object ExternalStoreUtils {
     }
   }
 
-  def validateAndGetAllProps(options: Map[String, String], urlProvided : Option[String], driverProvided : Option[String]) = {
+  def getDriver(url : String): Option[String] = {
+    val dialect = JdbcDialects.get(url)
+    dialect match {
+      case  GemFireXDDialect => Option("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+      case  GemFireXDClientDialect => Option("com.pivotal.gemfirexd.jdbc.ClientDriver")
+      case _=> None
+    }
+
+  }
+
+  def validateAndGetAllProps(sc : SparkContext, options: Map[String, String]) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
+    val SNAPPY_STORE_JDBC_URL = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
 
-    val url = if(!urlProvided.isDefined){
+    val url = if(SNAPPY_STORE_JDBC_URL.isEmpty){
       parameters.remove("url").getOrElse(
         sys.error("Option 'url' not specified"))
     }else{
-      urlProvided.get
+      SNAPPY_STORE_JDBC_URL
     }
-    val driver = if(!driverProvided.isDefined){
-      parameters.remove("driver")
-    }else{
-      driverProvided
-    }
+    val driver = getDriver(url).getOrElse(parameters.remove("driver").asInstanceOf[String])
+
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    driver.foreach(DriverRegistry.register)
+    DriverRegistry.register(driver)
 
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
       case Some("hikari") => true
@@ -78,7 +90,7 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    val allPoolProps = getAllPoolProperties(url, driver.orNull,
+    val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP)
     (url, driver, allPoolProps, connProps, hikariCP)
   }

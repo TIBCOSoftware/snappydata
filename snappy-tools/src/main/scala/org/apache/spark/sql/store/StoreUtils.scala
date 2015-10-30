@@ -11,7 +11,11 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import scala.collection.JavaConversions._
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.sql.store.{StoreInitRDD, MembershipAccumulator}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{SparkContext, Partition}
@@ -121,6 +125,7 @@ object StoreUtils {
     memberAccumulator.value
 
   }
+
 
   def appendClause(sb : mutable.StringBuilder, getClause : () => String) : Unit = {
     val clause = getClause.apply()

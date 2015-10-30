@@ -29,7 +29,7 @@ import scala.util.Random
  *
  */
 final class JDBCSourceAsColumnarStore(_url : String,
-     _driver : Option[String],
+     _driver : String,
     _poolProps: Map[String, String],
     _connProps : Properties,
     _hikariCP : Boolean ) extends ExternalStore {
@@ -198,7 +198,7 @@ final class JDBCSourceAsColumnarStore(_url : String,
 
   override def url = _url
 
-  override def driver = _driver.get
+  override def driver = _driver
 
   override def poolProps = _poolProps
 
