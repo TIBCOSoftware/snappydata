@@ -1,5 +1,7 @@
 package io.snappydata.app
 
+import io.snappydata.core.SnappySQLContext
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 import org.apache.spark.streaming.{Duration, Seconds}
@@ -10,17 +12,12 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
  */
 class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
-  private val sc = TestSQLContext.sparkContext
+  private val sc = SnappySQLContext.sparkContext
 
   val tableName : String = "ColumnTable"
 
-  val props = Map(
-    "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-    "poolImpl" -> "tomcat",
-    "user" -> "app",
-    "password" -> "app"
-  )
+  val props = Map.empty[String, String]
+
 
   val snc = org.apache.spark.sql.SnappyContext(sc)
 
@@ -105,11 +102,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
     println("Successful")
   }
 
-  val options =  "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false' ," +
-             "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
-             "poolImpl 'tomcat', " +
-             "user 'app', " +
-             "password 'app' ) "
+  val options =  "OPTIONS (PARTITION_BY 'Col1')"
 
   test("Test the creation/dropping of table using SQL") {
 

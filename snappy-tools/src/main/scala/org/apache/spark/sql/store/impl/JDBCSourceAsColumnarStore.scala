@@ -2,6 +2,7 @@ package org.apache.spark.sql.store.impl
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet}
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
@@ -27,7 +28,11 @@ import scala.util.Random
  * Columnar Store implementation for GemFireXD.
  *
  */
-final class JDBCSourceAsColumnarStore(jdbcSource: Map[String, String]) extends ExternalStore {
+final class JDBCSourceAsColumnarStore(_url : String,
+     _driver : Option[String],
+    _poolProps: Map[String, String],
+    _connProps : Properties,
+    _hikariCP : Boolean ) extends ExternalStore {
 
   @transient
   private lazy val serializer = SparkEnv.get.serializer
@@ -35,8 +40,7 @@ final class JDBCSourceAsColumnarStore(jdbcSource: Map[String, String]) extends E
   @transient
   private lazy val rand = new Random
 
-  private val (_url, _driver, _poolProps, _connProps, _hikariCP) =
-    ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
+
 
   @transient
   private val dialect = JdbcDialects.get(url)

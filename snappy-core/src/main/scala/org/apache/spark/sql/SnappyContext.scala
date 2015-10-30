@@ -724,9 +724,10 @@ object SnappyContext {
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName,
+    "jdbccolumn" -> classOf[columnar.DefaultSource].getCanonicalName,
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "row" -> "org.apache.spark.sql.rowtable.DefaultSource"
+    "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "column" -> "org.apache.spark.sql.columntable.DefaultSource"
   )
 
   def apply(sc: SparkContext,

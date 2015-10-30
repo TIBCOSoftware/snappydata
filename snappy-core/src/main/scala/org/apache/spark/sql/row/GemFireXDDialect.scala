@@ -36,7 +36,7 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
     }
   }
 
-
+  override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
 
 /**
@@ -50,6 +50,8 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
   JdbcDialects.registerDialect(GemFireXDClientDialect)
 
   def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd://") || url.startsWith("jdbc:snappydata://"))
+
+  override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
 
 abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {

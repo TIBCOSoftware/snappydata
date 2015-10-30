@@ -132,6 +132,8 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   def extraCreateTableProperties(isLoner: Boolean): Properties =
     new Properties()
+
+  def getPartitionByClause(col : String) : String;
 }
 
 object JdbcExtendedUtils {

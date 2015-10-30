@@ -35,12 +35,22 @@ private[sql] object ExternalStoreUtils {
     }
   }
 
-  def validateAndGetAllProps(options: Map[String, String]) = {
+  def validateAndGetAllProps(options: Map[String, String], urlProvided : Option[String], driverProvided : Option[String]) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
-    val url = parameters.remove("url").getOrElse(
-      sys.error("Option 'url' not specified"))
-    val driver = parameters.remove("driver")
+
+
+    val url = if(!urlProvided.isDefined){
+      parameters.remove("url").getOrElse(
+        sys.error("Option 'url' not specified"))
+    }else{
+      urlProvided.get
+    }
+    val driver = if(!driverProvided.isDefined){
+      parameters.remove("driver")
+    }else{
+      driverProvided
+    }
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 

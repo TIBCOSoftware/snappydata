@@ -2,6 +2,7 @@ package org.apache.spark.sql.store.impl
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 import java.sql.{Blob, Connection, PreparedStatement, ResultSet}
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 
 import org.apache.spark.scheduler.local.LocalBackend
@@ -26,12 +27,14 @@ import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
-/**
- * ExternalStore implementation for GemFireXD.
- *
- * Created by Neeraj on 16/7/15.
+/*
+Generic class to query column table from Snappy.
  */
-final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends ExternalStore {
+final class JDBCSourceAsStore(_url : String,
+    _driver : Option[String],
+    _poolProps: Map[String, String],
+    _connProps : Properties,
+    _hikariCP : Boolean)  extends ExternalStore {
 
   @transient
   private lazy val serializer = SparkEnv.get.serializer
@@ -39,7 +42,6 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   @transient
   private lazy val rand = new Random
 
-  private val (_url, _driver, _poolProps, _connProps, _hikariCP) = ExternalStoreUtils.validateAndGetAllProps(jdbcSource)
 
   @transient
   private val dialect = JdbcDialects.get(url)
@@ -47,23 +49,11 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   @transient
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  override def initSource() = {
-
-  }
-
-
-
   def getCachedBatchRDD(tableName: String,
                         requiredColumns: Array[String],
       uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch] = {
-    val connection: java.sql.Connection = getConnection(tableName)
-    connectionType match {
-      case ConnectionType.Embedded =>
-        new ExternalStorePartitionedRDD[CachedBatch](sparkContext,
-          connection.getSchema, tableName, this)
-      case _ =>
-        var rddList = new ArrayBuffer[RDD[CachedBatch]]()
+    var rddList = new ArrayBuffer[RDD[CachedBatch]]()
         uuidList.foreach(x => {
           val y = x.mapPartitions { uuidItr =>
             getCachedBatchIterator(tableName, null,uuidItr)
@@ -71,7 +61,6 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
           rddList += y
         })
         new UnionRDD[CachedBatch](sparkContext, rddList)
-    }
   }
 
   override def storeCachedBatch(batch: CachedBatch,
@@ -108,10 +97,6 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
     } finally {
       connection.close()
     }
-  }
-
-  override def cleanup(): Unit = {
-
   }
 
   override def getCachedBatchIterator(tableName: String,  requiredColumns: Array[String],
@@ -207,6 +192,10 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   override def poolProps = _poolProps
 
   override def connProps = _connProps
+
+  override def initSource(): Unit = ???
+
+  override def cleanup(): Unit = ???
 }
 
 private final class CachedBatchIteratorFromRS(conn: Connection, connType: ConnectionType,
@@ -276,62 +265,5 @@ final class UUIDKeyResolver extends PartitionResolver[UUIDRegionKey, CachedBatch
   override def getName: String = "UUIDKeyResolver"
 
   override def close(): Unit = {}
-}
 
-class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
-                                               schema: String, tableName: String, store: JDBCSourceAsStore)
-    extends RDD[CachedBatch](_sc, Nil) {
-
-  override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
-    store.tryExecute(tableName, {
-      case conn =>
-        conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
-        val resolvedName = StoreUtils.lookupName(tableName, schema)
-        //val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-        val par = split.index
-//        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
- //       ps1.execute()
-        val ps = conn.prepareStatement(s"select cachedBatch from $tableName")
-
-        val rs = ps.executeQuery()
-
-        new CachedBatchIteratorFromRS(conn, store.connectionType, ps, rs)
-    }, closeOnSuccess = false)
-  }
-
-  override def getPreferredLocations(split: Partition): Seq[String] = {
-    Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)
-  }
-
-  override protected def getPartitions: Array[Partition] = {
-    val resolvedName = StoreUtils.lookupName(tableName, schema)
-    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-    val numPartitions = region.getTotalNumberOfBuckets
-    val partitions = new Array[Partition](numPartitions)
-
-    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.zipWithIndex
-    val hostSet = numberedPeers.map(m => {
-      Tuple2(m._1.host, m._1)
-    }).toMap
-
-    val localBackend = sparkContext.schedulerBackend match {
-      case lb: LocalBackend => true
-      case _ => false
-    }
-
-    for (p <- 0 until numPartitions) {
-      //TODO there should be a cleaner way to translate GemFire membership IDs to BlockManagerIds
-      //TODO apart from primary members secondary nodes should also be included in preferred node list
-      val distMember = region.getBucketPrimary(p)
-      val prefNode = if (localBackend) {
-        Option(hostSet.head._2)
-      } else {
-        hostSet.get(distMember.getIpAddress.getHostAddress)
-      }
-      partitions(p) = new ExecutorLocalPartition(p, prefNode.get)
-    }
-    partitions
-
-  }
 }
