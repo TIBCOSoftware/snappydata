@@ -12,9 +12,9 @@ import org.apache.spark.storage.StorageLevel
 /**
  * Created by shirishd on 19/10/15.
  */
-class SnappyCriticalUpDUnitTest (s: String) extends ClusterManagerTestBase(s) {
+class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s) {
 
-  def testCriticalUp(): Unit = {
+  def __testCriticalUp(): Unit = {
     vm1.invoke(this.getClass, "startSnappyServer")
     vm0.invoke(this.getClass, "startSnappyLead")
     vm2.invoke(this.getClass, "startSnappyServer")
@@ -49,7 +49,7 @@ class SnappyCriticalUpDUnitTest (s: String) extends ClusterManagerTestBase(s) {
 
 }
 
-object SnappyCriticalUpDUnitTest extends ClusterManagerTestUtils {
+object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
 
   def runSparkJob(): Unit = {
     val rdd1 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8)).cache()
