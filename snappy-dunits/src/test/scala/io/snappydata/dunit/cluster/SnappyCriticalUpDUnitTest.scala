@@ -14,7 +14,7 @@ import org.apache.spark.storage.StorageLevel
  */
 class SnappyCriticalUpDUnitTest (s: String) extends ClusterManagerTestBase(s) {
 
-  def __testCriticalUp(): Unit = {
+  def testCriticalUp(): Unit = {
     vm1.invoke(this.getClass, "startSnappyServer")
     vm0.invoke(this.getClass, "startSnappyLead")
     vm2.invoke(this.getClass, "startSnappyServer")
