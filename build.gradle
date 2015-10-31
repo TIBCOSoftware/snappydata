@@ -258,7 +258,6 @@ task product {
   def productDir = file("${buildDir}/snappy")
   doFirst {
     delete productDir
-    productDir.mkdirs()
     file("${productDir}/lib").mkdirs()
   }
   doLast {
@@ -279,7 +278,7 @@ task product {
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def baseName = 'snappy-spark-assembly'
-    def archiveName = "snappy-spark-assembly_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
+    def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${productDir}/lib/${archiveName}")
     copy {
       from "${project(':snappy-spark').projectDir}/bin"

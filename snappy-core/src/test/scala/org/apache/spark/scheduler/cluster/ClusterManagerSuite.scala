@@ -1,11 +1,11 @@
 package org.apache.spark.scheduler.cluster
 
-import org.scalatest.BeforeAndAfter
+import org.scalatest.{FunSuite, BeforeAndAfter}
 import org.apache.spark.scheduler.TaskSchedulerImpl
 import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.{SparkContext, SparkFunSuite, SparkConf}
+import org.apache.spark.{SparkContext, SparkConf}
 
-class ClusterManagerSuite extends SparkFunSuite with BeforeAndAfter {
+class ClusterManagerSuite extends FunSuite with BeforeAndAfter {
 
   before {
     SparkContext.registerClusterManager(DelegateClusterManager)
