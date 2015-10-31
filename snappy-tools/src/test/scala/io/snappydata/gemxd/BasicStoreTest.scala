@@ -5,8 +5,9 @@ import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.jdbc.JdbcTestBase
+import io.snappydata.core.SnappySQLContext
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{SaveMode, Row}
 import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerType}
 
 /**
@@ -14,6 +15,7 @@ import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerT
  */
 class BasicStoreTest(s: String) extends TestUtil(s) {
 
+  private val sc = SnappySQLContext.sparkContext
   override protected def tearDown(): Unit = {
     val conn = TestUtil.getConnection
     try {
@@ -51,27 +53,12 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
 
   @throws(classOf[Exception])
   def testStringAsDatatype_runInSpark {
-    // First run the above query directly in Spark
-    val conf = new org.apache.spark.SparkConf().setAppName("ExternalStoreTest")
-        .set("spark.logConf", "true")
-    val setMaster: String = "local[6]"
-    conf.setMaster(setMaster)
 
-    val sc = new org.apache.spark.SparkContext(conf)
+
+
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     snContext.sql("set spark.sql.shuffle.partitions=6")
 
-    val props = Map(
-      //"url" -> "jdbc:snappydata:;mcast-port=45672;persist-dd=false;",
-      "url" -> "jdbc:gemfirexd:;mcast-port=45672;persist-dd=false;",
-      "poolImpl" -> "tomcat",
-      //"single-hop-enabled" -> "true",
-      //"poolProps" -> "",
-      //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "user" -> "app",
-      "password" -> "app"
-    )
 
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
     val rdd = sc.parallelize(data, data.length).map(s =>
@@ -87,7 +74,8 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     })
 
     //dataDF.registerTempTable("t1")
-    snContext.registerAndInsertIntoExternalStore(dataDF, "t1", schema, props)
+    dataDF.write.format("column").mode(SaveMode.Ignore).options(Map.empty[String, String]).saveAsTable("t1")
+    //snContext.registerAndInsertIntoExternalStore(dataDF, "t1", schema, props)
     //sc.createColumnTable("t1", dataDF.schema, "jdbcColumnar", props)
     //dataDF.write.format("jdbcColumnar").mode(SaveMode.Append).options(props).saveAsTable("t1")
 

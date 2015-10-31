@@ -5,7 +5,9 @@ import java.util.Properties
 
 import scala.collection.mutable
 
-import org.apache.spark.Partition
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+
+import org.apache.spark.{SparkContext, Partition}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.{InternalRow, CatalystTypeConverters}
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
@@ -17,10 +19,12 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.MutableRelationProvider
 import org.apache.spark.sql.sources.{JdbcExtendedUtils, Filter, BaseRelation}
+import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.BlockManagerId
 
 /**
  * Created by rishim on 29/10/15.
@@ -65,7 +69,7 @@ final class DefaultSource
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-
+    val sc = sqlContext.sparkContext
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
@@ -74,7 +78,7 @@ final class DefaultSource
     parameters.remove("serialization.format")
 
     val (url, driver, poolProps, _connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
+      ExternalStoreUtils.validateAndGetAllProps(sc, options)
 
     val preservepartitions = parameters.remove("preservepartitions")
     val dialect = JdbcDialects.get(url)
@@ -84,7 +88,9 @@ final class DefaultSource
     val ddlExtension = StoreUtils.ddlExtensionString(coptions)
     val schemaExtension = s"$schema $ddlExtension"
 
-    val externalStore = getExternalSource(url, driver, poolProps, connProps, hikariCP)
+
+
+    val externalStore = getExternalSource(sc, url, driver, poolProps, connProps, hikariCP)
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -92,14 +98,13 @@ final class DefaultSource
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)
   }
 
-  override def getExternalSource(url : String,
-      driver : String,
+  override def getExternalSource(sc: SparkContext, url: String,
+      driver: String,
       poolProps: Map[String, String],
-      connProps : Properties,
-      hikariCP : Boolean): ExternalStore = {
-    val externalSource = "org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore"
-    val constructor = Class.forName(externalSource).getConstructors()(0)
-    return constructor.newInstance(url, driver, poolProps, connProps, new java.lang.Boolean(hikariCP)).asInstanceOf[ExternalStore]
+      connProps: Properties,
+      hikariCP: Boolean): ExternalStore = {
+    val blockMap = StoreUtils.initStore(sc, url, connProps)
+    new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)
   }
 
 }

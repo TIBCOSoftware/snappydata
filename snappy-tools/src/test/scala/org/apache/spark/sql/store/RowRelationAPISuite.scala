@@ -15,14 +15,7 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
   private val sc = SnappySQLContext.sparkContext
 
-  private val URL = "'jdbc:gemfirexd:;mcast-port=0;user=app;password=app'"
-
-  private val driver = "'com.pivotal.gemfirexd.jdbc.EmbeddedDriver'"
-
-  val props = Map(
-    "url" -> "jdbc:gemfirexd:;mcast-port=0;user=app;password=app",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
-  )
+  val props = Map.empty[String, String]
 
 
  test("Create replicated row table with DataFrames") {
@@ -51,9 +44,7 @@ class RowRelationAPISuite extends FunSuite with Logging {
         "USING row " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "PARTITION_BY 'OrderId')")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
     val exp = snc.sql("select * from row_table2")
@@ -78,9 +69,7 @@ class RowRelationAPISuite extends FunSuite with Logging {
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
-        "preservepartitions 'true'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "preservepartitions 'true')")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table3")
     val countdf = snc.sql("select * from row_table3")
@@ -91,14 +80,15 @@ class RowRelationAPISuite extends FunSuite with Logging {
   test("Test PR with Primary Key") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE1")
+
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE1(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'PRIMARY KEY'," +
-        "REDUNDANCY '2'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "REDUNDANCY '2')")
+
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE1", true).asInstanceOf[PartitionedRegion]
 
@@ -110,14 +100,14 @@ class RowRelationAPISuite extends FunSuite with Logging {
   test("Test PR with buckets") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE2")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE2(OrderId INT NOT NULL,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
-        "BUCKETS '213'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "BUCKETS '213')")
+
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE2", true).asInstanceOf[PartitionedRegion]
 
@@ -129,15 +119,14 @@ class RowRelationAPISuite extends FunSuite with Logging {
   test("Test PR with REDUNDANCY") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE3")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE3(OrderId INT NOT NULL,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
         "BUCKETS '213'," +
-        "REDUNDANCY '2'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "REDUNDANCY '2')")
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE3", true).asInstanceOf[PartitionedRegion]
     snc.sql("insert into ROW_TEST_TABLE3 VALUES(1,11)")
@@ -149,16 +138,15 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
   test("Test PR with RECOVERDELAY") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE4")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE4(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
         "BUCKETS '213'," +
-        "RECOVERYDELAY '2'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "RECOVERYDELAY '2')")
+
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE4", true).asInstanceOf[PartitionedRegion]
 
@@ -169,15 +157,13 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
   test("Test PR with MAXPART") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE5")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE5(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
-        "MAXPARTSIZE '200'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "MAXPARTSIZE '200')")
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE5", true).asInstanceOf[PartitionedRegion]
 
@@ -187,45 +173,39 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
   test("Test PR with EVICTION BY") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE6")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE6(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId'," +
-        "EVICTION_BY 'LRUMEMSIZE 200'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "EVICTION_BY 'LRUMEMSIZE 200')")
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
   }
 
   test("Test PR with PERSISTENT") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE7")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE7(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'PRIMARY KEY'," +
-        "PERSISTENT 'ASYNCHRONOUS'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "PERSISTENT 'ASYNCHRONOUS')")
+
 
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE7", true).asInstanceOf[PartitionedRegion]
   }
 
   test("Test RR with PERSISTENT") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE8")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE8(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
         "USING row " +
         "options " +
         "(" +
-        "PERSISTENT 'ASYNCHRONOUS'," +
-        s"driver $driver," +
-        s"URL $URL)")
-
+        "PERSISTENT 'ASYNCHRONOUS')")
     val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE8", true).asInstanceOf[DistributedRegion]
     assert(region.getDiskStore != null)
   }
@@ -233,15 +213,13 @@ class RowRelationAPISuite extends FunSuite with Logging {
 
   test("Test PR with multiple columns") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE9")
     val df = snc.sql("CREATE TABLE ROW_TEST_TABLE9(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ItemRef INT) " +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderID, ItemRef'," +
-        "PERSISTENT 'ASYNCHRONOUS'," +
-        s"driver $driver," +
-        s"URL $URL)")
+        "PERSISTENT 'ASYNCHRONOUS')")
 
 
     val rdd = sc.parallelize(

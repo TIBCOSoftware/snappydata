@@ -1,5 +1,7 @@
 package io.snappydata.app
 
+import io.snappydata.core.SnappySQLContext
+
 import org.apache.spark.Logging
 import org.scalatest.FunSuite
 
@@ -8,7 +10,7 @@ import org.scalatest.FunSuite
  */
 class ColumnTablePersistSpec extends FunSuite with Logging {
 
-  private val testSparkContext = TestSQLContext.sparkContext
+  private val testSparkContext = SnappySQLContext.sparkContext
 
   test(""" This test will create simple table""") {
 

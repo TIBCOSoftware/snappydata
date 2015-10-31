@@ -105,6 +105,7 @@ class JDBCMutableRelation(
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table, conn)
+          case _ => // Do Nothing
         }
       }
     } catch {

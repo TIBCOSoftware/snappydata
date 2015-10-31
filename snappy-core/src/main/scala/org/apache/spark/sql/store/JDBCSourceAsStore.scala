@@ -1,31 +1,22 @@
-package org.apache.spark.sql.store.impl
+package org.apache.spark.sql.store
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
 import java.sql.{Blob, Connection, PreparedStatement, ResultSet}
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 
-import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.sql.store.util.StoreUtils
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.util.Random
 
-import com.gemstone.gemfire.cache.{EntryOperation, PartitionResolver}
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey}
+import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
-import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{SparkContext, SparkEnv}
 
 /*
 Generic class to query column table from Snappy.
@@ -237,14 +228,4 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
   }
 }
 
-final class UUIDKeyResolver extends PartitionResolver[UUIDRegionKey, CachedBatch] {
 
-  override def getRoutingObject(entryOperation: EntryOperation[UUIDRegionKey, CachedBatch]): AnyRef = {
-    Int.box(entryOperation.getKey.getBucketId)
-  }
-
-  override def getName: String = "UUIDKeyResolver"
-
-  override def close(): Unit = {}
-
-}

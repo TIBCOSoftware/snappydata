@@ -18,7 +18,7 @@ class LocalSQLContext
       "local[2]",
       "TestSQLContext",
       new SparkConf().set("spark.sql.testkey", "true")
-         .set("snappy.store.jdbc.url","jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false")
+         .set("snappy.store.jdbc.url","jdbc:gemfirexd:;mcast-port=33619;user=app;password=app")
         .set("driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
         .set("spark.sql.unsafe.enabled", "false")
     )) {

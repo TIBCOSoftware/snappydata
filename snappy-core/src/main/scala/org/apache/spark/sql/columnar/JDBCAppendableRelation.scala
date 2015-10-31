@@ -15,7 +15,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistr
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.{JDBCSourceAsStore, ExternalStore}
 import org.apache.spark.sql.types.StructType
 
 import scala.collection.mutable
@@ -284,7 +284,7 @@ object JDBCAppendableRelation {
 final class DefaultSource extends ColumnarRelationProvider
 
 class ColumnarRelationProvider extends SchemaRelationProvider
-  with CreatableRelationProvider {
+with CreatableRelationProvider {
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
     val parameters = new mutable.HashMap[String, String]
@@ -322,7 +322,7 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
 
-    val externalStore = getExternalSource(url, driver, poolProps, connProps, hikariCP)
+    val externalStore = getExternalSource(sqlContext.sparkContext, url, driver, poolProps, connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -346,13 +346,12 @@ class ColumnarRelationProvider extends SchemaRelationProvider
     relation
   }
 
-  def getExternalSource(_url : String,
-      _driver : String,
-      _poolProps: Map[String, String],
-      _connProps : Properties,
-      _hikariCP : Boolean): ExternalStore = {
-    val externalSource = "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
-    val constructor = Class.forName(externalSource).getConstructors().head
-    return constructor.newInstance(_url, _driver, _poolProps, _connProps, new java.lang.Boolean(_hikariCP)).asInstanceOf[ExternalStore]
+  def getExternalSource(sc: SparkContext, url: String,
+      driver: String,
+      poolProps: Map[String, String],
+      connProps: Properties,
+      hikariCP: Boolean): ExternalStore = {
+    new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP)
+
   }
 }

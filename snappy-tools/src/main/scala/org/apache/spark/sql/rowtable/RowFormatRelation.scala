@@ -26,7 +26,8 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{MutableRelationProvider, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.util.StoreUtils
-import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD, StoreRDD}
+import org.apache.spark.sql.store.{StoreProperties, MembershipAccumulator, StoreInitRDD, StoreRDD}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 
 import org.apache.spark.{AccumulatorParam, Partition}
@@ -103,59 +104,26 @@ final class DefaultSource
     parameters ++= options
 
     val connProps = new Properties()
+    val sc = sqlContext.sparkContext
 
-    val url = parameters.remove("url")
-        .getOrElse(sys.error("JDBC URL option 'url' not specified"))
-
+    val (url, driver, poolProps, _connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sc, options)
 
 
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    val driver = parameters.remove("driver")
-
-
-    val poolImpl = parameters.remove("poolimpl")
-    val poolProperties = parameters.remove("poolproperties")
-    // remove ALLOW_EXISTING property, if remaining
     parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
     parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-
     parameters.remove("serialization.format")
 
-    driver.foreach(DriverRegistry.register)
 
 
     val preservepartitions = parameters.remove("preservepartitions")
     val dialect = JdbcDialects.get(url)
     val coptions = new CaseInsensitiveMap(parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(coptions)
-
     val schemaExtension = s"$schema $ddlExtension"
-
-    val hikariCP = poolImpl.map(Utils.normalizeId) match {
-      case Some("hikari") => true
-      case Some("tomcat") => false
-      case Some(p) =>
-        throw new IllegalArgumentException("RowFormatRelation: " +
-            s"unsupported pool implementation '$p' " +
-            s"(supported values: tomcat, hikari)")
-      case None => false
-    }
-    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
-      val eqIndex = s.indexOf('=')
-      if (eqIndex >= 0) {
-        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
-      } else {
-        // assume a boolean property to be enabled
-        (s.trim, "true")
-      }
-    }: _*)).getOrElse(Map.empty)
-
-
-
-    val sc = sqlContext.sparkContext
-
 
     val blockMap = StoreUtils.initStore(sc, url, connProps)
 
@@ -180,7 +148,17 @@ final class DefaultSource
       sqlContext)
   }
 
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String], schema: StructType) = {
+    val SNAPPY_STORE_JDBC_URL = sqlContext.sparkContext.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
+    val dialect = JdbcDialects.get(SNAPPY_STORE_JDBC_URL)
+    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    createRelation(sqlContext, mode, options, schemaString)
+  }
 
 }
 

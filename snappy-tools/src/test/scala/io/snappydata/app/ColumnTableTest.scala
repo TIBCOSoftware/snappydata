@@ -23,6 +23,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
 
   after {
     snc.dropExternalTable(tableName, true)
+    snc.dropExternalTable("ColumnTable2", true)
   }
 
   test("Test the creation/dropping of table using Snappy API") {
@@ -166,6 +167,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val tableName2 = "CoulmnTable2"
+    snc.sql("DROP TABLE IF EXISTS CoulmnTable2")
     snc.sql("CREATE TABLE " + tableName2 + " USING column " +
         options + " AS (SELECT * FROM " + tableName + ")"
     )
