@@ -26,9 +26,9 @@ import org.apache.spark.{SparkCallbacks, SparkEnv, SparkConf}
  */
 object ExecutorInitiator {
 
-  val executorRunnable: ExecutorRunnable = new ExecutorRunnable
+  var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
-  val executorThread: Thread = new Thread(executorRunnable)
+  var executorThread: Thread = new Thread(executorRunnable)
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
@@ -189,9 +189,16 @@ object ExecutorInitiator {
         if (executorThread.getState == Thread.State.NEW) {
           executorThread.setDaemon(true)
           executorThread.start()
+        } else if (executorThread.getState == Thread.State.TERMINATED) {
+          // Restart a thread after it has been stopped
+          // This is required for dunit case mainly.
+          executorRunnable = new ExecutorRunnable
+          executorThread = new Thread(executorRunnable)
+          executorRunnable.setDriverDetails(driverURL, driverDM)
+          executorThread.setDaemon(true)
+          executorThread.start()
         }
       case None =>
     }
   }
-
 }
