@@ -38,3 +38,5 @@ test {
   reports.html.destination = file("${workingDir}/html")
   reports.junitXml.destination = file(workingDir)
 }
+
+test.dependsOn ':cleanDUnit'
