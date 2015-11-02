@@ -2,32 +2,36 @@ package io.snappydata.dunit
 
 import java.util.Properties
 
-import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import dunit.{Host, AvailablePortHelper, DistributedTestBase, VM}
-import io.snappydata.{Locator, Lead, ServiceManager, Server}
+import com.pivotal.gemfirexd.{Attribute, FabricService}
+import dunit.{AvailablePortHelper, DistributedTestBase, Host}
+import io.snappydata.{Lead, Locator, Server, ServiceManager}
 
 /**
  * Created by amogh on 15/10/15.
  */
 class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
 
-  var props: Properties = null
+  val props: Properties = new Properties()
 
-  val host = Host.getHost(0);
-
-  val vm0 = host.getVM(0);
-  val vm1 = host.getVM(1);
-  val vm2 = host.getVM(2);
+  val host = Host.getHost(0)
+  val vm0 = host.getVM(0)
+  val vm1 = host.getVM(1)
+  val vm2 = host.getVM(2)
 
   override
   def setUp(): Unit = {
-    props = TestUtil.doCommonSetup(null)
+    super.setUp()
+    props.setProperty(Attribute.SYS_PERSISTENT_DIR, "basetest")
+    props.setProperty("mcast-port", "0")
     GemFireXDUtils.IS_TEST_MODE = true
   }
 
   override
   def tearDown2(): Unit = {
+    super.tearDown2()
+    props.clear()
+    Array(vm0, vm1, vm2).foreach(_.invoke(this.getClass, "stopAny"))
     GemFireXDUtils.IS_TEST_MODE = false
   }
 
@@ -41,13 +45,9 @@ class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
   def testSnappyEntitiesStartStop(): Unit = {
     val arg: Array[AnyRef] = Array(props)
 
+    vm2.invoke(this.getClass, "startSnappyLocator", arg)
     vm0.invoke(this.getClass, "startSnappyLead", arg)
     vm1.invoke(this.getClass, "startSnappyServer", arg)
-    vm2.invoke(this.getClass, "startSnappyLocator", arg)
-
-    vm0.invoke(this.getClass, "stopSnappyLead")
-    vm1.invoke(this.getClass, "stopSnappyServer")
-    vm2.invoke(this.getClass, "stopSnappyLocator")
   }
 }
 
@@ -64,28 +64,12 @@ object SnappyBaseDUnitTest {
     assert(ServiceManager.getLeadInstance.status == FabricService.State.RUNNING)
   }
 
-  def stopSnappyLead(): Unit = {
-    val lead = ServiceManager.getLeadInstance
-
-    if (lead != null) {
-      lead.stop(null)
-    }
-  }
-
   def startSnappyServer(props: Properties): Unit = {
     val server: Server = ServiceManager.getServerInstance
 
     server.start(props)
 
     assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
-  }
-
-  def stopSnappyServer(): Unit = {
-    val server = ServiceManager.getServerInstance
-
-    if (server != null) {
-      server.stop(null)
-    }
   }
 
   def startSnappyLocator(props: Properties): Unit = {
@@ -96,12 +80,11 @@ object SnappyBaseDUnitTest {
     assert(ServiceManager.getLocatorInstance.status == FabricService.State.RUNNING)
   }
 
-  def stopSnappyLocator(): Unit = {
-    val loc = ServiceManager.getLocatorInstance
+  def stopAny(): Unit = {
+    val service = ServiceManager.currentFabricServiceInstance
 
-    if (loc != null) {
-      loc.stop(null)
+    if (service != null) {
+      service.stop(null)
     }
   }
-
 }
