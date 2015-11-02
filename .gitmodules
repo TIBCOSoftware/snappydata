@@ -1,0 +1,4 @@
+[submodule "spark-jobserver"]
+	path = spark-jobserver
+	url = https://github.com/SnappyData/spark-jobserver.git
+	branch = snappydata
