@@ -12,32 +12,22 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
     // Lead is started before other servers are started.
-    vm0.invoke(this.getClass, "startSnappyLead")
-    vm1.invoke(this.getClass, "startSnappyServer")
-    vm2.invoke(this.getClass, "startSnappyServer")
-    vm3.invoke(this.getClass, "startSnappyServer")
+    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
-
-    vm3.invoke(this.getClass, "stopSnappyServer")
-    vm2.invoke(this.getClass, "stopSnappyServer")
-    vm1.invoke(this.getClass, "stopSnappyServer")
-    vm0.invoke(this.getClass, "stopSnappyLead")
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     // Lead is started before other servers are started.
-    vm0.invoke(this.getClass, "startSnappyLead")
-    vm1.invoke(this.getClass, "startSnappyServer")
-    vm2.invoke(this.getClass, "startSnappyServer")
-    vm3.invoke(this.getClass, "startSnappyServer")
+    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob2")
-
-    vm3.invoke(this.getClass, "stopSnappyServer")
-    vm2.invoke(this.getClass, "stopSnappyServer")
-    vm1.invoke(this.getClass, "stopSnappyServer")
-    vm0.invoke(this.getClass, "stopSnappyLead")
   }
 }
 
@@ -49,8 +39,7 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
 
   val props = Map(
     //"url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "url" -> "jdbc:snappydata:;user=app;password=app;persist-dd=false",
-    //"url" -> "jdbc:gemfirexd://localhost:1527/;user=app;password=app;persist-dd=false",
+    "url" -> "jdbc:snappydata:;user=app;password=app",
     "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
     //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
     "poolImpl" -> "tomcat",
@@ -67,10 +56,10 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
     val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect
+    val r = result.collect()
     assert(r.length == 0)
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropExternalTable(tableName, ifExists = true)
     println("Successful")
   }
 
@@ -83,16 +72,16 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("column").mode(SaveMode.Append)
+        .options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect
+    val r = result.collect()
     assert(r.length == 5)
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropExternalTable(tableName, ifExists = true)
     println("Successful")
   }
-
 }
 
 case class Data(col1: Int, col2: Int, col3: Int)

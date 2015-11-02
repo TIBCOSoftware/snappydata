@@ -4,7 +4,7 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import scala.collection.mutable
+import scala.collection.{JavaConversions, mutable}
 
 import com.zaxxer.hikari.util.PropertyBeanSetter
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
@@ -119,6 +119,24 @@ object ConnectionPool {
     getPoolDataSource(id, poolProps, connProps, hikariCP).getConnection
   }
 
+  private def removePoolKey(id: String,
+      dsKey: (DataSource, PoolKey)): Boolean = {
+    // we expect the ID to be present in pools
+    val poolKey = dsKey._2
+    val ids = pools(poolKey)._2
+    ids -= id
+    // clear the entire pool if all references have been removed
+    if (ids.isEmpty) {
+      pools -= poolKey
+      if (poolKey._3) {
+        dsKey._1.asInstanceOf[HDataSource].shutdown()
+      } else {
+        dsKey._1.asInstanceOf[TDataSource].close(true)
+      }
+      true
+    } else false
+  }
+
   /**
    * Remove reference to the pool for given ID. Also will cleanup and remove
    * the pool if all the references have been removed.
@@ -129,20 +147,18 @@ object ConnectionPool {
   def removePoolReference(id: String): Boolean = {
     val dsKey = idToPoolMap.remove(id)
     if (dsKey != null) pools.synchronized {
-      // we expect the ID to be present in pools
-      val poolKey = dsKey._2
-      val ids = pools(poolKey)._2
-      ids -= id
-      // clear the entire pool if all references have been removed
-      if (ids.isEmpty) {
-        pools -= poolKey
-        if (poolKey._3) {
-          dsKey._1.asInstanceOf[HDataSource].shutdown()
-        } else {
-          dsKey._1.asInstanceOf[TDataSource].close(true)
-        }
-        true
-      } else false
+      removePoolKey(id, dsKey)
     } else false
+  }
+
+  /** To be invoked only on SparkContext stop. */
+  private[sql] def clear(): Unit = {
+    pools.synchronized {
+      JavaConversions.mapAsScalaMap(idToPoolMap).foreach {
+        case (id, dsKey) => removePoolKey(id, dsKey)
+      }
+      pools.clear()
+      idToPoolMap.clear()
+    }
   }
 }

@@ -2,7 +2,12 @@ package io.snappydata.cluster
 
 import java.io.File
 import java.net.URL
+import java.util
 import java.util.concurrent.locks.ReentrantLock
+
+import com.gemstone.gemfire.distributed.internal.MembershipListener
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
 
@@ -21,17 +26,38 @@ import org.apache.spark.{SparkCallbacks, SparkEnv, SparkConf}
  */
 object ExecutorInitiator {
 
-  val executorRunnable: ExecutorRunnable = new ExecutorRunnable
+  var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
-  val executorThread: Thread = new Thread(executorRunnable)
+  var executorThread: Thread = new Thread(executorRunnable)
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
+    private var driverDM : InternalDistributedMember = null
     var stopTask = false
     private val lock = new ReentrantLock
 
-    def setDriverURL(url: Option[String]) = lock.synchronized {
+    val membershipListener = new MembershipListener {
+      override def quorumLost(failures: util.Set[InternalDistributedMember],
+          remaining: util.List[InternalDistributedMember]): Unit = {}
+
+      override def memberJoined(id: InternalDistributedMember): Unit = {}
+
+      override def memberSuspect(id: InternalDistributedMember,
+          whoSuspected: InternalDistributedMember): Unit = {}
+
+      override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
+        executorRunnable.memberDeparted(id)
+      }
+    }
+    def memberDeparted(departedDM: InternalDistributedMember) = lock.synchronized {
+      if(departedDM.equals(driverDM)) {
+        setDriverDetails(None, null)
+      }
+    }
+    def setDriverDetails(url: Option[String],
+        dm: InternalDistributedMember) = lock.synchronized {
       driverURL = url
+      driverDM = dm
       lock.notify()
     }
 
@@ -39,6 +65,7 @@ object ExecutorInitiator {
       var prevDriverURL = ""
       var env: SparkEnv = null
       try {
+        GemFireXDUtils.getGfxdAdvisor.getDistributionManager.addMembershipListener(membershipListener)
         while (!stopTask) {
           try {
             Misc.checkIfCacheClosing(null)
@@ -127,6 +154,7 @@ object ExecutorInitiator {
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
+        GemFireXDUtils.getGfxdAdvisor.getDistributionManager.removeMembershipListener(membershipListener)
       }
     }
 
@@ -134,6 +162,7 @@ object ExecutorInitiator {
       case Some(x) => x
       case None => ""
     }
+
   }
 
   /**
@@ -143,15 +172,16 @@ object ExecutorInitiator {
    */
   def stop() = {
     executorRunnable.stopTask = true
-    executorRunnable.setDriverURL(None)
+    executorRunnable.setDriverDetails(None, null)
   }
 
   /**
    * Set the new driver url and start the thread if not already started
    * @param driverURL
    */
-  def startOrTransmuteExecutor(driverURL: Option[String]): Unit = {
-    executorRunnable.setDriverURL(driverURL)
+  def startOrTransmuteExecutor(driverURL: Option[String],
+      driverDM: InternalDistributedMember): Unit = {
+    executorRunnable.setDriverDetails(driverURL, driverDM)
     // start the executor thread if driver URL is set and the thread
     // is not already started.
     driverURL match {
@@ -159,9 +189,16 @@ object ExecutorInitiator {
         if (executorThread.getState == Thread.State.NEW) {
           executorThread.setDaemon(true)
           executorThread.start()
+        } else if (executorThread.getState == Thread.State.TERMINATED) {
+          // Restart a thread after it has been stopped
+          // This is required for dunit case mainly.
+          executorRunnable = new ExecutorRunnable
+          executorThread = new Thread(executorRunnable)
+          executorRunnable.setDriverDetails(driverURL, driverDM)
+          executorThread.setDaemon(true)
+          executorThread.start()
         }
       case None =>
     }
   }
-
 }
