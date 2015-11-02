@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import org.apache.spark.sql.streaming.StreamDDLStrategy
+import org.apache.spark.sql.streaming._
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -31,7 +31,6 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
-import org.apache.spark.sql.streaming.StreamingCtxtHolder
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied
@@ -294,6 +293,7 @@ protected class SnappyContext(sc: SparkContext)
   def registerTopK(tableName: String, streamTableName: String,
       topkOptions: Map[String, Any], isStreamSummary: Boolean) = {
     val topKRDD = SnappyContext.createTopKRDD(tableName, self.sc, isStreamSummary)
+    //TODO Yogesh, this needs to handle all types of StreamRelations
     catalog.registerTopK(tableName, streamTableName,
       catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
   }
@@ -500,7 +500,7 @@ protected class SnappyContext(sc: SparkContext)
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamDDLStrategy, StoreStrategy) ++ super.strategies
+      SnappyStrategies, StreamDDLStrategy, StoreStrategy, StreamQueryStrategy) ++ super.strategies
 
     object SnappyStrategies extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
@@ -513,6 +513,17 @@ protected class SnappyContext(sc: SparkContext)
             filters,
             identity[Seq[Expression]], // All filters still need to be evaluated
             InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
+        case _ => Nil
+      }
+    }
+    object StreamQueryStrategy extends Strategy {
+      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+        case LogicalDStreamPlan(output, stream) =>
+          PhysicalDStreamPlan(output, stream.asInstanceOf[DStream[Row]]) :: Nil
+        case WindowLogicalPlan(d, s, child) =>
+          WindowPhysicalPlan(d, s, planLater(child)) :: Nil
+        case l@LogicalRelation(t: StreamPlan) =>
+          PhysicalDStreamPlan(l.output, t.stream) :: Nil
         case _ => Nil
       }
     }

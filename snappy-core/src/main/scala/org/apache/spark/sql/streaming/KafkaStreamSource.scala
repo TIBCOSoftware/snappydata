@@ -10,18 +10,18 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 /**
  * Created by ymahajan on 25/09/15.
  */
-class KafkaStreamSource extends SchemaRelationProvider{
+class KafkaStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
                               options: Map[String, String], schema: StructType) = {
 
     val ZK_QUORUM = "zkquorum" //Zookeeper quorum (hostname:port,hostname:port,..)
     val GROUP_ID = "groupid" //The group id for this consumer
-    val TOPICS ="topics" //Map of (topic_name -> numPartitions) to consume
+    val TOPICS = "topics" //Map of (topic_name -> numPartitions) to consume
 
     val KAFKA_PARAMS = "kafkaparams" //Kafka configuration parameters ("metadata.broker.list" or "bootstrap.servers")
-    val FROM_OFFSETS = "fromoffsets"  //Per-topic/partition Kafka offsets defining the (inclusive) starting point of the stream
-    val MESSAGE_HINDLER = "messagehandler"  //Function for translating each message and metadata into the desired type
+    val FROM_OFFSETS = "fromoffsets" //Per-topic/partition Kafka offsets defining the (inclusive) starting point of the stream
+    val MESSAGE_HINDLER = "messagehandler" //Function for translating each message and metadata into the desired type
 
     val context = StreamingCtxtHolder.streamingContext
     //TODO: Yogesh, remove this dependency on checkpoint
@@ -48,47 +48,21 @@ class KafkaStreamSource extends SchemaRelationProvider{
       }.toMap
 
       val dStream = KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
-      import org.apache.spark.sql.streaming.snappy._
-      val props = Map(
-        "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-        "poolImpl" -> "tomcat",
-        "user" -> "app",
-        "password" -> "app"
-      )
-      dStream.saveToExternalTable("kafkaStreamGemXdTable", schema, props)
       KafkaStreamRelation(dStream.asInstanceOf[DStream[Any]], options, formatter.format,
         schema, sqlContext)
     } else {
       //Direct Kafka
       val topicsSet = options(TOPICS).split(",").toSet
+      val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
+        t.split(",").map { s =>
+          val a = s.split("->")
+          (a(0), a(1))
+        }.toMap
+      }.getOrElse(Map())
 
-      //(kafkaParams, 'metadata.broker.list -> localhost:9092, '
-      //      val kafkaParams :Map[String, String] = options.get("kafkaParams").map { t =>
-      //        t.split(",").map { s =>
-      //          val a = s.split("->")
-      //          (a(0), a(1))
-      //        }.toMap
-      //      }
-
-      val kafkaParams = Map[String, String]("metadata.broker.list" -> "localhost:9092")
-      //[String, String, StringDecoder, StringEncoder]
       val dStream = KafkaUtils.createDirectStream(
-        context, /*kafkaParams.asInstanceOf[Any]*/ kafkaParams, topicsSet)
-      import org.apache.spark.sql.streaming.snappy._
+        context, kafkaParams, topicsSet)
 
-      val props = Map(
-        "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-        "poolImpl" -> "tomcat",
-        "user" -> "app",
-        "password" -> "app"
-      )
-      dStream.saveToExternalTable("kafkaStreamGemXdTable", schema,props)
-
-      dStream.foreachRDD { rdd =>
-        rdd.cache().count()
-      }
       KafkaStreamRelation(dStream.asInstanceOf[DStream[Any]], options, formatter.format,
         schema, sqlContext)
     }

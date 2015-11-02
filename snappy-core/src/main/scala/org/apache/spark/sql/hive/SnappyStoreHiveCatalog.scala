@@ -656,7 +656,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       tableName: QualifiedTableName): SocketStreamRelation[T] = {
     val plan: LogicalPlan = tables.getOrElse(tableName,
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
-
     plan match {
       case LogicalRelation(sr: SocketStreamRelation[T]) => sr
       case _ => throw new IllegalStateException(
