@@ -31,19 +31,18 @@ import scala.util.Random
  * Columnar Store implementation for GemFireXD.
  *
  */
-final class JDBCSourceAsColumnarStore(_url : String,
-     _driver : String,
+final class JDBCSourceAsColumnarStore(_url: String,
+    _driver: String,
     _poolProps: Map[String, String],
-    _connProps : Properties,
-    _hikariCP : Boolean,
-    val blockMap : Map[InternalDistributedMember, BlockManagerId]) extends ExternalStore {
+    _connProps: Properties,
+    _hikariCP: Boolean,
+    val blockMap: Map[InternalDistributedMember, BlockManagerId]) extends ExternalStore {
 
   @transient
   private lazy val serializer = SparkEnv.get.serializer
 
   @transient
   private lazy val rand = new Random
-
 
 
   @transient

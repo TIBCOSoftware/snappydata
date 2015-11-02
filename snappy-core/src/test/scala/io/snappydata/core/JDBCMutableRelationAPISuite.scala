@@ -24,11 +24,11 @@ class JDBCMutableRelationAPISuite extends FunSuite with Logging with BeforeAndAf
   private val testSparkContext = SnappySQLContext.sparkContext
 
   before{
-    DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb;create=true")
+    DriverManager.getConnection("jdbc:derby:./JdbcRDDSuiteDb;create=true")
   }
   after {
     try{
-      DriverManager.getConnection("jdbc:derby:target/JdbcRDDSuiteDb;shutdown=true")
+      DriverManager.getConnection("jdbc:derby:./JdbcRDDSuiteDb;shutdown=true")
     }catch{
       // Throw if not normal single database shutdown
       // https://db.apache.org/derby/docs/10.2/ref/rrefexcept71493.html
@@ -45,23 +45,20 @@ class JDBCMutableRelationAPISuite extends FunSuite with Logging with BeforeAndAf
     val snc = org.apache.spark.sql.SnappyContext(testSparkContext)
 
     val props = Map(
-      "url" -> "jdbc:derby:target/JdbcRDDSuiteDb",
+      "url" -> "jdbc:derby:./JdbcRDDSuiteDb",
       "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
       "poolImpl" -> "tomcat",
       "user" -> "app",
       "password" -> "app"
     )
-    snc.sql("DROP TABLE IF EXISTS jdbc_table_1")
+    snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props).saveAsTable("jdbc_table_1")
+    dataDF.write.format("jdbc").mode(SaveMode.Overwrite).options(props).saveAsTable("TEST_JDBC_TABLE_1")
     val count = dataDF.count()
     assert(count === data.length)
   }
-
-
-
 
 }

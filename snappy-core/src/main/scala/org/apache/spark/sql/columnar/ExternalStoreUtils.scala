@@ -55,10 +55,10 @@ private[sql] object ExternalStoreUtils {
 
     val SNAPPY_STORE_JDBC_URL = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
 
-    val url = if(SNAPPY_STORE_JDBC_URL.isEmpty){
+    val url = if (SNAPPY_STORE_JDBC_URL.isEmpty) {
       parameters.remove("url").getOrElse(
         sys.error("Option 'url' not specified"))
-    }else{
+    } else {
       SNAPPY_STORE_JDBC_URL
     }
     val driver = getDriver(url).getOrElse(parameters.remove("driver").asInstanceOf[String])

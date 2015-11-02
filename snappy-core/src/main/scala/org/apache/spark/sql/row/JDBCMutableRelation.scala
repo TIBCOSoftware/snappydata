@@ -386,20 +386,20 @@ object JDBCMutableRelation extends Logging {
 }
 
 class MutableRelationProvider extends ExternalSchemaRelationProvider
-                     with SchemaRelationProvider
-                     with RelationProvider
-                     with CreatableRelationProvider {
+with SchemaRelationProvider
+with RelationProvider
+with CreatableRelationProvider {
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-                              options: Map[String, String], schema: String) = {
+      options: Map[String, String], schema: String) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
     val url = parameters.remove("url")
-      .getOrElse(sys.error("JDBC URL option 'url' not specified"))
+        .getOrElse(sys.error("JDBC URL option 'url' not specified"))
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     parameters.remove("serialization.format")
     val table = parameters.remove(dbtableProp)
-      .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
     val driver = parameters.remove("driver")
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
@@ -421,8 +421,8 @@ class MutableRelationProvider extends ExternalSchemaRelationProvider
       case Some("tomcat") => false
       case Some(p) =>
         throw new IllegalArgumentException("JDBCUpdatableRelation: " +
-          s"unsupported pool implementation '$p' " +
-          s"(supported values: tomcat, hikari)")
+            s"unsupported pool implementation '$p' " +
+            s"(supported values: tomcat, hikari)")
       case None => false
     }
     val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
@@ -440,7 +440,7 @@ class MutableRelationProvider extends ExternalSchemaRelationProvider
     } else {
       if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
         throw new IllegalArgumentException("JDBCUpdatableRelation: " +
-          "incomplete partitioning specified")
+            "incomplete partitioning specified")
       }
       JDBCPartitioningInfo(
         partitionColumn.get,
@@ -459,28 +459,28 @@ class MutableRelationProvider extends ExternalSchemaRelationProvider
   }
 
   override def createRelation(sqlContext: SQLContext,
-                              options: Map[String, String], schema: StructType) = {
+      options: Map[String, String], schema: StructType) = {
     val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
     val allowExisting = options.get(JdbcExtendedUtils
-      .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     createRelation(sqlContext, mode, options, schemaString)
   }
 
   override def createRelation(sqlContext: SQLContext,
-                              options: Map[String, String]) = {
+      options: Map[String, String]) = {
     val allowExisting = options.get(JdbcExtendedUtils
-      .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     // will work only if table is already existing
     createRelation(sqlContext, mode, options, "")
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-                              options: Map[String, String], data: DataFrame) = {
+      options: Map[String, String], data: DataFrame) = {
     val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
@@ -492,7 +492,7 @@ class MutableRelationProvider extends ExternalSchemaRelationProvider
 }
 
 final class DefaultSource
-  extends MutableRelationProvider {
+    extends MutableRelationProvider {
 
 
 }

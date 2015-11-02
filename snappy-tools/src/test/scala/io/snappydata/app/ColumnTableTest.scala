@@ -1,6 +1,8 @@
 package io.snappydata.app
 
-import io.snappydata.core.SnappySQLContext
+import java.sql.DriverManager
+
+import io.snappydata.core.{FileCleaner, SnappySQLContext}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{AnalysisException, SaveMode}

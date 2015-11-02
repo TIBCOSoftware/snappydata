@@ -2,8 +2,8 @@ package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.core.{TestData2, SnappySQLContext, TestData}
-import org.scalatest.FunSuite
+import io.snappydata.core.{FileCleaner, TestData2, SnappySQLContext, TestData}
+import org.scalatest.{BeforeAndAfter, FunSuite}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
@@ -11,14 +11,13 @@ import org.apache.spark.sql._
 /**
  * Tests for ROW stores
  */
-class RowRelationAPISuite extends FunSuite with Logging {
+class RowRelationAPISuite extends FunSuite with Logging  with BeforeAndAfter{
 
   private val sc = SnappySQLContext.sparkContext
 
   val props = Map.empty[String, String]
 
-
- test("Create replicated row table with DataFrames") {
+  test("Create replicated row table with DataFrames") {
 
     val snc = org.apache.spark.sql.SnappyContext(sc)
     val rdd = sc.parallelize((1 to 1000).map(i => TestData(i, s"$i")))

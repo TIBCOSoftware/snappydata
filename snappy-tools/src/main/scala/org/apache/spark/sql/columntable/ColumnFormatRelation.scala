@@ -1,33 +1,38 @@
 package org.apache.spark.sql.columntable
 
-import java.nio.ByteBuffer
 import java.util.Properties
 
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-
-import org.apache.spark.{SparkContext, Partition}
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.{InternalRow, CatalystTypeConverters}
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, ColumnarRelationProvider, JDBCAppendableRelation}
+import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRelation, JDBCPartitioningInfo, DriverRegistry}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.MutableRelationProvider
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, Filter, BaseRelation}
+import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.store.util.StoreUtils
-import org.apache.spark.sql.{Row, SQLContext, SaveMode}
-import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.sql.{SQLContext, SaveMode}
+import org.apache.spark.{Partition, SparkContext}
 
 /**
  * Created by rishim on 29/10/15.
+ * This class acts as a DataSource provider for column format tables provided Snappy. It uses GemFireXD as actual datastore to physically locate the tables.
+ * Column tables can be used for storing data in columnar compressed format.
+ * A example usage is given below.
+ *
+ * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    This provider scans underlying tables in parallel and is aware of the data partition.
+    It does not introduces a shuffle if simple table query is fired.
+    One can insert a single or multiple rows into this table as well as do a bulk insert by a Spark DataFrame.
+    Bulk insert example is shown above.
+
  */
 class ColumnFormatRelation(
     override val url: String,
@@ -42,22 +47,7 @@ class ColumnFormatRelation(
     override val origOptions: Map[String, String],
     override val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext
-    ) extends JDBCAppendableRelation(
-  url,
-  table,
-  provider,
-  mode,
-  userSchema,
-  parts,
-  _poolProps,
-  connProperties,
-  hikariCP,
-  origOptions,
-  externalStore,
-  sqlContext
-)() {
-
-
+    ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema, parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
 }
 
 final class DefaultSource
