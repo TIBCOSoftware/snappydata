@@ -148,9 +148,9 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     }
 
   protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> INDEX ~> ON ~> tableIdentifier) ~ ("(" ~ ident ~ ("," ~ ident).* ~ ")") ^^ {
-      case tableName =>
-          DropTable(tableName.toString(), false, true)
+    (CREATE ~> INDEX ~> ident) ~ (ON ~> ident) ~ wholeInput ^^ {
+      case indexName ~ tableName ~ sql =>
+        CreateIndex(tableName, sql)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
@@ -275,6 +275,18 @@ private[sql] case class TruncateTable(
     Seq.empty
   }
 }
+
+private[sql] case class CreateIndex(
+    tableName: String,
+    sql: String) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    snc.createIndexOnExternalTable(tableName, sql)
+    Seq.empty
+  }
+}
+
 case class DMLExternalTable(
     tableName: String,
     child: LogicalPlan,

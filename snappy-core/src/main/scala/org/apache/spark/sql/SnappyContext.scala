@@ -435,6 +435,51 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   }
 
   /**
+   * Create Index on an external table (created by a call to createExternalTable).
+   */
+  def createIndexOnExternalTable(tableName: String, sql: String): Unit = {
+    println("vivek:")
+    println("tablename=" + tableName)
+    println("sql=" + sql)
+
+    if (catalog.tableExists(tableName)) {
+      println(tableName + " exists")
+    } else {
+      throw new AnalysisException(
+        s"$tableName is not an indexable table")
+    }
+
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    println("qualifiedTable=" + qualifiedTable)
+    val plan = try {
+      catalog.lookupRelation(qualifiedTable, None)
+    } catch {
+      case ae: AnalysisException => throw ae
+    }
+
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(i: IndexableRelation) =>
+        i.createIndex(tableName, sql)
+      case _ => throw new AnalysisException(
+        s"$tableName is not an indexable table")
+    }
+
+    /*
+    val plan = try {
+      catalog.lookupRelation(tableName)
+    } catch {
+      case ae: AnalysisException => throw ae
+    }
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(i: IndexableRelation) =>
+        println("Is IndexableRelation")
+      case _ => throw new AnalysisException(
+        s"$tableName is not an indexable table but $plan")
+    }
+    */
+  }
+
+  /**
    * Drop a temporary table.
    */
   def dropTempTable(tableName: String, ifExists: Boolean = false): Unit = {

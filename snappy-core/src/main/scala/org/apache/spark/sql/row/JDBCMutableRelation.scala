@@ -40,6 +40,7 @@ class JDBCMutableRelation(
     with UpdatableRelation
     with DeletableRelation
     with DestroyRelation
+    with IndexableRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -265,6 +266,47 @@ class JDBCMutableRelation(
     }
     finally {
       conn.close()
+    }
+  }
+
+  override def createIndex(tableName: String, sql: String): Unit = {
+    var conn: Connection = null
+    try {
+      conn = JdbcUtils.createConnection(url, connProperties)
+      val tableExists = JdbcExtendedUtils.tableExists(conn, table,
+        dialect, sqlContext)
+
+      // Create the table if the table didn't exist.
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      }
+      else {
+        sys.error(s"Table $table do not exists.")
+      }
+    } catch {
+      case sqle: java.sql.SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      if (conn != null) {
+        conn.close()
+      }
+    }
+
+
+    val connection = ConnectionPool.getPoolConnection(table,
+      poolProperties, connProperties, hikariCP)
+    try {
+      val stmt = connection.prepareStatement(sql)
+      val result = stmt.executeUpdate()
+      stmt.close()
+    } finally {
+      connection.close()
     }
   }
 }

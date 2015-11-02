@@ -38,8 +38,13 @@ class CreateIndexTest extends FunSuite {
     result.collect.foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
 
-    //snContext.sql("create index on " + tableName)
-    snContext.sql("create index on " + tableName + " (COL1)")
+    try {
+      snContext.sql("create index test1 on " + tableName + " (COL1)")
+      fail("Should not create index on column table")
+    } catch {
+      case ae: org.apache.spark.sql.AnalysisException => // ignore
+      case e: Exception => throw e
+    }
   }
 
   test("Test create Index on Row Table using Snappy API") {
@@ -72,7 +77,7 @@ class CreateIndexTest extends FunSuite {
     doPrint("=============== RESULTS END ===============")
 
     //snContext.sql("create index on " + tableName)
-    snContext.sql("create index on " + tableName + " (COL1, COL2)")
+    snContext.sql("create index test1 on " + tableName + " (COL1)")
   }
 
   def verifyRows(r: Row) : Unit = {

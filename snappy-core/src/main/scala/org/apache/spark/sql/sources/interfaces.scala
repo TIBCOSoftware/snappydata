@@ -74,6 +74,16 @@ trait DestroyRelation {
   def destroy(ifExists: Boolean): Unit
 }
 
+@DeveloperApi
+trait IndexableRelation {
+
+  /**
+   * Execute index on the table.
+   */
+  def createIndex(tableName: String, colName: String): Unit
+
+}
+
 /**
  * ::DeveloperApi::
  * Implemented by objects that produce relations for a specific kind of data
