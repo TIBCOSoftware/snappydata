@@ -115,6 +115,11 @@ task cleanJUnit << {
   delete workingDir
   file(workingDir).mkdirs()
 }
+task cleanDUnit << {
+  def workingDir = "${testResultsBase}/dunit"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
 
 subprojects {
   // the run task for a selected sub-project
@@ -258,7 +263,6 @@ task product {
   def productDir = file("${buildDir}/snappy")
   doFirst {
     delete productDir
-    productDir.mkdirs()
     file("${productDir}/lib").mkdirs()
   }
   doLast {
@@ -279,7 +283,7 @@ task product {
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def baseName = 'snappy-spark-assembly'
-    def archiveName = "snappy-spark-assembly_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
+    def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${productDir}/lib/${archiveName}")
     copy {
       from "${project(':snappy-spark').projectDir}/bin"
@@ -330,7 +334,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test'
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
