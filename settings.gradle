@@ -8,7 +8,7 @@ include 'snappy-dunits'
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
 project(':snappy-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-tools" as File
 
-if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
+if (new File(rootDir, "snappy-spark").exists()) {
   include ':snappy-spark'
   // sub-projects of snappy-spark
   include ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion
@@ -65,7 +65,7 @@ if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
   project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
 }
 
-if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+if (new File(rootDir, "snappy-store").exists()) {
   include ':snappy-store'
   // sub-projects of snappy-spark
   include ':snappy-store:gemfire-joptsimple'
@@ -83,8 +83,4 @@ if (new File(rootDir, "snappy-store/build.gradle").exists()) {
   include ':snappy-store:gemfirexd:tools'
   include ':snappy-store:testing:core'
   include ':snappy-store:testing:sql'
-}
-
-if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
-  include ':spark-jobserver'
 }
