@@ -61,7 +61,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     new SnappyStoreHiveCatalog(self)
 
   @transient
-  override protected[sql] val cacheManager = new SnappyCacheManager(self)
+  override protected[sql] val cacheManager = new SnappyCacheManager
 
   def saveStream[T: ClassTag](stream: DStream[T],
       aqpTables: Seq[String],
@@ -161,14 +161,14 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       cacheManager.lookupCachedData(plan).getOrElse {
         sys.error(s"couldn't cache table $tableIdent")
       }
-    }
+    }.cachedRepresentation
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
     val cached = df.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation, output)
+        tableIdent, schema, relation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
 
@@ -179,7 +179,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation.cachedRepresentation match {
+      relation match {
         case externalStore: ExternalStoreRelation =>
           externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>
@@ -202,12 +202,12 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       cacheManager.lookupCachedData(plan).getOrElse {
         sys.error(s"couldn't cache table $tableIdent")
       }
-    }
+    }.cachedRepresentation
 
     val cached = rdd.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
+        tableIdent, schema, relation, schema.toAttributes)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
@@ -217,7 +217,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation.cachedRepresentation match {
+      relation match {
         case externalStore: ExternalStoreRelation =>
           externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>
@@ -236,7 +236,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = catalog.lookupRelation(qualifiedTable, None)
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(br) =>
+      case LogicalRelation(br, _) =>
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
           case d: DestroyRelation => d.truncate()
@@ -259,7 +259,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
       new DummyRDD(self))(self)
 
-    catalog.registerTable(Seq(tableName), plan)
+    catalog.registerTable(catalog.newQualifiedTableName(tableName), plan)
   }
 
   def registerSampleTable(tableName: String, schema: StructType,
@@ -423,7 +423,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     }
     // additional cleanup for external tables, if required
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(br) =>
+      case LogicalRelation(br, _) =>
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
@@ -453,7 +453,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def insert(tableName: String, rows: Row*): Int = {
     catalog.lookupRelation(tableName) match {
-      case LogicalRelation(r: RowInsertableRelation) => r.insert(rows)
+      case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
@@ -462,7 +462,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
     catalog.lookupRelation(tableName) match {
-      case LogicalRelation(u: UpdatableRelation) =>
+      case LogicalRelation(u: UpdatableRelation, _) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
@@ -471,7 +471,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   def delete(tableName: String, filterExpr: String): Int = {
     catalog.lookupRelation(tableName) match {
-      case LogicalRelation(d: DeletableRelation) => d.delete(filterExpr)
+      case LogicalRelation(d: DeletableRelation, _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }

@@ -9,8 +9,7 @@ import org.apache.spark.storage.StorageLevel
 /**
  * Snappy CacheManager extension to allow for appending data to cache.
  */
-private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
-    extends execution.CacheManager(sqlContext) {
+private[sql] class SnappyCacheManager extends execution.CacheManager {
 
   /**
    * Caches the data produced by the logical representation of the given
@@ -30,6 +29,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
         case s: StratifiedSample => true
         case _ => false
       }
+      val sqlContext = query.sqlContext
       cachedData += execution.CachedData(query.logicalPlan,
         columnar.InMemoryAppendableRelation(
           sqlContext.conf.useCompression,
@@ -50,6 +50,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
         case s: StratifiedSample => true
         case _ => false
       }
+      val sqlContext = query.sqlContext
       cachedData += execution.CachedData(query.logicalPlan,
         columnar.ExternalStoreRelation(
           sqlContext.conf.useCompression,

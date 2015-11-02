@@ -8,9 +8,10 @@ include 'snappy-dunits'
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
 project(':snappy-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-tools" as File
 
-if (new File(rootDir, "snappy-spark").exists()) {
+if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
   include ':snappy-spark'
   // sub-projects of snappy-spark
+  include ':snappy-spark:snappy-spark-test-tags_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion
@@ -38,6 +39,7 @@ if (new File(rootDir, "snappy-spark").exists()) {
   include ':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion
 
   // sub-project directories of snappy-spark
+  project(':snappy-spark:snappy-spark-test-tags_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/tags" as File
   project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/core" as File
   project(':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/bagel" as File
   project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/graphx" as File
@@ -65,7 +67,7 @@ if (new File(rootDir, "snappy-spark").exists()) {
   project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
 }
 
-if (new File(rootDir, "snappy-store").exists()) {
+if (new File(rootDir, "snappy-store/build.gradle").exists()) {
   include ':snappy-store'
   // sub-projects of snappy-spark
   include ':snappy-store:gemfire-joptsimple'

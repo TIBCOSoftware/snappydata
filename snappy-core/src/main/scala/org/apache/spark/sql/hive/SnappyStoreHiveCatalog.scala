@@ -37,7 +37,6 @@ import org.apache.spark.{Logging, Partition, TaskContext}
 final class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
 
-
   override val conf = context.conf
 
   val tables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
@@ -130,7 +129,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     */
     // `configure` goes second to override other settings.
     // `configure` goes second to override other settings.
-    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
+    if (sparkConf.contains("gemfirexd.db.url") &&
+        sparkConf.contains("gemfirexd.db.driver")) {
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         sparkConf.get("gemfirexd.db.url"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
@@ -139,7 +139,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         "APP")
     }
     //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
-
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -174,16 +173,14 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
-      new ClientWrapper(metaVersion, allConfig, classLoader)
-      /*
+      //new ClientWrapper(metaVersion, allConfig, classLoader)
       new IsolatedClientLoader(
         version = metaVersion,
         execJars = jars.toSeq,
         config = allConfig,
-        isolationOn = true,
+        isolationOn = false,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes())
-      */
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
     } else if (hiveMetastoreJars == "maven") {
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using maven.")
@@ -191,7 +188,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         version = hiveMetastoreVersion,
         config = allConfig,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes()).client
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
     } else {
       // Convert to files and expand any directories.
       val jars = hiveMetastoreJars.split(File.pathSeparator).flatMap {
@@ -215,7 +212,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         config = allConfig,
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes()).client
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
     }
   }
 
@@ -277,10 +274,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
   }
 
-  override def processTableIdentifier(tableIdentifier: Seq[String]) = {
-    SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
-  }
-
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
     new QualifiedTableName(tableIdent.database, tableIdent.table)
 
@@ -293,21 +286,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     } else {
       new QualifiedTableName(None, tableName)
     }
-  }
-
-  def newQualifiedTableName(tableIdent: Seq[String]): QualifiedTableName = {
-    val fullName = processTableIdentifier(tableIdent)
-    var isCurrentDB = true
-    val database = fullName.lift(fullName.size - 3).map { name =>
-      isCurrentDB = name == client.currentDatabase
-      name
-    }
-    val tableName = if (fullName.length > 1) {
-      fullName(fullName.size - 2) + '.' + fullName.last
-    } else {
-      fullName.last
-    }
-    new QualifiedTableName(database, tableName)
   }
 
   override def refreshTable(tableIdent: TableIdentifier): Unit = {
@@ -327,7 +305,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     topKStructures.clear()
   }
 
-  override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
+  override def unregisterTable(tableIdentifier: TableIdentifier): Unit = {
     unregisterTable(newQualifiedTableName(tableIdentifier))
   }
 
@@ -368,12 +346,12 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     lookupRelation(newQualifiedTableName(tableIdentifier), None)
   }
 
-  override def lookupRelation(tableIdentifier: Seq[String],
+  override def lookupRelation(tableIdentifier: TableIdentifier,
       alias: Option[String]): LogicalPlan = {
     lookupRelation(newQualifiedTableName(tableIdentifier), alias)
   }
 
-  override def tableExists(tableIdentifier: Seq[String]): Boolean = {
+  override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
     tableExists(newQualifiedTableName(tableIdentifier))
   }
 
@@ -386,9 +364,13 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         tableName.getTableOption(client).isDefined
   }
 
-  override def registerTable(tableIdentifier: Seq[String],
+  override def registerTable(tableIdentifier: TableIdentifier,
       plan: LogicalPlan): Unit = {
     tables += (newQualifiedTableName(tableIdentifier) -> plan)
+  }
+
+  def registerTable(tableName: QualifiedTableName, plan: LogicalPlan): Unit = {
+    tables += (tableName -> plan)
   }
 
   def registerExternalTable(tableName: QualifiedTableName,
@@ -561,7 +543,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
         .loadClass(externalSource).getConstructor(classOf[Map[String, String]])
-    return constructor.newInstance(options).asInstanceOf[ExternalStore]
+    constructor.newInstance(options).asInstanceOf[ExternalStore]
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
@@ -656,7 +638,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
 
     plan match {
-      case LogicalRelation(sr: StreamRelation[T]) => sr
+      case LogicalRelation(sr: StreamRelation[T], _) => sr
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }
@@ -695,14 +677,6 @@ object SnappyStoreHiveCatalog {
       tableIdentifier
     } else {
       Utils.normalizeId(tableIdentifier)
-    }
-  }
-
-  def processTableIdentifier(tableIdentifier: Seq[String], conf: SQLConf) = {
-    if (conf.caseSensitiveAnalysis) {
-      tableIdentifier
-    } else {
-      tableIdentifier.map(Utils.normalizeId)
     }
   }
 }

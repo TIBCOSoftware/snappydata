@@ -49,8 +49,8 @@ object SnappyParser extends SqlParserBase {
       }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
-      case r ~ s => DMLExternalTable(r, UnresolvedRelation(Seq(r)), s)
+    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~ wholeInput ^^ {
+      case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
     }
 
 }
@@ -268,7 +268,7 @@ private[sql] case class TruncateTable(
   }
 }
 case class DMLExternalTable(
-    tableName: String,
+    tableName: TableIdentifier,
     child: LogicalPlan,
     command: String)
     extends LogicalPlan with Command {
@@ -367,7 +367,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
           // around in StreamRelation so as to give the proper runtime type
-          case (streamTableName, LogicalRelation(sr: StreamRelation[_])) =>
+          case (streamTableName, LogicalRelation(sr: StreamRelation[_], _)) =>
             (streamTableName, sr.asInstanceOf[StreamRelation[Any]])
         }
         streamTables.foreach {
@@ -432,7 +432,7 @@ object OptsUtil {
 
   def getOption(optionName: String, options: Map[String, String]): String =
     options.getOrElse(optionName, options.collectFirst {
-      case (k, v) if (k.equalsIgnoreCase(optionName)) => v
+      case (k, v) if k.equalsIgnoreCase(optionName) => v
     }.getOrElse(throw newAnalysisException(
       s"Option $optionName not defined")))
 

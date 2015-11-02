@@ -37,7 +37,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{ConvertToUnsafe, SparkPlan}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
@@ -163,7 +163,8 @@ private[sql] object InMemoryAppendableRelation {
       tableName: Option[String],
       isSampledTable: Boolean): InMemoryAppendableRelation =
     new InMemoryAppendableRelation(child.output, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable)()
+      storageLevel, if (child.outputsUnsafeRows) child else ConvertToUnsafe(child),
+      tableName, isSampledTable)()
 }
 
 private[sql] class InMemoryAppendableColumnarTableScan(
