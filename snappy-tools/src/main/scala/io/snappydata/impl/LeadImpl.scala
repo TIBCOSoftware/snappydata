@@ -134,14 +134,22 @@ class LeadImpl extends ServerImpl with Lead {
 
     def getConfig(args: Array[String]) : Config = {
 
-      val notConfigurable = ConfigFactory.parseResources("jobserver-overrides")
+//      System.setProperty("config.trace", "loads")
+
+      val notConfigurable = ConfigFactory.parseResources("jobserver-overrides.conf")
 
       val bootConfig = notConfigurable.withFallback(ConfigFactory.parseProperties(bootProperties))
 
       val snappyDefaults = bootConfig.withFallback(
-          ConfigFactory.parseResources("jobserver-defaults"))
+          ConfigFactory.parseResources("jobserver-defaults.conf"))
 
-      snappyDefaults.withFallback(ConfigFactory.load()).resolve()
+      val builtIn = ConfigFactory.load()
+
+      val finalConf = snappyDefaults.withFallback(builtIn).resolve()
+
+//      System.out.println("SB: Passing JobServer with config ", finalConf.root.render())
+
+      finalConf
     }
 
     val confFile = bootProperties.getProperty("jobserver.config") match {
