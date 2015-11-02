@@ -7,7 +7,7 @@ import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps
 
 /**
- * Calls that are needed to be sent to snappy-tools classes because the variables are private[spark]
+ * Calls that are needed to be sent to Snappy-Core classes because the variables are private[spark]
  */
 object SparkCallbacks {
 
