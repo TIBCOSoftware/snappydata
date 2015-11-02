@@ -86,7 +86,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
             PruneFilters
       ) ,
       Batch("Consolidate Bootstrap & Lineage Embedding", Once,
-            //ConsolidateBootstrap(10),
+            ConsolidateBootstrap(5),
             IdentifyLazyEvaluates,
             EmbedLineage
       ) ,

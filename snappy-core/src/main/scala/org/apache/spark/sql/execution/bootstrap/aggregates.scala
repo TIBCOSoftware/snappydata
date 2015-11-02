@@ -24,6 +24,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction2
 import org.apache.spark.sql.catalyst.plans.physical.{AllTuples, ClusteredDistribution, Distribution, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.{SparkPlan, UnaryNode}
 //import org.apache.spark.sql.hive.online.ComposeRDDFunctions._
@@ -188,8 +189,9 @@ trait DelegatedAggregate {
    */
   protected[this] val resultExpressions = aggregateExpressions.map { agg =>
     agg.transform {
-      case TaggedAggregateExpression2( aggFunc,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
+      case TaggedAggregateExpression2(_, aggFunc,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
       case UnTaggedAggregateExpression2( aggFunc,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
+      case TaggedAlias( _,aggFunc:AggregateFunction2,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
       case e: Expression  if(!(e .isInstanceOf[DelegateFunction]) && resultMap.contains(e))   => resultMap(e)
     }
   }
@@ -276,6 +278,119 @@ case class BootstrapAggregate(
   }
 }
 
+
+case class SortedAggregateWith2Inputs2Outputs(
+    cacheFilter: Option[Attribute],
+
+    lineageRelayInfo: LineageRelay,
+    integrityInfo: Option[IntegrityInfo],
+    groupingExpressions: Seq[Expression],
+    aggregateExpressions: Seq[NamedExpression],
+    child: SparkPlan)(
+
+    val trace: List[Int] = -1 :: Nil,
+    val opId: OpId = OpId.newOpId)
+    extends UnaryNode with DelegatedAggregate   {
+
+  val partial = false
+
+
+
+  override def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
+    val rdd = child.execute()
+
+    if (groupingExpressions.isEmpty) {
+      rdd.mapPartitions { iter =>
+        val buffer = newAggregateBuffer()
+        var currentRow: InternalRow = null
+
+        while (iter.hasNext) {
+          currentRow = iter.next()
+          var i = 0
+          while (i < buffer.length) {
+            buffer(i).update(currentRow)
+            i += 1
+          }
+        }
+
+        val aggregateResults = new GenericMutableRow(computedAggregates.length)
+        val resultProjection = new InterpretedMutableProjection(resultExpressions, computedSchema)
+        val result = new ArrayBuffer[InternalRow]( 16)
+
+
+        var i = delegatees.length
+        while (i < buffer.length) {
+          buffer(i).evaluate(aggregateResults)
+          i += 1
+        }
+        result += aggregateResults
+        /*
+        val filter = buildRelayFilter()
+        if (filter(result)) {
+          // Broadcast the old results
+          val broadcastProjection = buildRelayProjection()
+          val toBroadcast = broadcastProjection(result)
+          SparkEnv.get.blockManager.putSingle(
+            LazyBlockId(opId.id, currentBatch, index), toBroadcast, StorageLevel.MEMORY_AND_DISK)
+        }
+
+        // Pass on the new results
+        if (prevRow != null) Iterator() else*/
+        result.iterator
+      }
+    } else {
+      rdd.mapPartitions { iter =>
+        val hashTable = new JHashMap[InternalRow, Array[DelegateAggregateFunction]]
+        val groupingProjection = new InterpretedMutableProjection(groupingExpressions, child.output)
+        var currentRow: InternalRow = null
+
+        while (iter.hasNext) {
+          currentRow = iter.next()
+          val currentGroup = groupingProjection(currentRow)
+          var currentBuffer = hashTable.get(currentGroup)
+          if (currentBuffer == null) {
+            currentBuffer = newAggregateBuffer()
+            hashTable.put(currentGroup.copy(), currentBuffer)
+          }
+          var i = 0
+          while (i < currentBuffer.length) {
+            currentBuffer(i).update(currentRow)
+            i += 1
+          }
+        }
+
+        val aggregateResults = new GenericMutableRow(computedAggregates.length)
+        val joinedRow = new JoinedRow
+        val resultProjection = new InterpretedMutableProjection(resultExpressions,
+          computedSchema ++ namedGroups.map(_._2))
+
+        val results = new ArrayBuffer[InternalRow]( 16)
+
+
+        hashTable.foreach { case (currentGroup, currentBuffer) =>
+          var i = delegatees.length
+          while (i < currentBuffer.length) {
+            currentBuffer(i).evaluate(aggregateResults)
+            i += 1
+          }
+          var row = resultProjection(joinedRow(aggregateResults, currentGroup))
+          results += row.copy()
+
+        }
+
+
+        // Pass on the new results
+        results.iterator
+      }
+    }
+  }
+
+  override protected final def otherCopyArgs =  trace :: opId :: Nil
+
+  override def simpleString: String = s"${super.simpleString} $opId"
+
+
+}
 
 
 case class AggregateWith2Inputs2Outputs(

@@ -9,7 +9,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.HiveTypeCoercion
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AlgebraicAggregate, Complete, Final, PartialMerge, Partial, AggregateExpression2}
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateFunction2, AlgebraicAggregate, Complete, Final, PartialMerge, Partial, AggregateExpression2}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenContext, GeneratedExpressionCode}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution._
@@ -519,7 +519,15 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
 
                     if (!partial) {
-                      TaggedAggregateExpression2(newExpr.aggregateFunction, a.mode,a.isDistinct, "dummy")():: Nil
+                      val ne1   = TaggedAggregateExpression2(Uncertain ,newExpr.aggregateFunction, a.mode,a.isDistinct, "dummy")()
+                      val ne=  TaggedAlias(Uncertain, ne1, "dummy")(ne1.exprId)
+
+                      ne ::
+                      TaggedAlias(Bound(Lower, ne.exprId), LowerPlaceholder(newExpr), ne.name)(
+                            qualifiers = ne.qualifiers) ::
+                          TaggedAlias(Bound(Upper, ne.exprId), UpperPlaceholder(newExpr), ne.name)(
+                            qualifiers = ne.qualifiers) ::
+                          Nil
 
                 } /*else if (BootStrapUtils.containsUncertain(expr.references)) {
                  TaggedAlias(Uncertain, newExpr, name)(alias.exprId, alias.qualifiers) :: Nil
@@ -897,8 +905,20 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
         flattened
       case alias@TaggedAlias(tag, child, name) =>
         val flattened = flatten(child).zipWithIndex.map { case (expr, idx) =>
-          if (idx == 0) TaggedAlias(tag, expr, name)(alias.exprId, alias.qualifiers)
-          else TaggedAlias(tag, expr, name)(qualifiers = alias.qualifiers)
+          if (idx == 0) {
+            child match {
+              case x: TaggedAggregateExpression2 => x
+              case _ => TaggedAlias(tag, expr, name)(alias.exprId, alias.qualifiers)
+            }
+          }
+          else {
+            child match {
+              case x: TaggedAggregateExpression2 => x
+              case _ =>  TaggedAlias(tag, expr, name)(qualifiers = alias.qualifiers)
+            }
+
+
+          }
         }
         toFlattened(alias.exprId) = flattened.map(_.toAttribute)
         flattened

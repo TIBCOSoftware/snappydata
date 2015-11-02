@@ -161,6 +161,7 @@ case class ByteMultiply(left: Expression, right: Expression) extends BinaryExpre
 
 
 private[sql] case class TaggedAggregateExpression2(
+    tag: TransformableTag,
     aggregateFunction: AggregateFunction2,
     mode: AggregateMode,
     isDistinct: Boolean, override val name: String)(
@@ -172,7 +173,7 @@ private[sql] case class TaggedAggregateExpression2(
   override def dataType: DataType = aggregateFunction.dataType
   override def foldable: Boolean = false
   override def nullable: Boolean = aggregateFunction.nullable
-
+  override lazy val resolved: Boolean = aggregateFunction.resolved
   override def references: AttributeSet = {
     val childReferences = mode match {
       case Partial | Complete => aggregateFunction.references.toSeq
@@ -277,6 +278,7 @@ case class DelegateFunction(multiplicity: Attribute,  aggFunc2: AggregateFunctio
   override def update(buffer: MutableRow, input: InternalRow): Unit = this.aggFunc2.update(buffer, input)
   override def  merge(buffer1: MutableRow, buffer2: InternalRow): Unit =this.aggFunc2.merge(buffer1, buffer2)
   override def cloneBufferAttributes: Seq[Attribute] = this.aggFunc2.cloneBufferAttributes
+  override lazy val resolved: Boolean = aggFunc2.resolved
 }
 
 case class Count01(child: Expression)
