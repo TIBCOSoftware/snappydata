@@ -30,8 +30,8 @@ protected final class StreamingSnappyContext(val streamingContext: StreamingCont
   }
 
   def registerCQ(queryStr: String): SchemaDStream = {
-    SparkPlan.currentContext.set(this) //SQLContext
-    StreamPlan.currentContext.set(this) //SnappyStreamingContext
+    //SparkPlan.currentContext.set(this) //SQLContext
+    //StreamPlan.currentContext.set(this) //StreamingSnappyContext
     val plan = super.sql(queryStr).queryExecution.logical
     //TODO Yogesh, This needs to get registered with catalog
     //catalog.registerCQ(queryStr, plan)
@@ -48,14 +48,14 @@ protected final class StreamingSnappyContext(val streamingContext: StreamingCont
 
   def createSchemaDStream(dStream: DStream[Any], schema: StructType): SchemaDStream = {
     SparkPlan.currentContext.set(this) //SQLContext
-    StreamPlan.currentContext.set(this) //SnappyStreamingContext
+    StreamPlan.currentContext.set(this) //StreamingSnappyContext
     val attributes = schema.toAttributes
     val logicalPlan = LogicalDStreamPlan(attributes, dStream)(this)
     new SchemaDStream(this, logicalPlan)
   }
 
-  protected lazy val streamStrategies = new StreamStrategies
-  experimental.extraStrategies = streamStrategies.strategies
+//  protected lazy val streamStrategies = new StreamStrategies
+//  experimental.extraStrategies = streamStrategies.strategies
 
 }
 

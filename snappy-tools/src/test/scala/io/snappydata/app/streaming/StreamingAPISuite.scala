@@ -46,8 +46,8 @@ class StreamingAPISuite extends FunSuite with Eventually with BeforeAndAfter {
     val schemaDStream = snsc.createSchemaDStream(dStream.asInstanceOf[DStream[Any]], schema)
     schemaDStream.registerAsTable("people")
 
-    val resultDStream: SchemaDStream = snsc.registerCQ("SELECT name FROM people")
- //   val resultDStream: SchemaDStream = snsc.registerCQ("SELECT name FROM people window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
+   // val resultDStream: SchemaDStream = snsc.registerCQ("SELECT name FROM people")
+  val resultDStream: SchemaDStream = snsc.registerCQ("SELECT name FROM people window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
 
     //resultDStream.window(Duration(10000))
     resultDStream.foreachRDD {

@@ -21,7 +21,7 @@ case class KafkaStreamRelation[T](dStream: DStream[T],
   extends BaseRelation with TableScan with Logging {
 
   override def buildScan(): RDD[Row] = {
-    //val stream: DStream[Row] = dStream.map(_._2).map(formatter.format)
+    //dStream.map(_._2).map(formatter.format)
     throw new IllegalAccessException("Not Implemented")
   }
 }

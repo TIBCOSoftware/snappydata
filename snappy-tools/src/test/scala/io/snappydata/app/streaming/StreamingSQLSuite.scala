@@ -15,82 +15,72 @@ class StreamingSQLSuite extends FunSuite with Eventually with BeforeAndAfter {
   private var snsc: StreamingSnappyContext = null
 
   def beforeFunction(): Unit = {
-    val conf = new org.apache.spark.SparkConf().
-      setMaster("local[2]").
-      setAppName("streamingsql")
+    val conf = new org.apache.spark.SparkConf()
+      .setMaster("local[2]")
+      .setAppName("streamingsql")
+      .set("spark.streaming.receiver.writeAheadLog.enable", "true")
     ssc = new StreamingContext(new SparkContext(conf), Duration(10000))
+    ssc.checkpoint("tmp")
     snsc = StreamingSnappyContext(ssc);
   }
 
   def afterFunction(): Unit = {
-    if (ssc != null) {
-      ssc.stop()
-    }
+    snsc.sql( """STREAMING CONTEXT STOP """)
   }
 
   before(beforeFunction)
   after(afterFunction)
 
-  test("sql on socket streams") {
+  ignore("sql on socket streams") {
 
     snsc.sql("create stream table socketStreamTable (name string, age int) using socket options (hostname 'localhost', port '9998', " +
       "storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', converter 'org.apache.spark.sql.streaming.MyStreamConverter')")
 
-//    val tableDStream = snsc.getSchemaDStream("socketStreamTable")
-//    tableDStream.registerAsTable("socketStreamTable")
+    //val tableDStream = snsc.getSchemaDStream("socketStreamTable")
 
-    val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM socketStreamTable")
-    //val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM socketStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
+    val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM socketStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
 
-    resultSet.foreachRDD {
-      r => r.foreach(print)
+    val thrown = intercept[Exception] {
+      snsc.sql( """STREAMING CONTEXT START """)
     }
-
-    snsc.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(20000)
-    snsc.sql( """STREAMING CONTEXT STOP """)
+    assert(thrown.getMessage === "requirement failed: No output operations registered, so nothing to execute")
+    ssc.awaitTerminationOrTimeout(10000)
   }
 
- /* test("sql on kafka streams") {
-
-    //snc.sql( """STREAMING CONTEXT  INIT 10""")
-
+  test("sql on kafka streams") {
+    intercept[Exception] {
     snsc.sql("create stream table kafkaStreamTable (name string, age int) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
-      " zkQuorum '10.112.195.65:2181', groupId 'streamSQLConsumer', topics 'test:01')")
+      " zkQuorum '10.112.195.65:2181', groupId 'streamSQLConsumer', topics 'tweets:01')")
 
     snsc.sql("create stream table directKafkaStreamTable (name string, age int) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
-      " kafkaParams 'metadata.broker.list -> localhost:9092', topics 'test')")
+      " kafkaParams 'metadata.broker.list->localhost:9092,auto.offset.reset->smallest', topics 'tweets')")
+
+    val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
 
     val resultSet1: SchemaDStream = snsc.registerCQ("SELECT name FROM kafkaStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
-
     val resultSet2: SchemaDStream = snsc.registerCQ("SELECT name FROM directKafkaStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
 
-    resultSet1.foreachRDD {
-      r => r.foreach(print)
-    }
-    resultSet2.foreachRDD {
-      r => r.foreach(print)
-    }
+    import org.apache.spark.sql.streaming.snappy._
+    val props = Map(
+      "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
+      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
+      "poolImpl" -> "tomcat",
+      "user" -> "app",
+      "password" -> "app"
+    )
+
+    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema, props)
     snsc.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(20000)
-    snsc.sql( """STREAMING CONTEXT STOP """)
+    ssc.awaitTerminationOrTimeout(10000)
+    }
   }
-*/
-/*  test("sql on file streams") {
 
+  ignore("sql on file streams") {
     var hfile: String = getClass.getResource("/2015.parquet").getPath
-
-    snsc.sql("create stream table fileStreamTable (id int, name string) using file options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
-      //" directory 'tmp')")
+    snsc.sql("create stream table fileStreamTable (name string, age int) using file options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
       " directory '" + hfile + "')")
-
-    val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM fileStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
-
-    resultSet.foreachRDD {
-      r => r.foreach(print)
-    }
+    snsc.registerCQ("SELECT name FROM fileStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
     snsc.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(20000)
-    snsc.sql( """STREAMING CONTEXT STOP """)
-  }*/
+    ssc.awaitTerminationOrTimeout(10000)
+  }
 }
