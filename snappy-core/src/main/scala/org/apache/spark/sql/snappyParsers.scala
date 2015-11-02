@@ -2,24 +2,16 @@ package org.apache.spark.sql
 
 import java.util.regex.Pattern
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
 
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
-
-import org.apache.spark.sql.catalyst.{TableIdentifier, ParserDialect, SqlParser}
-
-import org.apache.spark.sql.catalyst.{ParserDialect, SqlParser, TableIdentifier}
 
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming.{StreamPlan, WindowLogicalPlan, SocketStreamRelation, StreamingCtxtHolder}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming._
-import org.apache.spark.sql.catalyst.SqlParser
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
@@ -207,12 +199,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     (CREATE ~> STREAM ~> TABLE ~> ident) ~
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
       case streamname ~ cols ~ providerName ~ opts =>
-
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName)
         val userOpts  = opts.updated(USING.str, provider)
         CreateStreamTable(streamname, userColumns, new CaseInsensitiveMap(userOpts))
-
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
@@ -451,32 +441,3 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     Seq.empty
   }
 }
-
-
-private[spark] object StreamingCtxtHolder {
-
-  @volatile private[this] var globalContext: StreamingContext = _
-  private[this] val contextLock = new AnyRef
-
-  def streamingContext = globalContext
-
-  def apply(sparkCtxt: SparkContext,
-      duration: Int): StreamingContext = {
-    val context = globalContext
-    if (context != null &&
-        context.getState() != StreamingContextState.STOPPED) {
-      context
-    } else contextLock.synchronized {
-      val context = globalContext
-      if (context != null &&
-          context.getState() != StreamingContextState.STOPPED) {
-        context
-      } else {
-        val context = new StreamingContext(sparkCtxt, Seconds(duration))
-        globalContext = context
-        context
-      }
-    }
-  }
-}
-

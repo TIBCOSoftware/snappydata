@@ -48,15 +48,15 @@ class KafkaStreamSource extends SchemaRelationProvider{
       }.toMap
 
       val dStream = KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
-//      import org.apache.spark.sql.streaming.snappy._
-//      val props = Map(
-//        "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-//        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-//        "poolImpl" -> "tomcat",
-//        "user" -> "app",
-//        "password" -> "app"
-//      )
-//      dStream.saveToExternalTable("kafkaStreamGemXdTable", schema, props)
+      import org.apache.spark.sql.streaming.snappy._
+      val props = Map(
+        "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
+        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
+        "poolImpl" -> "tomcat",
+        "user" -> "app",
+        "password" -> "app"
+      )
+      dStream.saveToExternalTable("kafkaStreamGemXdTable", schema, props)
       KafkaStreamRelation(dStream.asInstanceOf[DStream[Any]], options, formatter.format,
         schema, sqlContext)
     } else {
@@ -75,18 +75,20 @@ class KafkaStreamSource extends SchemaRelationProvider{
       //[String, String, StringDecoder, StringEncoder]
       val dStream = KafkaUtils.createDirectStream(
         context, /*kafkaParams.asInstanceOf[Any]*/ kafkaParams, topicsSet)
-//      val props = Map(
-//        "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-//        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-//        "poolImpl" -> "tomcat",
-//        "user" -> "app",
-//        "password" -> "app"
-//      )
-//      //dStream.saveToExternalTable("kafkaStreamGemXdTable", schema,props)
-//
-//      dStream.foreachRDD { rdd =>
-//        rdd.cache().count()
-//      }
+      import org.apache.spark.sql.streaming.snappy._
+
+      val props = Map(
+        "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
+        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
+        "poolImpl" -> "tomcat",
+        "user" -> "app",
+        "password" -> "app"
+      )
+      dStream.saveToExternalTable("kafkaStreamGemXdTable", schema,props)
+
+      dStream.foreachRDD { rdd =>
+        rdd.cache().count()
+      }
       KafkaStreamRelation(dStream.asInstanceOf[DStream[Any]], options, formatter.format,
         schema, sqlContext)
     }
