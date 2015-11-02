@@ -306,9 +306,7 @@ task product {
       into "${productDir}/data"
     }
     copy {
-      from("${toolsProject.projectDir}/bin") {
-        include 'snappy'
-      }
+      from "${toolsProject.projectDir}/bin"
       into "${productDir}/bin"
       filter { line ->
         line.replaceAll('__VERSION__', "${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}")
