@@ -16,7 +16,7 @@ import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore, ExternalStore}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
@@ -36,34 +36,15 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId]) extends ExternalStore {
+    val blockMap: Map[InternalDistributedMember, BlockManagerId]) extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
 
-  @transient
-  private lazy val serializer = SparkEnv.get.serializer
-
-  @transient
-  private lazy val rand = new Random
-
-
-  @transient
-  private val dialect = JdbcDialects.get(url)
-
-  @transient
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
-
-  override def initSource() = {
-
-  }
-
-
-  def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
+  override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch] = {
-    val connection: java.sql.Connection = getConnection(tableName)
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD[CachedBatch](sparkContext,
-          connection.getSchema, tableName, requiredColumns, this)
+          tableName, requiredColumns, this)
       case _ =>
         var rddList = new ArrayBuffer[RDD[CachedBatch]]()
         uuidList.foreach(x => {
@@ -115,137 +96,12 @@ final class JDBCSourceAsColumnarStore(_url: String,
     }
   }
 
-  override def cleanup(): Unit = {
-
-  }
-
-  def getCachedBatchIterator(tableName: String,
-      requiredColumns: Array[String],
-      itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
-
-    //TODO: Suranjan instead of getting 10 batches at a time get one
-    //TODO: Suranjan Need to test both the performance
-    itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
-      case conn =>
-        //val (uuidIter, bucketIter) = kIter.map(k => k.getUUID -> k.getBucketId).unzip
-        val uuidIter = kIter.map(_.getUUID)
-
-        val uuidParams = uuidIter.foldRight(new StringBuilder) {
-          case (_, o) => o.append("?,")
-        }
-        if (uuidParams.nonEmpty) {
-          uuidParams.setCharAt(uuidParams.length - 1, ' ')
-        }
-        else {
-          return Iterator.empty
-        }
-        val ps = conn.prepareStatement(
-          s"select stats," + requiredColumns.mkString(" ", ",", " ") +
-              s" from $tableName where uuid IN ($uuidParams)")
-
-        uuidIter.zipWithIndex.foreach {
-          case (_id, idx) => ps.setString(idx + 1, _id.toString)
-        }
-        val rs = ps.executeQuery()
-
-        new CachedBatchIteratorOnRS(conn, connectionType, requiredColumns, ps, rs)
-    }, closeOnSuccess = false))
-  }
-
-  implicit def uuidToString(uuid: UUIDRegionKey): String = {
-    uuid.toString
-  }
-
-  override def getConnection(id: String): Connection = {
-    ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
-  }
-
-  private def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
-
-  private val insertStrings: mutable.HashMap[String, String] =
-    new mutable.HashMap[String, String]()
-
-  private def getRowInsertStr(tableName: String, numOfColumns: Int): String = {
-    val istr = insertStrings.getOrElse(tableName, {
-      lock(makeInsertStmnt(tableName, numOfColumns))
-    })
-    istr
-  }
-
-  private def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
-    if (!insertStrings.contains(tableName)) {
-      val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?, ? , ? " + ",?" * numOfColumns + ")")
-      insertStrings.put(tableName, s)
-    }
-    insertStrings.get(tableName).get
-  }
-
-  private val insertStmntLock = new ReentrantLock()
-
-  /** Acquires a read lock on the cache for the duration of `f`. */
-  private[sql] def lock[A](f: => A): A = {
-    insertStmntLock.lock()
-    try f finally {
-      insertStmntLock.unlock()
-    }
-  }
-
-  override def url = _url
-
-  override def driver = _driver
-
-  override def poolProps = _poolProps
-
-  override def connProps = _connProps
-}
-
-private final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
-    requiredColumns: Array[String],
-    ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
-
-  private val serializer = SparkEnv.get.serializer
-  var _hasNext = moveNext()
-
-  override def hasNext: Boolean = _hasNext
-
-  override def next() = {
-    val result = getCachedBatchFromRow(requiredColumns, rs, connType)
-    _hasNext = moveNext()
-    result
-  }
-
-  private def moveNext(): Boolean = {
-    if (rs.next()) {
-      true
-    } else {
-      rs.close()
-      ps.close()
-      conn.close()
-      false
-    }
-  }
-
-  private def getCachedBatchFromRow(requiredColumns: Array[String],
-      rs: ResultSet, connType: ConnectionType): CachedBatch = {
-    // it will be having the information of the columns to fetch
-    val numCols = requiredColumns.length
-    val colBuffers = new ArrayBuffer[Array[Byte]]()
-
-    for (i <- 0 until numCols) {
-      colBuffers += rs.getBytes(requiredColumns(i)).array
-    }
-
-    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.wrap(rs.getBytes("stats")))
-
-    CachedBatch(colBuffers.toArray, stats)
-  }
 
 }
 
 
 class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
-    schema: String, tableName: String,
+    tableName: String,
     requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
     extends RDD[CachedBatch](_sc, Nil) {
 
@@ -254,7 +110,6 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
       case conn =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val par = split.index
         val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
         ps1.execute()
@@ -273,12 +128,11 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
-
-    val connection: java.sql.Connection = store.getConnection(tableName)
-    val tableSchema = connection.getSchema
-    val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-    val region = Misc.getRegionForTable(resolvedName, true)
-    StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap)
+    store.tryExecute(tableName, {
+      case conn =>
+        val tableSchema = conn.getSchema
+        StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap)
+    })
 
   }
 }

@@ -14,6 +14,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, ExecutorLocalPartition}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.{Decimal, StructType}
 import org.apache.spark.storage.BlockManagerId
@@ -22,19 +23,20 @@ import org.apache.spark.{AccumulatorParam, SparkContext, TaskContext, Partition}
 
 
 /**
- * Created by rishim on 6/10/15.
- * Most of the code is copy of JDBCRDD. We had to copy a lot of stufss as JDBCRDD has a lot of methods as private.
+ * A scanner RDD which is very specific to Snappy store row tables. This scans row tables in parallel unlike Spark's
+ * inbuilt JDBCRDD.
+ * Most of the code is copy of JDBCRDD. We had to copy a lot of stuffs as JDBCRDD has a lot of methods as private.
  */
 class RowFormatScanRDD(@transient sc: SparkContext,
-                       getConnection: () => Connection,
-                       schema: StructType,
-                       tableName: String,
-                       columns: Array[String],
-                       filters: Array[Filter],
-                       partitions: Array[Partition],
-                       blockMap : Map[InternalDistributedMember, BlockManagerId],
-                       properties: Properties)
-  extends JDBCRDD(sc, getConnection, schema, tableName, columns, filters, partitions, properties) {
+    getConnection: () => Connection,
+    schema: StructType,
+    tableName: String,
+    columns: Array[String],
+    filters: Array[Filter],
+    partitions: Array[Partition],
+    blockMap: Map[InternalDistributedMember, BlockManagerId],
+    properties: Properties)
+    extends JDBCRDD(sc, getConnection, schema, tableName, columns, filters, partitions, properties) {
 
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
@@ -238,14 +240,16 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
-    val conn = getConnection()
-    val tableSchema = conn.getSchema
-    val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-    val region = Misc.getRegionForTable(resolvedName, true)
-    if (region.isInstanceOf[PartitionedRegion]) {
-      StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
-    } else {
-      StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
-    }
+    executeWithConnection(getConnection, {
+      case conn =>
+        val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+        if (region.isInstanceOf[PartitionedRegion]) {
+          StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
+        } else {
+          StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
+        }
+    })
   }
 }

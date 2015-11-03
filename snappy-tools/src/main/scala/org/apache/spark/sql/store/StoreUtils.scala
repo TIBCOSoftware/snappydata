@@ -1,9 +1,11 @@
 package org.apache.spark.sql.store.util
 
+import java.sql.Connection
 import java.util
 import java.util.Properties
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 import com.gemstone.gemfire.distributed.DistributedMember
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -125,7 +127,6 @@ object StoreUtils {
     memberAccumulator.value
 
   }
-
 
   def appendClause(sb : mutable.StringBuilder, getClause : () => String) : Unit = {
     val clause = getClause.apply()

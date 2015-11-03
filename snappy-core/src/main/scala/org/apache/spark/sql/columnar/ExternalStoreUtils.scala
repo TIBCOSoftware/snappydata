@@ -44,7 +44,7 @@ private[sql] object ExternalStoreUtils {
     dialect match {
       case  GemFireXDDialect => Option("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
       case  GemFireXDClientDialect => Option("com.pivotal.gemfirexd.jdbc.ClientDriver")
-      case _=> None
+      case _=> Option(DriverRegistry.getDriverClassName(url))
     }
 
   }
@@ -55,18 +55,19 @@ private[sql] object ExternalStoreUtils {
 
     val SNAPPY_STORE_JDBC_URL = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
 
-    val url = if (SNAPPY_STORE_JDBC_URL.isEmpty) {
-      parameters.remove("url").getOrElse(
-        sys.error("Option 'url' not specified"))
-    } else {
-      SNAPPY_STORE_JDBC_URL
+    val url = parameters.remove("url").getOrElse {
+      if (SNAPPY_STORE_JDBC_URL.isEmpty) sys.error("Option 'url' not specified") else SNAPPY_STORE_JDBC_URL
     }
-    val driver = getDriver(url).getOrElse(parameters.remove("driver").asInstanceOf[String])
+
+    val driver = parameters.remove("driver").map { d =>
+      // register for this case
+      DriverRegistry.register(d)
+      d
+    }.orElse(getDriver(url))
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    DriverRegistry.register(driver)
 
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
       case Some("hikari") => true
@@ -90,9 +91,9 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    val allPoolProps = getAllPoolProperties(url, driver,
+    val allPoolProps = getAllPoolProperties(url, driver.get,
       poolProps, hikariCP)
-    (url, driver, allPoolProps, connProps, hikariCP)
+    (url, driver.get, allPoolProps, connProps, hikariCP)
   }
 
   def getPoolConnection(id: String, driver: Option[String],

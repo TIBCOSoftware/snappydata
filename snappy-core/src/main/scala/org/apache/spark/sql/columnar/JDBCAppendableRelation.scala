@@ -11,9 +11,11 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
+import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry, JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{JDBCSourceAsStore, ExternalStore}
 import org.apache.spark.sql.types.StructType
@@ -213,7 +215,7 @@ class JDBCAppendableRelation(
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
             "primary key (uuid, bucketId)" , d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "partition by primary key")
+      case _ => ("primary key (uuid)", "")
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
@@ -237,6 +239,7 @@ class JDBCAppendableRelation(
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
+            case _ => // do nothing
 
           }
         }
@@ -298,6 +301,7 @@ with CreatableRelationProvider {
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
 
+
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
@@ -337,13 +341,28 @@ with CreatableRelationProvider {
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
 
-    createRelation(sqlContext, mode, options, schema)
+    val rel = getRelation(sqlContext, options)
+    rel.createRelation(sqlContext, mode, options, schema)
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], data: DataFrame): BaseRelation = {
-    val relation = createRelation(sqlContext, mode, options, data.schema)
+    val rel = getRelation(sqlContext, options)
+    val relation = rel.createRelation(sqlContext, mode, options, data.schema)
     relation.insert(data, mode == SaveMode.Overwrite)
     relation
+  }
+
+  def getRelation(sqlContext: SQLContext, options : Map[String, String]) : ColumnarRelationProvider = {
+    val (url, _, _, _, _) =
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
+
+    val clazz = JdbcDialects.get(url) match {
+      case d: GemFireXDBaseDialect => {
+        ResolvedDataSource.lookupDataSource("org.apache.spark.sql.columntable.DefaultSource")
+      }
+      case _ => classOf[columnar.DefaultSource]
+    }
+    clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }
 
   def getExternalSource(sc: SparkContext, url: String,
@@ -352,6 +371,5 @@ with CreatableRelationProvider {
       connProps: Properties,
       hikariCP: Boolean): ExternalStore = {
     new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP)
-
   }
 }

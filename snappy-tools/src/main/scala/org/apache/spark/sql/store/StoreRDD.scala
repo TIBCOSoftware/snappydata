@@ -2,9 +2,6 @@ package org.apache.spark.sql.store
 
 import java.sql.Connection
 
-
-import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -15,7 +12,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.serializer.Serializer
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.collection.{NarrowExecutorLocalSplitDep, CoGroupExecutorLocalPartition}
+import org.apache.spark.sql.collection.{CoGroupExecutorLocalPartition, NarrowExecutorLocalSplitDep}
+import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
@@ -35,12 +33,12 @@ import org.apache.spark.util.MutablePair
  */
 
 class StoreRDD(@transient sc: SparkContext,
-               @transient prev: RDD[Row],
-               tableName: String,
-               getConnection: () => Connection,
-               schema: StructType,
-               preservePartitioning: Boolean,
-               blockMap : Map[InternalDistributedMember, BlockManagerId]) extends RDD[Row](sc, Nil) {
+    @transient prev: RDD[Row],
+    tableName: String,
+    getConnection: () => Connection,
+    schema: StructType,
+    preservePartitioning: Boolean,
+    blockMap: Map[InternalDistributedMember, BlockManagerId]) extends RDD[Row](sc, Nil) {
 
   val (partitionColumn, totalNumBucket) = getPartitioningInfo(getConnection, tableName)
 
@@ -50,35 +48,28 @@ class StoreRDD(@transient sc: SparkContext,
 
   override val partitioner = Some(part)
 
-  def  getPartitioningInfo(getConnection: () => Connection , tableName : String) : (Seq[String], Int)  = {
-    try {
-      val conn = getConnection()
+  def getPartitioningInfo(getConnection: () => Connection, tableName: String): (Seq[String], Int) = {
+    executeWithConnection(getConnection, {
+      case conn => val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+        val (partitionColumn, totalNumBucket) = if (region.isInstanceOf[PartitionedRegion]) {
+          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+          val numPartitions = region.getTotalNumberOfBuckets
+          val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+          val parColumn = resolver.getColumnNames
 
-      val tableSchema = conn.getSchema
-      val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-      val region = Misc.getRegionForTable(resolvedName, true)
-      val (partitionColumn, totalNumBucket) = if (region.isInstanceOf[PartitionedRegion]) {
-        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-        val numPartitions = region.getTotalNumberOfBuckets
-        val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-        val parColumn = resolver.getColumnNames
+          (parColumn.toSeq, numPartitions)
 
-        (parColumn.toSeq, numPartitions)
-
-      }else{
-        (Seq.empty[String] , 0)
-      }
-
-      println(s"$partitionColumn $totalNumBucket")
-      (partitionColumn, totalNumBucket)
-
-    } catch {
-      case NonFatal(e) => throw e;
-    }
+        } else {
+          (Seq.empty[String], 0)
+        }
+        (partitionColumn, totalNumBucket)
+    })
   }
 
   override def getDependencies: Seq[Dependency[_]] = {
-    if(preservePartitioning && prev.partitions.length != totalNumBucket){
+    if (preservePartitioning && prev.partitions.length != totalNumBucket) {
       throw new RuntimeException(s"Preserve partitions can be set if partition of input dataset is equal to partitions of table ")
     }
     if (prev.partitioner == Some(part) || preservePartitioning || partitionColumn.isEmpty) {
@@ -94,13 +85,13 @@ class StoreRDD(@transient sc: SparkContext,
           val mutablePair = new MutablePair[Int, Row]()
 
           val ordinals = partitionColumn.map(col => {
-               schema.getFieldIndex(col.toUpperCase).getOrElse {
+            schema.getFieldIndex(col.toUpperCase).getOrElse {
               throw new RuntimeException(s"Partition column $col} not found in schema $schema")
             }
 
           })
           iter.map { row =>
-            val parKey = ordinals.map( k => row.get(k))
+            val parKey = ordinals.map(k => row.get(k))
             mutablePair.update(part.getPartition(parKey), row)
           }
         }
@@ -124,9 +115,9 @@ class StoreRDD(@transient sc: SparkContext,
 
       case shuffleDependency: ShuffleDependency[_, _, _] =>
         SparkEnv.get.shuffleManager.getReader(shuffleDependency.shuffleHandle, split.index, split.index + 1, context)
-          .read()
-          .asInstanceOf[Iterator[Product2[Int, Row]]]
-          .map(_._2)
+            .read()
+            .asInstanceOf[Iterator[Product2[Int, Row]]]
+            .map(_._2)
 
     }
   }
@@ -146,39 +137,42 @@ class StoreRDD(@transient sc: SparkContext,
    * be called once, so it is safe to implement a time-consuming computation in it.
    */
   override protected def getPartitions: Array[Partition] = {
-    val conn = getConnection()
-    val tableSchema = conn.getSchema
-    val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-    val region = Misc.getRegionForTable(resolvedName, true)
+    executeWithConnection(getConnection, {
+      case conn =>
+        val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
 
-    if (region.isInstanceOf[PartitionedRegion]) {
-      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-      val numPartitions = region.getTotalNumberOfBuckets
+        if (region.isInstanceOf[PartitionedRegion]) {
+          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+          val numPartitions = region.getTotalNumberOfBuckets
 
-      val partitions = new Array[Partition](numPartitions)
+          val partitions = new Array[Partition](numPartitions)
 
-      for (p <- 0 until numPartitions) {
-        val distMember = region.getBucketPrimary(p)
-        partitions(p) = getPartition(p, distMember)
-      }
-      partitions
-    } else {
-      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
-      val partitions = new Array[Partition](prev.partitions.length)
+          for (p <- 0 until numPartitions) {
+            val distMember = region.getBucketPrimary(p)
+            partitions(p) = getPartition(p, distMember)
+          }
+          partitions
+        } else {
+          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
+          val partitions = new Array[Partition](prev.partitions.length)
 
-      val member = if (localBackend){
-        Misc.getGemFireCache.getDistributedSystem.getDistributedMember
-      } else {
-        Misc.getGemFireCache.getMembers(region).iterator().next()
-      }
+          val member = if (localBackend) {
+            Misc.getGemFireCache.getDistributedSystem.getDistributedMember
+          } else {
+            Misc.getGemFireCache.getMembers(region).iterator().next()
+          }
 
 
-      for (p <- 0 until partitions.length) {
-        val distMember = member.asInstanceOf[InternalDistributedMember]
-        partitions(p) = getPartition(p, distMember)
-      }
-      partitions
-    }
+          for (p <- 0 until partitions.length) {
+            val distMember = member.asInstanceOf[InternalDistributedMember]
+            partitions(p) = getPartition(p, distMember)
+          }
+          partitions
+        }
+    })
+
   }
 
   private def getPartition(index: Int, distMember: InternalDistributedMember): Partition = {
@@ -199,10 +193,10 @@ class StoreRDD(@transient sc: SparkContext,
  * :: DeveloperApi ::
  * Used by test code to determine dependency..
  */
-object StoreRDD{
+object StoreRDD {
 
-  def apply(sc: SparkContext, prev: RDD[Row], schema : StructType, partitionColumn: Option[String], preservePartitioning: Boolean, numPartitions: Int) : StoreRDD = {
-   new StoreRDD(
+  def apply(sc: SparkContext, prev: RDD[Row], schema: StructType, partitionColumn: Option[String], preservePartitioning: Boolean, numPartitions: Int): StoreRDD = {
+    new StoreRDD(
       sc,
       prev,
       "",

@@ -17,20 +17,19 @@ import org.apache.spark.{Accumulator, AccumulatorParam, SparkEnv, TaskContext, P
 import org.apache.spark.rdd.RDD
 
 /**
- * Created by rishim on 18/10/15.
+ * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's standalone cluster.
+ * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
  */
-class StoreInitRDD(sc : SparkContext, url : String,
-                  val connProperties: Properties)
-                  (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
-                   extends  RDD[InternalRow](sc,Nil){
+class StoreInitRDD(sc: SparkContext, url: String,
+    val connProperties: Properties)
+    (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
+    extends RDD[InternalRow](sc, Nil) {
 
   val snc = SnappyContext(sc)
   val driver = DriverRegistry.getDriverClassName(url)
   val isLoner = snc.isLoner
-  /**
-   * :: DeveloperApi ::
-   * Implemented by subclasses to compute a given partition.
-   */
+
+
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     GemFireXDDialect.init()
     DriverRegistry.register(driver)

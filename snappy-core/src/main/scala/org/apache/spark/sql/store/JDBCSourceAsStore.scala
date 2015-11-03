@@ -1,7 +1,8 @@
 package org.apache.spark.sql.store
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, DataInputStream, DataOutputStream}
-import java.sql.{Blob, Connection, PreparedStatement, ResultSet}
+import java.io.{ByteArrayOutputStream, DataOutputStream}
+import java.nio.ByteBuffer
+import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 
@@ -21,61 +22,61 @@ import org.apache.spark.{SparkContext, SparkEnv}
 /*
 Generic class to query column table from Snappy.
  */
-final class JDBCSourceAsStore(_url : String,
-    _driver : String,
+class JDBCSourceAsStore(_url: String,
+    _driver: String,
     _poolProps: Map[String, String],
-    _connProps : Properties,
-    _hikariCP : Boolean)  extends ExternalStore {
+    _connProps: Properties,
+    _hikariCP: Boolean) extends ExternalStore {
 
   @transient
-  private lazy val serializer = SparkEnv.get.serializer
+  protected lazy val serializer = SparkEnv.get.serializer
 
   @transient
-  private lazy val rand = new Random
+  protected lazy val rand = new Random
 
 
   @transient
-  private val dialect = JdbcDialects.get(url)
+  protected val dialect = JdbcDialects.get(url)
 
   @transient
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
   def getCachedBatchRDD(tableName: String,
-                        requiredColumns: Array[String],
+      requiredColumns: Array[String],
       uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch] = {
     var rddList = new ArrayBuffer[RDD[CachedBatch]]()
-        uuidList.foreach(x => {
-          val y = x.mapPartitions { uuidItr =>
-            getCachedBatchIterator(tableName, null,uuidItr)
-          }
-          rddList += y
-        })
-        new UnionRDD[CachedBatch](sparkContext, rddList)
+    uuidList.foreach(x => {
+      val y = x.mapPartitions { uuidItr =>
+        getCachedBatchIterator(tableName, requiredColumns, uuidItr)
+      }
+      rddList += y
+    })
+    new UnionRDD[CachedBatch](sparkContext, rddList)
   }
 
   override def storeCachedBatch(batch: CachedBatch,
       tableName: String): UUIDRegionKey = {
-    val connection: java.sql.Connection = getConnection(tableName)
-    try {
-      val uuid = genUUIDRegionKey()
-
-      val blob = prepareCachedBatchAsBlob(batch, connection)
-      val rowInsertStr = getRowInsertStr(tableName)
-      val stmt = connection.prepareStatement(rowInsertStr)
-      stmt.setString(1, uuid.getUUID.toString)
-      stmt.setInt(2, uuid.getBucketId)
-      //stmt.setBlob(3, blob)
-      stmt.setBytes(3, blob)
-      stmt.executeUpdate()
-      stmt.close()
-      uuid
-    } finally {
-      connection.close()
-    }
+    tryExecute(tableName, {
+      case connection =>
+        val uuid = genUUIDRegionKey()
+        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+        val stmt = connection.prepareStatement(rowInsertStr)
+        stmt.setString(1, uuid.getUUID.toString)
+        stmt.setInt(2, uuid.getBucketId)
+        stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
+        var columnIndex = 4
+        batch.buffers.foreach(buffer => {
+          stmt.setBytes(columnIndex, buffer)
+          columnIndex += 1
+        })
+        stmt.executeUpdate()
+        stmt.close()
+        uuid
+    })
   }
 
-  override def getCachedBatchIterator(tableName: String,  requiredColumns: Array[String],
+  override def getCachedBatchIterator(tableName: String, requiredColumns: Array[String],
       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
 
     itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
@@ -100,7 +101,7 @@ final class JDBCSourceAsStore(_url : String,
         }
         val rs = ps.executeQuery()
 
-        new CachedBatchIteratorFromRS(conn, connectionType, ps, rs)
+        new CachedBatchIteratorOnRS(conn, connectionType, requiredColumns, ps, rs)
     }, closeOnSuccess = false))
   }
 
@@ -131,30 +132,31 @@ final class JDBCSourceAsStore(_url : String,
     ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
   }
 
-  private def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
+  protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
-  private val insertStrings: mutable.HashMap[String, String] =
+  protected val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
 
-  private def getRowInsertStr(tableName: String): String = {
+  protected def getRowInsertStr(tableName: String, numOfColumns: Int): String = {
     val istr = insertStrings.getOrElse(tableName, {
-      lock(makeInsertStmnt(tableName))
+      lock(makeInsertStmnt(tableName, numOfColumns))
     })
     istr
   }
 
-  private def makeInsertStmnt(tableName: String) = {
+  protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
-      val s = insertStrings.getOrElse(tableName, s"insert into $tableName values(?, ?, ?)")
+      val s = insertStrings.getOrElse(tableName,
+        s"insert into $tableName values(?, ? , ? " + ",?" * numOfColumns + ")")
       insertStrings.put(tableName, s)
     }
     insertStrings.get(tableName).get
   }
 
-  private val insertStmntLock = new ReentrantLock()
+  protected val insertStmntLock = new ReentrantLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */
-  private[sql] def lock[A](f: => A): A = {
+  protected[sql] def lock[A](f: => A): A = {
     insertStmntLock.lock()
     try f finally {
       insertStmntLock.unlock()
@@ -174,8 +176,8 @@ final class JDBCSourceAsStore(_url : String,
   override def cleanup(): Unit = ???
 }
 
-private final class CachedBatchIteratorFromRS(conn: Connection, connType: ConnectionType,
-                                             ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
+final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
+    requiredColumns: Array[String], ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
   var _hasNext = moveNext()
@@ -183,7 +185,7 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
   override def hasNext: Boolean = _hasNext
 
   override def next() = {
-    val result = getCachedBatchFromBlob(rs.getBlob(1), connType)
+    val result = getCachedBatchFromRow(requiredColumns, rs, connType)
     _hasNext = moveNext()
     result
   }
@@ -199,33 +201,18 @@ private final class CachedBatchIteratorFromRS(conn: Connection, connType: Connec
     }
   }
 
-  private def getCachedBatchFromBlob(blob: Blob, connType: ConnectionType): CachedBatch = {
-    val totBytes = blob.length().toInt
-//    println("KN: length of blob get = " + blob.length())
-    val bis = new ByteArrayInputStream(blob.getBytes(1, totBytes))
-
-    val dis = new DataInputStream(bis)
-    var offset = 0
-    val numCols = dis.readInt()
-    offset = offset + 4
+  private def getCachedBatchFromRow(requiredColumns: Array[String],
+      rs: ResultSet, connType: ConnectionType): CachedBatch = {
+    // it will be having the information of the columns to fetch
+    val numCols = requiredColumns.length
     val colBuffers = new ArrayBuffer[Array[Byte]]()
     for (i <- 0 until numCols) {
-      val lenOfByteArr = dis.readInt()
-      offset = offset + 4
-      val colBuffer = new Array[Byte](lenOfByteArr)
-      dis.read(colBuffer)
-      offset = offset + lenOfByteArr
-      colBuffers += colBuffer
+      colBuffers += rs.getBytes(requiredColumns(i)).array
     }
-    val remainingLength = totBytes - offset
-    val bytes = new Array[Byte](remainingLength)
-    dis.read(bytes)
-    val deserializationStream = serializer.newInstance().deserializeStream(
-      new ByteArrayInputStream(bytes))
-    val stats = deserializationStream.readValue[InternalRow]()
-    blob.free()
+    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.wrap(rs.getBytes("stats")))
+
     CachedBatch(colBuffers.toArray, stats)
   }
-}
 
+}
 

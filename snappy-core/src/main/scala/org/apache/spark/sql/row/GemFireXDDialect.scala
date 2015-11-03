@@ -135,7 +135,6 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   }
 
   override def initializeTable(tableName: String, conn: Connection): Unit = {
-    try {
       val stmt = conn.createStatement()
       val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='${tableName.toUpperCase}'")
       val result = if (rs.next()) rs.getString(1) else null
@@ -145,11 +144,6 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       }
       rs.close()
       stmt.close()
-
-    } catch {
-      case NonFatal(e) => throw e;
-    }
-
   }
 
 }
