@@ -256,7 +256,8 @@ private[sql] case class CreateExternalTableUsing(
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = if(StreamPlan.currentContext.get()!= null)
+      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options)
@@ -273,7 +274,8 @@ private[sql] case class CreateExternalTableUsingSelect(
     query: LogicalPlan) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = if(StreamPlan.currentContext.get()!= null)
+      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -289,7 +291,8 @@ private[sql] case class DropTable(
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = if(StreamPlan.currentContext.get()!= null)
+      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -301,7 +304,8 @@ private[sql] case class TruncateTable(
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = if(StreamPlan.currentContext.get()!= null)
+      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
     Seq.empty
@@ -359,14 +363,15 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val resolved = ResolvedDataSource(sqlContext, userColumns,
       Array.empty[String], provider, options)
     val plan = LogicalRelation(resolved.relation)
-    //val catalog = SnappyContext(sqlContext.sparkContext).catalog
-    val catalog = StreamPlan.currentContext.get().catalog
+    val snc = if(StreamPlan.currentContext.get()!= null)
+      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+    val catalog = snc.catalog
     val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
       case None => catalog.tables.put(streamTable, plan)
       case Some(x) => throw new IllegalStateException(
-        s"Stream name $streamTable already defined")
+        s"Stream table name $streamTable already defined")
     }
     Seq.empty
   }

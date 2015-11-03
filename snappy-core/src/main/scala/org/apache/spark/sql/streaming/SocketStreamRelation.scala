@@ -2,7 +2,7 @@ package org.apache.spark.sql.streaming
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.sources.{BaseRelation, TableScan}
+import org.apache.spark.sql.sources.{BaseRelation, DeletableRelation, DestroyRelation, TableScan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, SQLContext}
 import org.apache.spark.streaming.dstream.DStream
@@ -18,7 +18,7 @@ case class SocketStreamRelation[T](dStream: DStream[T],
                                    override val schema: StructType,
                                    @transient override val sqlContext: SQLContext)
                                   (implicit val ct: ClassTag[T])
-  extends BaseRelation with TableScan with Logging {
+  extends BaseRelation with TableScan with DeletableRelation with DestroyRelation with Logging {
 
   override def buildScan(): RDD[Row] = {
     null
@@ -31,5 +31,17 @@ case class SocketStreamRelation[T](dStream: DStream[T],
       Row.fromSeq(columnValues)
     })
     rowRDD*/
+  }
+
+  override def destroy(ifExists: Boolean): Unit = {
+    throw new IllegalAccessException("Stream tables cannot be dropped")
+  }
+
+  override def delete(filterExpr: String): Int = {
+    throw new IllegalAccessException("Stream tables cannot be dropped")
+  }
+
+  def truncate(): Unit = {
+    throw new IllegalAccessException("Stream tables cannot be truncated")
   }
 }
