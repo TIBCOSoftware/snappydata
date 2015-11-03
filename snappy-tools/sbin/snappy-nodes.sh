@@ -150,6 +150,13 @@ IFS=$'\n'
 for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
   host="$(echo "$slave"|awk '{print $1}')"
   dir="$(echo "$slave"|awk '{print $2}')"
+
+  # Pass the hostargs if we are starting the server
+  if grep -q " start"<<< $"${@// /\\ }" ; then
+    hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f3-)"
+  fi
+
+  # Set a default directory if not already started
   if [ "$dir" = "" ]; then
     dir="$SPARK_HOME"/snappy-"$host"-$componentType
   fi
@@ -158,16 +165,17 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
     ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dir\" ]; then  mkdir -p \"$dir\"; fi;" \
       2>&1 | sed "s/^/$host: /"
 
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir'" \
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir' ${hostargs}" \
       2>&1 | sed "s/^/$host: /"
   else
     # Create the directory for the snappy component
     ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dir\" ]; then  mkdir -p \"$dir\"; fi;" \
       2>&1 | sed "s/^/$host: /" &
 
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir'" \
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir' ${hostargs}" \
       2>&1 | sed "s/^/$host: /" &
   fi
+
   if [ "$SPARK_SLAVE_SLEEP" != "" ]; then
     sleep $SPARK_SLAVE_SLEEP
   fi
