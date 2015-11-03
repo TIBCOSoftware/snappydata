@@ -1,12 +1,9 @@
-package io.snappydata.jobserver
+package org.apache.spark.sql
 
 import com.typesafe.config.Config
-import io.snappydata.SnappySQLJob
+import org.apache.spark.{SparkConf, SparkContext}
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase}
-
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Created by soubhikc on 22/10/15.
