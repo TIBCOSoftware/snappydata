@@ -26,6 +26,8 @@ dependencies {
 }
 
 test {
+  dependsOn ':cleanDUnit'
+
   maxParallelForks = 1
   minHeapSize '128m'
   maxHeapSize '1g'
@@ -37,6 +39,6 @@ test {
   binResultsDir = file("${workingDir}/binary")
   reports.html.destination = file("${workingDir}/html")
   reports.junitXml.destination = file(workingDir)
-}
 
-test.dependsOn ':cleanDUnit'
+  systemProperties 'java.net.preferIPv4Stack': 'true'
+}
