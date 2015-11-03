@@ -154,7 +154,7 @@ object ExecutorInitiator extends Logging {
                 case NonFatal(e) => stopTask = true // just stop the task
               }
           }
-        }
+        } // end of while(true)
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
