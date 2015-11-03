@@ -1,8 +1,6 @@
-package io.snappydata
+package org.apache.spark.sql
 
 import spark.jobserver.SparkJobBase
-
-import org.apache.spark.sql.SnappyContext
 
 /**
  * Created by soubhikc on 22/10/15.
