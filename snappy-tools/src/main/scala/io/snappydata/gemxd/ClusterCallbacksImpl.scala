@@ -1,10 +1,7 @@
 package io.snappydata.gemxd
 
 import com.gemstone.gemfire.internal.shared.Version
-<<<<<<< Updated upstream
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider}
-=======
->>>>>>> Stashed changes
 import com.pivotal.gemfirexd.internal.snappy.{SparkSQLExecute, LeadNodeExecutionContext, ClusterCallbacks}
 import io.snappydata.cluster.ExecutorInitiator
 import org.apache.spark.scheduler.cluster.SnappyClusterManager

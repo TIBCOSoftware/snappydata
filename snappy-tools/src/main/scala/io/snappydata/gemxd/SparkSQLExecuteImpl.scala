@@ -36,6 +36,8 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
 
   private lazy val totalRows = rows.size
 
+  private val logger = Misc.getCacheLogWriterNoThrow
+
   // using the gemfirexd way of sending results where in the number of
   // columns in each row is divided into sets of 8 columns. Per eight column group a
   // byte will be sent to indicate which all column in that group has a
@@ -75,6 +77,9 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     if (hdos != null) {
       numBytes = hdos.size
       InternalDataSerializer.writeArrayLength(numBytes, out)
+      if (logger != null) {
+        logger.info("KN: calling sendTo ", new Exception("KN:"))
+      }
       hdos.sendTo(out)
     }
     else {
@@ -83,12 +88,18 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
   }
 
   override def packRows(): Boolean = {
+    if (logger != null) {
+      logger.info("KN: packRows totalRows = " + totalRows + " and rowsSent = " + rowsSent)
+    }
     if (totalRows == rowsSent) {
       false
     }
     else {
       if (rowsSent == 0) {
         // byte 1 will indicate that the metainfo is being packed too
+        if (logger != null) {
+          logger.info("KN: packRows wrote header byte 1")
+        }
         hdos.writeByte(0x01);
         DataSerializer.writeStringArray(getColumnNames, hdos)
         DataSerializer.writeIntArray(getColumnTypes, hdos)
@@ -100,9 +111,15 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
       }
 
       val start = rowsSent
+      if (logger != null) {
+        logger.info("KN: packRows start = " + start + " totalrows = " + totalRows + " hdos.size = " + hdos.size + " and GemFireXDUtils.DML_MAX_CHUNK_SIZE = " + GemFireXDUtils.DML_MAX_CHUNK_SIZE)
+      }
       // TODO: Take care of this chunking and streaming a bit later. After verifying the functionality.
-      (start until totalRows).takeWhile( _ => hdos.size >= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
+      (start until totalRows).takeWhile( _ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
         val r = rows(i)
+        if (logger != null) {
+          logger.info("KN: packRows writing row = " + rows(i))
+        }
         writeRow(r, hdos)
         rowsSent += 1
       })
@@ -113,8 +130,14 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
   private def writeRow(r: Row, hdos: HeapDataOutputStream) = {
     var groupNum: Int = 0
     while (groupNum < numEightColGroups - 1) {
+      if (logger != null) {
+        logger.info("KN: writeRow group 8 " + numEightColGroups)
+      }
         writeAGroup(groupNum, 8, r, hdos)
         groupNum += 1;
+    }
+    if (logger != null) {
+      logger.info("KN: packRows write row part = " + numPartCols)
     }
     writeAGroup(groupNum, numPartCols, r, hdos)
   }
@@ -125,7 +148,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     var index: Int = 0
     while (index < numColsInGrp) {
       colIndex = (groupNum << 3) + index
-      if (row.isNullAt(colIndex)) {
+      if (!row.isNullAt(colIndex)) {
         activeByteForGroup = ActiveColumnBits.setFlagForNormalizedColumnPosition(index, activeByteForGroup)
       }
       index += 1;
