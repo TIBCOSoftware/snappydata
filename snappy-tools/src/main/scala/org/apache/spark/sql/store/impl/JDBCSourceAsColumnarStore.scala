@@ -295,11 +295,15 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
       //TODO apart from primary members secondary nodes should also be included in preferred node list
       val distMember = region.getBucketPrimary(p)
       val prefNode = if (localBackend) {
-        Option(hostSet.head._2)
+        hostSet.head._2
       } else {
-        hostSet.get(distMember.getIpAddress.getHostAddress)
+        hostSet.get(distMember.getIpAddress.getHostAddress).getOrElse {
+          hostSet.get(distMember.getIpAddress.getHostName).getOrElse {
+            throw new Exception("Primary bucket not found for partition " + p)
+          }
+        }
       }
-      partitions(p) = new ExecutorLocalPartition(p, prefNode.get)
+      partitions(p) = new ExecutorLocalPartition(p, prefNode)
     }
     partitions
   }
