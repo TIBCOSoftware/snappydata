@@ -253,6 +253,8 @@ class JDBCMutableRelation(
     // clean up the connection pool on executors first
     Utils.mapExecutors(sqlContext,
       JDBCMutableRelation.removePool(table)).count()
+    // then on the driver
+    JDBCMutableRelation.removePool(table)
     // drop the external table using a non-pool connection
     val conn = JdbcUtils.createConnection(url, connProperties)
     try {

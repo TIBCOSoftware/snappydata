@@ -273,10 +273,12 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
+
     val connection: java.sql.Connection = store.getConnection(tableName)
     val tableSchema = connection.getSchema
     val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
     val region = Misc.getRegionForTable(resolvedName, true)
     StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap)
+
   }
 }

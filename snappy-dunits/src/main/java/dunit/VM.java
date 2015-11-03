@@ -110,6 +110,27 @@ public class VM implements java.io.Serializable {
    *        The class on which to invoke the method
    * @param methodName
    *        The name of the method to invoke
+   * @param arg
+   *        Single argument passed to the method call (must be {@link
+   *        java.io.Serializable}).
+   *
+   * @throws RMIException
+   *         An exception occurred on while invoking the method in
+   *         this VM
+   */
+  public Object invoke(Class c, String methodName, Object arg) {
+    return invoke(c, methodName, new Object[] { arg });
+  }
+
+  /**
+   * Invokes a static method with an {@link Object} or
+   * <code>void</code> return type in this VM.  If the return type of
+   * the method is <code>void</code>, <code>null</code> is returned.
+   *
+   * @param c
+   *        The class on which to invoke the method
+   * @param methodName
+   *        The name of the method to invoke
    * @param args
    *        Arguments passed to the method call (must be {@link
    *        java.io.Serializable}). 
@@ -280,7 +301,7 @@ public class VM implements java.io.Serializable {
    * completed successfully before repeatTimeoutMs has passed.
    */
   public void invokeRepeatingIfNecessary(RepeatableRunnable o, long repeatTimeoutMs) {
-    invoke(o, "runRepeatingIfNecessary", new Object[] {new Long(repeatTimeoutMs)});
+    invoke(o, "runRepeatingIfNecessary", new Object[] { repeatTimeoutMs });
   }
 
   /**
