@@ -45,6 +45,7 @@ sbin="`cd "$sbin"; pwd`"
 # If the slaves file is specified in the command line,
 # then it takes precedence over the definition in
 # snappy-env.sh. Save it here.
+componentType=$1
 case $1 in
   (locator)
     if [ -f "$SNAPPY_LOCATORS" ]; then
@@ -145,14 +146,27 @@ fi
 if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
 fi
-
+IFS=$'\n'
 for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
+  host="$(echo "$slave"|awk '{print $1}')"
+  dir="$(echo "$slave"|awk '{print $2}')"
+  if [ "$dir" = "" ]; then
+    dir="$SPARK_HOME"/snappy-"$host"-$componentType
+  fi
   if [ -n "${SPARK_SSH_FOREGROUND}" ]; then
-    ssh $SPARK_SSH_OPTS "$slave" $"${@// /\\ }" \
-      2>&1 | sed "s/^/$slave: /"
+    # Create the directory for the snappy component
+    ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dir\" ]; then  mkdir -p \"$dir\"; fi;" \
+      2>&1 | sed "s/^/$host: /"
+
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir'" \
+      2>&1 | sed "s/^/$host: /"
   else
-    ssh $SPARK_SSH_OPTS "$slave" $"${@// /\\ }" \
-      2>&1 | sed "s/^/$slave: /" &
+    # Create the directory for the snappy component
+    ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dir\" ]; then  mkdir -p \"$dir\"; fi;" \
+      2>&1 | sed "s/^/$host: /" &
+
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir'" \
+      2>&1 | sed "s/^/$host: /" &
   fi
   if [ "$SPARK_SLAVE_SLEEP" != "" ]; then
     sleep $SPARK_SLAVE_SLEEP

@@ -28,10 +28,10 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/spark-config.sh"
 
 # Start Locators
-"$sbin"/locators.sh start -dir=myloc1
+"$sbin"/locators.sh start
 
 # Start Servers
-"$sbin"/servers.sh start -dir=myloc1
+"$sbin"/servers.sh start
 
 # Start Leads
-"$sbin"/leads.sh start -dir=myloc1
+"$sbin"/leads.sh start
