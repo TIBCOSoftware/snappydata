@@ -17,10 +17,17 @@
 # limitations under the License.
 #
 
-# Starts a lead instance on each machine specified in the conf/leads file.
+# Starts a server on the machine this script is executed on.
+#
+
+usage="Usage: snappy-server.sh (start|stop|status) -dir=directory"
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
+
+mode=$1
+shift
+
 
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
@@ -28,5 +35,11 @@ sbin="`cd "$sbin"; pwd`"
 . "$SPARK_PREFIX/bin/load-snappy-env.sh"
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
 
-# Launch the slaves
-"$sbin/nodes.sh" lead cd "$SPARK_HOME" \; "$sbin/lead.sh" "$@"
+
+# Start up  the server instance
+function start_instance {
+  echo "Server instance : " "$mode"
+  "$SPARK_PREFIX"/bin/snappy-shell server "$mode" "$@"
+}
+
+start_instance "$@"

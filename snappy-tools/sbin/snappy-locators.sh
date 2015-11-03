@@ -17,21 +17,16 @@
 # limitations under the License.
 #
 
-# Start all snappy daemons - locator, lead and server on the nodes specified in the
-# conf/locators, conf/leads and conf/servers files repsectively
+# Starts a locator instance on each machine specified in the conf/locators file.
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
-# Load the Spark configuration
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
-# Start Locators
-"$sbin"/locators.sh status
+. "$SPARK_PREFIX/bin/load-snappy-env.sh"
+. "$SPARK_PREFIX/bin/load-spark-env.sh"
 
-# Start Servers
-"$sbin"/servers.sh status
-
-# Start Leads
-"$sbin"/leads.sh status
+# Launch the slaves
+"$sbin/snappy-nodes.sh" locator cd "$SPARK_HOME" \; "$sbin/snappy-locator.sh" "$@"

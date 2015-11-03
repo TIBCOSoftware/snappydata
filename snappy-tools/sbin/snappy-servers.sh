@@ -28,4 +28,4 @@ sbin="`cd "$sbin"; pwd`"
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
 
 # Launch the slaves
-"$sbin/nodes.sh" server cd "$SPARK_HOME" \; "$sbin/server.sh"  "$@"
+"$sbin/snappy-nodes.sh" server cd "$SPARK_HOME" \; "$sbin/snappy-server.sh"  "$@"

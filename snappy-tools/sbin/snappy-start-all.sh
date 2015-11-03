@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-# Stops all snappy daemons - locator, lead and server on the nodes specified in the
+# Start all snappy daemons - locator, lead and server on the nodes specified in the
 # conf/locators, conf/leads and conf/servers files repsectively
 
 sbin="`dirname "$0"`"
@@ -28,10 +28,10 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/spark-config.sh"
 
 # Start Locators
-"$sbin"/locators.sh stop
+"$sbin"/snappy-locators.sh start
 
 # Start Servers
-"$sbin"/servers.sh stop
+"$sbin"/snappy-servers.sh start
 
 # Start Leads
-"$sbin"/leads.sh stop
+"$sbin"/snappy-leads.sh start

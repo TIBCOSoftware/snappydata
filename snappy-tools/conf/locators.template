@@ -15,5 +15,9 @@
 # limitations under the License.
 #
 
-# A Snappy locator will be started on each of the machines listed below.
-localhost
+# Specify the host name on which a Snappy lead will be started. Also
+# specify the startup directory where the logs and configuration files
+# for that lead instance are kept. If the directory is not specified
+# a default directory is created inside the SPARK_HOME directory.
+#
+# localhost    directory

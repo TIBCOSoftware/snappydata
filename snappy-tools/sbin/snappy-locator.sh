@@ -17,10 +17,10 @@
 # limitations under the License.
 #
 
-# Starts a lead on the machine this script is executed on.
+# Starts a locator on the machine this script is executed on.
 #
 
-usage="Usage: lead.sh (start|stop|status) -dir=directory"
+usage="Usage: snappy-locator.sh (start|stop|status) -dir=directory"
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
@@ -35,10 +35,10 @@ shift
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
 
 
-# Start up  the lead instance
+# Start up  the locator instance
 function start_instance {
-  echo "Lead instance : " "$mode"
-  "$SPARK_PREFIX"/bin/snappy-shell leader "$mode" "$@"
+  echo "Locator instance : " "$mode"
+  "$SPARK_PREFIX"/bin/snappy-shell locator "$mode" "$@"
 }
 
 start_instance "$@"

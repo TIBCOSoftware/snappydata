@@ -17,29 +17,21 @@
 # limitations under the License.
 #
 
-# Starts a server on the machine this script is executed on.
-#
-
-usage="Usage: server.sh (start|stop|status) -dir=directory"
+# Stops all snappy daemons - locator, lead and server on the nodes specified in the
+# conf/locators, conf/leads and conf/servers files repsectively
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
-mode=$1
-shift
-
-
+# Load the Spark configuration
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
-. "$SPARK_PREFIX/bin/load-snappy-env.sh"
-. "$SPARK_PREFIX/bin/load-spark-env.sh"
+# Start Locators
+"$sbin"/snappy-locators.sh stop
 
+# Start Servers
+"$sbin"/snappy-servers.sh stop
 
-# Start up  the server instance
-function start_instance {
-  echo "Server instance : " "$mode"
-  "$SPARK_PREFIX"/bin/snappy-shell server "$mode" "$@"
-}
-
-start_instance "$@"
+# Start Leads
+"$sbin"/snappy-leads.sh stop
