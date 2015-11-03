@@ -55,8 +55,8 @@ object ClusterMgrDUnitTest extends ClusterManagerTestUtils {
         if (x * x + y * y < 1) 1 else 0
       }.reduce(_ + _)
     val pi = 4.0 * count / n
-    assert(3.14 <= pi)
-    assert(3.15 > pi)
+    assert(3.04 <= pi)
+    assert(3.25 > pi)
   }
 
   def startGemJob(): Unit = {
