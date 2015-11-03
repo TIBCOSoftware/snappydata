@@ -20,7 +20,7 @@
 # Starts a locator on the machine this script is executed on.
 #
 
-usage="Usage: locator.sh"
+usage="Usage: locator.sh (start|stop|status) -dir=directory"
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
@@ -38,7 +38,7 @@ shift
 # Start up  the locator instance
 function start_instance {
   echo "Locator instance : " "$mode"
-  "$SPARK_PREFIX"/bin/snappy locator "$mode" "$@"
+  "$SPARK_PREFIX"/bin/snappy-shell locator "$mode" "$@"
 }
 
 start_instance "$@"

@@ -20,7 +20,7 @@
 # Starts a server on the machine this script is executed on.
 #
 
-usage="Usage: server.sh"
+usage="Usage: server.sh (start|stop|status) -dir=directory"
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
@@ -39,7 +39,7 @@ shift
 # Start up  the server instance
 function start_instance {
   echo "Server instance : " "$mode"
-  "$SPARK_PREFIX"/bin/snappy server "$mode" "$@"
+  "$SPARK_PREFIX"/bin/snappy-shell server "$mode" "$@"
 }
 
 start_instance "$@"
