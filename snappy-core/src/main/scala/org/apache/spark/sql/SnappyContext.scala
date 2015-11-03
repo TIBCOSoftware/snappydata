@@ -205,16 +205,15 @@ protected class SnappyContext(sc: SparkContext)
         sys.error(s"couldn't cache table $tableIdent")
       }
     }
-
     val cached = rdd.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
-
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
+
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
@@ -295,7 +294,7 @@ protected class SnappyContext(sc: SparkContext)
     val topKRDD = SnappyContext.createTopKRDD(tableName, self.sc, isStreamSummary)
     //TODO Yogesh, this needs to handle all types of StreamRelations
     catalog.registerTopK(tableName, streamTableName,
-      catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
+      catalog.getStreamTableSchema(streamTableName), topkOptions, topKRDD)
   }
 
   override def createExternalTable(

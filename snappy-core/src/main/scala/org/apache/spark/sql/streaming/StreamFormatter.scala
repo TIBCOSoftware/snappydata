@@ -21,9 +21,10 @@ class MyStreamFormatter extends StreamFormatter[String] {
   override final val classTag = scala.reflect.classTag[String]
 
   override def format(rdd: RDD[String], schema: StructType): RDD[Row] = {
-     rdd.map(p => {
+    /* rdd.map(p => {
       val s = p.split(",")
       Row.fromTuple("A", "B", "C", "D", s(0))
-    })
+    })*/
+    null
   }
 }

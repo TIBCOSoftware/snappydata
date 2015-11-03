@@ -5,6 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, SQLContext}
+import org.apache.spark.streaming.{StreamingContextState, Time, Duration}
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.reflect.ClassTag
@@ -19,11 +20,16 @@ case class KafkaStreamRelation[T](dStream: DStream[T],
                                   @transient override val sqlContext: SQLContext)
                                  (implicit val ct: ClassTag[T])
   extends BaseRelation with TableScan with DeletableRelation
-  with DestroyRelation with Logging {
+  with DestroyRelation with Logging with Serializable {
 
   override def buildScan(): RDD[Row] = {
+
+    if(dStream.context.getState() == StreamingContextState.ACTIVE)
+      formatter(dStream.compute(Time(10000)).get,schema)
+    else
+      dStream.context.sparkContext.emptyRDD
     //dStream.map(_._2).map(formatter.format)
-    throw new IllegalAccessException("Not Implemented")
+    //throw new IllegalAccessException("Not Implemented")
   }
 
   override def destroy(ifExists: Boolean): Unit = {

@@ -62,7 +62,7 @@ protected final class StreamingSnappyContext(val streamingContext: StreamingCont
 
 object snappy extends Serializable {
   implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]): SnappyStreamOperations[T] =
-    SnappyStreamOperations(SnappyContext(ds.context.sparkContext), ds)
+    SnappyStreamOperations(StreamingSnappyContext(ds.context), ds)
 }
 
 object StreamingSnappyContext {
@@ -89,7 +89,7 @@ object StreamingSnappyContext {
   }
 }
 
-case class SnappyStreamOperations[T: ClassTag](context: SnappyContext, ds: DStream[T]) {
+case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext, ds: DStream[T]){
 
   def saveStream(sampleTab: Seq[String],
                  formatter: (RDD[T], StructType) => RDD[Row],
@@ -126,6 +126,7 @@ case class SnappyStreamOperations[T: ClassTag](context: SnappyContext, ds: DStre
     }
 
     context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
+
     context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
       externalStore)
 
@@ -155,6 +156,7 @@ object StreamingCtxtHolder {
         context
       } else {
         val context = new StreamingContext(sparkCtxt, Seconds(duration))
+        context.checkpoint(null) // TODO Yogesh, remove this
         globalContext = context
         context
       }

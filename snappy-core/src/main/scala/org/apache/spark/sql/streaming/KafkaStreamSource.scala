@@ -4,6 +4,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.StreamingContextState
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
@@ -62,6 +63,8 @@ class KafkaStreamSource extends SchemaRelationProvider {
 
       val dStream = KafkaUtils.createDirectStream(
         context, kafkaParams, topicsSet)
+
+      dStream.foreachRDD(rdd => print(s"Received Twitter stream updates. Count: ${rdd.count()}"))
 
       KafkaStreamRelation(dStream.asInstanceOf[DStream[Any]], options, formatter.format,
         schema, sqlContext)
