@@ -432,15 +432,16 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     val BASETABLE = "basetable"
     val table = options(BASETABLE)
 
-    val snappyCtxt = SnappyContext(sqlContext.sparkContext)
+    val snappyCtxt = if(StreamPlan.currentContext.get()!= null)
+      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
     val catalog = snappyCtxt.catalog
 
     val tableIdent = catalog.newQualifiedTableName(table)
-    val sr = catalog.getStreamTableRelation(tableIdent)
+    val schema = catalog.getStreamTableSchema(tableIdent)
 
     // Add the sample table to the catalog as well.
     // StratifiedSampler is not expecting base table, remove it.
-    snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
+    snappyCtxt.registerSampleTable(sampledTableName, schema,
       options - BASETABLE, Some(tableIdent.table))
 
     Seq.empty

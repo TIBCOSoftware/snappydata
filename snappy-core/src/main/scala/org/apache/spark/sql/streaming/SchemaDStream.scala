@@ -50,7 +50,7 @@ final class SchemaDStream(
       case _ => plan.children.flatMap(traverse(_))
     }
     val streams = traverse(queryExecution.executedPlan)
-    assert (!streams.isEmpty, s"Input query and related plan ${queryExecution.executedPlan} is not a stream plan")
+    //assert (!streams.isEmpty, s"Input query and related plan ${queryExecution.executedPlan} is not a stream plan")
     streams
   }
 
