@@ -1,24 +1,30 @@
 package io.snappydata.app.twitter
 
-import com.typesafe.config.ConfigFactory
-import kafka.serializer.{DefaultDecoder, StringDecoder}
 import org.apache.spark._
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamingSnappyContext}
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming._
-import org.apache.spark.streaming.kafka._
 
 /**
  * Created by ymahajan on 28/10/15.
  */
 object KafkaConsumer {
 
-  //private val conf = ConfigFactory.load()
+  val props = Map(
+    "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
+    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
+    "poolImpl" -> "tomcat",
+    "user" -> "app",
+    "password" -> "app"
+  )
+  val options =  "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false' ," +
+    "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
+    "poolimpl 'tomcat', " +
+    "user 'app', " +
+    "password 'app' ) "
 
-//  val sparkConf = new SparkConf().setAppName("kafka-twitter-spark-example").setMaster("local[*]")
-//  val sc = new StreamingContext(sparkConf, Seconds(5))
 
-  def main (args: Array[String]) {
+  def main(args: Array[String]) {
 
     val sc = new org.apache.spark.SparkConf().
       setMaster("local[2]").
@@ -26,46 +32,37 @@ object KafkaConsumer {
     val ssc = new StreamingContext(new SparkContext(sc), Duration(10000))
     val snsc = StreamingSnappyContext(ssc);
 
-    //  val encTweets = {
-    //    val topics = Map(KafkaProducerApp.KafkaTopic -> 1)
-    //    val kafkaParams = Map(
-    //      "zookeeper.connect" -> conf.getString("kafka.zookeeper.quorum"),
-    //      "group.id" -> "1")
-    //    KafkaUtils.createStream[String, Array[Byte], StringDecoder, DefaultDecoder](
-    //      sc, kafkaParams, topics, StorageLevel.MEMORY_ONLY)
-    //  }
-    //  encTweets.print()
+    val streamTable = "directKafkaStreamTable"
+    snsc.sql("create stream table "+ streamTable + " (name string, text string) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
+      " kafkaParams 'metadata.broker.list->localhost:9092', topics 'tweets')")
 
-    //snc.sql( """STREAMING CONTEXT  INIT 10""")
+    //snsc.sql("TRUNCATE TABLE " + streamTable)
 
-    snsc.sql("create stream table kafkaStreamTable (name string, text string) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
-      " zkQuorum '10.112.195.65:2181', groupId 'streamSQLConsumer', topics 'tweets:01')")
+    //snsc.sql("DROP TABLE " + streamTable)
 
-    snsc.sql("create stream table directKafkaStreamTable (name string, text string) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
-      " kafkaParams 'metadata.broker.list -> localhost:9092', topics 'tweets')")
+    //val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
+    //import org.apache.spark.sql.streaming.snappy._
+    //tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema, props)
 
-//    val resultSet1: SchemaDStream = snsc.registerCQ("SELECT text FROM kafkaStreamTable window (duration '10' seconds, slide '10' seconds)")// WHERE age >= 18")
-//
-//    val resultSet2: SchemaDStream = snsc.registerCQ("SELECT text FROM directKafkaStreamTable window (duration '10' seconds, slide '10' seconds)")// WHERE age >= 18")
-//
-//    resultSet1.foreachRDD {
-//      r => r.foreach(print)
-//    }
-//    resultSet2.foreachRDD {
-//      r => r.foreach(print)
-//    }
+    val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM directKafkaStreamTable window (duration '10' seconds, slide '10' seconds) ") //WHERE age >= 18
+
+    val storeTable = "directKafkaStoreTable"
+    val storeTable2 = "storeTable2"
+
+    snsc.sql("CREATE TABLE " + storeTable2 + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
+      options)
+
+    snsc.dropExternalTable(storeTable2, false)
+
+    snsc.sql("CREATE TABLE " + storeTable + " USING column " +
+      options + " AS (SELECT * FROM " + streamTable + ")")
+
+    snsc.sql("SELECT * FROM " + storeTable).show()
+
+    snsc.sql("DROP TABLE " + storeTable)
+
     snsc.sql( """STREAMING CONTEXT START """)
     ssc.awaitTerminationOrTimeout(20000)
     snsc.sql( """STREAMING CONTEXT STOP """)
-
-    //  val tweets = encTweets.flatMap(x => SpecificAvroCodecs.toBinary[Tweet].invert(x._2).toOption)
-    //
-    //  val wordCounts = tweets.flatMap(_.getText.split(" ")).map((_,1)).reduceByKey(_ + _)
-    //  val countsSorted = wordCounts.transform(_.sortBy(_._2, ascending = false))
-    //
-    //  countsSorted.print()
-
-    ssc.start()
-    ssc.awaitTermination()
   }
 }

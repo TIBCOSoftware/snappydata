@@ -25,13 +25,14 @@ protected final class StreamingSnappyContext(val streamingContext: StreamingCont
   self =>
 
   override def sql(sqlText: String): DataFrame = {
+    SparkPlan.currentContext.set(this) //SQLContext
     StreamPlan.currentContext.set(this) //SnappyStreamingContext
     super.sql(sqlText)
   }
 
   def registerCQ(queryStr: String): SchemaDStream = {
-    //SparkPlan.currentContext.set(this) //SQLContext
-    //StreamPlan.currentContext.set(this) //StreamingSnappyContext
+    SparkPlan.currentContext.set(this) //SQLContext
+    StreamPlan.currentContext.set(this) //StreamingSnappyContext
     val plan = super.sql(queryStr).queryExecution.logical
     //TODO Yogesh, This needs to get registered with catalog
     //catalog.registerCQ(queryStr, plan)
