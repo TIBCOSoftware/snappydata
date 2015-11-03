@@ -148,8 +148,8 @@ if [ "$SPARK_SSH_OPTS" = "" ]; then
 fi
 IFS=$'\n'
 for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
-  host="$(echo "$slave"|awk '{print $1}')"
-  dir="$(echo "$slave"|awk '{print $2}')"
+  host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f 1)"
+  dir="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f 2)"
 
   # Pass the hostargs if we are starting the server
   if grep -q " start"<<< $"${@// /\\ }" ; then

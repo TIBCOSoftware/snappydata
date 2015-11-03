@@ -37,7 +37,6 @@ shift
 
 # Start up  the lead instance
 function start_instance {
-  echo "Lead instance : " "$mode"
   "$SPARK_PREFIX"/bin/snappy-shell leader "$mode" "$@"
 }
 

@@ -38,7 +38,6 @@ shift
 
 # Start up  the server instance
 function start_instance {
-  echo "Server instance : " "$mode"
   "$SPARK_PREFIX"/bin/snappy-shell server "$mode" "$@"
 }
 

@@ -37,7 +37,6 @@ shift
 
 # Start up  the locator instance
 function start_instance {
-  echo "Locator instance : " "$mode"
   "$SPARK_PREFIX"/bin/snappy-shell locator "$mode" "$@"
 }
 
