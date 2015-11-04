@@ -14,7 +14,7 @@ import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation, MutableRelationProvider}
+import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
