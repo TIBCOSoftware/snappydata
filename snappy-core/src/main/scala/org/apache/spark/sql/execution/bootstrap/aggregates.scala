@@ -24,14 +24,16 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.errors._
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateFunction2
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateMode, AggregateExpression2, AggregateFunction2, Partial, Complete, Final}
 import org.apache.spark.sql.catalyst.plans.physical.{AllTuples, ClusteredDistribution, Distribution, UnspecifiedDistribution}
+import org.apache.spark.sql.execution.aggregate.SortBasedAggregationIterator
+import org.apache.spark.sql.execution.metric.{LongSQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.{SparkPlan, UnaryNode}
 //import org.apache.spark.sql.hive.online.ComposeRDDFunctions._
 import org.apache.spark.storage.{BlockId,  StorageLevel}
-
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.sql.execution.aggregate.SnappySortBasedAggregationIterator
 
 trait DelegatedAggregate {
   self: UnaryNode =>
@@ -189,8 +191,8 @@ trait DelegatedAggregate {
    */
   protected[this] val resultExpressions = aggregateExpressions.map { agg =>
     agg.transform {
-      case TaggedAggregateExpression2(_, aggFunc,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
-      case UnTaggedAggregateExpression2( aggFunc,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
+      case TaggedAggregateExpression2(_, aggFunc:AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
+      case UnTaggedAggregateExpression2( aggFunc: AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
       case TaggedAlias( _,aggFunc:AggregateFunction2,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
       case e: Expression  if(!(e .isInstanceOf[DelegateFunction]) && resultMap.contains(e))   => resultMap(e)
     }
@@ -279,108 +281,153 @@ case class BootstrapAggregate(
 }
 
 
+case class BootstrapSortedAggregate(
+    partial: Boolean,
+    groupingExpressions: Seq[NamedExpression],
+    aggregateExpressions: Seq[NamedExpression],
+    child: SparkPlan)
+    extends UnaryNode with DelegatedAggregate {
+
+  override private[sql] lazy val metrics = Map(
+    "numInputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of input rows"),
+    "numOutputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of output rows"))
+
+  override def outputsUnsafeRows: Boolean = false
+
+  override def canProcessUnsafeRows: Boolean = false
+
+  override def canProcessSafeRows: Boolean = true
+
+ /*
+  override def requiredChildDistribution: List[Distribution] = {
+    requiredChildDistributionExpressions match {
+      case Some(exprs) if exprs.length == 0 => AllTuples :: Nil
+      case Some(exprs) if exprs.length > 0 => ClusteredDistribution(exprs) :: Nil
+      case None => UnspecifiedDistribution :: Nil
+    }
+  }*/
+
+  override def requiredChildOrdering: Seq[Seq[SortOrder]] = {
+    groupingExpressions.map(SortOrder(_, Ascending)) :: Nil
+  }
+
+  override def outputOrdering: Seq[SortOrder] = {
+    groupingExpressions.map(SortOrder(_, Ascending))
+  }
+
+  protected override def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {val numInputRows = longMetric("numInputRows")
+    val numOutputRows = longMetric("numOutputRows")
+    child.execute().mapPartitions { iter =>
+      // Because the constructor of an aggregation iterator will read at least the first row,
+      // we need to get the value of iter.hasNext first.
+      val hasInput = iter.hasNext
+      if (!hasInput && groupingExpressions.nonEmpty) {
+        // This is a grouped aggregate and the input iterator is empty,
+        // so return an empty iterator.
+        Iterator[InternalRow]()
+      } else {
+        val outputIter = SnappySortBasedAggregationIterator.createFromInputIterator(
+          groupingExpressions,
+
+          initialInputBufferOffset=0,
+
+          newProjection _,
+          child.output,
+          iter,
+          outputsUnsafeRows,
+          numInputRows,
+          numOutputRows,
+          newAggregateBuffer _,
+          resultExpressions,
+          computedSchema,
+        computedAggregates.length,
+        delegatees,
+        if(this.partial) Partial else Final
+
+
+        )
+        if (!hasInput && groupingExpressions.isEmpty) {
+          // There is no input and there is no grouping expressions.
+          // We need to output a single row as the output.
+          numOutputRows += 1
+          Iterator[InternalRow](outputIter.outputForEmptyGroupingKeyWithoutInput())
+        } else {
+          outputIter
+        }
+      }
+    }
+  }
+
+  override def simpleString: String = {
+    val allAggregateExpressions = this.aggregateExpressions //++ completeAggregateExpressions
+
+    val keyString = groupingExpressions.mkString("[", ",", "]")
+    val functionString = allAggregateExpressions.mkString("[", ",", "]")
+    val outputString = output.mkString("[", ",", "]")
+    s"SortBasedAggregate(key=$keyString, functions=$functionString, output=$outputString)"
+  }
+}
+
 case class SortedAggregateWith2Inputs2Outputs(
     cacheFilter: Option[Attribute],
 
     lineageRelayInfo: LineageRelay,
     integrityInfo: Option[IntegrityInfo],
-    groupingExpressions: Seq[Expression],
+    groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
-    child: SparkPlan)(
+    child: SparkPlan
+
+    )(
 
     val trace: List[Int] = -1 :: Nil,
     val opId: OpId = OpId.newOpId)
     extends UnaryNode with DelegatedAggregate   {
-
+  override private[sql] lazy val metrics = Map(
+    "numInputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of input rows"),
+    "numOutputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of output rows"))
   val partial = false
 
 
 
   override def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    val rdd = child.execute()
+    val numInputRows = longMetric("numInputRows")
+    val numOutputRows = longMetric("numOutputRows")
+    child.execute().mapPartitions { iter =>
+      // Because the constructor of an aggregation iterator will read at least the first row,
+      // we need to get the value of iter.hasNext first.
+      val hasInput = iter.hasNext
+      if (!hasInput && groupingExpressions.nonEmpty) {
+        // This is a grouped aggregate and the input iterator is empty,
+        // so return an empty iterator.
+        Iterator[InternalRow]()
+      } else {
+        val outputIter = SnappySortBasedAggregationIterator.createFromInputIterator(
+          groupingExpressions,
 
-    if (groupingExpressions.isEmpty) {
-      rdd.mapPartitions { iter =>
-        val buffer = newAggregateBuffer()
-        var currentRow: InternalRow = null
+          initialInputBufferOffset=0,
 
-        while (iter.hasNext) {
-          currentRow = iter.next()
-          var i = 0
-          while (i < buffer.length) {
-            buffer(i).update(currentRow)
-            i += 1
+          newProjection _,
+          child.output,
+          iter,
+          outputsUnsafeRows,
+          numInputRows,
+          numOutputRows,
+          newAggregateBuffer _,
+          resultExpressions,
+          computedSchema,
+          computedAggregates.length,
+          delegatees,
+
+          if(this.partial) Partial else Final)
+
+          if (!hasInput && groupingExpressions.isEmpty) {
+            // There is no input and there is no grouping expressions.
+            // We need to output a single row as the output.
+            numOutputRows += 1
+            Iterator[InternalRow](outputIter.outputForEmptyGroupingKeyWithoutInput())
+          } else {
+            outputIter
           }
-        }
-
-        val aggregateResults = new GenericMutableRow(computedAggregates.length)
-        val resultProjection = new InterpretedMutableProjection(resultExpressions, computedSchema)
-        val result = new ArrayBuffer[InternalRow]( 16)
-
-
-        var i = delegatees.length
-        while (i < buffer.length) {
-          buffer(i).evaluate(aggregateResults)
-          i += 1
-        }
-        result += aggregateResults
-        /*
-        val filter = buildRelayFilter()
-        if (filter(result)) {
-          // Broadcast the old results
-          val broadcastProjection = buildRelayProjection()
-          val toBroadcast = broadcastProjection(result)
-          SparkEnv.get.blockManager.putSingle(
-            LazyBlockId(opId.id, currentBatch, index), toBroadcast, StorageLevel.MEMORY_AND_DISK)
-        }
-
-        // Pass on the new results
-        if (prevRow != null) Iterator() else*/
-        result.iterator
-      }
-    } else {
-      rdd.mapPartitions { iter =>
-        val hashTable = new JHashMap[InternalRow, Array[DelegateAggregateFunction]]
-        val groupingProjection = new InterpretedMutableProjection(groupingExpressions, child.output)
-        var currentRow: InternalRow = null
-
-        while (iter.hasNext) {
-          currentRow = iter.next()
-          val currentGroup = groupingProjection(currentRow)
-          var currentBuffer = hashTable.get(currentGroup)
-          if (currentBuffer == null) {
-            currentBuffer = newAggregateBuffer()
-            hashTable.put(currentGroup.copy(), currentBuffer)
-          }
-          var i = 0
-          while (i < currentBuffer.length) {
-            currentBuffer(i).update(currentRow)
-            i += 1
-          }
-        }
-
-        val aggregateResults = new GenericMutableRow(computedAggregates.length)
-        val joinedRow = new JoinedRow
-        val resultProjection = new InterpretedMutableProjection(resultExpressions,
-          computedSchema ++ namedGroups.map(_._2))
-
-        val results = new ArrayBuffer[InternalRow]( 16)
-
-
-        hashTable.foreach { case (currentGroup, currentBuffer) =>
-          var i = delegatees.length
-          while (i < currentBuffer.length) {
-            currentBuffer(i).evaluate(aggregateResults)
-            i += 1
-          }
-          var row = resultProjection(joinedRow(aggregateResults, currentGroup))
-          results += row.copy()
-
-        }
-
-
-        // Pass on the new results
-        results.iterator
       }
     }
   }

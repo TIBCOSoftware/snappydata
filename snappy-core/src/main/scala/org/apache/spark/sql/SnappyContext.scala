@@ -79,9 +79,9 @@ protected[sql] final class SnappyContext(sc: SparkContext)
             InsertCollect(true, .95)
       ) ,
       Batch("Post-Bootstrap Optimization", FixedPoint(100),
-           // PruneColumns,
+            PruneColumns,
             PushDownFilter,
-            //PruneProjects,
+            PruneProjects,
             OptimizeOperatorOrder,
             PruneFilters
       ) ,

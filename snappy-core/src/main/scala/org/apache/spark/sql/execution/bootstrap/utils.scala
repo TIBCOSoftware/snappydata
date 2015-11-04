@@ -182,6 +182,8 @@ object BootStrapUtils {
         if (aggregate.partial) getGrowthMode(aggregate.child) else fullAggregate(aggregate.child)
       case aggregate: BootstrapAggregate =>
         if (aggregate.partial) getGrowthMode(aggregate.child) else fullAggregate(aggregate.child)
+      case aggregate: BootstrapSortedAggregate =>
+        if (aggregate.partial) getGrowthMode(aggregate.child) else fullAggregate(aggregate.child)
       case aggregate: AggregateWith2Inputs2Outputs =>
         fullAggregate(aggregate.child)
       case aggregate: AggregateWith2Inputs =>
