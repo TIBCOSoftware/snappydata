@@ -140,6 +140,7 @@ object StoreUtils {
 
     val options = new CaseInsensitiveMap(parameters)
 
+    // Anu new properties added or removed needs to be taken care here by adding/deleting/modifying the list
     options.keySet.foreach { prop =>
       prop.toUpperCase match {
         case PARTITION_BY | BUCKETS | COLOCATE_WITH | REDUNDANCY | RECOVERYDELAY | MAXPARTSIZE | EVICTION_BY | PERSISTENT | SERVER_GROUPS | OFFHEAP => // Do nothing. Allowed values
