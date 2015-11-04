@@ -13,6 +13,9 @@ class ServerLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   @throws(classOf[Exception])
   override protected def getFabricServiceInstance: FabricService = ServiceManager.getServerInstance
 
+  override protected def run (args : Array[String]): Unit = {
+    super.run(args)
+  }
 }
 
 object ServerLauncher {

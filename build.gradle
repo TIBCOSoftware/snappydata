@@ -305,6 +305,13 @@ task product {
       from "${project(':snappy-spark').projectDir}/data"
       into "${productDir}/data"
     }
+    copy {
+      from "${toolsProject.projectDir}/bin"
+      into "${productDir}/bin"
+      filter { line ->
+        line.replaceAll('__VERSION__', "${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}")
+      }
+    }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
     if (file(sparkR).exists()) {
