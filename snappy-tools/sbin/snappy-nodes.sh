@@ -147,32 +147,54 @@ if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
 fi
 IFS=$'\n'
+index=1
+
 for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
   host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f 1)"
   dir="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f 2)"
 
-  # Pass the hostargs if we are starting the server
-  if grep -q " start"<<< $"${@// /\\ }" ; then
-    hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f3-)"
-  fi
-
   # Set a default directory if not already started
-  if [ "$dir" = "" ]; then
-    dir="$SPARK_HOME"/snappy-"$host"-$componentType
+  if [[ $dir != *"-dir"* ]] ; then
+    dirfolder="$SPARK_HOME"/snappy/"$host"-$componentType-$index
+    dirparam="-dir="$dirfolder
+    # Pass the hostargs if we are starting the server
+    if grep -q " start"<<< $"${@// /\\ }" ; then
+      hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+      # Set a default locator if not already specified
+      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] ; then
+        locatorParam="-locators="$(hostname)":10334"
+      fi
+    fi
+  else
+    dirparam=$dir
+    # Pass the hostargs if we are starting the server
+    if grep -q " start"<<< $"${@// /\\ }" ; then
+      hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f3-)"
+      # Set a default locator if not already specified
+      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] ; then
+        locatorParam="-locators="$(hostname)":10334"
+      fi
+    fi
   fi
-  if [ -n "${SPARK_SSH_FOREGROUND}" ]; then
-    # Create the directory for the snappy component
-    ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dir\" ]; then  mkdir -p \"$dir\"; fi;" \
-      2>&1 | sed "s/^/$host: /"
 
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir' ${hostargs}" \
+  index=$[index +1]
+  if [ -n "${SPARK_SSH_FOREGROUND}" ]; then
+    if [ "$dirfolder" != "" ]; then
+      # Create the directory for the snappy component if the folder is a default folder
+      ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" \
+        2>&1 | sed "s/^/$host: /"
+    fi
+
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${dirparam} ${locatorParam} ${hostargs}" \
       2>&1 | sed "s/^/$host: /"
   else
-    # Create the directory for the snappy component
-    ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dir\" ]; then  mkdir -p \"$dir\"; fi;" \
-      2>&1 | sed "s/^/$host: /" &
+    if [ "$dirfolder" != "" ]; then
+      # Create the directory for the snappy component if the folder is a default folder
+      ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" \
+        2>&1 | sed "s/^/$host: /"
+    fi
 
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } -dir='$dir' ${hostargs}" \
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${dirparam} ${locatorParam} ${hostargs}" \
       2>&1 | sed "s/^/$host: /" &
   fi
 

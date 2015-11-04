@@ -21,5 +21,5 @@
 # specific properties can also be passed. If the directory and properties
 # are not specified a default directory is created inside the SPARK_HOME directory.
 #
-# localhost   /tmp/data/lead -client-port=1558 -critical-heap-percentage=95 -locators=localhost[17777]
+# localhost   -dir=/tmp/data/lead (config args)
 localhost

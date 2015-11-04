@@ -27,11 +27,14 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
-# Start Locators
-"$sbin"/snappy-locators.sh stop
+# Stop Leads
+"$sbin"/snappy-leads.sh stop
 
-# Start Servers
+# Stop Servers
 "$sbin"/snappy-servers.sh stop
 
-# Start Leads
-"$sbin"/snappy-leads.sh stop
+# Stop locators
+"$sbin"/snappy-locators.sh stop
+
+
+

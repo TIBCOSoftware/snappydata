@@ -21,4 +21,5 @@
 # specific properties can also be passed. If the directory and properties
 # are not specified a default directory is created inside the SPARK_HOME directory.
 #
-# localhost    /tmp/data/locator -client-port=1555 -critical-heap-percentage=100  -peer-discovery-port=16666
+# localhost    -dir=/tmp/data/locator (config args)
+localhost
