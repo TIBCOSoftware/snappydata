@@ -4,16 +4,20 @@ import java.util.Properties
 
 import scala.collection.mutable
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, SaveMode}
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
 
 /**
@@ -93,7 +97,13 @@ final class DefaultSource
       poolProps: Map[String, String],
       connProps: Properties,
       hikariCP: Boolean): ExternalStore = {
-    val blockMap = StoreUtils.initStore(sc, url, connProps)
+
+    val dialect = JdbcDialects.get(url)
+    val blockMap =
+      dialect match {
+        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case _ => Map.empty[InternalDistributedMember, BlockManagerId]
+      }
     new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)
   }
 

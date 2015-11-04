@@ -13,7 +13,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, UUIDRegionKey}
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType}
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, ConnectionType}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore}
 import org.apache.spark.storage.BlockManagerId
@@ -47,6 +47,12 @@ final class JDBCSourceAsColumnarStore(_url: String,
         })
         new UnionRDD[CachedBatch](sparkContext, rddList)
     }
+  }
+
+  override def getConnection(id: String): Connection = {
+    val conn = ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
+    conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+    conn
   }
 
   override def storeCachedBatch(batch: CachedBatch,
@@ -100,7 +106,6 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName, {
       case conn =>
-        conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
         val par = split.index
         val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
