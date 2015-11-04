@@ -25,39 +25,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   final InternalDistributedMember thisMember;
 
-//  public SnappyHiveCatalog() {
-//
-//    SparkContext ctx = SparkContext.getOrCreate();
-//    assert ctx != null : "expected a non null spark context";
-//    SparkConf conf = ctx.getConf();
-//    assert conf != null : "expected a non null spark conf";
-//
-//    // initialize HiveMetaStoreClient
-//    HiveConf metadataConf = new HiveConf();
-//    if (conf.contains("gemfirexd.db.url")  && conf.contains("gemfirexd.db.driver")) {
-//      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-//        conf.get("gemfirexd.db.url"));
-//      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-//        conf.get("gemfirexd.db.driver"));
-//    }
-//    try {
-//      this.hmc = new HiveMetaStoreClient(metadataConf);
-//    } catch (MetaException me) {
-//      throw new IllegalStateException(me);
-//    }
-//    thisMember = InternalDistributedSystem.getConnectedInstance().getDistributedMember();
-//  }
-
   public SnappyHiveCatalog() {
     // initialize HiveMetaStoreClient
-    String snappydataurl = "jdbc:snappydata:;locators=localhost[7777];persist-dd=false;";
-    //String snappydataurl = "jdbc:snappydata:";
+    String snappydataurl = "jdbc:snappydata:";
 
     HiveConf metadataConf = new HiveConf();
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         snappydataurl);
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-      "APP");
     metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
       "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
 

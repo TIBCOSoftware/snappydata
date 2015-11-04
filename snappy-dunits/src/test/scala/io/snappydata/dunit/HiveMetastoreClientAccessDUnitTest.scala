@@ -24,9 +24,9 @@ class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestB
   }
 
   def testOne(): Unit = {
-    val locatorNetPort = 9999//AvailablePortHelper.getRandomAvailableTCPPort
-    val serverNetPort = 8888//AvailablePortHelper.getRandomAvailableTCPPort
-    val peerDiscoveryPort = 7777//AvailablePortHelper.getRandomAvailableTCPPort
+    val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
+    val serverNetPort = AvailablePortHelper.getRandomAvailableTCPPort
+    val peerDiscoveryPort = AvailablePortHelper.getRandomAvailableTCPPort
 
     val locatorArgs = new Array[AnyRef](3)
     locatorArgs(0) = "localhost"
@@ -36,7 +36,6 @@ class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestB
     vm1.invoke(this.getClass, "startLocator", locatorArgs)
 
     val driverArgs = new Array[AnyRef](1)
-    //val locStr = InetAddress.getLocalHost.getHostAddress+"["+peerDiscoveryPort+"]"
     val locStr = "localhost["+peerDiscoveryPort+"]"
     driverArgs(0) = locStr
 
@@ -89,20 +88,14 @@ object HiveMetastoreClientAccessDUnitTest {
     val locatorService = ServiceManager.getLocatorInstance
     val bootProps = new Properties()
     bootProps.setProperty("persist-dd", "false")
-    //locatorService.start(localHost.getHostAddress, peerDiscoveryPort, bootProps)
-    //println("KN: startlocator params peerDiscoveryPort = " + peerDiscoveryPort + ", netport = " + netport)
     locatorService.start("localhost", peerDiscoveryPort, bootProps)
     locatorService.startNetworkServer("localhost", netport, bootProps)
-    println("Loc vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    println("locator prop in loc = " + InternalDistributedSystem.getConnectedInstance.getConfig.getLocators)
   }
 
   def startDriverApp(locatorStr: String): Unit = {
     startSnappyLocalModeAndCreateARowAndAColumnTable(locatorStr)
     val dsys = InternalDistributedSystem.getConnectedInstance
     assert(dsys != null)
-    println("Driver vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    println("locator prop in driver app = " + InternalDistributedSystem.getConnectedInstance.getConfig.getLocators)
   }
 
   object ParseUtils extends java.io.Serializable {
@@ -173,7 +166,6 @@ object HiveMetastoreClientAccessDUnitTest {
     }
 
     val hfile: String = getClass.getResource("/2015.parquet").getPath
-    //val hfile: String = "/home/kneeraj/snappy/snappy-commons/snappy-core/src/test/resources/2015.parquet"
     val loadData: Boolean = true
     val setMaster: String = "local[6]"
 
