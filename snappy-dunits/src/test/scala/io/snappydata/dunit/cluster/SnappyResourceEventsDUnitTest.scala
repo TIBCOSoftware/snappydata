@@ -5,96 +5,96 @@ import scala.Predef._
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.control.{HeapMemoryMonitor, InternalResourceManager}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import dunit.DistributedTestBase
+import io.snappydata.ServiceManager
 
 import org.apache.spark.SparkEnv
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.storage.{RDDInfo, StorageLevel}
 
 /**
  * Created by shirishd on 19/10/15.
  */
 class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s) {
 
-  def __testCriticalUp(): Unit = {
-    vm1.invoke(this.getClass, "startSnappyServer")
-    vm0.invoke(this.getClass, "startSnappyLead")
-    vm2.invoke(this.getClass, "startSnappyServer")
+  override def tearDown2(): Unit = {
+    Array(vm3, vm2, vm1, vm0).foreach(_.invoke(this.getClass, "resetGFResourceManager"))
+    super.tearDown2()
+  }
+
+  def testCriticalUp(): Unit = {
+    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     // Execute the job
     vm0.invoke(this.getClass, "runSparkJob")
     vm1.invoke(this.getClass, "raiseCriticalUpMemoryEvent")
-    vm2.invoke(this.getClass, "raiseCriticalUpMemoryEvent")
-    vm0.invoke(this.getClass, "runSparkJobWithCriticalUp")
+    vm0.invoke(this.getClass, "runSparkJobAfterThresholdBreach")
 
     vm1.invoke(this.getClass, "assertShuffleMemoryManagerBehavior")
-    vm2.invoke(this.getClass, "assertShuffleMemoryManagerBehavior")
-
-    vm0.invoke(this.getClass, "stopSnappyLead")
-    vm2.invoke(this.getClass, "stopSnappyServer")
-    vm1.invoke(this.getClass, "stopSnappyServer")
   }
 
   def testEvictionUp(): Unit = {
-    vm1.invoke(this.getClass, "startSnappyServer")
-    vm0.invoke(this.getClass, "startSnappyLead")
+    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     // Execute the job
-    vm0.invoke(this.getClass, "runSparkJob2")
+    vm0.invoke(this.getClass, "runSparkJob")
     vm1.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
-    vm0.invoke(this.getClass, "runSparkJobWithEvictionUp")
-
-    vm0.invoke(this.getClass, "stopSnappyLead")
-    vm1.invoke(this.getClass, "stopSnappyServer")
+    vm0.invoke(this.getClass, "runSparkJobAfterThresholdBreach")
 
   }
-
 }
 
 object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
 
   def runSparkJob(): Unit = {
-    val rdd1 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8)).cache()
-    rdd1.count
+    val rdd1 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
+    println(rdd1.count)
     assert(!sc.getRDDStorageInfo.isEmpty)
-    rdd1.unpersist(true)
-    assert(sc.getRDDStorageInfo.isEmpty)
-  }
-
-  def runSparkJobWithCriticalUp(): Unit = {
-    val rdd2 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8)).cache()
-    rdd2.count
-    assert(sc.getRDDStorageInfo.isEmpty)
-    println(sc.getRDDStorageInfo.length)
   }
 
   def assertShuffleMemoryManagerBehavior(): Unit = {
     assert(SparkEnv.get.shuffleMemoryManager.tryToAcquire(1000) == 0)
   }
 
-  def runSparkJob2(): Unit = {
-    val rdd1 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8)).persist(StorageLevel.MEMORY_ONLY)
-    rdd1.count
-    assert(!sc.getRDDStorageInfo.isEmpty)
-    println("rdd1 " + rdd1.id)
+  def getInMemorySizeForCachedRDDs: Long = {
+    val rddInfo: Array[RDDInfo] = sc.getRDDStorageInfo
+    var sum = 0L;
+    for (i <- 0 to rddInfo.length - 1) {
+      sum = sum + rddInfo(i).memSize
+    }
+    sum
   }
 
-  def runSparkJobWithEvictionUp(): Unit = {
-    val rdd2 = sc.makeRDD(Array(1)).persist(StorageLevel.MEMORY_ONLY)
-    rdd2.count
-    assert(!sc.getRDDStorageInfo.isEmpty)
-    assert(sc.getRDDStorageInfo.size == 1)
+  def runSparkJobAfterThresholdBreach(): Unit = {
+    val sum1: Long = getInMemorySizeForCachedRDDs
+    println("1. cached rdd mem size before caching rdd when critical or eviction up = " + sum1)
 
-    val rdd3 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8)).persist(StorageLevel.MEMORY_ONLY)
-    rdd3.count
-    assert(!sc.getRDDStorageInfo.isEmpty)
-    assert(sc.getRDDStorageInfo.size == 1)
+    val rdd2 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
+    println(rdd2.count)
+    val sum2: Long = getInMemorySizeForCachedRDDs
+    println("2. cached rdd mem size after caching first rdd when critical or eviction up = " + sum2)
+    // make sure that after eviction up new rdd being cached does not result in
+    // increased memory usage
+    assert(!(sum2 > sum1))
+
+    val rdd3 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
+    println(rdd3.count)
+    val sum3: Long = getInMemorySizeForCachedRDDs
+    println("3. cached rdd mem size after caching second rdd when critical or eviction up = " + sum3)
+    // make sure that after eviction up new rdd being cached does not result in
+    // increased memory usage
+    assert(!(sum3 > sum2))
   }
-
+  
   def raiseCriticalUpMemoryEvent(): Unit = {
     println("About to raise CRITICAL UP event")
     val gfCache: GemFireCacheImpl = Misc.getGemFireCache
     val resMgr: InternalResourceManager = gfCache.getResourceManager
+    HeapMemoryMonitor.setTestDisableMemoryUpdates(true)
     resMgr.getHeapMonitor.setTestMaxMemoryBytes(100)
-    HeapMemoryMonitor.setTestBytesUsedForThresholdSet(90)
+    HeapMemoryMonitor.setTestBytesUsedForThresholdSet(92)
     resMgr.setCriticalHeapPercentage(90F)
 
     resMgr.getHeapMonitor().updateStateAndSendEvent(92);
@@ -105,11 +105,22 @@ object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
     println("About to raise EVICTION UP event")
     val gfCache: GemFireCacheImpl = Misc.getGemFireCache
     val resMgr: InternalResourceManager = gfCache.getResourceManager
+    HeapMemoryMonitor.setTestDisableMemoryUpdates(true)
     resMgr.getHeapMonitor.setTestMaxMemoryBytes(100)
     HeapMemoryMonitor.setTestBytesUsedForThresholdSet(90)
-    resMgr.setEvictionHeapPercentage(60)
-    resMgr.getHeapMonitor().updateStateAndSendEvent(70);
+    resMgr.setEvictionHeapPercentage(40F)
+    resMgr.getHeapMonitor().updateStateAndSendEvent(85);
     println("EVICTION UP event sent")
 
+  }
+
+  def resetGFResourceManager(): Unit = {
+    val service = ServiceManager.currentFabricServiceInstance
+    if (service != null) {
+      val gfCache: GemFireCacheImpl = Misc.getGemFireCache
+      val resMgr: InternalResourceManager = gfCache.getResourceManager
+      resMgr.getHeapMonitor.setTestMaxMemoryBytes(0)
+      resMgr.getHeapMonitor.updateStateAndSendEvent(10)
+    }
   }
 }
