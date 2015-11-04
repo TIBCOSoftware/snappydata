@@ -1,31 +1,23 @@
 package org.apache.spark.sql.store.impl
 
-import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet}
+import java.sql.Connection
 import java.util.Properties
-import java.util.concurrent.locks.ReentrantLock
+
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, ExecutorLocalPartition, UUIDRegionKey}
-import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
-import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore, ExternalStore}
-import org.apache.spark.sql.store.util.StoreUtils
-import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import scala.util.Random
+import org.apache.spark.rdd.{RDD, UnionRDD}
+import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, UUIDRegionKey}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType}
+import org.apache.spark.sql.store.util.StoreUtils
+import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore}
+import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /**
  * Columnar Store implementation for GemFireXD.
@@ -120,7 +112,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val rs = ps.executeQuery()
 
         new CachedBatchIteratorOnRS(conn, store.connectionType, requiredColumns, ps, rs)
-    }, closeOnSuccess = false)
+    }, closeOnSuccess = true)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

@@ -6,5 +6,6 @@ package org.apache.spark.sql.store
 object StoreProperties {
 
   val SNAPPY_STORE_JDBC_URL = "snappy.store.jdbc.url"
+  val DEFAULT_SNAPPY_STORE_JDBC_URL ="jdbc:snappydata:;"
 
 }

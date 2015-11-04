@@ -1,68 +1,54 @@
 package org.apache.spark.sql.rowtable
 
 
-import java.sql.Connection
 import java.util.Properties
 
-import scala.util.control.NonFatal
+import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.ddl.resolver.{GfxdPartitionByExpressionResolver, GfxdListPartitionResolver}
 
+import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.cluster.{CoarseGrainedSchedulerBackend, SnappyCoarseGrainedSchedulerBackend}
-import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql._
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
-
-import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-
-import org.apache.spark.sql.row.{MutableRelationProvider, JDBCMutableRelation}
+import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation, MutableRelationProvider}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.util.StoreUtils
-import org.apache.spark.sql.store.{StoreProperties, MembershipAccumulator, StoreInitRDD, StoreRDD}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-
-import org.apache.spark.{AccumulatorParam, Partition}
-
-import scala.collection.mutable
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
 class RowFormatRelation(
-                         override val url: String,
-                         override val table: String,
-                         override val provider: String,
-                         preservepartitions: Boolean,
-                         mode: SaveMode,
-                         userSpecifiedString: String,
-                         parts: Array[Partition],
-                         _poolProps: Map[String, String],
-                         override val connProperties: Properties,
-                         override val hikariCP: Boolean,
-                         override val origOptions: Map[String, String],
-                         blockMap : Map[InternalDistributedMember, BlockManagerId],
-                         @transient override val sqlContext: SQLContext)
-  extends JDBCMutableRelation(url,
-    table,
-    provider,
-    mode,
-    userSpecifiedString,
-    parts,
-    _poolProps,
-    connProperties,
-    hikariCP,
-    origOptions,
-    sqlContext) {
+    override val url: String,
+    override val table: String,
+    override val provider: String,
+    preservepartitions: Boolean,
+    mode: SaveMode,
+    userSpecifiedString: String,
+    parts: Array[Partition],
+    _poolProps: Map[String, String],
+    override val connProperties: Properties,
+    override val hikariCP: Boolean,
+    override val origOptions: Map[String, String],
+    blockMap: Map[InternalDistributedMember, BlockManagerId],
+    @transient override val sqlContext: SQLContext)
+    extends JDBCMutableRelation(url,
+      table,
+      provider,
+      mode,
+      userSpecifiedString,
+      parts,
+      _poolProps,
+      connProperties,
+      hikariCP,
+      origOptions,
+      sqlContext) {
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
@@ -92,10 +78,8 @@ class RowFormatRelation(
 }
 
 
-
 final class DefaultSource
-  extends MutableRelationProvider
-  {
+    extends MutableRelationProvider {
 
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
@@ -125,10 +109,16 @@ final class DefaultSource
     val ddlExtension = StoreUtils.ddlExtensionString(coptions)
     val schemaExtension = s"$schema $ddlExtension"
 
-    val blockMap = StoreUtils.initStore(sc, url, connProps)
+    val blockMap =
+      dialect match {
+        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case _ => Map.empty[InternalDistributedMember, BlockManagerId]
+      }
 
 
-    dialect match {// The driver if not a loner should be an accesor only
+
+    dialect match {
+      // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
         connProps.putAll(d.extraCreateTableProperties(SnappyContext(sc).isLoner))
     }
@@ -150,8 +140,9 @@ final class DefaultSource
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType) = {
-    val SNAPPY_STORE_JDBC_URL = sqlContext.sparkContext.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
-    val dialect = JdbcDialects.get(SNAPPY_STORE_JDBC_URL)
+    val (url, _, _, _, _) =
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
+    val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
     val allowExisting = options.get(JdbcExtendedUtils

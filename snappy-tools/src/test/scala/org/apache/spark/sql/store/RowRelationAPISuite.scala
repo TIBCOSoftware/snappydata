@@ -30,7 +30,7 @@ class RowRelationAPISuite extends FunSuite with Logging  with BeforeAndAfter{
     assert(count === 1000)
   }
 
-  test("Test Partitioned row tables") {
+ test("Test Partitioned row tables") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
     val rdd = sc.parallelize(

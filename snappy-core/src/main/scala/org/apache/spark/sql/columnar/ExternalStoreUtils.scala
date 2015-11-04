@@ -53,10 +53,12 @@ private[sql] object ExternalStoreUtils {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-    val SNAPPY_STORE_JDBC_URL = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
+    // First priority is for URL specified in SparkConf. If not we will check if user has provided that in
+    // options, else we will default it to Snappy peer connection URL
+    val snappyUrl = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
 
     val url = parameters.remove("url").getOrElse {
-      if (SNAPPY_STORE_JDBC_URL.isEmpty) sys.error("Option 'url' not specified") else SNAPPY_STORE_JDBC_URL
+      if (snappyUrl.isEmpty) StoreProperties.DEFAULT_SNAPPY_STORE_JDBC_URL else snappyUrl
     }
 
     val driver = parameters.remove("driver").map { d =>
