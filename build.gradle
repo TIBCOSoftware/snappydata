@@ -20,7 +20,7 @@ allprojects {
   repositories {
     maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
     mavenLocal()
-    maven { url "http://dl.bintray.com/spark-jobserver/maven" }
+    //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
@@ -304,6 +304,13 @@ task product {
     copy {
       from "${project(':snappy-spark').projectDir}/data"
       into "${productDir}/data"
+    }
+    copy {
+      from "${toolsProject.projectDir}/bin"
+      into "${productDir}/bin"
+      filter { line ->
+        line.replaceAll('__VERSION__', "${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}")
+      }
     }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"

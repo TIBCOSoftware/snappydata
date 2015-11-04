@@ -145,7 +145,7 @@ object ExecutorInitiator extends Logging {
               }
             }
           } catch {
-            case NonFatal(e) =>
+            case e@(NonFatal(_) | _: InterruptedException) =>
               try {
                 Misc.checkIfCacheClosing(e)
                 // log any exception other than those due to cache closing
@@ -154,7 +154,7 @@ object ExecutorInitiator extends Logging {
                 case NonFatal(e) => stopTask = true // just stop the task
               }
           }
-        }
+        } // end of while(true)
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
