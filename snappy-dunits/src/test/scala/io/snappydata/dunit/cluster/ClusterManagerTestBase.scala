@@ -32,7 +32,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val vm2 = host.getVM(2)
   val vm3 = host.getVM(3)
 
-  final def locatorPort = DistributedTestBase.getDUnitLocatorPort
+  final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   protected final def startArgs =
     Array(locatorPort, props).asInstanceOf[Array[AnyRef]]
 
