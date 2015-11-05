@@ -518,10 +518,10 @@ protected class SnappyContext(sc: SparkContext)
     object StreamQueryStrategy extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
         case LogicalDStreamPlan(output, stream) =>
-          PhysicalDStreamPlan(output, stream.asInstanceOf[DStream[Row]]) :: Nil
+          PhysicalDStreamPlan(output, stream.asInstanceOf[DStream[InternalRow]]) :: Nil
         case WindowLogicalPlan(d, s, child) =>
           WindowPhysicalPlan(d, s, planLater(child)) :: Nil
-        case l@LogicalRelation(t: StreamPlan) =>
+        case l @LogicalRelation(t: StreamPlan) =>
           PhysicalDStreamPlan(l.output, t.stream) :: Nil
         case _ => Nil
       }
@@ -735,9 +735,9 @@ object SnappyContext {
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
-    "socket" -> classOf[streaming.SocketStreamSource].getCanonicalName,
-    "file" -> classOf[streaming.FileStreamSource].getCanonicalName,
-    "kafka" -> classOf[streaming.KafkaStreamSource].getCanonicalName
+    "socket-stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
+    "file-stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
+    "kafka-stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName
   )
 
   def apply(sc: SparkContext): SnappyContext = {
