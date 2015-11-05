@@ -58,14 +58,12 @@ private[sql] object ExternalStoreUtils {
     val snappyUrl = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
 
     val url = parameters.remove("url").getOrElse {
-      if (snappyUrl.isEmpty) StoreProperties.DEFAULT_SNAPPY_STORE_JDBC_URL else snappyUrl
+      if (snappyUrl.isEmpty) StoreProperties.defaultStoreURL(sc) else snappyUrl
     }
 
-    val driver = parameters.remove("driver").map { d =>
-      // register for this case
-      DriverRegistry.register(d)
-      d
-    }.orElse(getDriver(url))
+    val driver = parameters.remove("driver").orElse(getDriver(url))
+
+    driver.foreach(DriverRegistry.register)
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")

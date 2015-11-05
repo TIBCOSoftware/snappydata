@@ -36,12 +36,14 @@ class LocalSQLContext
       "local[2]",
       "TestSQLContext",
       new SparkConf()
-         //.set("snappy.store.jdbc.url","jdbc:gemfirexd:;mcast-port=33619;user=app;password=app")
-        .set("spark.sql.unsafe.enabled", "false")
+          .set("spark.sql.unsafe.enabled", "false")
+
     )) {
-
-
 
 }
 
-object SnappySQLContext extends LocalSQLContext
+object TestSqlContext {
+  def newSparkContext = new LocalSQLContext().sparkContext
+}
+
+

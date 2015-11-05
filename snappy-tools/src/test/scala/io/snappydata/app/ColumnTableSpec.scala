@@ -1,20 +1,33 @@
 package io.snappydata.app
 
-import io.snappydata.core.SnappySQLContext
+import io.snappydata.core.{TestSqlContext, LocalSQLContext}
 
-import org.apache.spark.Logging
-import org.scalatest.FunSuite
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{SparkContext, Logging}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 /**
  * Created by skumar on 17/9/15
  */
-class ColumnTablePersistSpec extends FunSuite with Logging {
+class ColumnTablePersistSpec extends FunSuite with Logging with BeforeAndAfterAll{
 
-  private val testSparkContext = SnappySQLContext.sparkContext
+  var sc : SparkContext= null
+
+
+  override def afterAll(): Unit = {
+    sc.stop()
+
+  }
+
+  override def beforeAll(): Unit = {
+    if (sc == null) {
+      sc = TestSqlContext.newSparkContext
+    }
+  }
 
   test(""" This test will create simple table""") {
 
-    val snc = org.apache.spark.sql.SnappyContext(testSparkContext)
+    val snc = org.apache.spark.sql.SnappyContext(sc)
     val props = Map(
       "url" -> "jdbc:gemfirexd:;locators=10.112.204.54:10101;user=app;password=app",
       "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
@@ -24,7 +37,7 @@ class ColumnTablePersistSpec extends FunSuite with Logging {
     )
 
     val data = Seq(Seq(1, "1"), Seq(7, "8"))
-    val rdd = testSparkContext.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.registerTempTable("temp_table")
 

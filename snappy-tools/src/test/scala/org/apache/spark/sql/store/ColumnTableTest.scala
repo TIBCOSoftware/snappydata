@@ -1,27 +1,38 @@
-package io.snappydata.app
+package org.apache.spark.sql.store
 
-import java.sql.DriverManager
+import io.snappydata.core.{Data, TestSqlContext}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
 
-import io.snappydata.core.{FileCleaner, SnappySQLContext}
-
-import org.apache.spark.Logging
-import org.apache.spark.sql.{AnalysisException, SaveMode}
-import org.apache.spark.streaming.{Duration, Seconds}
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Created by Suranjan on 14/10/15.
  */
-class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
+class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter{
 
-  private val sc = SnappySQLContext.sparkContext
+  var sc : SparkContext= null
+
+  var snc: SnappyContext = null
+
+  override def afterAll(): Unit = {
+    sc.stop()
+
+  }
+
+  override def beforeAll(): Unit = {
+    if (sc == null) {
+      sc = TestSqlContext.newSparkContext
+      snc = SnappyContext(sc)
+    }
+  }
 
   val tableName : String = "ColumnTable"
 
   val props = Map.empty[String, String]
 
 
-  val snc = org.apache.spark.sql.SnappyContext(sc)
+
 
   after {
     snc.dropExternalTable(tableName, true)

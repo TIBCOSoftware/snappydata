@@ -5,7 +5,8 @@ import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.jdbc.JdbcTestBase
-import io.snappydata.core.SnappySQLContext
+import io.snappydata.app.LocalSQLContext
+
 
 import org.apache.spark.sql.{SaveMode, Row}
 import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerType}
@@ -15,7 +16,7 @@ import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerT
  */
 class BasicStoreTest(s: String) extends TestUtil(s) {
 
-  private val sc = SnappySQLContext.sparkContext
+
   override protected def tearDown(): Unit = {
     val conn = TestUtil.getConnection
     try {
@@ -27,7 +28,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     conn.close()
   }
 
-  @throws(classOf[Exception])
+ @throws(classOf[Exception])
   def testStringAsDatatype_runInXD {
     val conn: Connection = TestUtil.getConnection
     val st: Statement = conn.createStatement
@@ -54,7 +55,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   @throws(classOf[Exception])
   def testStringAsDatatype_runInSpark {
 
-
+    val sc = new LocalSQLContext().sparkContext
 
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     snContext.sql("set spark.sql.shuffle.partitions=6")
@@ -84,6 +85,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     doPrint("=============== RESULTS START ===============")
     result.collect.foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
+    sc.stop()
   }
 
   def verifyRows(r: Row) : Unit = {
@@ -92,7 +94,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   }
 
   // Copy from BugsTest to verify basic JUnit is running in Scala
-  @throws(classOf[Exception])
+ @throws(classOf[Exception])
   def testBug47329 {
     val conn: Connection = TestUtil.getConnection
     val st: Statement = conn.createStatement

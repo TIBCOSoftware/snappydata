@@ -1,19 +1,32 @@
 package org.apache.spark.sql.store
 
+
+
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.core.{FileCleaner, TestData2, SnappySQLContext, TestData}
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import io.snappydata.core.{TestSqlContext, LocalSQLContext, TestData, TestData2}
+import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Tests for ROW stores
  */
-class RowRelationAPISuite extends FunSuite with Logging  with BeforeAndAfter{
+class RowRelationAPISuite extends FunSuite with Logging  with BeforeAndAfterAll{
 
-  private val sc = SnappySQLContext.sparkContext
+  var sc : SparkContext= null
+
+  override def afterAll(): Unit = {
+    sc.stop()
+
+  }
+
+  override def beforeAll(): Unit = {
+    if (sc == null) {
+      sc = TestSqlContext.newSparkContext
+    }
+  }
 
   val props = Map.empty[String, String]
 
