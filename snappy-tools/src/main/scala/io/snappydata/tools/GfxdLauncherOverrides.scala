@@ -35,6 +35,9 @@ class LocatorLauncher(baseName: String) extends GfxdDistributionLocator(baseName
   @throws(classOf[Exception])
   override protected def getFabricServiceInstance: FabricService = ServiceManager.getLocatorInstance
 
+  override protected def run (args : Array[String]) : Unit  ={
+    super.run(args)
+  }
 }
 
 object LocatorLauncher {
