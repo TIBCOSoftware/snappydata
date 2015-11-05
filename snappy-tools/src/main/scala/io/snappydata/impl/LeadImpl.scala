@@ -1,6 +1,5 @@
 package io.snappydata.impl
 
-import java.io.File
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
@@ -11,7 +10,7 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.NetworkInterface
-import com.typesafe.config.{ConfigFactory, Config}
+import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.{Lead, LocalizedMessages, Utils}
 import org.slf4j.LoggerFactory
 import spark.jobserver.JobServer
@@ -30,8 +29,9 @@ class LeadImpl extends ServerImpl with Lead {
 
     val gfCache = GemFireCacheImpl.getInstance
 
-    if (gfCache == null || gfCache.isClosed)
+    if (gfCache == null || gfCache.isClosed) {
       throw new Exception("GemFire Cache not initialized")
+    }
 
     val dSys = gfCache.getDistributedSystem.asInstanceOf[InternalDistributedSystem]
 
@@ -47,28 +47,29 @@ class LeadImpl extends ServerImpl with Lead {
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
   @throws(classOf[SQLException])
-  override def start(bootProperties: Properties, ignoreIfStarted: Boolean) = this.synchronized {
-    this.bootProperties = initStartupArgs(bootProperties)
-    super.start(this.bootProperties, ignoreIfStarted)
+  override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit =
+    this.synchronized {
+      this.bootProperties = initStartupArgs(bootProperties)
+      super.start(this.bootProperties, ignoreIfStarted)
 
-    status() match {
-      case State.RUNNING =>
-        genericLogger.info("Initiating startup of additional lead node services...")
-        // check for leader's primary election
-        primaryLeaderLock.tryLock() match {
-          case true =>
-            startAddOnServices(bootProperties)
-          case false =>
-            serverstatus = State.STANDBY
-            primaryLeadNodeWaiter.start()
-        }
-      case _ =>
-        genericLogger.warn(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
+      status() match {
+        case State.RUNNING =>
+          genericLogger.info("Initiating startup of additional lead node services...")
+          // check for leader's primary election
+          primaryLeaderLock.tryLock() match {
+            case true =>
+              startAddOnServices(bootProperties)
+            case false =>
+              serverstatus = State.STANDBY
+              primaryLeadNodeWaiter.start()
+          }
+        case _ =>
+          genericLogger.warn(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
+      }
     }
-  }
 
   @throws(classOf[SQLException])
-  override def stop(shutdownCredentials: Properties) = {
+  override def stop(shutdownCredentials: Properties): Unit = {
     primaryLeadNodeWaiter.interrupt()
     super.stop(shutdownCredentials)
   }
@@ -76,7 +77,8 @@ class LeadImpl extends ServerImpl with Lead {
   override def waitUntilPrimary(): Unit = synchronized {
     status() match {
       case State.STANDBY => latch.await()
-      case _ => genericLogger.warn("not waiting because server not in standby mode. status is " + status())
+      case _ => genericLogger.warn("not waiting because server not in standby mode. status is "
+        + status())
     }
   }
 
@@ -132,22 +134,22 @@ class LeadImpl extends ServerImpl with Lead {
 
     genericLogger.info("Starting job server...")
 
-    def getConfig(args: Array[String]) : Config = {
+    def getConfig(args: Array[String]): Config = {
 
-//      System.setProperty("config.trace", "loads")
+      //      System.setProperty("config.trace", "loads")
 
       val notConfigurable = ConfigFactory.parseResources("jobserver-overrides.conf")
 
       val bootConfig = notConfigurable.withFallback(ConfigFactory.parseProperties(bootProperties))
 
       val snappyDefaults = bootConfig.withFallback(
-          ConfigFactory.parseResources("jobserver-defaults.conf"))
+        ConfigFactory.parseResources("jobserver-defaults.conf"))
 
       val builtIn = ConfigFactory.load()
 
       val finalConf = snappyDefaults.withFallback(builtIn).resolve()
 
-//      System.out.println("SB: Passing JobServer with config ", finalConf.root.render())
+      //      System.out.println("SB: Passing JobServer with config ", finalConf.root.render())
 
       finalConf
     }
@@ -165,17 +167,23 @@ class LeadImpl extends ServerImpl with Lead {
   }
 
   @throws(classOf[SQLException])
-  override def startNetworkServer(bindAddress: String, port: Int, networkProperties: Properties): NetworkInterface = {
+  override def startNetworkServer(bindAddress: String,
+                                  port: Int,
+                                  networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Network server cannot be started on lead node.")
   }
 
   @throws(classOf[SQLException])
-  override def startThriftServer(bindAddress: String, port: Int, networkProperties: Properties): NetworkInterface = {
+  override def startThriftServer(bindAddress: String,
+                                 port: Int,
+                                 networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Thrift server cannot be started on lead node.")
   }
 
   @throws(classOf[SQLException])
-  override def startDRDAServer(bindAddress: String, port: Int, networkProperties: Properties): NetworkInterface = {
+  override def startDRDAServer(bindAddress: String,
+                               port: Int,
+                               networkProperties: Properties): NetworkInterface = {
     throw new SQLException("DRDA server cannot be started on lead node.")
   }
 
