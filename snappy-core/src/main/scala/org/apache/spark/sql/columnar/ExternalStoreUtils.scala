@@ -2,8 +2,11 @@ package org.apache.spark.sql.columnar
 
 import java.sql.Connection
 import java.util.Properties
+import javax.jnlp.ServiceManager
 
 import org.apache.spark.SparkContext
+import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
+import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.store.StoreProperties
 
 
@@ -119,13 +122,21 @@ private[sql] object ExternalStoreUtils {
   def getConnectionType(url: String) = {
     JdbcDialects.get(url) match {
       case GemFireXDDialect => ConnectionType.Embedded
-      case GemFireXDClientDialect => ConnectionType.Net
+      case GemFireXDClientDialect =>   ConnectionType.Net
       case _ => ConnectionType.Unknown
     }
+  }
+
+  def isExternalShellMode (sparkContext: SparkContext): Boolean ={
+    if (!sparkContext.schedulerBackend.isInstanceOf[LocalBackend] &&
+        !sparkContext.schedulerBackend.isInstanceOf[SnappyCoarseGrainedSchedulerBackend])
+       true
+    else
+      false
   }
 }
 
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
-  val Embedded, Net, Unknown = Value
+  val Embedded, Net, ExternalShell, Unknown = Value
 }

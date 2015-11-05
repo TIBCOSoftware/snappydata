@@ -42,14 +42,19 @@ final class JDBCSourceAsColumnarStore(_url: String,
         new ColumnarStorePartitionedRDD[CachedBatch](sparkContext,
           tableName, requiredColumns, this)
       case _ =>
-        var rddList = new ArrayBuffer[RDD[CachedBatch]]()
-        uuidList.foreach(x => {
-          val y = x.mapPartitions { uuidItr =>
-            getCachedBatchIterator(tableName, requiredColumns, uuidItr)
-          }
-          rddList += y
-        })
-        new UnionRDD[CachedBatch](sparkContext, rddList)
+        if (ExternalStoreUtils.isExternalShellMode(sparkContext))
+          new ShellPartitionedRDD[CachedBatch](sparkContext,
+            connection.getSchema, tableName, requiredColumns, this)
+        else {
+          var rddList = new ArrayBuffer[RDD[CachedBatch]]()
+          uuidList.foreach(x => {
+            val y = x.mapPartitions { uuidItr =>
+              getCachedBatchIterator(tableName, requiredColumns, uuidItr)
+            }
+            rddList += y
+          })
+          new UnionRDD[CachedBatch](sparkContext, rddList)
+        }
     }
   }
 

@@ -119,27 +119,24 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     logInfo("default warehouse location is " + warehouse)
 
-    val sparkConf = context.sparkContext.conf
-    //val dburl = sparkConf.get("gemfirexd.db.url")
-    //val driver = sparkConf.get("gemfirexd.db.driver")
-    /*
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-      "jdbc:gemfirexd://localhost:1527")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      "com.pivotal.gemfirexd.jdbc.ClientDriver")
-    */
-    // `configure` goes second to override other settings.
-    // `configure` goes second to override other settings.
-    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
+
+/*    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         sparkConf.get("gemfirexd.db.url"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
         sparkConf.get("gemfirexd.db.driver"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         "APP")
-    }
-    //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
+    }*/
 
+
+    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
+      "jdbc:snappydata:")
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+      "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+      "APP")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
