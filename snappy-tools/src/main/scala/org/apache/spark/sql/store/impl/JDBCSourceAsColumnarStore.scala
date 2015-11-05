@@ -117,7 +117,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val rs = ps.executeQuery()
 
         new CachedBatchIteratorOnRS(conn, store.connectionType, requiredColumns, ps, rs)
-    }, closeOnSuccess = true)
+    }, closeOnSuccess = false)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

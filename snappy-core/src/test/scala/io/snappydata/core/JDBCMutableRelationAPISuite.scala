@@ -13,11 +13,13 @@ class JDBCMutableRelationAPISuite extends FunSuite with Logging with BeforeAndAf
 
   var sc : SparkContext= null
 
+  val path = "target/JDBCMutableRelationAPISuite"
+
   override def afterAll(): Unit = {
     sc.stop()
 
     try {
-      DriverManager.getConnection("jdbc:derby:target/JDBCMutableRelationAPISuite;shutdown=true")
+      DriverManager.getConnection(s"jdbc:derby:$path;shutdown=true")
     } catch {
       // Throw if not normal single database shutdown
       // https://db.apache.org/derby/docs/10.2/ref/rrefexcept71493.html
@@ -27,18 +29,20 @@ class JDBCMutableRelationAPISuite extends FunSuite with Logging with BeforeAndAf
         }
       }
     }
+    FileCleaner.cleanFile(path)
+    FileCleaner.cleanStoreFiles()
   }
 
   override def beforeAll(): Unit = {
     sc = new LocalSQLContext().sparkContext
-    DriverManager.getConnection("jdbc:derby:target/JDBCMutableRelationAPISuite;create=true")
+    DriverManager.getConnection(s"jdbc:derby:$path;create=true")
   }
 
   test("Create table in an external DataStore in Non-Embedded mode") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
     val props = Map(
-      "url" -> "jdbc:derby:target/JDBCMutableRelationAPISuite",
+      "url" -> s"jdbc:derby:$path",
       "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
       "poolImpl" -> "tomcat",
       "user" -> "app",

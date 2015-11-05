@@ -353,7 +353,9 @@ with CreatableRelationProvider {
   }
 
   def getRelation(sqlContext: SQLContext, options : Map[String, String]) : ColumnarRelationProvider = {
-    val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
+
+    val (url, _, _, _, _) =
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
 
     val clazz = JdbcDialects.get(url) match {
       case d: GemFireXDBaseDialect => {

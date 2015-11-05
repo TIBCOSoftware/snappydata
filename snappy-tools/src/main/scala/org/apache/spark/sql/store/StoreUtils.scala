@@ -75,9 +75,10 @@ object StoreUtils {
 
     for (p <- 0 until numPartitions) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p)
+      val withBlockManagers = distMembers.filter(d => blockMap.contains(d))
 
-      val prefNodes = distMembers.map(
-        distMember => blockMap.get(distMember)
+      val prefNodes = withBlockManagers.map(
+        m => blockMap.get(m)
       )
 
       val prefNodeSeq = prefNodes.map(a => a.get).toSeq
@@ -108,10 +109,12 @@ object StoreUtils {
       Misc.getGemFireCache.getMembers(region)
     }
 
+    val withBlockManagers = distMembers.filter(d => blockMap.contains(d))
+
     for (p <- 0 until numPartitions) {
 
-      val prefNodes = distMembers.map(
-        distMember => blockMap.get(distMember)
+      val prefNodes = withBlockManagers.map(
+        m => blockMap.get(m)
       ).toSeq
 
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodes)

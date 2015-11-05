@@ -4,7 +4,7 @@ package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.core.{TestSqlContext, LocalSQLContext, TestData, TestData2}
+import io.snappydata.core.{FileCleaner, TestSqlContext, LocalSQLContext, TestData, TestData2}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import org.apache.spark.sql._
@@ -19,7 +19,7 @@ class RowRelationAPISuite extends FunSuite with Logging  with BeforeAndAfterAll{
 
   override def afterAll(): Unit = {
     sc.stop()
-
+    FileCleaner.cleanStoreFiles()
   }
 
   override def beforeAll(): Unit = {

@@ -9,15 +9,16 @@ import org.apache.spark.scheduler.local.LocalBackend
  */
 object StoreProperties {
 
+  private val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
 
   def defaultStoreURL(sc : SparkContext): String = {
 
-
    if (sc.master.startsWith("snappydata://") || sc.conf.contains("snappy.locators")) {
-      "jdbc:snappydata:;" // Embedded mode. Take a peer connection
+     DEFAULT_EMBEDDED_URL // Embedded mode. Take a peer connection
     } else {
      sc.schedulerBackend match {
-       case lb: LocalBackend => "jdbc:snappydata:;" //TDOD need to check with Soubhick for local mode
+       case lb: LocalBackend => DEFAULT_EMBEDDED_URL //TDOD need to check with Soubhick for local mode
+       case lb: SnappyCoarseGrainedSchedulerBackend => DEFAULT_EMBEDDED_URL
        case _ => sys.error("Option 'url' not specified")
      }
     }

@@ -23,9 +23,9 @@ object FileCleaner{
   }
 
   def cleanStoreFiles(): Unit ={
-    FileCleaner.cleanFile("./JdbcRDDSuiteDb")
     FileCleaner.cleanFile("./metastore_db")
     FileCleaner.cleanFile("./datadictionary")
+    FileCleaner.cleanFile("./warehouse")
   }
 }
 

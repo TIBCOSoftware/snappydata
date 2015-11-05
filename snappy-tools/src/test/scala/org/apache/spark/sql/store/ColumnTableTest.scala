@@ -1,6 +1,6 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.core.{Data, TestSqlContext}
+import io.snappydata.core.{FileCleaner, Data, TestSqlContext}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
 
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
@@ -17,6 +17,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
 
   override def afterAll(): Unit = {
     sc.stop()
+    FileCleaner.cleanStoreFiles()
 
   }
 

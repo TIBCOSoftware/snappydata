@@ -1,6 +1,7 @@
 package io.snappydata.gemxd
 
 import java.sql.{ResultSet, PreparedStatement, Statement, Connection}
+import java.util.Properties
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.TestUtil
@@ -18,7 +19,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
 
 
   override protected def tearDown(): Unit = {
-    val conn = TestUtil.getConnection
+    val conn = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     try {
       conn.createStatement().execute("drop table if exists t1")
     } catch {
@@ -30,7 +31,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
 
  @throws(classOf[Exception])
   def testStringAsDatatype_runInXD {
-    val conn: Connection = TestUtil.getConnection
+    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     val st: Statement = conn.createStatement
     var rs: ResultSet = null
     st.execute("create table t1 (c1 int primary key, c2 String)")
@@ -96,7 +97,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   // Copy from BugsTest to verify basic JUnit is running in Scala
  @throws(classOf[Exception])
   def testBug47329 {
-    val conn: Connection = TestUtil.getConnection
+    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     val st: Statement = conn.createStatement
     var rs: ResultSet = null
     st.execute("create table t1 (c1 int primary key, c2  varchar(10))")

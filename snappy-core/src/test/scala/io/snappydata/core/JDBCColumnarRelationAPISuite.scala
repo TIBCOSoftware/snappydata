@@ -12,11 +12,13 @@ class JDBCColumnarRelationAPISuite extends FunSuite with Logging with BeforeAndA
 
   var sc : SparkContext= null
 
+  val path = "target/JDBCColumnarRelationAPISuite"
+
   override def afterAll(): Unit = {
     sc.stop()
 
     try {
-      DriverManager.getConnection("jdbc:derby:target/JDBCColumnarRelationAPISuite;shutdown=true")
+      DriverManager.getConnection(s"jdbc:derby:$path;shutdown=true")
     } catch {
       // Throw if not normal single database shutdown
       // https://db.apache.org/derby/docs/10.2/ref/rrefexcept71493.html
@@ -26,13 +28,15 @@ class JDBCColumnarRelationAPISuite extends FunSuite with Logging with BeforeAndA
         }
       }
     }
+    FileCleaner.cleanFile(path)
+    FileCleaner.cleanStoreFiles()
   }
 
   override def beforeAll(): Unit = {
     if (sc == null) {
       sc = new LocalSQLContext().sparkContext
     }
-    DriverManager.getConnection("jdbc:derby:target/JDBCColumnarRelationAPISuite;create=true")
+    DriverManager.getConnection(s"jdbc:derby:$path;create=true")
   }
 
 
@@ -41,7 +45,7 @@ class JDBCColumnarRelationAPISuite extends FunSuite with Logging with BeforeAndA
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
     val props = Map(
-      "url" -> "jdbc:derby:target/JDBCColumnarRelationAPISuite",
+      "url" -> s"jdbc:derby:$path",
       "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
       "poolImpl" -> "tomcat",
       "user" -> "app",
