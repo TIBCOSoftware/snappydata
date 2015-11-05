@@ -215,7 +215,7 @@ class JDBCAppendableRelation(
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
             "primary key (uuid, bucketId)" , d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "")
+      case _ => ("primary key (uuid)", "") //TODO. How to get primary key contraint from each DB
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
@@ -353,8 +353,7 @@ with CreatableRelationProvider {
   }
 
   def getRelation(sqlContext: SQLContext, options : Map[String, String]) : ColumnarRelationProvider = {
-    val (url, _, _, _, _) =
-      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
+    val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
 
     val clazz = JdbcDialects.get(url) match {
       case d: GemFireXDBaseDialect => {

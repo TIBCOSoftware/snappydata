@@ -38,6 +38,7 @@ class LocalSQLContext
       new SparkConf()
           .set("spark.sql.unsafe.enabled", "false")
 
+
     )) {
 
 }

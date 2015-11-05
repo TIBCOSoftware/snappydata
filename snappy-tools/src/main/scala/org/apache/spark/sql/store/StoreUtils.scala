@@ -149,95 +149,26 @@ object StoreUtils {
       }
     }
 
-    appendClause(sb, () => {
-      val partitionby = options.getOrElse(PARTITION_BY, EMPTY_STRING)
-      if (partitionby.isEmpty){
-        EMPTY_STRING
-      }else{
-        val parclause =
-          if (partitionby.equals(PRIMARY_KEY)) {
-            PRIMARY_KEY
-          } else {
-            s"COLUMN ($partitionby)"
-          }
-        s"$GEM_PARTITION_BY $parclause"
+
+    sb.append(options.get(PARTITION_BY).map(v => {
+      val parClause = {
+        v match {
+          case PRIMARY_KEY => PRIMARY_KEY
+          case _ => s"COLUMN ($v)"
+        }
       }
-
-    })
-
-    appendClause(sb, () => {
-      if (options.get(BUCKETS).isDefined) {
-        s"$GEM_BUCKETS ${options.get(BUCKETS).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-
-    appendClause(sb, () => {
-      if (options.get(COLOCATE_WITH).isDefined) {
-        s"$GEM_COLOCATE_WITH ${options.get(COLOCATE_WITH).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-    appendClause(sb, () => {
-      if (options.get(REDUNDANCY).isDefined) {
-        s"$GEM_REDUNDANCY ${options.get(REDUNDANCY).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-
-    appendClause(sb, () => {
-      if (options.get(RECOVERYDELAY).isDefined) {
-        s"$GEM_RECOVERYDELAY ${options.get(RECOVERYDELAY).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-    appendClause(sb, () => {
-      if (options.get(MAXPARTSIZE).isDefined) {
-        s"$GEM_MAXPARTSIZE ${options.get(MAXPARTSIZE).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-    appendClause(sb, () => {
-      if (options.get(EVICTION_BY).isDefined) {
-        s"$GEM_EVICTION_BY ${options.get(EVICTION_BY).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-    appendClause(sb, () => {
-      if (options.get(PERSISTENT).isDefined) {
-        s"$GEM_PERSISTENT ${options.get(PERSISTENT).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-    appendClause(sb, () => {
-      if (options.get(SERVER_GROUPS).isDefined) {
-        s"$GEM_SERVER_GROUPS ${options.get(SERVER_GROUPS).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
-
-    appendClause(sb, () => {
-      if (options.get(OFFHEAP).isDefined) {
-        s"$GEM_OFFHEAP ${options.get(OFFHEAP).get}"
-      } else {
-        EMPTY_STRING
-      }
-    })
+      s"$GEM_PARTITION_BY $parClause "
+    }
+    ).getOrElse(EMPTY_STRING))
+    sb.append(options.get(BUCKETS).map(v => s"$GEM_BUCKETS $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ").getOrElse(EMPTY_STRING))
+    sb.append(options.get(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ").getOrElse(EMPTY_STRING))
 
     sb.toString()
   }
