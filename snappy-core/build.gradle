@@ -34,12 +34,12 @@ dependencies {
 }
 
 scalaTest {
-  maxParallelForks = 4
+  maxParallelForks = 1
   maxHeapSize '4g'
   dependsOn ':cleanScalaTest'
 }
 test {
-  maxParallelForks = 4
+  maxParallelForks = 1
   maxHeapSize '2g'
   dependsOn ':cleanJUnit'
 }

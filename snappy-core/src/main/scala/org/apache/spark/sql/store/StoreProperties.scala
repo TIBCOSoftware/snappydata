@@ -11,9 +11,15 @@ object StoreProperties {
   val SNAPPY_STORE_JDBC_URL = "snappy.store.jdbc.url"
 
   def defaultStoreURL(sc : SparkContext): String = {
+/*    if (sc.master.startsWith("snappydata://") || sc.conf.contains("snappy.locators")) {
+      // embedded mode
+      "jdbc:snappydata:;"
+    } else {
+
+    }*/
     sc.schedulerBackend match {
-      case lb: LocalBackend => "jdbc:gemfirexd:;mcast-port=0;"//TODO need to change  com.pivotal.gemfirexd.TestUtil to make it snappydata
-      case _ => "jdbc:gemfirexd:"
+      case lb: LocalBackend => "jdbc:snappydata:;mcast-port=0;"
+      case _ => "jdbc:snappydata:"
     }
   }
 

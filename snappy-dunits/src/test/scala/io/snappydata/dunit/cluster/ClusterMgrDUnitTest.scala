@@ -30,14 +30,14 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm0.invoke(this.getClass, "stopAny")
     Thread.sleep(5000)
 
-    // Start the lead node in another JVM. The executors should
+    /*// Start the lead node in another JVM. The executors should
     // connect with this new lead.
     // In this case servers are already running and a lead comes
     // and join
     vm3.invoke(this.getClass, "startSnappyLead", startArgs)
     vm3.invoke(this.getClass, "startSparkJob")
     vm3.invoke(this.getClass, "startGemJob")
-    Thread.sleep(10000)
+    Thread.sleep(10000)*/
   }
 }
 

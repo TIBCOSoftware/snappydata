@@ -4,6 +4,8 @@ import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
+import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.ExecutorLocalPartition
@@ -20,7 +22,7 @@ import org.apache.spark.rdd.RDD
  * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's standalone cluster.
  * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
  */
-class StoreInitRDD(sc: SparkContext, url: String,
+class StoreInitRDD(@transient sc: SparkContext, url: String,
     val connProperties: Properties)
     (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
     extends RDD[InternalRow](sc, Nil) {
@@ -50,11 +52,7 @@ class StoreInitRDD(sc: SparkContext, url: String,
     Iterator.empty
   }
 
-  /**
-   * Implemented by subclasses to return the set of partitions in this RDD. This method will only
-   * be called once, so it is safe to implement a time-consuming computation in it.
-   */
-  override protected def getPartitions: Array[Partition] = {
+  protected def getSparkPartitions: Array[Partition] = {
     //TODO : Find a cleaner way of starting all executors.
     val partitions = new Array[Partition](100)
     for (p <- 0 until 100) {
@@ -62,5 +60,30 @@ class StoreInitRDD(sc: SparkContext, url: String,
     }
     partitions
   }
+
+  override def getPartitions: Array[Partition] = {
+    sc.schedulerBackend match {
+      case lb: SnappyCoarseGrainedSchedulerBackend => getPeerPartitions
+      case _ => getSparkPartitions
+    }
+  }
+
+  def getPeerPartitions(): Array[Partition] = {
+    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sc).
+        keySet.zipWithIndex
+
+    if (numberedPeers.nonEmpty) {
+      numberedPeers.map {
+        case (bid, idx) => createPartition(idx, bid)
+      }.toArray[Partition]
+    } else {
+      Array.empty[Partition]
+    }
+  }
+
+  def createPartition(index: Int,
+      blockId: BlockManagerId): ExecutorLocalPartition =
+    new ExecutorLocalPartition(index, blockId)
+
 
 }

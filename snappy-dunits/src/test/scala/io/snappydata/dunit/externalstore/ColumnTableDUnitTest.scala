@@ -37,15 +37,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 object ColumnTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "ColumnTable"
 
-  val props = Map(
-    //"url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "url" -> "jdbc:snappydata:;user=app;password=app",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-    //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-    "poolImpl" -> "tomcat",
-    "user" -> "app",
-    "password" -> "app"
-  )
+  val props = Map.empty[String,String]
 
   def startSparkJob(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
