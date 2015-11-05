@@ -32,3 +32,8 @@
 # - SPARK_PUBLIC_DNS, to set the public DNS name of the driver program
 # - SPARK_CLASSPATH, default classpath entries to append
 # - SPARK_LOCAL_DIRS, storage directories to use on this node for shuffle and RDD data
+
+# Options read by Snappy servers, leads and locators
+# - LOCATOR_STARTUP_OPTIONS, options and properties that are passed to all the locators.
+# - SERVER_STARTUP_OPTIONS, options and properties that are passed to all the snappy servers
+# - LEAD_STARTUP_OPTIONS, options and properties that are passed to all the lead opts.

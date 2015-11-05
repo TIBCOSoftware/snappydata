@@ -161,7 +161,8 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
     if grep -q " start"<<< $"${@// /\\ }" ; then
       hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
       # Set a default locator if not already specified
-      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] ; then
+      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] &&
+        [[ $"${@// /\\ }"  != *"-locators"* ]];then
         locatorParam="-locators="$(hostname)":10334"
       fi
     fi
@@ -171,7 +172,8 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
     if grep -q " start"<<< $"${@// /\\ }" ; then
       hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f3-)"
       # Set a default locator if not already specified
-      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] ; then
+      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] &&
+        [[ $"${@// /\\ }"  != *"-locators"* ]];then
         locatorParam="-locators="$(hostname)":10334"
       fi
     fi

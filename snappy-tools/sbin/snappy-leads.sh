@@ -29,4 +29,8 @@ sbin="`cd "$sbin"; pwd`"
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
 
 # Launch the slaves
-"$sbin/snappy-nodes.sh" lead cd "$SPARK_HOME" \; "$sbin/snappy-lead.sh" "$@"
+if [[ $@ == *"start"* ]] ; then
+  "$sbin/snappy-nodes.sh" lead cd "$SPARK_HOME" \; "$sbin/snappy-lead.sh" $@ $LEAD_STARTUP_OPTIONS
+else
+  "$sbin/snappy-nodes.sh" lead cd "$SPARK_HOME" \; "$sbin/snappy-lead.sh" $@
+fi
