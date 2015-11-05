@@ -732,6 +732,8 @@ object SnappyContext {
     val gc = globalContext
     if (gc == sc) {
       new SnappyContext(sc)
+    } else if (sc == null)  {
+      new SnappyContext(gc)
     } else contextLock.synchronized {
       val gc = globalContext
       if (gc == sc) {

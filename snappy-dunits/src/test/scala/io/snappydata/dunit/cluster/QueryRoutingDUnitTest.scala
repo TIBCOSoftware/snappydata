@@ -22,13 +22,15 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def testQueryRouting(): Unit = {
     // Lead is started before other servers are started.
     //vm0.invoke(this.getClass, "startSnappyLead", Array.fill[AnyRef](1)(Integer.valueOf(locatorPort)))
-    vm1.invoke(this.getClass, "startSnappyServer")
-    vm0.invoke(this.getClass, "startSnappyLead")
+    QueryRoutingDUnitTest.startSnappyServer(locatorPort, props)
+    //vm1.invoke(this.getClass, "startSnappyServer", startArgs)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     //vm2.invoke(this.getClass, "startSnappyServer")
     val netport1 = AvailablePortHelper.getRandomAvailableTCPPort
     //val netport2 = AvailablePortHelper.getRandomAvailableTCPPort
-    vm1.invoke(this.getClass, "startNetServer", Array.fill[AnyRef](1)(Integer.valueOf(netport1)))
+    //vm1.invoke(this.getClass, "startNetServer", Array(Integer.valueOf(netport1).asInstanceOf[AnyRef]))
     //vm2.invoke(this.getClass, "startNetServer", Array.fill[AnyRef](1)(Integer.valueOf(netport2)))
+    QueryRoutingDUnitTest.startNetServer(netport1)
 
     // Execute the job
     vm0.invoke(this.getClass, "createTablesAndInsertData")
@@ -45,12 +47,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     println("KN: total count is = " + cnt)
     assert(cnt == 5)
-    // Stop the lead node
-    vm0.invoke(this.getClass, "stopSnappyLead")
-    //Thread.sleep(5000)
-
-    vm2.invoke(this.getClass, "stopSnappyServer")
-    vm1.invoke(this.getClass, "stopSnappyServer")
   }
 }
 
