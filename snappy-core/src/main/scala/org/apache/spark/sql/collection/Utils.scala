@@ -434,3 +434,16 @@ private[spark] class CoGroupExecutorLocalPartition(
 
   override def hashCode(): Int = idx
 }
+
+
+class ExecutorLocalShellPartition(override val index: Int, val hostList: Array[(String, String)])
+  extends Partition {
+  override def toString = s"ExecutorLocalShellPartition($index, " + hostList(index)._1 + ")"
+
+  def getHostMap: Map[String, String] = {
+    var hostMap: Map[String, String] = Map()
+    hostList.foreach(t => hostMap += t)
+    hostMap
+  }
+
+}
