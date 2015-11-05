@@ -44,7 +44,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
       case _ =>
         if (ExternalStoreUtils.isExternalShellMode(sparkContext))
           new ShellPartitionedRDD[CachedBatch](sparkContext,
-            connection.getSchema, tableName, requiredColumns, this)
+            getConnection(tableName).getSchema, tableName, requiredColumns, this)
         else {
           var rddList = new ArrayBuffer[RDD[CachedBatch]]()
           uuidList.foreach(x => {

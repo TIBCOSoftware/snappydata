@@ -1,6 +1,7 @@
 package io.snappydata.dunit.cluster
 
 import java.io.File
+import java.net.InetAddress
 import java.sql.DriverManager
 import java.util.Properties
 
@@ -32,7 +33,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val vm2 = host.getVM(2)
   val vm3 = host.getVM(3)
 
-  final def locatorPort = ClusterManagerTestBase.locatorPort
+  def locatorPort = ClusterManagerTestBase.locatorPort
   protected final def startArgs =
     Array(locatorPort, props).asInstanceOf[Array[AnyRef]]
 
@@ -128,13 +129,18 @@ class ClusterManagerTestUtils {
   /**
    * Start a snappy server. Any number of snappy servers can be started.
    */
-  def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
-    props.setProperty("locators", "localhost[" + locatorPort + ']')
+  def startSnappyServer(locatorPort: Int, props: Properties , startNetworkServer:Boolean = false): Unit = {
     val server: Server = ServiceManager.getServerInstance
 
     server.start(props)
 
     assert(server.status == FabricService.State.RUNNING)
+
+    if (startNetworkServer) {
+      server.startNetworkServer(InetAddress.getLocalHost.getHostName,
+        AvailablePortHelper.getRandomAvailableTCPPort, null)
+    }
+
   }
 
   def stopSpark(): Unit = {

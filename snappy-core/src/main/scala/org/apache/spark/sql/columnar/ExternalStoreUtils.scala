@@ -2,11 +2,11 @@ package org.apache.spark.sql.columnar
 
 import java.sql.Connection
 import java.util.Properties
-import javax.jnlp.ServiceManager
 
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
 import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.store.StoreProperties
 
 
@@ -60,9 +60,13 @@ private[sql] object ExternalStoreUtils {
     // options, else we will default it to Snappy peer connection URL
     val snappyUrl = sc.getConf.get(StoreProperties.SNAPPY_STORE_JDBC_URL, "")
 
-    val url = parameters.remove("url").getOrElse {
-      if (snappyUrl.isEmpty) StoreProperties.DEFAULT_SNAPPY_STORE_JDBC_URL else snappyUrl
-    }
+    val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
+      val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.Utils")
+      clazz.getMethod("getLocatorClientURL").invoke(clazz.newInstance()).asInstanceOf[String] }
+    else
+      parameters.remove("url").getOrElse {
+        if (snappyUrl.isEmpty) StoreProperties.DEFAULT_SNAPPY_STORE_JDBC_URL else snappyUrl
+      }
 
     val driver = parameters.remove("driver").map { d =>
       // register for this case
