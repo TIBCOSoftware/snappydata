@@ -26,6 +26,9 @@ dependencies {
   compile 'com.zaxxer:HikariCP-java6:2.3.9'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+  testRuntime 'org.pegdown:pegdown:1.1.0'
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     testRuntime project(':snappy-store:gemfirexd:client')
   } else {
