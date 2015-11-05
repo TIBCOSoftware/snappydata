@@ -1,36 +1,82 @@
 package org.apache.spark.sql.streaming
 
+import kafka.serializer.StringDecoder
 import org.apache.spark.Logging
-import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, SQLContext}
-import org.apache.spark.streaming.{StreamingContextState, Time, Duration}
+import org.apache.spark.sql.{AnalysisException, SQLContext}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-
-import scala.reflect.ClassTag
+import org.apache.spark.streaming.kafka.KafkaUtils
 
 /**
  * Created by ymahajan on 25/09/15.
  */
-case class KafkaStreamRelation[T](dStream: DStream[T],
-                                  options: Map[String, Any],
-                                  formatter: (RDD[T], StructType) => RDD[Row],
-                                  override val schema: StructType,
-                                  @transient override val sqlContext: SQLContext)
-                                 (implicit val ct: ClassTag[T])
-  extends BaseRelation with TableScan with DeletableRelation
-  with DestroyRelation with Logging with Serializable {
+case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
+                               options: Map[String, String],
+                               override val schema: StructType)
+  extends StreamBaseRelation with DeletableRelation
+  with DestroyRelation with Logging with StreamPlan with Serializable {
 
-  override def buildScan(): RDD[Row] = {
+  val ZK_QUORUM = "zkquorum"
+  //Zookeeper quorum (hostname:port,hostname:port,..)
+  val GROUP_ID = "groupid"
+  //The group id for this consumer
+  val TOPICS = "topics" //Map of (topic_name -> numPartitions) to consume
 
-    if(dStream.context.getState() == StreamingContextState.ACTIVE)
-      formatter(dStream.compute(Time(10000)).get,schema)
-    else
-      dStream.context.sparkContext.emptyRDD
-    //dStream.map(_._2).map(formatter.format)
-    //throw new IllegalAccessException("Not Implemented")
+  val KAFKA_PARAMS = "kafkaparams"
+  //Kafka configuration parameters ("metadata.broker.list" or "bootstrap.servers")
+  val FROM_OFFSETS = "fromoffsets"
+  //Per-topic/partition Kafka offsets defining the (inclusive) starting point of the stream
+  val MESSAGE_HINDLER = "messagehandler" //Function for translating each message and metadata into the desired type
+
+  @transient val context = StreamingCtxtHolder.streamingContext
+
+  val storageLevel = options.get("storageLevel")
+    .map(StorageLevel.fromString)
+    .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
+
+
+    /*import scala.reflect.runtime.{universe => ru}
+    @transient val formatter = StreamUtils.loadClass(options("formatter")).newInstance() match {
+    case f: StreamFormatter[_] => f.asInstanceOf[StreamFormatter[Any]]
+    case f => throw new AnalysisException(s"Incorrect StreamFormatter $f")
+    }*/
+
+  private val streamToRow = {
+    try {
+      val clz = Class.forName(options("streamToRow"))
+      clz.newInstance().asInstanceOf[MessageToRowConverter]
+    } catch {
+      case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
+    }
   }
+  private val kafkaStream = if (options.exists(_._1 == ZK_QUORUM)) {
+    val zkQuorum: String = options(ZK_QUORUM)
+    val groupId: String = options(GROUP_ID)
+
+    val topics: Map[String, Int] = options(TOPICS).split(",").map { s =>
+      val a = s.split(":")
+      (a(0), a(1).toInt)
+    }.toMap
+
+    KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
+  } else {
+    //Direct Kafka
+    val topicsSet = options(TOPICS).split(",").toSet
+    val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
+      t.split(",").map { s =>
+        val a = s.split("->")
+        (a(0), a(1))
+      }.toMap
+    }.getOrElse(Map())
+
+    KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](
+    context, kafkaParams, topicsSet)
+  }
+
+  @transient val stream: DStream[InternalRow] = kafkaStream.map(_._2).map(streamToRow.toRow)
 
   override def destroy(ifExists: Boolean): Unit = {
     throw new IllegalAccessException("Stream tables cannot be dropped")

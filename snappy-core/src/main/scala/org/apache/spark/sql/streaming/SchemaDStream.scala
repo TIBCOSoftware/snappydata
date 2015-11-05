@@ -4,6 +4,7 @@ package org.apache.spark.sql.streaming
  * Created by ymahajan on 25/09/15.
  */
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.{Row ,SQLContext}
 import org.apache.spark.sql.execution.{SparkPlan}
 import org.apache.spark.sql.types.StructType
@@ -45,7 +46,7 @@ final class SchemaDStream(
   }
 
   @transient private lazy val parentStreams = {
-    def traverse(plan: SparkPlan): Seq[DStream[Row]] = plan match {
+    def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
       case x: StreamPlan => x.stream :: Nil
       case _ => plan.children.flatMap(traverse(_))
     }

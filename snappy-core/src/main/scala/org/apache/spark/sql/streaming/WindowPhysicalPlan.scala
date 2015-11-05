@@ -19,21 +19,21 @@ case class WindowPhysicalPlan(
   override def doExecute(): RDD[InternalRow] = {
     import DStreamHelper._
     assert(validTime != null)
-    StreamUtils.invoke(classOf[DStream[Row]], stream, "getOrCompute", (classOf[Time], validTime))
+    StreamUtils.invoke(classOf[DStream[InternalRow]], stream, "getOrCompute", (classOf[Time], validTime))
       .asInstanceOf[Option[RDD[InternalRow]]]
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 
   @transient private val wrappedStream =
-    new DStream[Row](streamingSnappyCtx.streamingContext) {
+    new DStream[InternalRow](streamingSnappyCtx.streamingContext) {
       override def dependencies = parentStreams.toList
 
       override def slideDuration: Duration = parentStreams.head.slideDuration
 
-      override def compute(validTime: Time): Option[RDD[Row]] = Some(child.execute().asInstanceOf[RDD[Row]])
+      override def compute(validTime: Time): Option[RDD[InternalRow]] = Some(child.execute().asInstanceOf[RDD[InternalRow]])
 
       private lazy val parentStreams = {
-        def traverse(plan: SparkPlan): Seq[DStream[Row]] = plan match {
+        def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
           case x: StreamPlan => x.stream :: Nil
           case _ => plan.children.flatMap(traverse(_))
         }

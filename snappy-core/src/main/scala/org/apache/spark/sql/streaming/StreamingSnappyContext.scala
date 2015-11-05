@@ -6,6 +6,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.ScalaReflection
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.{LogicalRDD, SparkPlan}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState, Time}
@@ -19,7 +20,7 @@ import scala.reflect.runtime.{universe => u}
 /**
  * Created by ymahajan on 25/09/15.
  */
-protected final class StreamingSnappyContext(val streamingContext: StreamingContext)
+protected final class StreamingSnappyContext(@transient val streamingContext: StreamingContext)
   extends SnappyContext(streamingContext.sparkContext) with Serializable {
 
   self =>
@@ -129,7 +130,6 @@ case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext, 
 
     context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
       externalStore)
-
     ds.foreachRDD((rdd: RDD[T], time: Time) => {
       context.appendToCacheRDD(rdd, tableIdent.table, schema)
     })
@@ -156,7 +156,6 @@ object StreamingCtxtHolder {
         context
       } else {
         val context = new StreamingContext(sparkCtxt, Seconds(duration))
-        context.checkpoint(null) // TODO Yogesh, remove this
         globalContext = context
         context
       }
@@ -171,3 +170,5 @@ object StreamingCtxtHolder {
     }
   }
 }
+
+abstract class StreamBaseRelation extends BaseRelation with StreamPlan with Serializable

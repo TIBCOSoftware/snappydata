@@ -26,39 +26,43 @@ object KafkaConsumer {
 
 
   def main(args: Array[String]) {
-
     val sc = new org.apache.spark.SparkConf()
       .setMaster("local[2]")
-      .setAppName("streamingsql")
-    val ssc = new StreamingContext(new SparkContext(sc), Duration(10000))
-    ssc.checkpoint(null)
+      .setAppName("kafkaconsumer")
+    val ssc = new StreamingContext(new SparkContext(sc), Duration(2000))
     val snsc = StreamingSnappyContext(ssc);
 
     val streamTable = "directKafkaStreamTable"
-    snsc.sql("create stream table "+ streamTable + " (name string, text string) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
+    snsc.sql("create stream table "+ streamTable + " (name string, text string) using kafka-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', streamToRow 'org.apache.spark.sql.streaming.MyMessageToRowConverter' ," +
       " kafkaParams 'metadata.broker.list->localhost:9092', topics 'tweets')")
-    snsc.cacheTable(streamTable)
-    //val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
 
-    val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM directKafkaStreamTable window (duration '10' seconds, slide '10' seconds) ") //WHERE age >= 18
+    //snsc.sql("select * from directKafkaStreamTable").show()
+
+    val resultSet: SchemaDStream = snsc.registerCQ("SELECT text FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) ")
     resultSet.foreachRDD(rdd => print(s"Received Twitter stream results. Count: ${rdd.count()}"))
+    resultSet.foreachRDD { r => r.foreach(println) }
 
-    snsc.sql("create sampled table directKafkaStreamTable_sampled Options (basetable 'directKafkaStreamTable', qcs 'text', fraction '0.005', strataReservoirSize '100' )")
-    snsc.cacheTable("directKafkaStreamTable_sampled")
-    snsc.sql("select count(*) from directKafkaStreamTable_sampled").show()
 
-    val directKafkaStoreTable = "directKafkaStoreTable"
-    snsc.sql("CREATE TABLE " + directKafkaStoreTable + " USING row " +
-      options + " AS (SELECT * FROM " + streamTable + ")")
-    snsc.sql("SELECT * FROM " + directKafkaStoreTable).show()
-    snsc.sql("DROP TABLE " + directKafkaStoreTable)
+//    snsc.cacheTable(streamTable)
 
-    val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
-    import org.apache.spark.sql.streaming.snappy._
-    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema, props)
+
+//    snsc.sql("create sampled table directKafkaStreamTable_sampled Options (basetable 'directKafkaStreamTable', qcs 'text', fraction '0.005', strataReservoirSize '100' )")
+//    snsc.cacheTable("directKafkaStreamTable_sampled")
+//    snsc.sql("select count(*) as count from directKafkaStreamTable_sampled").show()
+
+//    val directKafkaStoreTable = "directKafkaStoreTable"
+//    snsc.sql("CREATE TABLE " + directKafkaStoreTable + " USING column " +
+//      options + " AS (SELECT * FROM " + streamTable + ")")
+//    snsc.sql("SELECT * FROM " + directKafkaStoreTable).show()
+//    snsc.sql("DROP TABLE " + directKafkaStoreTable)
+
+//    val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
+//    import org.apache.spark.sql.streaming.snappy._
+//    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema, props)
+//    snsc.sql("select count(*) as count from kafkaStreamGemXdTable").show()
 
     snsc.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(60000)
+    ssc.awaitTerminationOrTimeout(20* 1000)
     snsc.sql( """STREAMING CONTEXT STOP """)
   }
 }

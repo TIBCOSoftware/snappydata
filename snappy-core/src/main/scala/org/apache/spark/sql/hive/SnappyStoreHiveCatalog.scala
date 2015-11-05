@@ -657,7 +657,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
     plan match {
       case LogicalRelation(sr: SocketStreamRelation[T]) => sr.schema
-      case LogicalRelation(kr: KafkaStreamRelation[T]) => kr.schema
+      case LogicalRelation(kr: KafkaStreamRelation) => kr.schema
       case LogicalRelation(fr: FileStreamRelation[T]) => fr.schema
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")

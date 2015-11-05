@@ -11,7 +11,7 @@ import org.apache.spark.streaming.dstream.DStream
 /**
  * Created by ymahajan on 25/09/15.
  */
-case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStream[Row])
+case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStream[InternalRow])
   extends SparkPlan with StreamPlan {
 
   import DStreamHelper._
