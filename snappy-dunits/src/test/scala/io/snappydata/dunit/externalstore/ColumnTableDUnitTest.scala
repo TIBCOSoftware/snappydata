@@ -11,11 +11,12 @@ import org.apache.spark.sql.SaveMode
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
-    // Lead is started before other servers are started.
+    // Lead is started before other servers are started
     vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
+    Thread.sleep(5000)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
   }
@@ -23,10 +24,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testCreateInsertAndDropOfTable(): Unit = {
     // Lead is started before other servers are started.
     vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-
+    Thread.sleep(5000)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
   }
 }

@@ -77,7 +77,7 @@ object StoreUtils {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p)
       val withBlockManagers = distMembers.filter(d => blockMap.contains(d))
 
-      val prefNodes = withBlockManagers.map(
+      val prefNodes = distMembers.map(
         m => blockMap.get(m)
       )
 
@@ -113,7 +113,7 @@ object StoreUtils {
 
     for (p <- 0 until numPartitions) {
 
-      val prefNodes = withBlockManagers.map(
+      val prefNodes = distMembers.map(
         m => blockMap.get(m)
       ).toSeq
 

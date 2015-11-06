@@ -30,6 +30,11 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
     helloWorld()
   }
 
+  override def tearDown2(): Unit = {
+    super.tearDown2()
+    stopAny()
+  }
+
   def testOne(): Unit = {
     val serverNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
