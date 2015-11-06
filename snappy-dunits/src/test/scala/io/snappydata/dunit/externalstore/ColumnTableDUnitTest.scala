@@ -11,11 +11,12 @@ import org.apache.spark.sql.SaveMode
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
-    // Lead is started before other servers are started.
+    // Lead is started before other servers are started
     vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
+    Thread.sleep(5000)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
   }
@@ -23,10 +24,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def testCreateInsertAndDropOfTable(): Unit = {
     // Lead is started before other servers are started.
     vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-
+    Thread.sleep(5000)
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
   }
 }
@@ -37,15 +39,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 object ColumnTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "ColumnTable"
 
-  val props = Map(
-    //"url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "url" -> "jdbc:snappydata:;user=app;password=app",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-    //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-    "poolImpl" -> "tomcat",
-    "user" -> "app",
-    "password" -> "app"
-  )
+  val props = Map.empty[String,String]
 
   def startSparkJob(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)

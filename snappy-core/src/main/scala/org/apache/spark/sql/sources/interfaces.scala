@@ -3,13 +3,18 @@ package org.apache.spark.sql.sources
 import java.sql.Connection
 import java.util.Properties
 
+import scala.collection.mutable
 import scala.util.control.NonFatal
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRelation, JDBCPartitioningInfo, DriverRegistry}
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
-import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcDialect}
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{DataFrame, AnalysisException, Row, SQLContext, SaveMode}
 
 @DeveloperApi
 trait RowInsertableRelation {
@@ -132,6 +137,8 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   def extraCreateTableProperties(isLoner: Boolean): Properties =
     new Properties()
+
+  def getPartitionByClause(col : String) : String;
 }
 
 object JdbcExtendedUtils {
@@ -246,5 +253,110 @@ object JdbcExtendedUtils {
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
     }
     new ResolvedDataSource(clazz, relation)
+  }
+}
+
+abstract class MutableRelationProvider extends ExternalSchemaRelationProvider
+with SchemaRelationProvider with RelationProvider with CreatableRelationProvider {
+
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: String) = {
+    val parameters = new mutable.HashMap[String, String]
+    parameters ++= options
+
+    val url = parameters.remove("url")
+        .getOrElse(sys.error("JDBC URL option 'url' not specified"))
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    parameters.remove("serialization.format")
+    val table = parameters.remove(dbtableProp)
+        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+    val driver = parameters.remove("driver")
+    val poolImpl = parameters.remove("poolimpl")
+    val poolProperties = parameters.remove("poolproperties")
+    val partitionColumn = parameters.remove("partitioncolumn")
+    val lowerBound = parameters.remove("lowerbound")
+    val upperBound = parameters.remove("upperbound")
+    val numPartitions = parameters.remove("numpartitions")
+
+    // remove ALLOW_EXISTING property, if remaining
+    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
+
+    parameters.remove("serialization.format")
+
+    driver.foreach(DriverRegistry.register)
+
+    val hikariCP = poolImpl.map(Utils.normalizeId) match {
+      case Some("hikari") => true
+      case Some("tomcat") => false
+      case Some(p) =>
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            s"unsupported pool implementation '$p' " +
+            s"(supported values: tomcat, hikari)")
+      case None => false
+    }
+    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+      val eqIndex = s.indexOf('=')
+      if (eqIndex >= 0) {
+        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
+      } else {
+        // assume a boolean property to be enabled
+        (s.trim, "true")
+      }
+    }: _*)).getOrElse(Map.empty)
+
+    val partitionInfo = if (partitionColumn.isEmpty) {
+      null
+    } else {
+      if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            "incomplete partitioning specified")
+      }
+      JDBCPartitioningInfo(
+        partitionColumn.get,
+        lowerBound.get.toLong,
+        upperBound.get.toLong,
+        numPartitions.get.toInt)
+    }
+    val parts = JDBCRelation.columnPartition(partitionInfo)
+    // remaining parameters are passed as properties to getConnection
+    val connProps = new Properties()
+    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+    new JDBCMutableRelation(url,
+      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      getClass.getCanonicalName, mode, schema, parts,
+      poolProps, connProps, hikariCP, options, sqlContext)
+  }
+
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String], schema: StructType) = {
+    val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
+    val dialect = JdbcDialects.get(url)
+    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
+
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    createRelation(sqlContext, mode, options, schemaString)
+  }
+
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String]) = {
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    // will work only if table is already existing
+    createRelation(sqlContext, mode, options, "")
+  }
+
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], data: DataFrame) = {
+    val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
+    val dialect = JdbcDialects.get(url)
+    val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
+
+    val relation = createRelation(sqlContext, mode, options, schemaString)
+    relation.insert(data)
+    relation
   }
 }
