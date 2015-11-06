@@ -290,6 +290,11 @@ task product {
       from datanucleusJars
       into "${productDir}/lib"
     }
+    // copy GemFireXD shared libraries for optimized JNI calls
+    copy {
+      from "${project(':snappy-store:gemfirexd:core').projectDir}/lib"
+      into "${productDir}/lib"
+    }
 
     // create the RELEASE file
     def release = file("${productDir}/RELEASE")
