@@ -1,3 +1,17 @@
+## Build Quickstart
+
+As of now, only the "integrated" build seems to work. Quickstart to compile
+project:
+
+1. git clone git@github.com:SnappyData/snappy-commons.git
+2. cd snappy-commons
+3. git clone git@github.com:SnappyData/snappy-spark.git
+4. git clone git@github.com:gemfire/gemxd-staging.git
+5. mv gemxd-staging snappy-store
+6. git submodule init        # get the job server integrated
+7. git submodule update      # checkout the correct job server code
+8. ./gradlew clean assemble
+
 ## Repository layout
 
 There were few proposals about how to manage the various repositories mentioned in [this document](https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document. 
