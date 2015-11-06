@@ -52,7 +52,7 @@ allprojects {
 
   ext {
     scalaBinaryVersion = '2.10'
-    scalaVersion = scalaBinaryVersion + '.4'
+    scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.5.0-SNAPSHOT.1'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
@@ -71,17 +71,6 @@ allprojects {
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
-  }
-
-  dependencies {
-    compile 'log4j:log4j:' + log4jVersion
-    compile 'org.slf4j:slf4j-api:' + slf4jVersion
-    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-
-    testCompile "junit:junit:${junitVersion}"
-    testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
-
-    testRuntime 'org.pegdown:pegdown:1.1.0'
   }
 }
 
@@ -227,21 +216,25 @@ subprojects {
   */
 
   configurations {
+    provided {
+      description 'a dependency that is provided externally at runtime'
+      visible true
+    }
+
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
     }
-  }
-
-  /*
-  configurations.all {
-    resolutionStrategy {
-      // fail eagerly on version conflict (includes transitive dependencies)
-      // e.g. multiple different versions of the same dependency (group and name are equal)
-      failOnVersionConflict()
+    /*
+    all {
+      resolutionStrategy {
+        // fail eagerly on version conflict (includes transitive dependencies)
+        // e.g. multiple different versions of the same dependency (group and name are equal)
+        failOnVersionConflict()
+      }
     }
+    */
   }
-  */
 
   task packageTests(type: Jar) {
     from sourceSets.test.output
@@ -249,6 +242,29 @@ subprojects {
   }
   artifacts {
     testOutput packageTests
+  }
+
+  idea {
+    module {
+      scopes.PROVIDED.plus += [ configurations.provided ]
+    }
+  }
+
+  sourceSets {
+    main.compileClasspath += configurations.provided
+    main.runtimeClasspath -= configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+  }
+
+  javadoc.classpath += configurations.provided
+
+  dependencies {
+    compile 'log4j:log4j:' + log4jVersion
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+
+    testCompile "junit:junit:${junitVersion}"
   }
 }
 
