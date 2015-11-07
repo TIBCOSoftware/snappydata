@@ -327,11 +327,19 @@ task product {
       into "${productDir}/data"
     }
     copy {
-      from "${toolsProject.projectDir}/bin"
+      from("${toolsProject.projectDir}/bin")
       into "${productDir}/bin"
       filter { line ->
         line.replaceAll('__VERSION__', "${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}")
       }
+    }
+    copy {
+      from("${toolsProject.projectDir}/sbin")
+      into "${productDir}/sbin"
+    }
+    copy {
+      from("${toolsProject.projectDir}/conf") 
+      into "${productDir}/conf"
     }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
