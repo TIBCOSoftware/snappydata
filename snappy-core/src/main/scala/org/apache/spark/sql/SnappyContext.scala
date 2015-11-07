@@ -725,7 +725,8 @@ object SnappyContext {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName
+    "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "column" ->  classOf[columnar.DefaultSource].getCanonicalName
   )
 
   def apply(sc: SparkContext): SnappyContext = {

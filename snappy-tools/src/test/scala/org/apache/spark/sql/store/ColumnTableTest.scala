@@ -1,31 +1,43 @@
-package io.snappydata.app
+package org.apache.spark.sql.store
 
-import org.apache.spark.Logging
-import org.apache.spark.sql.{AnalysisException, SaveMode}
-import org.apache.spark.streaming.{Duration, Seconds}
-import org.scalatest.{BeforeAndAfter, FunSuite}
+import io.snappydata.core.{FileCleaner, Data, TestSqlContext}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
+
+import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Created by Suranjan on 14/10/15.
  */
-class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
+class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter{
 
-  private val sc = TestSQLContext.sparkContext
+  var sc : SparkContext= null
+
+  var snc: SnappyContext = null
+
+  override def afterAll(): Unit = {
+    sc.stop()
+    FileCleaner.cleanStoreFiles()
+
+  }
+
+  override def beforeAll(): Unit = {
+    if (sc == null) {
+      sc = TestSqlContext.newSparkContext
+      snc = SnappyContext(sc)
+    }
+  }
 
   val tableName : String = "ColumnTable"
 
-  val props = Map(
-    "url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-    "poolImpl" -> "tomcat",
-    "user" -> "app",
-    "password" -> "app"
-  )
+  val props = Map.empty[String, String]
 
-  val snc = org.apache.spark.sql.SnappyContext(sc)
+
+
 
   after {
     snc.dropExternalTable(tableName, true)
+    snc.dropExternalTable("ColumnTable2", true)
   }
 
   test("Test the creation/dropping of table using Snappy API") {
@@ -105,11 +117,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
     println("Successful")
   }
 
-  val options =  "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false' ," +
-             "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
-             "poolImpl 'tomcat', " +
-             "user 'app', " +
-             "password 'app' ) "
+  val options =  "OPTIONS (PARTITION_BY 'Col1')"
 
   test("Test the creation/dropping of table using SQL") {
 
@@ -173,6 +181,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfter {
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val tableName2 = "CoulmnTable2"
+    snc.sql("DROP TABLE IF EXISTS CoulmnTable2")
     snc.sql("CREATE TABLE " + tableName2 + " USING column " +
         options + " AS (SELECT * FROM " + tableName + ")"
     )

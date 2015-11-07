@@ -40,10 +40,11 @@ dependencies {
   } else {
     compile files("${rootDir.getAbsolutePath()}/local-repo/spark-jobserver-1.5.0-SNAPSHOT-1.jar")
   }
-/*
-*/
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+  testRuntime 'org.pegdown:pegdown:1.1.0'
 }
 
 test.dependsOn ':cleanJUnit'
