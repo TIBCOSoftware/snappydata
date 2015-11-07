@@ -29,7 +29,7 @@ sbin="`cd "$sbin"; pwd`"
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
 
 # Launch the slaves
-if [[ $@ == *"start"* ]] ; then
+if echo $@ | grep -qw start; then
   "$sbin/snappy-nodes.sh" locator cd "$SPARK_HOME" \; "$sbin/snappy-locator.sh" $@ $LOCATOR_STARTUP_OPTIONS
 else
   "$sbin/snappy-nodes.sh" locator cd "$SPARK_HOME" \; "$sbin/snappy-locator.sh" $@

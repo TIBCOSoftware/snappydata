@@ -28,7 +28,7 @@
 #   SPARK_SSH_OPTS Options passed to ssh when running remote commands.
 ##
 
-usage="Usage: nodes.sh locator/server/lead [--config <conf-dir>] command..."
+usage="Usage: snappy-nodes.sh locator/server/lead [--config <conf-dir>] command..."
 
 # if no args specified, show usage
 if [ $# -le 0 ]; then
@@ -150,33 +150,26 @@ IFS=$'\n'
 index=1
 
 for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
-  host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f 1)"
-  dir="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f 2)"
 
-  # Set a default directory if not already started
-  if [[ $dir != *"-dir"* ]] ; then
+  host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
+  args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+  dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
+
+  # Set directory folder if not already set.
+  if [ -z "${dirparam}" ]; then
     dirfolder="$SPARK_HOME"/snappy/"$host"-$componentType-$index
-    dirparam="-dir="$dirfolder
-    # Pass the hostargs if we are starting the server
-    if grep -q " start"<<< $"${@// /\\ }" ; then
-      hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
-      # Set a default locator if not already specified
-      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] &&
-        [[ $"${@// /\\ }"  != *"-locators"* ]];then
-        locatorParam="-locators="$(hostname)":10334"
-      fi
+    dirparam="-dir=${dirfolder}"
+    args="${args} ${dirparam}"
+  fi
+
+  # For stop and status mode, don't pass any parameters other than directory
+  if echo $"${@// /\\ }" | grep -wq "start"; then
+    # Set a default locator if not already set.
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" -a "${componentType}" != "locator"  ]; then
+      args="${args} -locators="$(hostname)":10334"
     fi
   else
-    dirparam=$dir
-    # Pass the hostargs if we are starting the server
-    if grep -q " start"<<< $"${@// /\\ }" ; then
-      hostargs="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f3-)"
-      # Set a default locator if not already specified
-      if [[ $slave != *"-locators"* ]] && [[ $componentType != "locator" ]] &&
-        [[ $"${@// /\\ }"  != *"-locators"* ]];then
-        locatorParam="-locators="$(hostname)":10334"
-      fi
-    fi
+    args="${dirparam}"
   fi
 
   index=$[index +1]
@@ -187,7 +180,7 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
         2>&1 | sed "s/^/$host: /"
     fi
 
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${dirparam} ${locatorParam} ${hostargs}" \
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
       2>&1 | sed "s/^/$host: /"
   else
     if [ "$dirfolder" != "" ]; then
@@ -196,7 +189,7 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
         2>&1 | sed "s/^/$host: /"
     fi
 
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${dirparam} ${locatorParam} ${hostargs}" \
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
       2>&1 | sed "s/^/$host: /" &
   fi
 
