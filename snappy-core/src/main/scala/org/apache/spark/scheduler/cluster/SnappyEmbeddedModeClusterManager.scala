@@ -12,20 +12,20 @@ import org.apache.spark.scheduler.{SchedulerBackend, TaskSchedulerImpl, TaskSche
 object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
-  // This locator property should be used to join snappy DS
-  var locator : String = _
+  var masterUrl : String = _
   def createTaskScheduler(sc: SparkContext): TaskScheduler = {
+    // If there is an application that is trying to join snappy
+    // as lead in embedded mode, we need the locator to connect
+    // to the snappy distributed system and hence the locator is
+    // passed in masterurl itself.
+    if (masterUrl.startsWith("snappydata://"))
+      sc.conf.set("snappydata.store.locators", masterUrl.replaceFirst("snappydata://", ""))
     new TaskSchedulerImpl(sc)
   }
 
   def canCreate(masterURL: String): Boolean =
     if (masterURL.startsWith("snappydata")) {
-      // If there is an application that is trying to join snappy
-      // as lead in embedded mode, we need the locator to connect
-      // to the snappy distributed system and hence the locator is
-      // passed in masterurl itself.
-      if (masterURL.startsWith("snappydata://"))
-        locator = masterURL.replaceFirst("snappydata://", "")
+      masterUrl = masterURL
       true
     }
     else
