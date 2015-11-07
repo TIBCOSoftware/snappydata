@@ -7,6 +7,7 @@ import scala.util.control.NonFatal
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.jdbc.JdbcTestBase
 import io.snappydata.app.LocalSQLContext
+import io.snappydata.core.TestSqlContext
 
 
 import org.apache.spark.sql.{SaveMode, Row}
@@ -56,7 +57,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   @throws(classOf[Exception])
   def testStringAsDatatype_runInSpark {
 
-    val sc = new LocalSQLContext().sparkContext
+    val sc = TestSqlContext.newSparkContext
 
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     snContext.sql("set spark.sql.shuffle.partitions=6")

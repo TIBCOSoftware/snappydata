@@ -15,6 +15,7 @@ case class TestData2(key1: Int, value: String, ref : Int)
 case class Data(col1: Int, col2: Int, col3: Int)
 case class Data1(pk: Int, sk: String)
 case class Data2(pk: Int, Year: Int)
+case class RefData(ref : Int, description: String)
 
 object FileCleaner{
   def cleanFile(path : String): Unit ={
@@ -37,6 +38,7 @@ class LocalSQLContext
       "TestSQLContext",
       new SparkConf()
           .set("spark.sql.unsafe.enabled", "false")
+           .set("snappydata.store.locators", "localhost")
 
 
     )) {

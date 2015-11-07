@@ -17,7 +17,7 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources.JdbcExtendedDialect
+import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect}
 import org.apache.spark.sql.store.{StoreInitRDD, MembershipAccumulator}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{SparkContext, Partition}
@@ -138,22 +138,21 @@ object StoreUtils {
     }
   }
 
-  def ddlExtensionString(parameters: Map[String, String]): String = {
+  def removeInternalProps(parameters : mutable.HashMap[String, String])  = {
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val table = parameters.remove(dbtableProp)
+        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
+    parameters.remove("serialization.format")
+    table
+  }
+
+
+  def ddlExtensionString(parameters: mutable.HashMap[String, String]): String = {
     val sb = new StringBuilder()
 
-    val options = new CaseInsensitiveMap(parameters)
-
-    // Anu new properties added or removed needs to be taken care here by adding/deleting/modifying the list
-    options.keySet.foreach { prop =>
-      prop.toUpperCase match {
-        case PARTITION_BY | BUCKETS | COLOCATE_WITH | REDUNDANCY | RECOVERYDELAY | MAXPARTSIZE | EVICTION_BY | PERSISTENT | SERVER_GROUPS | OFFHEAP => // Do nothing. Allowed values
-        case _ => throw new IllegalArgumentException(
-          s"Illegal property $prop while creating table")
-      }
-    }
-
-
-    sb.append(options.get(PARTITION_BY).map(v => {
+    sb.append(parameters.remove(PARTITION_BY).map(v => {
       val parClause = {
         v match {
           case PRIMARY_KEY => PRIMARY_KEY
@@ -163,15 +162,15 @@ object StoreUtils {
       s"$GEM_PARTITION_BY $parClause "
     }
     ).getOrElse(EMPTY_STRING))
-    sb.append(options.get(BUCKETS).map(v => s"$GEM_BUCKETS $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ").getOrElse(EMPTY_STRING))
-    sb.append(options.get(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ").getOrElse(EMPTY_STRING))
 
     sb.toString()
   }

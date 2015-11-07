@@ -6,6 +6,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 
+import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -58,28 +59,20 @@ final class DefaultSource
     extends ColumnarRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
-    val connProps = new Properties()
+    val parameters = new CaseInsensitiveMutableHashMap(options)
 
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
+    val table = StoreUtils.removeInternalProps(parameters)
 
     val sc = sqlContext.sparkContext
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
-    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-    parameters.remove("serialization.format")
-
-    val (url, driver, poolProps, _connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, options)
-
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
     val preservepartitions = parameters.remove("preservepartitions")
+    val (url, driver, poolProps, connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+
+
     val dialect = JdbcDialects.get(url)
 
-    // Remove all added options before ddl extenison
-    val coptions = new CaseInsensitiveMap(parameters.toMap)
-    val ddlExtension = StoreUtils.ddlExtensionString(coptions)
+
     val schemaExtension = s"$schema $ddlExtension"
 
 

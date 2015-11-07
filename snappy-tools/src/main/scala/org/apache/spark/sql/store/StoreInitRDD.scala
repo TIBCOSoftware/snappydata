@@ -52,20 +52,8 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
     Iterator.empty
   }
 
-  protected def getSparkPartitions: Array[Partition] = {
-    //TODO : Find a cleaner way of starting all executors.
-    val partitions = new Array[Partition](100)
-    for (p <- 0 until 100) {
-      partitions(p) = new ExecutorLocalPartition(p, null)
-    }
-    partitions
-  }
-
-  override def getPartitions: Array[Partition] = {
-    sc.schedulerBackend match {
-      case lb: SnappyCoarseGrainedSchedulerBackend => getPeerPartitions
-      case _ => getSparkPartitions
-    }
+   override def getPartitions: Array[Partition] = {
+    getPeerPartitions
   }
 
   def getPeerPartitions(): Array[Partition] = {

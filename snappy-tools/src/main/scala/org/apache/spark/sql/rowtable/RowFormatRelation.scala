@@ -10,6 +10,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -84,37 +85,24 @@ final class DefaultSource
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
+    val parameters = new CaseInsensitiveMutableHashMap(options)
 
-    val connProps = new Properties()
+    val table = StoreUtils.removeInternalProps(parameters)
+
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+    val schemaExtension = s"$schema $ddlExtension"
+    val preservepartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
 
-    val (url, driver, poolProps, _connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, options)
+    val (url, driver, poolProps, connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
 
-
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
-    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-    parameters.remove("serialization.format")
-
-
-
-    val preservepartitions = parameters.remove("preservepartitions")
     val dialect = JdbcDialects.get(url)
-    val coptions = new CaseInsensitiveMap(parameters.toMap)
-    val ddlExtension = StoreUtils.ddlExtensionString(coptions)
-    val schemaExtension = s"$schema $ddlExtension"
-
     val blockMap =
       dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
-
 
 
     dialect match {

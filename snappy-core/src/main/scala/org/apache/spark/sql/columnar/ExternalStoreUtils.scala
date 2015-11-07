@@ -49,6 +49,19 @@ private[sql] object ExternalStoreUtils {
 
   }
 
+  class CaseInsensitiveMutableHashMap(map: Map[String, String]) extends mutable.HashMap[String, String]
+  with Serializable {
+
+    val baseMap = new mutable.HashMap[String, String]
+    baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
+
+    override def get(k: String): Option[String] = baseMap.get(k.toLowerCase)
+
+    override def remove(k: String): Option[String] = baseMap.remove(k.toLowerCase)
+
+    override def iterator: Iterator[(String, String)] = baseMap.iterator
+  }
+
   def validateAndGetAllProps(sc : SparkContext, options: Map[String, String]) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options

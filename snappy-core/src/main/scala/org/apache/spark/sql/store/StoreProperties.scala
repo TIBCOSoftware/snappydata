@@ -13,14 +13,10 @@ object StoreProperties {
 
   def defaultStoreURL(sc : SparkContext): String = {
 
-   if (sc.master.startsWith("snappydata://") || sc.conf.contains("snappy.locators")) {
-     DEFAULT_EMBEDDED_URL // Embedded mode. Take a peer connection
+   if (sc.master.startsWith("snappydata://") || sc.conf.contains("snappydata.store.locators")) {
+     DEFAULT_EMBEDDED_URL // Embedded mode. Already connected to
     } else {
-     sc.schedulerBackend match {
-       case lb: LocalBackend => DEFAULT_EMBEDDED_URL //TDOD need to check with Soubhick for local mode
-       case lb: SnappyCoarseGrainedSchedulerBackend => DEFAULT_EMBEDDED_URL
-       case _ => sys.error("Option 'url' not specified")
-     }
+     sys.error("Option 'url' not specified")
     }
   }
 

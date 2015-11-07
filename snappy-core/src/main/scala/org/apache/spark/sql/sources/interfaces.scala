@@ -8,6 +8,7 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRelation, JDBCPartitioningInfo, DriverRegistry}
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -330,7 +331,8 @@ with SchemaRelationProvider with RelationProvider with CreatableRelationProvider
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType) = {
-    val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
+    val (url, _, _, _, _) =
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
@@ -351,7 +353,8 @@ with SchemaRelationProvider with RelationProvider with CreatableRelationProvider
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame) = {
-    val url = options.getOrElse("url", sys.error("Option 'url' not specified"))
+    val (url, _, _, _, _) =
+      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
 

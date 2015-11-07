@@ -1,17 +1,17 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.core.{FileCleaner, Data, TestSqlContext}
+import io.snappydata.core.{Data, TestSqlContext, FileCleaner}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
 
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.{SaveMode, AnalysisException, SnappyContext}
+import org.apache.spark.{SparkContext, Logging}
 
 /**
- * Created by Suranjan on 14/10/15.
+ * Created by rishim on 6/11/15.
  */
-class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter{
+class RowTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
 
-  var sc : SparkContext= null
+  var sc: SparkContext = null
 
   var snc: SnappyContext = null
 
@@ -28,29 +28,27 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     }
   }
 
-  val tableName : String = "ColumnTable"
+  val tableName: String = "RowTable"
 
   val props = Map.empty[String, String]
 
 
-
-
   after {
     snc.dropExternalTable(tableName, true)
-    snc.dropExternalTable("ColumnTable2", true)
+    snc.dropExternalTable("RowTable2", true)
   }
 
-  test("Test the creation/dropping of table using Snappy API") {
+  test("Test the creation/dropping of row table using Snappy API") {
     //shouldn't be able to create without schema
-    intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "column", props)
-    }
+    /* intercept[AnalysisException] {
+       snc.createExternalTable(tableName, "row", props)
+     }*/
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createExternalTable(tableName, "row", dataDF.schema, props)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
@@ -63,7 +61,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
@@ -76,12 +74,12 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createExternalTable(tableName, "row", dataDF.schema, props)
 
     intercept[AnalysisException] {
-      dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
+      dataDF.write.format("row").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
     }
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect
@@ -91,7 +89,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
     rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("column").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
     assert(r.length == 5)
@@ -100,7 +98,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
     rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
     assert(r.length == 11)
@@ -109,7 +107,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
     rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("column").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
     assert(r.length == 6)
@@ -117,15 +115,14 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  val options =  "OPTIONS (PARTITION_BY 'Col1')"
-
+  val options = "OPTIONS (PARTITION_BY 'Col1')"
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
   test("Test the creation/dropping of table using SQL") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
-        )
+    )
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
@@ -134,7 +131,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
 
   test("Test the creation/dropping of table using SQ with explicit URL") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         optionsWithURL
     )
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -145,20 +142,20 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
 
   test("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options )
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
+        options)
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
 
     intercept[AnalysisException] {
-      dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
+      dataDF.write.format("row").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
     }
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
@@ -168,7 +165,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
 
   test("Test the creation of table using SQL and SnappyContext ") {
 
-    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
         options
     )
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -176,10 +173,10 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     val dataDF = snc.createDataFrame(rdd)
 
     intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "column", dataDF.schema, props)
+      snc.createExternalTable(tableName, "row", dataDF.schema, props)
     }
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
@@ -190,19 +187,19 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    val tableName2 = "CoulmnTable2"
-    snc.sql("DROP TABLE IF EXISTS CoulmnTable2")
-    snc.sql("CREATE TABLE " + tableName2 + " USING column " +
+    val tableName2 = "RowTable2"
+    snc.sql("DROP TABLE IF EXISTS RowTable2")
+    snc.sql("CREATE TABLE " + tableName2 + " USING row " +
         options + " AS (SELECT * FROM " + tableName + ")"
     )
     var result = snc.sql("SELECT * FROM " + tableName2)
     var r = result.collect
     assert(r.length == 5)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName2)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName2)
     result = snc.sql("SELECT * FROM " + tableName2)
     r = result.collect
     assert(r.length == 10)
@@ -215,8 +212,8 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.truncateExternalTable(tableName)
 
@@ -224,7 +221,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     var r = result.collect
     assert(r.length == 0)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
     snc.sql("TRUNCATE TABLE " + tableName)
 
     result = snc.sql("SELECT * FROM " + tableName)
@@ -238,8 +235,8 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.dropExternalTable(tableName, true)
 
@@ -260,8 +257,8 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
