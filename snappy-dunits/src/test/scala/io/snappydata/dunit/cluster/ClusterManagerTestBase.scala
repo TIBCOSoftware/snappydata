@@ -111,6 +111,8 @@ class ClusterManagerTestUtils {
     props.setProperty("host-data", "false")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf().setMaster("snappydata").setAppName("myapp")
+
+
     new File("./" + "driver").mkdir()
     new File("./" + "driver/events").mkdir()
 
