@@ -14,7 +14,7 @@ object StoreProperties {
   def defaultStoreURL(sc : SparkContext): String = {
 
    if (sc.master.startsWith("snappydata") || sc.conf.contains("snappydata.store.locators")) {
-     DEFAULT_EMBEDDED_URL // Embedded mode. Already connected to
+     DEFAULT_EMBEDDED_URL // Embedded mode. Already connected to Snappydata in embedded , nonembedded and local mode
     } else {
      sys.error("Option 'url' not specified")
     }
