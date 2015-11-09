@@ -329,9 +329,6 @@ task product {
     copy {
       from("${toolsProject.projectDir}/bin")
       into "${productDir}/bin"
-      filter { line ->
-        line.replaceAll('__VERSION__', "${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}")
-      }
     }
     copy {
       from("${toolsProject.projectDir}/sbin")
