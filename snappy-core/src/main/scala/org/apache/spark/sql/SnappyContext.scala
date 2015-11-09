@@ -754,14 +754,15 @@ object SnappyContext {
 
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
-    //For now assuming url host[port]. Will finalize it later.
+    //TODO - For now assuming url host[port]. Will finalize it later.
     if (!sc.schedulerBackend.isInstanceOf[LocalBackend] &&
       !sc.schedulerBackend.isInstanceOf[SnappyCoarseGrainedSchedulerBackend]) {
       externalShellMode = true
       val properties = new Properties()
       properties.setProperty("locators", sc.getConf.get("snappy.locator"))
+      properties.setProperty("host-data", "false")
       val server = getServerInstance()
-      server.getClass.getMethod("start", properties.getClass).invoke(server, Array(properties))
+      server.getClass.getMethod("start", properties.getClass).invoke(server, properties)
     }
   }
 
@@ -789,7 +790,7 @@ object SnappyContext {
   def getServerInstance(): Object ={
     val properties = new Properties()
     val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.ServiceManager")
-    clazz.getMethod("getServerInstance").invoke(clazz.newInstance())
+    clazz.getMethod("getServerInstance").invoke(clazz)
   }
 
   def getProvider(providerName: String): String =
