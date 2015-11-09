@@ -7,7 +7,7 @@ project:
 2. cd snappy-commons
 3. git clone git@github.com:SnappyData/snappy-spark.git
 4. git clone git@github.com:gemfire/gemxd-staging.git
-5. git clone git@github.com:gemfire/gemxd-aqp.git
+5. git clone git@github.com:SnappyData/snappy-aqp.git
 6. mv gemxd-staging snappy-store
 7. git submodule init        # get the job server integrated
 8. git submodule update      # checkout the correct job server code
