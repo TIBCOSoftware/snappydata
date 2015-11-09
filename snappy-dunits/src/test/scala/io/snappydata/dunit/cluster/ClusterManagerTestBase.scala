@@ -33,7 +33,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val vm2 = host.getVM(2)
   val vm3 = host.getVM(3)
 
-  def locatorPort = ClusterManagerTestBase.locatorPort
+  def locatorPort =  ClusterManagerTestBase.locatorPort
   protected final def startArgs =
     Array(locatorPort, props).asInstanceOf[Array[AnyRef]]
 
@@ -58,7 +58,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
           loc.start("localhost", locPort, locNetProps)
         }
         if (locNetPort > 0) {
-          loc.startNetworkServer("localhost", locNetPort, locNetProps)
+          loc.startNetworkServer("localhost", 1527, locNetProps)
         }
         assert(loc.status == FabricService.State.RUNNING)
       }
@@ -119,6 +119,7 @@ class ClusterManagerTestUtils {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
+    conf.set("snappy.store.jdbc.url" , "jdbc:snappydata:;user=app;password=app" )
     sc = new SparkContext(conf)
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     val lead: Server = ServiceManager.getServerInstance
@@ -129,19 +130,20 @@ class ClusterManagerTestUtils {
   /**
    * Start a snappy server. Any number of snappy servers can be started.
    */
-  def startSnappyServer(locatorPort: Int, props: Properties , startNetworkServer:Boolean = false): Unit = {
-    val server: Server = ServiceManager.getServerInstance
+  def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
 
+    props.setProperty("locators", s"localhost[$locatorPort]")
+    props.setProperty("host-data", "true")
+    val server: Server = ServiceManager.getServerInstance
     server.start(props)
 
     assert(server.status == FabricService.State.RUNNING)
+    server.startNetworkServer("localhost",
+      AvailablePortHelper.getRandomAvailableTCPPort, null)
 
-    if (startNetworkServer) {
-      server.startNetworkServer(InetAddress.getLocalHost.getHostName,
-        AvailablePortHelper.getRandomAvailableTCPPort, null)
-    }
 
   }
+
 
   def stopSpark(): Unit = {
     SnappyContext.stop()
