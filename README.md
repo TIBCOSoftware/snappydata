@@ -7,30 +7,33 @@ project:
 2. cd snappy-commons
 3. git clone git@github.com:SnappyData/snappy-spark.git
 4. git clone git@github.com:gemfire/gemxd-staging.git
-5. mv gemxd-staging snappy-store
-6. git submodule init        # get the job server integrated
-7. git submodule update      # checkout the correct job server code
-8. ./gradlew clean assemble
+5. git clone git@github.com:gemfire/gemxd-aqp.git
+6. mv gemxd-staging snappy-store
+7. git submodule init        # get the job server integrated
+8. git submodule update      # checkout the correct job server code
+9. ./gradlew clean assemble
 
 ## Repository layout
 
-There were few proposals about how to manage the various repositories mentioned in [this document](https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document. 
+There were few proposals about how to manage the various repositories mentioned in [this document](https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document.
 
-According to "Proposal 4" gemxd and snappy-spark repositories will be independent of any other repository. There will be a third repository that will hold the code of Snappy - snappy-commons. Snappy-Commons will have two projects: 
- 
-(a) **snappy-core** - Any code that is an extension to Spark code and is not dependent on gemxd, job server etc. should go in here. For e.g. SnappyContext, cluster manager etc. 
+According to "Proposal 4" gemxd and snappy-spark repositories will be independent of any other repository. There will be a third repository that will hold the code of Snappy - snappy-commons. Snappy-Commons will have two projects:
 
-(b) **snappy-tools** - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc. 
+(a) **snappy-core** - Any code that is an extension to Spark code and is not dependent on gemxd, job server etc. should go in here. For e.g. SnappyContext, cluster manager etc.
 
-Code in snappy-tools can depend on snappy-core but it cannot happen other way round. 
+(b) **snappy-tools** - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc.
+
+Code in snappy-tools can depend on snappy-core but it cannot happen other way round.
 
 The snappy-spark repository has to be copied or moved inside snappy-commons for an integrated build.
 
-(c) **snappy-spark** - This is the Spark code with Snappy modifcations. 
+(c) **snappy-spark** - This is the Spark code with Snappy modifcations.
 
 Similarly the GemfireXD repository can be copied or moved inside snappy-commons by name *snappy-store* for an integrated build with GemFireXD. The branch of GemFireXD to use is also *snappy-store* that has been branched from rebrand_Dec13 recently for this purpose.
 
 (d) **snappy-store** - This is the GemFireXD with Snappy additions.
+
+(e) **snappy-aqp** - This is the Snappy Data proprietary code (AQP error estimation)
 
 Note that git operations have still to be done separately on snappy-commons, snappy-spark and snappy-store(GemFireXD) repositories.
 
@@ -126,4 +129,3 @@ unlocked automatically on login (or you will be asked to unlock on first use).
 On Linux, you can install "seahorse", if not already, to see/modify all
 the passwords in keyring (GUI menu "Passwords and Keys" under Preferences
 or Accessories or System Tools)
-
