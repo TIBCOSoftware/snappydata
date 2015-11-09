@@ -62,7 +62,7 @@ private[sql] object ExternalStoreUtils {
 
     val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
       val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.Utils")
-      clazz.getMethod("getLocatorClientURL").invoke(clazz.newInstance()).asInstanceOf[String] }
+      clazz.getMethod("getLocatorClientURL").invoke(clazz).asInstanceOf[String] }
     else
       parameters.remove("url").getOrElse {
         if (snappyUrl.isEmpty) StoreProperties.DEFAULT_SNAPPY_STORE_JDBC_URL else snappyUrl
