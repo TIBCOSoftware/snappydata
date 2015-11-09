@@ -81,8 +81,8 @@ if (new File(rootDir, "snappy-store/build.gradle").exists()) {
   include ':snappy-store:gemfirexd:client'
   include ':snappy-store:gemfirexd:native'
   include ':snappy-store:gemfirexd:tools'
-  include ':snappy-store:testing:core'
-  include ':snappy-store:testing:sql'
+  include ':snappy-store:tests:core'
+  include ':snappy-store:tests:sql'
 }
 
 if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
