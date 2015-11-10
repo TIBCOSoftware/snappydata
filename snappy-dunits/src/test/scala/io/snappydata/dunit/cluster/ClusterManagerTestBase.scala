@@ -7,7 +7,7 @@ import java.util.Properties
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import com.pivotal.gemfirexd.{Attribute, FabricService, TestUtil}
 import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.apache.derbyTesting.junit.CleanDatabaseTestSetup
@@ -32,7 +32,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val vm2 = host.getVM(2)
   val vm3 = host.getVM(3)
 
-  final def locatorPort = ClusterManagerTestBase.locatorPort
+  final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   protected final def startArgs =
     Array(locatorPort, props).asInstanceOf[Array[AnyRef]]
 
@@ -40,6 +40,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val locatorNetProps = new Properties()
 
   override def setUp(): Unit = {
+    props.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
     TestUtil.currentTest = getName
     TestUtil.currentTestClass = getTestClass
     TestUtil.skipDefaultPartitioned = true
@@ -109,7 +110,9 @@ class ClusterManagerTestUtils {
     assert(sc == null)
     props.setProperty("host-data", "false")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
-    val conf: SparkConf = new SparkConf().setMaster("external:snappy").setAppName("myapp")
+    val conf: SparkConf = new SparkConf().setMaster("snappydata").setAppName("myapp")
+
+
     new File("./" + "driver").mkdir()
     new File("./" + "driver/events").mkdir()
 

@@ -558,7 +558,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val options = new CaseInsensitiveMap(jdbcSource)
     val externalSource = options.get("jdbcstore") match {
       case Some(x) => x
-      case None => "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
+      case None => "org.apache.spark.sql.store.JDBCSourceAsStore"
     }
     val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
         .loadClass(externalSource).getConstructor(classOf[Map[String, String]])

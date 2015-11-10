@@ -121,12 +121,12 @@ private[spark] case object StatCounterUDT
     }
   }
 
-  override def userClass = classOf[StatCounterWithFullCount]
+  override def userClass: Class[StatCounterWithFullCount] = classOf[StatCounterWithFullCount]
 
   private[spark] override def asNullable = this
 
   def finalizeEvaluation(errorStats: StatCounterWithFullCount,
-      confidence: Double, confFactor: Double, aggType: ErrorAggregate.Type) = {
+      confidence: Double, confFactor: Double, aggType: ErrorAggregate.Type) : Double = {
     val sampleCount = errorStats.count.toDouble
     val populationCount = errorStats.weightedCount
     val stdev = math.sqrt((errorStats.nvariance / (sampleCount * sampleCount)) *

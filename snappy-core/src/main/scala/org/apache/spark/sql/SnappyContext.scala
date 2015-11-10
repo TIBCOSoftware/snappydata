@@ -38,6 +38,7 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
+
 protected class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
@@ -736,6 +737,8 @@ object SnappyContext {
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
+    "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "column" ->  classOf[columnar.DefaultSource].getCanonicalName,
     "socket-stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
     "file-stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
     "kafka" -> classOf[streaming.KafkaStreamSource].getCanonicalName
