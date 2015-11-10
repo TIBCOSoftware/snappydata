@@ -1,5 +1,6 @@
 package io.snappydata.app.streaming
 
+import io.snappydata.SnappyFunSuite
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamingSnappyContext}
 import org.apache.spark.streaming.{Duration, StreamingContext}
@@ -9,7 +10,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
 /**
  * Created by ymahajan on 25/09/15.
  */
-class StreamingSQLSuite extends FunSuite with Eventually with BeforeAndAfter {
+class StreamingSQLSuite extends SnappyFunSuite with Eventually with BeforeAndAfter {
 
   private var ssc: StreamingContext = null
   private var snsc: StreamingSnappyContext = null
@@ -34,9 +35,7 @@ class StreamingSQLSuite extends FunSuite with Eventually with BeforeAndAfter {
   ignore("sql on socket streams") {
 
     snsc.sql("create stream table socketStreamTable (name string, age int) using socket-stream options (hostname 'localhost', port '9998', " +
-      "storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', converter 'org.apache.spark.sql.streaming.MyStreamConverter')")
-
-    //val tableDStream = snsc.getSchemaDStream("socketStreamTable")
+      "storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter', converter 'org.apache.spark.sql.streaming.MyStreamConverter')")
 
     val resultSet: SchemaDStream = snsc.registerCQ("SELECT name FROM socketStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
 
@@ -49,10 +48,10 @@ class StreamingSQLSuite extends FunSuite with Eventually with BeforeAndAfter {
 
   test("sql on kafka streams") {
     intercept[Exception] {
-    snsc.sql("create stream table kafkaStreamTable (name string, age int) using kafka-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
+    snsc.sql("create stream table kafkaStreamTable (name string, age int) using kafka-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter', " +
       " zkQuorum '10.112.195.65:2181', groupId 'streamSQLConsumer', topics 'tweets:01')")
 
-    snsc.sql("create stream table directKafkaStreamTable (name string, age int) using kafka-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
+    snsc.sql("create stream table directKafkaStreamTable (name string, age int) using kafka-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter', " +
       " kafkaParams 'metadata.broker.list->localhost:9092,auto.offset.reset->smallest', topics 'tweets')")
 
     val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
@@ -77,7 +76,7 @@ class StreamingSQLSuite extends FunSuite with Eventually with BeforeAndAfter {
 
   ignore("sql on file streams") {
     var hfile: String = getClass.getResource("/2015.parquet").getPath
-    snsc.sql("create stream table fileStreamTable (name string, age int) using file-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', " +
+    snsc.sql("create stream table fileStreamTable (name string, age int) using file-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter', " +
       " directory '" + hfile + "')")
     snsc.registerCQ("SELECT name FROM fileStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
     snsc.sql( """STREAMING CONTEXT START """)

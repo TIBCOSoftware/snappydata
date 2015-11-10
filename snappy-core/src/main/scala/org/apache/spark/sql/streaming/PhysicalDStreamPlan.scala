@@ -9,7 +9,14 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 
 /**
+ * A PhysicalPlan wrapper of SchemaDStream, inject the validTime and
+ * generate an effective RDD of current batchDuration.
+ *
+ * @param output
+ * @param stream
+ *
  * Created by ymahajan on 25/09/15.
+ *
  */
 case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStream[InternalRow])
   extends SparkPlan with StreamPlan {
@@ -18,7 +25,7 @@ case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStrea
 
   def children = Nil
 
-  override def doExecute() : RDD[InternalRow]= {
+  override def doExecute(): RDD[InternalRow] = {
     assert(validTime != null)
     StreamUtils.invoke(classOf[DStream[Row]], stream, "getOrCompute", (classOf[Time], validTime))
       .asInstanceOf[Option[RDD[InternalRow]]]

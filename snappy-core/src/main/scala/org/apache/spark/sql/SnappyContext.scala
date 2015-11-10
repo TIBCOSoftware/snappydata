@@ -515,14 +515,15 @@ protected class SnappyContext(sc: SparkContext)
         case _ => Nil
       }
     }
+    /** Stream related strategies to map stream specific logical plan to physical plan. */
     object StreamQueryStrategy extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
         case LogicalDStreamPlan(output, stream) =>
-          PhysicalDStreamPlan(output, stream.asInstanceOf[DStream[InternalRow]]) :: Nil
+          PhysicalDStreamPlan(output, stream) :: Nil
         case WindowLogicalPlan(d, s, child) =>
           WindowPhysicalPlan(d, s, planLater(child)) :: Nil
-        case l @LogicalRelation(t: StreamPlan) =>
-          PhysicalDStreamPlan(l.output, t.stream) :: Nil
+//        case l @LogicalRelation(t: StreamPlan) =>
+//          PhysicalDStreamPlan(l.output, t.stream) :: Nil
         case _ => Nil
       }
     }
@@ -737,7 +738,7 @@ object SnappyContext {
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "socket-stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
     "file-stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
-    "kafka-stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName
+    "kafka" -> classOf[streaming.KafkaStreamSource].getCanonicalName
   )
 
   def apply(sc: SparkContext): SnappyContext = {

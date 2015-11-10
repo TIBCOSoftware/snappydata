@@ -5,14 +5,14 @@ import java.util.Properties
 import kafka.javaapi.producer.Producer
 import kafka.producer.{KeyedMessage, ProducerConfig}
 import io.snappydata.app.twitter.TwitterStream.OnTweetPosted
-import twitter4j.{Status, FilterQuery}
-//import twitter4j.
+import org.apache.spark.sql.streaming.Tweet
+import twitter4j.{TwitterObjectFactory, Status, FilterQuery, TwitterFactory}
+
 /**
  * Created by ymahajan on 28/10/15.
  */
 
 object KafkaProducer {
-
 
   val KafkaTopic = "tweets"
 
@@ -24,6 +24,7 @@ object KafkaProducer {
     new Producer[String,  Array[Byte]](config)
   }
 
+
   val filterUsOnly = new FilterQuery().locations(Array(
     Array(-126.562500,30.448674),
     Array(-61.171875,44.087585)))
@@ -33,11 +34,11 @@ object KafkaProducer {
     val twitterStream = TwitterStream.getStream
     twitterStream.addListener(new OnTweetPosted(s => sendToKafka(s)))
     twitterStream.filter(filterUsOnly)
+    //twitterStream.sample()
   }
 
   private def sendToKafka(s: Status) {
-    val msg = new KeyedMessage[String, Array[Byte]](KafkaTopic, s.toString.getBytes)//TwitterObjectFactory.getRawJSON(s))
+    val msg = new KeyedMessage[String, Array[Byte]](KafkaTopic, TwitterObjectFactory.getRawJSON(s).getBytes)
     kafkaProducer.send(msg)
   }
-
 }

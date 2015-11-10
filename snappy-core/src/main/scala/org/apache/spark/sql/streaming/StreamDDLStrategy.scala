@@ -2,10 +2,8 @@ package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{ExecutedCommand, SparkPlan}
 import org.apache.spark.streaming.Time
-import org.apache.spark.streaming.dstream.DStream
 
 /**
  * Created by ymahajan on 25/09/15.
@@ -25,7 +23,6 @@ object StreamDDLStrategy extends Strategy {
     case _ => Nil
   }
 }
-
 
 
 /*class StreamStrategies extends QueryPlanner[SparkPlan]{

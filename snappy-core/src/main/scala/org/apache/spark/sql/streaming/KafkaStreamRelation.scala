@@ -1,11 +1,12 @@
 package org.apache.spark.sql.streaming
 
+
 import kafka.serializer.StringDecoder
 import org.apache.spark.Logging
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
@@ -38,11 +39,11 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
 
 
-    /*import scala.reflect.runtime.{universe => ru}
-    @transient val formatter = StreamUtils.loadClass(options("formatter")).newInstance() match {
-    case f: StreamFormatter[_] => f.asInstanceOf[StreamFormatter[Any]]
-    case f => throw new AnalysisException(s"Incorrect StreamFormatter $f")
-    }*/
+  /*import scala.reflect.runtime.{universe => ru}
+  @transient val formatter = StreamUtils.loadClass(options("formatter")).newInstance() match {
+  case f: StreamFormatter[_] => f.asInstanceOf[StreamFormatter[Any]]
+  case f => throw new AnalysisException(s"Incorrect StreamFormatter $f")
+  }*/
 
   private val streamToRow = {
     try {
@@ -52,7 +53,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }
   }
-  private val kafkaStream = if (options.exists(_._1 == ZK_QUORUM)) {
+  @transient private val kafkaStream = if (options.exists(_._1 == ZK_QUORUM)) {
     val zkQuorum: String = options(ZK_QUORUM)
     val groupId: String = options(GROUP_ID)
 
@@ -72,8 +73,10 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
       }.toMap
     }.getOrElse(Map())
 
+    // Currently works with Strings only
     KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](
-    context, kafkaParams, topicsSet)
+     context, kafkaParams, topicsSet)
+    //TODO Yogesh, need to provide typed decoders to createDirectStream
   }
 
   @transient val stream: DStream[InternalRow] = kafkaStream.map(_._2).map(streamToRow.toRow)
