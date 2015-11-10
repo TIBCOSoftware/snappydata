@@ -5,17 +5,18 @@ import java.net.URL
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 
+import scala.collection.mutable
+import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
-
-import scala.collection.mutable
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
-import org.apache.spark.{SparkCallbacks, SparkEnv, SparkConf}
+import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 
 /**
  * This class is responsible for initiating the executor process inside
@@ -24,7 +25,10 @@ import org.apache.spark.{SparkCallbacks, SparkEnv, SparkConf}
  *
  * Created by hemant on 15/10/15.
  */
-object ExecutorInitiator {
+object ExecutorInitiator extends Logging {
+
+  val SNAPPY_BLOCKMANAGER = "org.apache.spark.storage.SnappyBlockManager"
+  val SNAPPY_SHUFFLEMEMORYMANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
@@ -114,9 +118,10 @@ object ExecutorInitiator {
                         }
                       }
                     }
-
-                    //TODO: Hemant: add executor specific properties from local conf to
-                    //TODO: this conf that was received from driver.
+                  //TODO: Hemant: add executor specific properties from local conf to
+                  //TODO: this conf that was received from driver.
+                    driverConf.set("spark.blockManager", SNAPPY_BLOCKMANAGER)
+                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLEMEMORYMANAGER)
 
                     //TODO: Hemant: get the number of cores from spark conf
 
@@ -144,17 +149,21 @@ object ExecutorInitiator {
               }
             }
           } catch {
-            case e: Exception =>
-              e.printStackTrace();
-              //TODO:Hemant: add a proper log statement
-              System.out.println("exception " + e)
-              Misc.checkIfCacheClosing(e)
+            case e@(NonFatal(_) | _: InterruptedException) =>
+              try {
+                Misc.checkIfCacheClosing(e)
+                // log any exception other than those due to cache closing
+                logWarning("unexpected exception in ExecutorInitiator", e)
+              } catch {
+                case NonFatal(e) => stopTask = true // just stop the task
+              }
           }
-        }
+        } // end of while(true)
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
-        GemFireXDUtils.getGfxdAdvisor.getDistributionManager.removeMembershipListener(membershipListener)
+        GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+            .removeMembershipListener(membershipListener)
       }
     }
 

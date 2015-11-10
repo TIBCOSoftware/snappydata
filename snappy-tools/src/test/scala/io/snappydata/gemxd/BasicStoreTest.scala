@@ -1,12 +1,16 @@
 package io.snappydata.gemxd
 
 import java.sql.{ResultSet, PreparedStatement, Statement, Connection}
+import java.util.Properties
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.jdbc.JdbcTestBase
+import io.snappydata.app.LocalSQLContext
+import io.snappydata.core.TestSqlContext
 
-import org.apache.spark.sql.Row
+
+import org.apache.spark.sql.{SaveMode, Row}
 import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerType}
 
 /**
@@ -14,8 +18,9 @@ import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerT
  */
 class BasicStoreTest(s: String) extends TestUtil(s) {
 
+
   override protected def tearDown(): Unit = {
-    val conn = TestUtil.getConnection
+    val conn = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     try {
       conn.createStatement().execute("drop table if exists t1")
     } catch {
@@ -25,9 +30,9 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     conn.close()
   }
 
-  @throws(classOf[Exception])
+ @throws(classOf[Exception])
   def testStringAsDatatype_runInXD {
-    val conn: Connection = TestUtil.getConnection
+    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     val st: Statement = conn.createStatement
     var rs: ResultSet = null
     st.execute("create table t1 (c1 int primary key, c2 String)")
@@ -51,27 +56,12 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
 
   @throws(classOf[Exception])
   def testStringAsDatatype_runInSpark {
-    // First run the above query directly in Spark
-    val conf = new org.apache.spark.SparkConf().setAppName("ExternalStoreTest")
-        .set("spark.logConf", "true")
-    val setMaster: String = "local[6]"
-    conf.setMaster(setMaster)
 
-    val sc = new org.apache.spark.SparkContext(conf)
+    val sc = TestSqlContext.newSparkContext
+
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     snContext.sql("set spark.sql.shuffle.partitions=6")
 
-    val props = Map(
-      //"url" -> "jdbc:snappydata:;mcast-port=45672;persist-dd=false;",
-      "url" -> "jdbc:gemfirexd:;mcast-port=45672;persist-dd=false;",
-      "poolImpl" -> "tomcat",
-      //"single-hop-enabled" -> "true",
-      //"poolProps" -> "",
-      //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "user" -> "app",
-      "password" -> "app"
-    )
 
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
     val rdd = sc.parallelize(data, data.length).map(s =>
@@ -87,7 +77,8 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     })
 
     //dataDF.registerTempTable("t1")
-    snContext.registerAndInsertIntoExternalStore(dataDF, "t1", schema, props)
+    dataDF.write.format("column").mode(SaveMode.Ignore).options(Map.empty[String, String]).saveAsTable("t1")
+    //snContext.registerAndInsertIntoExternalStore(dataDF, "t1", schema, props)
     //sc.createColumnTable("t1", dataDF.schema, "jdbcColumnar", props)
     //dataDF.write.format("jdbcColumnar").mode(SaveMode.Append).options(props).saveAsTable("t1")
 
@@ -96,6 +87,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     doPrint("=============== RESULTS START ===============")
     result.collect.foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
+    sc.stop()
   }
 
   def verifyRows(r: Row) : Unit = {
@@ -104,9 +96,9 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   }
 
   // Copy from BugsTest to verify basic JUnit is running in Scala
-  @throws(classOf[Exception])
+ @throws(classOf[Exception])
   def testBug47329 {
-    val conn: Connection = TestUtil.getConnection
+    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     val st: Statement = conn.createStatement
     var rs: ResultSet = null
     st.execute("create table t1 (c1 int primary key, c2  varchar(10))")

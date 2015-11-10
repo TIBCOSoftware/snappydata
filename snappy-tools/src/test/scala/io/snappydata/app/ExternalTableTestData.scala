@@ -21,4 +21,4 @@ class LocalSQLContext
 
 }
 
-object TestSQLContext extends LocalSQLContext
+

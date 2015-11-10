@@ -1,18 +1,33 @@
 package io.snappydata.tools
 
 import com.pivotal.gemfirexd.FabricService
-import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdDistributionLocator}
+import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
+import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
 import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
-import io.snappydata.ServiceManager
+import io.snappydata.{LocalizedMessages, ServiceManager}
 
 /**
- * Created by soubhikc on 17/10/15.
+ * Launcher extension for GFXD server launcher to use Snappy service manager.
+ *
+ * @author soubhik
  */
 class ServerLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   @throws(classOf[Exception])
-  override protected def getFabricServiceInstance: FabricService = ServiceManager.getServerInstance
+  override protected def getFabricServiceInstance: FabricService =
+    ServiceManager.getServerInstance
 
+  override protected def run(args: Array[String]): Unit = {
+    super.run(args)
+  }
+
+  override protected def usage(): Unit = {
+    val script: String = LocalizedMessages.res.getTextMessage("SD_SERVER_SCRIPT")
+    val name: String = LocalizedMessages.res.getTextMessage("SD_SERVER_NAME")
+    val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP", script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), LocalizedResource.getMessage("FS_EXTRA_HELP"))
+    printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
+  }
 }
 
 object ServerLauncher {
@@ -21,17 +36,28 @@ object ServerLauncher {
     val launcher = new ServerLauncher("SnappyData Server")
     launcher.run(args)
   }
-
 }
 
 /**
- * Created by soubhikc on 17/10/15.
+ * Launcher extension for GFXD locator launcher to use Snappy service manager.
+ *
+ * @author soubhik
  */
 class LocatorLauncher(baseName: String) extends GfxdDistributionLocator(baseName) {
 
   @throws(classOf[Exception])
-  override protected def getFabricServiceInstance: FabricService = ServiceManager.getLocatorInstance
+  override protected def getFabricServiceInstance: FabricService =
+    ServiceManager.getLocatorInstance
 
+  override protected def run(args: Array[String]): Unit = {
+    super.run(args)
+  }
+
+  override protected def usage(): Unit = {
+    val script: String = LocalizedMessages.res.getTextMessage("SD_LOC_SCRIPT")
+    val name: String = LocalizedMessages.res.getTextMessage("SD_LOC_NAME")
+    printUsage(LocalizedResource.getMessage("SERVER_HELP", script, name, LocalizedResource.getMessage("LOC_ADDRESS_ARG"), LocalizedResource.getMessage("LOC_EXTRA_HELP")), SanityManager.DEFAULT_MAX_OUT_LINES)
+  }
 }
 
 object LocatorLauncher {
@@ -40,5 +66,4 @@ object LocatorLauncher {
     val launcher = new LocatorLauncher("SnappyData Locator")
     launcher.run(args)
   }
-
 }

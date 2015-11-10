@@ -1,16 +1,22 @@
 package io.snappydata.dunit
 
+import java.sql.DriverManager
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.{Attribute, FabricService}
 import dunit.{AvailablePortHelper, DistributedTestBase, Host}
 import io.snappydata.{Lead, Locator, Server, ServiceManager}
+import org.apache.derbyTesting.junit.CleanDatabaseTestSetup
 
 /**
  * Created by amogh on 15/10/15.
  */
 class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
+
+  import SnappyBaseDUnitTest._
 
   val props: Properties = new Properties()
 
@@ -35,6 +41,11 @@ class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
     GemFireXDUtils.IS_TEST_MODE = false
   }
 
+
+  def testHelloWorld(): Unit = {
+    helloWorld()
+  }
+
   /**
    * This test is not really making use of distributed capability of the framework here.
    * It just does what tests in ServerStartSuite.scala do, but in a single test. It has been added here as a starting point.
@@ -42,7 +53,7 @@ class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
    * These entities (lead, server, locator) do not really talk to each other in this test.
    * Each is started with mcast-port = 0.
    */
-  def testSnappyEntitiesStartStop(): Unit = {
+  def _testSnappyEntitiesStartStop(): Unit = {
     val arg: Array[AnyRef] = Array(props)
 
     vm2.invoke(this.getClass, "startSnappyLocator", arg)
@@ -55,6 +66,10 @@ class SnappyBaseDUnitTest(s: String) extends DistributedTestBase(s) {
  * New utility methods would need to be added as and when corresponding snappy code gets added.
  */
 object SnappyBaseDUnitTest {
+
+  def helloWorld(): Unit = {
+    println("Hello World! " + this.getClass)
+  }
 
   def startSnappyLead(props: Properties): Unit = {
     val lead: Lead = ServiceManager.getLeadInstance
@@ -82,8 +97,15 @@ object SnappyBaseDUnitTest {
 
   def stopAny(): Unit = {
     val service = ServiceManager.currentFabricServiceInstance
-
     if (service != null) {
+      // cleanup the database objects first
+      val store: GemFireStore = GemFireStore.getBootedInstance
+      if (store != null && Misc.getGemFireCacheNoThrow != null
+          && GemFireXDUtils.getMyVMKind.isAccessorOrStore) {
+        val conn = DriverManager.getConnection("jdbc:snappydata:;")
+        CleanDatabaseTestSetup.cleanDatabase(conn, false)
+        conn.close()
+      }
       service.stop(null)
     }
   }

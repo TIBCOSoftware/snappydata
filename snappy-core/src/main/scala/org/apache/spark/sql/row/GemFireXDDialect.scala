@@ -35,6 +35,8 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
         props
     }
   }
+
+  override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
 
 /**
@@ -48,6 +50,8 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
   JdbcDialects.registerDialect(GemFireXDClientDialect)
 
   def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd://") || url.startsWith("jdbc:snappydata://"))
+
+  override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
 
 abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
@@ -131,7 +135,15 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   }
 
   override def initializeTable(tableName: String, conn: Connection): Unit = {
-    JdbcExtendedUtils.executeUpdate(
-      s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
+      val stmt = conn.createStatement()
+      val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='${tableName.toUpperCase}'")
+      val result = if (rs.next()) rs.getString(1) else null
+      if(result.equalsIgnoreCase("PARTITION") || result.equalsIgnoreCase("PERSISTENT_PARTITION")){
+        JdbcExtendedUtils.executeUpdate(
+          s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
+      }
+      rs.close()
+      stmt.close()
   }
+
 }
