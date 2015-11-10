@@ -35,7 +35,7 @@ object SampleTableQuery  {
       val numBatches = 1
       val numBootstrapTrials = 5 // keep small since we're debugging and printing...
 
-      configureOnlineRun(spc, numBatches, numBootstrapTrials, "true") // Setup conf for BlinkDB
+      configureOnlineRun(spc, numBatches, numBootstrapTrials, "false") // Setup conf for BlinkDB
       msg("about to create table")
       createHiveLineitemTable(spc)
       msg("created table")

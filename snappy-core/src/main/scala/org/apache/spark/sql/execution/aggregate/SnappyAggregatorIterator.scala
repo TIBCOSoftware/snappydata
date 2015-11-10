@@ -167,7 +167,7 @@ abstract class SnappyAggregationIterator(
     aggregationMode match {
       // Partial-only
       //case (Some(Partial), None) =>
-      case Partial =>
+      case Partial | Final=>
 
 
         (currentBuffer: Array[DelegateAggregateFunction], row: InternalRow) => {
@@ -179,7 +179,22 @@ abstract class SnappyAggregationIterator(
         }
 
       // PartialMerge-only or Final-only
-      case PartialMerge | Final =>
+      case PartialMerge  =>
+
+
+        /*
+        val filter = buildRelayFilter()
+        if (filter(result)) {
+          // Broadcast the old results
+          val broadcastProjection = buildRelayProjection()
+          val toBroadcast = broadcastProjection(result)
+          SparkEnv.get.blockManager.putSingle(
+            LazyBlockId(opId.id, currentBatch, index), toBroadcast, StorageLevel.MEMORY_AND_DISK)
+        }
+
+        // Pass on the new results
+        if (prevRow != null) Iterator() else*/
+
         /*val inputAggregationBufferSchema = if (initialInputBufferOffset == 0) {
           // If initialInputBufferOffset, the input value does not contain
           // grouping keys.
@@ -321,7 +336,7 @@ abstract class SnappyAggregationIterator(
     aggregationMode match {
       // Partial-only or PartialMerge-only: every output row is basically the values of
       // the grouping expressions and the corresponding aggregation buffer.
-      case Partial =>
+      case Partial|Final =>
 
 
         // Because we cannot copy a joinedRow containing a UnsafeRow (UnsafeRow does not

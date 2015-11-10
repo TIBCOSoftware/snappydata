@@ -8,15 +8,17 @@ import scala.collection.mutable
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.HiveTypeCoercion
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
+import org.apache.spark.sql.catalyst.expressions.Count
+import org.apache.spark.sql.catalyst.expressions.Sum
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateFunction2, AlgebraicAggregate, Complete, Final, PartialMerge, Partial, AggregateExpression2}
+import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeGenContext, GeneratedExpressionCode}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.aggregate.SortBasedAggregate
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.hive.SampledRelation
-import org.apache.spark.sql.types.{BooleanType, DataType}
+import org.apache.spark.sql.types.{Metadata, BooleanType, DataType}
 
 /**
  * Remark:
@@ -380,7 +382,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
               val newAggrs = optimized.flatMap {
                 case alias@Alias(expr, name) if isAggregate(expr) =>
                   val newExpr = expr.transformUp {
-                    case sum: Sum =>
+                    case sum: org.apache.spark.sql.catalyst.expressions.Sum =>
                        val dSum = if (partial ) {
                          Delegate(btCnt, sum)
                        } else {
@@ -398,7 +400,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                       }
                       If(ByteNonZero(aBtCnt.child), dSum, Literal.create(null, dSum.dataType))
 */
-                    case count: Count =>
+                    case count: org.apache.spark.sql.catalyst.expressions.Count =>
                        if (partial ) {
                       Delegate(btCnt, count)
                      } else {
@@ -450,7 +452,15 @@ object PropagateBootstrap extends Rule[SparkPlan] {
               val params = aggrs.flatMap {
                 _.collect {
                   case a: AggregateExpression1 => a.children
-                  case AggregateExpression2(aggFunc,_,_) => aggFunc.children
+                  case AggregateExpression2(aggFunc: AlgebraicAggregate,_,_) => if(partial) {
+                    aggFunc.children
+                  }else {
+                    aggFunc.mergeExpressions.flatMap {
+                      _.collect {
+                        case a : Attribute => a
+                      }
+                    }
+                  }
                 }.flatten
               }.distinct
 
@@ -482,6 +492,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
               val aBtCnt = TaggedAlias(Bootstrap(),
                 Delegate(btCnt, Count01(boolTrue)), "_btcnt")()
+              var i = 0
               val newAggrs = optimized.flatMap {
                 case a: AggregateExpression2 =>
                   val newExpr = a.transformUp {
@@ -490,9 +501,56 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                       val dSum = if (partial) {
                         DelegateFunction(btCnt, sum, None)
                       } else {
+                        //remap the parameter
+                        val z = sum.transformUp {
+                          case att: AttributeReference => {
+                           val exchangeOption = aggregate.child match {
+                             case ex: Exchange => Some(ex)
+                             case _ => None
+                           }
+
+                            val s = exchangeOption.getOrElse(
+                              throw new UnsupportedOperationException("not an exhabge")).child match {
+                              case BootstrapSortedAggregate(_, groupings, aggExp, _) =>  {
+                                val exp = aggExp.filter ( x => {
+                                  val y = x.flatMap(_.references)
+                                  y.exists {
+                                    case t: NamedExpression => t.exprId == att.exprId
+                                    case _ => false
+                                  }
+                                }
+
+                            )
+
+                                  if (!exp.isEmpty) {
+                                    val temp = exp(0)
+                                    AttributeReference("dummy_replace",temp.dataType,
+                                      temp.nullable,
+                                    temp.metadata)(
+                                    temp.exprId,
+                                    temp.qualifiers)
+
+                                  } else {
+                                    att
+                                  }
+                                }
+                                case _ => att
+
+                                }
+                            s
+                          }
+
+                              case all => all
+
+                            }
+
+
+
+
                         //Cast(scale(DelegateFunction(btCnt, sum), ScaleFactor()), sum.dataType)
-                        DelegateFunction(btCnt, sum, Some(ScaleFactor()))
+                        DelegateFunction(btCnt, z.asInstanceOf[org.apache.spark.sql.catalyst.expressions.aggregate.Sum], Some(ScaleFactor()))
                       }
+
                       dSum
                       //If(ByteNonZero(aBtCnt.child), dSum, Literal.create(null, dSum.dataType))
 
@@ -519,6 +577,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
 
                     if (!partial) {
+
                       val ne1   = TaggedAggregateExpression2(Uncertain ,newExpr.aggregateFunction, a.mode,a.isDistinct, "dummy")()
                       val ne=  TaggedAlias(Uncertain, ne1, "dummy")(ne1.exprId)
 
@@ -532,16 +591,18 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                 } /*else if (BootStrapUtils.containsUncertain(expr.references)) {
                  TaggedAlias(Uncertain, newExpr, name)(alias.exprId, alias.qualifiers) :: Nil
                 }*/ else {
-                      UnTaggedAggregateExpression2(newExpr.aggregateFunction, a.mode,a.isDistinct, "dummy")() :: Nil
+                      val exprID = aggregate.resultExpressions(i).exprId
+                      UnTaggedAggregateExpression2(newExpr.aggregateFunction, a.mode,a.isDistinct, "dummy")(exprId = exprID) :: Nil
                 }
 
 
                 case expr: NamedExpression => expr :: Nil
               } :+ aBtCnt
-
+              i = i +1
               BootstrapSortedAggregate(partial, groupings, newAggrs.asInstanceOf[Seq[NamedExpression]], newChild)
 
-            case _ => aggregate
+            case _ =>  aggregate
+
           }
         case join@BroadcastHashJoin(leftKeys, rightKeys, buildSide, left, right) =>
           // TODO: move uncertain join keys to a filter
@@ -798,6 +859,7 @@ object PruneColumns extends Rule[SparkPlan] {
       case TaggedAttribute(_: Bound, _, _, _, _) =>
       case a => used += a.exprId
     }
+
     plan.transformDown {
       case Project(projectList, child) =>
         val project = Project(projectList.filter(e => used.contains(e.exprId)), child)
@@ -915,8 +977,9 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
     val toFlattened = new mutable.HashMap[ExprId, Seq[Attribute]]()
 
     def flatten(expression: Expression): Seq[Expression] = expression match {
-      case ApproxColumn(conf, columns, mults, _) =>
+      case ApproxColumn(conf, columns, mults, _) => {
         ApproxColumn(conf, columns.flatMap(flatten), mults.flatMap(flatten)) :: Nil
+      }
       case ExistsPlaceholder(child) => flatten(child).reduceRight(Or) :: Nil
       case ForAllPlaceholder(child) => flatten(child).reduceRight(And) :: Nil
       case LowerPlaceholder(child) => flatten(child).reduceRight(MinOf) :: Nil
@@ -931,25 +994,31 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
         }
         toFlattened(alias.exprId) = flattened.map(_.toAttribute)
         flattened
-      case alias@TaggedAlias(tag, child, name) =>
+      case alias@TaggedAlias(tag, child, name) => {
         val flattened = flatten(child).zipWithIndex.map { case (expr, idx) =>
           if (idx == 0) {
-            child match {
-              case x: TaggedAggregateExpression2 => x
-              case _ => TaggedAlias(tag, expr, name)(alias.exprId, alias.qualifiers)
-            }
+            // child match {
+            // case x: TaggedAggregateExpression2 => x
+            // case _ =>
+            TaggedAlias(tag, expr, name)(alias.exprId, alias.qualifiers)
+            // }
           }
           else {
-            child match {
-              case x: TaggedAggregateExpression2 => x
-              case _ =>  TaggedAlias(tag, expr, name)(qualifiers = alias.qualifiers)
-            }
-
-
+            // child match {
+            // case x: TaggedAggregateExpression2 => TaggedAggregateExpression2(x.tag, x.aggregateFunction, x.mode,
+            //   x.isDistinct, x.name)(qualifiers = x.qualifiers, explicitMetadata = x.explicitMetadata)
+            // case _ =>
+            TaggedAlias(tag, expr, name)(qualifiers = alias.qualifiers)
           }
+
+
         }
+
+
         toFlattened(alias.exprId) = flattened.map(_.toAttribute)
         flattened
+
+      }
       case alias@Alias(child, name) =>
         val flattened = flatten(child).zipWithIndex.map { case (expr, idx) =>
           if (idx == 0) Alias(expr, name)(alias.exprId, alias.qualifiers)
@@ -957,6 +1026,18 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
         }
         toFlattened(alias.exprId) = flattened.map(_.toAttribute)
         flattened
+
+      case uta@UnTaggedAggregateExpression2( aggFunc: DelegateFunction,mode,
+      isDistinct, name) => {
+        val flattened = flatten(aggFunc).zipWithIndex.map { case (expr, idx) =>
+          if (idx == 0) UnTaggedAggregateExpression2(expr.asInstanceOf[AggregateFunction2], mode, isDistinct, name)(uta.exprId, uta.qualifiers,
+            uta.explicitMetadata)
+          else UnTaggedAggregateExpression2(expr.asInstanceOf[AggregateFunction2], mode, isDistinct, name)(qualifiers= uta.qualifiers,
+            explicitMetadata = uta.explicitMetadata)
+        }
+        toFlattened(uta.exprId) = flattened.map(_.toAttribute)
+        flattened
+      }
       case poisson: SetSeedAndPoisson =>
         poisson +: Seq.tabulate(numTrials - 1)(_ => poisson.poisson)
       case expr if expr.children.nonEmpty =>
@@ -992,8 +1073,10 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
       case Project(projectList, child) =>
         Project(flattenNamed(projectList), child)
 
-      case CollectPlaceholder(projectList, child) =>
-        CollectPlaceholder(flattenNamed(projectList), child)
+      case CollectPlaceholder(projectList, child) => {
+        val x = flattenNamed(projectList)
+        CollectPlaceholder(x, child)
+      }
     }
   }
 }
@@ -1017,7 +1100,52 @@ object IdentifyLazyEvaluates extends Rule[SparkPlan] {
         case attr: Attribute => q.inputSet.find(_.exprId == attr.exprId).getOrElse(attr)
       }
 
+      System.out.print(withNewLeaves)
+
       withNewLeaves match {
+        case aggregate@BootstrapSortedAggregate(false, groupings, aggrs, child) =>
+          // An partial aggregate does not need to be converted to lazy evaluates,
+          // even if its input has lazy evaluates,
+          // because its output won't be reused
+          val opId = OpId.newOpId
+          val numShuffleParts = aggregate.sqlContext.conf.numShufflePartitions
+          val keys = BootStrapUtils.toNamed(groupings)
+
+          val toNewAttr = mutable.HashMap[ExprId, Attribute]()
+          val schema = aggrs.collect {
+            case alias@TaggedAlias(Uncertain, _, _) =>
+              // To distinguish the schema for lazy evals from the output
+              val attribute = alias.toAlias.toAttribute.newInstance()
+              toNewAttr(alias.exprId) = attribute
+              attribute
+            case alias@TaggedAlias(_: Bound, _, _) =>
+              val attribute = alias.toAlias.toAttribute.newInstance()
+              toNewAttr(alias.exprId) = attribute
+              attribute
+            case taggedExpr@TaggedAggregateExpression2(Uncertain,_,_,_,_) =>
+              // To distinguish the schema for lazy evals from the output
+              val attribute = taggedExpr.toAttribute.newInstance()
+              toNewAttr(taggedExpr.exprId) = attribute
+              attribute
+          }
+
+          val newAggrs = aggrs.map {
+            case alias@TaggedAlias(Uncertain, expr, name) =>
+              TaggedAlias(
+                LazyAggregate(opId, numShuffleParts, keys, schema, toNewAttr(alias.exprId)),
+                expr, name)(alias.exprId, alias.qualifiers)
+            case alias@TaggedAlias(bound: Bound, expr, name) =>
+              TaggedAlias(
+                LazyAggrBound(opId, numShuffleParts, keys, schema, toNewAttr(alias.exprId), bound),
+                expr, name)(alias.exprId, alias.qualifiers)
+            case taggedExpr@TaggedAggregateExpression2(Uncertain,aggregateFunction, mode, isDistinct, name)=>
+              TaggedAlias(
+                LazyAggregate(opId, numShuffleParts, keys, schema, toNewAttr(taggedExpr.exprId)),
+                aggregateFunction, name)(taggedExpr.exprId, taggedExpr.qualifiers)
+            case expr => expr
+          }
+          BootstrapSortedAggregate(partial = false, groupings, newAggrs, child)
+
         case aggregate@BootstrapAggregate(false, groupings, aggrs, child) =>
           // An partial aggregate does not need to be converted to lazy evaluates,
           // even if its input has lazy evaluates,
@@ -1051,40 +1179,6 @@ object IdentifyLazyEvaluates extends Rule[SparkPlan] {
             case expr => expr
           }
           BootstrapAggregate(partial = false, groupings, newAggrs, child)
-
-        case aggregate@BootstrapSortedAggregate(false, groupings, aggrs, child) =>
-          // An partial aggregate does not need to be converted to lazy evaluates,
-          // even if its input has lazy evaluates,
-          // because its output won't be reused
-          val opId = OpId.newOpId
-          val numShuffleParts = aggregate.sqlContext.conf.numShufflePartitions
-          val keys = BootStrapUtils.toNamed(groupings)
-
-          val toNewAttr = mutable.HashMap[ExprId, Attribute]()
-          val schema = aggrs.collect {
-            case alias@TaggedAlias(Uncertain, _, _) =>
-              // To distinguish the schema for lazy evals from the output
-              val attribute = alias.toAlias.toAttribute.newInstance()
-              toNewAttr(alias.exprId) = attribute
-              attribute
-            case alias@TaggedAlias(_: Bound, _, _) =>
-              val attribute = alias.toAlias.toAttribute.newInstance()
-              toNewAttr(alias.exprId) = attribute
-              attribute
-          }
-
-          val newAggrs = aggrs.map {
-            case alias@TaggedAlias(Uncertain, expr, name) =>
-              TaggedAlias(
-                LazyAggregate(opId, numShuffleParts, keys, schema, toNewAttr(alias.exprId)),
-                expr, name)(alias.exprId, alias.qualifiers)
-            case alias@TaggedAlias(bound: Bound, expr, name) =>
-              TaggedAlias(
-                LazyAggrBound(opId, numShuffleParts, keys, schema, toNewAttr(alias.exprId), bound),
-                expr, name)(alias.exprId, alias.qualifiers)
-            case expr => expr
-          }
-          BootstrapSortedAggregate(partial = false, groupings, newAggrs, child)
         case project: Project =>
           project.transformExpressionsUp {
             case alias@TaggedAlias(Uncertain, child, name)

@@ -59,6 +59,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
 
   @transient
   override protected[sql] val prepareForExecution = new RuleExecutor[SparkPlan] {
+    val isDebug = false
     val batches = Seq(
       Batch("Add exchange", Once, EnsureRequirements(self)),
       Batch("Add row converters", Once, EnsureRowFormats),
@@ -76,7 +77,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
             PropagateBootstrap,
             IdentifyUncertainTuples,
             CleanupOutputTuples,
-            InsertCollect(true, .95)
+            InsertCollect(isDebug, .95)
       ) ,
       Batch("Post-Bootstrap Optimization", FixedPoint(100),
             PruneColumns,

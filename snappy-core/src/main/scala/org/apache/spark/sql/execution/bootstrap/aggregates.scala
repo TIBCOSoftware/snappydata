@@ -124,33 +124,53 @@ trait DelegatedAggregate {
       delegateeMap(as.map(_.unbound.multiplicity))
 
     var offset = 0
-    groupedAggregates.map {
-      case (Sum(e), as) =>
-        val delegate = BindReferences.bindReference(DelegateSum(e, bind(as), offset), child.output)
-        offset += as.length
-        delegate
-      case (Count(e), as) =>
-        val delegate = BindReferences.bindReference(DelegateCount(e, bind(as), offset), child.output)
-        offset += as.length
-        delegate
-      case (Count01(e), as) =>
-        val delegate = BindReferences.bindReference(DelegateCount01(e, bind(as), offset), child.output)
-        offset += as.length
-        delegate
+    try {
+      groupedAggregates.map {
+        case (Sum(e), as) =>
+          val delegate = BindReferences.bindReference(DelegateSum(e, bind(as), offset), child.output)
+          offset += as.length
+          delegate
+        case (Count(e), as) =>
+          val delegate = BindReferences.bindReference(DelegateCount(e, bind(as), offset), child.output)
+          offset += as.length
+          delegate
+        case (Count01(e), as) =>
+          val delegate = BindReferences.bindReference(DelegateCount01(e, bind(as), offset), child.output)
+          offset += as.length
+          delegate
 
-      case (org.apache.spark.sql.catalyst.expressions.aggregate.Sum(e), as) =>
-        val delegate = BindReferences.bindReference(DelegateSum(e, bind(as), offset), child.output)
-        offset += as.length
-        delegate
-      case (org.apache.spark.sql.catalyst.expressions.aggregate.Count(e), as) =>
-        val delegate = BindReferences.bindReference(DelegateCount(e, bind(as), offset), child.output)
-        offset += as.length
-        delegate
-      case (Count01(e), as) =>
-        val delegate = BindReferences.bindReference(DelegateCount01(e, bind(as), offset), child.output)
-        offset += as.length
-        delegate
-    }.toArray
+        case (func@org.apache.spark.sql.catalyst.expressions.aggregate.Sum(e), as) =>
+          //if(true) {
+            val del = BindReferences.bindReference(DelegateSum(e, bind(as), offset), child.output)
+            offset += as.length
+            del
+          /*}else {
+            val modifiedE = e.transform {
+              case a: AttributeReference => {
+                 System.out.print("a")
+                 func.cloneBufferAttributes (0)
+              }
+            }
+            val del = BindReferences.bindReference(DelegateSum(modifiedE, bind(as), offset), child.output)
+            offset += as.length
+            del
+          }*/
+
+        case (org.apache.spark.sql.catalyst.expressions.aggregate.Count(e), as) =>
+          val delegate = BindReferences.bindReference(DelegateCount(e, bind(as), offset), child.output)
+          offset += as.length
+          delegate
+        case (Count01(e), as) =>
+          val delegate = BindReferences.bindReference(DelegateCount01(e, bind(as), offset), child.output)
+          offset += as.length
+          delegate
+      }.toArray
+    }catch {
+      case th: Throwable => {
+        th.printStackTrace()
+        throw th
+      }
+    }
   }
 
   /** The schema of the result of all aggregate evaluations */
@@ -386,8 +406,6 @@ case class SortedAggregateWith2Inputs2Outputs(
     "numInputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of input rows"),
     "numOutputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of output rows"))
   val partial = false
-
-
 
   override def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
     val numInputRows = longMetric("numInputRows")

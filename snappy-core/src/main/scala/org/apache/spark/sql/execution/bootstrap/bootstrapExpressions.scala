@@ -177,15 +177,24 @@ private[sql] case class TaggedAggregateExpression2(
   override def references: AttributeSet = {
     val childReferences = mode match {
       case Partial | Complete => aggregateFunction.references.toSeq
-      case PartialMerge | Final => aggregateFunction.bufferAttributes
+      case PartialMerge | Final =>aggregateFunction.references.toSeq// aggregateFunction.bufferAttributes
+    }
+    val subRefs = this.aggregateFunction match {
+      case  DelegateFunction(_, aggFunc2,_) =>  {
+        mode match {
+          case Partial | Complete => aggFunc2.references.toSeq
+          case PartialMerge | Final => aggFunc2.bufferAttributes
+        }
+      }
+      case _ => Nil
     }
 
-    AttributeSet(childReferences)
+    AttributeSet(childReferences ++ subRefs)
   }
 
   override def toString: String = s"(${aggregateFunction},mode=$mode,isDistinct=$isDistinct)"
 
-  def toAttribute: Attribute = AttributeReference(name, aggregateFunction.dataType, aggregateFunction.nullable, metadata)(exprId, qualifiers)
+  override def toAttribute: Attribute = AttributeReference(name, aggregateFunction.dataType, aggregateFunction.nullable, metadata)(exprId, qualifiers)
 
   override protected final def otherCopyArgs: Seq[AnyRef] = {
     exprId :: qualifiers :: explicitMetadata :: Nil
