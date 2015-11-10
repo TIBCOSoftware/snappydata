@@ -12,7 +12,7 @@ import io.snappydata.dunit.cluster.{ClusterManagerTestUtils, ClusterManagerTestB
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{SaveMode, DataFrame, Row}
 
 /**
  * Basic hive meta-store client test in Snappy cluster.
@@ -28,6 +28,11 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
 
   def testHelloWorld(): Unit = {
     helloWorld()
+  }
+
+  override def tearDown2(): Unit = {
+    super.tearDown2()
+    stopAny()
   }
 
   def testOne(): Unit = {
@@ -155,6 +160,7 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
+        .set("snappydata.store.locators", locStr)
 
     if (setMaster != null) {
       conf.setMaster(setMaster)
@@ -218,7 +224,8 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
           snContext.createDataFrame(rowRDD, schema)
         }
 
-      airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
+      airlineDataFrame.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("airline")
+      //airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
     }
 
     val rdd = sc.parallelize(
