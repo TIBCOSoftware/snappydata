@@ -29,18 +29,26 @@ object KafkaConsumer {
     val sc = new org.apache.spark.SparkConf()
       .setMaster("local[2]")
       .setAppName("kafkaconsumer")
-    val ssc = new StreamingContext(new SparkContext(sc), Duration(2000))
+    val ssc = new StreamingContext(new SparkContext(sc), Milliseconds(200))
     val snsc = StreamingSnappyContext(ssc);
 
     val streamTable = "directKafkaStreamTable"
-    snsc.sql("create stream table "+ streamTable + " (name string, text string) using kafka-stream options (storagelevel 'MEMORY_AND_DISK_SER_2', formatter 'org.apache.spark.sql.streaming.MyStreamFormatter', streamToRow 'org.apache.spark.sql.streaming.MyMessageToRowConverter' ," +
+    snsc.sql("create stream table "+ streamTable + " (id long, text string, fullName string, country string, retweets int) using kafka options (storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter' ," +
       " kafkaParams 'metadata.broker.list->localhost:9092', topics 'tweets')")
+
+    snsc.udf.register("sentiment", sentiment _)
 
     //snsc.sql("select * from directKafkaStreamTable").show()
 
-    val resultSet: SchemaDStream = snsc.registerCQ("SELECT text FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) ")
-    resultSet.foreachRDD(rdd => print(s"Received Twitter stream results. Count: ${rdd.count()}"))
-    resultSet.foreachRDD { r => r.foreach(println) }
+    //val resultSet: SchemaDStream = snsc.registerCQ("SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where country='jp'")
+    //val resultSet: SchemaDStream = snsc.registerCQ("SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%girl%' limit 10")
+
+   // val resultSet: SchemaDStream = snsc.registerCQ("SELECT retweets, max(retweets), min(retweets), avg(retweets) FROM directKafkaStreamTable window (duration '20' seconds, slide '20' seconds) group by retweets")
+    val resultSet: SchemaDStream = snsc.registerCQ("select sentiment(text) from directKafkaStreamTable window (duration '10' seconds, slide '10' seconds) where text like '%girl%' group by sentiment(text)")
+    //val resultSet: SchemaDStream = snsc.registerCQ("SELECT retweets, max(retweets), min(retweets), avg(retweets) FROM directKafkaStreamTable window (duration '20' seconds, slide '20' seconds) group by retweets")
+
+    resultSet.foreachRDD(rdd => println(s"Received Twitter stream results. Count: ${if(!rdd.isEmpty()) rdd.first()}"))
+    //resultSet.foreachRDD { r => r.foreach(println) }
 
 
 //    snsc.cacheTable(streamTable)
@@ -62,7 +70,34 @@ object KafkaConsumer {
 //    snsc.sql("select count(*) as count from kafkaStreamGemXdTable").show()
 
     snsc.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(20* 1000)
+    ssc.awaitTerminationOrTimeout(120* 1000)
     snsc.sql( """STREAMING CONTEXT STOP """)
   }
+
+  def sentiment(s:String) : String = {
+    val positive = Array("like", "love", "good", "great", "happy", "cool", "the", "one", "that")
+    val negative = Array("hate", "bad", "stupid", "is")
+
+    var st = 0;
+
+    val words = s.split(" ")
+    positive.foreach(p =>
+      words.foreach(w =>
+        if(p==w) st = st+1
+      )
+    )
+
+    negative.foreach(p=>
+      words.foreach(w=>
+        if(p==w) st = st-1
+      )
+    )
+    if(st>0)
+      "positivie"
+    else if(st<0)
+      "negative"
+    else
+      "neutral"
+  }
+
 }

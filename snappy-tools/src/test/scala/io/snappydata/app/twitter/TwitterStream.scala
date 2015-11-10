@@ -15,6 +15,7 @@ object TwitterStream {
       .setOAuthConsumerSecret("gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR")
       .setOAuthAccessToken("43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq")
       .setOAuthAccessTokenSecret("aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu")
+      .setJSONStoreEnabled(true)
       .build()
     twitterConf
   }
@@ -23,7 +24,8 @@ object TwitterStream {
 
   class OnTweetPosted(cb: Status => Unit) extends StatusListener {
 
-    override def onStatus(status: Status): Unit = cb(status)
+    override def onStatus(status: Status): Unit = {
+      cb(status)}
     override def onException(ex: Exception): Unit = throw ex
 
     // no-op for the following events

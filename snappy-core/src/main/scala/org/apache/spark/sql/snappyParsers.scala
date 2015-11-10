@@ -397,6 +397,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
           // around in StreamRelation so as to give the proper runtime type
+          //TODO Yogesh, need to see if this needs to be extended for other stream relations
           case (streamTableName, LogicalRelation(sr: SocketStreamRelation[_])) =>
             (streamTableName, sr.asInstanceOf[SocketStreamRelation[Any]])
         }
