@@ -1,6 +1,6 @@
 package org.apache.spark.shuffle
 
-import org.apache.spark.util.Utils
+import org.apache.spark.storage.SnappyMemoryUtils
 
 /**
  * Created by shirishd on 15/10/15.
@@ -20,18 +20,12 @@ private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory
       notifyAll() // Will later cause waiting tasks to wake up and check numThreads again
     }
 
-    if (isCriticalUp) {
+    if (SnappyMemoryUtils.isCriticalUp) {
       logInfo(s"Will not store $numBytes bytes as CRITICAL UP event is detected")
       0
     } else {
       super.tryToAcquire(numBytes)
     }
   }
-
-  def isCriticalUp: Boolean = {
-    Utils.getContextOrSparkClassLoader.loadClass("org.apache.spark.storage.SnappyMemoryUtils").
-        getMethod("isCriticalUp").invoke(null).asInstanceOf[Boolean]
-  }
-
 }
 
