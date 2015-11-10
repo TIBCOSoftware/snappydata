@@ -89,3 +89,7 @@ if (new File(rootDir, "snappy-store/build.gradle").exists()) {
 if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
   include ':spark-jobserver'
 }
+
+if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+  include ':snappy-aqp'
+}
