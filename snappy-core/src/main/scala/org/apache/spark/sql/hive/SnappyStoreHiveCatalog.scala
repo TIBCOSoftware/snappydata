@@ -495,8 +495,12 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     // create new StratifiedSample LogicalPlan if none was passed
     // (currently for streaming case)
     val sampleDF = df.getOrElse {
-      val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
-        new DummyRDD(context))(context)
+      val plan: LogicalRDD = streamTable match {
+        case Some(baseTable) => LogicalRDD(lookupRelation(baseTable,
+          None).output, new DummyRDD(context))(context)
+        case None => LogicalRDD(schema.toAttributes,
+          new DummyRDD(context))(context)
+      }
       val newDF = new SampleDataFrame(context,
         StratifiedSample(opts, plan, streamTable)())
       val tableOpt = Some(tableName)
