@@ -279,6 +279,7 @@ task generateSources {
 
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
+  dependsOn ':snappy-examples:jar'
 
   def productDir = file("${buildDir}/snappy")
   doFirst {
@@ -307,9 +308,17 @@ task product {
     release << "Build flags: ${buildFlags}\n"
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
+    def examplesProject = project(':snappy-examples')
     def baseName = 'snappy-spark-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
+    def exampleArchiveName = "quickstart-${version}.jar"
     file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${productDir}/lib/${archiveName}")
+    copy {
+      from "${examplesProject.buildDir}/libs"
+      into "${productDir}/lib"
+      include "${examplesProject.jar.archiveName}"
+      rename { filename -> exampleArchiveName }
+    }
     copy {
       from "${project(':snappy-spark').projectDir}/bin"
       into "${productDir}/bin"
