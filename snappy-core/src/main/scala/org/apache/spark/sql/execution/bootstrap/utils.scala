@@ -198,6 +198,10 @@ object BootStrapUtils {
       case _ => ???
     }
   }
+
+  def getScaleAttribute(child: SparkPlan): Attribute = child.output.filter{
+    _.name == OnlinePlannerUtil.scaleColumn
+  }(0)
 }
 
 

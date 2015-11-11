@@ -144,12 +144,14 @@ object SampleTableQuery  {
       StructField("l_receiptdate", DateType, false),
       StructField("l_shipinstruct", StringType, false),
       StructField("l_shipmode", StringType, false),
-      StructField("l_comment", StringType, false)))
+      StructField("l_comment", StringType, false),
+      StructField("scale", IntegerType, false)
+    ))
 
     hiveContext.sql("DROP TABLE IF EXISTS lineitem")
     import hiveContext.implicits._
     val people = hiveContext.sparkContext.textFile(LINEITEM_DATA_FILE).map(_.split('|')).map(p => Row(p(0).trim.toInt, p(1).trim.toInt, p(2).trim.toInt,p(3).trim.toInt,p(4).trim.toFloat,p(5).trim.toFloat,p(6).trim.toFloat,p(7).trim.toFloat,
-      p(8).trim, p(9).trim,  java.sql.Date.valueOf(p(10).trim) , java.sql.Date.valueOf(p(11).trim), java.sql.Date.valueOf(p(12).trim), p(13).trim, p(14).trim, p(15).trim ))
+      p(8).trim, p(9).trim,  java.sql.Date.valueOf(p(10).trim) , java.sql.Date.valueOf(p(11).trim), java.sql.Date.valueOf(p(12).trim), p(13).trim, p(14).trim, p(15).trim, p(16).trim.toInt ))
     val df = hiveContext.createDataFrame(people,schema)
     df.registerTempTable("lineitem")
 

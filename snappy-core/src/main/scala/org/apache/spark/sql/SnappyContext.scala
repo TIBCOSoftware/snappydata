@@ -21,7 +21,7 @@ import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
-import org.apache.spark.sql.hive.{IdentifySampledRelation, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{AddScaleFactor, IdentifySampledRelation, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -70,6 +70,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
             PruneProjects
       ) ,
       Batch("Bootstrap", Once,
+            AddScaleFactor,
             PushDownPartialAggregate,
             PushUpResample,
             PushUpSeed,

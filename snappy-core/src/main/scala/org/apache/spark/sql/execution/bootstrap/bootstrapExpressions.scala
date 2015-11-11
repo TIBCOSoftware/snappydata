@@ -180,7 +180,7 @@ private[sql] case class TaggedAggregateExpression2(
       case PartialMerge | Final =>aggregateFunction.references.toSeq// aggregateFunction.bufferAttributes
     }
     val subRefs = this.aggregateFunction match {
-      case  DelegateFunction(_, aggFunc2,_) =>  {
+      case  DelegateFunction(_, aggFunc2) =>  {
         mode match {
           case Partial | Complete => aggFunc2.references.toSeq
           case PartialMerge | Final => aggFunc2.bufferAttributes
@@ -268,7 +268,7 @@ case class Delegate(multiplicity: Attribute, aggregate: AggregateExpression1)
       s"No function to instantiate this aggregate. type: ${this.nodeName}")
 }
 
-case class DelegateFunction(multiplicity: Attribute,  aggFunc2: AggregateFunction2, scale: Option[ScaleFactor])
+case class DelegateFunction(multiplicity: Attribute,  aggFunc2: AggregateFunction2)
     extends AggregateFunction2 with DelegateCommon {
   // override type EvaluatedType = Any
 
