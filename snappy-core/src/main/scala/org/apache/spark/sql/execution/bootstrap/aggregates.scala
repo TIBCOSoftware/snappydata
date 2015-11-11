@@ -79,7 +79,7 @@ trait DelegatedAggregate {
           buffer += ComputedAggregate(
             d, AttributeReference(s"aggResult:$a", a.dataType, a.nullable)())
 
-        case d@DelegateFunction(r, a, scale) if !seen.contains(d) =>
+        case d@DelegateFunction(r, a) if !seen.contains(d) =>
           seen.add(d)
           var buffer = grouped.get(a)
           if (buffer == null) {

@@ -4,6 +4,7 @@ import java.lang.management.ManagementFactory
 import java.sql.Date
 import java.text.SimpleDateFormat
 
+import org.apache.spark.sql.execution.Approximate
 import org.apache.spark.sql.types.{DateType, StringType, FloatType, IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SQLContext, DataFrame}
 import org.apache.spark.sql.hive.HiveContext
@@ -55,6 +56,9 @@ object SampleTableQuery  {
       // msg(ol.executedPlan.toString)
 
      df.show()
+      val rows = df.collect()
+      val struct = rows(0).getStruct(0)
+      assert(struct.get(0) == 17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26)
 
 
       msg(s"==== BlinkPlay::main(): END")
