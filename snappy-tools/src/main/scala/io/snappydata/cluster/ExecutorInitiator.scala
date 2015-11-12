@@ -27,6 +27,9 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
+  val SNAPPY_BLOCKMANAGER = "org.apache.spark.storage.SnappyBlockManager"
+  val SNAPPY_SHUFFLEMEMORYMANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
+
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
   var executorThread: Thread = new Thread(executorRunnable)
@@ -115,9 +118,10 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-
-                    //TODO: Hemant: add executor specific properties from local conf to
-                    //TODO: this conf that was received from driver.
+                  //TODO: Hemant: add executor specific properties from local conf to
+                  //TODO: this conf that was received from driver.
+                    driverConf.set("spark.blockManager", SNAPPY_BLOCKMANAGER)
+                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLEMEMORYMANAGER)
 
                     //TODO: Hemant: get the number of cores from spark conf
 
