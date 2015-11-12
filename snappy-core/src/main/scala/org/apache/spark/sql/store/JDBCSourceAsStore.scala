@@ -34,7 +34,6 @@ class JDBCSourceAsStore(_url: String,
   @transient
   protected lazy val rand = new Random
 
-
   @transient
   protected val dialect = JdbcDialects.get(url)
 

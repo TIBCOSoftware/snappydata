@@ -71,7 +71,6 @@ class JDBCMutableRelation(
   def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
     try {
-
       conn = JdbcUtils.createConnection(url, connProperties)
       var tableExists = JdbcExtendedUtils.tableExists(conn, table,
         dialect, sqlContext)
@@ -101,7 +100,7 @@ class JDBCMutableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val sql = s"CREATE TABLE $table $userSpecifiedString"
-        logInfo("Applying DDL : "+ sql)
+        logInfo("Applying DDL : " + sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table, conn)
@@ -307,7 +306,7 @@ object JDBCMutableRelation extends Logging {
       columns: Array[String]): StructType = {
     new StructType(columns.map { col =>
       fieldMap.getOrElse(col, fieldMap.getOrElse(Utils.normalizeId(col),
-        throw new AnalysisException("JDBCUpdatableRelation: Cannot resolve " +
+        throw new AnalysisException("JDBCMutableRelation: Cannot resolve " +
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
     })

@@ -157,6 +157,15 @@ object JdbcExtendedUtils {
     }
   }
 
+  def execute(sql: String, conn: Connection): Unit = {
+    val stmt = conn.createStatement()
+    try {
+      stmt.execute(sql)
+    } finally {
+      stmt.close()
+    }
+  }
+
   /**
    * Compute the schema string for this RDD.
    */

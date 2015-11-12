@@ -93,8 +93,6 @@ final class JDBCSourceAsColumnarStore(_url: String,
       connection.close()
     }
   }
-
-
 }
 
 

@@ -8,6 +8,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -18,8 +19,8 @@ import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, SaveMode}
-import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext}
+import org.apache.spark.storage.{StorageLevel, BlockManagerId}
+import org.apache.spark.{Logging, Partition, SparkContext}
 
 /**
  * Created by rishim on 29/10/15.
@@ -45,6 +46,7 @@ class ColumnFormatRelation(
     override val provider: String,
     override val mode: SaveMode,
     userSchema: StructType,
+    schemaExtensions: String,
     parts: Array[Partition],
     _poolProps: Map[String, String],
     override val connProperties: Properties,
@@ -52,7 +54,20 @@ class ColumnFormatRelation(
     override val origOptions: Map[String, String],
     override val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext
-    ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema, parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
+    ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema, schemaExtensions, parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
+
+
+}
+
+
+object ColumnFormatRelation extends Logging with StoreCallback {
+  // register the call backs with the JDBCSource so that
+  // bucket region can insert into the column table
+
+  def registerStoreCallbacks(table: String, schema: StructType, externalStore: ExternalStore) = {
+    // if already registered don't register
+    StoreCallbacksImpl.registerExternalStoreAndSchema(table, schema, externalStore)
+  }
 }
 
 final class DefaultSource
@@ -69,19 +84,17 @@ final class DefaultSource
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
 
-
     val dialect = JdbcDialects.get(url)
 
-
-    val schemaExtension = s"$schema $ddlExtension"
-
-
+    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
+    val schemaExtension = s"$schemaString $ddlExtension"
 
     val externalStore = getExternalSource(sc, url, driver, poolProps, connProps, hikariCP)
+    ColumnFormatRelation.registerStoreCallbacks(table, schema, externalStore)
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, Seq.empty.toArray,
+      getClass.getCanonicalName, mode, schema, schemaExtension, Seq.empty.toArray,
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)
   }
 
