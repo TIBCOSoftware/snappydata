@@ -34,11 +34,13 @@ object FileCleaner{
 class LocalSQLContext
   extends SQLContext(
     new SparkContext(
-      "local[2]",
+      "local[4]",
       "TestSQLContext",
       new SparkConf()
           .set("spark.sql.unsafe.enabled", "false")
            .set("snappydata.store.locators", "localhost")
+           .set("snappy.store.optimization", "true")
+           //.set("spark.sql.shuffle.partitions" , "113")
 
 
     )) {

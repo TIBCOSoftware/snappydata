@@ -3,20 +3,22 @@ package org.apache.spark.sql.rowtable
 
 import java.util.Properties
 
-import scala.collection.mutable
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
+import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
@@ -49,7 +51,7 @@ class RowFormatRelation(
       connProperties,
       hikariCP,
       origOptions,
-      sqlContext) {
+      sqlContext) with PartitionedDataSourceScan {
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
@@ -76,6 +78,46 @@ class RowFormatRelation(
     }
   }
 
+  /**
+   * We need to set num partitions just to cheat Exchange of Spark.
+   * This partition is not used for actual scan operator which depends on the
+   * actual RDD.
+   * Spark ClusteredDistribution is pretty simplistic to consider numShufflePartitions for
+   * its partitioning scheme as Spark always uses shuffle.
+   * Ideally it should consider child Spark plans partitioner.
+   *
+   */
+  override def numPartitions: Int = {
+    executeWithConnection(connFunctor, {
+      case conn =>
+        val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(table, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+        if (region.isInstanceOf[PartitionedRegion]) {
+/*          val par = region.asInstanceOf[PartitionedRegion]
+          par.getTotalNumberOfBuckets*/
+          sqlContext.conf.numShufflePartitions
+        } else {
+          1
+        }
+    })
+  }
+  override def partitionColumns: Seq[String] = {
+    executeWithConnection(connFunctor, {
+      case conn => val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(table, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+        val partitionColumn = if (region.isInstanceOf[PartitionedRegion]) {
+          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+          val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+          val parColumn = resolver.getColumnNames
+          parColumn.toSeq
+        } else {
+          Seq.empty[String]
+        }
+        partitionColumn
+    })
+  }
 }
 
 

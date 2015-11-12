@@ -13,12 +13,14 @@ import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
+import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
+import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, DataSourceStrategy, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -493,26 +495,15 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
 
   @transient
-  override protected[sql] val planner = new execution.SparkPlanner(this) {
+  override protected[sql] val planner = new SparkPlanner with SnappyStrategies {
     val snappyContext = self
 
-    override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+    // TODO temporary flag till we determine ecerything works fine with the optimizations
+    val storeOptimization  = snappyContext.sparkContext.getConf.get("snappy.store.optimization" ,"false").toBoolean
 
-    object SnappyStrategies extends Strategy {
-      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-        case s@StratifiedSample(options, child, _) =>
-          s.getExecution(planLater(child)) :: Nil
-        case PhysicalOperation(projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-          pruneFilterProject(
-            projectList,
-            filters,
-            identity[Seq[Expression]], // All filters still need to be evaluated
-            InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
-        case _ => Nil
-      }
-    }
+    val storeOptimizedRules : Seq[Strategy] = if(storeOptimization) Seq(StoreDataSourceStrategy, LocalJoinStrategies) else Nil
+    override def strategies: Seq[Strategy] = Seq(SnappyStrategies, StreamStrategy, StoreStrategy) ++ storeOptimizedRules ++ super.strategies
+
   }
 
   /**
