@@ -24,7 +24,6 @@ object StreamDDLStrategy extends Strategy {
   }
 }
 
-
 /*class StreamStrategies extends QueryPlanner[SparkPlan]{
   def strategies : Seq[Strategy] = StreamStrategy :: Nil
   object StreamStrategy extends Strategy{

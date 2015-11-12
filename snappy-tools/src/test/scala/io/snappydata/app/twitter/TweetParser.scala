@@ -1,5 +1,6 @@
 package io.snappydata.app.twitter
 
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.streaming.MessageToRowConverter
 import org.apache.spark.unsafe.types.UTF8String
@@ -11,15 +12,18 @@ import twitter4j.Status
  * Created by ymahajan on 5/11/15.
  */
 
-class KafkaMessageToRowConverter[String] extends MessageToRowConverter with Serializable {
-  override def toRow(message: String): InternalRow = {
+class KafkaMessageToRowConverter extends MessageToRowConverter with Serializable {
+  override def toRow(message: Any): InternalRow = {
     //val parser = new TweetParser()
     //val tweet: ParsedTweet = parser.parse(message).get
     //InternalRow.fromSeq(Seq(tweet.id, UTF8String.fromString(tweet.text), UTF8String.fromString(tweet.fullname), UTF8String.fromString(tweet.country)))
-
     //TODO Yogesh. convert this raw JSON string to twitter4j.SatusJSONImpl
-    val status : Status = TwitterObjectFactory.createStatus(message)
-    InternalRow.fromSeq(Seq(status.getId, UTF8String.fromString(status.getText), UTF8String.fromString(status.getUser().getName), UTF8String.fromString(status.getUser.getLang), status.getRetweetCount))
+    val status : Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
+
+    //Row.fromSeq
+    InternalRow.fromSeq(Seq(status.getId, UTF8String.fromString(status.getText),
+      UTF8String.fromString(status.getUser().getName), UTF8String.fromString(status.getUser.getLang),
+      status.getRetweetCount))
   }
   override def getTargetType = classOf[String]
 }

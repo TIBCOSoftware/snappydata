@@ -27,6 +27,11 @@ protected final class StreamingSnappyContext(@transient val streamingContext: St
 
   self =>
 
+  override def sql(sqlText : String) : DataFrame = {
+    StreamPlan.currentContext.set(self) //StreamingSnappyContext
+    super.sql(sqlText)
+  }
+
   /**
    * Registers and executes given SQL query and
    * returns [[SchemaDStream]] to consume the results
