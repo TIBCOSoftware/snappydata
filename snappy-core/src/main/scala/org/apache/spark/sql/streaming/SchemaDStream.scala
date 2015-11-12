@@ -2,7 +2,7 @@ package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.types.StructType
@@ -55,7 +55,8 @@ final class SchemaDStream(
     DStreamHelper.setValidTime(validTime)
     // Scan the streaming logic plan to convert streaming plan
     // to specific RDD logic plan.
-    Some(queryExecution.executedPlan.execute().asInstanceOf[RDD[Row]])
+    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    Some(queryExecution.executedPlan.execute().map(converter(_).asInstanceOf[Row]))
   }
 
   @transient private lazy val parentStreams = {

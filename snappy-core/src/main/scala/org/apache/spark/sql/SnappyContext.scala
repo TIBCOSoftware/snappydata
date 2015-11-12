@@ -523,8 +523,8 @@ protected class SnappyContext(sc: SparkContext)
           PhysicalDStreamPlan(output, stream) :: Nil
         case WindowLogicalPlan(d, s, child) =>
           WindowPhysicalPlan(d, s, planLater(child)) :: Nil
-//        case l @LogicalRelation(t: StreamPlan) =>
-//          PhysicalDStreamPlan(l.output, t.stream) :: Nil
+        case l @LogicalRelation(t: StreamPlan) =>
+          PhysicalDStreamPlan(l.output, t.stream) :: Nil
         case _ => Nil
       }
     }

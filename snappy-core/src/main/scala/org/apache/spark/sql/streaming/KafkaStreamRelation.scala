@@ -3,7 +3,7 @@ package org.apache.spark.sql.streaming
 
 import kafka.serializer.StringDecoder
 import org.apache.spark.Logging
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SnappyContext, SQLContext}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
@@ -67,7 +67,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     //Direct Kafka
     val topicsSet = options(TOPICS).split(",").toSet
     val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
-      t.split(",").map { s =>
+      t.split(", ").map { s =>
         val a = s.split("->")
         (a(0), a(1))
       }.toMap

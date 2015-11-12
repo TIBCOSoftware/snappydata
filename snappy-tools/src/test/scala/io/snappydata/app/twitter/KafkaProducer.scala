@@ -14,11 +14,11 @@ import twitter4j.{TwitterObjectFactory, Status, FilterQuery, TwitterFactory}
 
 object KafkaProducer {
 
-  val KafkaTopic = "tweets"
+  val KafkaTopic = "tweetstream"
 
   val kafkaProducer = {
     val props = new Properties()
-    props.put("metadata.broker.list", "localhost:9092")//conf.getString("kafka.brokers"))
+    props.put("metadata.broker.list", "localhost:9092")//,localhost:9093")//conf.getString("kafka.brokers"))
     props.put("request.required.acks", "1")
     val config = new ProducerConfig(props)
     new Producer[String,  Array[Byte]](config)
