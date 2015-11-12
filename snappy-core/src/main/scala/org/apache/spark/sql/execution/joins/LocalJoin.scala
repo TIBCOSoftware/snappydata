@@ -1,12 +1,10 @@
 package org.apache.spark.sql.execution.joins
 
-import java.io.{ObjectOutputStream, IOException}
-
 import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.rdd.{MapPartitionsWithPreparationRDD, RDD}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.plans.physical.{UnspecifiedDistribution, AllTuples, ClusteredDistribution, Distribution, Partitioning}
+import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{BinaryNode, SparkPlan}
 import org.apache.spark.{Partition, SparkContext, TaskContext}
@@ -86,8 +84,12 @@ private[spark] class NarrowPartitionsRDD(
     val numParts = streamRDD.partitions.length
     val part = buildRDD.partitions.head
     Array.tabulate[Partition](numParts) { i =>
-      val prefs = streamRDD.preferredLocations(streamRDD.partitions(i))
-      new NarrowPartitionsPartition(part, streamRDD.partitions(i) ,prefs)
+      val prefs = Seq(streamRDD.preferredLocations(streamRDD.partitions(i)), buildRDD.preferredLocations(part))
+      // Check whether there are any hosts that match all RDDs; otherwise return the union
+      val exactMatchLocations = prefs.reduce((x, y) => x.intersect(y))
+      val locs = if (!exactMatchLocations.isEmpty) exactMatchLocations else prefs.flatten.distinct
+
+      new NarrowPartitionsPartition(part, streamRDD.partitions(i) , locs)
     }
   }
 
