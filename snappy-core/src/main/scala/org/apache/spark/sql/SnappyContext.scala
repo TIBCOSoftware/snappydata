@@ -36,7 +36,7 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-protected[sql] final class SnappyContext(sc: SparkContext)
+protected[sql] class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
   self =>
@@ -725,7 +725,8 @@ object SnappyContext {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName
+    "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "column" ->  classOf[columnar.DefaultSource].getCanonicalName
   )
 
   def apply(sc: SparkContext): SnappyContext = {
