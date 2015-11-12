@@ -1,6 +1,8 @@
 package io.snappydata.gemxd
 
-import com.pivotal.gemfirexd.internal.snappy.ClusterCallbacks
+import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks}
+import io.snappydata.cluster.ExecutorInitiator
+import org.apache.spark.scheduler.cluster.SnappyClusterManager
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -9,11 +11,33 @@ import com.pivotal.gemfirexd.internal.snappy.ClusterCallbacks
  */
 object ClusterCallbacksImpl extends ClusterCallbacks {
 
-  def launchExecutor = {
+  override def launchExecutor(driver_url: String) = {
+    val url = if (driver_url == null || driver_url == "")
+      None
+    else Some(driver_url)
+    ExecutorInitiator.startOrTransmuteExecutor(url)
 
   }
 
-  def killExecutor ={
+  override def getDriverURL: String = {
+    //TODO: Hemant: If the driverURL is null, GfxdProfile exchange
+    //TODO: Hemant: may not change it and may point to a stale url.
+    return SnappyClusterManager.schedulerBackend match {
+      case Some(x) =>
+        x.driverUrl
 
+      case None => null
+    }
   }
+
+  override def stopExecutor = {
+    ExecutorInitiator.stop()
+  }
+}
+
+/**
+ * Created by soubhikc on 19/10/15.
+ */
+trait ClusterCallback {
+  CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
 }

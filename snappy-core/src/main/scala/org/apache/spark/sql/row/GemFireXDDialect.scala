@@ -23,8 +23,8 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDDialect)
 
-  def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd:") &&
-    !url.startsWith("jdbc:gemfirexd://")
+  def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd:") || url.startsWith("jdbc:snappydata:")) &&
+    !url.startsWith("jdbc:gemfirexd://") && !url.startsWith("jdbc:snappydata://")
 
   override def extraCreateTableProperties(isLoner: Boolean): Properties = {
     isLoner match {
@@ -47,7 +47,7 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDClientDialect)
 
-  def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd://")
+  def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd://") || url.startsWith("jdbc:snappydata://"))
 }
 
 abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {

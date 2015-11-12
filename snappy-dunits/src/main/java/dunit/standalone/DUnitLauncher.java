@@ -180,8 +180,9 @@ public class DUnitLauncher {
     Properties p = new Properties();
     p.setProperty("locators", getLocatorString());
     p.setProperty("mcast-port", "0");
-    p.setProperty("enable-cluster-configuration", "false");
-    p.setProperty("use-cluster-configuration", "false");
+    // Below two properties are not available in GemFireXD yet
+//    p.setProperty("enable-cluster-configuration", "false");
+//    p.setProperty("use-cluster-configuration", "false");
     p.setProperty("log-level", LOG_LEVEL);
     return p;
   }
@@ -222,7 +223,7 @@ public class DUnitLauncher {
         p.setProperty("jmx-manager", "false");
         //Disable the shared configuration on this locator.
         //Shared configuration tests create their own locator
-        p.setProperty("enable-cluster-configuration", "false");
+//        p.setProperty("enable-cluster-configuration", "false");
         Locator.startLocatorAndDS(locatorPort, locatorLogFile, p);
         return null;
       }

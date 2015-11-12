@@ -3,10 +3,11 @@ package org.apache.spark.sql
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => u}
 import scala.reflect.runtime.universe.TypeTag
+import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.util.SqlUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
@@ -15,7 +16,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-import org.apache.spark.sql.catalyst.{InternalRow, CatalystTypeConverters, ScalaReflection}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
@@ -129,9 +130,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     })
   }
 
-  def externalTable(tableName: String): DataFrame =
-    DataFrame(this, catalog.lookupRelation(Seq(tableName)))
-
   protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
       time: Long,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
@@ -223,6 +221,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         tableIdent, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
@@ -255,8 +254,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       }
     }
 
-
-
     val cached = rdd.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
@@ -283,6 +280,20 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     cacheManager.lookupCachedData(catalog.lookupRelation(
       tableName)).foreach(_.cachedRepresentation.
         asInstanceOf[InMemoryAppendableRelation].truncate())
+  }
+
+  def truncateExternalTable(tableName: String): Unit = {
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    val plan = catalog.lookupRelation(qualifiedTable, None)
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(br) =>
+        cacheManager.tryUncacheQuery(DataFrame(self, plan))
+        br match {
+          case d: DestroyRelation => d.truncate()
+        }
+      case _ => throw new AnalysisException(
+        s"truncateExternalTable: Table $tableName not an external table")
+    }
   }
 
   def registerTable[A <: Product : u.TypeTag](tableName: String) = {
@@ -382,6 +393,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
     else options + (dbtableProp -> tableIdent.toString)
 
     val source = SnappyContext.getProvider(provider)
+
     val resolved = schemaDDL match {
       case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
         schema, source, mode, params)
@@ -414,7 +426,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       mode match {
         case SaveMode.ErrorIfExists =>
           throw new AnalysisException(s"Table $tableIdent already exists. " +
-              "If using SQL CREATE EXTERNAL TABLE, you need to use the " +
+              "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
         case _ =>
           // existing table schema could have nullable columns
@@ -432,19 +444,26 @@ protected[sql] final class SnappyContext(sc: SparkContext)
       dbtableProp))) options
     else options + (dbtableProp -> tableIdent.toString)
 
+    // this gives the provider..
     val source = SnappyContext.getProvider(provider)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
 
-    catalog.registerExternalTable(tableIdent, Some(data.schema),
-      partitionColumns, source, params)
+    if (catalog.tableExists(tableIdent) && mode == SaveMode.Overwrite) {
+      // uncache the previous results and don't register again
+      cacheManager.tryUncacheQuery(data)
+    }
+    else {
+      catalog.registerExternalTable(tableIdent, Some(data.schema),
+        partitionColumns, source, params)
+    }
     LogicalRelation(resolved.relation)
   }
 
   /**
    * Drop an external table created by a call to createExternalTable.
    */
-  def dropExternalTable(tableName: String, ifExists: Boolean): Unit = {
+  def dropExternalTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -458,7 +477,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
-          case d: DeletableRelation => d.destroy(ifExists)
+          case d: DestroyRelation => d.destroy(ifExists)
         }
       case _ => throw new AnalysisException(
         s"dropExternalTable: Table $tableName not an external table")
@@ -468,7 +487,7 @@ protected[sql] final class SnappyContext(sc: SparkContext)
   /**
    * Drop a temporary table.
    */
-  def dropTempTable(tableName: String, ifExists: Boolean): Unit = {
+  def dropTempTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -755,8 +774,8 @@ object SnappyContext {
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
-    "jdbc" -> classOf[row.DefaultSource].getCanonicalName
-    //"jdbcColumnar" -> classOf[columnar.DefaultSource].getCanonicalName
+    "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName
   )
 
   def apply(sc: SparkContext,
@@ -858,7 +877,7 @@ object SnappyContext {
         case None =>
           topKHokusai.addEpochData(tupleIterator.asInstanceOf[Iterator[T]].
               toSeq.foldLeft(
-                scala.collection.mutable.Map.empty[T, Long]) {
+            scala.collection.mutable.Map.empty[T, Long]) {
             (m, x) => m + ((x, m.getOrElse(x, 0l) + 1))
           }, time)
         case Some(freqCol) =>

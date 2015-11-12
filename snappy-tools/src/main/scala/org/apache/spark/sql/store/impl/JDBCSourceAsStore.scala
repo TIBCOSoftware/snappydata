@@ -60,6 +60,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
   }
 
   def getCachedBatchRDD(tableName: String,
+                        requiredColumns: Array[String],
       uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch] = {
     val connection: java.sql.Connection = getConnection(tableName)
@@ -71,7 +72,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
         var rddList = new ArrayBuffer[RDD[CachedBatch]]()
         uuidList.foreach(x => {
           val y = x.mapPartitions { uuidItr =>
-            getCachedBatchIterator(tableName, uuidItr)
+            getCachedBatchIterator(tableName, null,uuidItr)
           }
           rddList += y
         })
@@ -119,16 +120,7 @@ final class JDBCSourceAsStore(jdbcSource: Map[String, String])  extends External
 
   }
 
-  override def truncate(tableName: String) = tryExecute(tableName, {
-    case conn =>
-    dialect match {
-      case d: JdbcExtendedDialect => d.truncateTable(tableName)
-      case _ =>
-        JdbcExtendedUtils.executeUpdate(s"truncate table $tableName", conn)
-    }
-  })
-
-  override def getCachedBatchIterator(tableName: String,
+  override def getCachedBatchIterator(tableName: String,  requiredColumns: Array[String],
       itr: Iterator[UUIDRegionKey], getAll: Boolean = false): Iterator[CachedBatch] = {
 
     itr.sliding(10, 10).flatMap(kIter => tryExecute(tableName, {
@@ -303,8 +295,8 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val resolvedName = store.lookupName(tableName, schema)
         //val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
         val par = split.index
-        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
-        ps1.execute()
+//        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+ //       ps1.execute()
         val ps = conn.prepareStatement(s"select cachedBatch from $tableName")
 
         val rs = ps.executeQuery()
@@ -320,7 +312,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   override protected def getPartitions: Array[Partition] = {
     val resolvedName = store.lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-    val numPartitions = region.getTotalNumberOfBuckets
+    val numPartitions = 1 //region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
 
     val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sparkContext).

@@ -1,5 +1,4 @@
 *.class
-*.log
 snappy-spark
 snappy-store
 

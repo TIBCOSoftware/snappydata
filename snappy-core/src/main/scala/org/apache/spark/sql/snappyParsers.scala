@@ -6,7 +6,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
-import org.apache.spark.sql.catalyst.{TableIdentifier, ParserDialect, SqlParser}
+import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
@@ -20,7 +20,7 @@ import org.apache.spark.streaming._
  * 1) ERROR ESTIMATE AVG: error estimate for mean of a column/expression
  * 2) ERROR ESTIMATE SUM: error estimate for sum of a column/expression
  */
-private[sql] class SnappyParser extends SqlParser {
+object SnappyParser extends SqlParserBase {
 
   protected val ERROR = Keyword("ERROR")
   protected val ESTIMATE = Keyword("ESTIMATE")
@@ -58,11 +58,8 @@ private[sql] class SnappyParser extends SqlParser {
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
 private[sql] class SnappyParserDialect extends ParserDialect {
 
-  @transient
-  protected val sqlParser = new SnappyParser
-
   override def parse(sqlText: String): LogicalPlan = {
-    sqlParser.parse(sqlText)
+    SnappyParser.parse(sqlText)
   }
 }
 
@@ -74,7 +71,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream | createSampled | strmctxt
+        createStream | createSampled | strmctxt | truncateTable
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -84,6 +81,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val STOP = Keyword("STOP")
   protected val INIT = Keyword("INIT")
   protected val DROP = Keyword("DROP")
+  protected val TRUNCATE = Keyword("TRUNCATE")
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s+" +
       OPTIONS.str, Pattern.CASE_INSENSITIVE)
@@ -95,7 +93,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
       case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
-        val options = new CaseInsensitiveMap(opts.getOrElse(Map.empty[String, String]))
+        val options = opts.getOrElse(Map.empty[String, String])
         val provider = SnappyContext.getProvider(providerName)
         if (query.isDefined) {
           if (schemaString.length > 0) {
@@ -119,8 +117,13 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           val hasExternalSchema = if (temporary.isDefined) false
           else {
             // check if provider class implements ExternalSchemaRelationProvider
-            val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
-            classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
+            try {
+              val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
+              classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
+            } catch {
+              case cnfe: ClassNotFoundException => throw new DDLException(cnfe.toString)
+              case t: Throwable => throw t
+            }
           }
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
@@ -148,19 +151,24 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
         DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
     }
 
+  protected lazy val truncateTable: Parser[LogicalPlan] =
+    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ ident ^^ {
+      case temporary ~ tableName =>
+        TruncateTable(tableName, temporary.isDefined)
+    }
+
   protected lazy val createStream: Parser[LogicalPlan] =
     (CREATE ~> STREAM ~> TABLE ~> ident) ~
         tableCols.? ~ (OPTIONS ~> options) ^^ {
-      case streamname ~ cols ~ opts =>
+      case streamName ~ cols ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-        CreateStream(streamname, userColumns, new CaseInsensitiveMap(opts))
+        CreateStream(streamName, userColumns, opts)
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
     (CREATE ~> SAMPLED ~> TABLE ~> ident) ~
         (OPTIONS ~> options) ^^ {
-      case samplename ~ opts =>
-        CreateSampledTable(samplename, new CaseInsensitiveMap(opts))
+      case sampleName ~ opts => CreateSampledTable(sampleName, opts)
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
@@ -248,6 +256,17 @@ private[sql] case class DropTable(
   }
 }
 
+private[sql] case class TruncateTable(
+    tableName: String,
+    temporary: Boolean) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    if (temporary) snc.truncateTable(tableName)
+    else snc.truncateExternalTable(tableName)
+    Seq.empty
+  }
+}
 case class DMLExternalTable(
     tableName: String,
     child: LogicalPlan,
@@ -412,8 +431,10 @@ object OptsUtil {
   def newAnalysisException(msg: String) = new AnalysisException(msg)
 
   def getOption(optionName: String, options: Map[String, String]): String =
-    options.getOrElse(optionName, throw newAnalysisException(
-      s"Option $optionName not defined"))
+    options.getOrElse(optionName, options.collectFirst {
+      case (k, v) if (k.equalsIgnoreCase(optionName)) => v
+    }.getOrElse(throw newAnalysisException(
+      s"Option $optionName not defined")))
 
   def getOptionally(optionName: String,
       options: Map[String, String]): Option[String] = options.get(optionName)

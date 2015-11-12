@@ -17,7 +17,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
@@ -36,6 +36,7 @@ import org.apache.spark.{Logging, Partition, TaskContext}
  */
 final class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
+
 
   override val conf = context.conf
 
@@ -118,6 +119,9 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     logInfo("default warehouse location is " + warehouse)
 
+    val sparkConf = context.sparkContext.conf
+    //val dburl = sparkConf.get("gemfirexd.db.url")
+    //val driver = sparkConf.get("gemfirexd.db.driver")
     /*
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
       "jdbc:gemfirexd://localhost:1527")
@@ -126,11 +130,22 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     */
     // `configure` goes second to override other settings.
     // `configure` goes second to override other settings.
+    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
+        sparkConf.get("gemfirexd.db.url"))
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+        sparkConf.get("gemfirexd.db.driver"))
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        "APP")
+    }
+    //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
+
+
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
 
     val hiveMetastoreJars = this.hiveMetastoreJars()
-    val isolatedLoader = if (hiveMetastoreJars == "builtin") {
+    if (hiveMetastoreJars == "builtin") {
       if (hiveExecutionVersion != hiveMetastoreVersion) {
         throw new IllegalArgumentException("Builtin jars can only be used " +
             "when hive default version == hive metastore version. Execution: " +
@@ -159,6 +174,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using Spark classes.")
+      new ClientWrapper(metaVersion, allConfig, classLoader)
+      /*
       new IsolatedClientLoader(
         version = metaVersion,
         execJars = jars.toSeq,
@@ -166,6 +183,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
         sharedPrefixes = hiveMetastoreSharedPrefixes())
+      */
     } else if (hiveMetastoreJars == "maven") {
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using maven.")
@@ -173,7 +191,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         version = hiveMetastoreVersion,
         config = allConfig,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes())
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).client
     } else {
       // Convert to files and expand any directories.
       val jars = hiveMetastoreJars.split(File.pathSeparator).flatMap {
@@ -197,9 +215,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         config = allConfig,
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
-        sharedPrefixes = hiveMetastoreSharedPrefixes())
+        sharedPrefixes = hiveMetastoreSharedPrefixes()).client
     }
-    isolatedLoader.client
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
@@ -390,7 +407,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
    * Creates a data source table (a table created with USING clause) in Hive's
    * meta-store. Returns true when the table has been created else false.
    *
-   * @param tableType the type of external table: ROW, COLUMNAR, SAMPLE etc
+   * @param tableType the type of external table: ROW, COLUMN, SAMPLE etc
    */
   def createDataSourceTable(
       tableIdent: QualifiedTableName,
@@ -529,6 +546,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     tables.put(tableIdent, dummyDF.logicalPlan)
     context.cacheManager.cacheQuery_ext(dummyDF,
       Some(tableIdent.table), externalStore)
+
     context.appendToCache(df, tableIdent.table)
   }
 
@@ -536,12 +554,14 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   // to find out the type of the jdbc store. This is a
   // temporary arrangement.
   def getExternalTable(jdbcSource: Map[String, String]): ExternalStore = {
-    val externalSource = jdbcSource.get("jdbcStore") match {
+    val options = new CaseInsensitiveMap(jdbcSource)
+    val externalSource = options.get("jdbcstore") match {
       case Some(x) => x
       case None => "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
     }
-    val constructor = Class.forName(externalSource).getConstructors()(0)
-    return constructor.newInstance(jdbcSource).asInstanceOf[ExternalStore]
+    val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
+        .loadClass(externalSource).getConstructor(classOf[Map[String, String]])
+    return constructor.newInstance(options).asInstanceOf[ExternalStore]
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
@@ -713,7 +733,7 @@ object ExternalTableType extends Enumeration {
   type Type = Value
 
   val Row = Value("ROW")
-  val Columnar = Value("COLUMNAR")
+  val Columnar = Value("COLUMN")
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")

@@ -25,13 +25,21 @@ dependencies {
   compile 'org.apache.tomcat:tomcat-jdbc:8.0.24'
   compile 'com.zaxxer:HikariCP-java6:2.3.9'
 
-  // TODO: all these should be in snappy-tools not here but right now everything is in snappy-core
-  compile 'ooyala.cnd:job-server:0.3.1'
-
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     testRuntime project(':snappy-store:gemfirexd:client')
   } else {
     testRuntime files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
   }
+}
+
+scalaTest {
+  maxParallelForks = 4
+  maxHeapSize '4g'
+  dependsOn ':cleanScalaTest'
+}
+test {
+  maxParallelForks = 4
+  maxHeapSize '2g'
+  dependsOn ':cleanJUnit'
 }

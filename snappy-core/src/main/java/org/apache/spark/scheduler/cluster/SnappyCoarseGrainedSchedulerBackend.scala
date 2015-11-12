@@ -4,41 +4,63 @@ import org.apache.spark.{SparkEnv, SparkContext}
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
 
-import scala.collection.mutable.ArrayBuffer
-
 /**
  * Created by hemantb on 10/5/15.
  *
  */
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
-  extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
+    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
 
-  var driverUrl: Option[String] = None
+  private val snappyAppId = "snappy-app-" + System.currentTimeMillis
+
+  /**
+   * Overriding the spark app id function to provide a snappy specific app id.
+   * @return An application ID
+   */
+  override def applicationId(): String = snappyAppId
+
+  var driverUrl: String = ""
+
   override def start() {
+
     super.start()
-    driverUrl = Some(rpcEnv.uriOf(SparkEnv.driverActorSystemName,
+    driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
       RpcAddress(driverEndpoint.address.host, driverEndpoint.address.port),
-      CoarseGrainedSchedulerBackend.ENDPOINT_NAME))
+      CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
   }
+
   override def stop() {
     super.stop()
-    driverUrl = None
+    driverUrl = ""
+  }
+
+  override protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
+    // keep the app id as part of driver property so that it can be retrieved
+    // by the executor when driver properties are fetched using
+    // [org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps]
+    super.createDriverEndpoint(properties ++
+        Seq[(String, String)](("spark.app.id", applicationId())))
   }
 }
 
-class SnappyClusterManager extends ExternalClusterManager {
+object SnappyClusterManager extends ExternalClusterManager {
 
-  def createTaskScheduler (sc: SparkContext): TaskScheduler = new TaskSchedulerImpl(sc)
+  var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
 
-  def canCreate(masterURL : String): Boolean = if (masterURL == "snappy") true else false
+  def createTaskScheduler(sc: SparkContext): TaskScheduler = new TaskSchedulerImpl(sc)
 
-  def createSchedulerBackend (sc: SparkContext,
-    scheduler: TaskScheduler): SchedulerBackend = {
-    new SnappyCoarseGrainedSchedulerBackend(scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv)
+  def canCreate(masterURL: String): Boolean = if (masterURL == "snappy") true else false
+
+  def createSchedulerBackend(sc: SparkContext,
+      scheduler: TaskScheduler): SchedulerBackend = {
+    schedulerBackend = Some(
+      new SnappyCoarseGrainedSchedulerBackend(
+        scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv))
+    schedulerBackend.get
   }
 
   def intialize(scheduler: TaskScheduler,
-    backend: SchedulerBackend): Unit = {
+      backend: SchedulerBackend): Unit = {
     scheduler.asInstanceOf[TaskSchedulerImpl].initialize(backend)
   }
 

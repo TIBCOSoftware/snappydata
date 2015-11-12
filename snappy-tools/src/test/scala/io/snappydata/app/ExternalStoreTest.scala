@@ -1,5 +1,7 @@
 package io.snappydata.app
 
+import java.sql.DriverManager
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.snappy._
@@ -8,7 +10,7 @@ import org.apache.spark.sql.types._
 object ExternalStoreTest extends App {
 
   def addArrDelaySlot(row: ReusableRow, arrDelayIndex: Int,
-                      arrDelaySlotIndex: Int): Row = {
+      arrDelaySlotIndex: Int): Row = {
     val arrDelay =
       if (!row.isNullAt(arrDelayIndex)) row.getInt(arrDelayIndex) else 0
     row.setInt(arrDelaySlotIndex, math.abs(arrDelay) / 10)
@@ -26,11 +28,13 @@ object ExternalStoreTest extends App {
     option(args.toList)
   }
 
+  //val conn = DriverManager.getConnection("jdbc:snappydata://10.112.204.101:2000")
+  //println(conn)
   val conf = new org.apache.spark.SparkConf().setAppName("ExternalStoreTest")
-    .set("spark.logConf", "true")
-    //.set("spark.shuffle.sort.serializeMapOutputs", "true")
-    //.set("spark.executor.memory", "1g")
-    //.set("spark.driver.memory", "1g")
+      .set("spark.logConf", "true")
+  //.set("spark.shuffle.sort.serializeMapOutputs", "true")
+  //.set("spark.executor.memory", "1g")
+  //.set("spark.driver.memory", "1g")
   //.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
   //.set("spark.shuffle.spill", "false")
   //.set("spark.shuffle.sort.bypassMergeThreshold", "-1")
@@ -66,6 +70,12 @@ object ExternalStoreTest extends App {
     conf.set("spark.executor.extraJavaOptions", executorExtraJavaOptions)
   }
 
+  // Set the url of the database
+  // use these two when you want to test with snappydata database url
+  // Alter the url property when creating the table below as well
+  //conf.set("gemfirexd.db.url", "jdbc:snappydata:;mcast-port=45672;persist-dd=false;")
+  //conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+
   var start: Long = 0
   var end: Long = 0
   var results: DataFrame = null
@@ -83,10 +93,10 @@ object ExternalStoreTest extends App {
         val airlineData = sc.textFile(hfile)
 
         val schemaString = "Year,Month,DayOfMonth,DayOfWeek,DepTime,CRSDepTime," +
-          "ArrTime,CRSArrTime,UniqueCarrier,FlightNum,TailNum,ActualElapsedTime," +
-          "CRSElapsedTime,AirTime,ArrDelay,DepDelay,Origin,Dest,Distance,TaxiIn," +
-          "TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay," +
-          "WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,ArrDelaySlot"
+            "ArrTime,CRSArrTime,UniqueCarrier,FlightNum,TailNum,ActualElapsedTime," +
+            "CRSElapsedTime,AirTime,ArrDelay,DepDelay,Origin,Dest,Distance,TaxiIn," +
+            "TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay," +
+            "WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,ArrDelaySlot"
         val schemaArr = schemaString.split(",")
         val schemaTypes = List(IntegerType, IntegerType, IntegerType, IntegerType,
           IntegerType, IntegerType, IntegerType, IntegerType, StringType,
@@ -116,6 +126,7 @@ object ExternalStoreTest extends App {
         snContext.createDataFrame(rowRDD, schema)
       }
     val props = Map(
+      //"url" -> "jdbc:snappydata:;mcast-port=45672;persist-dd=false;",
       "url" -> "jdbc:gemfirexd:;mcast-port=45672;persist-dd=false;",
       "poolImpl" -> "tomcat",
       //"single-hop-enabled" -> "true",

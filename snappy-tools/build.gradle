@@ -1,5 +1,5 @@
 apply plugin: 'scala'
-apply plugin: 'com.github.maiflai.scalatest'
+apply plugin: 'com.github.johnrengelman.shadow'
 
 compileScala.options.encoding = 'UTF-8'
 
@@ -10,16 +10,86 @@ sourceSets.main.java.srcDirs = []
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
+  compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
+  if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
+    compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+  } else {
+    compile 'org.apache.spark:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'org.apache.spark:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'org.apache.spark:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'org.apache.spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
+  }
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     compile project(':snappy-store:gemfirexd:client')
     compile project(':snappy-store:gemfirexd:core')
     compile project(':snappy-store:gemfirexd:tools')
+
+    testCompile project(path: ':snappy-store:gemfirexd:tools', configuration: 'testOutput')
   } else {
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
   }
 
+  compile("spark.jobserver:job-server_${scalaBinaryVersion}:0.6.0") {
+    exclude(module: 'akka-actor_' + scalaBinaryVersion)
+    exclude(module: 'akka-remote_' + scalaBinaryVersion)
+    exclude(module: 'akka-slf4j_' + scalaBinaryVersion)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+}
+
+test.dependsOn ':cleanJUnit'
+scalaTest.dependsOn ':cleanScalaTest'
+check.dependsOn ':product'
+
+shadowJar {
+  zip64 = true
+
+  //inputs.files jar.outputs.files
+  //outputs.file "${buildDir}/libs/${archiveName}"
+
+  mergeServiceFiles {
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+  }
+  append('META-INF/services/org.apache.hadoop.fs.FileSystem')
+  append('reference.conf')
+  exclude 'org/datanucleus/**'
+  exclude 'log4j.properties'
+
+  /*
+  from {
+    def allJars = new HashSet<File>()
+    project(":snappy-tools_${scalaBinaryVersion}").configurations.runtime.each {
+      allJars.add(it)
+    }
+    allJars.collect {
+      it.isDirectory() ? it : zipTree(it).matching {
+        exclude {
+          it.path.contains('META-INF')
+        }
+      }
+    }
+  }
+  */
+
+  manifest {
+    attributes(
+      "Manifest-Version"  : "1.0",
+      "Created-By"        : System.getProperty("user.name"),
+      "Title"             : rootProject.name,
+      "Version"           : version,
+      "Vendor"            : "Snappy Data, Inc."
+    )
+  }
 }

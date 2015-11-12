@@ -27,7 +27,7 @@ object StreamingTupleGenerator {
   def main(args: Array[String]) {
     if (args.length < 2) {
       println("Usage: StreamingTupleGenerator " +
-          "<comma-seperated-filenames> <port-number> ")
+          "<port-number> <comma-seperated-filenames>")
       System.exit(1)
     }
 
