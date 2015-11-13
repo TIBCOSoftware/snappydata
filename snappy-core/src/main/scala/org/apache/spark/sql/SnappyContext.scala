@@ -23,8 +23,8 @@ import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, DataSourceStrategy, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -499,7 +499,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val snappyContext = self
 
     // TODO temporary flag till we determine ecerything works fine with the optimizations
-    val storeOptimization  = snappyContext.sparkContext.getConf.get("snappy.store.optimization" ,"false").toBoolean
+    val storeOptimization  = snappyContext.sparkContext.getConf.get("snappy.store.optimization" ,"true").toBoolean
 
     val storeOptimizedRules : Seq[Strategy] = if(storeOptimization) Seq(StoreDataSourceStrategy, LocalJoinStrategies) else Nil
     override def strategies: Seq[Strategy] = Seq(SnappyStrategies, StreamStrategy, StoreStrategy) ++ storeOptimizedRules ++ super.strategies
