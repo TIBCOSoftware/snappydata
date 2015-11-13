@@ -15,7 +15,7 @@ import org.apache.spark.{SparkContext, SparkConf}
 /**
  * Created by ashahid on 10/20/15.
  */
-object SampleTableQuery  {
+object SampleTableQuery  extends Serializable {
 
   // var LINEITEM_DATA_FILE = "/Users/pmclain/Snappy/Data/tcph/tpch_data/1G/lineitem.tbl"
   var LINEITEM_DATA_FILE = "/Users/ashahid/workspace/snappy/experiments/BlinkPlay/data/datafile.tbl"
@@ -25,10 +25,13 @@ object SampleTableQuery  {
 
   def main(args: Array[String]): Unit = {
     try {
-      val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("local[1]")
+      val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("spark://MacBook-Pro.local:7077")
+
+      //val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("local[1]")
       conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
       conf.set("spark.sql.unsafe.enabled", "false")
       val sc = new SparkContext(conf)
+      sc.addJar("/Users/ashahid/workspace/snappy/snappy-commons/snappy-core/build-artifacts/scala-2.10/classes/test/app.jar")
       val spc = SnappyContext(sc)
      // val hiveContext = new HiveContext(spc)
 
