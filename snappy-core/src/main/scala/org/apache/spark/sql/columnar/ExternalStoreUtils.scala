@@ -3,7 +3,11 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
-//import com.gemstone.gemfire.internal.cache.{PartitionedRegion, AbstractRegion}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.store.StoreProperties
+
+
+
 
 import scala.collection.mutable
 
@@ -35,16 +39,45 @@ private[sql] object ExternalStoreUtils {
     }
   }
 
-  def validateAndGetAllProps(options: Map[String, String]) = {
+  def getDriver(url : String): Option[String] = {
+    val dialect = JdbcDialects.get(url)
+    dialect match {
+      case  GemFireXDDialect => Option("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+      case  GemFireXDClientDialect => Option("com.pivotal.gemfirexd.jdbc.ClientDriver")
+      case _=> Option(DriverRegistry.getDriverClassName(url))
+    }
+
+  }
+
+  class CaseInsensitiveMutableHashMap(map: Map[String, String]) extends mutable.HashMap[String, String]
+  with Serializable {
+
+    val baseMap = new mutable.HashMap[String, String]
+    baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
+
+    override def get(k: String): Option[String] = baseMap.get(k.toLowerCase)
+
+    override def remove(k: String): Option[String] = baseMap.remove(k.toLowerCase)
+
+    override def iterator: Iterator[(String, String)] = baseMap.iterator
+  }
+
+  def validateAndGetAllProps(sc : SparkContext, options: Map[String, String]) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
-    val url = parameters.remove("url").getOrElse(
-      sys.error("Option 'url' not specified"))
-    val driver = parameters.remove("driver")
+
+
+    val url = parameters.remove("url").getOrElse {
+       StoreProperties.defaultStoreURL(sc)
+    }
+
+    val driver = parameters.remove("driver").orElse(getDriver(url))
+
+    driver.foreach(DriverRegistry.register)
+
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    driver.foreach(DriverRegistry.register)
 
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
       case Some("hikari") => true
@@ -68,9 +101,9 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    val allPoolProps = getAllPoolProperties(url, driver.orNull,
+    val allPoolProps = getAllPoolProperties(url, driver.get,
       poolProps, hikariCP)
-    (url, driver, allPoolProps, connProps, hikariCP)
+    (url, driver.get, allPoolProps, connProps, hikariCP)
   }
 
   def getPoolConnection(id: String, driver: Option[String],
