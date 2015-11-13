@@ -31,7 +31,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
           !locator.matches(".+\\[[0-9]+\\]")) {
         throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
       }
-      sc.conf.set(Prop.Store.locators, locator)
+      sc.conf.set(Prop.locators, locator)
     }
     new TaskSchedulerImpl(sc)
   }

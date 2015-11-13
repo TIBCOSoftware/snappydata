@@ -44,7 +44,7 @@ class LocalSQLContext
         "TestSQLContext",
         new SparkConf()
             .set("spark.sql.unsafe.enabled", "false")
-            .set(Prop.Store.locators, "localhost")
+            .set(Prop.locators, "localhost")
 
 
       )) {

@@ -81,9 +81,9 @@ class LeadImpl extends ServerImpl with Lead {
     val storeProps = new Properties()
 
     val filteredProp = confProps.filter {
-      case (k, _) => k.startsWith(Prop.Store.propPrefix)
+      case (k, _) => k.startsWith(Prop.propPrefix)
     }.map {
-      case (k, v) => (k.replaceFirst(Prop.Store.propPrefix, ""), v)
+      case (k, v) => (k.replaceFirst(Prop.propPrefix, ""), v)
     }
     storeProps.putAll(filteredProp.toMap.asJava)
 
@@ -184,7 +184,10 @@ class LeadImpl extends ServerImpl with Lead {
   @throws(classOf[Exception])
   private[snappydata] def startAddOnServices(snc: SnappyContext): Unit = this.synchronized {
 
-    if (status() == State.UNINITIALIZED) {
+    if (status() == State.UNINITIALIZED || status() == State.STOPPED) {
+      // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
+      // until now.
+      logger.info("Connecting to snappydata cluster now...")
       internalStart(snc.sparkContext.getConf)
     }
 

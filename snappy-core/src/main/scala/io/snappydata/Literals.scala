@@ -26,11 +26,9 @@ final object Const {
   */
 final object Prop {
 
-  final object Store {
-    private[snappydata] val propPrefix = s"${Const.propPrefix}store."
+  private[snappydata] val propPrefix = s"${Const.propPrefix}store."
 
-    val locators = s"${propPrefix}locators"
-  }
+  val locators = s"${propPrefix}locators"
 
   val jobserverEnabled = s"${Const.propPrefix}jobserver.enabled"
 

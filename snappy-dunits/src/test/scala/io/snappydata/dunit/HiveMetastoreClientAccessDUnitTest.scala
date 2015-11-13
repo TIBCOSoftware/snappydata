@@ -161,7 +161,7 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set(Prop.Store.locators, locStr)
+        .set(Prop.locators, locStr)
 
     if (setMaster != null) {
       conf.setMaster(setMaster)

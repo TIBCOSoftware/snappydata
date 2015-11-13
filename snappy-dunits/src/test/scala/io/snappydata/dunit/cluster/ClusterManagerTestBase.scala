@@ -7,15 +7,16 @@ import java.util.Properties
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import com.pivotal.gemfirexd.{Attribute, FabricService, TestUtil}
+import com.pivotal.gemfirexd.{Attribute, DistributedSQLTestBase, FabricService, TestUtil}
 import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.apache.derbyTesting.junit.CleanDatabaseTestSetup
-import org.slf4j.LoggerFactory
-
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
+import org.slf4j.LoggerFactory
+
+import scala.collection.JavaConverters._
 
 /**
  * Base class for tests using Snappy ClusterManager. New utility methods
@@ -126,7 +127,10 @@ class ClusterManagerTestUtils {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
-    logger.info("About to create SparkContext")
+    props.asScala.foreach({ case (k, v) =>
+      conf.set(io.snappydata.Prop.propPrefix + k, v)
+    })
+    logger.info(s"About to create SparkContext with conf ${conf}")
     sc = new SparkContext(conf)
     logger.info("SparkContext CREATED, about to create SnappyContext.")
     snc = SnappyContext(sc)

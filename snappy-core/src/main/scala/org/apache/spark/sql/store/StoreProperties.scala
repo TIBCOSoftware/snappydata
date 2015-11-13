@@ -15,7 +15,7 @@ object StoreProperties {
     // [soubhik] shouldn't this check be Const.JdbcUrlPrefix ?
     // like in SnappyEmbeddedModeClusterManager
     if (sc.master.startsWith("snappydata")
-        || sc.conf.contains(Prop.Store.locators)) {
+        || sc.conf.contains(Prop.locators)) {
       // Embedded mode. Already connected to Snappydata in embedded or
       // nonEmbedded or local mode
       Const.DEFAULT_EMBEDDED_URL
