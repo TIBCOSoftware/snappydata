@@ -62,8 +62,7 @@ class SnappyContext private(sc: SparkContext)
   }
 
   @transient
-  override protected[sql] lazy val catalog =
-    new SnappyStoreHiveCatalog(self)
+  override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
@@ -356,7 +355,6 @@ class SnappyContext private(sc: SparkContext)
     }
 
     val source = SnappyContext.getProvider(provider)
-
     val resolved = schemaDDL match {
       case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
         schema, source, mode, params)
@@ -412,6 +410,7 @@ class SnappyContext private(sc: SparkContext)
     }
 
     // this gives the provider..
+
     val source = SnappyContext.getProvider(provider)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
@@ -772,10 +771,21 @@ object SnappyContext {
     "column" -> classOf[columnar.DefaultSource].getCanonicalName
   )
 
+  def apply(): SnappyContext = {
+    val gc = globalContext
+    if (gc != null) {
+      new SnappyContext(gc)
+    } else {
+      null
+    }
+  }
+
   def apply(sc: SparkContext): SnappyContext = {
     val gc = _globalContext
     if (gc == sc) {
       new SnappyContext(sc)
+    } else if (sc == null) {
+      new SnappyContext(gc)
     } else contextLock.synchronized {
       val gc = _globalContext
       if (gc == sc) {

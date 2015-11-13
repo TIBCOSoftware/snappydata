@@ -1,29 +1,26 @@
 package io.snappydata.dunit.cluster
 
 import java.io.File
-import java.sql.DriverManager
 import java.util.Properties
-
-import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import com.pivotal.gemfirexd.{Attribute, DistributedSQLTestBase, FabricService, TestUtil}
-import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
-import io.snappydata.{Locator, Server, ServiceManager}
-import org.apache.derbyTesting.junit.CleanDatabaseTestSetup
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{SparkConf, SparkContext}
-import org.slf4j.LoggerFactory
 
 import scala.collection.JavaConverters._
 
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.{FabricService, TestUtil}
+import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
+import io.snappydata.{Locator, Server, ServiceManager}
+import org.slf4j.LoggerFactory
+
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{SparkConf, SparkContext}
+
 /**
- * Base class for tests using Snappy ClusterManager. New utility methods
- * would need to be added as and when corresponding snappy code gets added.
- *
- * @author hemant
- */
+  * Base class for tests using Snappy ClusterManager. New utility methods
+  * would need to be added as and when corresponding snappy code gets added.
+  *
+  * @author hemant
+  */
 class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
 
   val props: Properties = new Properties()
@@ -35,6 +32,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val vm3 = host.getVM(3)
 
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
+
   protected final def startArgs =
     Array(locatorPort, props).asInstanceOf[Array[AnyRef]]
 
@@ -42,7 +40,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val locatorNetProps = new Properties()
 
   override def setUp(): Unit = {
-    props.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
+    // props.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
     TestUtil.currentTest = getName
     TestUtil.currentTestClass = getTestClass
     TestUtil.skipDefaultPartitioned = true
@@ -93,8 +91,8 @@ object ClusterManagerTestBase {
 }
 
 /**
- * New utility methods would need to be added as and when corresponding snappy code gets added.
- */
+  * New utility methods would need to be added as and when corresponding snappy code gets added.
+  */
 class ClusterManagerTestUtils {
   val logger = LoggerFactory.getLogger(getClass)
 
@@ -104,14 +102,20 @@ class ClusterManagerTestUtils {
 
   var snc: SnappyContext = _
 
-  /**
-   * Start a snappy lead. This code starts a Spark server and at the same time
-   * also starts a SparkContext and hence it kind of becomes lead. We will use
-   * LeadImpl once the code for that is ready.
-   *
-   * Only a single instance of SnappyLead should be started.
-   */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
+    startSnappyLead(locatorPort, props, false)
+  }
+
+  /**
+    * Start a snappy lead. This code starts a Spark server and at the same time
+    * also starts a SparkContext and hence it kind of becomes lead. We will use
+    * LeadImpl once the code for that is ready.
+    *
+    * Only a single instance of SnappyLead should be started.
+    */
+  def startSnappyLead(locatorPort: Int,
+      props: Properties,
+      addUrlForHiveMetaStore: Boolean): Unit = {
     assert(sc == null)
     props.setProperty("host-data", "false")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
@@ -127,25 +131,30 @@ class ClusterManagerTestUtils {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
+    props.setProperty("log-level", "fine");
     props.asScala.foreach({ case (k, v) =>
       conf.set(io.snappydata.Prop.propPrefix + k, v)
     })
+    if (addUrlForHiveMetaStore) {
+      val snappydataurl = "jdbc:snappydata:;locators=localhost["
+      + locatorPort + "];route-query=false;user=HIVE_METASTORE;default-persistent=true"
+      conf.set("gemfirexd.db.url", snappydataurl)
+      conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+    }
     logger.info(s"About to create SparkContext with conf ${conf}")
     sc = new SparkContext(conf)
     logger.info("SparkContext CREATED, about to create SnappyContext.")
     snc = SnappyContext(sc)
+    assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
     logger.info("SnappyContext CREATED successfully.")
-//    props.setProperty("locators", "localhost[" + locatorPort + ']')
-//    val lead: Server = ServiceManager.getServerInstance
-//    lead.start(props)
-//    assert(lead.status == FabricService.State.RUNNING)
   }
 
   /**
-   * Start a snappy server. Any number of snappy servers can be started.
-   */
+    * Start a snappy server. Any number of snappy servers can be started.
+    */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
+    props.setProperty("log-level", "fine")
     val server: Server = ServiceManager.getServerInstance
 
     server.start(props)
@@ -153,9 +162,19 @@ class ClusterManagerTestUtils {
     assert(server.status == FabricService.State.RUNNING)
   }
 
+  def startNetServer(netPort: Int): Unit = {
+    ServiceManager.getServerInstance.startNetworkServer("localhost", netPort, null)
+    // ServiceManager.getServerInstance.startDRDAServer("localhost", netPort, null)
+  }
+
   def stopSpark(): Unit = {
-    SnappyContext.stop()
+    // cleanup metastore
     if (snc != null) {
+      snc.catalog.getTables(None).foreach {
+        case (tableName, false) => snc.dropExternalTable(tableName, true)
+        case _ =>
+      }
+      SnappyContext.stop()
       snc = null
     }
     if (sc != null) {
@@ -168,6 +187,7 @@ class ClusterManagerTestUtils {
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       // cleanup the database objects first
+      /*
       val store: GemFireStore = GemFireStore.getBootedInstance
       if (store != null && Misc.getGemFireCacheNoThrow != null
           && GemFireXDUtils.getMyVMKind.isAccessorOrStore) {
@@ -175,6 +195,7 @@ class ClusterManagerTestUtils {
         CleanDatabaseTestSetup.cleanDatabase(conn, false)
         conn.close()
       }
+      */
       service.stop(null)
     }
   }

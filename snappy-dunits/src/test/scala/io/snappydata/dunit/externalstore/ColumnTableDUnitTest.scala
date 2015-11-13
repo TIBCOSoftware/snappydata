@@ -16,7 +16,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
     Thread.sleep(5000)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
   }
@@ -28,7 +29,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
     Thread.sleep(5000)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
   }
 }
