@@ -738,10 +738,9 @@ object SnappyContext {
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "column" ->  classOf[columnar.DefaultSource].getCanonicalName,
-    "socket-stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
-    "file-stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
-    "kafka" -> classOf[streaming.KafkaStreamSource].getCanonicalName
+    "socket_stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
+    "file_stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
+    "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName
   )
 
   def apply(sc: SparkContext): SnappyContext = {
