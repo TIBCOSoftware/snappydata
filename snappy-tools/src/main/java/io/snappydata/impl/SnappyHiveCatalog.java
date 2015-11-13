@@ -3,6 +3,7 @@ package io.snappydata.impl;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -27,7 +28,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   public SnappyHiveCatalog() {
     // initialize HiveMetaStoreClient
-    String snappydataurl = "jdbc:snappydata:";
+    String snappydataurl = "jdbc:snappydata:;route-query=false;user=HIVE_METASTORE";
 
     HiveConf metadataConf = new HiveConf();
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
@@ -100,22 +101,26 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   private String getType(String tableName) throws TException {
-    List<String> tables = this.hmc.getAllTables("default");
-    for (String s : tables) {
-      System.out.println("table in default = " + s);
-    }
     List<String> list = this.hmc.getAllDatabases();
-    for (String s : list) {
-      System.out.println("db = " + s);
-    }
+//    Misc.getCacheLogWriter().info("KN: db list = " + list, new Exception());
+//    for (String s : list) {
+//      Misc.getCacheLogWriter().info("KN: db = " + s);
+//    }
+    List<String> tables = this.hmc.getAllTables("default");
+//    for (String s : tables) {
+//      //System.out.println("table in default = " + s);
+//      Misc.getCacheLogWriter().info("KN: table = " + s);
+//    }
     Table t = this.hmc.getTable("default", tableName);
     String type = t.getTableType();
-    System.out.println("KN: table type = " + type);
+//    System.out.println("KN: table type = " + type + " for ");
+//    Misc.getCacheLogWriter().info("KN: table type = " + type + " for ");
     Map<String, String> props = t.getParameters();//.getSd().getSerdeInfo().getParameters();
     Set<String> s = props.keySet();
-    for(String p : s) {
-      System.out.println("KN: Key = " + p + " val = " + props.get(p));
-    }
+//    for(String p : s) {
+//      System.out.println("KN: Key = " + p + " val = " + props.get(p));
+//      Misc.getCacheLogWriter().info("KN: Key = " + p + " val = " + props.get(p));
+//    }
     return t.getParameters().get("EXTERNAL");
   }
 }

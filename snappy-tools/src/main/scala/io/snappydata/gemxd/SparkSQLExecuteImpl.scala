@@ -19,7 +19,7 @@ import org.apache.spark.sql.{Row, SnappyContext, DataFrame}
  * Created by kneeraj on 20/10/15.
  */
 class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, senderVersion: Version) extends SparkSQLExecute {
-  
+
   private lazy val df: DataFrame = {
     // spark context will be constructed by now as this will be invoked when drda queries
     // will reach the lead node
@@ -45,11 +45,8 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
   private def getNumColumnGroups(rows: Array[Row]): (Int, Int, Int) = {
     if (rows != null && rows(0) != null) {
       val nc = rows(0).size
-      val numGroups = nc / 8 + (if (nc % 8 == 0) 0 else 1)
-      var partCols = nc % 8
-      if (partCols == 0) {
-        partCols = 8
-      }
+      val numGroups = (nc + 7) / 8
+      val partCols = ((nc - 1) % 8) + 1
       (nc, numGroups, partCols)
     }
     else {
@@ -62,15 +59,15 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
   }
 
   override def getNumColumns: Int = df.schema.size
-  
+
   override def getColumnTypes: Array[Int] = {
     val numCols = getNumColumns
     val schema = df.schema
-    val types = (0 until numCols).map( i => getSQLType(i, schema))
+    val types = (0 until numCols).map(i => getSQLType(i, schema))
     types.toArray
   }
 
-  override  def serializeRows(out: DataOutput) = {
+  override def serializeRows(out: DataOutput) = {
     var numBytes = 0
     if (hdos != null) {
       numBytes = hdos.size
@@ -101,7 +98,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
 
       val start = rowsSent
       // TODO: Take care of this chunking and streaming a bit later. After verifying the functionality.
-      (start until totalRows).takeWhile( _ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
+      (start until totalRows).takeWhile(_ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
         val r = rows(i)
         writeRow(r, hdos)
         rowsSent += 1
