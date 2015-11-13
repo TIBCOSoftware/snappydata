@@ -197,4 +197,14 @@ object StreamingCtxtHolder {
   }
 }
 
+trait StreamPlan {
+  def streamingSnappyCtx = StreamPlan.currentContext.get()
+
+  def stream: DStream[InternalRow]
+}
+
+object StreamPlan {
+  val currentContext = new ThreadLocal[StreamingSnappyContext]()
+}
+
 abstract class StreamBaseRelation extends BaseRelation with StreamPlan with Serializable

@@ -2,9 +2,9 @@ package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.execution.{ExplainCommand, SparkPlan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
@@ -65,7 +65,6 @@ final class SchemaDStream(
       case _ => plan.children.flatMap(traverse(_))
     }
     val streams = traverse(queryExecution.executedPlan)
-    //assert (!streams.isEmpty, s"Input query and related plan ${queryExecution.executedPlan} is not a stream plan")
     streams
   }
 
@@ -73,4 +72,23 @@ final class SchemaDStream(
   //printSchema
   //explain
   //columns
+  def explain(): Unit = explain(extended = false)
+
+  /**
+   * Explain the query to get logical plan as well as physical plan.
+   */
+  def explain(extended: Boolean): Unit = {
+    val explain = ExplainCommand(queryExecution.logical, extended = extended)
+    val sds: SchemaDStream = new SchemaDStream(streamingSnappy, explain)
+    sds.queryExecution.executedPlan.executeCollect().map {
+      r => println(r.getString(0))
+    }
+  }
+
+  /**
+   * Returns all column names as an array.
+   */
+  def columns: Array[String] = schema.fields.map(_.name)
+
+  def printSchema(): Unit = println(schema.treeString)
 }
