@@ -23,7 +23,7 @@ import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -369,7 +369,7 @@ class SnappyContext private(sc: SparkContext)
     }
 
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params)
+      Array.empty[String], source, params,  ExternalTableType.getTableType(resolved.relation))
     LogicalRelation(resolved.relation)
   }
 
@@ -422,7 +422,7 @@ class SnappyContext private(sc: SparkContext)
     }
     else {
       catalog.registerExternalTable(tableIdent, Some(data.schema),
-        partitionColumns, source, params)
+        partitionColumns, source, params, ExternalTableType.getTableType(resolved.relation))
     }
     LogicalRelation(resolved.relation)
   }
