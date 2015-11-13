@@ -1,6 +1,7 @@
 package org.apache.spark.sql.store
 
 import java.sql.Connection
+import java.util.UUID
 
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
@@ -17,6 +18,8 @@ trait ExternalStore extends Serializable {
   def initSource(): Unit
 
   def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey
+
+  def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId : Int, tableName: String): UUIDRegionKey
 
   def cleanup(): Unit
 

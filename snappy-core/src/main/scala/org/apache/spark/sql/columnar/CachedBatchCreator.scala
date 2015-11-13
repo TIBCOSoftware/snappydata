@@ -1,6 +1,7 @@
 package org.apache.spark.sql.columnar
 
 import java.sql.ResultSet
+import java.util.UUID
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -20,11 +21,6 @@ class CachedBatchCreator(
     val schema: StructType,
     val externalStore: ExternalStore) {
 
-  // Each JDBC-to-Catalyst conversion corresponds to a tag defined here so that
-  // we don't have to potentially poke around in the Metadata once for every
-  // row.
-  // Is there a better way to do this?  I'd rather be using a type that
-  // contains only the tags I define.
   abstract class JDBCConversion
 
   case object BooleanConversion extends JDBCConversion
@@ -69,9 +65,6 @@ class CachedBatchCreator(
     }).toArray
   }
 
-  // Need schema
-  // Need ExecRow/Row or ResultSet
-  // It will give InternalRow
   def createInternalRow(rs: ResultSet): InternalRow = {
     val conversions = getConversions(schema)
     val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
@@ -134,19 +127,14 @@ class CachedBatchCreator(
     }
     mutableRow
   }
-  // Need ExternalStore information
-  // schema
-  // columnBatchSize
-  // userCompression
-  // connection to the externalStore?
 
-  def createCachedBatch(rowIterator: Iterator[InternalRow]): Unit = {
+  def createCachedBatch(rowIterator: Iterator[InternalRow], batchID :UUID, bucketID : Int): Unit = {
     val useCompression = true
-    val columnBatchSize = 10000
+    val columnBatchSize = 10000 //TODO: Suranjan Get from somewhere
 
     def uuidBatchAggregate (accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-      val uuid = externalStore.storeCachedBatch (batch, tableName)
+      val uuid = externalStore.storeCachedBatch (batch, batchID, bucketID, tableName)
       accumulated += uuid
     }
 
@@ -162,13 +150,8 @@ class CachedBatchCreator(
       new ArrayBuffer[UUIDRegionKey] (1), uuidBatchAggregate)
 
     val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
-    val converter = CatalystTypeConverters.createToCatalystConverter (schema)
-
-    rowIterator.map (converter (_).asInstanceOf[InternalRow] )
-        .foreach (batches.appendRow ((), _) )
+    rowIterator.foreach (batches.appendRow ((), _) )
 
     batches.forceEndOfBatch
   }
-
-
 }

@@ -1,7 +1,7 @@
 package org.apache.spark.sql.store.impl
 
 import java.sql.Connection
-import java.util.Properties
+import java.util.{UUID, Properties}
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
@@ -69,6 +69,43 @@ final class JDBCSourceAsColumnarStore(_url: String,
               val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds
                   .toArray(new Array[Integer](0))
               genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
+            case _ =>
+              genUUIDRegionKey()
+          }
+
+        case _ => genUUIDRegionKey()
+      }
+
+      val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+      val stmt = connection.prepareStatement(rowInsertStr)
+      stmt.setString(1, uuid.getUUID.toString)
+      stmt.setInt(2, uuid.getBucketId)
+      stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
+      var columnIndex = 4
+      batch.buffers.foreach(buffer => {
+        stmt.setBytes(columnIndex, buffer)
+        columnIndex += 1
+      })
+      stmt.executeUpdate()
+      stmt.close()
+      uuid
+    } finally {
+      connection.close()
+    }
+  }
+
+  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketID: Int,
+      tableName: String): UUIDRegionKey = {
+    val connection: java.sql.Connection = getConnection(tableName)
+    try {
+      val uuid = connectionType match {
+
+        case ConnectionType.Embedded =>
+          val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
+          val region = Misc.getRegionForTable(resolvedName, true)
+          region.asInstanceOf[AbstractRegion] match {
+            case pr: PartitionedRegion =>
+              genUUIDRegionKey(bucketID, batchID)
             case _ =>
               genUUIDRegionKey()
           }

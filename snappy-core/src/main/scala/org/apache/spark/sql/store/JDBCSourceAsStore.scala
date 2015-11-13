@@ -3,7 +3,7 @@ package org.apache.spark.sql.store
 import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet}
-import java.util.Properties
+import java.util.{UUID, Properties}
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.collection.mutable
@@ -59,6 +59,26 @@ class JDBCSourceAsStore(_url: String,
     tryExecute(tableName, {
       case connection =>
         val uuid = genUUIDRegionKey()
+        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+        val stmt = connection.prepareStatement(rowInsertStr)
+        stmt.setString(1, uuid.getUUID.toString)
+        stmt.setInt(2, uuid.getBucketId)
+        stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
+        var columnIndex = 4
+        batch.buffers.foreach(buffer => {
+          stmt.setBytes(columnIndex, buffer)
+          columnIndex += 1
+        })
+        stmt.executeUpdate()
+        stmt.close()
+        uuid
+    })
+  }
+
+  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId: Int, tableName: String): UUIDRegionKey = {
+    tryExecute(tableName, {
+      case connection =>
+        val uuid = genUUIDRegionKey(bucketId, batchID)
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, uuid.getUUID.toString)
@@ -133,6 +153,8 @@ class JDBCSourceAsStore(_url: String,
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
+  protected def genUUIDRegionKey(bucketID: Int , batchID: UUID) = new UUIDRegionKey(bucketID, batchID)
+
   protected val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
 
@@ -173,6 +195,7 @@ class JDBCSourceAsStore(_url: String,
   override def initSource(): Unit = ???
 
   override def cleanup(): Unit = ???
+
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,

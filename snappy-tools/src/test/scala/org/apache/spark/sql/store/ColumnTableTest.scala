@@ -18,7 +18,6 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
   override def afterAll(): Unit = {
     sc.stop()
     FileCleaner.cleanStoreFiles()
-
   }
 
   override def beforeAll(): Unit = {
@@ -37,32 +36,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     snc.dropExternalTable("ColumnTable2", true)
   }
 
-  ignore("test the shadow table creation") {
-    snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
-        "USING column " +
-        "options " +
-        "(" +
-        "PARTITION_BY 'Col1'," +
-        "BUCKETS '1')")
-
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect
-    assert(r.length == 0)
-
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
-    val r2 = result.collect
-    assert(r2.length == 5)
-    println("Successful")
-
-  }
-
-  ignore("Test the creation/dropping of table using Snappy API") {
+  test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
       snc.createExternalTable(tableName, "column", props)
@@ -93,7 +67,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the creation of table using Snappy API and then append/ignore/overwrite DF using DataSource API") {
+  test("Test the creation of table using Snappy API and then append/ignore/overwrite DF using DataSource API") {
     var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
@@ -143,7 +117,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
 
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
-  ignore("Test the creation/dropping of table using SQL") {
+  test("Test the creation/dropping of table using SQL") {
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
@@ -154,7 +128,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the creation/dropping of table using SQ with explicit URL") {
+  test("Test the creation/dropping of table using SQ with explicit URL") {
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         optionsWithURL
@@ -165,7 +139,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
+  test("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options )
@@ -188,7 +162,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the creation of table using SQL and SnappyContext ") {
+  test("Test the creation of table using SQL and SnappyContext ") {
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
@@ -208,7 +182,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the creation of table using CREATE TABLE AS STATEMENT ") {
+  test("Test the creation of table using CREATE TABLE AS STATEMENT ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -233,7 +207,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the truncate syntax SQL and SnappyContext") {
+  test("Test the truncate syntax SQL and SnappyContext") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -256,7 +230,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the drop syntax SnappyContext and SQL ") {
+  test("Test the drop syntax SnappyContext and SQL ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -278,7 +252,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  ignore("Test the drop syntax SQL and SnappyContext ") {
+  test("Test the drop syntax SQL and SnappyContext ") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
