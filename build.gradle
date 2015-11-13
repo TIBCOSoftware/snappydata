@@ -1,5 +1,9 @@
 apply plugin: 'wrapper'
 
+if(JavaVersion.current() != JavaVersion.VERSION_1_7){
+    throw new GradleException("==== This build must be run with java 7 ====")
+}
+
 buildscript {
   repositories {
     maven { url "https://plugins.gradle.org/m2" }
@@ -20,7 +24,7 @@ allprojects {
   repositories {
     maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
     mavenLocal()
-    maven { url "http://dl.bintray.com/spark-jobserver/maven" }
+    //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
@@ -52,7 +56,7 @@ allprojects {
 
   ext {
     scalaBinaryVersion = '2.10'
-    scalaVersion = scalaBinaryVersion + '.4'
+    scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.5.0-SNAPSHOT.1'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
@@ -71,17 +75,6 @@ allprojects {
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
-  }
-
-  dependencies {
-    compile 'log4j:log4j:' + log4jVersion
-    compile 'org.slf4j:slf4j-api:' + slf4jVersion
-    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-
-    testCompile "junit:junit:${junitVersion}"
-    testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
-
-    testRuntime 'org.pegdown:pegdown:1.1.0'
   }
 }
 
@@ -112,6 +105,11 @@ task cleanScalaTest << {
 }
 task cleanJUnit << {
   def workingDir = "${testResultsBase}/junit"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
+task cleanDUnit << {
+  def workingDir = "${testResultsBase}/dunit"
   delete workingDir
   file(workingDir).mkdirs()
 }
@@ -222,21 +220,25 @@ subprojects {
   */
 
   configurations {
+    provided {
+      description 'a dependency that is provided externally at runtime'
+      visible true
+    }
+
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
     }
-  }
-
-  /*
-  configurations.all {
-    resolutionStrategy {
-      // fail eagerly on version conflict (includes transitive dependencies)
-      // e.g. multiple different versions of the same dependency (group and name are equal)
-      failOnVersionConflict()
+    /*
+    all {
+      resolutionStrategy {
+        // fail eagerly on version conflict (includes transitive dependencies)
+        // e.g. multiple different versions of the same dependency (group and name are equal)
+        failOnVersionConflict()
+      }
     }
+    */
   }
-  */
 
   task packageTests(type: Jar) {
     from sourceSets.test.output
@@ -244,6 +246,29 @@ subprojects {
   }
   artifacts {
     testOutput packageTests
+  }
+
+  idea {
+    module {
+      scopes.PROVIDED.plus += [ configurations.provided ]
+    }
+  }
+
+  sourceSets {
+    main.compileClasspath += configurations.provided
+    main.runtimeClasspath -= configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+  }
+
+  javadoc.classpath += configurations.provided
+
+  dependencies {
+    compile 'log4j:log4j:' + log4jVersion
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+
+    testCompile "junit:junit:${junitVersion}"
   }
 }
 
@@ -258,7 +283,6 @@ task product {
   def productDir = file("${buildDir}/snappy")
   doFirst {
     delete productDir
-    productDir.mkdirs()
     file("${productDir}/lib").mkdirs()
   }
   doLast {
@@ -270,6 +294,11 @@ task product {
       from datanucleusJars
       into "${productDir}/lib"
     }
+    // copy GemFireXD shared libraries for optimized JNI calls
+    copy {
+      from "${project(':snappy-store:gemfirexd:core').projectDir}/lib"
+      into "${productDir}/lib"
+    }
 
     // create the RELEASE file
     def release = file("${productDir}/RELEASE")
@@ -279,7 +308,7 @@ task product {
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def baseName = 'snappy-spark-assembly'
-    def archiveName = "snappy-spark-assembly_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
+    def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${productDir}/lib/${archiveName}")
     copy {
       from "${project(':snappy-spark').projectDir}/bin"
@@ -301,6 +330,18 @@ task product {
       from "${project(':snappy-spark').projectDir}/data"
       into "${productDir}/data"
     }
+    copy {
+      from("${toolsProject.projectDir}/bin")
+      into "${productDir}/bin"
+    }
+    copy {
+      from("${toolsProject.projectDir}/sbin")
+      into "${productDir}/sbin"
+    }
+    copy {
+      from("${toolsProject.projectDir}/conf") 
+      into "${productDir}/conf"
+    }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
     if (file(sparkR).exists()) {
@@ -321,7 +362,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test'
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }

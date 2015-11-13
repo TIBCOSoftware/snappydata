@@ -36,7 +36,7 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
  *
  * Created by Soubhik on 5/13/15.
  */
-protected[sql] final class SnappyContext(sc: SparkContext)
+protected[sql] class SnappyContext(sc: SparkContext)
     extends SQLContext(sc) with Serializable {
 
   self =>
@@ -492,7 +492,8 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         datasources.PreWriteCheck(catalog))
     }
 
-  @transient override protected[sql] val planner = new SparkPlanner {
+  @transient
+  override protected[sql] val planner = new execution.SparkPlanner(this) {
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
@@ -512,7 +513,6 @@ protected[sql] final class SnappyContext(sc: SparkContext)
         case _ => Nil
       }
     }
-
   }
 
   /**
@@ -720,28 +720,46 @@ object snappy extends Serializable {
 
 object SnappyContext {
 
-  @volatile private[this] var globalContext: SnappyContext = _
+  @volatile private[this] var globalContext: SparkContext = _
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName
+    "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "column" ->  classOf[columnar.DefaultSource].getCanonicalName
   )
 
-  def apply(sc: SparkContext,
-      init: SnappyContext => SnappyContext = identity): SnappyContext = {
-    val snc = globalContext
-    if (snc != null) {
-      snc
+  def apply(sc: SparkContext): SnappyContext = {
+    val gc = globalContext
+    if (gc == sc) {
+      new SnappyContext(sc)
     } else contextLock.synchronized {
-      val snc = globalContext
-      if (snc != null) {
-        snc
+      val gc = globalContext
+      if (gc == sc) {
+        new SnappyContext(sc)
       } else {
-        val snc = init(new SnappyContext(sc))
-        globalContext = snc
-        snc
+        globalContext = sc
+        initSparkContext(sc)
+        new SnappyContext(sc)
       }
+    }
+  }
+
+  // TODO: add initialization required for non-embedded mode etc here
+  private def initSparkContext(sc: SparkContext): Unit = {
+  }
+
+  def stop(): Unit = {
+    val sc = globalContext
+    if (sc != null && !sc.isStopped) {
+      // clean up the connection pool on executors first
+      Utils.mapExecutors(sc, { (tc, p) =>
+        ConnectionPool.clear()
+        Iterator.empty
+      }).count()
+      // then on the driver
+      ConnectionPool.clear()
+      sc.stop()
     }
   }
 

@@ -36,16 +36,16 @@ dependencies {
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
   }
 
-  compile("spark.jobserver:job-server_${scalaBinaryVersion}:0.6.0") {
-    exclude(module: 'akka-actor_' + scalaBinaryVersion)
-    exclude(module: 'akka-remote_' + scalaBinaryVersion)
-    exclude(module: 'akka-slf4j_' + scalaBinaryVersion)
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
+    compile project(':spark-jobserver')
+  } else {
+    compile files("${rootDir.getAbsolutePath()}/local-repo/spark-jobserver-1.5.0-SNAPSHOT-1.jar")
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+  testRuntime 'org.pegdown:pegdown:1.1.0'
 }
 
 test.dependsOn ':cleanJUnit'

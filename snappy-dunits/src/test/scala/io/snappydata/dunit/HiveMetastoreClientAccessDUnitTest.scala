@@ -5,42 +5,42 @@ import java.util.Properties
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import dunit.{DistributedTestBase, Host}
+import dunit.AvailablePortHelper
 import io.snappydata.ServiceManager
+import io.snappydata.dunit.cluster.{ClusterManagerTestUtils, ClusterManagerTestBase}
+
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{SaveMode, DataFrame, Row}
 
 /**
- * Created by kneeraj on 15/10/15.
+ * Basic hive meta-store client test in Snappy cluster.
+ *
+ * @author kneeraj
  */
-class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestBase(s) {
+class HiveMetastoreClientAccessDUnitTest(val s: String)
+    extends ClusterManagerTestBase(s) {
 
   import HiveMetastoreClientAccessDUnitTest._
+
+  override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   def testHelloWorld(): Unit = {
     helloWorld()
   }
 
+  override def tearDown2(): Unit = {
+    super.tearDown2()
+    stopAny()
+  }
+
   def testOne(): Unit = {
-    val locatorNetPort = 9999//AvailablePortHelper.getRandomAvailableTCPPort
-    val serverNetPort = 8888//AvailablePortHelper.getRandomAvailableTCPPort
-    val peerDiscoveryPort = 7777//AvailablePortHelper.getRandomAvailableTCPPort
+    val serverNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
-    val locatorArgs = new Array[AnyRef](3)
-    locatorArgs(0) = "localhost"
-    locatorArgs(1) = new Integer(locatorNetPort)
-    locatorArgs(2) = new Integer (peerDiscoveryPort)
-
-    vm1.invoke(this.getClass, "startLocator", locatorArgs)
-
-    val driverArgs = new Array[AnyRef](1)
-    //val locStr = InetAddress.getLocalHost.getHostAddress+"["+peerDiscoveryPort+"]"
-    val locStr = "localhost["+peerDiscoveryPort+"]"
-    driverArgs(0) = locStr
-
-    vm2.invoke(this.getClass, "startDriverApp", driverArgs)
+    val locStr = "localhost[" + locatorPort + ']'
+    vm2.invoke(this.getClass, "startDriverApp",
+      Array(locStr.asInstanceOf[AnyRef]))
 
     startHiveMetaClientInGfxdPeerNode(locStr, serverNetPort)
     val cc = Misc.getMemStore.getExternalCatalog
@@ -48,56 +48,24 @@ class HiveMetastoreClientAccessDUnitTest(val s: String) extends DistributedTestB
     assert(cc.isRowTable("row_table"))
   }
 
-
-
   def startHiveMetaClientInGfxdPeerNode(locatorStr: String, netPort: Int): Unit = {
     val dataStoreService = ServiceManager.getServerInstance
     val bootProperties = new Properties()
     bootProperties.setProperty("locators", locatorStr)
-    bootProperties.setProperty("persist-dd", "false")
     dataStoreService.start(bootProperties)
     println("Gfxd peer node vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
     //dataStoreService.startNetworkServer("localhost", netPort, null)
   }
-
-  val host = Host.getHost(0);
-
-  val vm0 = host.getVM(0);
-  val vm1 = host.getVM(1);
-  val vm2 = host.getVM(2);
-  val vm3 = host.getVM(3);
-
-  override
-  def setUp(): Unit = {
-    //super.setUp()
-  }
-
-  override
-  def tearDown2(): Unit = {
-
-  }
 }
 
-object HiveMetastoreClientAccessDUnitTest {
+object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
   def helloWorld(): Unit = {
-    hello("Hello World! " + this.getClass);
+    hello("Hello World! " + this.getClass)
   }
 
   def hello(s: String): Unit = {
-    println(s);
-  }
-
-  def startLocator(bindAddress: String, netport: Int, peerDiscoveryPort: Int): Unit = {
-    val locatorService = ServiceManager.getLocatorInstance
-    val bootProps = new Properties()
-    bootProps.setProperty("persist-dd", "false")
-    //locatorService.start(localHost.getHostAddress, peerDiscoveryPort, bootProps)
-    //println("KN: startlocator params peerDiscoveryPort = " + peerDiscoveryPort + ", netport = " + netport)
-    locatorService.start("localhost", peerDiscoveryPort, bootProps)
-    locatorService.startNetworkServer("localhost", netport, bootProps)
-    println("Loc vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    println("locator prop in loc = " + InternalDistributedSystem.getConnectedInstance.getConfig.getLocators)
+    println(s)
   }
 
   def startDriverApp(locatorStr: String): Unit = {
@@ -105,7 +73,16 @@ object HiveMetastoreClientAccessDUnitTest {
     val dsys = InternalDistributedSystem.getConnectedInstance
     assert(dsys != null)
     println("Driver vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    println("locator prop in driver app = " + InternalDistributedSystem.getConnectedInstance.getConfig.getLocators)
+    println("locator prop in driver app = " + InternalDistributedSystem
+        .getConnectedInstance.getConfig.getLocators)
+  }
+
+  def stopLocator(): Unit = {
+    val server = ServiceManager.getServerInstance
+
+    if (server != null) {
+      server.stop(null)
+    }
   }
 
   object ParseUtils extends java.io.Serializable {
@@ -132,7 +109,7 @@ object HiveMetastoreClientAccessDUnitTest {
     }
 
     def parseColumn(s: String, offset: Int, endOffset: Int,
-                    isInteger: Boolean): Any = {
+        isInteger: Boolean): Any = {
       if (isInteger) {
         if (endOffset != (offset + 2) || s(offset) != 'N' || s(offset + 1) != 'A') {
           parseInt(s, offset, endOffset)
@@ -145,8 +122,8 @@ object HiveMetastoreClientAccessDUnitTest {
     }
 
     def parseRow(s: String, split: Char,
-                 columnTypes: Array[Boolean],
-                 row: ReusableRow): Unit = {
+        columnTypes: Array[Boolean],
+        row: ReusableRow): Unit = {
       var ai = 0
       var splitStart = 0
       val len = s.length
@@ -165,10 +142,13 @@ object HiveMetastoreClientAccessDUnitTest {
       row(ai) = parseColumn(s, splitStart, len, columnTypes(ai))
     }
   }
+
   case class TestData(c1: Int, c2: String)
-  private def startSnappyLocalModeAndCreateARowAndAColumnTable(locStr: String): Unit = {
+
+  private def startSnappyLocalModeAndCreateARowAndAColumnTable(
+      locStr: String): Unit = {
     def addArrDelaySlot(row: ReusableRow, arrDelayIndex: Int,
-                        arrDelaySlotIndex: Int): Row = {
+        arrDelaySlotIndex: Int): Row = {
       val arrDelay =
         if (!row.isNullAt(arrDelayIndex)) row.getInt(arrDelayIndex) else 0
       row.setInt(arrDelaySlotIndex, math.abs(arrDelay) / 10)
@@ -176,22 +156,21 @@ object HiveMetastoreClientAccessDUnitTest {
     }
 
     val hfile: String = getClass.getResource("/2015.parquet").getPath
-    //val hfile: String = "/home/kneeraj/snappy/snappy-commons/snappy-core/src/test/resources/2015.parquet"
     val loadData: Boolean = true
     val setMaster: String = "local[6]"
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
-      .set("spark.logConf", "true")
+        .set("spark.logConf", "true")
+        .set("snappydata.store.locators", locStr)
 
     if (setMaster != null) {
       conf.setMaster(setMaster)
     }
 
     // Set the url from the locator
-    val snappydataurl = "jdbc:snappydata:;locators=" + locStr + ";persist-dd=false;"
+    val snappydataurl = "jdbc:snappydata:;locators=" + locStr
     conf.set("gemfirexd.db.url", snappydataurl)
     conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-
 
     val sc = new org.apache.spark.SparkContext(conf)
     val snContext = org.apache.spark.sql.SnappyContext(sc)
@@ -213,10 +192,10 @@ object HiveMetastoreClientAccessDUnitTest {
           val airlineData = sc.textFile(hfile)
 
           val schemaString = "Year,Month,DayOfMonth,DayOfWeek,DepTime,CRSDepTime," +
-            "ArrTime,CRSArrTime,UniqueCarrier,FlightNum,TailNum,ActualElapsedTime," +
-            "CRSElapsedTime,AirTime,ArrDelay,DepDelay,Origin,Dest,Distance,TaxiIn," +
-            "TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay," +
-            "WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,ArrDelaySlot"
+              "ArrTime,CRSArrTime,UniqueCarrier,FlightNum,TailNum,ActualElapsedTime," +
+              "CRSElapsedTime,AirTime,ArrDelay,DepDelay,Origin,Dest,Distance,TaxiIn," +
+              "TaxiOut,Cancelled,CancellationCode,Diverted,CarrierDelay," +
+              "WeatherDelay,NASDelay,SecurityDelay,LateAircraftDelay,ArrDelaySlot"
           val schemaArr = schemaString.split(",")
           val schemaTypes = List(IntegerType, IntegerType, IntegerType, IntegerType,
             IntegerType, IntegerType, IntegerType, IntegerType, StringType,
@@ -246,10 +225,9 @@ object HiveMetastoreClientAccessDUnitTest {
           snContext.createDataFrame(rowRDD, schema)
         }
 
-
-      airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
+      airlineDataFrame.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("airline")
+      //airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
     }
-
 
     val rdd = sc.parallelize(
       (1 to 1000).map(i => TestData(i, s"$i")))
