@@ -529,13 +529,16 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
   // end of insert/update/delete operations
 
+
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
     new Analyzer(catalog, functionRegistry, conf) {
       override val extendedResolutionRules =
         ExtractPythonUDFs ::
             datasources.PreInsertCastAndRename ::
+            ReplaceWithSampleTable ::
             WeightageRule ::
+            //TestRule::
             Nil
 
       override val extendedCheckRules = Seq(
@@ -771,6 +774,8 @@ object snappy extends Serializable {
 object SnappyContext {
 
   @volatile private[this] var globalContext: SparkContext = _
+  var SnappySC:SnappyContext = null
+
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
@@ -783,6 +788,8 @@ object SnappyContext {
     val gc = globalContext
     if (gc == sc) {
       new SnappyContext(sc)
+    } else if (sc == null) {
+      new SnappyContext(gc)
     } else contextLock.synchronized {
       val gc = globalContext
       if (gc == sc) {
@@ -790,7 +797,8 @@ object SnappyContext {
       } else {
         globalContext = sc
         initSparkContext(sc)
-        new SnappyContext(sc)
+        SnappySC =new SnappyContext(sc)
+        SnappySC
       }
     }
   }

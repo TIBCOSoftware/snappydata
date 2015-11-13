@@ -3,15 +3,16 @@ package org.apache.spark.sql
 import java.util.regex.Pattern
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming._
+import org.apache.spark.sql.sources
 
 /**
  * Snappy SQL extensions. Includes:
@@ -27,10 +28,40 @@ object SnappyParser extends SqlParserBase {
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
 
+  protected val ERRORPERCENT = Keyword("ERRORPERCENT")
+  protected val CONFIDENCE =Keyword("CONFIDENCE")
+
   protected val defaultConfidence = 0.75
 
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
       cte | dmlForExternalTable
+
+  override protected lazy val select: Parser[LogicalPlan] =
+    SELECT ~> DISTINCT.? ~
+        repsep(projection, ",") ~
+        (FROM ~> relations).? ~
+        (WHERE ~> expression).? ~
+        (GROUP ~ BY ~> rep1sep(expression, ",")).? ~
+        (HAVING ~> expression).? ~
+        sortType.? ~
+        (LIMIT ~> expression).? ~
+        (ERRORPERCENT ~> expression).? ~
+        (CONFIDENCE ~> expression).? ^^ {
+      case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c =>
+        val base = r.getOrElse(OneRowRelation)
+        val withFilter = f.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, base)).getOrElse(base)
+        val withProjection = g
+            .map(org.apache.spark.sql.catalyst.plans.logical.Aggregate(_, p.map(UnresolvedAlias(_)), withFilter))
+            .getOrElse(org.apache.spark.sql.catalyst.plans.logical.Project(p.map(UnresolvedAlias(_)), withFilter))
+        val withDistinct = d.map(_ => Distinct(withProjection)).getOrElse(withProjection)
+        val withHaving = h.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, withDistinct)).getOrElse(withDistinct)
+        val withOrder = o.map(_ (withHaving)).getOrElse(withHaving)
+        val withLimit = l.map(org.apache.spark.sql.catalyst.plans.logical.Limit(_, withOrder)).getOrElse(withOrder)
+        //      withLimit
+        val withErrorPercent = e.map(ErrorPercent(_, withLimit)).getOrElse(withLimit)
+        val withConfidence = c.map(Confidence(_, withErrorPercent)).getOrElse(withErrorPercent)
+        withConfidence
+    }
 
   override protected lazy val function = functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> unsignedFloat <~ ")").? ~
@@ -52,7 +83,6 @@ object SnappyParser extends SqlParserBase {
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(Seq(r)), s)
     }
-
 }
 
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
