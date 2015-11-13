@@ -10,6 +10,8 @@ import org.apache.spark.sql.{Row, SnappyContext}
  */
 class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  def testDummy(): Unit = {}
+
   /**
    * This test starts a lead node and two server nodes. Executes a job.
    * Then stops the lead node and starts lead in another node and then executes

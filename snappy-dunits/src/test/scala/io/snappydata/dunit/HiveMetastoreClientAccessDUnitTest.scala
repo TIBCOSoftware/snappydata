@@ -6,7 +6,7 @@ import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import dunit.AvailablePortHelper
-import io.snappydata.ServiceManager
+import io.snappydata.{Prop, ServiceManager}
 import io.snappydata.dunit.cluster.{ClusterManagerTestUtils, ClusterManagerTestBase}
 
 import org.apache.spark.sql.collection.ReusableRow
@@ -44,7 +44,7 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
 
     startHiveMetaClientInGfxdPeerNode(locStr, serverNetPort)
     val cc = Misc.getMemStore.getExternalCatalog
-    //assert(cc.isColumnTable("airline"))
+    // assert(cc.isColumnTable("airline"))
     assert(cc.isRowTable("row_table"))
   }
 
@@ -54,7 +54,7 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
     bootProperties.setProperty("locators", locatorStr)
     dataStoreService.start(bootProperties)
     println("Gfxd peer node vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
-    //dataStoreService.startNetworkServer("localhost", netPort, null)
+    // dataStoreService.startNetworkServer("localhost", netPort, null)
   }
 }
 
@@ -161,7 +161,7 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set("snappydata.store.locators", locStr)
+        .set(Prop.Store.locators, locStr)
 
     if (setMaster != null) {
       conf.setMaster(setMaster)

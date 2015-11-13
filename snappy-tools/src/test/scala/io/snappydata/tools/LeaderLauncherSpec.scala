@@ -9,6 +9,8 @@ import scala.collection.mutable.ArrayBuffer
 import io.snappydata.LocalizedMessages
 import org.scalatest.{Matchers, WordSpec}
 
+import org.apache.spark.SparkConf
+
 /**
  * BDD style tests
  *
@@ -16,7 +18,7 @@ import org.scalatest.{Matchers, WordSpec}
  */
 class LeaderLauncherSpec extends WordSpec with Matchers {
 
-  def doExtract(param: String, prop: String) = param.toLowerCase.startsWith("-" + prop)
+  private def doExtract(param: String, prop: String) = param.toLowerCase.startsWith("-" + prop)
 
   "leader" when {
     "started" should {
@@ -24,9 +26,9 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         {
 
           val l = new LeadImpl
-          val opts = l.initStartupArgs(new Properties)
+          val opts = l.initStartupArgs(new SparkConf)
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+          val hdProp = opts.get(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
 
           assert(hdProp != null)
           assert(hdProp.toBoolean == false)
@@ -34,12 +36,12 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeadImpl
-          val p = new Properties()
-          p.setProperty("host-data", "true")
+          val p = new SparkConf()
+          p.set("host-data", "true")
 
           val opts = l.initStartupArgs(p)
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+          val hdProp = opts.get(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
 
           assert(hdProp != null)
           assert(hdProp.toBoolean == false)
@@ -50,9 +52,9 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
       "always add implicit server group" in {
         {
           val l = new LeadImpl
-          val opts = l.initStartupArgs(new Properties())
+          val opts = l.initStartupArgs(new SparkConf())
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
+          val hdProp = opts.get(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
           assert(hdProp == l.LEADER_SERVERGROUP)
@@ -60,11 +62,11 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeadImpl
-          val p = new Properties()
-          p.setProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, "DUMMY,GRP")
+          val p = new SparkConf()
+          p.set(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, "DUMMY,GRP")
           val opts = l.initStartupArgs(p)
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
+          val hdProp = opts.get(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
           assert(hdProp.endsWith("," + l.LEADER_SERVERGROUP))
@@ -102,7 +104,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         }.getMessage.equals(LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
       }
 
-    } //end started
+    } // end started
   }
 
 }

@@ -6,51 +6,23 @@ import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase}
 
 /**
- * Created by soubhikc on 22/10/15.
- */
+  * Created by soubhikc on 22/10/15.
+  */
 class SnappyContextFactory extends SparkContextFactory {
 
-  type C = SnappyContext with ContextLike
+  type C = SnappyJobContext
 
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
-    val sc = SnappyContextFactory.getOrElse(new SparkContext(sparkConf))
-    new SnappyContext(sc) with ContextLike {
-      def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
-
-      def stop(): Unit = {
-        sparkContext.stop()
-        SnappyContextFactory.clear()
-      }
-    }
+    new SnappyJobContext(SnappyContext.globalContext, SnappyContextFactory.snappyContext)
   }
 }
 
 object SnappyContextFactory {
+  @volatile private[this] var _snc: SnappyContext = _
 
-  @volatile private[this] var sparkContextRef: SparkContext = _
-
-  def getOrElse(create: => SparkContext) = {
-    val sc = sparkContextRef
-    if (sc != null) {
-      sc
-    }
-    else this.synchronized {
-      val sc = sparkContextRef
-      if (sc != null) {
-        sc
-      } else {
-        sparkContextRef = create
-        sparkContextRef
-      }
-    }
+  def setSnappyContext(sc: SnappyContext): Unit = this.synchronized {
+    _snc = sc
   }
 
-  def clear() = this.synchronized {
-    sparkContextRef = null
-  }
-
-  def sparkContext(): Option[SparkContext] = {
-    val sc = sparkContextRef
-    if (sc != null) Some(sc) else None
-  }
+  def snappyContext: SnappyContext = _snc
 }

@@ -34,11 +34,18 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   test("Snappy Lead start") {
     val fs: Lead = ServiceManager.getLeadInstance
 
-    fs.start(props)
+    // right version of the test is now in LeaderLauncherSuite.
+    try {
+      fs.start(props)
+      fail("must fail as locator info not present")
+    } catch {
+      case e: Exception => if (!e.getMessage
+          .contains("locator info not provided in the snappy embedded url")) {
+        throw e
+      }
+      case other: Throwable => throw other
+    }
 
-    assert(ServiceManager.getLeadInstance.status == FabricService.State.RUNNING)
-
-    fs.stop(null)
   }
 
   test("Snappy Locator start") {

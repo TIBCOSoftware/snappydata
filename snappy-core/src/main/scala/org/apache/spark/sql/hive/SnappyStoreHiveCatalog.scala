@@ -565,7 +565,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean) = {
+      tableName: String, dropIfExists: Boolean): Unit = {
     val isLoner = context.isLoner
 
     val rdd = new DummyRDD(context) {

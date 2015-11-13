@@ -11,6 +11,7 @@ import com.pivotal.gemfirexd.{Attribute, FabricService, TestUtil}
 import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.apache.derbyTesting.junit.CleanDatabaseTestSetup
+import org.slf4j.LoggerFactory
 
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 import org.apache.spark.sql.SnappyContext
@@ -94,10 +95,13 @@ object ClusterManagerTestBase {
  * New utility methods would need to be added as and when corresponding snappy code gets added.
  */
 class ClusterManagerTestUtils {
+  val logger = LoggerFactory.getLogger(getClass)
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */
   var sc: SparkContext = _
+
+  var snc: SnappyContext = _
 
   /**
    * Start a snappy lead. This code starts a Spark server and at the same time
@@ -110,7 +114,8 @@ class ClusterManagerTestUtils {
     assert(sc == null)
     props.setProperty("host-data", "false")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
-    val conf: SparkConf = new SparkConf().setMaster("snappydata").setAppName("myapp")
+    val conf: SparkConf = new SparkConf().setMaster(s"snappydata://localhost[$locatorPort]")
+        .setAppName("myapp")
 
 
     new File("./" + "driver").mkdir()
@@ -121,11 +126,15 @@ class ClusterManagerTestUtils {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
+    logger.info("About to create SparkContext")
     sc = new SparkContext(conf)
-    props.setProperty("locators", "localhost[" + locatorPort + ']')
-    val lead: Server = ServiceManager.getServerInstance
-    lead.start(props)
-    assert(lead.status == FabricService.State.RUNNING)
+    logger.info("SparkContext CREATED, about to create SnappyContext.")
+    snc = SnappyContext(sc)
+    logger.info("SnappyContext CREATED successfully.")
+//    props.setProperty("locators", "localhost[" + locatorPort + ']')
+//    val lead: Server = ServiceManager.getServerInstance
+//    lead.start(props)
+//    assert(lead.status == FabricService.State.RUNNING)
   }
 
   /**
@@ -142,6 +151,9 @@ class ClusterManagerTestUtils {
 
   def stopSpark(): Unit = {
     SnappyContext.stop()
+    if (snc != null) {
+      snc = null
+    }
     if (sc != null) {
       if (!sc.isStopped) sc.stop()
       sc = null

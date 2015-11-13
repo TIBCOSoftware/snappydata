@@ -19,16 +19,16 @@ import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 
 /**
- * This class is responsible for initiating the executor process inside
- * the jvm. Also, if an executor has to be stopped, driverURL can be set as None
- * and it will take care of stopping the executor.
- *
- * Created by hemant on 15/10/15.
- */
+  * This class is responsible for initiating the executor process inside
+  * the jvm. Also, if an executor has to be stopped, driverURL can be set as None
+  * and it will take care of stopping the executor.
+  *
+  * Created by hemant on 15/10/15.
+  */
 object ExecutorInitiator extends Logging {
 
-  val SNAPPY_BLOCKMANAGER = "org.apache.spark.storage.SnappyBlockManager"
-  val SNAPPY_SHUFFLEMEMORYMANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
+  private val SNAPPY_BLOCK_MANAGER = "org.apache.spark.storage.SnappyBlockManager"
+  private val SNAPPY_SHUFFLE_MEMORY_MANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
@@ -36,7 +36,7 @@ object ExecutorInitiator extends Logging {
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
-    private var driverDM : InternalDistributedMember = null
+    private var driverDM: InternalDistributedMember = null
     var stopTask = false
     private val lock = new ReentrantLock
 
@@ -53,13 +53,15 @@ object ExecutorInitiator extends Logging {
         executorRunnable.memberDeparted(id)
       }
     }
-    def memberDeparted(departedDM: InternalDistributedMember) = lock.synchronized {
-      if(departedDM.equals(driverDM)) {
+
+    def memberDeparted(departedDM: InternalDistributedMember): Unit = lock.synchronized {
+      if (departedDM.equals(driverDM)) {
         setDriverDetails(None, null)
       }
     }
+
     def setDriverDetails(url: Option[String],
-        dm: InternalDistributedMember) = lock.synchronized {
+        dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
       driverDM = dm
       lock.notify()
@@ -69,11 +71,12 @@ object ExecutorInitiator extends Logging {
       var prevDriverURL = ""
       var env: SparkEnv = null
       try {
-        GemFireXDUtils.getGfxdAdvisor.getDistributionManager.addMembershipListener(membershipListener)
+        GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+            .addMembershipListener(membershipListener)
         while (!stopTask) {
           try {
             Misc.checkIfCacheClosing(null)
-            if (prevDriverURL ==  getDriverURL) {
+            if (prevDriverURL == getDriverURL) {
               lock.synchronized {
                 lock.wait()
               }
@@ -88,9 +91,10 @@ object ExecutorInitiator extends Logging {
                 case Some(url) =>
 
                   /**
-                   * The executor initialization code has been picked from CoarseGrainedExecutorBackend.
-                   * We need to track the changes there and merge them here on a regular basis.
-                   */
+                    * The executor initialization code has been picked from
+                    * CoarseGrainedExecutorBackend.
+                    * We need to track the changes there and merge them here on a regular basis.
+                    */
                   val executorHost = GemFireCacheImpl.getInstance().getMyId.getHost
                   val memberId = GemFireCacheImpl.getInstance().getMyId.toString
                   SparkHadoopUtil.get.runAsSparkUser { () =>
@@ -99,12 +103,14 @@ object ExecutorInitiator extends Logging {
                     val executorConf = new SparkConf
 
                     val port = executorConf.getInt("spark.executor.port", 0)
-                    val props = SparkCallbacks.fetchDriverProperty(executorHost, executorConf, port, url)
+                    val props = SparkCallbacks.fetchDriverProperty(executorHost,
+                      executorConf, port, url)
 
 
                     val driverConf = new SparkConf()
                     // Specify a default directory for executor, if the local directory for executor
-                    // is set via the executor conf, it will override this property later in the code
+                    // is set via the executor conf,
+                    // it will override this property later in the code
                     val localDirForExecutor = new File("./" + "executor").getAbsolutePath
 
                     driverConf.set("spark.local.dir", localDirForExecutor)
@@ -118,12 +124,12 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-                  //TODO: Hemant: add executor specific properties from local conf to
-                  //TODO: this conf that was received from driver.
-                    driverConf.set("spark.blockManager", SNAPPY_BLOCKMANAGER)
-                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLEMEMORYMANAGER)
+                    // TODO: Hemant: add executor specific properties from local conf to
+                    // TODO: this conf that was received from driver.
+                    driverConf.set("spark.blockManager", SNAPPY_BLOCK_MANAGER)
+                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
 
-                    //TODO: Hemant: get the number of cores from spark conf
+                    // TODO: Hemant: get the number of cores from spark conf
 
                     val cores = 6
 
@@ -175,19 +181,19 @@ object ExecutorInitiator extends Logging {
   }
 
   /**
-   * This should be called only when the process is terminating.
-   * If a process ceases to be an executor, only startOrTransmuteExecutor should be called
-   * with None.
-   */
-  def stop() = {
+    * This should be called only when the process is terminating.
+    * If a process ceases to be an executor, only startOrTransmuteExecutor should be called
+    * with None.
+    */
+  def stop(): Unit = {
     executorRunnable.stopTask = true
     executorRunnable.setDriverDetails(None, null)
   }
 
   /**
-   * Set the new driver url and start the thread if not already started
-   * @param driverURL
-   */
+    * Set the new driver url and start the thread if not already started
+    * @param driverURL
+    */
   def startOrTransmuteExecutor(driverURL: Option[String],
       driverDM: InternalDistributedMember): Unit = {
     executorRunnable.setDriverDetails(driverURL, driverDM)
