@@ -59,7 +59,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public boolean isRowTable(String tableName) {
     try {
       String tableType = getType(tableName);
-      System.out.println("KN: tableType = " + tableType);
+      //System.out.println("KN: tableType = " + tableType);
       if (tableType != null && tableType.equals(ExternalTableType.Row().toString())) {
         return true;
       }
