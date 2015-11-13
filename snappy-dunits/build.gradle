@@ -25,6 +25,10 @@ dependencies {
   }
 }
 
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+}
+
 test {
   dependsOn ':cleanDUnit'
 

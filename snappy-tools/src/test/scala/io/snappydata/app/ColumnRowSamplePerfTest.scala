@@ -1,25 +1,21 @@
 package io.snappydata.app
 
-import java.sql.DriverManager
-
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
-import org.apache.spark.sql.collection.ReusableRow
-import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types._
-
 import scala.actors.Futures._
 
+import org.apache.spark.sql._
+import org.apache.spark.sql.snappy._
+
 /**
- * Hack to test : column, row tables using SQL, Data source API, Join Column with row, concurrency, speed
+ * Hack to test : column, row tables using SQL, Data source API,
+ * Join Column with row, concurrency, speed
  * Created by jramnara on 10/28/15.
  */
-object ColumnRowSamplePerfTest extends App{
+object ColumnRowSamplePerfTest extends App {
 
-  var hfile: String = "/Users/jramnara/Downloads/2007-8.01.csv.parts"
+  //var hfile: String = "/Users/jramnara/Downloads/2007-8.01.csv.parts"
   // Too large ... You need to download from GoogleDrive/snappyDocuments/data; or, use the one below
-  //var hfile: String = getClass.getResource("/2015.parquet").getPath
-  val codetableFile: String = "/Users/jramnara/Downloads/airlineCode_Lookup.csv"
+  var hfile: String = getClass.getResource("/2015.parquet").getPath
+  val codetableFile = getClass.getResource("/airlineCode_Lookup.csv").getPath
   // also available in GoogleDrive/snappyDocuments/data
 
   var loadData: Boolean = true
@@ -27,13 +23,14 @@ object ColumnRowSamplePerfTest extends App{
   var setJars, executorExtraClassPath: String = null
   var executorExtraJavaOptions: String = null
   var setMaster: String = "local[6]"
-  var tablename: String = "airline"
+  var tableName: String = "airline"
 
   if (args.length > 0) option(args.toList)
 
-  val conf = new org.apache.spark.SparkConf().setAppName("ColumnRowSamplePerfTest")
-    .set("spark.logConf", "true")
-    .set("spark.scheduler.mode", "FAIR")
+  val conf = new org.apache.spark.SparkConf()
+      .setAppName("ColumnRowSamplePerfTest")
+      .set("spark.logConf", "true")
+      .set("spark.scheduler.mode", "FAIR")
 
   if (setMaster != null) {
     conf.setMaster(setMaster)
@@ -73,93 +70,90 @@ object ColumnRowSamplePerfTest extends App{
 
   val ret = awaitAll(20000000L, tasks: _*) // wait a lot
 
-
-
   def createTableLoadData() = {
 
     if (loadData) {
+      // All these properties will default when using snappyContext in the release
+      val props = Map(
+        "url" -> "jdbc:gemfirexd:;mcast-port=0;",
+        //"poolImpl" -> "tomcat",   // DOESN'T WORK?
+        //"poolProps" -> "",
+        //"single-hop-enabled" -> "true",
+        //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
+        "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
+        "user" -> "app",
+        "password" -> "app"
+        //"persistent" -> "SYNCHRONOUS"  // THIS DOESN'T WORK .. SHOULD
+      )
 
       if (hfile.endsWith(".parquet")) {
         airlineDataFrame = snContext.read.load(hfile)
       } else {
-
-        // All these properties will default when using snappyContext in the release
-        val props = Map(
-          //"url" -> "jdbc:snappydata:;mcast-port=0;persist-dd=false;",
-          //"url" -> "jdbc:gemfirexd:;mcast-port=0;persist-dd=false;",
-          "url" -> "jdbc:gemfirexd:;mcast-port=0;",
-          //"poolImpl" -> "tomcat",   // DOESN'T WORK?
-          //"single-hop-enabled" -> "true",
-          //"poolProps" -> "",
-          //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-          "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-          "user" -> "app",
-          "password" -> "app"
-          //"persistent" -> "SYNCHRONOUS"  // THIS DOESN'T WORK .. SHOULD
-        )
-
         // Create the Airline columnar table
-        val airlineDataFrame = snContext.read
+        airlineDataFrame = snContext.read
             .format("com.databricks.spark.csv") // CSV to DF package
             .option("header", "true") // Use first line of all files as header
             .option("inferSchema", "true") // Automatically infer data types
             .load(hfile)
-        println("The airline table schema ..")
-        airlineDataFrame.schema.printTreeString()
-        // airlineDataFrame.show(10) // expensive extract of all partitions?
+      }
 
-        snContext.dropExternalTable("airline", true)
-        airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
+      println(s"The $tableName table schema ..")
+      airlineDataFrame.schema.printTreeString()
+      // airlineDataFrame.show(10) // expensive extract of all partitions?
 
-        // METHODS BELOW FAIL FOR TBD REASON .. something to do with the data?
-        //snContext.createExternalTable("airline", "column", airlineDataFrame.schema, props)
-        //airlineDataFrame.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("airline")
+      snContext.dropExternalTable(tableName, ifExists = true)
 
+      snContext.createExternalTable(tableName, "column",
+        airlineDataFrame.schema, props)
+      airlineDataFrame.write.mode(SaveMode.Append).saveAsTable(tableName)
 
-        //Now create the airline code row replicated table
-        val codeTabledf = snContext.read
+      //Now create the airline code row replicated table
+      val codeTabledf = snContext.read
             .format("com.databricks.spark.csv") // CSV to DF package
             .option("header", "true") // Use first line of all files as header
             .option("inferSchema", "true") // Automatically infer data types
             .load(codetableFile)
-        println("The airline code table schema ..")
-        codeTabledf.schema.printTreeString()
-        codeTabledf.show(10)
+      println("The airline code table schema ..")
+      codeTabledf.schema.printTreeString()
+      codeTabledf.show(10)
 
-        snContext.dropExternalTable("airlineCode", true)
-        val options = "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=0;user=app;password=app;persist-dd=false' ," +
+      snContext.dropExternalTable("airlineCode", ifExists = true)
+      /*
+      val options = "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=0'," +
           "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
           "poolImpl 'tomcat', " +
           "user 'app', " +
           "password 'app' ) "
-        //snContext.sql("create table airlineCode (code varchar, description varchar) using jdbc " + options)
+      snContext.sql("create table airlineCode (code varchar, " +
+          "description varchar) using row " + options)
+      */
+      codeTabledf.write.format("row").options(props).saveAsTable("airlineCode")
 
-        //snContext.createExternalTable("airlineCode", "ROW", df.schema, props)
-        codeTabledf.write.format("jdbc").options(props).saveAsTable("airlineCode") //insertInto("airlineCode")
+      // finally creates some samples
+      val samples = airlineDataFrame.stratifiedSample(Map(
+        "qcs" -> "UniqueCarrier,Year,Month", "fraction" -> 0.03,
+        "strataReservoirSize" -> "50"))
+      snContext.dropExternalTable("airlineSampled", ifExists = true)
+      samples.write.format("column").options(props).saveAsTable("airlineSampled")
 
-        // can I use registerAndInsertIntoExternalStore to create ROW table?
-        //airlineDataFrame.registerAndInsertIntoExternalStore("airlineCode", props)
+      // This will do the real work. Load the data.
+      var start = System.currentTimeMillis
+      results = snContext.sql(s"SELECT count(*) FROM $tableName")
+      results.map(t => "Count: " + t(0)).collect().foreach(println)
+      var end = System.currentTimeMillis
+      msg(s"Time to load into table $tableName and count = " +
+          (end - start) + " ms")
 
-        // finally creates some samples
-        val samples = airlineDataFrame.stratifiedSample(Map("qcs" -> "UniqueCarrier,Year,Month", "fraction" -> 0.03,
-          "strataReservoirSize" -> "50"))
-        samples.registerAndInsertIntoExternalStore("airlineSampled", props)
-        //samples.write.format("column").options(props).saveAsTable("airlineSampled")
-
-
-        // This will do the real work. Load the data.
-        val start = System.currentTimeMillis
-        results = snContext.sql(s"SELECT count(*) FROM $tablename")
-        results.map(t => "Count: " + t(0)).collect().foreach(println)
-        val end = System.currentTimeMillis
-        msg(s"Time to load into table $tablename and count = " + (end - start) + " ms")
-
-      }
+      start = System.currentTimeMillis
+      results = snContext.sql(s"SELECT count(*) FROM airlineSampled")
+      results.map(t => "Count: " + t(0)).collect().foreach(println)
+      end = System.currentTimeMillis
+      msg(s"Time to load into table airlineSampled and count = " +
+          (end - start) + " ms")
     }
   }
 
-
-  def runQueries(sqlContext: SQLContext ): Unit = {
+  def runQueries(sqlContext: SQLContext): Unit = {
     var start: Long = 0
     var end: Long = 0
     var results: DataFrame = null
@@ -167,27 +161,29 @@ object ColumnRowSamplePerfTest extends App{
     for (i <- 0 to 3) {
 
       start = System.currentTimeMillis
-      results = sqlContext.sql(s"SELECT count(*) FROM $tablename")
+      results = sqlContext.sql(s"SELECT count(*) FROM $tableName")
       results.map(t => "Count: " + t(0)).collect().foreach(msg)
       end = System.currentTimeMillis
       msg("Time taken for count(*): " + (end - start) + "ms")
 
       start = System.currentTimeMillis
-      results = sqlContext.sql(s"SELECT count(DepTime) FROM $tablename")
+      results = sqlContext.sql(s"SELECT count(DepTime) FROM $tableName")
       results.map(t => "Count: " + t(0)).collect().foreach(msg)
       end = System.currentTimeMillis
       msg("Time taken for count(DepTime): " + (end - start) + "ms")
 
       start = System.currentTimeMillis
-      results = sqlContext.sql(s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier,
-	        Year, Month FROM $tablename GROUP BY UniqueCarrier, Year, Month""")
-      results.collect()   //.foreach(msg)
+      results = sqlContext.sql(
+        s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier,
+	        Year, Month FROM $tableName GROUP BY UniqueCarrier, Year, Month""")
+      results.collect() //.foreach(msg)
       end = System.currentTimeMillis
       msg("Time taken for AVG+count(*) with GROUP BY: " + (end - start) + "ms")
 
       start = System.currentTimeMillis
-      results = sqlContext.sql(s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier, t2.DESCRIPTION,
-	        Year, Month FROM $tablename t1, airlineCode t2 where t1.UniqueCarrier = t2.CODE
+      results = sqlContext.sql(
+        s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier, t2.DESCRIPTION,
+	        Year, Month FROM $tableName t1, airlineCode t2 where t1.UniqueCarrier = t2.CODE
 	        GROUP BY UniqueCarrier, DESCRIPTION, Year,Month""")
       results.collect()
       end = System.currentTimeMillis
@@ -196,20 +192,22 @@ object ColumnRowSamplePerfTest extends App{
       Thread.sleep(3000)
 
       start = System.currentTimeMillis
-      results = sqlContext.sql(s"""SELECT AVG(ArrDelay), UniqueCarrier, Year,
-	        Month FROM $tablename GROUP BY UniqueCarrier, Year, Month ORDER BY
+      results = sqlContext.sql(
+        s"""SELECT AVG(ArrDelay), UniqueCarrier, Year,
+	        Month FROM $tableName GROUP BY UniqueCarrier, Year, Month ORDER BY
 	        UniqueCarrier, Year, Month""")
       //results.explain(true)
-      results.collect()  //.foreach(msg)
+      results.collect() //.foreach(msg)
       end = System.currentTimeMillis
       msg("Time taken for AVG on GROUP BY with ORDER BY: " +
-        (end - start) + "ms")
+          (end - start) + "ms")
 
       Thread.sleep(3000)
 
       start = System.currentTimeMillis
-      results = sqlContext.sql(s"""SELECT AVG(ArrDelay), UniqueCarrier, Year,
-	        Month FROM $tablename GROUP BY UniqueCarrier, Year, Month
+      results = sqlContext.sql(
+        s"""SELECT AVG(ArrDelay), UniqueCarrier, Year,
+	        Month FROM $tableName GROUP BY UniqueCarrier, Year, Month
 	        ORDER BY Year, Month""")
       results.collect()
       end = System.currentTimeMillis
@@ -263,6 +261,4 @@ object ColumnRowSamplePerfTest extends App{
       case Nil => true
     }
   } // end of option
-
 }
-

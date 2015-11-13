@@ -8,10 +8,10 @@ sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
 
 dependencies {
-  compile group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0'
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
+  compile group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0'
   compile project(':snappy-core_' + scalaBinaryVersion)
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
@@ -46,6 +46,10 @@ dependencies {
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
 
   testRuntime 'org.pegdown:pegdown:1.1.0'
+}
+
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
 }
 
 test.dependsOn ':cleanJUnit'
