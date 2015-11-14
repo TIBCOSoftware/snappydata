@@ -173,7 +173,7 @@ public class DUnitLauncher {
 
     init(master);
     
-    //startLocator(registry);
+    startLocator(registry);
   }
   
   public static Properties getDistributedSystemProperties() {
