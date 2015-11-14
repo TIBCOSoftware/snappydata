@@ -15,14 +15,13 @@ import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
-import org.apache.spark.sql.hive.{AddScaleFactor, IdentifySampledRelation, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -30,8 +29,8 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
-import org.apache.spark.sql.execution.bootstrap._
 
+import org.apache.spark.sql.{execution => sparkexecution}
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied
  * SQLContext offering additional capabilities.
@@ -57,54 +56,10 @@ protected[sql] class SnappyContext(sc: SparkContext)
   } else {
     conf.dialect
   }
-
-  @transient
-  override protected[sql] val prepareForExecution = new RuleExecutor[SparkPlan] {
-    val isDebug = false
-    val batches = Seq(
-      Batch("Add exchange", Once, EnsureRequirements(self)),
-      Batch("Add row converters", Once, EnsureRowFormats),
-      Batch("Identify Sampled Relations", Once,
-         // SafetyCheck,
-          IdentifySampledRelation) ,
-      Batch("Pre-Bootstrap Optimization", FixedPoint(100),
-            PruneProjects
-      ) ,
-      Batch("Bootstrap", Once,
-            AddScaleFactor,
-            PushDownPartialAggregate,
-            PushUpResample,
-            PushUpSeed,
-            ImplementResample,
-            PropagateBootstrap,
-            IdentifyUncertainTuples,
-            CleanupOutputTuples,
-            InsertCollect(isDebug, .95)
-      ) ,
-      Batch("Post-Bootstrap Optimization", FixedPoint(100),
-            PruneColumns,
-            PushDownFilter,
-            PruneProjects,
-            OptimizeOperatorOrder,
-            PruneFilters
-      ) ,
-      Batch("Consolidate Bootstrap & Lineage Embedding", Once,
-            ConsolidateBootstrap(5),
-            IdentifyLazyEvaluates,
-            EmbedLineage
-      ) ,
-      Batch("Materialize Plan", Once,
-            ImplementSort,
-           // ImplementJoin(),
-            ImplementProject(),
-            ImplementAggregate(2),
-            ImplementCollect(),
-            CleanupAnalysisExpressions
-      )
+  override protected[sql] def executePlan(plan: LogicalPlan) =
+    new SnappyQueryExecution(this, plan)
 
 
-    )
-  }
 
   @transient
   override protected[sql] lazy val catalog =

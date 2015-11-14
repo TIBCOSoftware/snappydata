@@ -1498,7 +1498,7 @@ object OnlinePlannerUtil {
   val boolFalse = Literal(false)
   val byte0 = Literal(0.toByte)
   val byte1 = Literal(1.toByte)
-  val scaleColumn = "scale"
+  val scaleColumn = "__STRATIFIED_SAMPLER_WEIGHTAGE"
 
   def getSeeds(attributes: Seq[Attribute]): Seq[Attribute] =
     attributes.collect { case seed@TaggedAttribute(_: Seed, _, _, _, _) => seed }

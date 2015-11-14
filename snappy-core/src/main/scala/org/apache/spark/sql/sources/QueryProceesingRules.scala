@@ -14,10 +14,11 @@ import org.apache.spark.sql.execution.{StratifiedSample}
  */
 object ReplaceWithSampleTable extends Rule[LogicalPlan] {
   def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
-    case c: Confidence => c.child //TODO:Store confidence level some where for post-query triage
-    case e: ErrorPercent => {
+
+    case e: ErrorPercent => e.child //TODO:Store confidence level some where for post-query triage
+    case c: Confidence => {
       plan transformDown {
-        case e: ErrorPercent => e.child //TODO:Store confidence level some where for post-query triage
+        case c: Confidence => c.child //TODO:Store confidence level some where for post-query triage
 
         case p: Subquery if !p.child.isInstanceOf[StratifiedSample] => {
           val query_qcs = new mutable.ArrayBuffer[String]
@@ -79,10 +80,11 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
           //println("aqpTable" + aqp)
           val newPlan = aqp match {
-            case (sample, name) => Subquery(name, sample)
+            case (sample, name) => SampleTable(Subquery(name, sample))
             case _ => p
           }
           newPlan
+
         }
       }
     }
@@ -127,3 +129,6 @@ case class Confidence(confidenceExpr: Expression, child: LogicalPlan) extends Un
   override def output: Seq[Attribute] = child.output
 }
 
+case class SampleTable(child: LogicalPlan) extends UnaryNode {
+  override def output: Seq[Attribute] = child.output
+}

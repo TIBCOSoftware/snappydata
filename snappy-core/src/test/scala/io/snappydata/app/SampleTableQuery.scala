@@ -8,7 +8,7 @@ import org.apache.spark.sql.execution.Approximate
 import org.apache.spark.sql.types.{DateType, StringType, FloatType, IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SQLContext, DataFrame}
 import org.apache.spark.sql.hive.HiveContext
-
+import org.apache.spark.sql.snappy._
 import org.apache.spark.{SparkContext, SparkConf}
 
 
@@ -41,7 +41,7 @@ object SampleTableQuery  extends Serializable {
 
       configureOnlineRun(spc, numBatches, numBootstrapTrials, "false") // Setup conf for BlinkDB
       msg("about to create table")
-      createHiveLineitemTable(spc)
+      createHiveLineitemTable(spc,"lineitem")
       msg("created table")
       // Just to make sure plain vanilla hive query works
       // showHiveQuery("select count(*) from lineitem", hiveContext)
@@ -60,14 +60,48 @@ object SampleTableQuery  extends Serializable {
 
      df.show()
       val rows = df.collect()
-      val struct = rows(0).getStruct(0)
-      assert(struct.get(0) == 17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26)
+      val sum = rows(0).getDouble(0)
+      /*assert(sum ==
+        17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26)*/
+
+     /* val struct = rows(0).getStruct(0)
+      assert(struct.get(0) ==
+        17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26
+
+      )*/
 
 
+      val mainTable = createHiveLineitemTable(spc,"mainTable")
+     // val sampleTable = createHiveLineitemTable(spc,"sampleTable", true)
+
+
+
+      spc.registerSampleTable("mainTable_sampled",
+       mainTable.schema, Map(
+          "qcs" -> "l_quantity",
+          "fraction" -> 0.01,
+          "strataReservoirSize" -> 50), Some("mainTable"))
+
+      mainTable.insertIntoSampleTables("mainTable_sampled")
+
+      //Run query on actual table
+      val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 96")
+
+      result.show()
+    /*  val rows = df.collect()
+      val sum = rows(0).getInt(0)
+      assert(sum ==
+        17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26
+*/
       msg(s"==== BlinkPlay::main(): END")
+
+
+
     }catch {
       case th :Throwable => th.printStackTrace()
     }
+
+
   }
 
 
@@ -133,7 +167,8 @@ object SampleTableQuery  extends Serializable {
     msg(s"==== createHiveLineitemTable(): done")
   }*/
 
-  def createHiveLineitemTable(hiveContext: SQLContext): Unit = {
+  def createHiveLineitemTable(hiveContext: SQLContext,
+                              tableName: String, isSample: Boolean = false): DataFrame = {
     msg(s"==== createHiveLineitemTable(): drop table if exists")
     val schema = StructType(Seq(
       StructField("l_orderkey", IntegerType, false),
@@ -155,14 +190,24 @@ object SampleTableQuery  extends Serializable {
       StructField("scale", IntegerType, false)
     ))
 
-    hiveContext.sql("DROP TABLE IF EXISTS lineitem")
+    hiveContext.sql("DROP TABLE IF EXISTS " + tableName)
     import hiveContext.implicits._
     val people = hiveContext.sparkContext.textFile(LINEITEM_DATA_FILE).map(_.split('|')).map(p => Row(p(0).trim.toInt, p(1).trim.toInt, p(2).trim.toInt,p(3).trim.toInt,p(4).trim.toFloat,p(5).trim.toFloat,p(6).trim.toFloat,p(7).trim.toFloat,
       p(8).trim, p(9).trim,  java.sql.Date.valueOf(p(10).trim) , java.sql.Date.valueOf(p(11).trim), java.sql.Date.valueOf(p(12).trim), p(13).trim, p(14).trim, p(15).trim, p(16).trim.toInt ))
-    val df = hiveContext.createDataFrame(people,schema)
-    df.registerTempTable("lineitem")
+
+
+   val df =  if(isSample) {
+     hiveContext.createDataFrame(hiveContext.sparkContext.emptyRDD[Row],
+        schema)
+
+    }else {
+      val dfx = hiveContext.createDataFrame(people,schema)
+      dfx.registerTempTable(tableName)
+      dfx
+    }
 
     msg(s"==== createHiveLineitemTable(): done")
+    df
   }
 
 /*
