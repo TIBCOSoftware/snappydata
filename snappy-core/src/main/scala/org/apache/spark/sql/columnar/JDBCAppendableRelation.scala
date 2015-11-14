@@ -77,6 +77,18 @@ class JDBCAppendableRelation(
     }
   }
 
+  private def getNarrowColumnName(schema : StructType) : Array[String] = {
+
+    val narrowField =
+      schema.fields.zipWithIndex.map { case (a, ordinal) =>
+        a -> a.dataType
+      } minBy { case (a, dataType) =>
+        ColumnType(dataType).defaultSize
+      }
+
+    Array(narrowField._1.name)
+  }
+
   override def schema: StructType = userSchema
 
   // TODO: Suranjan currently doesn't apply any filters.
@@ -84,25 +96,28 @@ class JDBCAppendableRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
 
+
     val requestedColumns = if (requiredColumns.isEmpty) {
-      val (narrowestField, _) =
-        schema.fields.map { s =>
-          s.name -> s.dataType
-        } minBy { case (_, dataType) =>
+      val narrowField =
+        schema.fields.zipWithIndex.map { case (a, ordinal) =>
+          a -> a.dataType
+        } minBy { case (a, dataType) =>
           ColumnType(dataType).defaultSize
         }
-      Array(narrowestField)
+
+      Array(narrowField._1.name)
     } else {
       requiredColumns
     }
 
-    def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table,
-        requestedColumns.map(column => columnPrefix + column), uuidList,
+    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
+      externalStore.getCachedBatchRDD(table, requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    val outputTypes = requestedColumns.map { a => schema(a) }
+    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
+    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
     cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.  If none are requested, use the
       // narrowest (the field with minimum default element size).
@@ -113,10 +128,10 @@ class JDBCAppendableRelation(
       def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
-          val columnAccessors = requestedColumnIndices.map { batchColumnIndex =>
+          val columnAccessors = requestedColumnIndices.zipWithIndex.map { case(schemaIndex, bufferIndex) =>
             ColumnAccessor(
-              schema.fields(batchColumnIndex).dataType,
-              ByteBuffer.wrap(cachedBatch.buffers(batchColumnIndex)))
+              schema.fields(schemaIndex).dataType,
+              ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
           }
           // Extract rows via column accessors
           new Iterator[InternalRow] {
