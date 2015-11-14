@@ -21,7 +21,9 @@ import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
-import org.apache.spark.sql.hive.{ QualifiedTableName, SnappyStoreHiveCatalog}
+
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -62,8 +64,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
 
   @transient
-  override protected[sql] lazy val catalog =
-    new SnappyStoreHiveCatalog(self)
+  override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
@@ -348,7 +349,6 @@ protected[sql] class SnappyContext(sc: SparkContext)
     else options + (dbtableProp -> tableIdent.toString)
 
     val source = SnappyContext.getProvider(provider)
-
     val resolved = schemaDDL match {
       case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
         schema, source, mode, params)
@@ -361,7 +361,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
 
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params)
+      Array.empty[String], source, params,  ExternalTableType.getTableType(resolved.relation))
     LogicalRelation(resolved.relation)
   }
 
@@ -400,6 +400,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     else options + (dbtableProp -> tableIdent.toString)
 
     // this gives the provider..
+
     val source = SnappyContext.getProvider(provider)
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
@@ -410,7 +411,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
     else {
       catalog.registerExternalTable(tableIdent, Some(data.schema),
-        partitionColumns, source, params)
+        partitionColumns, source, params, ExternalTableType.getTableType(resolved.relation))
     }
     LogicalRelation(resolved.relation)
   }
@@ -738,6 +739,15 @@ object SnappyContext {
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
     "column" ->  classOf[columnar.DefaultSource].getCanonicalName
   )
+
+  def apply(): SnappyContext = {
+    val gc = globalContext
+    if (gc != null) {
+      new SnappyContext(gc)
+    } else {
+      null
+    }
+  }
 
   def apply(sc: SparkContext): SnappyContext = {
     val gc = globalContext
