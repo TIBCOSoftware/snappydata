@@ -12,19 +12,15 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
-import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, DataSourceStrategy, LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -358,7 +354,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
 
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params)
+      Array.empty[String], source, params,  ExternalTableType.getTableType(resolved.relation))
     LogicalRelation(resolved.relation)
   }
 
@@ -407,7 +403,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
     else {
       catalog.registerExternalTable(tableIdent, Some(data.schema),
-        partitionColumns, source, params)
+        partitionColumns, source, params, ExternalTableType.getTableType(resolved.relation))
     }
     LogicalRelation(resolved.relation)
   }

@@ -1,5 +1,9 @@
 apply plugin: 'wrapper'
 
+if(JavaVersion.current() != JavaVersion.VERSION_1_7){
+    throw new GradleException("==== This build must be run with java 7 ====")
+}
+
 buildscript {
   repositories {
     maven { url "https://plugins.gradle.org/m2" }
@@ -329,9 +333,6 @@ task product {
     copy {
       from("${toolsProject.projectDir}/bin")
       into "${productDir}/bin"
-      filter { line ->
-        line.replaceAll('__VERSION__', "${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}")
-      }
     }
     copy {
       from("${toolsProject.projectDir}/sbin")

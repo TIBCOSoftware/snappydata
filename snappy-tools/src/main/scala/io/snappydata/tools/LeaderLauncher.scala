@@ -6,6 +6,8 @@ import com.gemstone.gemfire.cache.Cache
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
 import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
+import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
 import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
 import io.snappydata.impl.LeadImpl
 import io.snappydata.{Lead, LocalizedMessages, ServiceManager}
@@ -28,6 +30,10 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   def initStartupArgs(args: ArrayBuffer[String]) = {
 
+//    if (args.length == 0) {
+//      usage()
+//      System.exit(1)
+//    }
     assert(args.length > 0, LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
 
     def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {
@@ -46,6 +52,13 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
     }
 
     args.toArray[String]
+  }
+
+  override protected def usage(): Unit = {
+    val script: String = LocalizedMessages.res.getTextMessage("SD_LEAD_SCRIPT")
+    val name: String = LocalizedMessages.res.getTextMessage("SD_LEAD_NAME")
+    val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP", script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), LocalizedResource.getMessage("FS_EXTRA_HELP"))
+    printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
   }
 
   override protected def run(args: Array[String]): Unit = {
