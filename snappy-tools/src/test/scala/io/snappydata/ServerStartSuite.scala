@@ -2,17 +2,20 @@ package io.snappydata
 
 import java.util.Properties
 
-import com.pivotal.gemfirexd.{FabricService, FabricLocator, TestUtil}
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.{FabricLocator, FabricService, TestUtil}
 import org.scalatest.BeforeAndAfterAll
 
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+
 /**
- * Created by hemantb.
- */
+  * Created by hemantb.
+  */
 class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   var props: Properties = null
 
   override def beforeAll(): Unit = {
+    Class.forName("org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager$") //scalastyle:ignore
     props = TestUtil.doCommonSetup(null)
     GemFireXDUtils.IS_TEST_MODE = true
   }
@@ -31,7 +34,7 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
     fs.stop(null)
   }
 
-  test("Snappy Lead start") {
+  ignore("Snappy Lead start") {
     val fs: Lead = ServiceManager.getLeadInstance
 
     // right version of the test is now in LeaderLauncherSuite.
@@ -39,10 +42,18 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
       fs.start(props)
       fail("must fail as locator info not present")
     } catch {
-      case e: Exception => if (!e.getMessage
-          .contains("locator info not provided in the snappy embedded url")) {
-        throw e
-      }
+      case e: Exception =>
+        var ex: Throwable = e
+        var found = false
+        while (ex != null) {
+          if (ex.getMessage.contains("locator info not provided in the snappy embedded url")) {
+            found = true
+          }
+          ex = ex.getCause
+        }
+        if (!found) {
+          throw e
+        }
       case other: Throwable => throw other
     }
 

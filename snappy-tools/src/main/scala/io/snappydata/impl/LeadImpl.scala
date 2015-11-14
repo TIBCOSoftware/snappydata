@@ -44,6 +44,8 @@ class LeadImpl extends ServerImpl with Lead {
     DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
   }
 
+  private var sparkContext: SparkContext = _
+
   private val latch = new CountDownLatch(1)
   private var notificationCallback: (() => Unit) = _
   private lazy val primaryLeadNodeWaiter = scheduleWaitForPrimaryDeparture
@@ -59,16 +61,28 @@ class LeadImpl extends ServerImpl with Lead {
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
 
     _blockingStart = false
-    val locator = bootProperties.getProperty(DistributionConfig.LOCATORS_NAME)
+    val locator = {
+      bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
+        case v if v != null => v
+        case _ =>
+          bootProperties.getProperty(Prop.locators)
+      }
+    }
+
     val conf = new SparkConf()
     conf.setMaster(Const.jdbcUrlPrefix + s"$locator").setAppName("leaderLauncher")
 
-    bootProperties.asScala.foreach({ case (k, v) => conf.set(k, v) })
+    bootProperties.asScala.foreach({ case (k, v) =>
+      val key = k.startsWith(Prop.propPrefix) match {
+        case true => k
+        case _ => Prop.propPrefix + k
+      }
+      conf.set(key, v)
+    })
 
-    val sc = new SparkContext(conf)
+    sparkContext = new SparkContext(conf)
 
-    SnappyContext(sc)
-
+    SnappyContext(sparkContext)
   }
 
   def internalStart(conf: SparkConf): Unit = {
@@ -118,6 +132,10 @@ class LeadImpl extends ServerImpl with Lead {
   override def stop(shutdownCredentials: Properties): Unit = {
     primaryLeadNodeWaiter.interrupt()
     bootProperties.clear()
+    SnappyContext.stop
+    if (sparkContext != null && !sparkContext.isStopped) {
+      sparkContext.stop()
+    }
     super.stop(shutdownCredentials)
   }
 

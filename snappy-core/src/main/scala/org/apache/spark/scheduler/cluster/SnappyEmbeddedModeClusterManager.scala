@@ -14,7 +14,7 @@ import org.apache.spark.sql.SnappyContext
   */
 object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
-  SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
+  SparkContext.registerClusterManager(this)
 
   var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
 

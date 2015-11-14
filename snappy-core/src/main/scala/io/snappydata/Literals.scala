@@ -1,5 +1,7 @@
 package io.snappydata
 
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+
 /**
   * Created by soubhikc on 11/11/15.
   *
@@ -8,6 +10,7 @@ package io.snappydata
   * i.e. upper camel case.
   */
 final object Const {
+  SnappyEmbeddedModeClusterManager
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
 
@@ -25,6 +28,7 @@ final object Const {
   * i.e. upper camel case.
   */
 final object Prop {
+  SnappyEmbeddedModeClusterManager
 
   private[snappydata] val propPrefix = s"${Const.propPrefix}store."
 
