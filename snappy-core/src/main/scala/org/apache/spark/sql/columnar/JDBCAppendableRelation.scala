@@ -77,17 +77,7 @@ class JDBCAppendableRelation(
     }
   }
 
-  private def getNarrowColumnName(schema : StructType) : Array[String] = {
-
-    val narrowField =
-      schema.fields.zipWithIndex.map { case (a, ordinal) =>
-        a -> a.dataType
-      } minBy { case (a, dataType) =>
-        ColumnType(dataType).defaultSize
-      }
-
-    Array(narrowField._1.name)
-  }
+ 
 
   override def schema: StructType = userSchema
 
