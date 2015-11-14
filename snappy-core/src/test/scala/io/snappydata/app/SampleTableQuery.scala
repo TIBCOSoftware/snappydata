@@ -25,9 +25,9 @@ object SampleTableQuery  extends Serializable {
 
   def main(args: Array[String]): Unit = {
     try {
-      val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("spark://MacBook-Pro.local:7077")
+    //  val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("spark://MacBook-Pro.local:7077")
 
-      //val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("local[1]")
+      val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("local[1]")
       conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
       conf.set("spark.sql.unsafe.enabled", "false")
       val sc = new SparkContext(conf)

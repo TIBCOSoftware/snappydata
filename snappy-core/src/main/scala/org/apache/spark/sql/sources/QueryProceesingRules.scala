@@ -80,7 +80,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
           //println("aqpTable" + aqp)
           val newPlan = aqp match {
-            case (sample, name) => SampleTable(Subquery(name, sample))
+            case (sample, name) => Subquery(name, sample)//SampleTable(Subquery(name, sample))
             case _ => p
           }
           newPlan
@@ -129,6 +129,6 @@ case class Confidence(confidenceExpr: Expression, child: LogicalPlan) extends Un
   override def output: Seq[Attribute] = child.output
 }
 
-case class SampleTable(child: LogicalPlan) extends UnaryNode {
+/*case class SampleTable(child: LogicalPlan) extends UnaryNode {
   override def output: Seq[Attribute] = child.output
-}
+}*/

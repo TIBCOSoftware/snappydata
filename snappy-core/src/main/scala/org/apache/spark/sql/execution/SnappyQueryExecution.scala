@@ -2,12 +2,12 @@ package org.apache.spark.sql.execution
 
 import org.apache.hadoop.metrics2.util.SampleQuantiles
 import org.apache.spark.sql.{execution, SQLContext}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 
 import org.apache.spark.sql.execution.bootstrap._
 import org.apache.spark.sql.hive.{AddScaleFactor, IdentifySampledRelation}
-import org.apache.spark.sql.sources.SampleTable
+
 
 /**
  * Created by ashahid on 11/13/15.
@@ -15,12 +15,13 @@ import org.apache.spark.sql.sources.SampleTable
 class SnappyQueryExecution (sqlContext: SQLContext, logical: LogicalPlan)
 extends QueryExecution(sqlContext, logical) {
 
-  private  lazy val hasSampleTable: Boolean = checkForSampleTable
+  //private  var hasSampleTable: Boolean = false
   override  val prepareForExecution : RuleExecutor[SparkPlan] = modifyRule
-
-  private def checkForSampleTable : Boolean = {
+ // override lazy val analyzed: LogicalPlan = modifyPlanConditionally
+ /*
+  private def checkForSampleTable(plan : LogicalPlan) : (Boolean, LogicalPlan) = {
     var found = false
-    this.analyzed.transformUp
+    val modifiedPlan = plan.transformUp
     {
       case SampleTable(child) => {
         found = true
@@ -28,13 +29,18 @@ extends QueryExecution(sqlContext, logical) {
       }
 
     }
-    found
-  }
+    (found, modifiedPlan)
+  }*/
 
   //override def prepareForExecution = newRules
+ /* private def modifyPlanConditionally : LogicalPlan = {
+    val (foundSample, newPlan) = checkForSampleTable(analyzer.execute(logical))
+    hasSampleTable = foundSample
+    newPlan
+  }*/
 
   private def modifyRule  =
-    if(hasSampleTable) {
+    if(analyzedPlanHasSampleTable) {
 
        new RuleExecutor[SparkPlan] {
         //val isDebug = false
@@ -89,5 +95,15 @@ extends QueryExecution(sqlContext, logical) {
     }
 
 
+  private def analyzedPlanHasSampleTable : Boolean =
+    this.analyzed.find{
+      case Subquery(_, _: StratifiedSample) => true
+      case _ => false
+
+    } match {
+      case Some(x) => true
+      case None => false
+
+  }
 
 }

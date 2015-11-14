@@ -5,7 +5,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{Complete, Final, Par
 import org.apache.spark.sql.execution.aggregate.SortBasedAggregate
 import org.apache.spark.sql.execution.bootstrap.{OnlinePlannerUtil, BootStrapUtils, RandomSeed, Seed, TaggedAlias}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{BindReferences, AttributeReference, Multiply, Alias, Attribute}
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.columnar.{InMemoryColumnarTableScan, InMemoryRelation}
 import org.apache.spark.sql.execution.{PhysicalRDD, Project, SparkPlan, UnaryNode}
@@ -62,7 +62,7 @@ object AddScaleFactor extends Rule[SparkPlan] {
             val lhs = BootStrapUtils.getScaleAttribute(child)
 
             val (l,r) = OnlinePlannerUtil.widenTypes(lhs,expression)
-            val newExp = Multiply(l,r)
+            val newExp = Divide(r,l)
             val newFunc = org.apache.spark.sql.catalyst.expressions.aggregate.Sum(newExp)
             AggregateExpression2(newFunc, aggExp.mode, aggExp.isDistinct)
           case _ => aggExp
