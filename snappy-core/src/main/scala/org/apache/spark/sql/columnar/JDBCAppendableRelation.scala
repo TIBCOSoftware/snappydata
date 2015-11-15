@@ -77,7 +77,7 @@ class JDBCAppendableRelation(
     }
   }
 
- 
+
 
   override def schema: StructType = userSchema
 
@@ -89,13 +89,11 @@ class JDBCAppendableRelation(
 
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
-        schema.fields.zipWithIndex.map { case (a, ordinal) =>
-          a -> a.dataType
-        } minBy { case (a, dataType) =>
-          ColumnType(dataType).defaultSize
+        schema.fields.minBy { a =>
+          ColumnType(a.dataType).defaultSize
         }
 
-      Array(narrowField._1.name)
+      Array(narrowField.name)
     } else {
       requiredColumns
     }
