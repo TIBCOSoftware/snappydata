@@ -26,8 +26,3 @@ project/plugins/project/
 # Emacs files
 .#*
 *~
-
-target
-
-# Spark Files
-metastore_db/
