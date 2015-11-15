@@ -2,26 +2,26 @@ package org.apache.spark.sql.columnar
 
 import java.nio.ByteBuffer
 import java.sql.Connection
-import java.util.{UUID, Properties}
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry, JDBCPartitioningInfo, JDBCRelation}
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{JDBCSourceAsStore, ExternalStore}
+import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * A LogicalPlan implementation for an external column table whose contents
@@ -77,6 +77,8 @@ class JDBCAppendableRelation(
     }
   }
 
+
+
   override def schema: StructType = userSchema
 
   // TODO: Suranjan currently doesn't apply any filters.
@@ -84,36 +86,40 @@ class JDBCAppendableRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
 
-    def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table, requiredColumns.map(column => columnPrefix + column), uuidList,
+
+    val requestedColumns = if (requiredColumns.isEmpty) {
+      val narrowField =
+        schema.fields.minBy { a =>
+          ColumnType(a.dataType).defaultSize
+        }
+
+      Array(narrowField.name)
+    } else {
+      requiredColumns
+    }
+
+    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
+      externalStore.getCachedBatchRDD(table, requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    val outputTypes = requestedColumns.map { a => schema(a) }
+    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
+    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
     cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.  If none are requested, use the
       // narrowest (the field with minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = if (requiredColumns.isEmpty) {
-        val (narrowestOrdinal, narrowestDataType) =
-          schema.fields.zipWithIndex.map { case (a, ordinal) =>
-            ordinal -> a.dataType
-          } minBy { case (_, dataType) =>
-            ColumnType(dataType).defaultSize
-          }
-        Seq(narrowestOrdinal) -> Seq(narrowestDataType)
-      } else {
-        requiredColumns.map { a =>
-          schema.getFieldIndex(a).get -> schema(a).dataType
-        }.unzip
-      }
+      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+        schema.getFieldIndex(a).get -> schema(a).dataType
+      }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
       def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
-          val columnAccessors = requestedColumnIndices.map { batchColumnIndex =>
+          val columnAccessors = requestedColumnIndices.zipWithIndex.map { case(schemaIndex, bufferIndex) =>
             ColumnAccessor(
-              schema.fields(batchColumnIndex).dataType,
-              ByteBuffer.wrap(cachedBatch.buffers(batchColumnIndex)))
+              schema.fields(schemaIndex).dataType,
+              ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
           }
           // Extract rows via column accessors
           new Iterator[InternalRow] {
