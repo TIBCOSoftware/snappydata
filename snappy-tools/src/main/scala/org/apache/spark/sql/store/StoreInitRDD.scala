@@ -2,26 +2,25 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
-import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.ExecutorLocalPartition
-import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Accumulator, AccumulatorParam, SparkEnv, TaskContext, Partition, SparkContext}
-import org.apache.spark.rdd.RDD
+import org.apache.spark.{Accumulator, Partition, SparkContext, SparkEnv, TaskContext}
 
 /**
- * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's standalone cluster.
- * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
- */
+  * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's
+  * standalone cluster.
+  * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
+  */
 class StoreInitRDD(@transient sc: SparkContext, url: String,
     val connProperties: Properties)
     (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
@@ -52,7 +51,7 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
     Iterator.empty
   }
 
-   override def getPartitions: Array[Partition] = {
+  override def getPartitions: Array[Partition] = {
     getPeerPartitions
   }
 

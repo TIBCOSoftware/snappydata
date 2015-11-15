@@ -20,6 +20,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
@@ -32,6 +33,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
     vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 }
 

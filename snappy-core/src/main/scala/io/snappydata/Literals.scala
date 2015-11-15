@@ -30,11 +30,9 @@ final object Const {
 final object Prop {
   SnappyEmbeddedModeClusterManager
 
-  private[snappydata] val propPrefix = s"${Const.propPrefix}store."
+  val locators = s"${Const.propPrefix}locators"
 
-  val locators = s"${propPrefix}locators"
-
-  val jobserverEnabled = s"${Const.propPrefix}jobserver.enabled"
+  val jobserverEnabled = s"jobserver.enabled"
 
   val jobserverConfigFile = "jobserver.configFile"
 }

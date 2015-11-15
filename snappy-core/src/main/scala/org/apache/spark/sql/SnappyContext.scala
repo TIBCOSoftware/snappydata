@@ -39,7 +39,8 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
   *
   * Created by Soubhik on 5/13/15.
   */
-class SnappyContext private(sc: SparkContext)
+class SnappyContext private(sc: SparkContext,
+    boot: Boolean)
     extends SQLContext(sc) with Serializable {
 
   self =>
@@ -67,7 +68,7 @@ class SnappyContext private(sc: SparkContext)
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
 
-  if (SnappyContext.toolsCallback != null) {
+  if (boot && SnappyContext.toolsCallback != null) {
     SnappyContext.toolsCallback.invokeLeadStartAddonService(this)
   }
 
@@ -367,7 +368,8 @@ class SnappyContext private(sc: SparkContext)
     }
 
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params,  ExternalTableType.getTableType(resolved.relation))
+      Array.empty[String], source, params,
+      ExternalTableType.getTableType(resolved.relation))
     LogicalRelation(resolved.relation)
   }
 
@@ -774,7 +776,7 @@ object SnappyContext {
   def apply(): SnappyContext = {
     val gc = globalContext
     if (gc != null) {
-      new SnappyContext(gc)
+      new SnappyContext(gc, false)
     } else {
       null
     }
@@ -783,25 +785,21 @@ object SnappyContext {
   def apply(sc: SparkContext): SnappyContext = {
     val gc = _globalContext
     if (gc == sc) {
-      new SnappyContext(sc)
+      new SnappyContext(sc, false)
     } else if (sc == null) {
-      new SnappyContext(gc)
+      new SnappyContext(gc, false)
     } else contextLock.synchronized {
       val gc = _globalContext
       if (gc == sc) {
-        new SnappyContext(sc)
+        new SnappyContext(sc, false)
       } else if (sc == null) {
-        new SnappyContext(gc)
+        new SnappyContext(gc, false)
       } else {
         _globalContext = sc
         initSparkContext(sc)
-        new SnappyContext(sc)
+        new SnappyContext(sc, false) // postStartHook doing the job.
       }
     }
-  }
-
-  private[spark] def setGlobalContext(sc: SparkContext): Unit = contextLock.synchronized {
-    _globalContext = sc
   }
 
   // TODO: add initialization required for non-embedded mode etc here

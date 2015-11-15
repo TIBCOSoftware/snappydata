@@ -39,6 +39,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   override def stop() {
     super.stop()
     _driverUrl = ""
+    SnappyEmbeddedModeClusterManager.stop()
     logger.info(s"stopped successfully")
   }
 

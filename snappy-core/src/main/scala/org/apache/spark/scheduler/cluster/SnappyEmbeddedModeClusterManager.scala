@@ -1,6 +1,7 @@
 package org.apache.spark.scheduler.cluster
 
 import io.snappydata.{Const, Prop}
+import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
@@ -16,7 +17,12 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   SparkContext.registerClusterManager(this)
 
+  val logger = LoggerFactory.getLogger(getClass)
+
   var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
+
+  var sc: SparkContext = _
+
 
   def createTaskScheduler(sc: SparkContext): TaskScheduler = {
     // If there is an application that is trying to join snappy
@@ -25,13 +31,24 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     // passed in masterurl itself.
     if (sc.master.startsWith(Const.jdbcUrlPrefix)) {
       val locator = sc.master.replaceFirst(Const.jdbcUrlPrefix, "").trim
-      if (locator.isEmpty ||
-          locator == "" ||
-          locator == "null" ||
-          !locator.matches(".+\\[[0-9]+\\]")) {
-        throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
+
+      val (prop, value) = {
+        if (locator.indexOf("mcast-port") >= 0) {
+          val split = locator.split("=")
+          (split(0).trim, split(1).trim)
+        }
+        else if (locator.isEmpty ||
+            locator == "" ||
+            locator == "null" ||
+            !locator.matches(".+\\[[0-9]+\\]")
+        ) {
+          throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
+        }
+        (Prop.locators, locator)
       }
-      sc.conf.set(Prop.locators, locator)
+
+      logger.info(s"setting from url ${prop} with ${value}")
+      sc.conf.set(prop, value)
     }
     new TaskSchedulerImpl(sc)
   }
@@ -56,6 +73,16 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     schedulerImpl.initialize(backend)
 
     SnappyContext.toolsCallback.invokeLeadStart(schedulerImpl.sc.conf)
-    SnappyContext.setGlobalContext(schedulerImpl.sc)
+    sc = schedulerImpl.sc
   }
+
+  def postStartHook(): Unit = {
+    SnappyContext(sc)
+  }
+
+  def stop(): Unit = {
+    sc = null
+    SnappyContext.toolsCallback.invokeLeadStop(null)
+  }
+
 }

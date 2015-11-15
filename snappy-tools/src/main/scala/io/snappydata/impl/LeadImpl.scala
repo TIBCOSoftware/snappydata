@@ -54,13 +54,14 @@ class LeadImpl extends ServerImpl with Lead {
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
-  var _blockingStart: Boolean = true
-  def blockingStart: Boolean = _blockingStart
+  var _directApiInvoked: Boolean = false
+
+  def directApiInvoked: Boolean = _directApiInvoked
 
   @throws(classOf[SQLException])
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
 
-    _blockingStart = false
+    _directApiInvoked = true
     val locator = {
       bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
         case v if v != null => v
@@ -73,9 +74,9 @@ class LeadImpl extends ServerImpl with Lead {
     conf.setMaster(Const.jdbcUrlPrefix + s"$locator").setAppName("leaderLauncher")
 
     bootProperties.asScala.foreach({ case (k, v) =>
-      val key = k.startsWith(Prop.propPrefix) match {
+      val key = k.startsWith(Const.propPrefix) match {
         case true => k
-        case _ => Prop.propPrefix + k
+        case _ => Const.propPrefix + k
       }
       conf.set(key, v)
     })
@@ -87,36 +88,41 @@ class LeadImpl extends ServerImpl with Lead {
 
   def internalStart(conf: SparkConf): Unit = {
 
-    val overriddenConf = initStartupArgs(conf)
+    initStartupArgs(conf)
 
-    val confProps = overriddenConf.getAll
-    bootProperties.putAll(confProps.toMap.asJava)
+    logger.info("cluster configuration after overriding certain properties \n"
+        + conf.toDebugString)
 
+    val confProps = conf.getAll
     val storeProps = new Properties()
 
     val filteredProp = confProps.filter {
-      case (k, _) => k.startsWith(Prop.propPrefix)
+      case (k, _) => k.startsWith(Const.propPrefix)
     }.map {
-      case (k, v) => (k.replaceFirst(Prop.propPrefix, ""), v)
+      case (k, v) => (k.replaceFirst(Const.propPrefix, ""), v)
     }
     storeProps.putAll(filteredProp.toMap.asJava)
 
+    logger.info("passing store properties as " + storeProps)
     super.start(storeProps, false)
 
     status() match {
       case State.RUNNING =>
+        bootProperties.putAll(confProps.toMap.asJava)
         logger.info("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
-        val startStatus = blockingStart match {
+        val startStatus = directApiInvoked match {
           case true =>
+            primaryLeaderLock.tryLock()
+          case _ =>
             primaryLeaderLock.lockInterruptibly()
             true
-          case _ => primaryLeaderLock.tryLock()
         }
+
         startStatus match {
           case true =>
             logger.info("Primary lead lock acquired.")
-            // let go.
+          // let go.
           case false =>
             serverstatus = State.STANDBY
             primaryLeadNodeWaiter.start()
@@ -130,12 +136,19 @@ class LeadImpl extends ServerImpl with Lead {
 
   @throws(classOf[SQLException])
   override def stop(shutdownCredentials: Properties): Unit = {
-    primaryLeadNodeWaiter.interrupt()
-    bootProperties.clear()
-    SnappyContext.stop
     if (sparkContext != null && !sparkContext.isStopped) {
       sparkContext.stop()
     }
+  }
+
+  def internalStop(shutdownCredentials: Properties): Unit = {
+    logger.info("clearing boot properties " + bootProperties, new Exception("SB:"))
+    primaryLeadNodeWaiter.interrupt()
+    bootProperties.clear()
+    SnappyContext.stop
+    // TODO: [soubhik] find a way to stop jobserver.
+    SnappyContextFactory.setSnappyContext(null)
+    sparkContext = null
     super.stop(shutdownCredentials)
   }
 
@@ -153,7 +166,9 @@ class LeadImpl extends ServerImpl with Lead {
     def changeOrAppend(attr: String, value: String,
         overwrite: Boolean = false,
         ignoreIfPresent: Boolean = false) = {
-      val x = conf.getOption(attr).getOrElse {null}
+      val x = conf.getOption(attr).getOrElse {
+        null
+      }
       x match {
         case null =>
           conf.set(attr, value)

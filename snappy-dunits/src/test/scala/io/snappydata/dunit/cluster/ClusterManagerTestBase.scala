@@ -133,7 +133,7 @@ class ClusterManagerTestUtils {
     conf.set("spark.eventLog.dir", eventDirForDriver)
     props.setProperty("log-level", "fine");
     props.asScala.foreach({ case (k, v) =>
-      conf.set(io.snappydata.Prop.propPrefix + k, v)
+      conf.set(io.snappydata.Const.propPrefix + k, v)
     })
     if (addUrlForHiveMetaStore) {
       val snappydataurl = "jdbc:snappydata:;locators=localhost["
@@ -141,7 +141,7 @@ class ClusterManagerTestUtils {
       conf.set("gemfirexd.db.url", snappydataurl)
       conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
     }
-    logger.info(s"About to create SparkContext with conf ${conf}")
+    logger.info(s"About to create SparkContext with conf \n" + conf.toDebugString)
     sc = new SparkContext(conf)
     logger.info("SparkContext CREATED, about to create SnappyContext.")
     snc = SnappyContext(sc)

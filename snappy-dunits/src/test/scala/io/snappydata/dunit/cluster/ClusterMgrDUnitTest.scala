@@ -29,7 +29,7 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     Thread.sleep(10000)
 
     // Stop the lead node
-    vm0.invoke(this.getClass, "stopAny")
+    vm0.invoke(this.getClass, "stopSpark")
     Thread.sleep(5000)
 
     // Start the lead node in another JVM. The executors should

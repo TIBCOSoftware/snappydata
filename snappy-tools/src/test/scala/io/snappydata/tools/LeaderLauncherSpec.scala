@@ -12,10 +12,10 @@ import org.scalatest.{Matchers, WordSpec}
 import org.apache.spark.SparkConf
 
 /**
- * BDD style tests
- *
- * Created by soubhikc on 7/10/15.
- */
+  * BDD style tests
+  *
+  * Created by soubhikc on 7/10/15.
+  */
 class LeaderLauncherSpec extends WordSpec with Matchers {
 
   private def doExtract(param: String, prop: String) = param.toLowerCase.startsWith("-" + prop)

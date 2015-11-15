@@ -1,5 +1,7 @@
 package io.snappydata
 
+import java.util.Properties
+
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.SparkConf
@@ -17,7 +19,12 @@ object ToolsCallbackImpl extends ToolsCallback {
 
   override def invokeLeadStartAddonService(snc: SnappyContext): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    // TODO: [soubhik] This needs to be in some other place.
     lead.startAddOnServices(snc)
   }
+
+  def invokeLeadStop(shutdownCredentials: Properties): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.internalStop(shutdownCredentials)
+  }
+
 }
