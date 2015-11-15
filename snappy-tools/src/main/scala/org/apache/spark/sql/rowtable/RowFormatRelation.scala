@@ -1,6 +1,5 @@
 package org.apache.spark.sql.rowtable
 
-
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -13,7 +12,11 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
+
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
+
+import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
+
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -78,6 +81,7 @@ class RowFormatRelation(
     }
   }
 
+
   /**
    * We need to set num partitions just to cheat Exchange of Spark.
    * This partition is not used for actual scan operator which depends on the
@@ -120,15 +124,11 @@ class RowFormatRelation(
   }
 }
 
-
-final class DefaultSource
-    extends MutableRelationProvider {
-
+final class DefaultSource extends MutableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
-
     val table = StoreUtils.removeInternalProps(parameters)
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters)
@@ -145,7 +145,6 @@ final class DefaultSource
         case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
-
 
     dialect match {
       // The driver if not a loner should be an accesor only
@@ -180,6 +179,4 @@ final class DefaultSource
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     createRelation(sqlContext, mode, options, schemaString)
   }
-
 }
-

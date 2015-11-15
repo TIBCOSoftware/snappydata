@@ -138,7 +138,7 @@ object StoreUtils {
     }
   }
 
-  def removeInternalProps(parameters : mutable.HashMap[String, String])  = {
+  def removeInternalProps(parameters : mutable.Map[String, String])  = {
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
@@ -148,8 +148,7 @@ object StoreUtils {
     table
   }
 
-
-  def ddlExtensionString(parameters: mutable.HashMap[String, String]): String = {
+  def ddlExtensionString(parameters: mutable.Map[String, String]): String = {
     val sb = new StringBuilder()
 
     sb.append(parameters.remove(PARTITION_BY).map(v => {

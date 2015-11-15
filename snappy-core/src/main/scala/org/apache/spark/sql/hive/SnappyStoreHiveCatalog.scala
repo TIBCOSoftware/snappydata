@@ -9,6 +9,7 @@ import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.apache.hadoop.hive.conf.HiveConf
+import org.stringtemplate.v4.misc.Misc
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
@@ -396,7 +397,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       userSpecifiedSchema: Option[StructType],
       partitionColumns: Array[String], provider: String,
       options: Map[String, String],
-      tableType : ExternalTableType.Type): Unit = {
+      tableType: ExternalTableType.Type): Unit = {
     createDataSourceTable(tableName, tableType,
       userSpecifiedSchema, partitionColumns, provider, options)
   }
