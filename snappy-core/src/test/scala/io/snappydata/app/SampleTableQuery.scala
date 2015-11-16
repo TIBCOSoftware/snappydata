@@ -59,8 +59,8 @@ object SampleTableQuery  extends Serializable {
       // msg(ol.executedPlan.toString)
 
      df.show()
-      val rows = df.collect()
-      val sum = rows(0).getDouble(0)
+      val rows1 = df.collect()
+      val sum = rows1(0).getDouble(0)
       /*assert(sum ==
         17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26)*/
 
@@ -88,11 +88,10 @@ object SampleTableQuery  extends Serializable {
       val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 96")
 
       result.show()
-    /*  val rows = df.collect()
-      val sum = rows(0).getInt(0)
-      assert(sum ==
-        17*4 + 36*5 + 8*3 + 28 * 2 + 24*1 + 32 * 3 + 38 * 6 + 5* 45 + 4* 49 + 3* 27 + 2*2 + 1* 28 + 4*26
-*/
+      val rows2 = result.collect()
+      val struct = rows2(0).getStruct(0)
+      msg("estimate=" + struct.getDouble(0))
+      msg("bound=" + struct.getDouble(1) + "," + struct.getDouble(2))
       msg(s"==== BlinkPlay::main(): END")
 
 

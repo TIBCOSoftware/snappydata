@@ -9,6 +9,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.hive.SampledRelation
+import org.apache.spark.sql.collection.Utils
 
 object BootStrapUtils {
 
@@ -200,7 +201,7 @@ object BootStrapUtils {
   }
 
   def getScaleAttribute(child: SparkPlan): Attribute = child.output.filter{
-    _.name == OnlinePlannerUtil.scaleColumn
+    _.name == Utils.WEIGHTAGE_COLUMN_NAME
   }(0)
 }
 

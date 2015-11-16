@@ -1,10 +1,13 @@
 package org.apache.spark.sql.execution
 
 import org.apache.hadoop.metrics2.util.SampleQuantiles
+import org.apache.spark.sql.catalyst.{SimpleCatalystConf, CatalystConf}
+import org.apache.spark.sql.catalyst.analysis._
+import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.{execution, SQLContext}
 import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-
+import org.apache.spark.sql.catalyst.plans.logical.{UnaryNode =>  LogicalUnary}
 import org.apache.spark.sql.execution.bootstrap._
 import org.apache.spark.sql.hive.{AddScaleFactor, IdentifySampledRelation}
 
@@ -13,10 +16,11 @@ import org.apache.spark.sql.hive.{AddScaleFactor, IdentifySampledRelation}
  * Created by ashahid on 11/13/15.
  */
 class SnappyQueryExecution (sqlContext: SQLContext, logical: LogicalPlan)
-extends QueryExecution(sqlContext, logical) {
+extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
+}) {
 
   //private  var hasSampleTable: Boolean = false
-  override  val prepareForExecution : RuleExecutor[SparkPlan] = modifyRule
+
  // override lazy val analyzed: LogicalPlan = modifyPlanConditionally
  /*
   private def checkForSampleTable(plan : LogicalPlan) : (Boolean, LogicalPlan) = {
@@ -40,7 +44,7 @@ extends QueryExecution(sqlContext, logical) {
   }*/
 
   private def modifyRule  =
-    if(analyzedPlanHasSampleTable) {
+    if(analyzedPlanHasSampleTable(this.analyzed)) {
 
        new RuleExecutor[SparkPlan] {
         //val isDebug = false
@@ -95,8 +99,8 @@ extends QueryExecution(sqlContext, logical) {
     }
 
 
-  private def analyzedPlanHasSampleTable : Boolean =
-    this.analyzed.find{
+  private def analyzedPlanHasSampleTable(analyzed : LogicalPlan) : Boolean =
+    analyzed.find{
       case Subquery(_, _: StratifiedSample) => true
       case _ => false
 
@@ -106,4 +110,38 @@ extends QueryExecution(sqlContext, logical) {
 
   }
 
+
+
+  override lazy val analyzed: LogicalPlan = analyzer.execute(logical)
+  override val analyzer : Analyzer = new DummyAnalyzer(sqlContext.analyzer, this)
+
+
+  override  val prepareForExecution : RuleExecutor[SparkPlan] = modifyRule
+
+  override lazy val withCachedData: LogicalPlan = {
+    assertAnalyzed()
+    cacheManager.useCachedData(analyzed.transformUp{
+      case Dummy(child, _) => child
+    })
+  }
+
+  override def toString: String = ""
+}
+
+private class DummyAnalyzer ( realAnalyzer: Analyzer, queryExecutor: SnappyQueryExecution)  extends Analyzer(EmptyCatalog, EmptyFunctionRegistry, new SimpleCatalystConf(true)) {
+  override def checkAnalysis(analyzed: LogicalPlan) = realAnalyzer.checkAnalysis(analyzed.children(0))
+
+  override def execute(logical: LogicalPlan) = Dummy(realAnalyzer.execute(logical), queryExecutor)
+
+}
+
+case class Dummy(child : LogicalPlan, queryExecutor: SnappyQueryExecution) extends LogicalUnary {
+  override def output: Seq[Attribute] = child.output
+  override lazy val schema = queryExecutor.executedPlan.schema
+}
+
+object DummyReplacer {
+  def apply(): PartialFunction[ LogicalPlan, LogicalPlan] = {
+    case Dummy(child , _) => child
+  }
 }

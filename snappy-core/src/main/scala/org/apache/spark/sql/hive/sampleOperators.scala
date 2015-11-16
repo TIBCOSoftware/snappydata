@@ -60,9 +60,9 @@ object AddScaleFactor extends Rule[SparkPlan] {
         aggExp.aggregateFunction match {
           case org.apache.spark.sql.catalyst.expressions.aggregate.Sum(expression) =>
             val lhs = BootStrapUtils.getScaleAttribute(child)
-
+           // WeightedSum(Multiply(args, mapExpr))
             val (l,r) = OnlinePlannerUtil.widenTypes(lhs,expression)
-            val newExp = Divide(r,l)
+            val newExp = Multiply(r,l)
             val newFunc = org.apache.spark.sql.catalyst.expressions.aggregate.Sum(newExp)
             AggregateExpression2(newFunc, aggExp.mode, aggExp.isDistinct)
           case _ => aggExp
