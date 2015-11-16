@@ -7,14 +7,20 @@
  */
 package dunit.tests;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Properties;
 
+import com.gemstone.gemfire.distributed.Locator;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import dunit.AsyncInvocation;
 import dunit.DistributedTestBase;
 import dunit.Host;
 import dunit.RMIException;
+import dunit.SerializableRunnable;
 import dunit.VM;
+import dunit.standalone.DUnitLauncher;
+import util.TestException;
 
 /**
  * This class tests the basic functionality of the distributed unit
@@ -24,6 +30,36 @@ public class BasicDUnitTest extends DistributedTestBase {
 
   public BasicDUnitTest(String name) {
     super(name);
+  }
+
+  public static void startLocator() {
+    final int locatorPort = DUnitLauncher.getLocator();
+    final String locatorLogFile = "locator-" + locatorPort + ".log";
+    DistributedTestBase.invokeInLocator(new SerializableRunnable() {
+      @Override
+      public void run() {
+        Properties p = DUnitLauncher.getDistributedSystemProperties();
+        // I never want this locator to end up starting a jmx manager
+        // since it is part of the unit test framework
+        p.setProperty("jmx-manager", "false");
+        try {
+          Locator.startLocatorAndDS(locatorPort, new File(locatorLogFile), p);
+        } catch (IOException ioe) {
+          throw new TestException(ioe.getMessage(), ioe);
+        }
+      }
+    });
+  }
+
+  public static void stopLocator() {
+    DistributedTestBase.invokeInLocator(new SerializableRunnable() {
+      @Override
+      public void run() {
+        if (Locator.hasLocator()) {
+          Locator.getLocator().stop();
+        }
+      }
+    });
   }
 
   ////////  Test Methods
@@ -67,33 +103,35 @@ public class BasicDUnitTest extends DistributedTestBase {
     throw new BasicTestException(s);
   }
 
-  public void _testRemoteInvocationBoolean() {
-
-  }
-
-  public void testRemoteInvokeAsync() throws InterruptedException {
+  // disabled redundant test
+  public void DISABLED_testRemoteInvokeAsync() throws InterruptedException {
     Host host = Host.getHost(0);
     VM vm = host.getVM(0);
     String name = this.getUniqueName();
     String value = "Hello";
 
-    AsyncInvocation ai =
-        vm.invokeAsync(this.getClass(), "remoteBind",
-            new Object[]{name, value});
-    ai.join();
-    // TODO shouldn't we call fail() here?
-    if (ai.exceptionOccurred()) {
-      fail("remoteBind failed", ai.getException());
+    startLocator();
+    try {
+      AsyncInvocation ai =
+          vm.invokeAsync(this.getClass(), "remoteBind",
+              new Object[]{name, value});
+      ai.join();
+      if (ai.exceptionOccurred()) {
+        fail("remoteBind failed", ai.getException());
+      }
+
+      ai = vm.invokeAsync(this.getClass(), "remoteValidateBind",
+          new Object[]{name, value});
+      ai.join();
+      if (ai.exceptionOccurred()) {
+        fail("remoteValidateBind failed", ai.getException());
+      }
+
+      vm.invoke(this.getClass(), "stopDS", null);
+    } finally {
+      stopLocator();
     }
 
-    ai = vm.invokeAsync(this.getClass(), "remoteValidateBind",
-        new Object[]{name, value});
-    ai.join();
-    if (ai.exceptionOccurred()) {
-      fail("remoteValidateBind failed", ai.getException());
-    }
-
-    vm.invoke(this.getClass(), "stopDS", null);
   }
 
   private static InternalDistributedSystem _instancce = null;
