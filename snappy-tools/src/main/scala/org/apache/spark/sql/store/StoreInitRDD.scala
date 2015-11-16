@@ -8,7 +8,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.ExecutorLocalPartition
+import org.apache.spark.sql.collection.{Utils, ExecutorLocalPartition}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -26,10 +26,8 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
     (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
     extends RDD[InternalRow](sc, Nil) {
 
-  val snc = SnappyContext(sc)
   val driver = DriverRegistry.getDriverClassName(url)
-  val isLoner = snc.isLoner
-
+  val isLoner = Utils.isLoner(sc)
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     GemFireXDDialect.init()

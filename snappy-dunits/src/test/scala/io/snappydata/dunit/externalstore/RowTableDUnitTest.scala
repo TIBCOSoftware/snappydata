@@ -56,7 +56,7 @@ object RowTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 0)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -76,7 +76,7 @@ object RowTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 5)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 }
 

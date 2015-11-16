@@ -136,8 +136,11 @@ class LeadImpl extends ServerImpl with Lead {
 
   @throws(classOf[SQLException])
   override def stop(shutdownCredentials: Properties): Unit = {
-    if (sparkContext != null && !sparkContext.isStopped) {
+    assert(sparkContext != null, "Mix and match of LeadService api " +
+        "and SparkContext is unsupported.")
+    if (!sparkContext.isStopped) {
       sparkContext.stop()
+      sparkContext = null
     }
   }
 

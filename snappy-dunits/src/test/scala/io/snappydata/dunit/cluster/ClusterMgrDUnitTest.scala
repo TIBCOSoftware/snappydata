@@ -40,6 +40,7 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm3.invoke(this.getClass, "startSparkJob")
     vm3.invoke(this.getClass, "startGemJob")
     Thread.sleep(10000)
+    vm3.invoke(this.getClass, "stopSpark")
   }
 }
 

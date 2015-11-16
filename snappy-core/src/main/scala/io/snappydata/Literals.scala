@@ -32,6 +32,8 @@ final object Prop {
 
   val locators = s"${Const.propPrefix}locators"
 
+  val mcastPort = s"${Const.propPrefix}mcast-port"
+
   val jobserverEnabled = s"jobserver.enabled"
 
   val jobserverConfigFile = "jobserver.configFile"

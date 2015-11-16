@@ -85,10 +85,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
       sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
     val memoryStatus = sc.env.blockManager.master.getMemoryStatus
     // no filtering for local backend
-    sc.schedulerBackend match {
-      case lb: LocalBackend => memoryStatus
-      case _ => memoryStatus.filter(!_._1.isDriver)
-    }
+    if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
   }
 
   def getHostExecutorId(blockId: BlockManagerId) =
@@ -280,6 +277,11 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
       numPartitions: Int): RDD[T] = {
     val cleanedF = sc.clean(f)
     new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
+  }
+
+  def isLoner(sc: SparkContext): Boolean = sc.schedulerBackend match {
+    case lb: LocalBackend => true
+    case _ => false
   }
 
   def normalizeId(k: String): String = {

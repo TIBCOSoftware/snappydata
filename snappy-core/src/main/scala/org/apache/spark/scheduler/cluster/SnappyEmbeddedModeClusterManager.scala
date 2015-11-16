@@ -4,7 +4,7 @@ import io.snappydata.{Const, Prop}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
-import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
+import org.apache.spark.scheduler.{SnappyTaskSchedulerImpl, ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
 import org.apache.spark.sql.SnappyContext
 
 /**
@@ -50,7 +50,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
       logger.info(s"setting from url ${prop} with ${value}")
       sc.conf.set(prop, value)
     }
-    new TaskSchedulerImpl(sc)
+    new SnappyTaskSchedulerImpl(sc)
   }
 
   def canCreate(masterURL: String): Boolean =
@@ -74,10 +74,6 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
     SnappyContext.toolsCallback.invokeLeadStart(schedulerImpl.sc.conf)
     sc = schedulerImpl.sc
-  }
-
-  def postStartHook(): Unit = {
-    SnappyContext(sc)
   }
 
   def stop(): Unit = {

@@ -11,7 +11,6 @@ import io.snappydata.util.SqlUtils
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
@@ -30,7 +29,6 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
 
 /**
@@ -659,12 +657,6 @@ class SnappyContext private(sc: SparkContext,
   def getExternalStoreConfig: Map[String, String] = {
     storeConfig
   }
-
-  def isLoner: Boolean = sparkContext.schedulerBackend match {
-    case lb: LocalBackend => true
-    case _ => false
-  }
-
 }
 
 // scalastyle:off
@@ -797,7 +789,7 @@ object SnappyContext {
       } else {
         _globalContext = sc
         initSparkContext(sc)
-        new SnappyContext(sc, false) // postStartHook doing the job.
+        new SnappyContext(sc, true)
       }
     }
   }

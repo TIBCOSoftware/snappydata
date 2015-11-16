@@ -9,6 +9,7 @@ package dunit.tests;
 
 import java.util.Properties;
 
+import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import dunit.AsyncInvocation;
 import dunit.DistributedTestBase;
 import dunit.Host;
@@ -46,7 +47,7 @@ public class BasicDUnitTest extends DistributedTestBase {
     } catch (RMIException ex) {
       assertTrue(ex.getCause() instanceof BasicTestException);
     }
-  } 
+  }
 
   static class BasicTestException extends RuntimeException {
     BasicTestException() {
@@ -60,7 +61,6 @@ public class BasicDUnitTest extends DistributedTestBase {
 
   /**
    * Accessed via reflection.  DO NOT REMOVE
-   *
    */
   protected static void remoteThrowException() {
     String s = "Test exception.  Please ignore.";
@@ -78,8 +78,8 @@ public class BasicDUnitTest extends DistributedTestBase {
     String value = "Hello";
 
     AsyncInvocation ai =
-      vm.invokeAsync(this.getClass(), "remoteBind", 
-                     new Object[] { name, value });
+        vm.invokeAsync(this.getClass(), "remoteBind",
+            new Object[]{name, value});
     ai.join();
     // TODO shouldn't we call fail() here?
     if (ai.exceptionOccurred()) {
@@ -87,26 +87,35 @@ public class BasicDUnitTest extends DistributedTestBase {
     }
 
     ai = vm.invokeAsync(this.getClass(), "remoteValidateBind",
-                        new Object[] {name, value });
+        new Object[]{name, value});
     ai.join();
     if (ai.exceptionOccurred()) {
       fail("remoteValidateBind failed", ai.getException());
     }
+
+    vm.invoke(this.getClass(), "stopDS", null);
   }
 
+  private static InternalDistributedSystem _instancce = null;
   private static Properties bindings = new Properties();
+
   private static void remoteBind(String name, String s) {
-    new BasicDUnitTest("bogus").getSystem(); // forces connection
+    _instancce = new BasicDUnitTest("bogus").getSystem(); // forces connection
     bindings.setProperty(name, s);
   }
 
-  private static void remoteValidateBind(String name, String expected)
-  {
+  static void stopDS() {
+    if (_instancce != null) {
+      _instancce.disconnect();
+    }
+  }
+
+  private static void remoteValidateBind(String name, String expected) {
     assertEquals(expected, bindings.getProperty(name));
   }
 
-  public void testRemoteInvokeAsyncWithException() 
-    throws InterruptedException {
+  public void testRemoteInvokeAsyncWithException()
+      throws InterruptedException {
 
     Host host = Host.getHost(0);
     VM vm = host.getVM(0);
@@ -114,7 +123,7 @@ public class BasicDUnitTest extends DistributedTestBase {
 //    String value = "Hello";
 
     AsyncInvocation ai =
-      vm.invokeAsync(this.getClass(), "remoteThrowException");
+        vm.invokeAsync(this.getClass(), "remoteThrowException");
     ai.join();
     assertTrue(ai.exceptionOccurred());
     Throwable ex = ai.getException();

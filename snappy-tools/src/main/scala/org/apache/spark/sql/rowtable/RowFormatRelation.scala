@@ -7,6 +7,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -98,7 +99,7 @@ final class DefaultSource extends MutableRelationProvider {
     dialect match {
       // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(SnappyContext(sc).isLoner))
+        connProps.putAll(d.extraCreateTableProperties(Utils.isLoner(sc)))
     }
 
     new RowFormatRelation(url,
