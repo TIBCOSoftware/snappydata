@@ -190,6 +190,14 @@ object ExecutorInitiator extends Logging {
    */
   def startOrTransmuteExecutor(driverURL: Option[String],
       driverDM: InternalDistributedMember): Unit = {
+    // Avoid creation of executor inside the Gem accessor
+    // that is a Spark driver but has joined the gem system
+    // in the non embedded mode
+    if (SparkCallbacks.isDriver()) {
+      logInfo("Executor cannot be instantiated in this VM as a Spark driver is already running. ")
+      return
+    }
+
     executorRunnable.setDriverDetails(driverURL, driverDM)
     // start the executor thread if driver URL is set and the thread
     // is not already started.
