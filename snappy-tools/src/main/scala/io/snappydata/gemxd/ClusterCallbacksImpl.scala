@@ -24,6 +24,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks {
     else {
       Some(driverUrl)
     }
+    logger.info(s"invoking startOrTransmute with. ${url}")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
   }
 

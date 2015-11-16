@@ -35,8 +35,8 @@ object ExecutorInitiator extends Logging {
   var executorThread: Thread = new Thread(executorRunnable)
 
   class ExecutorRunnable() extends Runnable {
-    private var driverURL: Option[String] = None
-    private var driverDM: InternalDistributedMember = null
+    @volatile private var driverURL: Option[String] = None
+    @volatile private var driverDM: InternalDistributedMember = null
     var stopTask = false
     private val lock = new ReentrantLock
 
@@ -152,6 +152,8 @@ object ExecutorInitiator extends Logging {
                     val endPoint = rpcenv.setupEndpoint("Executor", executor)
                   }
                 case None =>
+                  logInfo("ALERT!!! resulting in no-op")
+
               }
             }
           } catch {
@@ -200,27 +202,30 @@ object ExecutorInitiator extends Logging {
     // that is a Spark driver but has joined the gem system
     // in the non embedded mode
     if (SparkCallbacks.isDriver()) {
-      logInfo("Executor cannot be instantiated in this VM as a Spark driver is already running. ")
+      logInfo("Executor cannot be instantiated in this " +
+          "VM as a Spark driver is already running. ")
       return
     }
 
-    executorRunnable.setDriverDetails(driverURL, driverDM)
+//    executorRunnable.setDriverDetails(driverURL, driverDM)
     // start the executor thread if driver URL is set and the thread
     // is not already started.
     driverURL match {
       case Some(x) =>
-        if (executorThread.getState == Thread.State.NEW) {
+  /*      if (executorThread.getState == Thread.State.NEW) {
+          logInfo("SB: About to thread start " + executorThread.getName)
           executorThread.setDaemon(true)
           executorThread.start()
         } else if (executorThread.getState == Thread.State.TERMINATED) {
-          // Restart a thread after it has been stopped
+  */        // Restart a thread after it has been stopped
           // This is required for dunit case mainly.
           executorRunnable = new ExecutorRunnable
           executorThread = new Thread(executorRunnable)
+          logInfo("Spawning new thread " + executorThread.getName + " and starting")
           executorRunnable.setDriverDetails(driverURL, driverDM)
           executorThread.setDaemon(true)
           executorThread.start()
-        }
+   //     }
       case None =>
     }
   }
