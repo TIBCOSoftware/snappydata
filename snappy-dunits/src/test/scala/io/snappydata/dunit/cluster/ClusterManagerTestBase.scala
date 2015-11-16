@@ -1,6 +1,8 @@
 package io.snappydata.dunit.cluster
 
 import java.io.File
+import java.net.InetAddress
+
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -29,6 +31,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val vm3 = host.getVM(3)
 
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
+
   protected final def startArgs =
     Array(locatorPort, props).asInstanceOf[Array[AnyRef]]
 
@@ -54,7 +57,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
           loc.start("localhost", locPort, locNetProps)
         }
         if (locNetPort > 0) {
-          loc.startNetworkServer("localhost", locNetPort, locNetProps)
+          loc.startNetworkServer("localhost", 1527, locNetProps)
         }
         assert(loc.status == FabricService.State.RUNNING)
       }
@@ -125,6 +128,7 @@ class ClusterManagerTestUtils {
       conf.set("gemfirexd.db.url", snappydataurl)
       conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
     }
+    conf.set("snappy.store.jdbc.url" , "jdbc:snappydata:;user=app;password=app" )
     sc = new SparkContext(conf)
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     val lead: Server = ServiceManager.getServerInstance
@@ -137,13 +141,17 @@ class ClusterManagerTestUtils {
    * Start a snappy server. Any number of snappy servers can be started.
    */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
+
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     props.setProperty("log-level", "fine")
     val server: Server = ServiceManager.getServerInstance
 
-    server.start(props)
 
     assert(server.status == FabricService.State.RUNNING)
+    server.startNetworkServer("localhost",
+      AvailablePortHelper.getRandomAvailableTCPPort, null)
+
+
   }
 
   def startNetServer(netPort: Int): Unit = {

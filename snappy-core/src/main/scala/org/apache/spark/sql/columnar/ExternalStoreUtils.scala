@@ -3,6 +3,9 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
+import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
+import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import scala.collection.mutable
 
 import org.apache.spark.SparkContext
@@ -71,10 +74,15 @@ private[sql] object ExternalStoreUtils {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-
-    val url = parameters.remove("url").getOrElse {
-       StoreProperties.defaultStoreURL(sc)
-    }
+    val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
+      val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.Utils")
+      clazz.getMethod("getLocatorClientURL").invoke(clazz).asInstanceOf[String] }
+    else
+      parameters.remove("url").getOrElse {
+        parameters.remove("url").getOrElse {
+          StoreProperties.defaultStoreURL(sc)
+        }
+      }
 
     val driver = parameters.remove("driver").orElse(getDriver(url))
 
@@ -132,13 +140,21 @@ private[sql] object ExternalStoreUtils {
   def getConnectionType(url: String) = {
     JdbcDialects.get(url) match {
       case GemFireXDDialect => ConnectionType.Embedded
-      case GemFireXDClientDialect => ConnectionType.Net
+      case GemFireXDClientDialect =>   ConnectionType.Net
       case _ => ConnectionType.Unknown
     }
+  }
+
+  def isExternalShellMode (sparkContext: SparkContext): Boolean ={
+    if (!sparkContext.schedulerBackend.isInstanceOf[LocalBackend] &&
+        !sparkContext.schedulerBackend.isInstanceOf[SnappyCoarseGrainedSchedulerBackend])
+       true
+    else
+      false
   }
 }
 
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
-  val Embedded, Net, Unknown = Value
+  val Embedded, Net, ExternalShell, Unknown = Value
 }
