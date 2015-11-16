@@ -59,7 +59,7 @@ extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
             PruneProjects
           ) ,
           Batch("Bootstrap", Once,
-            AddScaleFactor,
+           // AddScaleFactor,
             PushDownPartialAggregate,
             PushUpResample,
             PushUpSeed,
@@ -89,8 +89,6 @@ extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
             ImplementCollect(),
             CleanupAnalysisExpressions
           )
-
-
         )
       }
 
@@ -130,9 +128,7 @@ extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
 
 private class DummyAnalyzer ( realAnalyzer: Analyzer, queryExecutor: SnappyQueryExecution)  extends Analyzer(EmptyCatalog, EmptyFunctionRegistry, new SimpleCatalystConf(true)) {
   override def checkAnalysis(analyzed: LogicalPlan) = realAnalyzer.checkAnalysis(analyzed.children(0))
-
   override def execute(logical: LogicalPlan) = Dummy(realAnalyzer.execute(logical), queryExecutor)
-
 }
 
 case class Dummy(child : LogicalPlan, queryExecutor: SnappyQueryExecution) extends LogicalUnary {
