@@ -80,7 +80,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
           //println("aqpTable" + aqp)
           val newPlan = aqp match {
-            case (sample, name) => Subquery(name, sample)//SampleTable(Subquery(name, sample))
+            case (sample, name) => Subquery(name, sample)
             case _ => p
           }
           newPlan

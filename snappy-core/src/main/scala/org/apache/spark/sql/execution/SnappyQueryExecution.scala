@@ -44,7 +44,7 @@ extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
   }*/
 
   private def modifyRule  =
-    if(analyzedPlanHasSampleTable(this.analyzed)) {
+    if(SnappyQueryExecution.analyzedPlanHasSampleTable(this.analyzed)) {
 
        new RuleExecutor[SparkPlan] {
         //val isDebug = false
@@ -97,16 +97,7 @@ extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
     }
 
 
-  private def analyzedPlanHasSampleTable(analyzed : LogicalPlan) : Boolean =
-    analyzed.find{
-      case Subquery(_, _: StratifiedSample) => true
-      case _ => false
 
-    } match {
-      case Some(x) => true
-      case None => false
-
-  }
 
 
 
@@ -119,25 +110,53 @@ extends QueryExecution(sqlContext, logical.transformUp {DummyReplacer()
   override lazy val withCachedData: LogicalPlan = {
     assertAnalyzed()
     cacheManager.useCachedData(analyzed.transformUp{
-      case Dummy(child, _) => child
+      case SampleTableQuery(child, _) => child
     })
   }
 
   override def toString: String = ""
 }
 
-private class DummyAnalyzer ( realAnalyzer: Analyzer, queryExecutor: SnappyQueryExecution)  extends Analyzer(EmptyCatalog, EmptyFunctionRegistry, new SimpleCatalystConf(true)) {
-  override def checkAnalysis(analyzed: LogicalPlan) = realAnalyzer.checkAnalysis(analyzed.children(0))
-  override def execute(logical: LogicalPlan) = Dummy(realAnalyzer.execute(logical), queryExecutor)
+private class DummyAnalyzer ( realAnalyzer: Analyzer, queryExecutor: SnappyQueryExecution)
+  extends Analyzer(EmptyCatalog, EmptyFunctionRegistry, new SimpleCatalystConf(true)) {
+
+  override def checkAnalysis(analyzed: LogicalPlan) = realAnalyzer.checkAnalysis(analyzed match {
+    case SampleTableQuery(child, _) => child
+    case _ => analyzed
+  })
+
+  override def execute(logical: LogicalPlan) = {
+    val actualPlan = realAnalyzer.execute(logical)
+    if(SnappyQueryExecution.analyzedPlanHasSampleTable(actualPlan)) {
+      SampleTableQuery(actualPlan, queryExecutor)
+    }else {
+      actualPlan
+    }
+  }
+
 }
 
-case class Dummy(child : LogicalPlan, queryExecutor: SnappyQueryExecution) extends LogicalUnary {
+object SnappyQueryExecution {
+
+  def analyzedPlanHasSampleTable(analyzed : LogicalPlan) : Boolean =
+    analyzed.find{
+      case Subquery(_, _: StratifiedSample) => true
+      case _ => false
+
+    } match {
+      case Some(x) => true
+      case None => false
+
+    }
+}
+
+case class SampleTableQuery(child : LogicalPlan, queryExecutor: SnappyQueryExecution) extends LogicalUnary {
   override def output: Seq[Attribute] = child.output
   override lazy val schema = queryExecutor.executedPlan.schema
 }
 
 object DummyReplacer {
   def apply(): PartialFunction[ LogicalPlan, LogicalPlan] = {
-    case Dummy(child , _) => child
+    case SampleTableQuery(child , _) => child
   }
 }
