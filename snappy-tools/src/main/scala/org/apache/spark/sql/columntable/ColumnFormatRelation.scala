@@ -14,7 +14,7 @@ import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{CachedBatch, ColumnAccessor, ColumnType, ColumnarRelationProvider, ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.columnar.{ConnectionType, ColumnAccessor, CachedBatch, ColumnType, ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -82,7 +82,7 @@ class ColumnFormatRelation(
       filters: Array[Filter]): RDD[Row] = {
 
     def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table+shadowTableNamePrefix, requiredColumns.map(column => columnPrefix + column), uuidList,
+      externalStore.getCachedBatchRDD(table + shadowTableNamePrefix, requiredColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
@@ -200,9 +200,9 @@ class ColumnFormatRelation(
   // truncate both actual and shadow table
   override def truncate() = writeLock {
     val dialect = JdbcDialects.get(externalStore.url)
-    externalStore.tryExecute(table+shadowTableNamePrefix, {
+    externalStore.tryExecute(table + shadowTableNamePrefix, {
       case conn =>
-        JdbcExtendedUtils.truncateTable(conn, table+shadowTableNamePrefix, dialect)
+        JdbcExtendedUtils.truncateTable(conn, table + shadowTableNamePrefix, dialect)
     })
     externalStore.tryExecute(table, {
       case conn =>
@@ -275,7 +275,7 @@ class ColumnFormatRelation(
         dialect, sqlContext)
       if (!tableExists) {
         var partitionByClause = ""
-        if(!schemaExtensions.contains(" PARTITION ")) {
+        if (!schemaExtensions.contains(" PARTITION ")) {
           // create partition by extension with all the columns
           partitionByClause = dialect match {
             case d: JdbcExtendedDialect =>
@@ -289,7 +289,7 @@ class ColumnFormatRelation(
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
         }
-        createExternalTableForCachedBatches(tableName+shadowTableNamePrefix, externalStore)
+        createExternalTableForCachedBatches(tableName + shadowTableNamePrefix, externalStore)
       }
     }
     catch {
@@ -426,17 +426,17 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
 }
 
-final class DefaultSource
-    extends ColumnarRelationProvider {
+final class DefaultSource extends ColumnarRelationProvider {
 
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
     val table = StoreUtils.removeInternalProps(parameters)
 
     val sc = sqlContext.sparkContext
     val ddlExtension = StoreUtils.ddlExtensionString(parameters)
-    val preservepartitions = parameters.remove("preservepartitions")
+    //val preservepartitions = parameters.remove("preservepartitions")
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
 
@@ -472,5 +472,4 @@ final class DefaultSource
       }
     new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)
   }
-
 }

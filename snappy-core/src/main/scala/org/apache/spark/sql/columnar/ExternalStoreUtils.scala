@@ -3,19 +3,15 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.store.StoreProperties
-
-
-
-
 import scala.collection.mutable
 
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.store.StoreProperties
 
 /**
  * Utility methods used by external storage layers.
@@ -46,11 +42,10 @@ private[sql] object ExternalStoreUtils {
       case  GemFireXDClientDialect => Option("com.pivotal.gemfirexd.jdbc.ClientDriver")
       case _=> Option(DriverRegistry.getDriverClassName(url))
     }
-
   }
 
-  class CaseInsensitiveMutableHashMap(map: Map[String, String]) extends mutable.HashMap[String, String]
-  with Serializable {
+  class CaseInsensitiveMutableHashMap(map: Map[String, String])
+      extends mutable.Map[String, String] with Serializable {
 
     val baseMap = new mutable.HashMap[String, String]
     baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
@@ -60,6 +55,16 @@ private[sql] object ExternalStoreUtils {
     override def remove(k: String): Option[String] = baseMap.remove(k.toLowerCase)
 
     override def iterator: Iterator[(String, String)] = baseMap.iterator
+
+    override def +=(kv: (String, String)) = {
+      baseMap += kv
+      this
+    }
+
+    override def -=(key: String) = {
+      baseMap -= key
+      this
+    }
   }
 
   def validateAndGetAllProps(sc : SparkContext, options: Map[String, String]) = {

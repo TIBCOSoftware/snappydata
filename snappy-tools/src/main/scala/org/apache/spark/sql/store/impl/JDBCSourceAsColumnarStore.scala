@@ -28,7 +28,8 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId]) extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
+    val blockMap: Map[InternalDistributedMember, BlockManagerId])
+    extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
@@ -145,9 +146,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val par = split.index
         val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
         ps1.execute()
-        val ps = conn.prepareStatement(s"select stats , " +
-            requiredColumns.mkString(" ", ",", " ") +
-            s" from $tableName")
+        val ps = conn.prepareStatement(s"select stats, " +
+            requiredColumns.mkString(", ") + s" from $tableName")
 
         val rs = ps.executeQuery()
 

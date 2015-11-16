@@ -36,6 +36,10 @@ dependencies {
   }
 }
 
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+}
+
 scalaTest {
   maxParallelForks = 1
   maxHeapSize '4g'
