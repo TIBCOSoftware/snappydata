@@ -23,8 +23,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def testQueryRouting(): Unit = {
     // Lead is started before other servers are started.
     QueryRoutingDUnitTest.startSnappyServer(locatorPort, props)
-    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
+    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     val netport1 = AvailablePortHelper.getRandomAvailableTCPPort
     QueryRoutingDUnitTest.startNetServer(netport1)
 

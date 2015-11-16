@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.collection
 
-import java.io.{ObjectOutputStream, IOException}
+import java.io.{IOException, ObjectOutputStream}
 
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
 import scala.collection.{Map => SMap, Traversable, mutable}
@@ -25,15 +25,15 @@ import scala.reflect.ClassTag
 import scala.util.Sorting
 
 import org.apache.commons.math3.distribution.NormalDistribution
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SQLContext, AnalysisException, Row}
+import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.util.Utils
-import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext, Partitioner}
+import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
