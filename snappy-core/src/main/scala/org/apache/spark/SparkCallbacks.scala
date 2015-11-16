@@ -30,6 +30,7 @@ object SparkCallbacks {
     if (env != null) {
       SparkHadoopUtil.get.runAsSparkUser { () =>
         env.stop()
+        SparkEnv.set(null)
       }
     }
   }
@@ -50,6 +51,11 @@ object SparkCallbacks {
 
   def isExecutorStartupConf(key: String): Boolean = {
     SparkConf.isExecutorStartupConf(key)
+  }
+
+  def isDriver() : Boolean = {
+    SparkEnv.get != null &&
+        SparkEnv.get.executorId == SparkContext.DRIVER_IDENTIFIER
   }
 
 }
