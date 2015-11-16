@@ -38,7 +38,7 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
 
 
   ignore("test the shadow table creation") {
-    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
         "USING column " +
@@ -62,8 +62,8 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
   }
 
 
-  ignore("test the shadow table creation heavy insert") {
-    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+  test("test the shadow table creation heavy insert") {
+   // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
         "USING column " +
@@ -89,7 +89,7 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
 
 
   test("test the shadow table creation without partition by clause") {
-    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
         "USING column " +
