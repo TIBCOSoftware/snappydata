@@ -28,7 +28,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{SparkConf, Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -732,7 +732,7 @@ object SnappyContext extends Logging {
 
   private[spark] def globalContext = _globalContext
 
-  lazy val toolsCallback = this.synchronized {
+  lazy val toolsCallback = {
     import org.apache.spark.util.Utils
     try {
       val c = Utils.classForName("io.snappydata.ToolsCallbackImpl$")
