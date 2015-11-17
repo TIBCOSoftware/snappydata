@@ -18,10 +18,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def testDummy(): Unit = {
-
-  }
-
   def testQueryRouting(): Unit = {
     // Lead is started before other servers are started.
     QueryRoutingDUnitTest.startSnappyServer(locatorPort, props)

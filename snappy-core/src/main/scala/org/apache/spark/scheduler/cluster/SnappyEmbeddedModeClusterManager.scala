@@ -1,6 +1,6 @@
 package org.apache.spark.scheduler.cluster
 
-import io.snappydata.{Const, Prop}
+import io.snappydata.{Constant, Property}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
@@ -17,20 +17,21 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   SparkContext.registerClusterManager(this)
 
+  def register(): Unit = {
+    // no op. static initialization above does the job.
+  }
+
   val logger = LoggerFactory.getLogger(getClass)
 
   var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
-
-  var sc: SparkContext = _
-
 
   def createTaskScheduler(sc: SparkContext): TaskScheduler = {
     // If there is an application that is trying to join snappy
     // as lead in embedded mode, we need the locator to connect
     // to the snappy distributed system and hence the locator is
     // passed in masterurl itself.
-    if (sc.master.startsWith(Const.jdbcUrlPrefix)) {
-      val locator = sc.master.replaceFirst(Const.jdbcUrlPrefix, "").trim
+    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+      val locator = sc.master.replaceFirst(Constant.JDBC_URL_PREFIX, "").trim
 
       val (prop, value) = {
         if (locator.indexOf("mcast-port") >= 0) {
@@ -44,7 +45,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }
-        (Prop.locators, locator)
+        (Property.locators, locator)
       }
 
       logger.info(s"setting from url ${prop} with ${value}")
@@ -73,11 +74,9 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     schedulerImpl.initialize(backend)
 
     SnappyContext.toolsCallback.invokeLeadStart(schedulerImpl.sc.conf)
-    sc = schedulerImpl.sc
   }
 
-  def stop(): Unit = {
-    sc = null
+  def stopLead(): Unit = {
     SnappyContext.toolsCallback.invokeLeadStop(null)
   }
 

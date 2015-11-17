@@ -4,7 +4,8 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
-import org.slf4j.LoggerFactory
+
+import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 
 /**
@@ -12,26 +13,24 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
   *
   * Created by hemantb on 10/12/15.
   */
-object ClusterCallbacksImpl extends ClusterCallbacks {
-
-  val logger = LoggerFactory.getLogger(getClass)
+object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def launchExecutor(driverUrl: String, driverDM: InternalDistributedMember): Unit = {
     val url = if (driverUrl == null || driverUrl == "") {
-      logger.info(s"call to launchExecutor but driverUrl is invalid. ${driverUrl}")
+      logInfo(s"call to launchExecutor but driverUrl is invalid. ${driverUrl}")
       None
     }
     else {
       Some(driverUrl)
     }
-    logger.info(s"invoking startOrTransmute with. ${url}")
+    logInfo(s"invoking startOrTransmute with. ${url}")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
   }
 
   override def getDriverURL: String = {
     return SnappyEmbeddedModeClusterManager.schedulerBackend match {
       case Some(x) =>
-        logger.info(s"returning driverUrl=${x.driverUrl}")
+        logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
       case None =>
         null

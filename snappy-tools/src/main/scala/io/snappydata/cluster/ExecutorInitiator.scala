@@ -189,8 +189,9 @@ object ExecutorInitiator extends Logging {
    * with None.
    */
   def stop(): Unit = {
-    if (executorThread.getState != Thread.State.NEW)
+    if (executorThread.getState != Thread.State.NEW) {
       executorRunnable.stopTask = true
+    }
     executorRunnable.setDriverDetails(None, null)
   }
 

@@ -44,7 +44,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     TestUtil.currentTest = getName
     TestUtil.currentTestClass = getTestClass
     TestUtil.skipDefaultPartitioned = true
-    props.setProperty("log-level", "fine")
     TestUtil.doCommonSetup(props)
     GemFireXDUtils.IS_TEST_MODE = true
 
@@ -134,9 +133,8 @@ class ClusterManagerTestUtils {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
-    props.setProperty("log-level", "fine");
     props.asScala.foreach({ case (k, v) =>
-      conf.set(io.snappydata.Const.propPrefix + k, v)
+      conf.set(io.snappydata.Constant.PROPERTY_PREFIX + k, v)
     })
     if (addUrlForHiveMetaStore) {
       val snappydataurl = "jdbc:snappydata:;locators=localhost["
@@ -157,7 +155,6 @@ class ClusterManagerTestUtils {
     */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
-    props.setProperty("log-level", "fine")
     val server: Server = ServiceManager.getServerInstance
 
     server.start(props)

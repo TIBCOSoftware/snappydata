@@ -5,7 +5,7 @@ import java.util.Properties
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import dunit.AvailablePortHelper
-import io.snappydata.{Prop, ServiceManager}
+import io.snappydata.{Property, ServiceManager}
 import io.snappydata.dunit.cluster.{ClusterManagerTestBase, ClusterManagerTestUtils}
 
 import org.apache.spark.sql.collection.ReusableRow
@@ -159,7 +159,7 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set(Prop.locators, locStr)
+        .set(Property.locators, locStr)
 
     if (setMaster != null) {
       conf.setMaster(setMaster)

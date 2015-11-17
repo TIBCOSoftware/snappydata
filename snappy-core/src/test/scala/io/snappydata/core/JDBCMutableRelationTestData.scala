@@ -3,7 +3,7 @@ package io.snappydata.core
 
 import scala.reflect.io.{Path, File}
 
-import io.snappydata.Prop
+import io.snappydata.Property
 
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.{SQLContext}

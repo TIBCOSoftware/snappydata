@@ -8,7 +8,6 @@ import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.ToolsCallback
 import io.snappydata.util.SqlUtils
-import org.slf4j.LoggerFactory
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
@@ -29,7 +28,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -39,11 +38,9 @@ import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
   */
 class SnappyContext private(sc: SparkContext,
     boot: Boolean)
-    extends SQLContext(sc) with Serializable {
+    extends SQLContext(sc) with Serializable with Logging {
 
   self =>
-
-  val logger = LoggerFactory.getLogger(getClass)
 
   // initialize GemFireXDDialect so that it gets registered
   GemFireXDDialect.init()
@@ -734,9 +731,7 @@ object snappy extends Serializable {
 
 }
 
-object SnappyContext {
-
-  val logger = LoggerFactory.getLogger(getClass)
+object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContext: SparkContext = _
 
@@ -747,11 +742,11 @@ object SnappyContext {
     try {
       val c = Utils.classForName("io.snappydata.ToolsCallbackImpl$")
       val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logger.info("toolsCallback initialized")
+      logInfo("toolsCallback initialized")
       tc
     } catch {
       case cnf: ClassNotFoundException =>
-        logger.warn("toolsCallback couldn't be INITIALIZED." +
+        logWarning("toolsCallback couldn't be INITIALIZED." +
             "DriverURL won't get published to others.")
         null
     }

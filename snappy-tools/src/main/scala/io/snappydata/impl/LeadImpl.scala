@@ -14,18 +14,16 @@ import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{Attribute, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.snappydata.{Const, Prop, Lead, LocalizedMessages, Utils}
+import io.snappydata.{Constant, Property, Lead, LocalizedMessages, Utils}
 import org.slf4j.LoggerFactory
 import spark.jobserver.JobServer
 
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.{Logging, SparkContext, SparkConf}
 import org.apache.spark.sql.{SnappyContextFactory, SnappyContext}
 
-class LeadImpl extends ServerImpl with Lead {
+class LeadImpl extends ServerImpl with Lead with Logging {
 
   self =>
-
-  val logger = LoggerFactory.getLogger(getClass)
 
   private val LOCK_SERVICE_NAME = "__PRIMARY_LEADER_LS"
 
@@ -66,17 +64,19 @@ class LeadImpl extends ServerImpl with Lead {
       bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
         case v if v != null => v
         case _ =>
-          bootProperties.getProperty(Prop.locators)
+          bootProperties.getProperty(Property.locators)
       }
     }
 
     val conf = new SparkConf()
-    conf.setMaster(Const.jdbcUrlPrefix + s"$locator").setAppName("leaderLauncher")
+    conf.setMaster(Constant.JDBC_URL_PREFIX + s"$locator").setAppName("leaderLauncher")
 
     bootProperties.asScala.foreach({ case (k, v) =>
-      val key = k.startsWith(Const.propPrefix) match {
-        case true => k
-        case _ => Const.propPrefix + k
+      val key = if (!k.startsWith(Constant.PROPERTY_PREFIX)) {
+        Constant.PROPERTY_PREFIX + k
+      }
+      else {
+        k
       }
       conf.set(key, v)
     })
@@ -90,26 +90,26 @@ class LeadImpl extends ServerImpl with Lead {
 
     initStartupArgs(conf)
 
-    logger.info("cluster configuration after overriding certain properties \n"
+    logInfo("cluster configuration after overriding certain properties \n"
         + conf.toDebugString)
 
     val confProps = conf.getAll
     val storeProps = new Properties()
 
     val filteredProp = confProps.filter {
-      case (k, _) => k.startsWith(Const.propPrefix)
+      case (k, _) => k.startsWith(Constant.PROPERTY_PREFIX)
     }.map {
-      case (k, v) => (k.replaceFirst(Const.propPrefix, ""), v)
+      case (k, v) => (k.replaceFirst(Constant.PROPERTY_PREFIX, ""), v)
     }
     storeProps.putAll(filteredProp.toMap.asJava)
 
-    logger.info("passing store properties as " + storeProps)
+    logInfo("passing store properties as " + storeProps)
     super.start(storeProps, false)
 
     status() match {
       case State.RUNNING =>
         bootProperties.putAll(confProps.toMap.asJava)
-        logger.info("ds connected. About to check for primary lead lock.")
+        logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
         val startStatus = directApiInvoked match {
           case true =>
@@ -121,7 +121,7 @@ class LeadImpl extends ServerImpl with Lead {
 
         startStatus match {
           case true =>
-            logger.info("Primary lead lock acquired.")
+            logInfo("Primary lead lock acquired.")
           // let go.
           case false =>
             serverstatus = State.STANDBY
@@ -129,7 +129,7 @@ class LeadImpl extends ServerImpl with Lead {
             return
         }
       case _ =>
-        logger.warn(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
+        logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
         return
     }
   }
@@ -145,7 +145,6 @@ class LeadImpl extends ServerImpl with Lead {
   }
 
   def internalStop(shutdownCredentials: Properties): Unit = {
-    logger.info("clearing boot properties " + bootProperties, new Exception("SB:"))
     primaryLeadNodeWaiter.interrupt()
     bootProperties.clear()
     SnappyContext.stop
@@ -159,7 +158,7 @@ class LeadImpl extends ServerImpl with Lead {
     status() match {
       case State.STANDBY => latch.await()
       case State.RUNNING => ; // no-op
-      case _ => logger.warn("not waiting because server not in standby mode. status is "
+      case _ => logWarning("not waiting because server not in standby mode. status is "
           + status())
     }
   }
@@ -183,7 +182,7 @@ class LeadImpl extends ServerImpl with Lead {
 
     changeOrAppend(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
     changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", overwrite = true)
-    changeOrAppend(Prop.jobserverEnabled, "false", ignoreIfPresent = true)
+    changeOrAppend(Property.jobserverEnabled, "false", ignoreIfPresent = true)
 
     conf
   }
@@ -195,17 +194,17 @@ class LeadImpl extends ServerImpl with Lead {
     val r = new Runnable() {
       override def run(): Unit = {
         try {
-          logger.info("About to wait for member lock")
+          logInfo("About to wait for member lock")
           primaryLeaderLock.lockInterruptibly()
           latch.countDown()
-          logger.info("Notifying status ...")
+          logInfo("Notifying status ...")
           notificationCallback()
         } catch {
           case ie: InterruptedException =>
-            logger.info("Thread interrupted. Shutting down primary lead node lock waiter.")
+            logInfo("Thread interrupted. Shutting down primary lead node lock waiter.")
             Thread.currentThread().interrupt()
           case e: Throwable =>
-            logger.warn("Exception while becoming primary lead node after standby mode", e)
+            logWarning("Exception while becoming primary lead node after standby mode", e)
             throw e
         }
       }
@@ -223,13 +222,13 @@ class LeadImpl extends ServerImpl with Lead {
     if (status() == State.UNINITIALIZED || status() == State.STOPPED) {
       // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
       // until now.
-      logger.info("Connecting to snappydata cluster now...")
+      logInfo("Connecting to snappydata cluster now...")
       internalStart(snc.sparkContext.getConf)
     }
 
-    if (bootProperties.getProperty(Prop.jobserverEnabled).toBoolean) {
+    if (bootProperties.getProperty(Property.jobserverEnabled).toBoolean) {
       SnappyContextFactory.setSnappyContext(snc)
-      logger.info("Starting job server...")
+      logInfo("Starting job server...")
 
       val confFile = bootProperties.getProperty("jobserver.configFile") match {
         case null => Array[String]()
@@ -243,7 +242,7 @@ class LeadImpl extends ServerImpl with Lead {
     // which inturn will create a new profile object via #instantiateProfile
     // whereby ClusterCallbacks#getDriverURL should be now returning
     // the correct URL given SparkContext is fully initialized.
-    logger.info("About to send profile update after initialization completed.")
+    logInfo("About to send profile update after initialization completed.")
     ServerGroupUtils.sendUpdateProfile()
   }
 
@@ -262,7 +261,7 @@ class LeadImpl extends ServerImpl with Lead {
 
     val finalConf = snappyDefaults.withFallback(builtIn).resolve()
 
-    logger.info("Passing JobServer with config ", finalConf.root.render())
+    logInfo("Passing JobServer with config " + finalConf.root.render())
 
     finalConf
   }

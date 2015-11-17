@@ -8,7 +8,7 @@ import com.gemstone.gemfire.internal.AvailablePort
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
 import com.pivotal.gemfirexd.{TestUtil, FabricService, Attribute}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
-import io.snappydata.{Prop, ServiceManager, Lead, Const, SnappyFunSuite}
+import io.snappydata.{Property, ServiceManager, Lead, Constant, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.{SparkConf, SparkContext}
@@ -47,7 +47,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val props = TestUtil.doCommonSetup(null)
 
-    props.setProperty(Prop.locators, s"localhost[${availablePort}]")
+    props.setProperty(Property.locators, s"localhost[${availablePort}]")
     fs.start(props)
 
     assert(ServiceManager.getLeadInstance.status == FabricService.State.RUNNING)
@@ -191,7 +191,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val conf = new SparkConf()
         .setAppName(testName)
-        .setMaster(Const.jdbcUrlPrefix + s"localhost[${availablePort}]")
+        .setMaster(Constant.JDBC_URL_PREFIX + s"localhost[${availablePort}]")
         // .set(Prop.Store.locators, s"localhost[${availablePort}]")
         .set(Attribute.SYS_PERSISTENT_DIR, dirname)
 

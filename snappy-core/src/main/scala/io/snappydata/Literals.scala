@@ -9,14 +9,14 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
   * http://docs.scala-lang.org/style/naming-conventions.html
   * i.e. upper camel case.
   */
-final object Const {
-  SnappyEmbeddedModeClusterManager
+final object Constant {
+  SnappyEmbeddedModeClusterManager.register
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
 
-  val jdbcUrlPrefix = "snappydata://";
+  val JDBC_URL_PREFIX = "snappydata://";
 
-  private[snappydata] val propPrefix = "snappydata."
+  private[snappydata] val PROPERTY_PREFIX = "snappydata."
 
 }
 
@@ -27,12 +27,12 @@ final object Const {
   * http://docs.scala-lang.org/style/naming-conventions.html
   * i.e. upper camel case.
   */
-final object Prop {
-  SnappyEmbeddedModeClusterManager
+final object Property {
+  SnappyEmbeddedModeClusterManager.register
 
-  val locators = s"${Const.propPrefix}locators"
+  val locators = s"${Constant.PROPERTY_PREFIX}locators"
 
-  val mcastPort = s"${Const.propPrefix}mcast-port"
+  val mcastPort = s"${Constant.PROPERTY_PREFIX}mcast-port"
 
   val jobserverEnabled = s"jobserver.enabled"
 
