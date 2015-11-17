@@ -19,12 +19,12 @@ import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 
 /**
-  * This class is responsible for initiating the executor process inside
-  * the jvm. Also, if an executor has to be stopped, driverURL can be set as None
-  * and it will take care of stopping the executor.
-  *
-  * Created by hemant on 15/10/15.
-  */
+ * This class is responsible for initiating the executor process inside
+ * the jvm. Also, if an executor has to be stopped, driverURL can be set as None
+ * and it will take care of stopping the executor.
+ *
+ * Created by hemant on 15/10/15.
+ */
 object ExecutorInitiator extends Logging {
 
   private val SNAPPY_BLOCK_MANAGER = "org.apache.spark.storage.SnappyBlockManager"
@@ -35,8 +35,8 @@ object ExecutorInitiator extends Logging {
   var executorThread: Thread = new Thread(executorRunnable)
 
   class ExecutorRunnable() extends Runnable {
-    @volatile private var driverURL: Option[String] = None
-    @volatile private var driverDM: InternalDistributedMember = null
+    private var driverURL: Option[String] = None
+    private var driverDM: InternalDistributedMember = null
     var stopTask = false
     private val lock = new ReentrantLock
 
@@ -91,10 +91,10 @@ object ExecutorInitiator extends Logging {
                 case Some(url) =>
 
                   /**
-                    * The executor initialization code has been picked from
-                    * CoarseGrainedExecutorBackend.
-                    * We need to track the changes there and merge them here on a regular basis.
-                    */
+                   * The executor initialization code has been picked from
+                   * CoarseGrainedExecutorBackend.
+                   * We need to track the changes there and merge them here on a regular basis.
+                   */
                   val executorHost = GemFireCacheImpl.getInstance().getMyId.getHost
                   val memberId = GemFireCacheImpl.getInstance().getMyId.toString
                   SparkHadoopUtil.get.runAsSparkUser { () =>
@@ -152,8 +152,7 @@ object ExecutorInitiator extends Logging {
                     val endPoint = rpcenv.setupEndpoint("Executor", executor)
                   }
                 case None =>
-                  logInfo("ALERT!!! resulting in no-op")
-
+                // If driver url is none, already running executor is stopped.
               }
             }
           } catch {
@@ -161,12 +160,15 @@ object ExecutorInitiator extends Logging {
               try {
                 Misc.checkIfCacheClosing(e)
                 // log any exception other than those due to cache closing
-                logWarning("unexpected exception in ExecutorInitiator", e)
+                logWarning("Unexpected exception in ExecutorInitiator", e)
               } catch {
                 case NonFatal(e) => stopTask = true // just stop the task
               }
           }
         } // end of while(true)
+      } catch {
+        case e: Throwable =>
+          logWarning("ExecutorInitiator failing with exception: ", e)
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
@@ -179,23 +181,23 @@ object ExecutorInitiator extends Logging {
       case Some(x) => x
       case None => ""
     }
-
   }
 
   /**
-    * This should be called only when the process is terminating.
-    * If a process ceases to be an executor, only startOrTransmuteExecutor should be called
-    * with None.
-    */
+   * This should be called only when the process is terminating.
+   * If a process ceases to be an executor, only startOrTransmuteExecutor should be called
+   * with None.
+   */
   def stop(): Unit = {
-    executorRunnable.stopTask = true
+    if (executorThread.getState != Thread.State.NEW)
+      executorRunnable.stopTask = true
     executorRunnable.setDriverDetails(None, null)
   }
 
   /**
-    * Set the new driver url and start the thread if not already started
-    * @param driverURL
-    */
+   * Set the new driver url and start the thread if not already started
+   * @param driverURL
+   */
   def startOrTransmuteExecutor(driverURL: Option[String],
       driverDM: InternalDistributedMember): Unit = {
     // Avoid creation of executor inside the Gem accessor
@@ -207,17 +209,17 @@ object ExecutorInitiator extends Logging {
       return
     }
 
-//    executorRunnable.setDriverDetails(driverURL, driverDM)
+    executorRunnable.setDriverDetails(driverURL, driverDM)
     // start the executor thread if driver URL is set and the thread
     // is not already started.
     driverURL match {
       case Some(x) =>
-  /*      if (executorThread.getState == Thread.State.NEW) {
-          logInfo("SB: About to thread start " + executorThread.getName)
+        if (executorThread.getState == Thread.State.NEW) {
+          logInfo("About to start thread " + executorThread.getName)
           executorThread.setDaemon(true)
           executorThread.start()
         } else if (executorThread.getState == Thread.State.TERMINATED) {
-  */        // Restart a thread after it has been stopped
+          // Restart a thread after it has been stopped
           // This is required for dunit case mainly.
           executorRunnable = new ExecutorRunnable
           executorThread = new Thread(executorRunnable)
@@ -225,7 +227,7 @@ object ExecutorInitiator extends Logging {
           executorRunnable.setDriverDetails(driverURL, driverDM)
           executorThread.setDaemon(true)
           executorThread.start()
-   //     }
+        }
       case None =>
     }
   }
