@@ -64,7 +64,9 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   override def tearDown2(): Unit = {
     GemFireXDUtils.IS_TEST_MODE = false
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(this.getClass, "stopSpark"))
+    getClass.getMethod("stopSpark").invoke(null)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(this.getClass, "stopAny"))
+    getClass.getMethod("stopAny").invoke(null)
     props.clear()
     val locNetPort = locatorNetPort
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
