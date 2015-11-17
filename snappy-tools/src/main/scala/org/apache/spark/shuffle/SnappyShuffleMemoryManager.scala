@@ -1,15 +1,15 @@
 package org.apache.spark.shuffle
 
-import org.apache.spark.storage.SnappyMemoryUtils
+import org.apache.spark.memory.{SnappyMemoryUtils, MemoryManager}
 
 /**
  * Created by shirishd on 15/10/15.
  */
 
-private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory: Long,
-    override val pageSizeBytes: Long) extends ShuffleMemoryManager(maxMemory, pageSizeBytes) {
+private[spark] class SnappyShuffleMemoryManager protected(override val memoryManager: MemoryManager,
+    override val pageSizeBytes: Long) extends ShuffleMemoryManager(memoryManager, pageSizeBytes) {
 
-  override def tryToAcquire(numBytes: Long): Long = synchronized {
+  override def tryToAcquire(numBytes: Long): Long = memoryManager.synchronized {
     val taskAttemptId = currentTaskAttemptId()
     assert(numBytes > 0, "invalid number of bytes requested: " + numBytes)
 
@@ -17,7 +17,7 @@ private[spark] class SnappyShuffleMemoryManager protected(override val maxMemory
     // of active tasks, to let other tasks ramp down their memory in calls to tryToAcquire
     if (!taskMemory.contains(taskAttemptId)) {
       taskMemory(taskAttemptId) = 0L
-      notifyAll() // Will later cause waiting tasks to wake up and check numThreads again
+      memoryManager.notifyAll() // Will later cause waiting tasks to wake up and check numThreads again
     }
 
     if (SnappyMemoryUtils.isCriticalUp) {

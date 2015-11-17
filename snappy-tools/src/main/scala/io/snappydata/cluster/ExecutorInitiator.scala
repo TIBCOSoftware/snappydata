@@ -27,7 +27,7 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
-  val SNAPPY_BLOCKMANAGER = "org.apache.spark.storage.SnappyBlockManager"
+  val SNAPPY_STATICMEMORYMANAGER = "org.apache.spark.memory.SnappyStaticMemoryManager"
   val SNAPPY_SHUFFLEMEMORYMANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
@@ -120,7 +120,9 @@ object ExecutorInitiator extends Logging {
                     }
                   //TODO: Hemant: add executor specific properties from local conf to
                   //TODO: this conf that was received from driver.
-                    driverConf.set("spark.blockManager", SNAPPY_BLOCKMANAGER)
+                    //use static memory manager always for Snappy
+                    driverConf.set("spark.memory.useLegacyMode", "true");
+                    driverConf.set("spark.staticMemoryManager", SNAPPY_STATICMEMORYMANAGER)
                     driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLEMEMORYMANAGER)
 
                     //TODO: Hemant: get the number of cores from spark conf
