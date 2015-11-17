@@ -24,9 +24,9 @@ import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
 
 /**
- * A LogicalPlan implementation for an external column table whose contents
- * are retrieved using a JDBC URL or DataSource.
- */
+  * A LogicalPlan implementation for an external column table whose contents
+  * are retrieved using a JDBC URL or DataSource.
+  */
 
 class JDBCAppendableRelation(
     val url: String,
@@ -43,7 +43,7 @@ class JDBCAppendableRelation(
     @transient override val sqlContext: SQLContext)(
     private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
     = new ArrayBuffer[RDD[UUIDRegionKey]]()
-    )
+)
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
@@ -217,17 +217,20 @@ class JDBCAppendableRelation(
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")
 
-    val (primarykey, partitionStrategy) = dialect match {// The driver if not a loner should be an accesor only
+    val (primarykey, partitionStrategy) = dialect match {
+      // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
-            "primary key (uuid, bucketId)" , d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "") //TODO. How to get primary key contraint from each DB
+            "primary key (uuid, bucketId)", d.getPartitionByClause("bucketId"))
+      case _ => ("primary key (uuid)", "") // TODO. How to get primary key contraint from each DB
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy", tableName, dropIfExists = false) //for test make it false
+        userSchema.fields.map(structField => columnPrefix + structField.name + " blob")
+            .mkString(" ", ",", " ") +
+        s", $primarykey) $partitionStrategy",
+      tableName, dropIfExists = false) // for test make it false
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
@@ -253,9 +256,9 @@ class JDBCAppendableRelation(
   }
 
   /**
-   * Destroy and cleanup this relation. It may include, but not limited to,
-   * dropping the external table that this relation represents.
-   */
+    * Destroy and cleanup this relation. It may include, but not limited to,
+    * dropping the external table that this relation represents.
+    */
   override def destroy(ifExists: Boolean): Unit = {
     dropTable(table, ifExists)
   }
@@ -295,7 +298,8 @@ final class DefaultSource extends ColumnarRelationProvider
 class ColumnarRelationProvider extends SchemaRelationProvider
 with CreatableRelationProvider {
 
-  def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
+  def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: StructType) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
     val partitionColumn = parameters.remove("partitioncolumn")
@@ -358,7 +362,7 @@ with CreatableRelationProvider {
     relation
   }
 
-  def getRelation(sqlContext: SQLContext, options : Map[String, String]) : ColumnarRelationProvider = {
+  def getRelation(sqlContext: SQLContext, options: Map[String, String]): ColumnarRelationProvider = {
 
     val (url, _, _, _, _) =
       ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)

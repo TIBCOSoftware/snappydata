@@ -14,8 +14,8 @@ import org.apache.spark.sql.{SaveMode, Row}
 import org.apache.spark.sql.types.{StructField, StringType, StructType, IntegerType}
 
 /**
- * Created by vivek on 16/10/15.
- */
+  * Created by vivek on 16/10/15.
+  */
 class BasicStoreTest(s: String) extends TestUtil(s) {
 
 
@@ -25,12 +25,12 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
       conn.createStatement().execute("drop table if exists t1")
     } catch {
       case NonFatal(e) => // ignore
-      case other => throw other
+      case other: Throwable => throw other
     }
     conn.close()
   }
 
- @throws(classOf[Exception])
+  @throws(classOf[Exception])
   def testStringAsDatatype_runInXD {
     val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     val st: Statement = conn.createStatement
@@ -63,7 +63,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     snContext.sql("set spark.sql.shuffle.partitions=6")
 
 
-    val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
+    val data = Seq(Seq(111, "aaaaa"), Seq(222, ""))
     val rdd = sc.parallelize(data, data.length).map(s =>
       new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
@@ -90,13 +90,13 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     sc.stop()
   }
 
-  def verifyRows(r: Row) : Unit = {
+  def verifyRows(r: Row): Unit = {
     doPrint(r.toString())
     assert(r.toString() == "[111]", "got=" + r.toString() + " but expected 111")
   }
 
   // Copy from BugsTest to verify basic JUnit is running in Scala
- @throws(classOf[Exception])
+  @throws(classOf[Exception])
   def testBug47329 {
     val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
     val st: Statement = conn.createStatement

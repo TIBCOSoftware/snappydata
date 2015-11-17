@@ -27,8 +27,8 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
-  val SNAPPY_BLOCKMANAGER = "org.apache.spark.storage.SnappyBlockManager"
-  val SNAPPY_SHUFFLEMEMORYMANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
+  private val SNAPPY_BLOCK_MANAGER = "org.apache.spark.storage.SnappyBlockManager"
+  private val SNAPPY_SHUFFLE_MEMORY_MANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
@@ -36,7 +36,7 @@ object ExecutorInitiator extends Logging {
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
-    private var driverDM : InternalDistributedMember = null
+    private var driverDM: InternalDistributedMember = null
     var stopTask = false
     private val lock = new ReentrantLock
 
@@ -53,13 +53,15 @@ object ExecutorInitiator extends Logging {
         executorRunnable.memberDeparted(id)
       }
     }
-    def memberDeparted(departedDM: InternalDistributedMember) = lock.synchronized {
-      if(departedDM.equals(driverDM)) {
+
+    def memberDeparted(departedDM: InternalDistributedMember): Unit = lock.synchronized {
+      if (departedDM.equals(driverDM)) {
         setDriverDetails(None, null)
       }
     }
+
     def setDriverDetails(url: Option[String],
-        dm: InternalDistributedMember) = lock.synchronized {
+        dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
       driverDM = dm
       lock.notify()
@@ -69,11 +71,12 @@ object ExecutorInitiator extends Logging {
       var prevDriverURL = ""
       var env: SparkEnv = null
       try {
-        GemFireXDUtils.getGfxdAdvisor.getDistributionManager.addMembershipListener(membershipListener)
+        GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+            .addMembershipListener(membershipListener)
         while (!stopTask) {
           try {
             Misc.checkIfCacheClosing(null)
-            if (prevDriverURL ==  getDriverURL) {
+            if (prevDriverURL == getDriverURL) {
               lock.synchronized {
                 lock.wait()
               }
@@ -88,7 +91,8 @@ object ExecutorInitiator extends Logging {
                 case Some(url) =>
 
                   /**
-                   * The executor initialization code has been picked from CoarseGrainedExecutorBackend.
+                   * The executor initialization code has been picked from
+                   * CoarseGrainedExecutorBackend.
                    * We need to track the changes there and merge them here on a regular basis.
                    */
                   val executorHost = GemFireCacheImpl.getInstance().getMyId.getHost
@@ -99,12 +103,14 @@ object ExecutorInitiator extends Logging {
                     val executorConf = new SparkConf
 
                     val port = executorConf.getInt("spark.executor.port", 0)
-                    val props = SparkCallbacks.fetchDriverProperty(executorHost, executorConf, port, url)
+                    val props = SparkCallbacks.fetchDriverProperty(executorHost,
+                      executorConf, port, url)
 
 
                     val driverConf = new SparkConf()
                     // Specify a default directory for executor, if the local directory for executor
-                    // is set via the executor conf, it will override this property later in the code
+                    // is set via the executor conf,
+                    // it will override this property later in the code
                     val localDirForExecutor = new File("./" + "executor").getAbsolutePath
 
                     driverConf.set("spark.local.dir", localDirForExecutor)
@@ -118,12 +124,12 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-                  //TODO: Hemant: add executor specific properties from local conf to
-                  //TODO: this conf that was received from driver.
-                    driverConf.set("spark.blockManager", SNAPPY_BLOCKMANAGER)
-                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLEMEMORYMANAGER)
+                    // TODO: Hemant: add executor specific properties from local conf to
+                    // TODO: this conf that was received from driver.
+                    driverConf.set("spark.blockManager", SNAPPY_BLOCK_MANAGER)
+                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
 
-                    //TODO: Hemant: get the number of cores from spark conf
+                    // TODO: Hemant: get the number of cores from spark conf
 
                     val cores = 6
 
@@ -146,6 +152,7 @@ object ExecutorInitiator extends Logging {
                     val endPoint = rpcenv.setupEndpoint("Executor", executor)
                   }
                 case None =>
+                // If driver url is none, already running executor is stopped.
               }
             }
           } catch {
@@ -153,12 +160,15 @@ object ExecutorInitiator extends Logging {
               try {
                 Misc.checkIfCacheClosing(e)
                 // log any exception other than those due to cache closing
-                logWarning("unexpected exception in ExecutorInitiator", e)
+                logWarning("Unexpected exception in ExecutorInitiator", e)
               } catch {
                 case NonFatal(e) => stopTask = true // just stop the task
               }
           }
         } // end of while(true)
+      } catch {
+        case e: Throwable =>
+          logWarning("ExecutorInitiator failing with exception: ", e)
       } finally {
         // kill if an executor is already running.
         SparkCallbacks.stopExecutor(env)
@@ -171,7 +181,6 @@ object ExecutorInitiator extends Logging {
       case Some(x) => x
       case None => ""
     }
-
   }
 
   /**
@@ -179,8 +188,10 @@ object ExecutorInitiator extends Logging {
    * If a process ceases to be an executor, only startOrTransmuteExecutor should be called
    * with None.
    */
-  def stop() = {
-    executorRunnable.stopTask = true
+  def stop(): Unit = {
+    if (executorThread.getState != Thread.State.NEW) {
+      executorRunnable.stopTask = true
+    }
     executorRunnable.setDriverDetails(None, null)
   }
 
@@ -194,7 +205,8 @@ object ExecutorInitiator extends Logging {
     // that is a Spark driver but has joined the gem system
     // in the non embedded mode
     if (SparkCallbacks.isDriver()) {
-      logInfo("Executor cannot be instantiated in this VM as a Spark driver is already running. ")
+      logInfo("Executor cannot be instantiated in this " +
+          "VM as a Spark driver is already running. ")
       return
     }
 
@@ -204,6 +216,7 @@ object ExecutorInitiator extends Logging {
     driverURL match {
       case Some(x) =>
         if (executorThread.getState == Thread.State.NEW) {
+          logInfo("About to start thread " + executorThread.getName)
           executorThread.setDaemon(true)
           executorThread.start()
         } else if (executorThread.getState == Thread.State.TERMINATED) {
@@ -211,6 +224,7 @@ object ExecutorInitiator extends Logging {
           // This is required for dunit case mainly.
           executorRunnable = new ExecutorRunnable
           executorThread = new Thread(executorRunnable)
+          logInfo("Spawning new thread " + executorThread.getName + " and starting")
           executorRunnable.setDriverDetails(driverURL, driverDM)
           executorThread.setDaemon(true)
           executorThread.start()

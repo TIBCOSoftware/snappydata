@@ -1,32 +1,37 @@
 package io.snappydata
 
-import java.io.{FilenameFilter, File}
+import java.io.{File, FilenameFilter}
 
-import com.pivotal.gemfirexd.TestUtil
-import org.apache.spark.Logging
 import org.scalatest.{FunSuite, Outcome}
 
+import org.apache.spark.Logging
+
 /**
- * Base abstract class for all snappydata tests
- * similar to SparkFunSuite.
- *
- * Created by soubhikc on 6/10/15.
- */
-private[snappydata] abstract class SnappyFunSuite extends FunSuite with Logging {
+  * Base abstract class for all snappydata tests
+  * similar to SparkFunSuite.
+  *
+  * Created by soubhikc on 6/10/15.
+  */
+private[snappydata] abstract class SnappyFunSuite extends FunSuite // scalastyle:ignore
+with Logging {
 
   var dirList = Array[File]()
 
+  @volatile private[this] var _testName: String = _
+
+  protected def testName = _testName
+
   /**
-   * Copied from SparkFunSuite.
-   *
-   * Log the suite name and the test name before and after each test.
-   *
-   * Subclasses should never override this method. If they wish to run
-   * custom code before and after each test, they should mix in the
-   * {{org.scalatest.BeforeAndAfter}} trait instead.
-   */
+    * Copied from SparkFunSuite.
+    *
+    * Log the suite name and the test name before and after each test.
+    *
+    * Subclasses should never override this method. If they wish to run
+    * custom code before and after each test, they should mix in the
+    * {{org.scalatest.BeforeAndAfter}} trait instead.
+    */
   final protected override def withFixture(test: NoArgTest): Outcome = {
-    val testName = test.text
+    _testName = test.text
     val suiteName = this.getClass.getName
     val shortSuiteName = suiteName.replaceAll("io.snappydata", "i.sd")
     try {
@@ -42,10 +47,13 @@ private[snappydata] abstract class SnappyFunSuite extends FunSuite with Logging 
   }
 
   def deleteDir(dir: File): Boolean = {
-    return TestUtil.deleteDir(dir)
+    val clazz = Class.forName("com.pivotal.gemfirexd.TestUtil") //scalastyle:ignore
+    val res = clazz.getMethod("deleteDir", classOf[File])
+        .invoke(null, dir)
+    res.toString.toBoolean
   }
 
-  def cleanup() = {
+  def cleanup(): Unit = {
     val clearList = dirList
     dirList = Array[File]()
     clearList.foreach(deleteDir(_))

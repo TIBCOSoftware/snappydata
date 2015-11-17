@@ -1,16 +1,17 @@
 package io.snappydata.core
 
 import java.sql.{SQLException, DriverManager}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, FunSuite}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, FunSuite} //scalastyle:ignore
 import org.apache.spark.{SparkContext, Logging}
 import org.apache.spark.sql.SaveMode
 
 /**
- * Created by rishim on 3/11/15.
- */
-class JDBCColumnarRelationAPISuite extends FunSuite with Logging with BeforeAndAfter with BeforeAndAfterAll {
+  * Created by rishim on 3/11/15.
+  */
+class JDBCColumnarRelationAPISuite extends FunSuite //scalastyle:ignore
+with Logging with BeforeAndAfter with BeforeAndAfterAll {
 
-  var sc : SparkContext= null
+  var sc: SparkContext = null
 
   val path = "target/JDBCColumnarRelationAPISuite"
 
@@ -38,7 +39,6 @@ class JDBCColumnarRelationAPISuite extends FunSuite with Logging with BeforeAndA
     }
     DriverManager.getConnection(s"jdbc:derby:$path;create=true")
   }
-
 
 
   test("Create table in an external DataStore in Non-Embedded mode") {

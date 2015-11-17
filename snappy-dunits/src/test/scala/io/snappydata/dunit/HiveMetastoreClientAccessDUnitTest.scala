@@ -3,22 +3,20 @@ package io.snappydata.dunit
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import dunit.{AvailablePortHelper, DistributedTestBase, Host}
-import io.snappydata.ServiceManager
-import io.snappydata.dunit.cluster.{ClusterManagerTestUtils, ClusterManagerTestBase}
+import dunit.AvailablePortHelper
+import io.snappydata.{Property, ServiceManager}
+import io.snappydata.dunit.cluster.{ClusterManagerTestBase, ClusterManagerTestUtils}
 
 import org.apache.spark.sql.collection.ReusableRow
-import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{SaveMode, DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
 /**
- * Basic hive meta-store client test in Snappy cluster.
- *
- * @author kneeraj
- */
+  * Basic hive meta-store client test in Snappy cluster.
+  *
+  * @author kneeraj
+  */
 class HiveMetastoreClientAccessDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
 
@@ -43,10 +41,10 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
       Array(locStr.asInstanceOf[AnyRef]))
 
     startHiveMetaClientInGfxdPeerNode(locStr, serverNetPort)
-    //Misc.getMemStore.initExternalCatalog
-    //val cc = Misc.getMemStore.getExternalCatalog
-    //assert(cc.isColumnTable("airline"))
-    //assert(cc.isRowTable("row_table"))
+    // Misc.getMemStore.initExternalCatalog
+    // val cc = Misc.getMemStore.getExternalCatalog
+    // assert(cc.isColumnTable("airline"))
+    // assert(cc.isRowTable("row_table"))
   }
 
   def startHiveMetaClientInGfxdPeerNode(locatorStr: String, netPort: Int): Unit = {
@@ -161,7 +159,7 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set("snappydata.store.locators", locStr)
+        .set(Property.locators, locStr)
 
     if (setMaster != null) {
       conf.setMaster(setMaster)
@@ -225,8 +223,9 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
           snContext.createDataFrame(rowRDD, schema)
         }
 
-      airlineDataFrame.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("airline")
-      //airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
+      airlineDataFrame.write.format("column").mode(SaveMode.Append)
+          .options(Map.empty[String, String]).saveAsTable("airline")
+      // airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
     }
 
     val rdd = sc.parallelize(
