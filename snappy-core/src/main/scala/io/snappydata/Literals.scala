@@ -5,9 +5,9 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 /**
   * Created by soubhikc on 11/11/15.
   *
-  * Constant names should be as per naming convention
+  * Constant names sugged per naming convention
   * http://docs.scala-lang.org/style/naming-conventions.html
-  * i.e. upper camel case.
+  * we decided to use upper case with underscore word separator.
   */
 final object Constant {
   SnappyEmbeddedModeClusterManager.register

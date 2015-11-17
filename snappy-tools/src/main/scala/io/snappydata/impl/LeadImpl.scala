@@ -86,7 +86,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     SnappyContext(sparkContext)
   }
 
-  def internalStart(conf: SparkConf): Unit = {
+  private[snappydata] def internalStart(conf: SparkConf): Unit = {
 
     initStartupArgs(conf)
 
@@ -144,12 +144,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
   }
 
-  def internalStop(shutdownCredentials: Properties): Unit = {
+  private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
     primaryLeadNodeWaiter.interrupt()
     bootProperties.clear()
     SnappyContext.stop
     // TODO: [soubhik] find a way to stop jobserver.
-    SnappyContextFactory.setSnappyContext(null)
     sparkContext = null
     super.stop(shutdownCredentials)
   }
@@ -217,17 +216,16 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   }
 
   @throws(classOf[Exception])
-  private[snappydata] def startAddOnServices(snc: SnappyContext): Unit = this.synchronized {
+  private[snappydata] def startAddOnServices(sc: SparkContext): Unit = this.synchronized {
 
     if (status() == State.UNINITIALIZED || status() == State.STOPPED) {
       // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
       // until now.
       logInfo("Connecting to snappydata cluster now...")
-      internalStart(snc.sparkContext.getConf)
+      internalStart(sc.getConf)
     }
 
     if (bootProperties.getProperty(Property.jobserverEnabled).toBoolean) {
-      SnappyContextFactory.setSnappyContext(snc)
       logInfo("Starting job server...")
 
       val confFile = bootProperties.getProperty("jobserver.configFile") match {

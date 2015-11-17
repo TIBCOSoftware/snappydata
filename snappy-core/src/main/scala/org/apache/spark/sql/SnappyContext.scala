@@ -36,8 +36,7 @@ import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskCont
   *
   * Created by Soubhik on 5/13/15.
   */
-class SnappyContext private(sc: SparkContext,
-    boot: Boolean)
+class SnappyContext private(sc: SparkContext)
     extends SQLContext(sc) with Serializable with Logging {
 
   self =>
@@ -62,10 +61,6 @@ class SnappyContext private(sc: SparkContext,
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
-
-  if (boot && SnappyContext.toolsCallback != null) {
-    SnappyContext.toolsCallback.invokeLeadStartAddonService(this)
-  }
 
   def saveStream[T: ClassTag](stream: DStream[T],
       aqpTables: Seq[String],
@@ -737,7 +732,7 @@ object SnappyContext extends Logging {
 
   private[spark] def globalContext = _globalContext
 
-  val toolsCallback = this.synchronized {
+  lazy val toolsCallback = this.synchronized {
     import org.apache.spark.util.Utils
     try {
       val c = Utils.classForName("io.snappydata.ToolsCallbackImpl$")
@@ -763,7 +758,7 @@ object SnappyContext extends Logging {
   def apply(): SnappyContext = {
     val gc = globalContext
     if (gc != null) {
-      new SnappyContext(gc, false)
+      new SnappyContext(gc)
     } else {
       null
     }
@@ -772,25 +767,32 @@ object SnappyContext extends Logging {
   def apply(sc: SparkContext): SnappyContext = {
     val gc = _globalContext
     if (gc == sc) {
-      new SnappyContext(sc, false)
+      new SnappyContext(sc)
     } else if (sc == null) {
-      new SnappyContext(gc, false)
+      new SnappyContext(gc)
     } else contextLock.synchronized {
       val gc = _globalContext
       if (gc == sc) {
-        new SnappyContext(sc, false)
+        new SnappyContext(sc)
       } else if (sc == null) {
-        new SnappyContext(gc, false)
+        new SnappyContext(gc)
       } else {
         _globalContext = sc
         initSparkContext(sc)
-        new SnappyContext(sc, true)
+        new SnappyContext(sc)
       }
     }
   }
 
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
+    if (toolsCallback != null) {
+      // NOTE: if Property.jobServer.enabled is true
+      // this will trigger SnappyContext.apply() method
+      // prior to `new SnappyContext(sc)` after this
+      // method ends.
+      toolsCallback.invokeLeadStartAddonService(sc)
+    }
   }
 
   def stop(): Unit = {
