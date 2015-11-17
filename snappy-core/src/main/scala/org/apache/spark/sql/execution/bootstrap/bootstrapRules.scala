@@ -956,6 +956,8 @@ object PruneProjects extends Rule[SparkPlan] {
         case _ => false
       } =>
       CollectPlaceholder(projectList1, child)
+
+
   }
 
   def simpleCopy(projectList: Seq[NamedExpression]): Boolean = projectList.forall {

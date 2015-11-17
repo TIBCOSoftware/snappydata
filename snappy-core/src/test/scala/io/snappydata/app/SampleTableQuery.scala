@@ -85,7 +85,7 @@ object SampleTableQuery  extends Serializable {
       mainTable.insertIntoSampleTables("mainTable_sampled")
 
       //Run query on actual table
-      val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 96")
+      val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
 
       result.show()
       val rows2 = result.collect()

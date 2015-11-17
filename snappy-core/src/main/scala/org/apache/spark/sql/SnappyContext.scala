@@ -492,8 +492,8 @@ protected[sql] class SnappyContext(sc: SparkContext)
       override val extendedResolutionRules =
         ExtractPythonUDFs ::
             datasources.PreInsertCastAndRename ::
-            ReplaceWithSampleTable ::
-            WeightageRule ::
+         //   ReplaceWithSampleTable ::
+          //  WeightageRule ::
             //TestRule::
             Nil
 
@@ -519,6 +519,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
             filters,
             identity[Seq[Expression]], // All filters still need to be evaluated
             InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
+        case s@SampleTableQuery(child, _,_,_) => planLater(child):: Nil
         case _ => Nil
       }
     }

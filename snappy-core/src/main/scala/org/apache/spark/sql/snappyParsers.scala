@@ -12,7 +12,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming._
-import org.apache.spark.sql.sources
+
 
 /**
  * Snappy SQL extensions. Includes:
