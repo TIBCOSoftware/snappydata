@@ -16,10 +16,11 @@ import org.apache.spark.sql.execution.{StratifiedSample}
  * Created by sbhokare on 4/11/15.
  */
 object ReplaceWithSampleTable extends Rule[LogicalPlan] {
-
+  val DEFAULT_CONFIDENCE: Double = 95
+  val DEFAULT_ERROR: Double = 10
   def apply(plan: LogicalPlan): LogicalPlan = {
-    var errorPercent: Double = 10
-    var confidence: Double = 95
+    var errorPercent: Double = -1
+    var confidence: Double = -1
 
     def convertToDouble(expr: Expression): Double = expr.dataType match {
       case _: IntegralType => expr.eval().asInstanceOf[Int]
@@ -50,7 +51,22 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
         confidence = convertToDouble(expr)
         child
       } //TODO:Store confidence level some where for post-query triage
-      case p@Subquery(name, child) if !child.isInstanceOf[StratifiedSample] => {
+      case p@Subquery(name, child) if (!child.isInstanceOf[StratifiedSample] && (errorPercent != -1
+        || confidence != -1 || SnappyContext.SnappySC.catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
+        && (planX match {
+          case StratifiedSample(_,_,_) => true
+          case _ => false
+        }))
+      }))=> {
+
+        if(errorPercent  == -1) {
+          errorPercent = DEFAULT_ERROR
+        }
+
+        if(confidence  == -1) {
+          confidence = DEFAULT_CONFIDENCE
+        }
+
         val query_qcs = new mutable.ArrayBuffer[String]
         plan transformUp {
           case a: org.apache.spark.sql.catalyst.plans.logical.Aggregate => {
