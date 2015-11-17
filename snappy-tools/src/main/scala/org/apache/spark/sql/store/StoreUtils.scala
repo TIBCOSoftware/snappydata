@@ -13,7 +13,7 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import scala.collection.JavaConversions._
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{AnalysisException, SnappyContext}
 import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -51,6 +51,7 @@ object StoreUtils {
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_OFFHEAP = "OFFHEAP"
   val PRIMARY_KEY = "PRIMARY KEY"
+  val LRUCOUNT = "LRUCOUNT"
 
   val EMPTY_STRING = ""
 
@@ -163,6 +164,27 @@ object StoreUtils {
     ).getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ").getOrElse(EMPTY_STRING))
+
+    sb.append(parameters.remove(EVICTION_BY).map(v => {
+      v.contains(LRUCOUNT) match {
+        case true => throw new AnalysisException("Column table cannot take LRUCOUNT as Evcition Attributes")
+        case _ =>
+      }
+      s"$GEM_EVICTION_BY $v} "}).getOrElse(EMPTY_STRING))
+
+    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ").getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ").getOrElse(EMPTY_STRING))
+
+    sb.toString()
+  }
+
+  def ddlExtensionStringForShadowTable(parameters: mutable.Map[String, String]): String = {
+    val sb = new StringBuilder()
+    sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ").getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ").getOrElse(EMPTY_STRING))

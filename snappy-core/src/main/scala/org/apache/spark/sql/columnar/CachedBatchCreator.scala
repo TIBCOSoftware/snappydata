@@ -5,6 +5,7 @@ import java.util.UUID
 
 import scala.collection.mutable.ArrayBuffer
 
+import org.apache.spark.sql.{SnappyContext, SQLConf}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SpecificMutableRow}
 import org.apache.spark.sql.collection.UUIDRegionKey
@@ -129,8 +130,8 @@ class CachedBatchCreator(
   }
 
   def createCachedBatch(rowIterator: Iterator[InternalRow], batchID :UUID, bucketID : Int): Unit = {
-    val useCompression = true
-    val columnBatchSize = 10000 //TODO: Suranjan Get from somewhere
+    val useCompression = true//SQLConf.useCompression
+    val columnBatchSize = 10000//SQLConf.columnBatchSize
 
     def uuidBatchAggregate (accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {

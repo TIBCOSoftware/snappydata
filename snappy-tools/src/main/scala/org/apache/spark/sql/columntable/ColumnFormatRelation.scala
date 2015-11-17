@@ -55,6 +55,7 @@ class ColumnFormatRelation(
     override val mode: SaveMode,
     userSchema: StructType,
     schemaExtensions: String,
+    ddlExtensionForShadowTable: String,
     parts: Array[Partition],
     _poolProps: Map[String, String],
     override val connProperties: Properties,
@@ -80,37 +81,40 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
+    val requestedColumns = if (requiredColumns.isEmpty) {
+      val narrowField =
+        schema.fields.minBy { a =>
+          ColumnType(a.dataType).defaultSize
+        }
 
-    def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table + shadowTableNamePrefix, requiredColumns.map(column => columnPrefix + column), uuidList,
+      Array(narrowField.name)
+    } else {
+      requiredColumns
+    }
+
+    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
+      externalStore.getCachedBatchRDD(table, requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
-    val converter = CatalystTypeConverters.createToScalaConverter(userSchema)
+    val outputTypes = requestedColumns.map { a => schema(a) }
+    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
+    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
+
     val colRDD = cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.  If none are requested, use the
       // narrowest (the field with minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = if (requiredColumns.isEmpty) {
-        val (narrowestOrdinal, narrowestDataType) =
-          userSchema.fields.zipWithIndex.map { case (a, ordinal) =>
-            ordinal -> a.dataType
-          } minBy { case (_, dataType) =>
-            ColumnType(dataType).defaultSize
-          }
-        Seq(narrowestOrdinal) -> Seq(narrowestDataType)
-      } else {
-        requiredColumns.map { a =>
-          userSchema.getFieldIndex(a).get -> userSchema(a).dataType
-        }.unzip
-      }
+      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+        schema.getFieldIndex(a).get -> schema(a).dataType
+      }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
       def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
-          val columnAccessors = requestedColumnIndices.map { batchColumnIndex =>
+          val columnAccessors = requestedColumnIndices.zipWithIndex.map { case(schemaIndex, bufferIndex) =>
             ColumnAccessor(
-              userSchema.fields(batchColumnIndex).dataType,
-              ByteBuffer.wrap(cachedBatch.buffers(batchColumnIndex)))
+              schema.fields(schemaIndex).dataType,
+              ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
           }
           // Extract rows via column accessors
           new Iterator[InternalRow] {
@@ -262,7 +266,7 @@ class ColumnFormatRelation(
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, stats blob, " +
         userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy $colocationClause", tableName, dropIfExists = false)
+        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable", tableName, dropIfExists = false)
   }
 
 
@@ -431,6 +435,8 @@ final class DefaultSource extends ColumnarRelationProvider {
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
+    val parametersForShadowTable = new CaseInsensitiveMutableHashMap(options)
+    StoreUtils.removeInternalProps(parametersForShadowTable)
 
     val table = StoreUtils.removeInternalProps(parameters)
 
@@ -439,6 +445,8 @@ final class DefaultSource extends ColumnarRelationProvider {
     //val preservepartitions = parameters.remove("preservepartitions")
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+
+    val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable)
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
@@ -454,7 +462,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, schemaExtension, Seq.empty.toArray,
+      getClass.getCanonicalName, mode, schema, schemaExtension, ddlExtensionForShadowTable, Seq.empty.toArray,
       poolProps, connProps, hikariCP, options, externalStore, blockMap, sqlContext)()
   }
 

@@ -91,7 +91,6 @@ class JDBCAppendableRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
 
-
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
         schema.fields.minBy { a =>
