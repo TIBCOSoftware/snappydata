@@ -9,7 +9,7 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
   * http://docs.scala-lang.org/style/naming-conventions.html
   * we decided to use upper case with underscore word separator.
   */
-final object Constant {
+object Constant {
   SnappyEmbeddedModeClusterManager.register
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
@@ -27,7 +27,7 @@ final object Constant {
   * http://docs.scala-lang.org/style/naming-conventions.html
   * i.e. upper camel case.
   */
-final object Property {
+object Property {
   SnappyEmbeddedModeClusterManager.register
 
   val locators = s"${Constant.PROPERTY_PREFIX}locators"
