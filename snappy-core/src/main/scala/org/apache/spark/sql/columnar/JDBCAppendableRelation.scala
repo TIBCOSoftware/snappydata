@@ -2,31 +2,31 @@ package org.apache.spark.sql.columnar
 
 import java.nio.ByteBuffer
 import java.sql.Connection
-import java.util.{UUID, Properties}
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry, JDBCPartitioningInfo, JDBCRelation}
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{JDBCSourceAsStore, ExternalStore}
+import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
 
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
 /**
- * A LogicalPlan implementation for an external column table whose contents
- * are retrieved using a JDBC URL or DataSource.
- */
+  * A LogicalPlan implementation for an external column table whose contents
+  * are retrieved using a JDBC URL or DataSource.
+  */
 
 class JDBCAppendableRelation(
     val url: String,
@@ -43,7 +43,7 @@ class JDBCAppendableRelation(
     @transient override val sqlContext: SQLContext)(
     private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
     = new ArrayBuffer[RDD[UUIDRegionKey]]()
-    )
+)
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
@@ -77,6 +77,8 @@ class JDBCAppendableRelation(
     }
   }
 
+
+
   override def schema: StructType = userSchema
 
   // TODO: Suranjan currently doesn't apply any filters.
@@ -84,36 +86,40 @@ class JDBCAppendableRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
 
-    def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table, requiredColumns.map(column => columnPrefix + column), uuidList,
+
+    val requestedColumns = if (requiredColumns.isEmpty) {
+      val narrowField =
+        schema.fields.minBy { a =>
+          ColumnType(a.dataType).defaultSize
+        }
+
+      Array(narrowField.name)
+    } else {
+      requiredColumns
+    }
+
+    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
+      externalStore.getCachedBatchRDD(table, requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    val outputTypes = requestedColumns.map { a => schema(a) }
+    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
+    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
     cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.  If none are requested, use the
       // narrowest (the field with minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = if (requiredColumns.isEmpty) {
-        val (narrowestOrdinal, narrowestDataType) =
-          schema.fields.zipWithIndex.map { case (a, ordinal) =>
-            ordinal -> a.dataType
-          } minBy { case (_, dataType) =>
-            ColumnType(dataType).defaultSize
-          }
-        Seq(narrowestOrdinal) -> Seq(narrowestDataType)
-      } else {
-        requiredColumns.map { a =>
-          schema.getFieldIndex(a).get -> schema(a).dataType
-        }.unzip
-      }
+      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+        schema.getFieldIndex(a).get -> schema(a).dataType
+      }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
       def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
-          val columnAccessors = requestedColumnIndices.map { batchColumnIndex =>
+          val columnAccessors = requestedColumnIndices.zipWithIndex.map { case(schemaIndex, bufferIndex) =>
             ColumnAccessor(
-              schema.fields(batchColumnIndex).dataType,
-              ByteBuffer.wrap(cachedBatch.buffers(batchColumnIndex)))
+              schema.fields(schemaIndex).dataType,
+              ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
           }
           // Extract rows via column accessors
           new Iterator[InternalRow] {
@@ -211,17 +217,20 @@ class JDBCAppendableRelation(
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")
 
-    val (primarykey, partitionStrategy) = dialect match {// The driver if not a loner should be an accesor only
+    val (primarykey, partitionStrategy) = dialect match {
+      // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
-            "primary key (uuid, bucketId)" , d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "") //TODO. How to get primary key contraint from each DB
+            "primary key (uuid, bucketId)", d.getPartitionByClause("bucketId"))
+      case _ => ("primary key (uuid)", "") // TODO. How to get primary key contraint from each DB
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy", tableName, dropIfExists = false) //for test make it false
+        userSchema.fields.map(structField => columnPrefix + structField.name + " blob")
+            .mkString(" ", ",", " ") +
+        s", $primarykey) $partitionStrategy",
+      tableName, dropIfExists = false) // for test make it false
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
@@ -247,9 +256,9 @@ class JDBCAppendableRelation(
   }
 
   /**
-   * Destroy and cleanup this relation. It may include, but not limited to,
-   * dropping the external table that this relation represents.
-   */
+    * Destroy and cleanup this relation. It may include, but not limited to,
+    * dropping the external table that this relation represents.
+    */
   override def destroy(ifExists: Boolean): Unit = {
     dropTable(table, ifExists)
   }
@@ -289,7 +298,8 @@ final class DefaultSource extends ColumnarRelationProvider
 class ColumnarRelationProvider extends SchemaRelationProvider
 with CreatableRelationProvider {
 
-  def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
+  def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: StructType) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
     val partitionColumn = parameters.remove("partitioncolumn")
@@ -352,7 +362,7 @@ with CreatableRelationProvider {
     relation
   }
 
-  def getRelation(sqlContext: SQLContext, options : Map[String, String]) : ColumnarRelationProvider = {
+  def getRelation(sqlContext: SQLContext, options: Map[String, String]): ColumnarRelationProvider = {
 
     val (url, _, _, _, _) =
       ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)

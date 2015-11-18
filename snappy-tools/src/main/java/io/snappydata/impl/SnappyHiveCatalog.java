@@ -3,6 +3,7 @@ package io.snappydata.impl;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
@@ -25,39 +26,13 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   final InternalDistributedMember thisMember;
 
-//  public SnappyHiveCatalog() {
-//
-//    SparkContext ctx = SparkContext.getOrCreate();
-//    assert ctx != null : "expected a non null spark context";
-//    SparkConf conf = ctx.getConf();
-//    assert conf != null : "expected a non null spark conf";
-//
-//    // initialize HiveMetaStoreClient
-//    HiveConf metadataConf = new HiveConf();
-//    if (conf.contains("gemfirexd.db.url")  && conf.contains("gemfirexd.db.driver")) {
-//      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-//        conf.get("gemfirexd.db.url"));
-//      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-//        conf.get("gemfirexd.db.driver"));
-//    }
-//    try {
-//      this.hmc = new HiveMetaStoreClient(metadataConf);
-//    } catch (MetaException me) {
-//      throw new IllegalStateException(me);
-//    }
-//    thisMember = InternalDistributedSystem.getConnectedInstance().getDistributedMember();
-//  }
-
   public SnappyHiveCatalog() {
     // initialize HiveMetaStoreClient
-    String snappydataurl = "jdbc:snappydata:;locators=localhost[7777];persist-dd=false;";
-    //String snappydataurl = "jdbc:snappydata:";
+    String snappydataurl = "jdbc:snappydata:;route-query=false;user=HIVE_METASTORE";
 
     HiveConf metadataConf = new HiveConf();
     metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         snappydataurl);
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-      "APP");
     metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
       "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
 
@@ -84,7 +59,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public boolean isRowTable(String tableName) {
     try {
       String tableType = getType(tableName);
-      System.out.println("KN: tableType = " + tableType);
+      //System.out.println("KN: tableType = " + tableType);
       if (tableType != null && tableType.equals(ExternalTableType.Row().toString())) {
         return true;
       }
@@ -126,22 +101,26 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   private String getType(String tableName) throws TException {
-    List<String> tables = this.hmc.getAllTables("default");
-    for (String s : tables) {
-      System.out.println("table in default = " + s);
-    }
     List<String> list = this.hmc.getAllDatabases();
-    for (String s : list) {
-      System.out.println("db = " + s);
-    }
+//    Misc.getCacheLogWriter().info("KN: db list = " + list, new Exception());
+//    for (String s : list) {
+//      Misc.getCacheLogWriter().info("KN: db = " + s);
+//    }
+    List<String> tables = this.hmc.getAllTables("default");
+//    for (String s : tables) {
+//      //System.out.println("table in default = " + s);
+//      Misc.getCacheLogWriter().info("KN: table = " + s);
+//    }
     Table t = this.hmc.getTable("default", tableName);
     String type = t.getTableType();
-    System.out.println("KN: table type = " + type);
+//    System.out.println("KN: table type = " + type + " for ");
+//    Misc.getCacheLogWriter().info("KN: table type = " + type + " for ");
     Map<String, String> props = t.getParameters();//.getSd().getSerdeInfo().getParameters();
     Set<String> s = props.keySet();
-    for(String p : s) {
-      System.out.println("KN: Key = " + p + " val = " + props.get(p));
-    }
+//    for(String p : s) {
+//      System.out.println("KN: Key = " + p + " val = " + props.get(p));
+//      Misc.getCacheLogWriter().info("KN: Key = " + p + " val = " + props.get(p));
+//    }
     return t.getParameters().get("EXTERNAL");
   }
 }

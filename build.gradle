@@ -353,6 +353,16 @@ task product {
   }
 }
 
+def copyTestsCommonResources(def bdir) {
+  def outdir = "${bdir}/resources/test"
+  file(outdir).mkdirs()
+
+  copy {
+    from "${rootDir}/tests-common/src/main/resources"
+    into outdir
+  }
+}
+
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }

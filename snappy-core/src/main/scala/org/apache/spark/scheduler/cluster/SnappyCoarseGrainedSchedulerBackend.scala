@@ -1,15 +1,15 @@
 package org.apache.spark.scheduler.cluster
 
-import org.apache.spark.SparkEnv
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.TaskSchedulerImpl
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Created by hemantb on 10/5/15.
  *
  */
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
-    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) {
+    extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {
 
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
 
@@ -19,19 +19,24 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
    */
   override def applicationId(): String = snappyAppId
 
-  var driverUrl: String = ""
+  @volatile private var _driverUrl: String = ""
+
+  def driverUrl: String = _driverUrl
 
   override def start() {
 
     super.start()
-    driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
+    _driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
       RpcAddress(driverEndpoint.address.host, driverEndpoint.address.port),
       CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+    logInfo(s"started with driverUrl $driverUrl")
   }
 
   override def stop() {
     super.stop()
-    driverUrl = ""
+    _driverUrl = ""
+    SnappyEmbeddedModeClusterManager.stopLead()
+    logInfo(s"stopped successfully")
   }
 
   override protected def createDriverEndpoint(properties: Seq[(String, String)]): DriverEndpoint = {
