@@ -1,17 +1,15 @@
 package io.snappydata.dunit.externalstore
 
-import java.net.URL
-import java.sql.{Connection, DriverManager}
+import java.net.InetAddress
 import java.util.Properties
-import com.pivotal.gemfirexd.FabricService
-import io.snappydata.ServiceManager
+import com.pivotal.gemfirexd.internal.catalog.SystemProcedures
+import dunit.AvailablePortHelper
+import dunit.DistributedTestBase.ExpectedException
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
 import io.snappydata.dunit.cluster.ClusterManagerTestUtils
-import org.apache.spark.scheduler.cluster.DelegateClusterManager
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.{SparkContext, SparkConf}
 
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext, SaveMode}
 import scala.collection.Map
 import sys.process._
 
@@ -20,91 +18,145 @@ import sys.process._
  */
 class ExternalShellDUnitTest(s: String) extends ClusterManagerTestBase(s) with Serializable {
 
-  override val locatorNetPort = 1527
+  override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   def testTableCreation(): Unit = {
 
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
 
+    vm2.invoke(this.getClass, "startNetServer", AvailablePortHelper.getRandomAvailableTCPPort.asInstanceOf[AnyRef])
 
-    vm1.invoke(this.getClass, "startSnappyLead", startArgs)
+    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+
+    vm1.invoke(this.getClass, "startSnappyLead", fullStartArgs)
 
     vm3.invoke(this.getClass, "startSparkCluster")
 
-    vm1.invoke(this.getClass, "startEmbeddedClusterJob")
+    //Embedded Cluster Operations
+    vm1.invoke(this.getClass, "createTablesAndInsertData")
 
-    vm3.invoke(this.getClass, "startSparkJob", startArgs)
+    //StandAlone Spark Cluster Operations
+    vm3.invoke(this.getClass, "VerifyEmbeddedTablesAndCreateNewInShell", startArgs)
 
-    vm1.invoke(this.getClass, "stopSpark")
+    //Embedded Cluster Verifying the Spark Cluster Operations
+    vm1.invoke(this.getClass, "VerifyShellModeOperations")
 
     vm3.invoke(this.getClass, "stopSparkCluster")
 
+    println("Test Completed Sucessfully")
+
   }
+
 }
 
 /**
  * Since this object derives from ClusterManagerTestUtils
  */
 object ExternalShellDUnitTest extends ClusterManagerTestUtils with Serializable {
-  private val tableName: String = "ColumnTable"
+  private var tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]
 
-  def startEmbeddedClusterJob(): Unit = {
+  def createTablesAndInsertData(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    createTableUsingDataSourceAPI(snc, "embeddedModeTable1")
+    selectFromTable(snc, "embeddedModeTable1", 5)
 
-    val rdd = sc.parallelize(data, data.length).map(s => Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
+    createTableUsingDataSourceAPI(snc, "embeddedModeTable2")
+    selectFromTable(snc, "embeddedModeTable2", 5)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r = result.collect()
-    assert(r.length == 0)
-
-    snc.dropExternalTable(tableName, ifExists = true)
     println("Successful")
   }
 
-  def startSparkJob(locatorPort: Int, prop: Properties): Unit = {
+
+  def VerifyShellModeOperations(): Unit = {
+    // embeddedModeTable1 is dropped in shell mode. recreate it
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    createTableUsingDataSourceAPI(snc, "embeddedModeTable1")
+    selectFromTable(snc, "embeddedModeTable1", 5)
+
+    snc.dropExternalTable("embeddedModeTable1", ifExists = true)
+
+    // embeddedModeTable2 still exists drop it
+    snc.dropExternalTable("embeddedModeTable2", ifExists = true)
+
+    // read data from shellModeTable1
+    selectFromTable(snc, "shellModeTable1", 5)
+
+    //drop table created in shell mode
+    snc.dropExternalTable("shellModeTable1", ifExists = true)
+
+    //recreate the dropped table
+    createTableUsingDataSourceAPI(snc, "shellModeTable1")
+    selectFromTable(snc, "shellModeTable1", 5)
+    snc.dropExternalTable("shellModeTable1", ifExists = true)
+    println("Successful")
+  }
+
+  def VerifyEmbeddedTablesAndCreateNewInShell(locatorPort: Int, prop: Properties): Unit = {
+
+    val hostName = InetAddress.getLocalHost.getHostName
+
     val conf = new SparkConf().
-        setAppName("test Application")
-        .setMaster(s"spark://pnq-nthanvi02:7077")
+         setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
         .set("snappy.locator", s"localhost[$locatorPort]")
-      //switching to http broadcast as could not run jobs with TorrentBroadcast due to spark env issue
-      .set("spark.broadcast.factory" , "org.apache.spark.broadcast.HttpBroadcastFactory")
+      //TODO - how to pass this class to spark executors??
+        .set ("spark.executor.extraClassPath" , "/home/namrata/snappy-commons/data.jar")
 
     val sc = new SparkContext(conf)
-
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    //load it with respective path
-
-    var hfile: String = "/home/namrata/snappy-commons/snappy-dunits/src/test/resources/2015.parquet"
-
-    val dataDF = snc.read.load(hfile)
-
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-
-
-    dataDF.write.format("column").mode(SaveMode.Append)
-      .options(props).saveAsTable(tableName)
+    //try to create the table already created in embedded mode. it should throw the table exist exception.
+    var tableAlreadyExistException: Exception = null
+    try {
+      createTableUsingDataSourceAPI(snc, "embeddedModeTable1")
+    } catch {
+      case e: AnalysisException => tableAlreadyExistException = e
+    }
+    assert(tableAlreadyExistException != null)
+    assert(tableAlreadyExistException.getMessage.contains("Table embeddedModeTable1 already exists"))
 
 
-    val result = snc.sql("SELECT * FROM " + tableName)
+    //select the data from table created in embedded mode
+    selectFromTable(snc, "embeddedModeTable1", 5)
 
-    val r = result.collect()
+    // drop the table created in embedded mode
+    snc.dropExternalTable("embeddedModeTable1", ifExists = true)
 
-    assert(r.length == 5)
+    //select the data from table created in embedded mode
+    selectFromTable(snc, "embeddedModeTable2", 5)
 
-    snc.dropExternalTable(tableName, ifExists = true)
+
+    //create a table in shell mode
+    createTableUsingDataSourceAPI(snc, "shellModeTable1")
+    selectFromTable(snc, "shellModeTable1", 5)
+    sc.stop()
     println("Successful")
   }
 
 
-  def startSparkCluster = {
+  def createTableUsingDataSourceAPI(sqlContext: SQLContext, tableName: String) = {
+    val context = sqlContext.sparkContext
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = context.parallelize(data, data.length).map(s => Data(s(0), s(1), s(2)))
 
+    val dataDF = sqlContext.createDataFrame(rdd)
+
+    sqlContext.createExternalTable(tableName, "column", dataDF.schema, props)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    //sqlContext.createExternalTable(tableName, "column", dataDF.schema, props)
+  }
+
+  def selectFromTable(sqlContext: SQLContext, tableName: String, expectedLength: Int): Unit = {
+    val result = sqlContext.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == expectedLength)
+  }
+
+  def startSparkCluster = {
     "../../../../../snappy/sbin/start-all.sh" !!
   }
 
