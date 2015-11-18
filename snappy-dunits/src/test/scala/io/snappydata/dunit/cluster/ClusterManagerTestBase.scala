@@ -1,8 +1,6 @@
 package io.snappydata.dunit.cluster
 
 import java.io.File
-import java.net.InetAddress
-
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -60,7 +58,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
           loc.start("localhost", locPort, locNetProps)
         }
         if (locNetPort > 0) {
-          loc.startNetworkServer("localhost", 1527, locNetProps)
+          loc.startNetworkServer("localhost", locNetPort, locNetProps)
         }
         assert(loc.status == FabricService.State.RUNNING)
       }
@@ -144,7 +142,6 @@ class ClusterManagerTestUtils {
       conf.set("gemfirexd.db.url", snappydataurl)
       conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
     }
-    conf.set("snappy.store.jdbc.url" , "jdbc:snappydata:;user=app;password=app" )
     logger.info(s"About to create SparkContext with conf \n" + conf.toDebugString)
     sc = new SparkContext(conf)
     logger.info("SparkContext CREATED, about to create SnappyContext.")
@@ -157,16 +154,12 @@ class ClusterManagerTestUtils {
     * Start a snappy server. Any number of snappy servers can be started.
     */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
-
     props.setProperty("locators", "localhost[" + locatorPort + ']')
     val server: Server = ServiceManager.getServerInstance
 
+    server.start(props)
 
     assert(server.status == FabricService.State.RUNNING)
-    server.startNetworkServer("localhost",
-      AvailablePortHelper.getRandomAvailableTCPPort, null)
-
-
   }
 
   def startNetServer(netPort: Int): Unit = {

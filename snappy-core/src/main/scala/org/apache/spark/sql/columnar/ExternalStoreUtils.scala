@@ -159,5 +159,5 @@ private[sql] object ExternalStoreUtils {
 
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
-  val Embedded, Net, ExternalShell, Unknown = Value
+  val Embedded, Net, Unknown = Value
 }

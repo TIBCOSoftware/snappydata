@@ -122,7 +122,16 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     logInfo("default warehouse location is " + warehouse)
 
     val sparkConf = context.sparkContext.conf
-
+    //val dburl = sparkConf.get("gemfirexd.db.url")
+    //val driver = sparkConf.get("gemfirexd.db.driver")
+    /*
+    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
+      "jdbc:gemfirexd://localhost:1527")
+    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+      "com.pivotal.gemfirexd.jdbc.ClientDriver")
+    */
+    // `configure` goes second to override other settings.
+    // `configure` goes second to override other settings.
     if (sparkConf.contains("gemfirexd.db.url") && sparkConf.contains("gemfirexd.db.driver")) {
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         sparkConf.get("gemfirexd.db.url"))
@@ -130,8 +139,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         sparkConf.get("gemfirexd.db.driver"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         "APP")
-    }
-    else if (ExternalStoreUtils.isExternalShellMode(context.sparkContext)) {
+    } else if (ExternalStoreUtils.isExternalShellMode(context.sparkContext)) {
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         ExternalStoreUtils.getHiveMetaStoreConnectionURL(context.sparkContext))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
@@ -139,6 +147,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         "APP")
     }
+    //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
 
 
     val allConfig = metadataConf.asScala.map(e =>
@@ -641,7 +650,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         s"not null, bucketId integer, cachedBatch Blob not null, $primarykey) " +
-        s"$partitionStrategy", tableName, dropIfExists = false)
+        s"$partitionStrategy", tableName, dropIfExists = true)
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */

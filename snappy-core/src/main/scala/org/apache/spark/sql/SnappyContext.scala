@@ -33,14 +33,8 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-<<<<<<< HEAD
-import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
 import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
-||||||| merged common ancestors
-import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
-=======
-import org.apache.spark.{SparkConf, Logging, Partition, Partitioner, SparkContext, TaskContext}
->>>>>>> 759c5dec031ff8458b4c12ae105273a0d073c467
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
