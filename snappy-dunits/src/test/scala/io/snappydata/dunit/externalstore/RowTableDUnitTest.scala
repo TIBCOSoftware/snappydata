@@ -18,6 +18,8 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
+
+    vm0.invoke(this.getClass, "stopSpark")
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
@@ -29,6 +31,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     Thread.sleep(5000)
     vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 }
 
@@ -53,7 +56,7 @@ object RowTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 0)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -73,7 +76,7 @@ object RowTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 5)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 }
 
