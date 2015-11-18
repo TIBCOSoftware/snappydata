@@ -78,10 +78,8 @@ private[sql] object ExternalStoreUtils {
       val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.Utils")
       clazz.getMethod("getLocatorClientURL").invoke(clazz).asInstanceOf[String] }
     else
-      parameters.remove("url").getOrElse {
         parameters.remove("url").getOrElse {
           StoreProperties.defaultStoreURL(sc)
-        }
       }
 
     val driver = parameters.remove("driver").orElse(getDriver(url))
@@ -151,6 +149,11 @@ private[sql] object ExternalStoreUtils {
        true
     else
       false
+  }
+
+  def getHiveMetaStoreConnectionURL(sparkContext: SparkContext) :String = {
+    //TODO - finalize the correct string. currently in sync with  gemfirexd.db.url property
+     "jdbc:snappydata:;locators=" + sparkContext.getConf.get("snappy.locator").trim +";route-query=false;user=HIVE_METASTORE;default-persistent=true"
   }
 }
 
