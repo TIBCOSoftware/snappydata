@@ -129,7 +129,8 @@ object ExecutorInitiator extends Logging {
                     driverConf.set("spark.blockManager", SNAPPY_BLOCK_MANAGER)
                     driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
 
-                    val cores = driverConf.getInt("spark.executor.cores", 2)
+                    val cores = driverConf.getInt("spark.executor.cores",
+                      Runtime.getRuntime().availableProcessors())
 
                     env = SparkCallbacks.createExecutorEnv(
                       driverConf, memberId, executorHost, port, cores, false)
