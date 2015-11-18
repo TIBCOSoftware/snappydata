@@ -440,15 +440,15 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
         case aggregate@SortBasedAggregate(_,
         groupings: Seq[NamedExpression],
-        aggrs: Seq[AggregateExpression2],
-        _,
+        nonCompleteAggregates: Seq[AggregateExpression2],
+        nonCompleteAggregateAttributes: Seq[Attribute],
         _,
         _,
         _,
         _,
         child: SparkPlan) =>
 
-          val partial = aggrs.exists(_.mode match {
+          val partial = nonCompleteAggregates.exists(_.mode match {
             case Partial => true
             case PartialMerge => true
             case Final => false
@@ -457,7 +457,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
           require(deterministicKeys(groupings), GROUP_BY_KEY_ERROR)
           BootStrapUtils.getBtCnt(child.output) match {
             case Some(btCnt@TaggedAttribute(Bootstrap(), _, _, _, _)) =>
-              val params = aggrs.flatMap {
+              val params = nonCompleteAggregates.flatMap {
                 _.collect {
                   case a: AggregateExpression1 => a.children
                   case agg@AggregateExpression2(aggFunc: AlgebraicAggregate, _, _) => if (partial) {
@@ -479,8 +479,10 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
               val (optimized, newChild) =
                 if (params.forall { case _: Attribute | _: Literal => true case _ => false }) {
-                  (aggrs, child)
+                  (nonCompleteAggregates, child)
                 } else {
+                  //TODO. Identify the right aggregate attributes for the expressions
+                //  throw new UnsupportedOperationException("not yet implemented")
                   val map = params.flatMap {
                     case n: NamedExpression => Some((n, n))
                     case _: Literal => None
@@ -489,7 +491,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                   }.toMap
                   val projectList =
                     (groupings.flatMap(_.references) ++ map.values :+ btCnt).distinct
-                  val consolidated = aggrs.map {
+                  val consolidated = nonCompleteAggregates.map {
                     _.transformUp {
                       case a: AggregateExpression =>
                         a.mapChildren {
@@ -506,8 +508,8 @@ object PropagateBootstrap extends Rule[SparkPlan] {
               val aBtCnt = TaggedAlias(Bootstrap(),
                 Delegate(btCnt, Count01(boolTrue)), "_btcnt")()
               var i = 0
-              val newAggrs = optimized.flatMap {
-                case a: AggregateExpression2 =>
+              val newAggrs = optimized.zipWithIndex.flatMap {
+                case (a:AggregateExpression2, index: Int) =>
                   val newExpr = a.transformUp {
 
                     case sum: org.apache.spark.sql.catalyst.expressions.aggregate.Sum =>
@@ -590,8 +592,8 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
                   if (!partial) {
 
-                    val ne1 = TaggedAggregateExpression2(Uncertain, newExpr.aggregateFunction, a.mode, a.isDistinct, "dummy")()
-                    val ne = TaggedAlias(Uncertain, ne1, "dummy")(ne1.exprId)
+                    val ne1 = TaggedAggregateExpression2(Uncertain, newExpr.aggregateFunction, a.mode, a.isDistinct, "XXX")()
+                    val ne = TaggedAlias(Uncertain, ne1, nonCompleteAggregateAttributes(0).name)(ne1.exprId)
 
                     ne ::
                         TaggedAlias(Bound(Lower, ne.exprId), LowerPlaceholder(newExpr), ne.name)(
@@ -609,7 +611,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                   }
 
 
-                case expr: NamedExpression => expr :: Nil
+                case (expr:NamedExpression, _) => expr :: Nil
               } :+ aBtCnt
               i = i + 1
               BootstrapSortedAggregate(partial, groupings, newAggrs.asInstanceOf[Seq[NamedExpression]], newChild)
