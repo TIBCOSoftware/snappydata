@@ -65,7 +65,8 @@ class ColumnFormatRelation(
     )
     (private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] = new ArrayBuffer[RDD[UUIDRegionKey]]()
         )
-    extends JDBCAppendableRelation(url, table, provider, mode, userSchema, parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
+    extends JDBCAppendableRelation(url, table, provider, mode, userSchema, parts, _poolProps, connProperties,
+      hikariCP, origOptions, externalStore, sqlContext)()
     with RowInsertableRelation {
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
