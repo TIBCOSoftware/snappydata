@@ -479,7 +479,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
               val (optimized, newChild) =
                 if (params.forall { case _: Attribute | _: Literal => true case _ => false }) {
-                  (nonCompleteAggregates, child)
+                  (nonCompleteAggregates.zipWithIndex, child)
                 } else {
                   //TODO. Identify the right aggregate attributes for the expressions
                 //  throw new UnsupportedOperationException("not yet implemented")
@@ -491,14 +491,16 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                   }.toMap
                   val projectList =
                     (groupings.flatMap(_.references) ++ map.values :+ btCnt).distinct
-                  val consolidated = nonCompleteAggregates.map {
-                    _.transformUp {
+                  val consolidated = nonCompleteAggregates.zipWithIndex.map { case (exprsn, index) => {
+                    (exprsn.transformUp {
                       case a: AggregateExpression =>
                         a.mapChildren {
                           case e if map.contains(e) => map(e).toAttribute
                           case e => e
                         }
                     }
+                      , index)
+                  }
                   }
                   (consolidated, Project(projectList, child))
                 }
@@ -508,7 +510,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
               val aBtCnt = TaggedAlias(Bootstrap(),
                 Delegate(btCnt, Count01(boolTrue)), "_btcnt")()
               var i = 0
-              val newAggrs = optimized.zipWithIndex.flatMap {
+              val newAggrs = optimized.flatMap {
                 case (a:AggregateExpression2, index: Int) =>
                   val newExpr = a.transformUp {
 
@@ -591,9 +593,15 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
 
                   if (!partial) {
-
-                    val ne1 = TaggedAggregateExpression2(Uncertain, newExpr.aggregateFunction, a.mode, a.isDistinct, "XXX")()
-                    val ne = TaggedAlias(Uncertain, ne1, nonCompleteAggregateAttributes(0).name)(ne1.exprId)
+                    val name = aggregate.resultExpressions.find(_.children.exists {
+                      case x: NamedExpression => x.exprId == nonCompleteAggregateAttributes(index).exprId
+                      case _ => false
+                    }) match {
+                      case Some(x) => x.name
+                      case None => nonCompleteAggregateAttributes(index).name
+                    }
+                    val ne1 = TaggedAggregateExpression2(Uncertain, newExpr.aggregateFunction, a.mode, a.isDistinct, name)()
+                    val ne = TaggedAlias(Uncertain, ne1, name)(ne1.exprId)
 
                     ne ::
                         TaggedAlias(Bound(Lower, ne.exprId), LowerPlaceholder(newExpr), ne.name)(
