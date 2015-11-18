@@ -14,7 +14,7 @@ import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{Attribute, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.snappydata.{Constant, Property, Lead, LocalizedMessages, Utils}
+import io.snappydata._
 import org.slf4j.LoggerFactory
 import spark.jobserver.JobServer
 
@@ -293,4 +293,23 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   override def stopAllNetworkServers(): Unit = {
     // nothing to do as none of the net servers are allowed to start.
   }
+}
+
+object LeadImpl {
+
+  def invokeLeadStart(conf: SparkConf): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.internalStart(conf)
+  }
+
+  def invokeLeadStartAddonService(sc: SparkContext): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.startAddOnServices(sc)
+  }
+
+  def invokeLeadStop(shutdownCredentials: Properties): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    lead.internalStop(shutdownCredentials)
+  }
+
 }

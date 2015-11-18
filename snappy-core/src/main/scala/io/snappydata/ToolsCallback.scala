@@ -9,9 +9,6 @@ import org.apache.spark.{SparkConf, SparkContext}
   */
 trait ToolsCallback {
 
-  def invokeLeadStart(conf: SparkConf)
-
   def invokeLeadStartAddonService(sc: SparkContext)
 
-  def invokeLeadStop(shutdownCredentials: Properties)
 }

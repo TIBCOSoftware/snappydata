@@ -1,10 +1,12 @@
 package org.apache.spark.scheduler.cluster
 
+import io.snappydata.impl.LeadImpl
 import io.snappydata.{Constant, Property}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
-import org.apache.spark.scheduler.{SnappyTaskSchedulerImpl, ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
+import org.apache.spark.scheduler.{SnappyTaskSchedulerImpl,
+  ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
 import org.apache.spark.sql.SnappyContext
 
 /**
@@ -16,10 +18,6 @@ import org.apache.spark.sql.SnappyContext
 object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   SparkContext.registerClusterManager(this)
-
-  def register(): Unit = {
-    // no op. static initialization above does the job.
-  }
 
   val logger = LoggerFactory.getLogger(getClass)
 
@@ -73,11 +71,11 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
     schedulerImpl.initialize(backend)
 
-    SnappyContext.toolsCallback.invokeLeadStart(schedulerImpl.sc.conf)
+    LeadImpl.invokeLeadStart(schedulerImpl.sc.conf)
   }
 
   def stopLead(): Unit = {
-    SnappyContext.toolsCallback.invokeLeadStop(null)
+    LeadImpl.invokeLeadStop(null)
   }
 
 }
