@@ -1,6 +1,5 @@
 package org.apache.spark.sql.columntable
 
-import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
@@ -10,11 +9,10 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ConnectionType, ColumnAccessor, CachedBatch, ColumnType, ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.columnar.{ColumnType, ColumnarRelationProvider, ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -81,6 +79,7 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
+
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
         schema.fields.minBy { a =>
@@ -91,51 +90,10 @@ class ColumnFormatRelation(
     } else {
       requiredColumns
     }
-
-    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table, requestedColumns.map(column => columnPrefix + column), uuidList,
-        sqlContext.sparkContext)
-    }
-
     val outputTypes = requestedColumns.map { a => schema(a) }
-    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
     val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
 
-    val colRDD = cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
-      // Find the ordinals and data types of the requested columns.  If none are requested, use the
-      // narrowest (the field with minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
-        schema.getFieldIndex(a).get -> schema(a).dataType
-      }.unzip
-      val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-      def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
-        val rows = cacheBatches.flatMap { cachedBatch =>
-          // Build column accessors
-          val columnAccessors = requestedColumnIndices.zipWithIndex.map { case(schemaIndex, bufferIndex) =>
-            ColumnAccessor(
-              schema.fields(schemaIndex).dataType,
-              ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
-          }
-          // Extract rows via column accessors
-          new Iterator[InternalRow] {
-            private[this] val rowLen = nextRow.numFields
-
-            override def next(): InternalRow = {
-              var i = 0
-              while (i < rowLen) {
-                columnAccessors(i).extractTo(nextRow, i)
-                i += 1
-              }
-              if (requiredColumns.isEmpty) InternalRow.empty else nextRow
-            }
-
-            override def hasNext: Boolean = columnAccessors(0).hasNext
-          }
-        }
-        rows.map(converter(_).asInstanceOf[Row])
-      }
-      cachedBatchesToRows(cachedBatchIterator)
-    }
+    val colRDD = super.buildScan(requiredColumns, filters)
 
     colRDD.union(connectionType match {
       case ConnectionType.Embedded =>

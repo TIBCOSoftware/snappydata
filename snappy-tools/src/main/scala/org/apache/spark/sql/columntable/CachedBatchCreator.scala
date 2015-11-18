@@ -1,17 +1,20 @@
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.columntable
 
-import java.sql.ResultSet
 import java.util.UUID
 
 import scala.collection.mutable.ArrayBuffer
 
-import org.apache.spark.sql.{SnappyContext, SQLConf}
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, SpecificMutableRow}
+import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
+import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
+import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
+
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnBuilder, ColumnType}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
@@ -66,7 +69,7 @@ class CachedBatchCreator(
     }).toArray
   }
 
-  def createInternalRow(rs: ResultSet): InternalRow = {
+  def createInternalRow(execRow: ExecRow): InternalRow = {
     val conversions = getConversions(schema)
     val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
 
@@ -74,10 +77,10 @@ class CachedBatchCreator(
     while (i < conversions.length) {
       val pos = i + 1
       conversions(i) match {
-        case BooleanConversion => mutableRow.setBoolean(i, rs.getBoolean(pos))
+        case BooleanConversion => mutableRow.setBoolean(i, execRow.getColumn(pos).getBoolean())
         case DateConversion =>
           // DateTimeUtils.fromJavaDate does not handle null value, so we need to check it.
-          val dateVal = rs.getDate(pos)
+          val dateVal = execRow.getColumn(pos).getDate(null)
           if (dateVal != null) {
             mutableRow.setInt(i, DateTimeUtils.fromJavaDate(dateVal))
           } else {
@@ -92,28 +95,29 @@ class CachedBatchCreator(
         // retrieve it, you will get wrong result 199.99.
         // So it is needed to set precision and scale for Decimal based on JDBC metadata.
         case DecimalConversion(p, s) =>
-          val decimalVal = rs.getBigDecimal(pos)
+          val decimalVal = execRow.getColumn(pos).typeToBigDecimal()
           if (decimalVal == null) {
             mutableRow.update(i, null)
           } else {
             mutableRow.update(i, Decimal(decimalVal, p, s))
           }
-        case DoubleConversion => mutableRow.setDouble(i, rs.getDouble(pos))
-        case FloatConversion => mutableRow.setFloat(i, rs.getFloat(pos))
-        case IntegerConversion => mutableRow.setInt(i, rs.getInt(pos))
-        case LongConversion => mutableRow.setLong(i, rs.getLong(pos))
+        case DoubleConversion => mutableRow.setDouble(i, execRow.getColumn(pos).getDouble())
+        case FloatConversion => mutableRow.setFloat(i, execRow.getColumn(pos).getFloat())
+        case IntegerConversion => mutableRow.setInt(i, execRow.getColumn(pos).getInt())
+        case LongConversion => mutableRow.setLong(i, execRow.getColumn(pos).getLong())
         // TODO(davies): use getBytes for better performance, if the encoding is UTF-8
-        case StringConversion => mutableRow.update(i, UTF8String.fromString(rs.getString(pos)))
+        case StringConversion => mutableRow.update(i,
+          UTF8String.fromString(execRow.getColumn(pos).getString()))
         case TimestampConversion =>
-          val t = rs.getTimestamp(pos)
+          val t = execRow.getColumn(pos).getTimestamp(null)
           if (t != null) {
             mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(t))
           } else {
             mutableRow.update(i, null)
           }
-        case BinaryConversion => mutableRow.update(i, rs.getBytes(pos))
+        case BinaryConversion => mutableRow.update(i, execRow.getColumn(pos).getBytes())
         case BinaryLongConversion => {
-          val bytes = rs.getBytes(pos)
+          val bytes = execRow.getColumn(pos).getBytes()
           var ans = 0L
           var j = 0
           while (j < bytes.size) {
@@ -123,36 +127,43 @@ class CachedBatchCreator(
           mutableRow.setLong(i, ans)
         }
       }
-      if (rs.wasNull) mutableRow.setNullAt(i)
+      if (execRow.getColumn(pos).isNull) mutableRow.setNullAt(i)
       i = i + 1
     }
     mutableRow
   }
 
-  def createCachedBatch(rowIterator: Iterator[InternalRow], batchID :UUID, bucketID : Int): Unit = {
-    val useCompression = true//SQLConf.useCompression
-    val columnBatchSize = 10000//SQLConf.columnBatchSize
+  def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
+      batchID: UUID, bucketID: Int): Unit = {
+    val useCompression = true //SQLConf.useCompression
+    val columnBatchSize = 10000 //SQLConf.columnBatchSize
 
-    def uuidBatchAggregate (accumulated: ArrayBuffer[UUIDRegionKey],
+    def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-      val uuid = externalStore.storeCachedBatch (batch, batchID, bucketID, tableName)
+      val uuid = externalStore.storeCachedBatch(batch, batchID, bucketID, tableName)
       accumulated += uuid
     }
 
     def columnBuilders = schema.map {
       attribute =>
-        val columnType = ColumnType (attribute.dataType)
+        val columnType = ColumnType(attribute.dataType)
         val initialBufferSize = columnType.defaultSize * columnBatchSize
-        ColumnBuilder (attribute.dataType, initialBufferSize,
+        ColumnBuilder(attribute.dataType, initialBufferSize,
           attribute.name, useCompression)
     }.toArray
 
-    val holder = new CachedBatchHolder (columnBuilders, 0, columnBatchSize, schema,
-      new ArrayBuffer[UUIDRegionKey] (1), uuidBatchAggregate)
+    val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize, schema,
+      new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
     val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
-    rowIterator.foreach (batches.appendRow ((), _) )
-
-    batches.forceEndOfBatch
+    try {
+      while (sc.fetchNext(row)) {
+        // extract columns using getXXX etc like for ResultSet and create CachedBatches
+        batches.appendRow((), createInternalRow(row))
+      }
+      batches.forceEndOfBatch
+    } finally {
+      sc.close();
+    }
   }
 }

@@ -62,7 +62,7 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
   }
 
 
-  test("test the shadow table creation heavy insert") {
+  ignore("test the shadow table creation heavy insert") {
    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
