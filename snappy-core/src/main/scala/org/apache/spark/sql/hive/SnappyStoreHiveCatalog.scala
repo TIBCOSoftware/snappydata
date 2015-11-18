@@ -121,24 +121,25 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     logInfo("default warehouse location is " + warehouse)
 
+    val sparkConf = context.sparkContext.conf
 
-/*    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
+    if (sparkConf.contains("gemfirexd.db.url") && sparkConf.contains("gemfirexd.db.driver")) {
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
         sparkConf.get("gemfirexd.db.url"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
         sparkConf.get("gemfirexd.db.driver"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         "APP")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
-    }*/
+    }
+    else if (ExternalStoreUtils.isExternalShellMode(context.sparkContext)) {
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
+        ExternalStoreUtils.getHiveMetaStoreConnectionURL(context.sparkContext))
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+        "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
+        "APP")
+    }
 
-
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-      "jdbc:snappydata:")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-      "APP")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -640,7 +641,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         s"not null, bucketId integer, cachedBatch Blob not null, $primarykey) " +
-        s"$partitionStrategy", tableName, dropIfExists = true)
+        s"$partitionStrategy", tableName, dropIfExists = false)
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */
