@@ -16,10 +16,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
     Thread.sleep(5000)
-    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
+    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
@@ -29,9 +30,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
     Thread.sleep(5000)
-    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
+    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 }
 
@@ -41,7 +43,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 object ColumnTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "ColumnTable"
 
-  val props = Map.empty[String,String]
+  val props = Map.empty[String, String]
 
   def startSparkJob(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
@@ -56,7 +58,7 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 0)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -76,7 +78,7 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 5)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 }
 

@@ -7,17 +7,17 @@ import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RetrieveSparkProps
 
 /**
- * Calls that are needed to be sent to snappy-tools classes because the variables are private[spark]
- */
+  * Calls that are needed to be sent to snappy-tools classes because the variables are private[spark]
+  */
 object SparkCallbacks {
 
   def createExecutorEnv(
-                         conf: SparkConf,
-                         executorId: String,
-                         hostname: String,
-                         port: Int,
-                         numCores: Int,
-                         isLocal: Boolean): SparkEnv = {
+      conf: SparkConf,
+      executorId: String,
+      hostname: String,
+      port: Int,
+      numCores: Int,
+      isLocal: Boolean): SparkEnv = {
     SparkEnv.createExecutorEnv(conf, executorId, hostname,
       port, numCores, isLocal)
   }
@@ -30,12 +30,13 @@ object SparkCallbacks {
     if (env != null) {
       SparkHadoopUtil.get.runAsSparkUser { () =>
         env.stop()
+        SparkEnv.set(null)
       }
     }
   }
 
   def fetchDriverProperty(host: String, executorConf: SparkConf,
-      port: Int, url : String): Seq[(String,String)]= {
+      port: Int, url: String): Seq[(String, String)] = {
     val fetcher = RpcEnv.create(
       "driverPropsFetcher",
       host,
@@ -48,8 +49,13 @@ object SparkCallbacks {
     props
   }
 
-  def isExecutorStartupConf(key: String) : Boolean = {
+  def isExecutorStartupConf(key: String): Boolean = {
     SparkConf.isExecutorStartupConf(key)
+  }
+
+  def isDriver() : Boolean = {
+    SparkEnv.get != null &&
+        SparkEnv.get.executorId == SparkContext.DRIVER_IDENTIFIER
   }
 
 }

@@ -39,8 +39,9 @@ class SnappyCoarseGrainedExecutorBackend(
     }
     // stop the actor system
     stop()
-    if (rpcEnv != null)
+    if (rpcEnv != null) {
       rpcEnv.shutdown()
+    }
     SparkHadoopUtil.get.stopExecutorDelegationTokenRenewer()
   }
 }
