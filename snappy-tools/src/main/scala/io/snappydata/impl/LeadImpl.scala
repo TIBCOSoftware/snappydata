@@ -4,6 +4,8 @@ import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
 
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+
 import scala.collection.JavaConverters._
 
 import akka.actor.ActorSystem
@@ -80,6 +82,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       }
       conf.set(key, v)
     })
+
+    SnappyEmbeddedModeClusterManager.register()
 
     sparkContext = new SparkContext(conf)
 

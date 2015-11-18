@@ -19,6 +19,10 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   SparkContext.registerClusterManager(this)
 
+  def register(): Unit = {
+    // no op. static initialization above does the job.
+  }
+
   val logger = LoggerFactory.getLogger(getClass)
 
   var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
