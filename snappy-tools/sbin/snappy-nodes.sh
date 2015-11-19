@@ -166,7 +166,7 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
   if echo $"${@// /\\ }" | grep -wq "start"; then
     # Set a default locator if not already set.
     if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" -a "${componentType}" != "locator"  ]; then
-      args="${args} -locators="$(hostname)":10334"
+      args="${args} -locators="$(hostname)"[10334]"
     fi
   else
     args="${dirparam}"
