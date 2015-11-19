@@ -5,7 +5,7 @@ package org.apache.spark.sql.execution
  */
 object Constants {
 
-  val keyNumBootStrapTrials: String = "numBootStrapTrials"
+  val keyNumBootStrapTrials: String = "spark.sql.numBootStrapTrials"
   val keyAQPDebug = "spark.sql.aqp.debug"
   val defaultNumBootStrapTrials: Int = 100
 

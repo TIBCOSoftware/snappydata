@@ -509,7 +509,13 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
               val aBtCnt = TaggedAlias(Bootstrap(),
                 Delegate(btCnt, Count01(boolTrue)), "_btcnt")()
+              val exchangeOption = aggregate.find  {
+                case Exchange(_,_) => true
+                case _ => false
+              }
+
               var i = 0
+
               val newAggrs = optimized.flatMap {
                 case (a:AggregateExpression2, index: Int) =>
                   val newExpr = a.transformUp {
@@ -519,49 +525,44 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                         DelegateFunction(btCnt, sum)
                       } else {
                         //remap the parameter
-                        val z = sum.transformUp {
-                          case att: AttributeReference => {
-                            val exchangeOption = aggregate.child match {
-                              case ex: Exchange => Some(ex)
-                              case _ => None
-                            }
+                        // find exchange operator
 
-                            val s = exchangeOption.getOrElse(
-                              throw new UnsupportedOperationException("not an exhabge")).child match {
-                              case BootstrapSortedAggregate(_, groupings, aggExp, _) => {
-                                val exp = aggExp.filter(x => {
-                                  x.flatMap(_.references).exists {
-                                    case t: NamedExpression => t.exprId == att.exprId
-                                    case _ => false
+                        val z = exchangeOption match {
+                          case Some(Exchange(_, child)) =>
+                            sum.transformUp {
+                              case att: AttributeReference =>
+                                 child match {
+                                  case BootstrapSortedAggregate(_, groupings, aggExp, _) => {
+                                    val exp = aggExp.filter(x => {
+                                      x.flatMap(_.references).exists {
+                                        case t: NamedExpression => t.exprId == att.exprId
+                                        case _ => false
+                                      }
+                                    }
+
+                                    )
+
+                                    if (!exp.isEmpty) {
+                                      val temp = exp(0)
+                                      AttributeReference("dummy_replace", temp.dataType,
+                                        temp.nullable,
+                                        temp.metadata)(
+                                        temp.exprId,
+                                        temp.qualifiers)
+
+                                    } else {
+                                      att
+                                    }
                                   }
+                                  case _ => att
+
                                 }
 
-                                )
-
-                                if (!exp.isEmpty) {
-                                  val temp = exp(0)
-                                  AttributeReference("dummy_replace", temp.dataType,
-                                    temp.nullable,
-                                    temp.metadata)(
-                                    temp.exprId,
-                                    temp.qualifiers)
-
-                                } else {
-                                  att
-                                }
-                              }
-                              case _ => att
+                              case all => all
 
                             }
-                            s
-                          }
-
-                          case all => all
-
+                          case None => throw new UnsupportedOperationException("no exchange operator found")
                         }
-
-
-
 
                         //Cast(scale(DelegateFunction(btCnt, sum), ScaleFactor()), sum.dataType)
                         DelegateFunction(btCnt, z.asInstanceOf[org.apache.spark.sql.catalyst.expressions.aggregate.Sum])
