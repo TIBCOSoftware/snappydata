@@ -3,12 +3,18 @@ package io.snappydata.core.aqp
 import java.lang.management.ManagementFactory
 import java.sql.Date
 import java.text.SimpleDateFormat
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.{GenericMutableRow, BoundReference, Expression}
+import org.apache.spark.sql.execution.bootstrap.ApproxColumn
 import org.scalatest._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, DataFrame, SQLContext, SnappyContext}
 import org.apache.spark.{SparkContext, SparkConf}
 import org.scalatest.{Matchers, FlatSpec}
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.execution.Constants
+
 
 /**
  * Created by ashahid on 11/17/15.
@@ -18,24 +24,41 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
    //Set up sample & Main table
    var LINEITEM_DATA_FILE = "/Users/ashahid/workspace/snappy/experiments/BlinkPlay/data/datafile.tbl"
 
-  val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("local[1]")
-  conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
-  conf.set("spark.sql.unsafe.enabled", "false")
-  val sc = new SparkContext(conf)
+
+  var conf = createDefaultConf
+
   //sc.addJar("/Users/ashahid/workspace/snappy/snappy-commons/snappy-core/build-artifacts/scala-2.10/classes/test/app.jar")
-  val spc = SnappyContext(sc)
-  createLineitemTable(spc,"lineitem")
-  val mainTable = createLineitemTable(spc,"mainTable")
-  spc.registerSampleTable("mainTable_sampled",
-    mainTable.schema, Map(
-      "qcs" -> "l_quantity",
-      "fraction" -> 0.01,
-      "strataReservoirSize" -> 50), Some("mainTable"))
+  var spc = initTestTables(conf)
 
-  mainTable.insertIntoSampleTables("mainTable_sampled")
+  private def createDefaultConf = {
+    val conf = new SparkConf().setAppName("BlinkDB Play").setMaster("local[1]")
+    conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
+    conf.set("spark.sql.unsafe.enabled", "false")
+
+    conf.set(Constants.keyNumBootStrapTrials, "25")
+    conf
+  }
 
 
-  "Sample Table Query on Sum aggregate " should "be correct" in {
+  private def initTestTables(localConf: SparkConf): SQLContext = {
+    val sc = new SparkContext(localConf)
+
+    val snc = SnappyContext(sc)
+    createLineitemTable(snc,"lineitem")
+    val mainTable = createLineitemTable(snc,"mainTable")
+    snc.registerSampleTable("mainTable_sampled",
+      mainTable.schema, Map(
+        "qcs" -> "l_quantity",
+        "fraction" -> 0.01,
+        "strataReservoirSize" -> 50), Some("mainTable"))
+
+    mainTable.insertIntoSampleTables("mainTable_sampled")
+    snc
+  }
+
+   behavior of "aggregate on sample table"
+
+   "Sample Table Query on Sum aggregate " should "be correct" in {
     val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
 
     result.show()
@@ -58,10 +81,77 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   }
 
+  "Sample Table Query with a given confidence " should "use correct quntiles" in {
+    spc.sparkContext.stop()
+    val numBootStrapTrials = 100
+    conf = createDefaultConf
+    val confidence = 90
+    conf.set(Constants.keyAQPDebug, "true")
+    conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
+    spc = initTestTables(conf)
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence " + confidence)
+
+    result.show()
+    val rows = result.collect()
+    assert(rows(0).schema.length === numBootStrapTrials)
+
+    var i = 0
+    val arrayOfBS = Array.fill[Double](numBootStrapTrials)( {
+      val temp = i
+      i = i+1
+      rows(0).getDouble(temp)
+    }
+    )
+    val estimate = arrayOfBS(0)
+    val sortedData = arrayOfBS.sortWith( _.compareTo(_) <= 0 )
+    val lowerBound = sortedData(9)
+    val upperBound = sortedData(89)
+
+
+    i = 0
+    val arrayOfBSAny = Array.fill[Any](numBootStrapTrials)( {
+      val temp = i
+      i = i+1
+      rows(0).getDouble(temp)
+    }
+    )
+
+    i =0
+    val columns = Array.fill[Expression](100)( {
+      val temp = i
+      i = i +1
+      BoundReference(temp, DoubleType, false)
+
+    }
+    )
+
+    i = 100
+    val multiplicities = Array.fill[Expression](100)( {
+      val temp = i
+      i = i +1
+      BoundReference(temp, ByteType, false)
+
+    }
+    )
+
+    val arrayOfBytesAny = Array.fill[Any](100)(1.asInstanceOf[Byte])
+    val arrayOfBoolAny = Array.fill[Any](1)(true)
+
+    val approxColumn = ApproxColumn(confidence/100, columns, multiplicities,true)
+    val internalRow = new GenericMutableRow(Array.concat[Any](arrayOfBSAny , arrayOfBytesAny, arrayOfBoolAny))
+    val evalRow = approxColumn.eval(internalRow).asInstanceOf[InternalRow]
+    assert(estimate == evalRow.getDouble(0))
+    assert(lowerBound == evalRow.getDouble(1))
+    assert(upperBound == evalRow.getDouble(2))
+
+
+  }
+
   def msg(m: String) = DebugUtils.msg(m)
 
   def createLineitemTable(sqlContext: SQLContext,
                               tableName: String, isSample: Boolean = false): DataFrame = {
+
 
     val schema = StructType(Seq(
       StructField("l_orderkey", IntegerType, false),
@@ -84,6 +174,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     ))
 
     sqlContext.sql("DROP TABLE IF EXISTS " + tableName)
+    sqlContext.sql("DROP TABLE IF EXISTS " + tableName + "_sampled" )
 
     val people = sqlContext.sparkContext.textFile(LINEITEM_DATA_FILE).map(_.split('|')).map(p => Row(p(0).trim.toInt, p(1).trim.toInt, p(2).trim.toInt,p(3).trim.toInt,p(4).trim.toFloat,p(5).trim.toFloat,p(6).trim.toFloat,p(7).trim.toFloat,
       p(8).trim, p(9).trim,  java.sql.Date.valueOf(p(10).trim) , java.sql.Date.valueOf(p(11).trim), java.sql.Date.valueOf(p(12).trim), p(13).trim, p(14).trim, p(15).trim, p(16).trim.toInt ))

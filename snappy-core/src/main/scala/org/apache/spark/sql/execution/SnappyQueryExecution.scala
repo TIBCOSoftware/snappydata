@@ -21,8 +21,7 @@ class SnappyQueryExecution (sqlContext: SnappyContext, logical: LogicalPlan)
 extends QueryExecution(sqlContext, logical) {
 
 
-  private var confidence: Double = 0
-  private var error: Double =0
+
   //private  var hasSampleTable: Boolean = false
 
  // override lazy val analyzed: LogicalPlan = modifyPlanConditionally
@@ -47,62 +46,61 @@ extends QueryExecution(sqlContext, logical) {
     newPlan
   }*/
 
-  private def modifyRule  =
-    if(this.analyzed match {
-      case SampleTableQuery(_,_,_,_) => true
-      case _ => false
-    }) {
-       val data = this.analyzed.asInstanceOf[SampleTableQuery]
-       new RuleExecutor[SparkPlan] {
-        //val isDebug = false
+  private def modifyRule  = this.analyzed.find {
+        case SampleTableQuery(_, _, _, _) => true
+        case _ => false
+      } match {
+      case Some(sampleTableNode) =>
+        val debug = sqlContext.conf.getConfString(Constants.keyAQPDebug, "false").toBoolean
 
-        val batches =  Seq(
-          Batch("Add exchange", Once, EnsureRequirements(sqlContext)),
-          Batch("Add row converters", Once, EnsureRowFormats),
-          Batch("Identify Sampled Relations", Once,
-            // SafetyCheck,
-            IdentifySampledRelation) ,
-          Batch("Pre-Bootstrap Optimization", FixedPoint(100),
-            PruneProjects
-          ) ,
-          Batch("Bootstrap", Once,
-           // AddScaleFactor,
-            PushDownPartialAggregate,
-            PushUpResample,
-            PushUpSeed,
-            ImplementResample,
-            PropagateBootstrap,
-            IdentifyUncertainTuples,
-            CleanupOutputTuples,
-            InsertCollect(false, data.confidence/100)
-          ) ,
-          Batch("Post-Bootstrap Optimization", FixedPoint(100),
-            PruneColumns,
-            PushDownFilter,
-            PruneProjects,
-            OptimizeOperatorOrder,
-            PruneFilters
-          ) ,
-          Batch("Consolidate Bootstrap & Lineage Embedding", Once,
-            ConsolidateBootstrap(5),
-            IdentifyLazyEvaluates,
-            EmbedLineage
-          ) ,
-          Batch("Materialize Plan", Once,
-            ImplementSort,
-            // ImplementJoin(),
-            ImplementProject(),
-            ImplementAggregate(2),
-            ImplementCollect(),
-            CleanupAnalysisExpressions
+        new RuleExecutor[SparkPlan] {
+
+          val batches = Seq(
+            Batch("Add exchange", Once, EnsureRequirements(sqlContext)),
+            Batch("Add row converters", Once, EnsureRowFormats),
+            Batch("Identify Sampled Relations", Once,
+              // SafetyCheck,
+              IdentifySampledRelation),
+            Batch("Pre-Bootstrap Optimization", FixedPoint(100),
+              PruneProjects
+            ),
+            Batch("Bootstrap", Once,
+              // AddScaleFactor,
+              PushDownPartialAggregate,
+              PushUpResample,
+              PushUpSeed,
+              ImplementResample,
+              PropagateBootstrap,
+              IdentifyUncertainTuples,
+              CleanupOutputTuples,
+              InsertCollect(debug, sampleTableNode.asInstanceOf[SampleTableQuery].confidence / 100)
+            ),
+            Batch("Post-Bootstrap Optimization", FixedPoint(100),
+              PruneColumns,
+              PushDownFilter,
+              PruneProjects,
+              OptimizeOperatorOrder,
+              PruneFilters
+            ),
+            Batch("Consolidate Bootstrap & Lineage Embedding", Once,
+              ConsolidateBootstrap(sqlContext.conf.getConfString(Constants.keyNumBootStrapTrials,
+                Constants.defaultNumBootStrapTrials.toString).toInt, debug),
+              IdentifyLazyEvaluates,
+              EmbedLineage
+            ),
+            Batch("Materialize Plan", Once,
+              ImplementSort,
+              // ImplementJoin(),
+              ImplementProject(),
+              ImplementAggregate(2),
+              ImplementCollect(),
+              CleanupAnalysisExpressions
+            )
           )
-        )
-      }
+        }
 
-    }else {
-      sqlContext.prepareForExecution
+      case None => sqlContext.prepareForExecution
     }
-
 
 
 

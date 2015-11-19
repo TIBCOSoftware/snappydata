@@ -1001,9 +1001,16 @@ object PruneFilters extends Rule[SparkPlan] {
  * NOTE: we need to propagate all the attributes again
  * because we changed the output attributes of operators.
  */
-case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
+case class ConsolidateBootstrap(numTrials: Int, debug: Boolean) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = {
     val toFlattened = new mutable.HashMap[ExprId, Seq[Attribute]]()
+
+
+    def getName(name: String, idx: Int) = if(debug) {
+      name + idx
+    }else {
+      name
+    }
 
     def flatten(expression: Expression): Seq[Expression] = expression match {
       case ApproxColumn(conf, columns, mults, _) => {
@@ -1018,8 +1025,8 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
       case alias@TaggedAlias(tag: Bootstrap, child, name)
         if !alias.references.exists(ref => toFlattened.contains(ref.exprId)) =>
         val flattened = flatten(child).zipWithIndex.map { case (expr, idx) =>
-          if (idx == 0) TaggedAlias(tag, expr, name)(alias.exprId, alias.qualifiers)
-          else TaggedAlias(tag, expr, name)(qualifiers = alias.qualifiers)
+          if (idx == 0) TaggedAlias(tag, expr, getName(name, idx))(alias.exprId, alias.qualifiers)
+          else TaggedAlias(tag, expr, getName(name, idx))(qualifiers = alias.qualifiers)
         }
         toFlattened(alias.exprId) = flattened.map(_.toAttribute)
         flattened
@@ -1029,7 +1036,7 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
             // child match {
             // case x: TaggedAggregateExpression2 => x
             // case _ =>
-            TaggedAlias(tag, expr, name)(alias.exprId, alias.qualifiers)
+            TaggedAlias(tag, expr, getName(name, idx))(alias.exprId, alias.qualifiers)
             // }
           }
           else {
@@ -1037,7 +1044,7 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
             // case x: TaggedAggregateExpression2 => TaggedAggregateExpression2(x.tag, x.aggregateFunction, x.mode,
             //   x.isDistinct, x.name)(qualifiers = x.qualifiers, explicitMetadata = x.explicitMetadata)
             // case _ =>
-            TaggedAlias(tag, expr, name)(qualifiers = alias.qualifiers)
+            TaggedAlias(tag, expr, getName(name, idx))(qualifiers = alias.qualifiers)
           }
 
 
@@ -1050,8 +1057,8 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
       }
       case alias@Alias(child, name) =>
         val flattened = flatten(child).zipWithIndex.map { case (expr, idx) =>
-          if (idx == 0) Alias(expr, name)(alias.exprId, alias.qualifiers)
-          else Alias(expr, name)(qualifiers = alias.qualifiers)
+          if (idx == 0) Alias(expr, getName(name, idx))(alias.exprId, alias.qualifiers)
+          else Alias(expr, getName(name, idx))(qualifiers = alias.qualifiers)
         }
         toFlattened(alias.exprId) = flattened.map(_.toAttribute)
         flattened
@@ -1059,9 +1066,9 @@ case class ConsolidateBootstrap(numTrials: Int) extends Rule[SparkPlan] {
       case uta@UnTaggedAggregateExpression2(aggFunc: DelegateFunction, mode,
       isDistinct, name) => {
         val flattened = flatten(aggFunc).zipWithIndex.map { case (expr, idx) =>
-          if (idx == 0) UnTaggedAggregateExpression2(expr.asInstanceOf[AggregateFunction2], mode, isDistinct, name)(uta.exprId, uta.qualifiers,
+          if (idx == 0) UnTaggedAggregateExpression2(expr.asInstanceOf[AggregateFunction2], mode, isDistinct, getName(name, idx))(uta.exprId, uta.qualifiers,
             uta.explicitMetadata)
-          else UnTaggedAggregateExpression2(expr.asInstanceOf[AggregateFunction2], mode, isDistinct, name)(qualifiers = uta.qualifiers,
+          else UnTaggedAggregateExpression2(expr.asInstanceOf[AggregateFunction2], mode, isDistinct, getName(name, idx))(qualifiers = uta.qualifiers,
             explicitMetadata = uta.explicitMetadata)
         }
         toFlattened(uta.exprId) = flattened.map(_.toAttribute)
