@@ -120,6 +120,7 @@ class ClusterManagerTestUtils {
       addUrlForHiveMetaStore: Boolean): Unit = {
     assert(sc == null)
     props.setProperty("host-data", "false")
+    props.setProperty("log-level", "info");
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf().setMaster(s"snappydata://localhost[$locatorPort]")
         .setAppName("myapp")
@@ -137,8 +138,8 @@ class ClusterManagerTestUtils {
       conf.set(io.snappydata.Constant.PROPERTY_PREFIX + k, v)
     })
     if (addUrlForHiveMetaStore) {
-      val snappydataurl = "jdbc:snappydata:;locators=localhost["
-      + locatorPort + "];route-query=false;user=HIVE_METASTORE;default-persistent=true"
+      val snappydataurl = "jdbc:snappydata:;locators=localhost[" +
+          locatorPort + "];route-query=false;user=HIVE_METASTORE;default-persistent=true"
       conf.set("gemfirexd.db.url", snappydataurl)
       conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
     }
@@ -148,6 +149,8 @@ class ClusterManagerTestUtils {
     snc = SnappyContext(sc)
     assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
     logger.info("SnappyContext CREATED successfully.")
+    val lead: Server = ServiceManager.getServerInstance
+    assert(lead.status == FabricService.State.RUNNING)
   }
 
   /**
@@ -155,10 +158,9 @@ class ClusterManagerTestUtils {
     */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
+    props.setProperty("log-level", "info")
     val server: Server = ServiceManager.getServerInstance
-
     server.start(props)
-
     assert(server.status == FabricService.State.RUNNING)
   }
 
@@ -169,13 +171,13 @@ class ClusterManagerTestUtils {
 
   def stopSpark(): Unit = {
     // cleanup metastore
+    val snc = SnappyContext()
     if (snc != null) {
       snc.catalog.getTables(None).foreach {
         case (tableName, false) => snc.dropExternalTable(tableName, true)
         case _ =>
       }
       SnappyContext.stop()
-      snc = null
     }
     if (sc != null) {
       if (!sc.isStopped) sc.stop()
@@ -186,16 +188,6 @@ class ClusterManagerTestUtils {
   def stopAny(): Unit = {
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
-      // cleanup the database objects first
-      /*
-      val store: GemFireStore = GemFireStore.getBootedInstance
-      if (store != null && Misc.getGemFireCacheNoThrow != null
-          && GemFireXDUtils.getMyVMKind.isAccessorOrStore) {
-        val conn = DriverManager.getConnection("jdbc:snappydata:;")
-        CleanDatabaseTestSetup.cleanDatabase(conn, false)
-        conn.close()
-      }
-      */
       service.stop(null)
     }
   }
