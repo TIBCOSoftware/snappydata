@@ -1,5 +1,6 @@
 package org.apache.spark.sql.store.impl
 
+import java.net.ConnectException
 import java.sql.{DriverManager, Connection}
 import java.util.Properties
 
@@ -22,6 +23,9 @@ import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, TaskContext}
+import io.snappydata.{Constant, Utils}
+
+import scala.util.Random
 
 /**
  * Columnar Store implementation for GemFireXD.
@@ -149,23 +153,14 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
   extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
-    DriverRegistry.register("com.pivotal.gemfirexd.jdbc.ClientDriver")
+    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER )
     val resolvedName = StoreUtils.lookupName(tableName, schema)
 
-    val localhost = SocketCreator.getLocalHost.getHostAddress
-    val hostMap = split.asInstanceOf[ExecutorLocalShellPartition].getHostMap
-
-    val url = {
-      if (hostMap.keySet.contains(localhost))
-        hostMap.get(localhost).get
-      else
-        hostMap.get(hostMap.head._1).get
-    }
-
     //TODO use connection Pool
-    val conn  = DriverManager.getConnection(url)
+    val conn = getConnection(ArrayBuffer(split.asInstanceOf[ExecutorLocalShellPartition].hostList:_*))
 
     conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+
     val par = split.index
 
     val statement = conn.createStatement();
@@ -174,6 +169,27 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
     val rs = statement.executeQuery(query)
     new CachedBatchIteratorOnRS(conn, store.connectionType, requiredColumns, statement, rs)
 
+  }
+
+
+  def getConnection(hostList: ArrayBuffer[(String, String)]): Connection = {
+    val localhost = SocketCreator.getLocalHost
+    val index = {
+      val index = hostList.indexWhere(e => e._2.contains(localhost.getHostAddress))
+      if (index < 0) Random.nextInt(hostList.size)
+      else index
+    }
+    try {
+      DriverManager.getConnection(hostList(index)._2)
+    } catch {
+      case connectException: ConnectException =>
+        if (hostList.size == 1)
+          throw connectException
+        else {
+          hostList.remove(index)
+          getConnection(hostList)
+        }
+    }
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -188,7 +204,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
     val numPartitions = bucketToServerList.size
     val partitions = new Array[Partition](numPartitions)
     for (p <- 0 until numPartitions) {
-      partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
+      partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p) )
     }
     partitions
   }
@@ -196,7 +212,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
 
   private def getBucketToServerMapping(resolvedName: String): Array[Array[(String, String)]] = {
     //todo - replicated regions needs to be handled or not required????
-    val urlPrefix = "jdbc:gemfirexd://"
+    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
     val region: PartitionedRegion = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
     val bidToAdvisorMap = region.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
     val distributedMembersToNetServerMap = GemFireXDUtils.getGfxdAdvisor.
@@ -212,8 +228,12 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
             for (bOwner: InternalDistributedMember <- bOwners)
               yield {
                 val netServer: String = distributedMembersToNetServerMap.get(bOwner)
+                val hostNameWithAddress = netServer.substring(0,netServer.indexOf("[")).split("/")
+                val host =  if (hostNameWithAddress(0) == "" || hostNameWithAddress(0) == null )
+                  hostNameWithAddress(1)
+                else hostNameWithAddress (0)
                 val clientPort = netServer.substring(netServer.indexOf("[") + 1, netServer.indexOf("]"))
-                Tuple2(bOwner.getIpAddress.getHostAddress, s"$urlPrefix" + bOwner.getIpAddress.getHostName + s":$clientPort")
+                Tuple2(bOwner.getIpAddress.getHostAddress, s"$urlPrefix$host:$clientPort")
               }
           }
           serverPerBucket
