@@ -800,7 +800,7 @@ object SnappyContext extends Logging {
       if (!locator.matches(".+\\[[0-9]+\\]"))
         throw new Exception(s"locator info should be provided in the format host[port]")
       val properties = new Properties()
-      properties.setProperty(Property.locators, locator)
+      properties.setProperty("locators", locator)
       properties.setProperty("host-data", "false")
       val server = getServerInstance()
       server.getClass.getMethod("start", properties.getClass).invoke(server, properties)
@@ -815,6 +815,7 @@ object SnappyContext extends Logging {
   }
 
 
+
   def stop(): Unit = {
     val sc = _globalContext
     if (sc != null && !sc.isStopped) {
@@ -827,9 +828,9 @@ object SnappyContext extends Logging {
       ConnectionPool.clear()
       //TODO - conditional base disconnect driver from the embedded DS
       if (ExternalStoreUtils.isExternalShellMode(sc)) {
-        val server = getServerInstance
-        server.getClass.getMethod("stop", new Properties().getClass).invoke(server, null)
-      }
+      val server = getServerInstance
+      server.getClass.getMethod("stop", new Properties().getClass).invoke(server, null)
+    }
       sc.stop()
     }
   }
