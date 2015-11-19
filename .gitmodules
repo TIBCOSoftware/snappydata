@@ -2,3 +2,11 @@
 	path = spark-jobserver
 	url = https://github.com/SnappyData/spark-jobserver.git
 	branch = snappydata
+[submodule "snappy-spark"]
+	path = snappy-spark
+	url = https://github.com/SnappyData/snappy-spark.git
+	branch = snappy/master
+[submodule "snappy-store"]
+	path = snappy-store
+	url = https://github.com/gemfire/gemxd-staging.git
+	branch = snappy-store

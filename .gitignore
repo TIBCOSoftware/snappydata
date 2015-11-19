@@ -1,6 +1,4 @@
 *.class
-snappy-spark
-snappy-store
 snappy-aqp
 
 # sbt specific
