@@ -126,7 +126,9 @@ private[sql] object ExternalStoreUtils {
 
   def getConnection(url: String, connProperties: Properties) = {
     connProperties.remove("poolProperties")
-    JdbcUtils.createConnection(url, connProperties)
+    val con = JdbcUtils.createConnection(url, connProperties)
+    con.setTransactionIsolation(Connection.TRANSACTION_NONE)
+    con
     //DriverManager.getConnection(url)
   }
 

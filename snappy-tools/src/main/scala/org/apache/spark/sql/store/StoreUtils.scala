@@ -184,7 +184,7 @@ object StoreUtils {
         case true => throw new AnalysisException("Column table cannot take LRUCOUNT as Evcition Attributes")
         case _ =>
       }
-      s"$GEM_EVICTION_BY $v} "
+      s"$GEM_EVICTION_BY $v "
     }).getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")

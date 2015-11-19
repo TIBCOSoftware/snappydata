@@ -90,7 +90,11 @@ class JDBCAppendableRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
+    scanTable(table, requiredColumns, filters)
+  }
 
+  def scanTable(tableName: String, requiredColumns: Array[String],
+      filters: Array[Filter]) :RDD[Row] = {
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
         schema.fields.minBy { a =>
@@ -103,7 +107,7 @@ class JDBCAppendableRelation(
     }
 
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table, requestedColumns.map(column => columnPrefix + column), uuidList,
+      externalStore.getCachedBatchRDD(tableName, requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
@@ -217,7 +221,7 @@ class JDBCAppendableRelation(
     createExternalTableForCachedBatches(table, externalStore)
   }
 
-  private def createExternalTableForCachedBatches(tableName: String,
+  def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")

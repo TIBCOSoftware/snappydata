@@ -1,9 +1,10 @@
 package org.apache.spark.sql.store
 
 import io.snappydata.core.{TestData, Data, TestSqlContext, FileCleaner}
+import org.apache.spark.sql.execution.datasources.DDLException
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
 
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
 import org.apache.spark.{SparkContext, Logging}
 
 /**
@@ -11,7 +12,7 @@ import org.apache.spark.{SparkContext, Logging}
  */
 class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
 
-  var sc : SparkContext= null
+  var sc: SparkContext = null
 
   var snc: SnappyContext = null
 
@@ -27,7 +28,7 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
     }
   }
 
-  val tableName : String = "ColumnTable"
+  val tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]
 
@@ -62,8 +63,8 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
   }
 
 
-  ignore("test the shadow table creation heavy insert") {
-   // snc.sql(s"DROP TABLE IF EXISTS $tableName")
+  test("test the shadow table creation heavy insert") {
+    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
         "USING column " +
@@ -112,4 +113,148 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
     println("Successful")
   }
 
+  test("test the shadow table with NOT NULL Column") {
+    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    intercept[DDLException] {
+      val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT NOT NULL ,Value STRING) " +
+          "USING column " +
+          "options " +
+          "(" +
+          "BUCKETS '100')")
+    }
+  }
+
+  test("test the shadow table with primary key") {
+    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    intercept[DDLException] {
+      val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT PRIMARY KEY ,Value STRING)" +
+          "USING column " +
+          "options " +
+          "(" +
+          "BUCKETS '100')")
+    }
+  }
+
+
+  test("test the shadow table with persistence") {
+    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PERSISTENT" +
+        "BUCKETS '100')")
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 0)
+
+    val rdd = sc.parallelize(
+      (1 to 19999).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    val r2 = result.collect
+    assert(r2.length == 19999)
+    println("Successful")
+  }
+
+  test("test the shadow table with eviction") {
+    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "BUCKETS '100')")
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 0)
+
+    val rdd = sc.parallelize(
+      (1 to 19999).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    val r2 = result.collect
+    assert(r2.length == 19999)
+    println("Successful")
+  }
+
+//  val PARTITION_BY = "PARTITION_BY"
+//  val BUCKETS = "BUCKETS"
+//  val COLOCATE_WITH = "COLOCATE_WITH"
+//  val REDUNDANCY = "REDUNDANCY"
+//  val RECOVERYDELAY = "RECOVERYDELAY"
+//  val MAXPARTSIZE = "MAXPARTSIZE"
+//  val EVICTION_BY = "EVICTION_BY"
+//  val PERSISTENT = "PERSISTENT"
+//  val SERVER_GROUPS = "SERVER_GROUPS"
+//  val OFFHEAP = "OFFHEAP"
+
+  test("test the shadow table with options on compressed table") {
+    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '213'," +
+        "REDUNDANCY '2')")
+
+    val result = snc.sql("SELECT Key1 FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 0)
+
+    val rdd = sc.parallelize(
+      (1 to 19999).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    val r2 = result.collect
+    assert(r2.length == 19999)
+    println("Successful")
+  }
+
+  test("test the shadow table with eviction options on compressed table") {
+    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '213'," +
+        "REDUNDANCY '2'," +
+        "EVICTION_BY 'LRUMEMSIZE 200')")
+
+    val result = snc.sql("SELECT Value FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 0)
+
+    val rdd = sc.parallelize(
+      (1 to 19999).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    val r2 = result.collect
+    assert(r2.length == 19999)
+    println("Successful")
+  }
+
+  test("test the shadow table with eviction options LRUCOUNT on compressed table") {
+    intercept[AnalysisException] {
+      val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
+          "USING column " +
+          "options " +
+          "(" +
+          "PARTITION_BY 'Key1'," +
+          "BUCKETS '213'," +
+          "REDUNDANCY '2'," +
+          "EVICTION_BY 'LRUCOUNT 20')")
+    }
+  }
 }

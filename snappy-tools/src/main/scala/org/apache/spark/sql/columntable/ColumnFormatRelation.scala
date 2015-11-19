@@ -1,7 +1,10 @@
 package org.apache.spark.sql.columntable
 
+import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
+
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -9,10 +12,10 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.{InternalRow, CatalystTypeConverters}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ColumnType, ColumnarRelationProvider, ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -80,7 +83,6 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
         schema.fields.minBy { a =>
@@ -91,10 +93,11 @@ class ColumnFormatRelation(
     } else {
       requiredColumns
     }
+
     val outputTypes = requestedColumns.map { a => schema(a) }
     val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
 
-    val colRDD = super.buildScan(requiredColumns, filters)
+    val colRDD = super.scanTable(table+shadowTableNamePrefix, requiredColumns, filters)
 
     colRDD.union(connectionType match {
       case ConnectionType.Embedded =>
@@ -208,7 +211,7 @@ class ColumnFormatRelation(
     createActualTable(table, externalStore)
   }
 
-  private def createExternalTableForCachedBatches(tableName: String,
+  override def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")
@@ -405,7 +408,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
 
-    val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable)
+    val ddlExtensionForShadowTable = StoreUtils.ddlExtensionStringForShadowTable(parametersForShadowTable)
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
