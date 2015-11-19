@@ -1,7 +1,5 @@
 package io.snappydata
 
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
-
 /**
   * Created by soubhikc on 11/11/15.
   *
@@ -10,7 +8,6 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
   * we decided to use upper case with underscore word separator.
   */
 object Constant {
-  SnappyEmbeddedModeClusterManager.register
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
 
@@ -28,7 +25,6 @@ object Constant {
   * i.e. upper camel case.
   */
 object Property {
-  SnappyEmbeddedModeClusterManager.register
 
   val locators = s"${Constant.PROPERTY_PREFIX}locators"
 

@@ -130,9 +130,8 @@ object ExecutorInitiator extends Logging {
                     driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
                     driverConf.set("spark.shuffle.memoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
 
-                    // TODO: Hemant: get the number of cores from spark conf
-
-                    val cores = 6
+                    val cores = driverConf.getInt("spark.executor.cores",
+                      Runtime.getRuntime().availableProcessors())
 
                     env = SparkCallbacks.createExecutorEnv(
                       driverConf, memberId, executorHost, port, cores, false)

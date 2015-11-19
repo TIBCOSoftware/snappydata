@@ -106,6 +106,7 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+    connProps.setProperty("route-query", "false")
     val allPoolProps = getAllPoolProperties(url, driver.get,
       poolProps, hikariCP)
     (url, driver.get, allPoolProps, connProps, hikariCP)
