@@ -97,11 +97,17 @@ object ExternalShellDUnitTest extends ClusterManagerTestUtils with Serializable 
   def VerifyEmbeddedTablesAndCreateNewInShell(locatorPort: Int, prop: Properties): Unit = {
 
     val hostName = InetAddress.getLocalHost.getHostName
+    //This  should be created automatically in the same way for embedded and non embedded shell mode
+    val snappydataurl = "jdbc:snappydata:;locators=localhost[" +
+      locatorPort + "];route-query=false;user=HIVE_METASTORE;default-persistent=true"
 
     val conf = new SparkConf().
          setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("snappy.locator", s"localhost[$locatorPort]")
+        .set("snappydata.locators", s"localhost[$locatorPort]")
+        .set("gemfirexd.db.url", snappydataurl)
+        .set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
+
       //TODO - how to pass this class to spark executors??
         .set ("spark.executor.extraClassPath" , "/home/namrata/snappy-commons/data.jar")
 

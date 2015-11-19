@@ -3,7 +3,7 @@ package org.apache.spark.sql
 import java.util.Properties
 
 
-import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.scheduler.cluster.{CoarseGrainedSchedulerBackend, SparkDeploySchedulerBackend}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -11,7 +11,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
-import io.snappydata.ToolsCallback
+import io.snappydata.{Property, ToolsCallback}
 import io.snappydata.util.SqlUtils
 
 import org.apache.spark.rdd.RDD
@@ -33,7 +33,6 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
 import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
@@ -757,7 +756,6 @@ object SnappyContext extends Logging {
 
   private[this] val contextLock = new AnyRef
 
-  var externalShellMode = false;
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
@@ -797,11 +795,12 @@ object SnappyContext extends Logging {
   private def initSparkContext(sc: SparkContext): Unit = {
 
     //TODO - For now assuming url host[port]. Will finalize it later.
-    if (!sc.schedulerBackend.isInstanceOf[LocalBackend] &&
-      !sc.schedulerBackend.isInstanceOf[SnappyCoarseGrainedSchedulerBackend]) {
-      externalShellMode = true
+    if (ExternalStoreUtils.isExternalShellMode(sc)) {
+      val locator = sc.getConf.get(Property.locators)
+      if (!locator.matches(".+\\[[0-9]+\\]"))
+        throw new Exception(s"locator info should be provided in the format host[port]")
       val properties = new Properties()
-      properties.setProperty("locators", sc.getConf.get("snappy.locator"))
+      properties.setProperty(Property.locators, locator)
       properties.setProperty("host-data", "false")
       val server = getServerInstance()
       server.getClass.getMethod("start", properties.getClass).invoke(server, properties)
@@ -816,7 +815,6 @@ object SnappyContext extends Logging {
   }
 
 
-
   def stop(): Unit = {
     val sc = _globalContext
     if (sc != null && !sc.isStopped) {
@@ -828,10 +826,10 @@ object SnappyContext extends Logging {
       // then on the driver
       ConnectionPool.clear()
       //TODO - conditional base disconnect driver from the embedded DS
-      if (externalShellMode) {
-      val server = getServerInstance
-      server.getClass.getMethod("stop", new Properties().getClass).invoke(server, null)
-    }
+      if (ExternalStoreUtils.isExternalShellMode(sc)) {
+        val server = getServerInstance
+        server.getClass.getMethod("stop", new Properties().getClass).invoke(server, null)
+      }
       sc.stop()
     }
   }

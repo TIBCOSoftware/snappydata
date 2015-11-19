@@ -52,6 +52,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
       logger.info(s"setting from url ${prop} with ${value}")
       sc.conf.set(prop, value)
+      sc.conf.set(Property.embedded , "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }

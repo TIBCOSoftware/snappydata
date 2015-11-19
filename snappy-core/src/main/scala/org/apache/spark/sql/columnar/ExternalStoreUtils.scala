@@ -3,8 +3,8 @@ package org.apache.spark.sql.columnar
 import java.sql.Connection
 import java.util.Properties
 
-import org.apache.spark.scheduler.cluster.SnappyCoarseGrainedSchedulerBackend
-import org.apache.spark.scheduler.local.LocalBackend
+import io.snappydata.Property
+import org.apache.spark.scheduler.cluster.CoarseGrainedSchedulerBackend
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import scala.collection.mutable
 
@@ -145,17 +145,11 @@ private[sql] object ExternalStoreUtils {
   }
 
   def isExternalShellMode (sparkContext: SparkContext): Boolean ={
-    if (!sparkContext.schedulerBackend.isInstanceOf[LocalBackend] &&
-        !sparkContext.schedulerBackend.isInstanceOf[SnappyCoarseGrainedSchedulerBackend])
-       true
-    else
-      false
+    val locator = sparkContext.getConf.getOption(Property.locators).getOrElse(return false)
+    val embeddedMode = sparkContext.getConf.getOption(Property.embedded).getOrElse(return true)
+    false
   }
 
-  def getHiveMetaStoreConnectionURL(sparkContext: SparkContext) :String = {
-    //TODO - finalize the correct string. currently in sync with  gemfirexd.db.url property
-     "jdbc:snappydata:;locators=" + sparkContext.getConf.get("snappy.locator").trim +";route-query=false;user=HIVE_METASTORE;default-persistent=true"
-  }
 }
 
 object ConnectionType extends Enumeration {

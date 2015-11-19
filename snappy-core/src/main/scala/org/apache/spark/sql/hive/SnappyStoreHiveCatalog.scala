@@ -139,14 +139,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         sparkConf.get("gemfirexd.db.driver"))
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         "APP")
-    } else if (ExternalStoreUtils.isExternalShellMode(context.sparkContext)) {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-        ExternalStoreUtils.getHiveMetaStoreConnectionURL(context.sparkContext))
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "APP")
     }
+
     //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
 
 
