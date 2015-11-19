@@ -33,6 +33,7 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     fs.stop(null)
   }
+
   ignore("Snappy Lead start") {
     val fs: Lead = ServiceManager.getLeadInstance
 
