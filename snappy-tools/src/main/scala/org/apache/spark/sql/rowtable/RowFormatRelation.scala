@@ -50,7 +50,7 @@ class RowFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  val connFunctor = JDBCMutableRelation.getConnector(table, driver, poolProperties,
+  val connFunctor = ExternalStoreUtils.getConnector(table, driver, poolProperties,
     connProperties, hikariCP)
 
   override def buildScan(requiredColumns: Array[String],
@@ -60,7 +60,7 @@ class RowFormatRelation(
         new RowFormatScanRDD(
           sqlContext.sparkContext,
           connFunctor,
-          JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
+          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
           filters,

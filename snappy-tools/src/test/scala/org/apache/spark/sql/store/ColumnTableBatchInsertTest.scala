@@ -185,17 +185,6 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
     println("Successful")
   }
 
-//  val PARTITION_BY = "PARTITION_BY"
-//  val BUCKETS = "BUCKETS"
-//  val COLOCATE_WITH = "COLOCATE_WITH"
-//  val REDUNDANCY = "REDUNDANCY"
-//  val RECOVERYDELAY = "RECOVERYDELAY"
-//  val MAXPARTSIZE = "MAXPARTSIZE"
-//  val EVICTION_BY = "EVICTION_BY"
-//  val PERSISTENT = "PERSISTENT"
-//  val SERVER_GROUPS = "SERVER_GROUPS"
-//  val OFFHEAP = "OFFHEAP"
-
   test("test the shadow table with options on compressed table") {
     val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
         "USING column " +
@@ -246,7 +235,7 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
   }
 
   test("test the shadow table with eviction options LRUCOUNT on compressed table") {
-    intercept[AnalysisException] {
+    intercept[DDLException] {
       val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
           "USING column " +
           "options " +

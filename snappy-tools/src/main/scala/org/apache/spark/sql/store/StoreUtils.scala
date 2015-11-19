@@ -2,6 +2,8 @@ package org.apache.spark.sql.store.util
 
 import java.util.Properties
 
+import org.apache.spark.sql.execution.datasources.DDLException
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -181,7 +183,7 @@ object StoreUtils {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(EVICTION_BY).map(v => {
       v.contains(LRUCOUNT) match {
-        case true => throw new AnalysisException("Column table cannot take LRUCOUNT as Evcition Attributes")
+        case true => throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
         case _ =>
       }
       s"$GEM_EVICTION_BY $v "
