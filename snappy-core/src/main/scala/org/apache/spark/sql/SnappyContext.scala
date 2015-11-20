@@ -797,7 +797,7 @@ object SnappyContext extends Logging {
     //TODO - For now assuming url host[port]. Will finalize it later.
     if (ExternalStoreUtils.isExternalShellMode(sc)) {
       val locator = sc.getConf.get(Property.locators)
-      if (!locator.matches(".+\\[[0-9]+\\]"))
+      if (!locator.matches(".+[0-9]+"))
         throw new Exception(s"locator info should be provided in the format host[port]")
       val properties = new Properties()
       properties.setProperty("locators", locator)

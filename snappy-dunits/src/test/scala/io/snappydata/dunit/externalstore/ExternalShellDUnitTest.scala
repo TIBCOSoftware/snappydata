@@ -104,7 +104,7 @@ object ExternalShellDUnitTest extends ClusterManagerTestUtils with Serializable 
     val conf = new SparkConf().
          setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("snappydata.locators", s"localhost[$locatorPort]")
+        .set("snappydata.locators", s"localhost:$locatorPort")
         .set("gemfirexd.db.url", snappydataurl)
         .set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
 
