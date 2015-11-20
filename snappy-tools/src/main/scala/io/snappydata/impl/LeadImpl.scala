@@ -71,10 +71,14 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
 
     val conf = new SparkConf()
-    conf.setMaster(Constant.JDBC_URL_PREFIX + s"$locator").setAppName("leaderLauncher")
+    conf.setMaster(Constant.JDBC_URL_PREFIX + s"$locator").
+      setAppName("leaderLauncher").
+      set(Property.jobserverEnabled, "true")
 
     bootProperties.asScala.foreach({ case (k, v) =>
-      val key = if (!k.startsWith(Constant.PROPERTY_PREFIX)) {
+      val key = if (!k.startsWith(Constant.PROPERTY_PREFIX) &&
+        !k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX)
+      ) {
         Constant.PROPERTY_PREFIX + k
       }
       else {
@@ -95,11 +99,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     initStartupArgs(conf)
 
     logInfo("cluster configuration after overriding certain properties \n"
-        + conf.toDebugString)
+      + conf.toDebugString)
 
     val confProps = conf.getAll
     val storeProps = new Properties()
-
+    
     val filteredProp = confProps.filter {
       case (k, _) => k.startsWith(Constant.PROPERTY_PREFIX)
     }.map {
@@ -141,7 +145,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   @throws(classOf[SQLException])
   override def stop(shutdownCredentials: Properties): Unit = {
     assert(sparkContext != null, "Mix and match of LeadService api " +
-        "and SparkContext is unsupported.")
+      "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
       sparkContext.stop()
       sparkContext = null
@@ -162,15 +166,15 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       case State.STANDBY => latch.await()
       case State.RUNNING => ; // no-op
       case _ => logWarning("not waiting because server not in standby mode. status is "
-          + status())
+        + status())
     }
   }
 
   private[snappydata] def initStartupArgs(conf: SparkConf) = {
 
     def changeOrAppend(attr: String, value: String,
-        overwrite: Boolean = false,
-        ignoreIfPresent: Boolean = false) = {
+                       overwrite: Boolean = false,
+                       ignoreIfPresent: Boolean = false) = {
       val x = conf.getOption(attr).getOrElse {
         null
       }
@@ -229,7 +233,12 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       internalStart(sc.getConf)
     }
 
-    if (bootProperties.getProperty(Property.jobserverEnabled).toBoolean) {
+    val jobServerEnabled = bootProperties.getProperty(Property.jobserverEnabled).toBoolean
+    if (_directApiInvoked) {
+      assert(jobServerEnabled,
+        "JobServer must have been enabled with lead.start(..) invocation")
+    }
+    if (jobServerEnabled) {
       logInfo("Starting job server...")
 
       val confFile = bootProperties.getProperty("jobserver.configFile") match {
@@ -275,22 +284,22 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   @throws(classOf[SQLException])
   override def startNetworkServer(bindAddress: String,
-      port: Int,
-      networkProperties: Properties): NetworkInterface = {
+                                  port: Int,
+                                  networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Network server cannot be started on lead node.")
   }
 
   @throws(classOf[SQLException])
   override def startThriftServer(bindAddress: String,
-      port: Int,
-      networkProperties: Properties): NetworkInterface = {
+                                 port: Int,
+                                 networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Thrift server cannot be started on lead node.")
   }
 
   @throws(classOf[SQLException])
   override def startDRDAServer(bindAddress: String,
-      port: Int,
-      networkProperties: Properties): NetworkInterface = {
+                               port: Int,
+                               networkProperties: Properties): NetworkInterface = {
     throw new SQLException("DRDA server cannot be started on lead node.")
   }
 

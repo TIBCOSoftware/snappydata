@@ -22,7 +22,7 @@ final class SnappyJobContext(val sc: SparkContext, val snc: SnappyContext) exten
     * stop method.
     */
   override def stop(): Unit = {
-    sparkContext.stop()
+    // sparkContext.stop()
   }
 
   /**
