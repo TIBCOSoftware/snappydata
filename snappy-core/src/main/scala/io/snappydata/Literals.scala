@@ -15,6 +15,8 @@ object Constant {
 
   private[snappydata] val PROPERTY_PREFIX = "snappydata."
 
+  private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
+
 }
 
 /**
@@ -30,7 +32,7 @@ object Property {
 
   val mcastPort = s"${Constant.PROPERTY_PREFIX}mcast-port"
 
-  val jobserverEnabled = s"jobserver.enabled"
+  val jobserverEnabled = s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled"
 
-  val jobserverConfigFile = "jobserver.configFile"
+  val jobserverConfigFile = s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile"
 }
