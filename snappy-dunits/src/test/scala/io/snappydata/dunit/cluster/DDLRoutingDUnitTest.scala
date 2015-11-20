@@ -33,12 +33,13 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     createTableXD(conn, tableName)
     tableMetadataXD(tableName)
 
+    // Drop Table and Recreate
+    dropTableXD(conn, tableName)
     createTableXD(conn, tableName)
 
     // Will be enabled after introduction of shadow table
     //insertDataXD(conn, tableName)
     vm0.invoke(this.getClass, "insertData", tableName)
-    println("inserted values in ColumnTable = " + tableName)
 
     vm0.invoke(this.getClass, "queryData", tableName)
   }
@@ -72,6 +73,11 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def insertDataXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("insert into " + tableName + " values(1, 2, 3) ")
+  }
+
+  def dropTableXD(conn: Connection, tableName: String): Unit = {
+    val s = conn.createStatement()
+    s.execute("drop table " + tableName)
   }
 }
 
