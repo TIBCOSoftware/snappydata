@@ -1,11 +1,10 @@
 package io.snappydata.app
 
-import java.sql.{SQLException, DriverManager}
+import java.sql.{DriverManager, SQLException}
 
 import scala.actors.Futures._
 
 import io.snappydata.SnappyFunSuite
-import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.snappy._

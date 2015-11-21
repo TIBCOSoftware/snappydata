@@ -56,7 +56,8 @@ with Logging {
   def cleanup(): Unit = {
     val clearList = dirList
     dirList = Array[File]()
-    clearList.foreach(deleteDir(_))
+    clearList.foreach(deleteDir)
+    deleteDir(new File("metastore_db"))
     deleteDir(new File("datadictionary"))
     val filter = new FilenameFilter {
       override def accept(dir: File, name: String): Boolean = {
