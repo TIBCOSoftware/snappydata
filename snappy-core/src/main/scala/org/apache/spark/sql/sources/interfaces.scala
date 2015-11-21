@@ -139,7 +139,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   def extraCreateTableProperties(isLoner: Boolean): Properties =
     new Properties()
 
-  def getPartitionByClause(col : String) : String;
+  def getPartitionByClause(col : String) : String
 }
 
 object JdbcExtendedUtils {
@@ -257,8 +257,11 @@ object JdbcExtendedUtils {
   }
 }
 
-abstract class MutableRelationProvider extends ExternalSchemaRelationProvider
-with SchemaRelationProvider with RelationProvider with CreatableRelationProvider {
+abstract class MutableRelationProvider
+    extends ExternalSchemaRelationProvider
+    with SchemaRelationProvider
+    with RelationProvider
+    with CreatableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {

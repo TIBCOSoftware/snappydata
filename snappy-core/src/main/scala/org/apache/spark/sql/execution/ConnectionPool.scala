@@ -10,6 +10,10 @@ import com.zaxxer.hikari.util.PropertyBeanSetter
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
 import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
 
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.{GemFireXDDialect, GemFireXDClientDialect}
+
 /**
  * A global way to obtain a pooled DataSource with a given set of
  * pool and connection properties.
@@ -52,7 +56,7 @@ object ConnectionPool {
    * as identical for the same ID.
    *
    * @param id an ID for a pool that will shared by all requests against the
-   *           same id (e.g. the table name can be the idle for external table)
+   *           same id (e.g. the table name can be the ID for an external table)
    * @param props map of pool properties to their values; the key can be either
    *              `PoolProperty.Type` or a string (as in Tomcat or Hikari)
    * @param connectionProps set of any additional connection properties
@@ -113,10 +117,23 @@ object ConnectionPool {
    *
    * @see getPoolDataSource
    */
-  def getPoolConnection(id: String, poolProps: Map[String, String],
+  def getPoolConnection(id: String, driver: Option[String],
+      dialect: JdbcDialect, poolProps: Map[String, String],
       connProps: Properties = EMPTY_PROPS,
       hikariCP: Boolean = false): Connection = {
-    getPoolDataSource(id, poolProps, connProps, hikariCP).getConnection
+    try {
+      driver.foreach(DriverRegistry.register)
+    } catch {
+      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
+        s"Couldn't find driver class $driver", cnfe)
+    }
+    val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
+    val conn = ds.getConnection
+    dialect match {
+      case GemFireXDDialect | GemFireXDClientDialect =>
+        conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+    }
+    conn
   }
 
   private def removePoolKey(id: String,

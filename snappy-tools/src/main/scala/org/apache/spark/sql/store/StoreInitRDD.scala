@@ -6,9 +6,8 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.{Utils, ExecutorLocalPartition}
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -53,7 +52,7 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
     getPeerPartitions
   }
 
-  def getPeerPartitions(): Array[Partition] = {
+  def getPeerPartitions: Array[Partition] = {
     val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sc).
         keySet.zipWithIndex
 
@@ -69,6 +68,4 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
   def createPartition(index: Int,
       blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
-
-
 }

@@ -1,15 +1,13 @@
 package org.apache.spark.sql.columnar
 
-import java.sql.Connection
 import java.util.Properties
 
 import scala.collection.mutable
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.store.StoreProperties
 
@@ -35,12 +33,11 @@ private[sql] object ExternalStoreUtils {
     }
   }
 
-  def getDriver(url : String): Option[String] = {
-    val dialect = JdbcDialects.get(url)
+  def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case  GemFireXDDialect => Option("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-      case  GemFireXDClientDialect => Option("com.pivotal.gemfirexd.jdbc.ClientDriver")
-      case _=> Option(DriverRegistry.getDriverClassName(url))
+      case GemFireXDDialect => "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
+      case GemFireXDClientDialect => "com.pivotal.gemfirexd.jdbc.ClientDriver"
+      case _ => DriverRegistry.getDriverClassName(url)
     }
   }
 
@@ -71,18 +68,17 @@ private[sql] object ExternalStoreUtils {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-
     val url = parameters.remove("url").getOrElse {
        StoreProperties.defaultStoreURL(sc)
     }
 
-    val driver = parameters.remove("driver").orElse(getDriver(url))
+    val dialect = JdbcDialects.get(url)
+    val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
 
-    driver.foreach(DriverRegistry.register)
+    DriverRegistry.register(driver)
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
-
 
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
       case Some("hikari") => true
@@ -106,28 +102,18 @@ private[sql] object ExternalStoreUtils {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    connProps.setProperty("route-query", "false")
-    val allPoolProps = getAllPoolProperties(url, driver.get,
-      poolProps, hikariCP)
-    (url, driver.get, allPoolProps, connProps, hikariCP)
-  }
-
-  def getPoolConnection(id: String, driver: Option[String],
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): Connection = {
-    try {
-      if (driver.isDefined) DriverRegistry.register(driver.get)
-    } catch {
-      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
-        s"Couldn't find driver class $driver", cnfe)
+    dialect match {
+      case GemFireXDDialect | GemFireXDClientDialect =>
+        connProps.setProperty("route-query", "false")
     }
-    ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
+    val allPoolProps = getAllPoolProperties(url, driver,
+      poolProps, hikariCP)
+    (url, driver, allPoolProps, connProps, hikariCP)
   }
 
   def getConnection(url: String, connProperties: Properties) = {
     connProperties.remove("poolProperties")
     JdbcUtils.createConnection(url, connProperties)
-    //DriverManager.getConnection(url)
   }
 
   def getConnectionType(url: String) = {

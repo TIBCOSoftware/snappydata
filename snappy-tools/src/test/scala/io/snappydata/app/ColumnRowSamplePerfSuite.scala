@@ -17,15 +17,12 @@ import org.apache.spark.sql.snappy._
 class ColumnRowSamplePerfSuite extends SnappyFunSuite {
 
   override def cleanup(): Unit = {
-    val sc = ColumnRowSamplePerfSuite.sc
-    if (sc != null && !sc.isStopped) {
-      sc.stop()
-    }
+    SnappyContext.stop()
     try {
       DriverManager.getConnection(s"jdbc:snappydata:;shutdown=true")
     } catch {
       case sqlEx: SQLException =>
-        if (sqlEx.getSQLState != "XJ015") {
+        if (sqlEx.getSQLState != "08006" && sqlEx.getSQLState != "XJ015") {
           throw sqlEx
         }
     }

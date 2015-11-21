@@ -16,9 +16,8 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
   var snc: SnappyContext = null
 
   override def afterAll(): Unit = {
-    sc.stop()
+    SnappyContext.stop()
     FileCleaner.cleanStoreFiles()
-
   }
 
   override def beforeAll(): Unit = {
@@ -31,9 +30,6 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
   val tableName : String = "ColumnTable"
 
   val props = Map.empty[String, String]
-
-
-
 
   after {
     snc.dropExternalTable(tableName, true)

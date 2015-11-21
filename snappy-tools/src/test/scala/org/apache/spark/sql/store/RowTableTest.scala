@@ -16,9 +16,8 @@ class RowTableTest extends FunSuite with Logging with BeforeAndAfterAll with Bef
   var snc: SnappyContext = null
 
   override def afterAll(): Unit = {
-    sc.stop()
+    SnappyContext.stop()
     FileCleaner.cleanStoreFiles()
-
   }
 
   override def beforeAll(): Unit = {

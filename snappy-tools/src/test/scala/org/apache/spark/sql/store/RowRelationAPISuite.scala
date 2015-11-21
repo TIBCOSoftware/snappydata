@@ -18,7 +18,7 @@ class RowRelationAPISuite extends FunSuite with Logging  with BeforeAndAfterAll{
   var sc : SparkContext= null
 
   override def afterAll(): Unit = {
-    sc.stop()
+    SnappyContext.stop()
     FileCleaner.cleanStoreFiles()
   }
 

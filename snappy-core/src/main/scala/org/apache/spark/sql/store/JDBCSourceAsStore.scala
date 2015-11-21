@@ -1,6 +1,5 @@
 package org.apache.spark.sql.store
 
-import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.util.Properties
@@ -16,6 +15,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils}
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.{SparkContext, SparkEnv}
 
@@ -33,7 +33,6 @@ class JDBCSourceAsStore(_url: String,
 
   @transient
   protected lazy val rand = new Random
-
 
   @transient
   protected val dialect = JdbcDialects.get(url)
@@ -105,31 +104,13 @@ class JDBCSourceAsStore(_url: String,
     }, closeOnSuccess = false))
   }
 
-
-  private def prepareCachedBatchAsBlob(batch: CachedBatch, conn: Connection) = {
-    val outputStream = new ByteArrayOutputStream()
-    val dos = new DataOutputStream(outputStream)
-
-    val numCols = batch.buffers.length
-    dos.writeInt(numCols)
-
-    batch.buffers.foreach(x => {
-      dos.writeInt(x.length)
-      dos.write(x)
-    })
-    val ser = serializer.newInstance()
-    val bf = ser.serialize(batch.stats)
-    dos.write(bf.array())
-    // println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
-    outputStream.toByteArray
-  }
-
   implicit def uuidToString(uuid: UUIDRegionKey): String = {
     uuid.toString
   }
 
   override def getConnection(id: String): Connection = {
-    ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
+    ConnectionPool.getPoolConnection(id, None, dialect, poolProps,
+      connProps, _hikariCP)
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
@@ -170,10 +151,6 @@ class JDBCSourceAsStore(_url: String,
   override def poolProps = _poolProps
 
   override def connProps = _connProps
-
-  override def initSource(): Unit = ???
-
-  override def cleanup(): Unit = ???
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
@@ -215,4 +192,3 @@ final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
   }
 
 }
-

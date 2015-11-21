@@ -4,24 +4,22 @@ import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
 
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
-
 import scala.collection.JavaConverters._
 
 import akka.actor.ActorSystem
-import com.gemstone.gemfire.distributed.internal.{DistributionConfig, InternalDistributedSystem}
+import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.NetworkInterface
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import com.pivotal.gemfirexd.{Attribute, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
-import org.slf4j.LoggerFactory
 import spark.jobserver.JobServer
 
-import org.apache.spark.{Logging, SparkContext, SparkConf}
-import org.apache.spark.sql.{SnappyContextFactory, SnappyContext}
+import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 class LeadImpl extends ServerImpl with Lead with Logging {
 
@@ -39,7 +37,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       throw new Exception("GemFire Cache not initialized")
     }
 
-    val dSys = gfCache.getDistributedSystem.asInstanceOf[InternalDistributedSystem]
+    val dSys = gfCache.getDistributedSystem
 
     DLockService.create(LOCK_SERVICE_NAME, dSys, true, true, true)
   }
@@ -48,7 +46,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private val latch = new CountDownLatch(1)
   private var notificationCallback: (() => Unit) = _
-  private lazy val primaryLeadNodeWaiter = scheduleWaitForPrimaryDeparture
+  private lazy val primaryLeadNodeWaiter = scheduleWaitForPrimaryDeparture()
 
   private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
@@ -112,7 +110,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     storeProps.putAll(filteredProp.toMap.asJava)
 
     logInfo("passing store properties as " + storeProps)
-    super.start(storeProps, false)
+    super.start(storeProps, ignoreIfStarted = false)
 
     status() match {
       case State.RUNNING =>
@@ -134,11 +132,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           case false =>
             serverstatus = State.STANDBY
             primaryLeadNodeWaiter.start()
-            return
         }
       case _ =>
         logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
-        return
     }
   }
 
@@ -155,7 +151,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
     primaryLeadNodeWaiter.interrupt()
     bootProperties.clear()
-    SnappyContext.stop
+    SnappyContext.stop()
     // TODO: [soubhik] find a way to stop jobserver.
     sparkContext = null
     super.stop(shutdownCredentials)
@@ -175,15 +171,13 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     def changeOrAppend(attr: String, value: String,
                        overwrite: Boolean = false,
                        ignoreIfPresent: Boolean = false) = {
-      val x = conf.getOption(attr).getOrElse {
-        null
-      }
+      val x = conf.getOption(attr).orNull
       x match {
         case null =>
           conf.set(attr, value)
         case v if ignoreIfPresent => ; // skip setting property.
         case v if overwrite => conf.set(attr, value)
-        case v => conf.set(attr, x ++ s""",${value}""")
+        case v => conf.set(attr, x ++ s""",$value""")
       }
     }
 

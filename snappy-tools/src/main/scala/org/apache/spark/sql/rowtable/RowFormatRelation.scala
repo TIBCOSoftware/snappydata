@@ -50,16 +50,13 @@ class RowFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  val connFunctor = JDBCMutableRelation.getConnector(table, driver, poolProperties,
-    connProperties, hikariCP)
-
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           sqlContext.sparkContext,
-          connFunctor,
+          connector,
           JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
@@ -83,10 +80,10 @@ final class DefaultSource extends MutableRelationProvider {
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters)
     val schemaExtension = s"$schema $ddlExtension"
-    val preservepartitions = parameters.remove("preservepartitions")
+    val preservePartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
 
-    val (url, driver, poolProps, connProps, hikariCP) =
+    val (url, _, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
 
     val dialect = JdbcDialects.get(url)
@@ -105,7 +102,7 @@ final class DefaultSource extends MutableRelationProvider {
     new RowFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
-      preservepartitions.getOrElse("false").toBoolean,
+      preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
       Seq.empty.toArray,

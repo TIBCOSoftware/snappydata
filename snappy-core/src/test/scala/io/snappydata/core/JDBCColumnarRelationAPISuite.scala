@@ -3,7 +3,7 @@ package io.snappydata.core
 import java.sql.{SQLException, DriverManager}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter, FunSuite} //scalastyle:ignore
 import org.apache.spark.{SparkContext, Logging}
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SnappyContext, SaveMode}
 
 /**
   * Created by rishim on 3/11/15.
@@ -16,7 +16,7 @@ with Logging with BeforeAndAfter with BeforeAndAfterAll {
   val path = "target/JDBCColumnarRelationAPISuite"
 
   override def afterAll(): Unit = {
-    sc.stop()
+    SnappyContext.stop()
 
     try {
       DriverManager.getConnection(s"jdbc:derby:$path;shutdown=true")
@@ -42,7 +42,7 @@ with Logging with BeforeAndAfter with BeforeAndAfterAll {
 
 
   test("Create table in an external DataStore in Non-Embedded mode") {
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val snc = SnappyContext(sc)
 
     val props = Map(
       "url" -> s"jdbc:derby:$path",

@@ -24,9 +24,10 @@ case class Data2(pk: Int, Year: Int)
 case class RefData(ref: Int, description: String)
 
 object FileCleaner {
-  def cleanFile(path: String): Unit = {
+
+  def cleanFile(path: String): Boolean = {
     val file = File(Path(path))
-    if (file.exists) file.deleteRecursively()
+    file.exists && file.deleteRecursively()
   }
 
   def cleanStoreFiles(): Unit = {

@@ -38,7 +38,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       "stop",
       "-dir=tests-snappy-loc-dir"
     ))
-    deleteDir(new java.io.File("tests-snappy-loc-dir"))
+    deleteDir("tests-snappy-loc-dir")
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
   }
 

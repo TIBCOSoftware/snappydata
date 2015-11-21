@@ -4,7 +4,7 @@ import java.sql.{DriverManager, SQLException}
 
 import org.scalatest.{FunSuite, BeforeAndAfter, BeforeAndAfterAll} //scalastyle:ignore
 
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SnappyContext, SaveMode}
 import org.apache.spark.{Logging, SparkContext}
 
 /**
@@ -18,18 +18,17 @@ with Logging with BeforeAndAfter with BeforeAndAfterAll {
   val path = "target/JDBCMutableRelationAPISuite"
 
   override def afterAll(): Unit = {
-    sc.stop()
+    SnappyContext.stop()
 
     try {
       DriverManager.getConnection(s"jdbc:derby:$path;shutdown=true")
     } catch {
       // Throw if not normal single database shutdown
       // https://db.apache.org/derby/docs/10.2/ref/rrefexcept71493.html
-      case sqlEx: SQLException => {
-        if (sqlEx.getSQLState.compareTo("08006") != 0) {
+      case sqlEx: SQLException =>
+        if (sqlEx.getSQLState != "08006" && sqlEx.getSQLState != "XJ015") {
           throw sqlEx
         }
-      }
     }
     FileCleaner.cleanFile(path)
     FileCleaner.cleanStoreFiles()
@@ -41,7 +40,7 @@ with Logging with BeforeAndAfter with BeforeAndAfterAll {
   }
 
   test("Create table in an external DataStore in Non-Embedded mode") {
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+    val snc = SnappyContext(sc)
 
     val props = Map(
       "url" -> s"jdbc:derby:$path",

@@ -2,6 +2,7 @@ package io.snappydata
 
 import java.io.{File, FilenameFilter}
 
+import io.snappydata.core.FileCleaner
 import org.scalatest.{FunSuite, Outcome}
 
 import org.apache.spark.Logging
@@ -15,7 +16,7 @@ import org.apache.spark.Logging
 private[snappydata] abstract class SnappyFunSuite extends FunSuite // scalastyle:ignore
 with Logging {
 
-  var dirList = Array[File]()
+  var dirList = Array[String]()
 
   @volatile private[this] var _testName: String = _
 
@@ -46,19 +47,15 @@ with Logging {
     }
   }
 
-  def deleteDir(dir: File): Boolean = {
-    val clazz = Class.forName("com.pivotal.gemfirexd.TestUtil") //scalastyle:ignore
-    val res = clazz.getMethod("deleteDir", classOf[File])
-        .invoke(null, dir)
-    res.toString.toBoolean
+  def deleteDir(dir: String): Boolean = {
+    FileCleaner.cleanFile(dir)
   }
 
   def cleanup(): Unit = {
     val clearList = dirList
-    dirList = Array[File]()
+    dirList = Array[String]()
     clearList.foreach(deleteDir)
-    deleteDir(new File("metastore_db"))
-    deleteDir(new File("datadictionary"))
+    FileCleaner.cleanStoreFiles()
     val filter = new FilenameFilter {
       override def accept(dir: File, name: String): Boolean = {
         name.startsWith("BACKUPGFXD-DEFAULT-DISKSTORE") ||
@@ -67,7 +64,7 @@ with Logging {
     }
 
     for (f <- new File(".").listFiles(filter)) {
-      deleteDir(f)
+      deleteDir(f.getPath)
     }
   }
 

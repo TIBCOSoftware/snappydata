@@ -9,14 +9,12 @@ import org.scalatest.{BeforeAndAfterAll, FunSuite}
 /**
  * Created by skumar on 17/9/15
  */
-class ColumnTablePersistSpec extends FunSuite with Logging with BeforeAndAfterAll{
+class ColumnTablePersistSpec extends FunSuite with Logging with BeforeAndAfterAll {
 
-  var sc : SparkContext= null
-
+  var sc: SparkContext = null
 
   override def afterAll(): Unit = {
-    sc.stop()
-
+    SnappyContext.stop()
   }
 
   override def beforeAll(): Unit = {
@@ -25,7 +23,7 @@ class ColumnTablePersistSpec extends FunSuite with Logging with BeforeAndAfterAl
     }
   }
 
-  test(""" This test will create simple table""") {
+  test( """ This test will create simple table""") {
 
     val snc = org.apache.spark.sql.SnappyContext(sc)
     val props = Map(
