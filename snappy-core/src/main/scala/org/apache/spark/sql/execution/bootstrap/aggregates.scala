@@ -39,7 +39,7 @@ trait DelegatedAggregate {
   self: UnaryNode =>
 
   val partial: Boolean
-  val groupingExpressions: Seq[Expression]
+  val groupingExpressions: Seq[NamedExpression]
   val aggregateExpressions: Seq[NamedExpression]
 
   override def requiredChildDistribution: Seq[Distribution] =
@@ -53,7 +53,7 @@ trait DelegatedAggregate {
       }
     }
 
-  override def output: Seq[Attribute] = aggregateExpressions.map(_.toAttribute)
+  override def output: Seq[Attribute] = resultExpressions.map(_.toAttribute)//aggregateExpressions.map(_.toAttribute)
 
   /**
    * An aggregate that needs to be computed for each row in a group.
@@ -209,19 +209,23 @@ trait DelegatedAggregate {
    * Substituted version of aggregateExpressions expressions which are used to compute final
    * output rows given a group and the result of all aggregate computations.
    */
-  protected[this] val resultExpressions = aggregateExpressions.map { agg =>
+  protected[this] val resultExpressions: Seq[NamedExpression] = groupingExpressions ++ aggregateExpressions.map { agg =>
     agg.transform {
-      case TaggedAggregateExpression2(_, aggFunc:AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
-      case UnTaggedAggregateExpression2( aggFunc: AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
-      case TaggedAlias( _,aggFunc:AggregateFunction2,_) if resultMap.contains(aggFunc) => resultMap(aggFunc)
+
+      case exp@TaggedAggregateExpression2(tag:Tag, aggFunc:AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => TaggedAlias(tag, resultMap(aggFunc), exp.name)(exp.exprId)
+
+      case exp@UnTaggedAggregateExpression2( aggFunc: AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => Alias(resultMap(aggFunc), exp.name)(exp.exprId)
+      case exp@TaggedAlias( tag:Tag,aggFunc:AggregateFunction2,_) if resultMap.contains(aggFunc) => TaggedAlias(tag,resultMap(aggFunc), exp.name)(exp.exprId)
+      case exp@TaggedAlias( tag:Tag,aggExp:AggregateExpression1,_) if resultMap.contains(aggExp) => TaggedAlias(tag,resultMap(aggExp), exp.name)(exp.exprId)
+      case exp@TaggedAlias( tag:Tag,TaggedAggregateExpression2(_, aggFunc:AggregateFunction2,_,_,_) ,_) if resultMap.contains(aggFunc) => TaggedAlias(tag,resultMap(aggFunc), exp.name)(exp.exprId)
       case e: Expression  if(!(e .isInstanceOf[DelegateFunction]) && resultMap.contains(e))   => resultMap(e)
-    }
+    }.asInstanceOf[NamedExpression]
   }
 }
 
 case class BootstrapAggregate(
     partial: Boolean,
-    groupingExpressions: Seq[Expression],
+    groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
     child: SparkPlan)
     extends UnaryNode with DelegatedAggregate {
@@ -463,7 +467,7 @@ case class AggregateWith2Inputs2Outputs(
 
     lineageRelayInfo: LineageRelay,
     integrityInfo: Option[IntegrityInfo],
-    groupingExpressions: Seq[Expression],
+    groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
     child: SparkPlan)(
 
@@ -576,7 +580,7 @@ case class AggregateWith2Inputs(
     cacheFilter: Option[Attribute],
 
     partial: Boolean,
-    groupingExpressions: Seq[Expression],
+    groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
     child: SparkPlan)(
 

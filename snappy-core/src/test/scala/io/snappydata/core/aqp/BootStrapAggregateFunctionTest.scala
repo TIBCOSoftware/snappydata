@@ -15,6 +15,9 @@ import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.Constants
 
+import scala.reflect.io.Path
+import scala.util.Try
+
 
 /**
  * Created by ashahid on 11/17/15.
@@ -35,7 +38,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
     conf.set("spark.sql.unsafe.enabled", "false")
 
-    conf.set(Constants.keyNumBootStrapTrials, "25")
+    conf.set(Constants.keyNumBootStrapTrials, "100")
     conf
   }
 
@@ -81,11 +84,24 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   }
 
+
+  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" ignore {
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable group by l_orderkey confidence 95")
+
+    result.show()
+    val rows2 = result.collect()
+
+
+  }
+
   "Sample Table Query with a given confidence " should "use correct quntiles" in {
+
     spc.sparkContext.stop()
     val numBootStrapTrials = 100
     conf = createDefaultConf
     val confidence = 90
+    val path: Path = Path (" /tmp/hive")
+    Try(path.deleteRecursively())
     conf.set(Constants.keyAQPDebug, "true")
     conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
     spc = initTestTables(conf)
@@ -104,8 +120,8 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     )
     val estimate = arrayOfBS(0)
     val sortedData = arrayOfBS.sortWith( _.compareTo(_) <= 0 )
-    val lowerBound = sortedData(9)
-    val upperBound = sortedData(89)
+    val lowerBound = sortedData(4)
+    val upperBound = sortedData(94)
 
 
     i = 0
@@ -137,15 +153,16 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     val arrayOfBytesAny = Array.fill[Any](100)(1.asInstanceOf[Byte])
     val arrayOfBoolAny = Array.fill[Any](1)(true)
 
-    val approxColumn = ApproxColumn(confidence/100, columns, multiplicities,true)
+    val approxColumn = ApproxColumn(confidence/100d, columns, multiplicities,false)
     val internalRow = new GenericMutableRow(Array.concat[Any](arrayOfBSAny , arrayOfBytesAny, arrayOfBoolAny))
     val evalRow = approxColumn.eval(internalRow).asInstanceOf[InternalRow]
     assert(estimate == evalRow.getDouble(0))
     assert(lowerBound == evalRow.getDouble(1))
     assert(upperBound == evalRow.getDouble(2))
-
-
   }
+
+
+
 
   def msg(m: String) = DebugUtils.msg(m)
 

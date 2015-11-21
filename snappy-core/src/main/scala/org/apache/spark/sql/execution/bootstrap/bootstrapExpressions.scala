@@ -206,6 +206,8 @@ private[sql] case class TaggedAggregateExpression2(
           this.exprId == a.exprId && this.qualifiers == a.qualifiers && this.explicitMetadata == a.explicitMetadata
     case _ => false
   }
+
+  def toUntaggedAggregateExpression2 = UnTaggedAggregateExpression2(aggregateFunction, mode, isDistinct, name)(exprId, qualifiers, explicitMetadata )
 }
 
 private[sql] case class UnTaggedAggregateExpression2(

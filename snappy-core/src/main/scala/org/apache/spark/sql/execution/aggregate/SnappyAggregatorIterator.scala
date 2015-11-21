@@ -347,7 +347,7 @@ abstract class SnappyAggregationIterator(
         (currentGroupingKey: InternalRow, currentBuffer: Array[DelegateAggregateFunction]) => {
           //resultProjection(rowToBeEvaluated(currentGroupingKey, currentBuffer))
           // rowToBeEvaluated(currentGroupingKey, currentBuffer)
-          if(groupingKeyAttributes.isEmpty) {
+         // if(groupingKeyAttributes.isEmpty) {
 
             val resultProjection = new InterpretedProjection(resultExpressions, computedSchema)
             val aggregateResults = new GenericMutableRow(lenComptedAggregates)
@@ -359,10 +359,10 @@ abstract class SnappyAggregationIterator(
             }
 
             resultProjection(aggregateResults)
-          }else {
+        /*  }else {
             val rowToBeEvaluated = new JoinedRow
             throw new UnsupportedOperationException("not implemented")
-          }
+          }*/
         }
 
       // Final-only, Complete-only and Final-Complete: every output row contains values representing

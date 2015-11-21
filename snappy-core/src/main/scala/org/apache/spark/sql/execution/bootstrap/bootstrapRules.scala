@@ -355,7 +355,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
             case _ => project
           }
 
-        case aggregate@Aggregate(partial, groupings, aggrs, child) =>
+        /*case aggregate@Aggregate(partial, groupings, aggrs, child) =>
           require(deterministicKeys(groupings), GROUP_BY_KEY_ERROR)
           BootStrapUtils.getBtCnt(child.output) match {
             case Some(btCnt@TaggedAttribute(Bootstrap(), _, _, _, _)) =>
@@ -436,7 +436,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
               BootstrapAggregate(partial, groupings, newAggrs, newChild)
 
             case _ => aggregate
-          }
+          }*/
 
         case aggregate@SortBasedAggregate(_,
         groupings: Seq[NamedExpression],
@@ -529,38 +529,47 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
                         val z = exchangeOption match {
                           case Some(Exchange(_, child)) =>
-                            sum.transformUp {
-                              case att: AttributeReference =>
-                                 child match {
-                                  case BootstrapSortedAggregate(_, groupings, aggExp, _) => {
-                                    val exp = aggExp.filter(x => {
-                                      x.flatMap(_.references).exists {
-                                        case t: NamedExpression => t.exprId == att.exprId
-                                        case _ => false
-                                      }
+
+
+                            val newSumChildOption = child match {
+                              case bsa@BootstrapSortedAggregate(_, groupings, aggExp, _) => {
+
+
+                                val exp = aggExp.zipWithIndex.filter { case (x, idx) => {
+                                  sum.children.flatMap(_.references).forall{
+                                    attrib => x.flatMap(_.references).exists{
+                                      _.exprId == attrib.exprId
                                     }
 
-                                    )
-
-                                    if (!exp.isEmpty) {
-                                      val temp = exp(0)
-                                      AttributeReference("dummy_replace", temp.dataType,
-                                        temp.nullable,
-                                        temp.metadata)(
-                                        temp.exprId,
-                                        temp.qualifiers)
-
-                                    } else {
-                                      att
-                                    }
                                   }
-                                  case _ => att
 
                                 }
 
-                              case all => all
+                                }
+
+                                if (!exp.isEmpty) {
+                                  val (temp,idx)  = exp(0)
+                                  Some(AttributeReference("dummy_replace", temp.dataType,
+                                    temp.nullable,
+                                    temp.metadata)(
+                                    bsa.output(groupings.length + idx).exprId,
+                                    temp.qualifiers))
+
+                                } else {
+                                  None
+                                }
+                              }
+
+                              case _ => None
+                            }
+
+                            newSumChildOption match {
+
+                              case Some(newSumChild) => sum.withNewChildren(newSumChild :: Nil)
+                              case None => sum
 
                             }
+
                           case None => throw new UnsupportedOperationException("no exchange operator found")
                         }
 
@@ -602,7 +611,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                       case None => nonCompleteAggregateAttributes(index).name
                     }
                     val ne1 = TaggedAggregateExpression2(Uncertain, newExpr.aggregateFunction, a.mode, a.isDistinct, name)()
-                    val ne = TaggedAlias(Uncertain, ne1, name)(ne1.exprId)
+                    val ne = TaggedAlias(Uncertain, ne1, name)(nonCompleteAggregateAttributes(index).exprId)
 
                     ne ::
                         TaggedAlias(Bound(Lower, ne.exprId), LowerPlaceholder(newExpr), ne.name)(
@@ -637,7 +646,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
           require(deterministicKeys(leftKeys) && deterministicKeys(rightKeys), JOIN_KEY_ERROR)
           postprocess(join)
 
-        case join@LeftSemiJoinHash(leftKeys, rightKeys, left, right, None) =>
+       /* case join@LeftSemiJoinHash(leftKeys, rightKeys, left, right, None) =>
           require(deterministicKeys(leftKeys) && deterministicKeys(rightKeys), JOIN_KEY_ERROR)
           // Distinct the right branch
           val newJoin = BootStrapUtils.getBtCnt(right.output) match {
@@ -649,7 +658,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
               LeftSemiJoinHash(leftKeys, rightKeys, left, newRight, None)
             case None => join
           }
-          postprocess(newJoin)
+          postprocess(newJoin)*/
 
         case sort@Sort(sortOrder, global, child) =>
           require(deterministicKeys(sortOrder), SORT_KEY_ERROR)
@@ -899,9 +908,15 @@ object PruneColumns extends Rule[SparkPlan] {
           aggregates.filter(e => used.contains(e.exprId)), child)
         used ++= aggregate.references.map(_.exprId)
         aggregate
-      case BootstrapSortedAggregate(partial, groupings, aggregates, child) =>
+      case bsa@BootstrapSortedAggregate(partial, groupings, aggregates, child) =>
+        //Identify those from output result expressions which are not used by the outer parent,
+        //which will then be used to filter the aggregate expression
+        val unusedIndices = bsa.output.zipWithIndex.filter{case (e,indx) => !used.contains(e.exprId)}.map{ case(_, index) => index }
+        //the index also contains the group by cols attended
+
+        val newAggs = aggregates.zipWithIndex.filter{case (e, index) => !unusedIndices.contains(index + groupings.length)}.map{case(e,_) => e}
         val aggregate = BootstrapSortedAggregate(partial, groupings,
-          aggregates.filter(e => used.contains(e.exprId)), child)
+         newAggs, child)
         used ++= aggregate.references.map(_.exprId)
         aggregate
 
@@ -1493,6 +1508,10 @@ object CleanupAnalysisExpressions extends Rule[SparkPlan] {
       }
       case alias: TaggedAlias => {
         alias.toAlias
+      }
+
+      case taggedAggExp: TaggedAggregateExpression2 => {
+        taggedAggExp.toUntaggedAggregateExpression2
       }
 
     }
