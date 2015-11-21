@@ -13,9 +13,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
@@ -198,7 +198,8 @@ class JDBCAppendableRelation(
     var conn: Connection = null
     val dialect = JdbcDialects.get(url)
     try {
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = ExternalStoreUtils.getConnection(url, connProperties,
+        dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
       val tableExists = JdbcExtendedUtils.tableExists(conn, table,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {

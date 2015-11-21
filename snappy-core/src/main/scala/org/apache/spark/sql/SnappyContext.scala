@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
-import io.snappydata.ToolsCallback
+import io.snappydata.{Constant, ToolsCallback}
 import io.snappydata.util.SqlUtils
 
 import org.apache.spark.rdd.RDD
@@ -28,7 +28,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{SparkConf, Logging, Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -729,6 +729,7 @@ object snappy extends Serializable {
 object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContext: SparkContext = _
+  @volatile private[this] var _globalSNContext: SnappyContext = _
 
   private[spark] def globalContext = _globalContext
 
@@ -784,9 +785,24 @@ object SnappyContext extends Logging {
     }
   }
 
+  def getOrCreate(sc: SparkContext): SnappyContext = {
+    val gnc = _globalSNContext
+    if (gnc != null) gnc
+    else contextLock.synchronized {
+      val gnc = _globalSNContext
+      if (gnc != null) gnc
+      else {
+        val gnc = SnappyContext(sc)
+        _globalSNContext = gnc
+        gnc
+      }
+    }
+  }
+
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
-    if (toolsCallback != null) {
+    if (sc.master.startsWith(Constant.SNAPPY_URL_PREFIX) &&
+        toolsCallback != null) {
       // NOTE: if Property.jobServer.enabled is true
       // this will trigger SnappyContext.apply() method
       // prior to `new SnappyContext(sc)` after this

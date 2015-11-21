@@ -71,7 +71,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
 
     val conf = new SparkConf()
-    conf.setMaster(Constant.JDBC_URL_PREFIX + s"$locator").setAppName("leaderLauncher")
+    conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").setAppName("leaderLauncher")
 
     bootProperties.asScala.foreach({ case (k, v) =>
       val key = if (!k.startsWith(Constant.PROPERTY_PREFIX)) {

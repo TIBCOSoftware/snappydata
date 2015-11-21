@@ -570,7 +570,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         }
 
         val conn = ExternalStoreUtils.getConnection(externalStore.url,
-          externalStore.connProps)
+          externalStore.connProps, driverDialect = null, isLoner = false)
         conn.close()
         Iterator.empty
       }

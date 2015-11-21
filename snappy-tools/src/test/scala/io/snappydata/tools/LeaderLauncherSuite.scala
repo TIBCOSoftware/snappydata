@@ -191,7 +191,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val conf = new SparkConf()
         .setAppName(testName)
-        .setMaster(Constant.JDBC_URL_PREFIX + s"localhost[${availablePort}]")
+        .setMaster(Constant.SNAPPY_URL_PREFIX + s"localhost[${availablePort}]")
         // .set(Prop.Store.locators, s"localhost[${availablePort}]")
         .set(Attribute.SYS_PERSISTENT_DIR, dirname)
 

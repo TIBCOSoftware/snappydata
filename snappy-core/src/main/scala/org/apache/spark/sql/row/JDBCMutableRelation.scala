@@ -11,7 +11,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -72,7 +71,10 @@ class JDBCMutableRelation(
     var conn: Connection = null
     try {
 
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = ExternalStoreUtils.getConnection(url, connProperties,
+        dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
+      logInfo("Applying DDL : "+ url + " connproperties " + connProperties)
+
       var tableExists = JdbcExtendedUtils.tableExists(conn, table,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
@@ -256,7 +258,8 @@ class JDBCMutableRelation(
     // then on the driver
     JDBCMutableRelation.removePool(table)
     // drop the external table using a non-pool connection
-    val conn = JdbcUtils.createConnection(url, connProperties)
+    val conn = ExternalStoreUtils.getConnection(url, connProperties,
+      dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
     } finally {
@@ -265,7 +268,8 @@ class JDBCMutableRelation(
   }
 
   def truncate(): Unit = {
-    val conn = JdbcUtils.createConnection(url, connProperties)
+    val conn = ExternalStoreUtils.getConnection(url, connProperties,
+      dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
       JdbcExtendedUtils.truncateTable(conn, table, dialect)
     }

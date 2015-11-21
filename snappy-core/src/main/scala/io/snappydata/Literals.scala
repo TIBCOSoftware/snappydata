@@ -11,7 +11,7 @@ object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
 
-  val JDBC_URL_PREFIX = "snappydata://";
+  val SNAPPY_URL_PREFIX = "snappydata://";
 
   private[snappydata] val PROPERTY_PREFIX = "snappydata."
 

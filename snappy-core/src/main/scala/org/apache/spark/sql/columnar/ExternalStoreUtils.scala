@@ -9,8 +9,9 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.sql.store.StoreProperties
 
 /**
@@ -124,8 +125,17 @@ private[sql] object ExternalStoreUtils {
     ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
   }
 
-  def getConnection(url: String, connProperties: Properties) = {
+  def getConnection(url: String, connProperties: Properties,
+      driverDialect: JdbcDialect, isLoner: Boolean) = {
     connProperties.remove("poolProperties")
+    if (driverDialect != null) {
+      // add driver specific properties
+      driverDialect match {
+        // The driver if not a loner should be an accesor only
+        case d: JdbcExtendedDialect =>
+          connProperties.putAll(d.extraCreateTableProperties(isLoner))
+      }
+    }
     JdbcUtils.createConnection(url, connProperties)
     //DriverManager.getConnection(url)
   }

@@ -5,9 +5,7 @@ import io.snappydata.{Constant, Property}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
-import org.apache.spark.scheduler.{SnappyTaskSchedulerImpl,
-  ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, SnappyTaskSchedulerImpl, TaskScheduler, TaskSchedulerImpl}
 
 /**
   * Snappy's cluster manager that is responsible for creating
@@ -32,8 +30,8 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     // as lead in embedded mode, we need the locator to connect
     // to the snappy distributed system and hence the locator is
     // passed in masterurl itself.
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
-      val locator = sc.master.replaceFirst(Constant.JDBC_URL_PREFIX, "").trim
+    if (sc.master.startsWith(Constant.SNAPPY_URL_PREFIX)) {
+      val locator = sc.master.replaceFirst(Constant.SNAPPY_URL_PREFIX, "").trim
 
       val (prop, value) = {
         if (locator.indexOf("mcast-port") >= 0) {
