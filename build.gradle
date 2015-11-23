@@ -98,6 +98,15 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/)}) {
   }
 }
 
+def cleanIntermediateFiles(def projectName) {
+  def projDir = "${project(projectName).projectDir}"
+  delete "${projDir}/metastore_db"
+  delete "${projDir}/warehouse"
+  delete "${projDir}/datadictionary"
+  delete fileTree(projDir) {
+    include 'BACKUPGFXD-DEFAULT-DISKSTORE**', 'locator*.dat'
+  }
+}
 task cleanScalaTest << {
   def workingDir = "${testResultsBase}/scalatest"
   delete workingDir

@@ -22,11 +22,11 @@ import org.apache.spark.{SparkContext, SparkEnv}
 /*
 Generic class to query column table from Snappy.
  */
-class JDBCSourceAsStore(_url: String,
-    _driver: String,
-    _poolProps: Map[String, String],
-    _connProps: Properties,
-    _hikariCP: Boolean) extends ExternalStore {
+class JDBCSourceAsStore(override val url: String,
+    override val driver: String,
+    override val poolProps: Map[String, String],
+    override val connProps: Properties,
+    hikariCP: Boolean) extends ExternalStore {
 
   @transient
   protected lazy val serializer = SparkEnv.get.serializer
@@ -34,10 +34,8 @@ class JDBCSourceAsStore(_url: String,
   @transient
   protected lazy val rand = new Random
 
-  @transient
   protected val dialect = JdbcDialects.get(url)
 
-  @transient
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
   def getCachedBatchRDD(tableName: String,
@@ -110,7 +108,7 @@ class JDBCSourceAsStore(_url: String,
 
   override def getConnection(id: String): Connection = {
     ConnectionPool.getPoolConnection(id, None, dialect, poolProps,
-      connProps, _hikariCP)
+      connProps, hikariCP)
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
@@ -143,14 +141,6 @@ class JDBCSourceAsStore(_url: String,
       insertStmntLock.unlock()
     }
   }
-
-  override def url = _url
-
-  override def driver = _driver
-
-  override def poolProps = _poolProps
-
-  override def connProps = _connProps
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,

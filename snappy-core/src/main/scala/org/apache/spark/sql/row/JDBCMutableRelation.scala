@@ -8,7 +8,6 @@ import scala.collection.mutable
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.jdbc._
@@ -27,7 +26,7 @@ class JDBCMutableRelation(
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
-    _poolProps: Map[String, String],
+    val poolProperties: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
     val origOptions: Map[String, String],
@@ -44,9 +43,6 @@ class JDBCMutableRelation(
   override val needConversion: Boolean = false
 
   val driver = DriverRegistry.getDriverClassName(url)
-
-  val poolProperties = ExternalStoreUtils
-      .getAllPoolProperties(url, driver, _poolProps, hikariCP)
 
   final val dialect = JdbcDialects.get(url)
 
@@ -72,7 +68,7 @@ class JDBCMutableRelation(
     try {
 
       conn = JdbcUtils.createConnection(url, connProperties)
-      var tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         return

@@ -33,7 +33,7 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
     DriverRegistry.register(driver)
     JdbcDialects.get(url) match {
       case d: JdbcExtendedDialect =>
-        val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
+        val extraProps = d.extraDriverProperties(isLoner).propertyNames
         while (extraProps.hasMoreElements) {
           val p = extraProps.nextElement()
           if (connProperties.get(p) != null) {

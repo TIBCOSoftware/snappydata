@@ -14,15 +14,16 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
-  * Created by soubhikc on 6/10/15.
-  */
+ * Created by soubhikc on 6/10/15.
+ */
 class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
 
   override def beforeAll(): Unit = {
-    val f = new java.io.File("tests-snappy-loc-dir");
+    val f = new java.io.File("tests-snappy-loc-dir")
     f.mkdir()
+    dirList += f.getAbsolutePath
 
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = true
     GfxdDistributionLocator.main(Array(
@@ -34,26 +35,30 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    GfxdDistributionLocator.main(Array(
-      "stop",
-      "-dir=tests-snappy-loc-dir"
-    ))
-    deleteDir("tests-snappy-loc-dir")
-    CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
+    try {
+      GfxdDistributionLocator.main(Array(
+        "stop",
+        "-dir=tests-snappy-loc-dir"
+      ))
+      CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
+    } finally {
+      super.afterAll()
+    }
   }
 
   test("leader api") {
+    val dirname = createDir("tests-snappy-leader-api")
     val fs: Lead = ServiceManager.getLeadInstance
 
     val props = TestUtil.doCommonSetup(null)
 
     props.setProperty(Property.locators, s"localhost[${availablePort}]")
+    props.setProperty(Attribute.SYS_PERSISTENT_DIR, dirname)
     fs.start(props)
 
     assert(ServiceManager.getLeadInstance.status == FabricService.State.RUNNING)
 
     fs.stop(null)
-
   }
 
   test("simple leader launch") {
@@ -99,7 +104,6 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "-dir=" + dirname
       ))
     }
-
   }
 
   test("leader standby") {
@@ -181,10 +185,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "-dir=" + leader2
       ))
     }
-
-
   }
-
 
   test("leader startup using SparkContext") {
     val dirname = createDir("tests-snappy-leader-by-conf")
@@ -193,7 +194,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         .setAppName(testName)
         .setMaster(Constant.JDBC_URL_PREFIX + s"localhost[${availablePort}]")
         // .set(Prop.Store.locators, s"localhost[${availablePort}]")
-        .set(Attribute.SYS_PERSISTENT_DIR, dirname)
+        .set(Constant.PROPERTY_PREFIX + Attribute.SYS_PERSISTENT_DIR, dirname)
 
     val sc = new SparkContext(conf)
 

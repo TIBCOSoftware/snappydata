@@ -2,8 +2,6 @@ package org.apache.spark.sql.columntable
 
 import java.util.Properties
 
-import scala.collection.mutable
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -60,13 +58,12 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
-    val table = StoreUtils.removeInternalProps(parameters)
-
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     //val ddlExtension = StoreUtils.ddlExtensionString(parameters)
     //val preservepartitions = parameters.remove("preservepartitions")
     val (url, driver, poolProps, connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     //val dialect = JdbcDialects.get(url)
     //val schemaExtension = s"$schema $ddlExtension"
@@ -76,7 +73,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, Seq.empty.toArray,
+      getClass.getCanonicalName, mode, schema, Array[Partition](),
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)
   }
 

@@ -6,8 +6,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricLocator, FabricService, TestUtil}
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
-
 /**
   * Created by hemantb.
   */
@@ -22,6 +20,7 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     GemFireXDUtils.IS_TEST_MODE = false
+    super.afterAll()
   }
 
   test("Snappy Server start") {

@@ -1,12 +1,12 @@
 package io.snappydata.app
 
-import java.sql.{DriverManager, SQLException}
-
 import scala.actors.Futures._
 
 import io.snappydata.SnappyFunSuite
+import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.snappy._
 
 /**
@@ -14,19 +14,21 @@ import org.apache.spark.sql.snappy._
  * Join Column with row, concurrency, speed
  * Created by jramnara on 10/28/15.
  */
-class ColumnRowSamplePerfSuite extends SnappyFunSuite {
+class ColumnRowSamplePerfSuite
+    extends SnappyFunSuite
+    with BeforeAndAfterAll {
 
-  override def cleanup(): Unit = {
-    SnappyContext.stop()
-    try {
-      DriverManager.getConnection(s"jdbc:snappydata:;shutdown=true")
-    } catch {
-      case sqlEx: SQLException =>
-        if (sqlEx.getSQLState != "08006" && sqlEx.getSQLState != "XJ015") {
-          throw sqlEx
-        }
+  // context creation is handled by App main
+  override def beforeAll(): Unit = {
+  }
+
+  override def afterAll(): Unit = {
+    val snc = ColumnRowSamplePerfSuite.snContext
+    // cleanup metastore
+    if (snc != null) {
+      snc.clearCache()
     }
-    super.cleanup()
+    super.afterAll()
   }
 
   test("Some performance tests for column store with airline schema") {
@@ -92,12 +94,15 @@ object ColumnRowSamplePerfSuite extends App {
     runQueries(snContext)
   }
 
-  val ret = awaitAll(20000000L, tasks: _*) // wait a lot
+  // wait a lot
+  awaitAll(20000000L, tasks: _*)
 
   def createTableLoadData() = {
 
     if (loadData) {
       // All these properties will default when using snappyContext in the release
+      val props = Map[String, String]()
+      /*
       val props = Map(
         "url" -> "jdbc:snappydata:;mcast-port=0;",
         //"poolImpl" -> "tomcat",   // DOESN'T WORK?
@@ -109,6 +114,7 @@ object ColumnRowSamplePerfSuite extends App {
         "password" -> "app"
         //"persistent" -> "SYNCHRONOUS"  // THIS DOESN'T WORK .. SHOULD
       )
+      */
 
       if (hfile.endsWith(".parquet")) {
         airlineDataFrame = snContext.read.load(hfile)

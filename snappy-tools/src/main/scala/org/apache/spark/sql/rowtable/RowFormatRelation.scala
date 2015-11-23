@@ -76,7 +76,7 @@ final class DefaultSource extends MutableRelationProvider {
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val table = StoreUtils.removeInternalProps(parameters)
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters)
     val schemaExtension = s"$schema $ddlExtension"
@@ -84,7 +84,7 @@ final class DefaultSource extends MutableRelationProvider {
     val sc = sqlContext.sparkContext
 
     val (url, _, poolProps, connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
@@ -96,7 +96,8 @@ final class DefaultSource extends MutableRelationProvider {
     dialect match {
       // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(Utils.isLoner(sc)))
+        connProps.putAll(d.extraDriverProperties(Utils.isLoner(sc)))
+      case _ =>
     }
 
     new RowFormatRelation(url,
@@ -112,18 +113,5 @@ final class DefaultSource extends MutableRelationProvider {
       options,
       blockMap,
       sqlContext)
-  }
-
-  override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
-    val (url, _, _, _, _) =
-      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
-    val dialect = JdbcDialects.get(url)
-    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
-
-    val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    createRelation(sqlContext, mode, options, schemaString)
   }
 }

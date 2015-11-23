@@ -5,7 +5,6 @@
 .history
 .lib/
 dist/*
-target/
 lib_managed/
 src_managed/
 project/boot/
@@ -19,8 +18,3 @@ project/plugins/project/
 # Emacs files
 .#*
 *~
-
-# Spark Files
-metastore_db/
-
-local-repo

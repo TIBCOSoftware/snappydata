@@ -7,7 +7,6 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
@@ -23,10 +22,13 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDDialect)
 
-  def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd:") || url.startsWith("jdbc:snappydata:")) &&
-    !url.startsWith("jdbc:gemfirexd://") && !url.startsWith("jdbc:snappydata://")
+  def canHandle(url: String): Boolean =
+      (url.startsWith("jdbc:gemfirexd:") ||
+      url.startsWith("jdbc:snappydata:")) &&
+      !url.startsWith("jdbc:gemfirexd://") &&
+      !url.startsWith("jdbc:snappydata://")
 
-  override def extraCreateTableProperties(isLoner: Boolean): Properties = {
+  override def extraDriverProperties(isLoner: Boolean): Properties = {
     isLoner match {
       case true => new Properties
       case false =>
@@ -49,7 +51,9 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDClientDialect)
 
-  def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd://") || url.startsWith("jdbc:snappydata://"))
+  def canHandle(url: String): Boolean =
+      url.startsWith("jdbc:gemfirexd://") ||
+      url.startsWith("jdbc:snappydata://")
 
   override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
@@ -91,37 +95,16 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     case _ => None
   }
 
-  private def normalize(id: String, context: SQLContext): String = {
-    // backend DB is always using case-insensitive names
-    Utils.normalizeIdUpperCase(id)
-  }
-
-  override def tableExists(table: String, conn: Connection,
-      context: SQLContext): Boolean = {
-    // using the JDBC meta-data API
-    val dotIndex = table.indexOf('.')
-    val schemaName = if (dotIndex > 0) {
-      normalize(table.substring(0, dotIndex), context)
-    } else {
-      // get the current schema
-      try {
-        val stmt = conn.createStatement()
-        val rs = stmt.executeQuery("VALUES CURRENT SCHEMA")
-        val result = if (rs.next()) rs.getString(1) else null
-        rs.close()
-        stmt.close()
-        result
-      } catch {
-        case NonFatal(e) => null
-      }
-    }
-    val tableName = normalize(if (dotIndex > 0)
-      table.substring(dotIndex + 1) else table, context)
+  override def getCurrentSchema(conn: Connection): String = {
     try {
-      val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
-      rs.next()
+      val stmt = conn.createStatement()
+      val rs = stmt.executeQuery("VALUES CURRENT SCHEMA")
+      val result = if (rs.next()) rs.getString(1) else null
+      rs.close()
+      stmt.close()
+      result
     } catch {
-      case t: java.sql.SQLException => false
+      case NonFatal(e) => null
     }
   }
 
@@ -145,5 +128,4 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
       rs.close()
       stmt.close()
   }
-
 }

@@ -132,6 +132,7 @@ object ConnectionPool {
     dialect match {
       case GemFireXDDialect | GemFireXDClientDialect =>
         conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
+      case _ =>
     }
     conn
   }

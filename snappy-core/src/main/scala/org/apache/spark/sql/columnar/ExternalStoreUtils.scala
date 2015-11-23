@@ -4,12 +4,14 @@ import java.util.Properties
 
 import scala.collection.mutable
 
+import io.snappydata.{Constant, Property}
+
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.store.StoreProperties
+import org.apache.spark.sql.sources.JdbcExtendedUtils
 
 /**
  * Utility methods used by external storage layers.
@@ -64,13 +66,39 @@ private[sql] object ExternalStoreUtils {
     }
   }
 
-  def validateAndGetAllProps(sc : SparkContext, options: Map[String, String]) = {
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
+  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val table = parameters.remove(dbtableProp)
+        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
+    parameters.remove("serialization.format")
+    table
+  }
 
-    val url = parameters.remove("url").getOrElse {
-       StoreProperties.defaultStoreURL(sc)
+  def defaultStoreURL(sc: SparkContext): String = {
+    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+      // Already connected to SnappyData in embedded mode.
+      Constant.DEFAULT_EMBEDDED_URL
+    } else {
+      val isLoner = Utils.isLoner(sc)
+      sc.conf.getOption(Property.locators).map(
+        Constant.DEFAULT_EMBEDDED_URL + "locators=" + _).getOrElse {
+        sc.conf.getOption(Property.mcastPort).map(
+          Constant.DEFAULT_EMBEDDED_URL + "mcast-port=" + _).getOrElse {
+          if (isLoner) {
+            Constant.DEFAULT_EMBEDDED_URL + "mcast-port=0"
+          } else {
+            sys.error("Option 'url' not specified")
+          }
+        }
+      } + (if (isLoner) "" else ";host-data=false")
     }
+  }
+
+  def validateAndGetAllProps(sc : SparkContext,
+      parameters: mutable.Map[String, String]) = {
+    val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
     val dialect = JdbcDialects.get(url)
     val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
@@ -105,6 +133,7 @@ private[sql] object ExternalStoreUtils {
     dialect match {
       case GemFireXDDialect | GemFireXDClientDialect =>
         connProps.setProperty("route-query", "false")
+      case _ =>
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP)

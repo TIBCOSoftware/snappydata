@@ -809,7 +809,10 @@ object SnappyContext extends Logging {
       }).count()
       // then on the driver
       ConnectionPool.clear()
+      // clear current hive catalog connection
+      SnappyStoreHiveCatalog.closeCurrent()
       sc.stop()
+      _globalContext = null
     }
   }
 
