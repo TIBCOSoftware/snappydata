@@ -16,7 +16,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
@@ -29,7 +29,6 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{SparkConf, Logging, Partition, Partitioner, SparkContext, TaskContext}
-
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
   * SQLContext offering additional capabilities.
@@ -732,21 +731,6 @@ object SnappyContext extends Logging {
 
   private[spark] def globalContext = _globalContext
 
-  lazy val toolsCallback = {
-    import org.apache.spark.util.Utils
-    try {
-      val c = Utils.classForName("io.snappydata.ToolsCallbackImpl$")
-      val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logInfo("toolsCallback initialized")
-      tc
-    } catch {
-      case cnf: ClassNotFoundException =>
-        logWarning("toolsCallback couldn't be INITIALIZED." +
-            "DriverURL won't get published to others.")
-        null
-    }
-  }
-
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
@@ -786,12 +770,15 @@ object SnappyContext extends Logging {
 
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
-    if (toolsCallback != null) {
+    if (ToolsCallbackInit.toolsCallback != null) {
+      if (ExternalStoreUtils.isExternalShellMode(sc))
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc)
+      else
       // NOTE: if Property.jobServer.enabled is true
       // this will trigger SnappyContext.apply() method
       // prior to `new SnappyContext(sc)` after this
       // method ends.
-      toolsCallback.invokeLeadStartAddonService(sc)
+        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
     }
   }
 
@@ -804,6 +791,8 @@ object SnappyContext extends Logging {
         Iterator.empty
       }).count()
       // then on the driver
+      if (ExternalStoreUtils.isExternalShellMode(sc) )
+        ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
       ConnectionPool.clear()
       sc.stop()
     }

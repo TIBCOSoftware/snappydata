@@ -19,6 +19,8 @@ package org.apache.spark.sql.collection
 
 import java.io.{IOException, ObjectOutputStream}
 
+import _root_.io.snappydata.ToolsCallback
+
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
 import scala.collection.{Map => SMap, Traversable, mutable}
 import scala.reflect.ClassTag
@@ -33,8 +35,8 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
-
+import org.apache.spark._
+import org.apache.spark.util.Utils
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
   final val WEIGHTAGE_COLUMN_NAME = "__STRATIFIED_SAMPLER_WEIGHTAGE"
@@ -441,11 +443,21 @@ private[spark] class CoGroupExecutorLocalPartition(
 class ExecutorLocalShellPartition(override val index: Int, val hostList: Array[(String, String)])
   extends Partition {
   override def toString = s"ExecutorLocalShellPartition($index, " + hostList(index)._1 + ")"
+}
 
-  def getHostMap: Map[String, String] = {
-    var hostMap: Map[String, String] = Map()
-    hostList.foreach(t => hostMap += t)
-    hostMap
+
+object ToolsCallbackInit extends Logging {
+  final val toolsCallback = {
+    try {
+      val c = org.apache.spark.util.Utils.classForName("io.snappydata.ToolsCallbackImpl$")
+      val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
+      logInfo("toolsCallback initialized")
+      tc
+    } catch {
+      case cnf: ClassNotFoundException =>
+        logWarning("toolsCallback couldn't be INITIALIZED." +
+          "DriverURL won't get published to others.")
+        null
+    }
   }
-
 }
