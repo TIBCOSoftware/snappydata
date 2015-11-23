@@ -105,7 +105,7 @@ class ClusterManagerTestUtils {
   var snc: SnappyContext = _
 
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
-    startSnappyLead(locatorPort, props, false)
+    startSnappyLead(locatorPort, props, addUrlForHiveMetaStore = false)
   }
 
   /**
@@ -120,11 +120,10 @@ class ClusterManagerTestUtils {
       addUrlForHiveMetaStore: Boolean): Unit = {
     assert(sc == null)
     props.setProperty("host-data", "false")
-    props.setProperty("log-level", "info");
+    props.setProperty("log-level", "info")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf().setMaster(s"snappydata://localhost[$locatorPort]")
         .setAppName("myapp")
-
 
     new File("./" + "driver").mkdir()
     new File("./" + "driver/events").mkdir()
@@ -174,7 +173,8 @@ class ClusterManagerTestUtils {
     val snc = SnappyContext()
     if (snc != null) {
       snc.catalog.getTables(None).foreach {
-        case (tableName, false) => snc.dropExternalTable(tableName, true)
+        case (tableName, false) =>
+          snc.dropExternalTable(tableName, ifExists = true)
         case _ =>
       }
       SnappyContext.stop()

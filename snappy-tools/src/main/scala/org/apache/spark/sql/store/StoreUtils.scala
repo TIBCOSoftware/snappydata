@@ -1,19 +1,15 @@
 package org.apache.spark.sql.store.util
 
-import java.util
 import java.util.Properties
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.DistributedMember
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.sql.collection.{Utils, MultiExecutorLocalPartition}
-import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
@@ -120,16 +116,6 @@ object StoreUtils {
     if (!clause.isEmpty) {
       sb.append(s"$clause ")
     }
-  }
-
-  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
-    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-    parameters.remove("serialization.format")
-    table
   }
 
   def ddlExtensionString(parameters: mutable.Map[String, String]): String = {

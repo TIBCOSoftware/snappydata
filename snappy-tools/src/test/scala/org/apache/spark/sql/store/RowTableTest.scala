@@ -1,41 +1,28 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.core.{Data, TestSqlContext, FileCleaner}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.Data
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
-import org.apache.spark.sql.{SaveMode, AnalysisException, SnappyContext}
-import org.apache.spark.{SparkContext, Logging}
+import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
+ * Tests for ROW tables.
+ *
  * Created by rishim on 6/11/15.
  */
-class RowTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
-
-  var sc: SparkContext = null
-
-  var snc: SnappyContext = null
-
-  override def afterAll(): Unit = {
-    sc.stop()
-    FileCleaner.cleanStoreFiles()
-
-  }
-
-  override def beforeAll(): Unit = {
-    if (sc == null) {
-      sc = TestSqlContext.newSparkContext
-      snc = SnappyContext(sc)
-    }
-  }
+class RowTableTest
+    extends SnappyFunSuite
+    with BeforeAndAfter
+    with BeforeAndAfterAll {
 
   val tableName: String = "RowTable"
 
   val props = Map.empty[String, String]
 
-
   after {
-    snc.dropExternalTable(tableName, true)
-    snc.dropExternalTable("RowTable2", true)
+    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropExternalTable("RowTable2", ifExists = true)
   }
 
   test("Test the creation/dropping of row table using Snappy API") {

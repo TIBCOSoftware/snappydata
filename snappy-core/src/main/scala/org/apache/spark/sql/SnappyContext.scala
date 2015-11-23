@@ -1,17 +1,12 @@
 package org.apache.spark.sql
 
-import java.util.Properties
-
-
-import org.apache.spark.scheduler.cluster.{CoarseGrainedSchedulerBackend, SparkDeploySchedulerBackend}
-
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
-import io.snappydata.{Property, ToolsCallback}
+import io.snappydata.ToolsCallback
 import io.snappydata.util.SqlUtils
 
 import org.apache.spark.rdd.RDD
@@ -33,7 +28,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{SparkConf, Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -54,8 +49,6 @@ class SnappyContext private(sc: SparkContext)
 
   @transient
   val topKLocks = scala.collection.mutable.Map[String, ReadWriteLock]()
-
-  protected var  externalShellMode = false;
 
   override protected[sql] def dialectClassName = if (conf.dialect == "sql") {
     classOf[SnappyParserDialect].getCanonicalName
@@ -793,19 +786,7 @@ object SnappyContext extends Logging {
 
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
-
-    //TODO - For now assuming url host[port]. Will finalize it later.
-    if (ExternalStoreUtils.isExternalShellMode(sc)) {
-      val locator = sc.getConf.get(Property.locators)
-      if (!locator.matches(".+[0-9]+"))
-        throw new Exception(s"locator info should be provided in the format host[port]")
-      val properties = new Properties()
-      properties.setProperty("locators", locator)
-      properties.setProperty("host-data", "false")
-      val server = getServerInstance()
-      server.getClass.getMethod("start", properties.getClass).invoke(server, properties)
-    }
-    else if (toolsCallback != null) {
+    if (toolsCallback != null) {
       // NOTE: if Property.jobServer.enabled is true
       // this will trigger SnappyContext.apply() method
       // prior to `new SnappyContext(sc)` after this
@@ -813,8 +794,6 @@ object SnappyContext extends Logging {
       toolsCallback.invokeLeadStartAddonService(sc)
     }
   }
-
-
 
   def stop(): Unit = {
     val sc = _globalContext
@@ -826,19 +805,8 @@ object SnappyContext extends Logging {
       }).count()
       // then on the driver
       ConnectionPool.clear()
-      //TODO - conditional base disconnect driver from the embedded DS
-      if (ExternalStoreUtils.isExternalShellMode(sc)) {
-      val server = getServerInstance
-      server.getClass.getMethod("stop", new Properties().getClass).invoke(server, null)
-    }
       sc.stop()
     }
-  }
-
-  def getServerInstance(): Object ={
-    val properties = new Properties()
-    val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.ServiceManager")
-    clazz.getMethod("getServerInstance").invoke(clazz)
   }
 
   def getProvider(providerName: String): String =

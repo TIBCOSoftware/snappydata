@@ -1,5 +1,6 @@
 package org.apache.spark.sql.store.impl
 
+
 import java.net.ConnectException
 import java.sql.{DriverManager, Connection}
 import java.util.Properties
@@ -19,6 +20,8 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.collection.{ExecutorLocalShellPartition, MultiExecutorLocalPartition, UUIDRegionKey}
 import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, ConnectionType}
+
+import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, UUIDRegionKey}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore}
 import org.apache.spark.storage.BlockManagerId
@@ -61,12 +64,6 @@ final class JDBCSourceAsColumnarStore(_url: String,
           new UnionRDD[CachedBatch](sparkContext, rddList)
         }
     }
-  }
-
-  override def getConnection(id: String): Connection = {
-    val conn = ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
-    conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
-    conn
   }
 
   override def storeCachedBatch(batch: CachedBatch,
