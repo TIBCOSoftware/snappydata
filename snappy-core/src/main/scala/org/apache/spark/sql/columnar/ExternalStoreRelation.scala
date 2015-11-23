@@ -127,10 +127,10 @@ private[sql] object ExternalStoreRelation {
 
     val holder = relation match {
       case esr: ExternalStoreRelation =>
-        new CachedBatchHolder(columnBuilders, 0, batchSize, schema,
+        new CachedBatchHolder(columnBuilders, 0, false, batchSize, schema,
           new ArrayBuffer[UUIDRegionKey](1), esr.uuidBatchAggregate)
       case imar: InMemoryAppendableRelation =>
-        new CachedBatchHolder(columnBuilders, 0, batchSize, schema,
+        new CachedBatchHolder(columnBuilders, 0, false, batchSize, schema,
           new ArrayBuffer[CachedBatch](1), imar.batchAggregate)
       case _ => throw new IllegalStateException("ExternalStoreRelation:" +
           s" unknown relation $relation for table $tableName")

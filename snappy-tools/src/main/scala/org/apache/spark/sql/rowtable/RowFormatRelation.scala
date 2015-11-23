@@ -81,7 +81,7 @@ final class DefaultSource extends MutableRelationProvider {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = StoreUtils.removeInternalProps(parameters)
 
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters, true, false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservepartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
@@ -92,7 +92,7 @@ final class DefaultSource extends MutableRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 

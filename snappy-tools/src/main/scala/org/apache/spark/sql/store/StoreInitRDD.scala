@@ -3,10 +3,11 @@ package org.apache.spark.sql.store
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SQLConf, SQLContext, SnappyContext}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, ExecutorLocalPartition}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -21,13 +22,15 @@ import org.apache.spark.{Accumulator, Partition, SparkContext, SparkEnv, TaskCon
   * standalone cluster.
   * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
   */
-class StoreInitRDD(@transient sc: SparkContext, url: String,
+class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     val connProperties: Properties)
     (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
-    extends RDD[InternalRow](sc, Nil) {
+    extends RDD[InternalRow](sqlContext.sparkContext, Nil) {
 
   val driver = DriverRegistry.getDriverClassName(url)
-  val isLoner = Utils.isLoner(sc)
+  val isLoner = Utils.isLoner(sqlContext.sparkContext)
+
+  GemFireCacheImpl.setColumnBatchSize(sqlContext.conf.columnBatchSize)
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     GemFireXDDialect.init()
@@ -54,7 +57,7 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
   }
 
   def getPeerPartitions(): Array[Partition] = {
-    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sc).
+    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sqlContext.sparkContext).
         keySet.zipWithIndex
 
     if (numberedPeers.nonEmpty) {

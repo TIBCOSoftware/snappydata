@@ -113,29 +113,6 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
     println("Successful")
   }
 
-  test("test the shadow table with NOT NULL Column") {
-    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
-    intercept[DDLException] {
-      val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT NOT NULL ,Value STRING) " +
-          "USING column " +
-          "options " +
-          "(" +
-          "BUCKETS '100')")
-    }
-  }
-
-  test("test the shadow table with primary key") {
-    //snc.sql(s"DROP TABLE IF EXISTS $tableName")
-    intercept[DDLException] {
-      val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT PRIMARY KEY ,Value STRING)" +
-          "USING column " +
-          "options " +
-          "(" +
-          "BUCKETS '100')")
-    }
-  }
-
-
   test("test the shadow table with persistence") {
     //snc.sql(s"DROP TABLE IF EXISTS $tableName")
 

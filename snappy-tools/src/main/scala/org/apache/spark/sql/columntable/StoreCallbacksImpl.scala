@@ -3,9 +3,11 @@ package org.apache.spark.sql.columntable
 
 import java.util.{Collections, UUID}
 
+import org.apache.spark.sql.SQLContext
+
 import scala.collection.mutable
 
-import com.gemstone.gemfire.internal.cache.BucketRegion
+import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, BucketRegion}
 import com.gemstone.gemfire.internal.snappy.{CallbackFactoryProvider, StoreCallbacks}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer}
@@ -21,15 +23,20 @@ import org.apache.spark.sql.types._
  */
 object StoreCallbacksImpl extends StoreCallbacks with Logging {
 
+  private var sqlContext = None: Option[SQLContext]
   val stores = new mutable.HashMap[String, (StructType, ExternalStore)]
 
-  def registerExternalStoreAndSchema(tableName: String, schema: StructType, externalStore: ExternalStore) = {
+
+  def registerExternalStoreAndSchema(context: SQLContext, tableName: String,
+      schema: StructType, externalStore: ExternalStore) = {
     stores.synchronized {
       stores.get(tableName) match {
         case None => stores.put(tableName, (schema, externalStore))
         case Some(v) =>
       }
     }
+    sqlContext = Some(context)
+    GemFireCacheImpl.setColumnBatchSize(context.conf.columnBatchSize)
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID, bucketID: Int) = {
@@ -46,7 +53,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging {
           false, 0, TransactionController.MODE_RECORD,
           TransactionController.ISOLATION_NOLOCK /* not used */ , null, null, 0, null, null, 0, null);
 
-        val batchCreator = new CachedBatchCreator(s"${container.getTableName}_SHADOW_", schema, externalStore)
+        val batchCreator = new CachedBatchCreator(sqlContext.getOrElse(sys.error("SQLContext value not set")),
+          s"${container.getTableName}_SHADOW_", schema, externalStore)
         batchCreator.createAndStoreBatch(sc, row, batchID, bucketID)
       }
       finally {

@@ -11,7 +11,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.{SQLContext, AnalysisException}
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD}
@@ -47,6 +47,11 @@ object StoreUtils {
   val LRUCOUNT = "LRUCOUNT"
 
   val EMPTY_STRING = ""
+
+  val SHADOW_COLUMN_NAME = "shadow_uuid"
+
+  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int generated always as identity"
+
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -93,7 +98,7 @@ object StoreUtils {
       Misc.getGemFireCache.getMembers(region)
           .asScala.asInstanceOf[scala.collection.Set[InternalDistributedMember]]
     }
-    
+
     for (p <- 0 until numPartitions) {
 
       val prefNodes = distMembers.map(
@@ -105,13 +110,13 @@ object StoreUtils {
     partitions
   }
 
-  def initStore(sc: SparkContext, url: String,
+  def initStore(sqlContext: SQLContext, url: String,
       connProps: Properties): Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
     // everytime we can get a map from SnappyCluster
     val map = Map[InternalDistributedMember, BlockManagerId]()
-    val memberAccumulator = sc.accumulator(map)(MembershipAccumulator)
-    new StoreInitRDD(sc, url, connProps)(memberAccumulator).collect()
+    val memberAccumulator = sqlContext.sparkContext.accumulator(map)(MembershipAccumulator)
+    new StoreInitRDD(sqlContext, url, connProps)(memberAccumulator).collect()
     memberAccumulator.value
   }
 
@@ -132,20 +137,29 @@ object StoreUtils {
     table
   }
 
-  def ddlExtensionString(parameters: mutable.Map[String, String]): String = {
+  def ddlExtensionString(parameters: mutable.Map[String, String], isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
-    sb.append(parameters.remove(PARTITION_BY).map(v => {
-      val parClause = {
-        v match {
-          case PRIMARY_KEY => PRIMARY_KEY
-          case _ => s"COLUMN ($v)"
+    if (!isShadowTable) {
+      sb.append(parameters.remove(PARTITION_BY).map(v => {
+        val parClause = {
+          v match {
+            case PRIMARY_KEY => PRIMARY_KEY
+            case _ => if (isRowTable) s"COLUMN ($v)" else s"COLUMN ($v, $SHADOW_COLUMN_NAME)"
+          }
         }
+        s"$GEM_PARTITION_BY $parClause "
       }
-      s"$GEM_PARTITION_BY $parClause "
+      ).getOrElse(if (isRowTable) EMPTY_STRING else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME)"))
+    } else {
+      parameters.remove(PARTITION_BY).map(v => {
+        v match {
+          case PRIMARY_KEY => throw new DDLException("Column table cannot be partitioned on" +
+              " PRIMARY KEY as no primary key")
+          case _ =>
+        }
+      })
     }
-    ).getOrElse(EMPTY_STRING))
-
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
@@ -156,38 +170,19 @@ object StoreUtils {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
-        .getOrElse(EMPTY_STRING))
+    if (!isShadowTable) {
+      sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
+          .getOrElse(EMPTY_STRING))
+    } else {
+      sb.append(parameters.remove(EVICTION_BY).map(v => {
+        v.contains(LRUCOUNT) match {
+          case true => throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+          case _ =>
+        }
+        s"$GEM_EVICTION_BY $v "
+      }).getOrElse(EMPTY_STRING))
+    }
 
-    sb.toString()
-  }
-
-  def ddlExtensionStringForShadowTable(parameters: mutable.Map[String, String]): String = {
-    val sb = new StringBuilder()
-
-    sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(EVICTION_BY).map(v => {
-      v.contains(LRUCOUNT) match {
-        case true => throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
-        case _ =>
-      }
-      s"$GEM_EVICTION_BY $v "
-    }).getOrElse(EMPTY_STRING))
 
     sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
         .getOrElse(EMPTY_STRING))

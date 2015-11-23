@@ -2,6 +2,9 @@ package org.apache.spark.sql.columntable
 
 import java.util.UUID
 
+import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import org.apache.spark.sql.{SQLContext, SQLConf}
+
 import scala.collection.mutable.ArrayBuffer
 
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
@@ -21,6 +24,7 @@ import org.apache.spark.unsafe.types.UTF8String
  * Created by skumar on 5/11/15.
  */
 class CachedBatchCreator(
+    val sqlContext: SQLContext,
     val tableName: String,
     val schema: StructType,
     val externalStore: ExternalStore) {
@@ -135,8 +139,11 @@ class CachedBatchCreator(
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: UUID, bucketID: Int): Unit = {
-    val useCompression = true //SQLConf.useCompression
-    val columnBatchSize = 10000 //SQLConf.columnBatchSize
+
+    val useCompression = sqlContext.conf.useCompression
+    val columnBatchSize = sqlContext.conf.columnBatchSize
+    //10000//we have to set MAX so that only one cached batch is created per call
+
 
     def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
@@ -152,7 +159,9 @@ class CachedBatchCreator(
           attribute.name, useCompression)
     }.toArray
 
-    val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize, schema,
+    // adding one variable so that only one cached batch is created
+
+    val holder = new CachedBatchHolder(columnBuilders, 0, true, columnBatchSize, schema,
       new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
     val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]

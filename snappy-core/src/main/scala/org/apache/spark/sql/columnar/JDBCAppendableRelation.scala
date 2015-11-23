@@ -175,7 +175,7 @@ class JDBCAppendableRelation(
           attribute.name, useCompression)
       }.toArray
 
-      val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize, schema,
+      val holder = new CachedBatchHolder(columnBuilders, 0, false, columnBatchSize, schema,
         new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
       val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
@@ -258,7 +258,6 @@ class JDBCAppendableRelation(
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
             case _ => // do nothing
-
           }
         }
     })
@@ -347,7 +346,7 @@ with CreatableRelationProvider {
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
 
-    val externalStore = getExternalSource(sqlContext.sparkContext, url, driver, poolProps, connProps, hikariCP)
+    val externalStore = getExternalSource(sqlContext, url, driver, poolProps, connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -387,7 +386,7 @@ with CreatableRelationProvider {
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }
 
-  def getExternalSource(sc: SparkContext, url: String,
+  def getExternalSource(sqlContext: SQLContext, url: String,
       driver: String,
       poolProps: Map[String, String],
       connProps: Properties,

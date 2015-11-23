@@ -3,6 +3,8 @@ package io.snappydata.dunit.cluster
 import java.io.File
 import java.util.Properties
 
+import com.gemstone.gemfire.internal.tools.gfsh.app.commands.value
+
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -147,6 +149,9 @@ class ClusterManagerTestUtils {
     sc = new SparkContext(conf)
     logger.info("SparkContext CREATED, about to create SnappyContext.")
     snc = SnappyContext(sc)
+    // Setting the default column batch size for tests to 3
+    snc.setConf("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+
     assert(ServiceManager.getServerInstance.status == FabricService.State.RUNNING)
     logger.info("SnappyContext CREATED successfully.")
     val lead: Server = ServiceManager.getServerInstance

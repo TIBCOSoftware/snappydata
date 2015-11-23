@@ -15,12 +15,12 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
-import org.apache.spark.sql.sources.{Filter, JdbcExtendedDialect, JdbcExtendedUtils, RowInsertableRelation}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext, SaveMode, SnappyContext}
+import org.apache.spark.sql._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
@@ -94,6 +94,8 @@ class ColumnFormatRelation(
 
     val colRDD = super.scanTable(table+shadowTableNamePrefix, requiredColumns, filters)
 
+    // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
+    // we may miss some result though
     colRDD.union(connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
@@ -228,7 +230,9 @@ class ColumnFormatRelation(
   }
 
 
+  //TODO: Suranjan make sure that this table doesn't evict to disk by setting some property, may be MemLRU?
   def createActualTable(tableName: String, externalStore: ExternalStore) = {
+
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
@@ -236,16 +240,7 @@ class ColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(conn, table,
         dialect, sqlContext)
       if (!tableExists) {
-        var partitionByClause = ""
-        if (!schemaExtensions.contains(" PARTITION ")) {
-          // create partition by extension with all the columns
-          partitionByClause = dialect match {
-            case d: JdbcExtendedDialect =>
-              d.getPartitionByClause(s"${schemaFields.keys.mkString(", ")}")
-          }
-        }
-
-        val sql = s"CREATE TABLE ${tableName} $schemaExtensions $partitionByClause"
+        val sql = s"CREATE TABLE ${tableName} $schemaExtensions "
         logInfo("Applying DDL : " + sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
@@ -276,9 +271,8 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
 
-  def registerStoreCallbacks(table: String, userSchema: StructType, externalStore: ExternalStore) = {
-    // if already registered don't register
-    StoreCallbacksImpl.registerExternalStoreAndSchema(table.toUpperCase, userSchema, externalStore)
+  def registerStoreCallbacks(sqlContext: SQLContext,table: String, userSchema: StructType, externalStore: ExternalStore) = {
+    StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase, userSchema, externalStore)
   }
 }
 
@@ -293,23 +287,29 @@ final class DefaultSource extends ColumnarRelationProvider {
     val table = StoreUtils.removeInternalProps(parameters)
 
     val sc = sqlContext.sparkContext
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
 
-    val ddlExtensionForShadowTable = StoreUtils.ddlExtensionStringForShadowTable(parametersForShadowTable)
+    val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
-    val schemaExtension = s"$schemaString $ddlExtension"
+    val schemaExtension = if (schemaString.length > 0) {
+      val temp = schemaString.substring(0, schemaString.length - 1).concat(s", ${StoreUtils.SHADOW_COLUMN} )")
+      s"$temp $ddlExtension"
+    } else {
+      s"$schemaString $ddlExtension"
+    }
 
-    val externalStore = getExternalSource(sc, url, driver, poolProps, connProps, hikariCP)
-    ColumnFormatRelation.registerStoreCallbacks(table, schema, externalStore)
+    val externalStore = getExternalSource(sqlContext, url, driver, poolProps, connProps, hikariCP)
+    ColumnFormatRelation.registerStoreCallbacks(sqlContext, table, schema, externalStore)
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -317,7 +317,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       poolProps, connProps, hikariCP, options, externalStore, blockMap, sqlContext)()
   }
 
-  override def getExternalSource(sc: SparkContext, url: String,
+  override def getExternalSource(sqlContext: SQLContext, url: String,
       driver: String,
       poolProps: Map[String, String],
       connProps: Properties,
@@ -326,7 +326,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)
