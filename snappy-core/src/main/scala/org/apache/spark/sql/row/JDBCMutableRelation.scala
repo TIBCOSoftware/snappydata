@@ -276,7 +276,7 @@ class JDBCMutableRelation(
     var conn: Connection = null
     try {
       conn = JdbcUtils.createConnection(url, connProperties)
-      val tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
 
       // Create the table if the table didn't exist.
@@ -302,7 +302,7 @@ class JDBCMutableRelation(
     }
 
 
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, Some(driver), dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)

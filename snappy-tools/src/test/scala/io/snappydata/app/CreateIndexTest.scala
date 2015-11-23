@@ -1,18 +1,15 @@
 package io.snappydata.app
 
-import org.scalatest.FunSuite
-
+import io.snappydata.SnappyFunSuite
 import org.apache.spark.sql.{Row, SaveMode}
 
 /**
  * Created by vivekb on 27/10/15.
  */
-class CreateIndexTest extends FunSuite {
+class CreateIndexTest extends SnappyFunSuite {
 
   test("Test create Index on Column Table using Snappy API") {
     val tableName : String = "tcol1"
-
-    val sc = TestSQLContext.sparkContext
     val snContext = org.apache.spark.sql.SnappyContext(sc)
 
     val props = Map(
@@ -48,7 +45,6 @@ class CreateIndexTest extends FunSuite {
   }
 
   test("Test create Index on Row Table using Snappy API") {
-    val sc = TestSQLContext.sparkContext
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     val tableName : String = "trow1"
     val props = Map(
