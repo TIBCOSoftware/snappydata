@@ -233,7 +233,7 @@ private[sql] case class CreateExternalTableUsingSelect(
     query: LogicalPlan) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -249,7 +249,7 @@ private[sql] case class DropTable(
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -261,7 +261,7 @@ private[sql] case class TruncateTable(
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
     Seq.empty
