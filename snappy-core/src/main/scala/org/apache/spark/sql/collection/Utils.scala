@@ -17,20 +17,23 @@
 
 package org.apache.spark.sql.collection
 
+import java.io.{IOException, ObjectOutputStream}
+
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
 import scala.collection.{Map => SMap, Traversable, mutable}
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
 import org.apache.commons.math3.distribution.NormalDistribution
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SQLContext, AnalysisException, Row}
+import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext, Partitioner}
+import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
@@ -82,10 +85,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
       sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
     val memoryStatus = sc.env.blockManager.master.getMemoryStatus
     // no filtering for local backend
-    sc.schedulerBackend match {
-      case lb: LocalBackend => memoryStatus
-      case _ => memoryStatus.filter(!_._1.isDriver)
-    }
+    if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
   }
 
   def getHostExecutorId(blockId: BlockManagerId) =
@@ -279,6 +279,11 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
   }
 
+  def isLoner(sc: SparkContext): Boolean = sc.schedulerBackend match {
+    case lb: LocalBackend => true
+    case _ => false
+  }
+
   def normalizeId(k: String): String = {
     var index = 0
     val len = k.length
@@ -386,4 +391,48 @@ class ExecutorLocalPartition(override val index: Int,
   def hostExecutorId = Utils.getHostExecutorId(blockId)
 
   override def toString = s"ExecutorLocalPartition($index, $blockId)"
+}
+
+class MultiExecutorLocalPartition(override val index: Int,
+    val blockIds: Seq[BlockManagerId]) extends Partition {
+
+  def hostExecutorIds = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
+
+  override def toString = s"MultiExecutorLocalPartition($index, $blockIds)"
+}
+
+
+private[spark] case class NarrowExecutorLocalSplitDep(
+    @transient rdd: RDD[_],
+    @transient splitIndex: Int,
+    var split: Partition
+    ) extends Serializable {
+
+  @throws(classOf[IOException])
+  private def writeObject(oos: ObjectOutputStream): Unit = org.apache.spark.util.Utils.tryOrIOException {
+    // Update the reference to parent split at the time of task serialization
+    split = rdd.partitions(splitIndex)
+    oos.defaultWriteObject()
+  }
+}
+
+/**
+ * Stores information about the narrow dependencies used by a StoreRDD.
+ *
+ * @param narrowDep maps to the dependencies variable in the parent RDD: for each one to one
+ *                   dependency in dependencies, narrowDeps has a NarrowExecutorLocalSplitDep (describing
+ *                   the partition for that dependency) at the corresponding index. The size of
+ *                   narrowDeps should always be equal to the number of parents.
+ */
+private[spark] class CoGroupExecutorLocalPartition(
+    idx: Int, val blockId: BlockManagerId, val narrowDep: Option[NarrowExecutorLocalSplitDep])
+    extends Partition with Serializable {
+
+  override val index: Int = idx
+
+  def hostExecutorId = Utils.getHostExecutorId(blockId)
+
+  override def toString = s"CoGroupExecutorLocalPartition($index, $blockId)"
+
+  override def hashCode(): Int = idx
 }

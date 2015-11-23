@@ -11,6 +11,7 @@ dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
+  compile group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0'
   compile project(':snappy-core_' + scalaBinaryVersion)
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
@@ -35,20 +36,34 @@ dependencies {
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
   }
 
-  compile("spark.jobserver:job-server_${scalaBinaryVersion}:0.6.0") {
-    exclude(module: 'akka-actor_' + scalaBinaryVersion)
-    exclude(module: 'akka-remote_' + scalaBinaryVersion)
-    exclude(module: 'akka-slf4j_' + scalaBinaryVersion)
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
+    compile project(':spark-jobserver')
+  } else {
+    compile files("${rootDir.getAbsolutePath()}/local-repo/spark-jobserver-1.5.0-SNAPSHOT-1.jar")
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+  testRuntime 'org.pegdown:pegdown:1.1.0'
+}
+
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
 }
 
 test.dependsOn ':cleanJUnit'
-scalaTest.dependsOn ':cleanScalaTest'
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
 check.dependsOn ':product'
 
 shadowJar {

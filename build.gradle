@@ -1,5 +1,9 @@
 apply plugin: 'wrapper'
 
+if(JavaVersion.current() != JavaVersion.VERSION_1_7){
+    throw new GradleException("==== This build must be run with java 7 ====")
+}
+
 buildscript {
   repositories {
     maven { url "https://plugins.gradle.org/m2" }
@@ -20,7 +24,7 @@ allprojects {
   repositories {
     maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
     mavenLocal()
-    maven { url "http://dl.bintray.com/spark-jobserver/maven" }
+    //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
@@ -52,7 +56,7 @@ allprojects {
 
   ext {
     scalaBinaryVersion = '2.10'
-    scalaVersion = scalaBinaryVersion + '.4'
+    scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.5.0-SNAPSHOT.1'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
@@ -71,17 +75,6 @@ allprojects {
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
-  }
-
-  dependencies {
-    compile 'log4j:log4j:' + log4jVersion
-    compile 'org.slf4j:slf4j-api:' + slf4jVersion
-    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-
-    testCompile "junit:junit:${junitVersion}"
-    testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
-
-    testRuntime 'org.pegdown:pegdown:1.1.0'
   }
 }
 
@@ -105,6 +98,15 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/)}) {
   }
 }
 
+def cleanIntermediateFiles(def projectName) {
+  def projDir = "${project(projectName).projectDir}"
+  delete "${projDir}/metastore_db"
+  delete "${projDir}/warehouse"
+  delete "${projDir}/datadictionary"
+  delete fileTree(projDir) {
+    include 'BACKUPGFXD-DEFAULT-DISKSTORE**', 'locator*.dat'
+  }
+}
 task cleanScalaTest << {
   def workingDir = "${testResultsBase}/scalatest"
   delete workingDir
@@ -227,21 +229,25 @@ subprojects {
   */
 
   configurations {
+    provided {
+      description 'a dependency that is provided externally at runtime'
+      visible true
+    }
+
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
     }
-  }
-
-  /*
-  configurations.all {
-    resolutionStrategy {
-      // fail eagerly on version conflict (includes transitive dependencies)
-      // e.g. multiple different versions of the same dependency (group and name are equal)
-      failOnVersionConflict()
+    /*
+    all {
+      resolutionStrategy {
+        // fail eagerly on version conflict (includes transitive dependencies)
+        // e.g. multiple different versions of the same dependency (group and name are equal)
+        failOnVersionConflict()
+      }
     }
+    */
   }
-  */
 
   task packageTests(type: Jar) {
     from sourceSets.test.output
@@ -249,6 +255,29 @@ subprojects {
   }
   artifacts {
     testOutput packageTests
+  }
+
+  idea {
+    module {
+      scopes.PROVIDED.plus += [ configurations.provided ]
+    }
+  }
+
+  sourceSets {
+    main.compileClasspath += configurations.provided
+    main.runtimeClasspath -= configurations.provided
+    test.compileClasspath += configurations.provided
+    test.runtimeClasspath += configurations.provided
+  }
+
+  javadoc.classpath += configurations.provided
+
+  dependencies {
+    compile 'log4j:log4j:' + log4jVersion
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+
+    testCompile "junit:junit:${junitVersion}"
   }
 }
 
@@ -272,6 +301,11 @@ task product {
     }
     copy {
       from datanucleusJars
+      into "${productDir}/lib"
+    }
+    // copy GemFireXD shared libraries for optimized JNI calls
+    copy {
+      from "${project(':snappy-store:gemfirexd:core').projectDir}/lib"
       into "${productDir}/lib"
     }
 
@@ -305,6 +339,18 @@ task product {
       from "${project(':snappy-spark').projectDir}/data"
       into "${productDir}/data"
     }
+    copy {
+      from("${toolsProject.projectDir}/bin")
+      into "${productDir}/bin"
+    }
+    copy {
+      from("${toolsProject.projectDir}/sbin")
+      into "${productDir}/sbin"
+    }
+    copy {
+      from("${toolsProject.projectDir}/conf") 
+      into "${productDir}/conf"
+    }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
     if (file(sparkR).exists()) {
@@ -313,6 +359,16 @@ task product {
         into "${productDir}/R/lib"
       }
     }
+  }
+}
+
+def copyTestsCommonResources(def bdir) {
+  def outdir = "${bdir}/resources/test"
+  file(outdir).mkdirs()
+
+  copy {
+    from "${rootDir}/tests-common/src/main/resources"
+    into outdir
   }
 }
 

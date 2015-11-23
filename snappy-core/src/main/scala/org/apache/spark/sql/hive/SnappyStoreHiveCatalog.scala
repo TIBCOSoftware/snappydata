@@ -9,20 +9,23 @@ import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.hive.ql.metadata.Hive
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.streaming.StreamRelation
@@ -36,7 +39,6 @@ import org.apache.spark.{Logging, Partition, TaskContext}
  */
 final class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
-
 
   override val conf = context.conf
 
@@ -394,8 +396,9 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   def registerExternalTable(tableName: QualifiedTableName,
       userSpecifiedSchema: Option[StructType],
       partitionColumns: Array[String], provider: String,
-      options: Map[String, String]): Unit = {
-    createDataSourceTable(tableName, ExternalTableType.Row,
+      options: Map[String, String],
+      tableType: ExternalTableType.Type): Unit = {
+    createDataSourceTable(tableName, tableType,
       userSpecifiedSchema, partitionColumns, provider, options)
   }
 
@@ -557,7 +560,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val options = new CaseInsensitiveMap(jdbcSource)
     val externalSource = options.get("jdbcstore") match {
       case Some(x) => x
-      case None => "org.apache.spark.sql.store.impl.JDBCSourceAsStore"
+      case None => "org.apache.spark.sql.store.JDBCSourceAsStore"
     }
     val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
         .loadClass(externalSource).getConstructor(classOf[Map[String, String]])
@@ -565,8 +568,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean) = {
-    val isLoner = context.isLoner
+      tableName: String, dropIfExists: Boolean): Unit = {
+    val isLoner = Utils.isLoner(context.sparkContext)
 
     val rdd = new DummyRDD(context) {
       override def compute(split: Partition,
@@ -574,7 +577,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
-            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
+            val extraProps = d.extraDriverProperties(isLoner).propertyNames
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
@@ -582,6 +585,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
                     "shouldn't exist here in Executors")
               }
             }
+          case _ =>
         }
 
         val conn = ExternalStoreUtils.getConnection(externalStore.url,
@@ -607,7 +611,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val dialect = JdbcDialects.get(externalStore.url)
     dialect match {
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(isLoner))
+        connProps.putAll(d.extraDriverProperties(isLoner))
     }
 
     externalStore.tryExecute(tableName, {
@@ -705,6 +709,10 @@ object SnappyStoreHiveCatalog {
       tableIdentifier.map(Utils.normalizeId)
     }
   }
+
+  def closeCurrent(): Unit = {
+    Hive.closeCurrent()
+  }
 }
 
 /** A fully qualified identifier for a table (i.e. [dbName.]schema.tableName) */
@@ -737,4 +745,12 @@ object ExternalTableType extends Enumeration {
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
+
+  def getTableType(relation : BaseRelation) : ExternalTableType.Type ={
+    relation match {
+      case x : JDBCMutableRelation  => ExternalTableType.Row
+      case x : JDBCAppendableRelation => ExternalTableType.Columnar
+      case _=> ExternalTableType.Row
+    }
+  }
 }

@@ -145,6 +145,7 @@ public class ProcessManager {
       "-Dgemfire.DEFAULT_MAX_OPLOG_SIZE=10",
       "-Dgemfire.disallowMcastDefaults=true",
       "-XX:MaxPermSize=256M",
+      "-Djava.net.preferIPv4Stack=true",
       "-ea",
       agent,
       "dunit.standalone.ChildVM"

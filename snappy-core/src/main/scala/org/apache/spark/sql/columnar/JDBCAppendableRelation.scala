@@ -2,24 +2,27 @@ package org.apache.spark.sql.columnar
 
 import java.nio.ByteBuffer
 import java.sql.Connection
-import java.util.{UUID, Properties}
+import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, UUIDRegionKey, Utils}
-import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry, JDBCPartitioningInfo, JDBCRelation}
+import org.apache.spark.sql.collection.{Utils, UUIDRegionKey}
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.datasources.ResolvedDataSource
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * A LogicalPlan implementation for an external column table whose contents
@@ -39,9 +42,8 @@ class JDBCAppendableRelation(
     val origOptions: Map[String, String],
     val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)(
-    private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
-    = new ArrayBuffer[RDD[UUIDRegionKey]]()
-    )
+    private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] =
+    new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
@@ -82,36 +84,41 @@ class JDBCAppendableRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
 
-    def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table, requiredColumns.map(column => columnPrefix + column), uuidList,
+    val requestedColumns = if (requiredColumns.isEmpty) {
+      val narrowField =
+        schema.fields.minBy { a =>
+          ColumnType(a.dataType).defaultSize
+        }
+
+      Array(narrowField.name)
+    } else {
+      requiredColumns
+    }
+
+    val cachedColumnBuffers: RDD[CachedBatch] = readLock {
+      externalStore.getCachedBatchRDD(table,
+        requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
 
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    val outputTypes = requestedColumns.map { a => schema(a) }
+    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
+    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
     cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
-      // Find the ordinals and data types of the requested columns.  If none are requested, use the
-      // narrowest (the field with minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = if (requiredColumns.isEmpty) {
-        val (narrowestOrdinal, narrowestDataType) =
-          schema.fields.zipWithIndex.map { case (a, ordinal) =>
-            ordinal -> a.dataType
-          } minBy { case (_, dataType) =>
-            ColumnType(dataType).defaultSize
-          }
-        Seq(narrowestOrdinal) -> Seq(narrowestDataType)
-      } else {
-        requiredColumns.map { a =>
-          schema.getFieldIndex(a).get -> schema(a).dataType
-        }.unzip
-      }
+      // Find the ordinals and data types of the requested columns.
+      // If none are requested, use the narrowest (the field with
+      // minimum default element size).
+      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+        schema.getFieldIndex(a).get -> schema(a).dataType
+      }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
       def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
-          val columnAccessors = requestedColumnIndices.map { batchColumnIndex =>
-            ColumnAccessor(
-              schema.fields(batchColumnIndex).dataType,
-              ByteBuffer.wrap(cachedBatch.buffers(batchColumnIndex)))
+          val columnAccessors = requestedColumnIndices.zipWithIndex.map {
+            case (schemaIndex, bufferIndex) =>
+              ColumnAccessor(schema.fields(schemaIndex).dataType,
+                ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
           }
           // Extract rows via column accessors
           new Iterator[InternalRow] {
@@ -139,7 +146,8 @@ class JDBCAppendableRelation(
     assert(df.schema.equals(schema))
 
     // We need to truncate the table
-    if (overwrite) sqlContext.asInstanceOf[SnappyContext].truncateExternalTable(table)
+    if (overwrite)
+      sqlContext.asInstanceOf[SnappyContext].truncateExternalTable(table)
 
     val useCompression = sqlContext.conf.useCompression
     val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -169,7 +177,7 @@ class JDBCAppendableRelation(
       batches.forceEndOfBatch().iterator
     }
     // trigger an Action to materialize 'cached' batch
-    cached.count
+    cached.count()
     appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
   }
 
@@ -191,7 +199,7 @@ class JDBCAppendableRelation(
     val dialect = JdbcDialects.get(url)
     try {
       conn = JdbcUtils.createConnection(url, connProperties)
-      val tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         return
@@ -207,69 +215,26 @@ class JDBCAppendableRelation(
   private def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
-      "registerAndInsertIntoExternalStore: expected non-empty table name")
+      "createExternalTableForCachedBatches: expected non-empty table name")
 
-    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(
-      externalStore.url) match {
-      case ConnectionType.Embedded =>
+    val (primarykey, partitionStrategy) = dialect match {
+      // The driver if not a loner should be an accesor only
+      case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
-            "primary key (uuid, bucketId)", "partition by column (bucketId)")
-      // TODO: [sumedh] Neeraj, the partition clause should come from JdbcDialect or something
-      // TODO: [Suranjan] we can get the colocation clause here for colocation as well.
-      case _ => ("primary key (uuid)", "partition by primary key")
+            "primary key (uuid, bucketId)", d.getPartitionByClause("bucketId"))
+      case _ => ("primary key (uuid)", "") // TODO. How to get primary key contraint from each DB
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy", tableName, dropIfExists = false) //for test make it false
+        userSchema.fields.map(structField => columnPrefix + structField.name + " blob")
+            .mkString(" ", ",", " ") +
+        s", $primarykey) $partitionStrategy",
+      tableName, dropIfExists = false) // for test make it false
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
       tableName: String, dropIfExists: Boolean) = {
-    //convert to SnappyContext to see if it Loner
-    val isLoner = sqlContext.asInstanceOf[SnappyContext].isLoner
-    val rdd = new DummyRDD(sqlContext) {
-      override def compute(split: Partition,
-          taskContext: TaskContext): Iterator[InternalRow] = {
-
-        DriverRegistry.register(externalStore.driver)
-        // TODO: Suranjan Commenting it out. Verify if it is needed.
-//        JdbcDialects.get(externalLocalStore.url) match {
-//          case d: JdbcExtendedDialect =>
-//            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
-//            while (extraProps.hasMoreElements) {
-//              val p = extraProps.nextElement()
-//              if (externalLocalStore.connProps.get(p) != null) {
-//                sys.error(s"Master specific property $p " +
-//                    "shouldn't exist here in Executors")
-//              }
-//            }
-//        }
-
-        val conn = ExternalStoreUtils.getConnection(externalStore.url,
-          externalStore.connProps)
-        conn.close()
-        Iterator.empty
-      }
-
-      override protected def getPartitions: Array[Partition] = {
-        //TODO : Suranjan Find a cleaner way of starting all executors.
-        val partitions = new Array[Partition](100)
-        for (p <- 0 until 100) {
-          partitions(p) = new ExecutorLocalPartition(p, null)
-        }
-        partitions
-      }
-    }
-    rdd.collect()
-
-    val connProps = externalStore.connProps
-    val dialect = JdbcDialects.get(externalStore.url)
-    dialect match {
-      case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(isLoner))
-    }
 
     externalStore.tryExecute(tableName, {
       case conn =>
@@ -277,12 +242,13 @@ class JDBCAppendableRelation(
           JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
             ifExists = true)
         }
-        val tableExists = JdbcExtendedUtils.tableExists(conn, table,
+        val tableExists = JdbcExtendedUtils.tableExists(table, conn,
           dialect, sqlContext)
         if (!tableExists) {
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
+            case _ => // do nothing
 
           }
         }
@@ -294,18 +260,19 @@ class JDBCAppendableRelation(
    * dropping the external table that this relation represents.
    */
   override def destroy(ifExists: Boolean): Unit = {
-    dropTable(table, ifExists)
+    // clean up the connection pool on executors first
+    Utils.mapExecutors(sqlContext,
+      JDBCAppendableRelation.removePool(table)).count()
+    // then on the driver
+    JDBCAppendableRelation.removePool(table)
+    // drop the external table using a non-pool connection
+    val conn = JdbcUtils.createConnection(url, connProperties)
+    try {
+      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+    } finally {
+      conn.close()
+    }
   }
-
-  private def dropTable(tableName: String, ifExists: Boolean): Unit = {
-    val dialect = JdbcDialects.get(externalStore.url)
-    externalStore.tryExecute(tableName, {
-      case conn =>
-        JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
-          ifExists)
-    })
-  }
-
 }
 
 object JDBCAppendableRelation {
@@ -324,52 +291,32 @@ object JDBCAppendableRelation {
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema, parts,
       poolProps, connProps, hikariCP, options, null, sqlContext)()
+
+  private def removePool(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    Iterator.empty
+  }
 }
 
-final class DefaultSource extends SchemaRelationProvider
-with CreatableRelationProvider {
+final class DefaultSource extends ColumnarRelationProvider
 
-  def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
+class ColumnarRelationProvider
+    extends SchemaRelationProvider
+    with CreatableRelationProvider {
+
+  def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: StructType) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
-    //TODO: Suranjan Add/remove parameters specific to  explicit partitioning, colocation, persistence
-    val url = parameters.remove("url")
-        .getOrElse(sys.error("JDBC URL option 'url' not specified"))
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    val driver = parameters.remove("driver")
-    val poolImpl = parameters.remove("poolimpl")
-    val poolProperties = parameters.remove("poolproperties")
     val partitionColumn = parameters.remove("partitioncolumn")
     val lowerBound = parameters.remove("lowerbound")
     val upperBound = parameters.remove("upperbound")
     val numPartitions = parameters.remove("numpartitions")
-    val serializationFormat = parameters.remove("serialization.format")
 
-    // remove ALLOW_EXISTING property, if remaining
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
-
-    DriverRegistry.register(driver.get)
-
-    val hikariCP = poolImpl.map(Utils.normalizeId) match {
-      case Some("hikari") => true
-      case Some("tomcat") => false
-      case Some(p) =>
-        throw new IllegalArgumentException("JDBCAppendableRelation: " +
-            s"unsupported pool implementation '$p' " +
-            s"(supported values: tomcat, hikari)")
-      case None => false
-    }
-    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
-      val eqIndex = s.indexOf('=')
-      if (eqIndex >= 0) {
-        (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
-      } else {
-        // assume a boolean property to be enabled
-        (s.trim, "true")
-      }
-    }: _*)).getOrElse(Map.empty)
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
+    val sc = sqlContext.sparkContext
+    val (url, driver, poolProps, connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
       null
@@ -385,11 +332,9 @@ with CreatableRelationProvider {
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-    // remaining parameters are passed as properties to getConnection
-    val connProps = new Properties()
-    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
 
-    val externalStore = getExternalTable(options - JdbcExtendedUtils.DBTABLE_PROPERTY - JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY - "serialization.format")
+    val externalStore = getExternalSource(sc, url, driver, poolProps,
+      connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -399,27 +344,41 @@ with CreatableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType) = {
-    options.getOrElse("url", sys.error("Option 'url' not specified"))
 
     val allowExisting = options.get(JdbcExtendedUtils
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
 
-    createRelation(sqlContext, mode, options, schema)
+    val rel = getRelation(sqlContext, options)
+    rel.createRelation(sqlContext, mode, options, schema)
   }
 
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], data: DataFrame): BaseRelation = {
-    val relation = createRelation(sqlContext, mode, options, data.schema)
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], data: DataFrame): BaseRelation = {
+    val rel = getRelation(sqlContext, options)
+    val relation = rel.createRelation(sqlContext, mode, options, data.schema)
     relation.insert(data, mode == SaveMode.Overwrite)
     relation
   }
 
-  def getExternalTable(jdbcSource: Map[String, String]): ExternalStore = {
-    val externalSource = jdbcSource.get("jdbcStore") match {
-      case Some(x) => x
-      case None => "org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore"
+  def getRelation(sqlContext: SQLContext,
+      options: Map[String, String]): ColumnarRelationProvider = {
+
+    val url = options.getOrElse("url",
+      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+    val clazz = JdbcDialects.get(url) match {
+      case d: GemFireXDBaseDialect => ResolvedDataSource.
+          lookupDataSource("org.apache.spark.sql.columntable.DefaultSource")
+      case _ => classOf[columnar.DefaultSource]
     }
-    val constructor = Class.forName(externalSource).getConstructors()(0)
-    return constructor.newInstance(jdbcSource).asInstanceOf[ExternalStore]
+    clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
+  }
+
+  def getExternalSource(sc: SparkContext, url: String,
+      driver: String,
+      poolProps: Map[String, String],
+      connProps: Properties,
+      hikariCP: Boolean): ExternalStore = {
+    new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP)
   }
 }

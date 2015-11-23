@@ -24,11 +24,8 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     // Execute the job
     vm0.invoke(this.getClass, "startSparkJob")
     vm0.invoke(this.getClass, "startGemJob")
-    Thread.sleep(10000)
-
     // Stop the lead node
-    vm0.invoke(this.getClass, "stopAny")
-    Thread.sleep(5000)
+    vm0.invoke(this.getClass, "stopSpark")
 
     // Start the lead node in another JVM. The executors should
     // connect with this new lead.
@@ -37,7 +34,7 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     vm3.invoke(this.getClass, "startSnappyLead", startArgs)
     vm3.invoke(this.getClass, "startSparkJob")
     vm3.invoke(this.getClass, "startGemJob")
-    Thread.sleep(10000)
+    vm3.invoke(this.getClass, "stopSpark")
   }
 }
 
@@ -55,8 +52,8 @@ object ClusterMgrDUnitTest extends ClusterManagerTestUtils {
         if (x * x + y * y < 1) 1 else 0
       }.reduce(_ + _)
     val pi = 4.0 * count / n
-    assert(3.14 <= pi)
-    assert(3.15 > pi)
+    assert(3.04 <= pi)
+    assert(3.25 > pi)
   }
 
   def startGemJob(): Unit = {

@@ -1,42 +1,53 @@
 package io.snappydata.gemxd
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks}
+import com.gemstone.gemfire.internal.shared.Version
+import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
+
+import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 
 /**
- * Callbacks that are sent by GemXD to Snappy for cluster management
- *
- * Created by hemantb on 10/12/15.
- */
-object ClusterCallbacksImpl extends ClusterCallbacks {
+  * Callbacks that are sent by GemXD to Snappy for cluster management
+  *
+  * Created by hemantb on 10/12/15.
+  */
+object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
-  override def launchExecutor(driver_url: String, driverDM: InternalDistributedMember) = {
-    val url = if (driver_url == null || driver_url == "")
+  override def launchExecutor(driverUrl: String, driverDM: InternalDistributedMember): Unit = {
+    val url = if (driverUrl == null || driverUrl == "") {
+      logInfo(s"call to launchExecutor but driverUrl is invalid. ${driverUrl}")
       None
-    else Some(driver_url)
+    }
+    else {
+      Some(driverUrl)
+    }
+    logInfo(s"invoking startOrTransmute with. ${url}")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
-
   }
 
   override def getDriverURL: String = {
     return SnappyEmbeddedModeClusterManager.schedulerBackend match {
       case Some(x) =>
+        logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
-
-      case None => null
+      case None =>
+        null
     }
   }
 
-  override def stopExecutor = {
+  override def stopExecutor: Unit = {
     ExecutorInitiator.stop()
   }
+
+  override def getSQLExecute(sql: String, ctx: LeadNodeExecutionContext,
+      v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, v)
 }
 
 /**
- * Created by soubhikc on 19/10/15.
- */
+  * Created by soubhikc on 19/10/15.
+  */
 trait ClusterCallback {
   CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
 }

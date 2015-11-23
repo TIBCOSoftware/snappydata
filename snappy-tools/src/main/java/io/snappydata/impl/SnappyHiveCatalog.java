@@ -1,147 +1,174 @@
 package io.snappydata.impl;
 
-import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+
+import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.Table;
-import org.apache.spark.SparkConf;
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.thrift.TException;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by kneeraj on 10/1/15.
  */
 public class SnappyHiveCatalog implements ExternalCatalog {
 
-  final private HiveMetaStoreClient hmc;
+  final private static String THREAD_GROUP_NAME = "HiveMetaStore Client Group";
 
-  final InternalDistributedMember thisMember;
+  private ThreadLocal<HiveMetaStoreClient> hmClients = new ThreadLocal<>();
 
-//  public SnappyHiveCatalog() {
-//
-//    SparkContext ctx = SparkContext.getOrCreate();
-//    assert ctx != null : "expected a non null spark context";
-//    SparkConf conf = ctx.getConf();
-//    assert conf != null : "expected a non null spark conf";
-//
-//    // initialize HiveMetaStoreClient
-//    HiveConf metadataConf = new HiveConf();
-//    if (conf.contains("gemfirexd.db.url")  && conf.contains("gemfirexd.db.driver")) {
-//      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-//        conf.get("gemfirexd.db.url"));
-//      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-//        conf.get("gemfirexd.db.driver"));
-//    }
-//    try {
-//      this.hmc = new HiveMetaStoreClient(metadataConf);
-//    } catch (MetaException me) {
-//      throw new IllegalStateException(me);
-//    }
-//    thisMember = InternalDistributedSystem.getConnectedInstance().getDistributedMember();
-//  }
+  private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
+
+  private final ExecutorService hmsQueriesExecutorService;
+
+  private final static String DEFAULT_DB_NAME = "default";
+
+  private final ArrayList<HiveMetaStoreClient> allHMclients = new ArrayList<>();
 
   public SnappyHiveCatalog() {
-    // initialize HiveMetaStoreClient
-    String snappydataurl = "jdbc:snappydata:;locators=localhost[7777];persist-dd=false;";
-    //String snappydataurl = "jdbc:snappydata:";
+    final ThreadGroup hmsThreadGroup = LogWriterImpl.createThreadGroup(
+        THREAD_GROUP_NAME, Misc.getI18NLogWriter());
+    ThreadFactory hmsClientThreadFactory = new ThreadFactory() {
+      private int next = 0;
 
-    HiveConf metadataConf = new HiveConf();
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-        snappydataurl);
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-      "APP");
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
-
+      public Thread newThread(Runnable command) {
+        Thread t = new Thread(hmsThreadGroup, command, "HiveMetaStore Client-"
+            + next++);
+        t.setDaemon(true);
+        return t;
+      }
+    };
+    hmsQueriesExecutorService = Executors.newFixedThreadPool(1, hmsClientThreadFactory);
+    // just run a task to initialize the HMC for the thread. Assumption is that this should be outside
+    // any lock
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.INIT, null, null);
+    Future<Boolean> ret = hmsQueriesExecutorService.submit(q);
     try {
-      this.hmc = new HiveMetaStoreClient(metadataConf);
-    } catch (MetaException me) {
-      throw new IllegalStateException(me);
+      ret.get();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
     }
-    thisMember = InternalDistributedSystem.getConnectedInstance().getDistributedMember();
   }
 
   public boolean isColumnTable(String tableName) {
-    try {
-      String tableType = getType(tableName);
-      if (tableType != null && tableType.equals(ExternalTableType.Columnar().toString())) {
-        return true;
-      }
-    } catch (TException e) {
-      throw new IllegalArgumentException(e);
-    }
-    return false;
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, DEFAULT_DB_NAME);
+    Future<Boolean> f = this.hmsQueriesExecutorService.submit(q);
+    return handleFutureResult(f);
   }
 
   public boolean isRowTable(String tableName) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName, DEFAULT_DB_NAME);
+    Future<Boolean> f = this.hmsQueriesExecutorService.submit(q);
+    return handleFutureResult(f);
+  }
+
+  @Override
+  public void stop() {
+    for (HiveMetaStoreClient cl : this.allHMclients) {
+      cl.close();
+    }
+    this.hmClients = null;
+    this.allHMclients.clear();
+    this.hmsQueriesExecutorService.shutdown();
+  }
+
+  private HMSQuery getHMSQuery() {
+    HMSQuery q = this.queries.get();
+    if (q == null) {
+      q = new HMSQuery();
+      this.queries.set(q);
+    }
+    return q;
+  }
+
+  private boolean handleFutureResult(Future<Boolean> f) {
     try {
-      String tableType = getType(tableName);
-      System.out.println("KN: tableType = " + tableType);
-      if (tableType != null && tableType.equals(ExternalTableType.Row().toString())) {
-        return true;
+      return f.get();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private class HMSQuery implements Callable<Boolean> {
+
+    private int qType;
+    private String tableName;
+    private String dbName;
+
+    private static final int INIT = 0;
+    private static final int ISROWTABLE_QUERY = 1;
+    private static final int ISCOLUMNTABLE_QUERY = 2;
+    private static final int CLOSE_HMC = 3;
+
+    // More to be added later
+
+    HMSQuery() {
+    }
+
+    public void resetValues(int queryType, String tableName, String dbName) {
+      this.qType = queryType;
+      this.tableName = tableName;
+      this.dbName = dbName;
+    }
+
+    @Override
+    public Boolean call() throws Exception {
+      switch (this.qType) {
+        case INIT:
+          initHMC();
+          return true;
+
+        case ISROWTABLE_QUERY:
+          HiveMetaStoreClient hmc = SnappyHiveCatalog.this.hmClients.get();
+          String type = getType(hmc);
+          return type.equals(ExternalTableType.Row().toString());
+
+        case ISCOLUMNTABLE_QUERY:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          type = getType(hmc);
+          return type.equals(ExternalTableType.Columnar().toString());
+
+        default:
+          throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
       }
-    } catch (TException e) {
-      throw new IllegalArgumentException(e);
     }
-    return false;
-  }
 
-  public boolean tableExists(String tableName) {
-    try {
-      this.hmc.getTable("", tableName);
-    } catch (TException e) {
-      return false;
+    public String toString() {
+      return "HiveMetaStoreQuery:query type = " + this.qType + " tname = " + this.tableName + " db = " + this.dbName;
     }
-    return true;
-  }
 
-  // TODO: Will be implemented later when the serDe actually carries
-  // this information
-  public boolean hasComplexTypes(String tableName) {
-    return false;
-  }
+    private void initHMC() {
+      String snappydataurl = "jdbc:snappydata:;route-query=false;user=HIVE_METASTORE";
+      HiveConf metadataConf = new HiveConf();
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
+          snappydataurl);
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+          "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
 
-  // TODO: Will be implemented later when the serDe actually carries
-  // this information
-  public boolean hasUserDefinedTypes(String tableName) {
-    return false;
-  }
-
-  // TODO: Will be implemented later when the serDe actually carries
-  // this information
-  public boolean isSnappyUDF(String fnName) {
-    return false;
-  }
-
-  public String getCatalogDescription() {
-    return "Snappy Hive Catalog Client [" + thisMember + "]";
-  }
-
-  private String getType(String tableName) throws TException {
-    List<String> tables = this.hmc.getAllTables("default");
-    for (String s : tables) {
-      System.out.println("table in default = " + s);
+      try {
+        HiveMetaStoreClient hmc = new HiveMetaStoreClient(metadataConf);
+        SnappyHiveCatalog.this.hmClients.set(hmc);
+        SnappyHiveCatalog.this.allHMclients.add(hmc);
+      } catch (MetaException me) {
+        throw new IllegalStateException(me);
+      }
     }
-    List<String> list = this.hmc.getAllDatabases();
-    for (String s : list) {
-      System.out.println("db = " + s);
+
+    private String getType(HiveMetaStoreClient hmc) throws TException {
+      Table t = hmc.getTable(this.dbName, this.tableName);
+      return t.getParameters().get("EXTERNAL");
     }
-    Table t = this.hmc.getTable("default", tableName);
-    String type = t.getTableType();
-    System.out.println("KN: table type = " + type);
-    Map<String, String> props = t.getParameters();//.getSd().getSerdeInfo().getParameters();
-    Set<String> s = props.keySet();
-    for(String p : s) {
-      System.out.println("KN: Key = " + p + " val = " + props.get(p));
-    }
-    return t.getParameters().get("EXTERNAL");
   }
 }

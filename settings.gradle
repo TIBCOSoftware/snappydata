@@ -8,7 +8,7 @@ include 'snappy-dunits'
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
 project(':snappy-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-tools" as File
 
-if (new File(rootDir, "snappy-spark").exists()) {
+if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
   include ':snappy-spark'
   // sub-projects of snappy-spark
   include ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion
@@ -65,9 +65,11 @@ if (new File(rootDir, "snappy-spark").exists()) {
   project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-spark/external/kafka" as File
 }
 
-if (new File(rootDir, "snappy-store").exists()) {
+if (new File(rootDir, "snappy-store/build.gradle").exists()) {
   include ':snappy-store'
-  // sub-projects of snappy-spark
+  // sub-projects of snappy-store
+  include ':snappy-store:gemfire-jgroups'
+  include ':snappy-store:gemfire-trove'
   include ':snappy-store:gemfire-joptsimple'
   include ':snappy-store:gemfire-json'
   include ':snappy-store:gemfire-junit'
@@ -80,7 +82,22 @@ if (new File(rootDir, "snappy-store").exists()) {
   include ':snappy-store:gemfirexd:core'
   include ':snappy-store:gemfirexd:client'
   include ':snappy-store:gemfirexd:native'
+  include ':snappy-store:gemfirexd-hibernate'
   include ':snappy-store:gemfirexd:tools'
-  include ':snappy-store:testing:core'
-  include ':snappy-store:testing:sql'
+  include ':snappy-store:tests-core'
+  include ':snappy-store:tests-sql'
+
+  project(':snappy-store:gemfire-jgroups').projectDir = "$rootDir/snappy-store/lgpl/gemfire-jgroups" as File
+  project(':snappy-store:gemfire-trove').projectDir = "$rootDir/snappy-store/lgpl/gemfire-trove" as File
+  project(':snappy-store:gemfirexd-hibernate').projectDir = "$rootDir/snappy-store/lgpl/gemfirexd-hibernate" as File
+  project(':snappy-store:tests-core').projectDir = "$rootDir/snappy-store/tests/core" as File
+  project(':snappy-store:tests-sql').projectDir = "$rootDir/snappy-store/tests/sql" as File
+}
+
+if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
+  include ':spark-jobserver'
+}
+
+if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+  include ':snappy-aqp'
 }

@@ -11,23 +11,29 @@ import org.apache.spark.sql.SaveMode
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
-    // Lead is started before other servers are started.
+    // Lead is started before other servers are started
     vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
+    Thread.sleep(5000)
+    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
     vm0.invoke(this.getClass, "startSparkJob")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
     // Lead is started before other servers are started.
     vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
+
     vm2.invoke(this.getClass, "startSnappyServer", startArgs)
     vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-
+    Thread.sleep(5000)
+    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
+    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
     vm0.invoke(this.getClass, "startSparkJob2")
+    vm0.invoke(this.getClass, "stopSpark")
   }
 }
 
@@ -37,15 +43,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 object ColumnTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "ColumnTable"
 
-  val props = Map(
-    //"url" -> "jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false",
-    "url" -> "jdbc:snappydata:;user=app;password=app",
-    "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-    //"driver" -> "com.pivotal.gemfirexd.jdbc.ClientDriver",
-    "poolImpl" -> "tomcat",
-    "user" -> "app",
-    "password" -> "app"
-  )
+  val props = Map.empty[String, String]
 
   def startSparkJob(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
@@ -60,7 +58,7 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 0)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -80,7 +78,7 @@ object ColumnTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 5)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 }
 

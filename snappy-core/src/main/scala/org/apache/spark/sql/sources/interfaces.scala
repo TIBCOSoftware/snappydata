@@ -3,13 +3,19 @@ package org.apache.spark.sql.sources
 import java.sql.Connection
 import java.util.Properties
 
+import scala.collection.mutable
 import scala.util.control.NonFatal
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
-import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
 trait RowInsertableRelation {
@@ -130,7 +136,11 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   /** Query string to check for existence of a table */
   def tableExists(tableName: String, conn: Connection,
-      context: SQLContext): Boolean
+      context: SQLContext): Boolean =
+    JdbcExtendedUtils.tableExistsInMetaData(tableName, conn, this)
+
+  /** Get the current schema set on the given connection. */
+  def getCurrentSchema(conn: Connection): String = conn.getSchema
 
   /** DDL to truncate a table, or null/empty if truncate is not supported */
   def truncateTable(tableName: String): String = s"TRUNCATE TABLE $tableName"
@@ -140,8 +150,10 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
   def initializeTable(tableName: String, conn: Connection): Unit = {}
 
-  def extraCreateTableProperties(isLoner: Boolean): Properties =
+  def extraDriverProperties(isLoner: Boolean): Properties =
     new Properties()
+
+  def getPartitionByClause(col : String) : String
 }
 
 object JdbcExtendedUtils {
@@ -191,24 +203,62 @@ object JdbcExtendedUtils {
     if (sb.length < 2) "" else "(".concat(sb.substring(2)).concat(")")
   }
 
+  def tableExistsInMetaData(table: String, conn: Connection,
+      dialect: JdbcDialect): Boolean = {
+    // using the JDBC meta-data API
+    val dotIndex = table.indexOf('.')
+    val schemaName = if (dotIndex > 0) {
+      Utils.normalizeIdUpperCase(table.substring(0, dotIndex))
+    } else {
+      // get the current schema
+      dialect match {
+        case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
+        case _ => conn.getSchema
+      }
+    }
+    val tableName = Utils.normalizeIdUpperCase(if (dotIndex > 0)
+      table.substring(dotIndex + 1)
+    else table)
+    try {
+      val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
+      rs.next()
+    } catch {
+      case t: java.sql.SQLException => false
+    }
+  }
+
   /**
    * Returns true if the table already exists in the JDBC database.
    */
-  def tableExists(conn: Connection, table: String, dialect: JdbcDialect,
+  def tableExists(table: String, conn: Connection, dialect: JdbcDialect,
       context: SQLContext): Boolean = {
     dialect match {
       case d: JdbcExtendedDialect => d.tableExists(table, conn, context)
 
       case _ =>
         try {
-          val stmt = conn.createStatement()
-          val rs = stmt.executeQuery(s"SELECT 1 FROM $table LIMIT 1")
-          rs.next()
-          rs.close()
-          stmt.close()
-          true
+          tableExistsInMetaData(table, conn, dialect)
         } catch {
-          case NonFatal(e) => false
+          case NonFatal(_) =>
+            val stmt = conn.createStatement()
+            // try LIMIT clause, then FETCH FIRST and lastly COUNT
+            val testQueries = Array(s"SELECT 1 FROM $table LIMIT 1",
+              s"SELECT 1 FROM $table FETCH FIRST ROW ONLY",
+              s"SELECT COUNT(1) FROM $table")
+            for (q <- testQueries) {
+              try {
+                val rs = stmt.executeQuery(q)
+                rs.next()
+                rs.close()
+                stmt.close()
+                // return is not very efficient but then this code
+                // is not performance sensitive
+                return true
+              } catch {
+                case NonFatal(_) => // continue
+              }
+            }
+            false
         }
     }
   }
@@ -219,7 +269,7 @@ object JdbcExtendedUtils {
       case d: JdbcExtendedDialect =>
         d.dropTable(tableName, conn, context, ifExists)
       case _ =>
-        if (!ifExists || tableExists(conn, tableName, dialect, context)) {
+        if (!ifExists || tableExists(tableName, conn, dialect, context)) {
           JdbcExtendedUtils.executeUpdate(s"DROP TABLE $tableName", conn)
         }
     }
@@ -256,5 +306,80 @@ object JdbcExtendedUtils {
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
     }
     new ResolvedDataSource(clazz, relation)
+  }
+}
+
+abstract class MutableRelationProvider
+    extends ExternalSchemaRelationProvider
+    with SchemaRelationProvider
+    with RelationProvider
+    with CreatableRelationProvider {
+
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: String) = {
+    val parameters = new mutable.HashMap[String, String]
+    parameters ++= options
+    val partitionColumn = parameters.remove("partitioncolumn")
+    val lowerBound = parameters.remove("lowerbound")
+    val upperBound = parameters.remove("upperbound")
+    val numPartitions = parameters.remove("numpartitions")
+
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
+    val sc = sqlContext.sparkContext
+    val (url, _, poolProps, connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+
+    val partitionInfo = if (partitionColumn.isEmpty) {
+      null
+    } else {
+      if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
+        throw new IllegalArgumentException("JDBCUpdatableRelation: " +
+            "incomplete partitioning specified")
+      }
+      JDBCPartitioningInfo(
+        partitionColumn.get,
+        lowerBound.get.toLong,
+        upperBound.get.toLong,
+        numPartitions.get.toInt)
+    }
+    val parts = JDBCRelation.columnPartition(partitionInfo)
+    new JDBCMutableRelation(url,
+      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      getClass.getCanonicalName, mode, schema, parts,
+      poolProps, connProps, hikariCP, options, sqlContext)
+  }
+
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String], schema: StructType) = {
+    val url = options.getOrElse("url",
+      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+    val dialect = JdbcDialects.get(url)
+    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
+
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    createRelation(sqlContext, mode, options, schemaString)
+  }
+
+  override def createRelation(sqlContext: SQLContext,
+      options: Map[String, String]) = {
+    val allowExisting = options.get(JdbcExtendedUtils
+        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    // will work only if table is already existing
+    createRelation(sqlContext, mode, options, "")
+  }
+
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], data: DataFrame) = {
+    val url = options.getOrElse("url",
+      ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
+    val dialect = JdbcDialects.get(url)
+    val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
+
+    val relation = createRelation(sqlContext, mode, options, schemaString)
+    relation.insert(data)
+    relation
   }
 }
