@@ -50,16 +50,13 @@ class RowFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  val connFunctor = JDBCMutableRelation.getConnector(table, driver, poolProperties,
-    connProperties, hikariCP)
-
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           sqlContext.sparkContext,
-          connFunctor,
+          connector,
           JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
@@ -79,15 +76,15 @@ final class DefaultSource extends MutableRelationProvider {
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val table = StoreUtils.removeInternalProps(parameters)
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters)
     val schemaExtension = s"$schema $ddlExtension"
-    val preservepartitions = parameters.remove("preservepartitions")
+    val preservePartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
 
-    val (url, driver, poolProps, connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+    val (url, _, poolProps, connProps, hikariCP) =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
@@ -99,13 +96,14 @@ final class DefaultSource extends MutableRelationProvider {
     dialect match {
       // The driver if not a loner should be an accesor only
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(Utils.isLoner(sc)))
+        connProps.putAll(d.extraDriverProperties(Utils.isLoner(sc)))
+      case _ =>
     }
 
     new RowFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
-      preservepartitions.getOrElse("false").toBoolean,
+      preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
       Seq.empty.toArray,
@@ -115,18 +113,5 @@ final class DefaultSource extends MutableRelationProvider {
       options,
       blockMap,
       sqlContext)
-  }
-
-  override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
-    val (url, _, _, _, _) =
-      ExternalStoreUtils.validateAndGetAllProps(sqlContext.sparkContext, options)
-    val dialect = JdbcDialects.get(url)
-    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
-
-    val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    createRelation(sqlContext, mode, options, schemaString)
   }
 }

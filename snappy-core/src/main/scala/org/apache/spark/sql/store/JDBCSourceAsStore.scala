@@ -1,6 +1,5 @@
 package org.apache.spark.sql.store
 
-import java.io.{ByteArrayOutputStream, DataOutputStream}
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement, ResultSet}
 import java.util.Properties
@@ -16,17 +15,18 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils}
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.{SparkContext, SparkEnv}
 
 /*
 Generic class to query column table from Snappy.
  */
-class JDBCSourceAsStore(_url: String,
-    _driver: String,
-    _poolProps: Map[String, String],
-    _connProps: Properties,
-    _hikariCP: Boolean) extends ExternalStore {
+class JDBCSourceAsStore(override val url: String,
+    override val driver: String,
+    override val poolProps: Map[String, String],
+    override val connProps: Properties,
+    hikariCP: Boolean) extends ExternalStore {
 
   @transient
   protected lazy val serializer = SparkEnv.get.serializer
@@ -34,11 +34,8 @@ class JDBCSourceAsStore(_url: String,
   @transient
   protected lazy val rand = new Random
 
-
-  @transient
   protected val dialect = JdbcDialects.get(url)
 
-  @transient
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
   def getCachedBatchRDD(tableName: String,
@@ -105,31 +102,13 @@ class JDBCSourceAsStore(_url: String,
     }, closeOnSuccess = false))
   }
 
-
-  private def prepareCachedBatchAsBlob(batch: CachedBatch, conn: Connection) = {
-    val outputStream = new ByteArrayOutputStream()
-    val dos = new DataOutputStream(outputStream)
-
-    val numCols = batch.buffers.length
-    dos.writeInt(numCols)
-
-    batch.buffers.foreach(x => {
-      dos.writeInt(x.length)
-      dos.write(x)
-    })
-    val ser = serializer.newInstance()
-    val bf = ser.serialize(batch.stats)
-    dos.write(bf.array())
-    // println("KN: length of blob put = " + blob.length() + " lenght of serialized bf: " + bf.array().length)
-    outputStream.toByteArray
-  }
-
   implicit def uuidToString(uuid: UUIDRegionKey): String = {
     uuid.toString
   }
 
   override def getConnection(id: String): Connection = {
-    ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
+    ConnectionPool.getPoolConnection(id, None, dialect, poolProps,
+      connProps, hikariCP)
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
@@ -162,18 +141,6 @@ class JDBCSourceAsStore(_url: String,
       insertStmntLock.unlock()
     }
   }
-
-  override def url = _url
-
-  override def driver = _driver
-
-  override def poolProps = _poolProps
-
-  override def connProps = _connProps
-
-  override def initSource(): Unit = ???
-
-  override def cleanup(): Unit = ???
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
@@ -215,4 +182,3 @@ final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
   }
 
 }
-

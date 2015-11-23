@@ -1,31 +1,28 @@
 package io.snappydata
 
 /**
-  * Created by soubhikc on 11/11/15.
-  *
-  * Constant names sugged per naming convention
-  * http://docs.scala-lang.org/style/naming-conventions.html
-  * we decided to use upper case with underscore word separator.
-  */
+ * Created by soubhikc on 11/11/15.
+ *
+ * Constant names sugged per naming convention
+ * http://docs.scala-lang.org/style/naming-conventions.html
+ * we decided to use upper case with underscore word separator.
+ */
 object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
 
-  val JDBC_URL_PREFIX = "snappydata://";
+  val JDBC_URL_PREFIX = "snappydata://"
 
-  private[snappydata] val PROPERTY_PREFIX = "snappydata."
+  val PROPERTY_PREFIX = "snappydata."
 
-  private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
-
+  val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 }
 
 /**
-  * Created by soubhikc on 11/11/15.
-  *
-  * Property names should be as per naming convention
-  * http://docs.scala-lang.org/style/naming-conventions.html
-  * i.e. upper camel case.
-  */
+ * Property names should be as per naming convention
+ * http://docs.scala-lang.org/style/naming-conventions.html
+ * i.e. upper camel case.
+ */
 object Property {
 
   val locators = s"${Constant.PROPERTY_PREFIX}locators"

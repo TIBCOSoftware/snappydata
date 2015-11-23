@@ -44,6 +44,14 @@ scalaTest {
   maxParallelForks = 1
   maxHeapSize '4g'
   dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
 }
 test {
   maxParallelForks = 4
