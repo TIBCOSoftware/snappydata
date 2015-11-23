@@ -36,7 +36,6 @@ case class LocalJoin(leftKeys: Seq[Expression],
   override def requiredChildDistribution: Seq[Distribution] =
     UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
 
-
   /**
    * Overridden by concrete implementations of SparkPlan.
    * Produces the result of the query as an RDD[InternalRow]
@@ -56,14 +55,12 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
   }
 
-
   def narrowPartitions(buildRDD: RDD[InternalRow], streamRDD: RDD[InternalRow], preservesPartitioning: Boolean)
       (f: (Iterator[InternalRow], Iterator[InternalRow]) => Iterator[InternalRow]): NarrowPartitionsRDD = {
     val sc = buildRDD.sparkContext
-    new NarrowPartitionsRDD(sc, sc.clean(f), buildRDD, streamRDD, preservesPartitioning)
+    new NarrowPartitionsRDD(sc, sc.clean(f),
+      buildRDD, streamRDD, preservesPartitioning)
   }
-
-
 }
 
 
@@ -77,17 +74,19 @@ private[spark] class NarrowPartitionsRDD(
 
   override def compute(s: Partition, context: TaskContext): Iterator[InternalRow] = {
     val partitions = s.asInstanceOf[NarrowPartitionsPartition]
-    f(buildRDD.iterator(partitions.buildPartition, context), streamRDD.iterator(partitions.streamPartition, context))
+    f(buildRDD.iterator(partitions.buildPartition, context),
+      streamRDD.iterator(partitions.streamPartition, context))
   }
 
   override def getPartitions: Array[Partition] = {
     val numParts = streamRDD.partitions.length
     val part = buildRDD.partitions.head
     Array.tabulate[Partition](numParts) { i =>
-      val prefs = Seq(streamRDD.preferredLocations(streamRDD.partitions(i)), buildRDD.preferredLocations(part))
-      // Check whether there are any hosts that match all RDDs; otherwise return the union
-      val exactMatchLocations = prefs.reduce((x, y) => x.intersect(y))
-      val locs = if (!exactMatchLocations.isEmpty) exactMatchLocations else prefs.flatten.distinct
+      val streamLocs = streamRDD.preferredLocations(streamRDD.partitions(i))
+      val buildLocs = buildRDD.preferredLocations(part)
+      val exactMatchLocations = streamLocs.intersect(buildLocs)
+      val locs = if (!exactMatchLocations.isEmpty) exactMatchLocations else
+                         (streamLocs ++ buildLocs).distinct
 
       new NarrowPartitionsPartition(part, streamRDD.partitions(i) , locs)
     }

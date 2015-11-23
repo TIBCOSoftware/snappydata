@@ -502,7 +502,7 @@ class SnappyContext private(sc: SparkContext)
   override protected[sql] val planner = new SparkPlanner with SnappyStrategies {
     val snappyContext = self
 
-    // TODO temporary flag till we determine ecerything works fine with the optimizations
+    // TODO temporary flag till we determine every thing works fine with the optimizations
     val storeOptimization  = snappyContext.sparkContext.getConf.get(
         "snappy.store.optimization", "true").toBoolean
 
