@@ -47,7 +47,7 @@ class JDBCMutableRelation(
   final val dialect = JdbcDialects.get(url)
 
   // create table in external store once upfront
-  createTable(mode)
+  val tableSchema = createTable(mode)
 
   override val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
@@ -63,15 +63,16 @@ class JDBCMutableRelation(
     }
   }: _*)
 
-  def createTable(mode: SaveMode): Unit = {
+  def createTable(mode: SaveMode): String = {
     var conn: Connection = null
     try {
 
       conn = JdbcUtils.createConnection(url, connProperties)
       var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
+      val tableSchema = JdbcExtendedUtils.getCurrentSchema(conn, dialect)
       if (mode == SaveMode.Ignore && tableExists) {
-        return
+        return tableSchema
       }
 
       if (mode == SaveMode.ErrorIfExists && tableExists) {
@@ -103,6 +104,7 @@ class JDBCMutableRelation(
           case _ => // Do Nothing
         }
       }
+      tableSchema
     } catch {
       case sqle: java.sql.SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {

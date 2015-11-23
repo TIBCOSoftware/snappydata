@@ -201,10 +201,7 @@ object JdbcExtendedUtils {
       Utils.normalizeIdUpperCase(table.substring(0, dotIndex))
     } else {
       // get the current schema
-      dialect match {
-        case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
-        case _ => conn.getSchema
-      }
+      getCurrentSchema(conn, dialect)
     }
     val tableName = Utils.normalizeIdUpperCase(if (dotIndex > 0)
       table.substring(dotIndex + 1)
@@ -214,6 +211,14 @@ object JdbcExtendedUtils {
       rs.next()
     } catch {
       case t: java.sql.SQLException => false
+    }
+  }
+
+  def getCurrentSchema(conn: Connection,
+      dialect: JdbcDialect): String = {
+    dialect match {
+      case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
+      case _ => conn.getSchema
     }
   }
 

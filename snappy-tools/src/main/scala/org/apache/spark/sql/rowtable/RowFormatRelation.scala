@@ -90,35 +90,29 @@ class RowFormatRelation(
    *
    */
   override def numPartitions: Int = {
-    executeWithConnection(connector, {
-      case conn =>
-        val tableSchema = conn.getSchema
-        val resolvedName = StoreUtils.lookupName(table, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-        if (region.isInstanceOf[PartitionedRegion]) {
-/*          val par = region.asInstanceOf[PartitionedRegion]
-          par.getTotalNumberOfBuckets*/
-          sqlContext.conf.numShufflePartitions
-        } else {
-          1
-        }
-    })
+    val resolvedName = StoreUtils.lookupName(table, tableSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+    if (region.isInstanceOf[PartitionedRegion]) {
+      /*          val par = region.asInstanceOf[PartitionedRegion]
+                par.getTotalNumberOfBuckets*/
+      sqlContext.conf.numShufflePartitions
+    } else {
+      1
+    }
   }
+
   override def partitionColumns: Seq[String] = {
-    executeWithConnection(connector, {
-      case conn => val tableSchema = conn.getSchema
-        val resolvedName = StoreUtils.lookupName(table, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-        val partitionColumn = if (region.isInstanceOf[PartitionedRegion]) {
-          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-          val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-          val parColumn = resolver.getColumnNames
-          parColumn.toSeq
-        } else {
-          Seq.empty[String]
-        }
-        partitionColumn
-    })
+    val resolvedName = StoreUtils.lookupName(table, tableSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+    val partitionColumn = if (region.isInstanceOf[PartitionedRegion]) {
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+      val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+      val parColumn = resolver.getColumnNames
+      parColumn.toSeq
+    } else {
+      Seq.empty[String]
+    }
+    partitionColumn
   }
 }
 
