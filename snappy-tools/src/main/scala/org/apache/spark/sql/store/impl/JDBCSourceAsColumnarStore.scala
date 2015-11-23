@@ -67,7 +67,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
-      tableName: String): UUIDRegionKey = {
+                                tableName: String): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
@@ -78,13 +78,14 @@ final class JDBCSourceAsColumnarStore(_url: String,
           region.asInstanceOf[AbstractRegion] match {
             case pr: PartitionedRegion =>
               val primaryBuckets = pr.getDataStore.getAllLocalPrimaryBucketIds
-                  .toArray(new Array[Integer](0))
+                .toArray(new Array[Integer](0))
               genUUIDRegionKey(rand.nextInt(primaryBuckets.size))
             case _ =>
               genUUIDRegionKey()
           }
 
-        case _ => genUUIDRegionKey()
+        case _ =>
+          genUUIDRegionKey(rand.nextInt(Integer.MAX_VALUE))
       }
 
       val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)

@@ -2,13 +2,14 @@ package org.apache.spark.sql.columnar
 
 import java.util.Properties
 
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import scala.collection.mutable
 
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
@@ -101,8 +102,7 @@ private[sql] object ExternalStoreUtils {
       parameters: mutable.Map[String, String]) = {
 
     val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
-      val clazz = ResolvedDataSource.lookupDataSource("io.snappydata.Utils")
-      clazz.getMethod("getLocatorClientURL").invoke(clazz).asInstanceOf[String]
+      ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
     }
     else
       parameters.remove("url").getOrElse(defaultStoreURL(sc))
@@ -161,9 +161,10 @@ private[sql] object ExternalStoreUtils {
   }
 
   def isExternalShellMode (sparkContext: SparkContext): Boolean ={
-    val locator = sparkContext.getConf.getOption(Property.locators).getOrElse(return false)
-    val embeddedMode = sparkContext.getConf.getOption(Property.embedded).getOrElse(return true)
-    false
+    sparkContext.getConf.getOption(Property.locators).exists { s => !s.isEmpty &&
+      !sparkContext.getConf.getOption(Property.mcastPort).exists {_.toInt > 0 }
+    } &&
+      !sparkContext.getConf.getOption(Property.embedded).exists(_.toBoolean)
   }
 
 }

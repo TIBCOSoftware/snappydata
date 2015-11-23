@@ -1,6 +1,7 @@
 package io.snappydata
 
 import java.util.Properties
+import java.util.regex.Pattern
 
 import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.internal.LogWriterImpl.GemFireThreadGroup
@@ -10,6 +11,8 @@ import scala.collection.JavaConversions._
  * Created by soubhikc on 20/10/15.
  */
 object Utils {
+  val LocatorURLPattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])");
+
   val SnappyDataThreadGroup = new GemFireThreadGroup("SnappyData Thread Group") {
     override def uncaughtException(t: Thread, e: Throwable) {
       if (e.isInstanceOf[Error] && SystemFailure.isJVMFailureError(e.asInstanceOf[Error])) {
@@ -17,14 +20,6 @@ object Utils {
       }
       Thread.dumpStack
     }
-  }
-
-  def getLocatorClientURL(): String ={
-    val urlPrefix = "jdbc:snappydata://"
-    val drdaServerOnLocator = GemFireXDUtils.getGfxdAdvisor.getAllDRDAServersOnLOcators()
-    val locatorURL = drdaServerOnLocator.entrySet().filter(entry => entry.getValue !=null && !entry.getValue.isEmpty ).head.getValue
-    val port = locatorURL.substring(locatorURL.indexOf("[") + 1, locatorURL.indexOf("]"))
-    s"${urlPrefix}localhost:$port"
   }
 
 }

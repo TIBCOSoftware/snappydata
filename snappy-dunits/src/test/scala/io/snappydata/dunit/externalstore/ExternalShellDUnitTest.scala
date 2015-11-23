@@ -112,7 +112,7 @@ object ExternalShellDUnitTest extends ClusterManagerTestUtils with Serializable 
       //TODO - how to pass this class to spark executors??
         .set ("spark.executor.extraClassPath" , getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
 
-    println("Namrata - configuration classpath " + scala.util.Properties.envOrElse("SNAPPY_DIST_CLASSPATH" , " "))
+
     val sc = new SparkContext(conf)
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
