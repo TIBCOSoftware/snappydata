@@ -1,6 +1,7 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.core.{FileCleaner, RefData, TestData2, TestSqlContext}
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.{FileCleaner, RefData, TestData2}
 import org.scalatest.{BeforeAndAfterAll, FunSuite}
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -12,32 +13,17 @@ import org.apache.spark.{Logging, SparkContext}
 /**
  * Created by rishim on 6/11/15.
  */
-class SnappyJoinSuite extends FunSuite with Logging  with BeforeAndAfterAll{
-
-  var sc : SparkContext= null
-
-  override def afterAll(): Unit = {
-    sc.stop()
-    FileCleaner.cleanStoreFiles()
-  }
-
-  override def beforeAll(): Unit = {
-    if (sc == null) {
-      sc = TestSqlContext.newSparkContext
-    }
-  }
+class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val props = Map.empty[String, String]
 
   test("Replicated table join with PR Table") {
 
-    val snc = org.apache.spark.sql.SnappyContext(sc)
     val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
     val refDf = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS RR_TABLE")
 
     snc.sql("CREATE TABLE RR_TABLE(OrderRef INT NOT NULL,description String) USING row options()")
-
 
     refDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("RR_TABLE")
 
@@ -81,7 +67,6 @@ class SnappyJoinSuite extends FunSuite with Logging  with BeforeAndAfterAll{
 
   test("Replicated table join with Replicated Table") {
 
-    val snc = org.apache.spark.sql.SnappyContext(sc)
     val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
     val refDf = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS RR_TABLE1")
@@ -147,7 +132,6 @@ class SnappyJoinSuite extends FunSuite with Logging  with BeforeAndAfterAll{
 
   test("PR table join with PR Table") {
 
-    val snc = org.apache.spark.sql.SnappyContext(sc)
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
     val refDf = snc.createDataFrame(dimension1)
@@ -240,7 +224,6 @@ class SnappyJoinSuite extends FunSuite with Logging  with BeforeAndAfterAll{
   // TODO should be enabled after column table schema works is finished
 /*  test("PR column table join with PR row Table") {
 
-    val snc = org.apache.spark.sql.SnappyContext(sc)
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
     val refDf = snc.createDataFrame(dimension1)

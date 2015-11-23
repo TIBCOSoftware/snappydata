@@ -90,7 +90,7 @@ class RowFormatRelation(
    *
    */
   override def numPartitions: Int = {
-    executeWithConnection(connFunctor, {
+    executeWithConnection(connector, {
       case conn =>
         val tableSchema = conn.getSchema
         val resolvedName = StoreUtils.lookupName(table, tableSchema)
@@ -105,7 +105,7 @@ class RowFormatRelation(
     })
   }
   override def partitionColumns: Seq[String] = {
-    executeWithConnection(connFunctor, {
+    executeWithConnection(connector, {
       case conn => val tableSchema = conn.getSchema
         val resolvedName = StoreUtils.lookupName(table, tableSchema)
         val region = Misc.getRegionForTable(resolvedName, true)
