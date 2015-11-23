@@ -10,6 +10,7 @@ import io.snappydata.dunit.cluster.ClusterManagerTestUtils
 import org.apache.spark.{SparkContext, SparkConf}
 
 import org.apache.spark.sql.{AnalysisException, SQLContext, SnappyContext, SaveMode}
+import util.TestException
 import scala.collection.Map
 import sys.process._
 
@@ -109,8 +110,9 @@ object ExternalShellDUnitTest extends ClusterManagerTestUtils with Serializable 
         .set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
 
       //TODO - how to pass this class to spark executors??
-        .set ("spark.executor.extraClassPath" , "/home/namrata/snappy-commons/data.jar")
+        .set ("spark.executor.extraClassPath" , getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
 
+    println("Namrata - configuration classpath " + scala.util.Properties.envOrElse("SNAPPY_DIST_CLASSPATH" , " "))
     val sc = new SparkContext(conf)
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
@@ -162,11 +164,18 @@ object ExternalShellDUnitTest extends ClusterManagerTestUtils with Serializable 
     assert(r.length == expectedLength)
   }
 
+  def getEnvironmentVariable(env:String):String =  {
+    val value = scala.util.Properties.envOrElse(env, null)
+    if (env == null )
+      throw new TestException(s" Environment variable $env is not defined")
+    value
+
+  }
   def startSparkCluster = {
-    "../../../../../snappy/sbin/start-all.sh" !!
+    (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/start-all.sh") !!
   }
 
   def stopSparkCluster = {
-    "../../../../../snappy/sbin/stop-all.sh" !!
+    (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/stop-all.sh") !!
   }
 }
