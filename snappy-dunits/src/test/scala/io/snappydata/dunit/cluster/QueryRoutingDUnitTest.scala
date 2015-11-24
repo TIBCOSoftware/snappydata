@@ -84,6 +84,16 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       }
       case e: Exception => throw new RuntimeException("unexpected exception " + e.getMessage, e)
     }
+    s.execute("select col1, col2 from ColumnTableQR")
+    rs = s.getResultSet
+    cnt = 0
+    while(rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 5)
+    md = rs.getMetaData
+    println("KN: 3rd metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    assert(md.getColumnCount == 2)
     QueryRoutingDUnitTest.stopSpark
   }
 }
