@@ -2,6 +2,7 @@ package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
+import org.apache.spark.Logging
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
 import org.apache.spark.sql.{AnalysisException, SaveMode}
@@ -11,77 +12,21 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
  *
  * Created by Suranjan on 14/10/15.
  */
-<<<<<<< HEAD
-class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
-||||||| merged common ancestors
-class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter{
-=======
 class ColumnTableTest
     extends SnappyFunSuite
     with Logging
     with BeforeAndAfter
     with BeforeAndAfterAll {
->>>>>>> master
-
-<<<<<<< HEAD
-  var sc : SparkContext= null
-
-  var snc: SnappyContext = null
-
-  override def afterAll(): Unit = {
-    sc.stop()
-    FileCleaner.cleanStoreFiles()
-  }
-
-  override def beforeAll(): Unit = {
-    if (sc == null) {
-      sc = TestSqlContext.newSparkContext
-      snc = SnappyContext(sc)
-    }
-||||||| merged common ancestors
-  var sc : SparkContext= null
-
-  var snc: SnappyContext = null
-
-  override def afterAll(): Unit = {
-    sc.stop()
-    FileCleaner.cleanStoreFiles()
-
-  }
-
-  override def beforeAll(): Unit = {
-    if (sc == null) {
-      sc = TestSqlContext.newSparkContext
-      snc = SnappyContext(sc)
-    }
-=======
-  after {
-    snc.dropExternalTable(tableName, ifExists = true)
-    snc.dropExternalTable("ColumnTable2", ifExists = true)
->>>>>>> master
-  }
 
   val tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]
 
-<<<<<<< HEAD
   after {
-    snc.dropExternalTable(tableName, true)
-    snc.dropExternalTable("ColumnTable2", true)
+    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropExternalTable("ColumnTable2", ifExists = true)
   }
 
-||||||| merged common ancestors
-
-
-
-  after {
-    snc.dropExternalTable(tableName, true)
-    snc.dropExternalTable("ColumnTable2", true)
-  }
-
-=======
->>>>>>> master
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
