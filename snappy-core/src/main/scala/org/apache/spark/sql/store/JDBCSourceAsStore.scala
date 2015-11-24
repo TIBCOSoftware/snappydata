@@ -111,7 +111,7 @@ class JDBCSourceAsStore(override val url: String,
       connProps, hikariCP)
   }
 
-  protected def genUUIDRegionKey(bucketId: Int = 1) = new UUIDRegionKey(bucketId)
+  protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
   protected val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
