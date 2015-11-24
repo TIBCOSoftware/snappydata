@@ -780,7 +780,7 @@ object SnappyContext extends Logging {
       ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
     } else if (ExternalStoreUtils.isExternalShellMode(sc) &&
       ToolsCallbackInit.toolsCallback != null) {
-      ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+      ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc)
     }
   }
 
