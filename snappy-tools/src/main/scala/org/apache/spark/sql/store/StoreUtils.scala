@@ -2,21 +2,19 @@ package org.apache.spark.sql.store.util
 
 import java.util.Properties
 
-import org.apache.spark.sql.execution.datasources.DDLException
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-
-import org.apache.spark.sql.{SQLContext, AnalysisException}
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /*/10/15.
   */

@@ -6,7 +6,7 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
-import io.snappydata.ToolsCallback
+import io.snappydata.{Constant, ToolsCallback}
 import io.snappydata.util.SqlUtils
 
 import org.apache.spark.rdd.RDD
@@ -28,7 +28,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{SparkConf, Logging, Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -730,7 +730,7 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContext: SparkContext = _
 
-  private[spark] def globalContext = _globalContext
+  private[spark] final def globalContext = _globalContext
 
   lazy val toolsCallback = {
     import org.apache.spark.util.Utils
@@ -756,7 +756,7 @@ object SnappyContext extends Logging {
   )
 
   def apply(): SnappyContext = {
-    val gc = globalContext
+    val gc = _globalContext
     if (gc != null) {
       new SnappyContext(gc)
     } else {
@@ -786,7 +786,8 @@ object SnappyContext extends Logging {
 
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
-    if (toolsCallback != null) {
+    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX) &&
+        toolsCallback != null) {
       // NOTE: if Property.jobServer.enabled is true
       // this will trigger SnappyContext.apply() method
       // prior to `new SnappyContext(sc)` after this
@@ -796,7 +797,10 @@ object SnappyContext extends Logging {
   }
 
   def stop(): Unit = {
-    val sc = _globalContext
+    var sc = _globalContext
+    if (sc == null) {
+      sc = SparkContext.activeContext.get()
+    }
     if (sc != null && !sc.isStopped) {
       // clean up the connection pool on executors first
       Utils.mapExecutors(sc, { (tc, p) =>
@@ -805,7 +809,10 @@ object SnappyContext extends Logging {
       }).count()
       // then on the driver
       ConnectionPool.clear()
+      // clear current hive catalog connection
+      SnappyStoreHiveCatalog.closeCurrent()
       sc.stop()
+      _globalContext = null
     }
   }
 

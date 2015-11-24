@@ -43,7 +43,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         else if (locator.isEmpty ||
             locator == "" ||
             locator == "null" ||
-            !locator.matches(".+\\[[0-9]+\\]")
+            !(locator.matches("(.+:[0-9]+)|(.+\\[[0-9]+\\])"))
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }

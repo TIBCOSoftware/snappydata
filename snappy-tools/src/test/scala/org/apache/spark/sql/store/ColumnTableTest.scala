@@ -1,16 +1,29 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.core.{FileCleaner, Data, TestSqlContext}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.Data
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
+ * Tests for column tables in GFXD.
+ *
  * Created by Suranjan on 14/10/15.
  */
+<<<<<<< HEAD
 class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
+||||||| merged common ancestors
+class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter{
+=======
+class ColumnTableTest
+    extends SnappyFunSuite
+    with Logging
+    with BeforeAndAfter
+    with BeforeAndAfterAll {
+>>>>>>> master
 
+<<<<<<< HEAD
   var sc : SparkContext= null
 
   var snc: SnappyContext = null
@@ -25,17 +38,50 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
       sc = TestSqlContext.newSparkContext
       snc = SnappyContext(sc)
     }
+||||||| merged common ancestors
+  var sc : SparkContext= null
+
+  var snc: SnappyContext = null
+
+  override def afterAll(): Unit = {
+    sc.stop()
+    FileCleaner.cleanStoreFiles()
+
   }
 
-  val tableName : String = "ColumnTable"
+  override def beforeAll(): Unit = {
+    if (sc == null) {
+      sc = TestSqlContext.newSparkContext
+      snc = SnappyContext(sc)
+    }
+=======
+  after {
+    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropExternalTable("ColumnTable2", ifExists = true)
+>>>>>>> master
+  }
+
+  val tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]
+
+<<<<<<< HEAD
+  after {
+    snc.dropExternalTable(tableName, true)
+    snc.dropExternalTable("ColumnTable2", true)
+  }
+
+||||||| merged common ancestors
+
+
 
   after {
     snc.dropExternalTable(tableName, true)
     snc.dropExternalTable("ColumnTable2", true)
   }
 
+=======
+>>>>>>> master
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
@@ -113,7 +159,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
     println("Successful")
   }
 
-  val options =  "OPTIONS (PARTITION_BY 'Col1')"
+  val options = "OPTIONS (PARTITION_BY 'Col1')"
 
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
@@ -121,7 +167,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
         options
-        )
+    )
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
@@ -142,7 +188,7 @@ class ColumnTableTest extends FunSuite with Logging with BeforeAndAfterAll with 
   test("Test the creation using SQL and insert a DF in append/overwrite/errorifexists mode") {
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " +
-        options )
+        options)
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))

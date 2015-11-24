@@ -1,20 +1,20 @@
 package org.apache.spark.sql.columnar
 
-import java.sql.{PreparedStatement, Connection}
+import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
-import org.apache.spark.sql.{Row, AnalysisException}
-import org.apache.spark.sql.types._
-
-import scala.collection.mutable
-import org.apache.spark.Logging
-import org.apache.spark.SparkContext
+import io.snappydata.{Constant, Property}
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.store.StoreProperties
+import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{AnalysisException, Row}
+
+import scala.collection.mutable
 
 /**
  * Utility methods used by external storage layers.
@@ -38,12 +38,11 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def getDriver(url : String): Option[String] = {
-    val dialect = JdbcDialects.get(url)
+  def getDriver(url: String, dialect: JdbcDialect): String = {
     dialect match {
-      case  GemFireXDDialect => Option("com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-      case  GemFireXDClientDialect => Option("com.pivotal.gemfirexd.jdbc.ClientDriver")
-      case _=> Option(DriverRegistry.getDriverClassName(url))
+      case GemFireXDDialect => "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
+      case GemFireXDClientDialect => "com.pivotal.gemfirexd.jdbc.ClientDriver"
+      case _ => DriverRegistry.getDriverClassName(url)
     }
   }
 
@@ -70,22 +69,47 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def validateAndGetAllProps(sc : SparkContext, options: Map[String, String]) = {
-    val parameters = new mutable.HashMap[String, String]
-    parameters ++= options
+  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val table = parameters.remove(dbtableProp)
+        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
+    parameters.remove("serialization.format")
+    table
+  }
 
-
-    val url = parameters.remove("url").getOrElse {
-       StoreProperties.defaultStoreURL(sc)
+  def defaultStoreURL(sc: SparkContext): String = {
+    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+      // Already connected to SnappyData in embedded mode.
+      Constant.DEFAULT_EMBEDDED_URL
+    } else {
+      val isLoner = Utils.isLoner(sc)
+      sc.conf.getOption(Property.locators).map(
+        Constant.DEFAULT_EMBEDDED_URL + "locators=" + _).getOrElse {
+        sc.conf.getOption(Property.mcastPort).map(
+          Constant.DEFAULT_EMBEDDED_URL + "mcast-port=" + _).getOrElse {
+          if (isLoner) {
+            Constant.DEFAULT_EMBEDDED_URL + "mcast-port=0"
+          } else {
+            sys.error("Option 'url' not specified")
+          }
+        }
+      } + (if (isLoner) "" else ";host-data=false")
     }
+  }
 
-    val driver = parameters.remove("driver").orElse(getDriver(url))
+  def validateAndGetAllProps(sc : SparkContext,
+      parameters: mutable.Map[String, String]) = {
+    val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
-    driver.foreach(DriverRegistry.register)
+    val dialect = JdbcDialects.get(url)
+    val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
+
+    DriverRegistry.register(driver)
 
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
-
 
     val hikariCP = poolImpl.map(Utils.normalizeId) match {
       case Some("hikari") => true
@@ -109,30 +133,19 @@ private[sql] object ExternalStoreUtils extends Logging {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    connProps.setProperty("route-query", "false")
-    val allPoolProps = getAllPoolProperties(url, driver.get,
-      poolProps, hikariCP)
-    (url, driver.get, allPoolProps, connProps, hikariCP)
-  }
-
-  def getPoolConnection(id: String, driver: Option[String],
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): Connection = {
-    try {
-      if (driver.isDefined) DriverRegistry.register(driver.get)
-    } catch {
-      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
-        s"Couldn't find driver class $driver", cnfe)
+    dialect match {
+      case GemFireXDDialect | GemFireXDClientDialect =>
+        connProps.setProperty("route-query", "false")
+      case _ =>
     }
-    ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
+    val allPoolProps = getAllPoolProperties(url, driver,
+      poolProps, hikariCP)
+    (url, driver, allPoolProps, connProps, hikariCP)
   }
 
   def getConnection(url: String, connProperties: Properties) = {
     connProperties.remove("poolProperties")
-    val con = JdbcUtils.createConnection(url, connProperties)
-    con.setTransactionIsolation(Connection.TRANSACTION_NONE)
-    con
-    //DriverManager.getConnection(url)
+    JdbcUtils.createConnection(url, connProperties)
   }
 
   def getConnectionType(url: String) = {
@@ -165,16 +178,12 @@ private[sql] object ExternalStoreUtils extends Logging {
       })
   }
 
-  def getConnector(id: String, driver: String, poolProps: Map[String, String],
-      connProps: Properties, hikariCP: Boolean): () => Connection = {
+  def getConnector(id: String, driver: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): () => Connection = {
     () => {
-      try {
-        if (driver != null) DriverRegistry.register(driver)
-      } catch {
-        case cnfe: ClassNotFoundException =>
-          logWarning(s"Couldn't find driver class $driver", cnfe)
-      }
-      ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
+      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
+        poolProps, connProps, hikariCP)
     }
   }
 

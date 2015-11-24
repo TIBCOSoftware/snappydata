@@ -1,23 +1,21 @@
 package org.apache.spark.sql.store.impl
 
-import java.sql.Connection
-import java.util.{UUID, Properties}
-
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
+import java.util.{Properties, UUID}
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, UUIDRegionKey}
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, ConnectionType}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, TaskContext}
+
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 /**
  * Columnar Store implementation for GemFireXD.
@@ -48,12 +46,6 @@ final class JDBCSourceAsColumnarStore(_url: String,
         })
         new UnionRDD[CachedBatch](sparkContext, rddList)
     }
-  }
-
-  override def getConnection(id: String): Connection = {
-    val conn = ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
-    conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
-    conn
   }
 
   override def storeCachedBatch(batch: CachedBatch,

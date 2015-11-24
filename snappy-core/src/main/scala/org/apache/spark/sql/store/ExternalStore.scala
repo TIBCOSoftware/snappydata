@@ -15,13 +15,10 @@ import org.apache.spark.sql.columnar.CachedBatch
  * Created by neeraj on 16/7/15.
  */
 trait ExternalStore extends Serializable {
-  def initSource(): Unit
 
   def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey
 
   def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId : Int, tableName: String): UUIDRegionKey
-
-  def cleanup(): Unit
 
   def getCachedBatchIterator(tableName: String,
       requiredColumns: Array[String],

@@ -6,7 +6,7 @@ import java.util.Properties
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
-import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.collection.{Utils, UUIDRegionKey}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.ConnectionPool
@@ -69,7 +69,7 @@ class ColumnFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  lazy val connFunctor = ExternalStoreUtils.getConnector(table, driver, _poolProps,
+  lazy val connFunctor = ExternalStoreUtils.getConnector(table, driver, dialect, _poolProps,
     connProperties, hikariCP)
 
   val rowInsertStr = ExternalStoreUtils.getInsertString(table, userSchema)
@@ -139,7 +139,7 @@ class ColumnFormatRelation(
       throw new IllegalArgumentException(
         "JDBCAppendableRelation.insert: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       _poolProps, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
@@ -175,20 +175,25 @@ class ColumnFormatRelation(
     uuidList.clear()
   }
 
-  override def dropTable(tableName: String, ifExists: Boolean): Unit = {
-
-    val dialect = JdbcDialects.get(externalStore.url)
-    externalStore.tryExecute(tableName + shadowTableNamePrefix, {
-      case conn =>
-        JdbcExtendedUtils.dropTable(conn, tableName + shadowTableNamePrefix, dialect, sqlContext,
-          ifExists)
-    })
-
-    externalStore.tryExecute(tableName, {
-      case conn =>
-        JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
-          ifExists)
-    })
+  /**
+   * Destroy and cleanup this relation. It may include, but not limited to,
+   * dropping the external table that this relation represents.
+   */
+  override def destroy(ifExists: Boolean): Unit = {
+    // clean up the connection pool on executors first
+    Utils.mapExecutors(sqlContext,
+      ColumnFormatRelation.removePool(table)).count()
+    // then on the driver
+    ColumnFormatRelation.removePool(table)
+    // drop the external table using a non-pool connection
+    val conn = JdbcUtils.createConnection(url, connProperties)
+    try {
+      JdbcExtendedUtils.dropTable(conn, table + shadowTableNamePrefix, dialect, sqlContext,
+        ifExists)
+      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+    } finally {
+      conn.close()
+    }
   }
 
   override def createTable(mode: SaveMode): Unit = {
@@ -196,7 +201,7 @@ class ColumnFormatRelation(
     val dialect = JdbcDialects.get(url)
     try {
       conn = JdbcUtils.createConnection(url, connProperties)
-      val tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         return
@@ -237,7 +242,7 @@ class ColumnFormatRelation(
     var conn: Connection = null
     try {
       conn = JdbcUtils.createConnection(url, connProperties)
-      val tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (!tableExists) {
         val sql = s"CREATE TABLE ${tableName} $schemaExtensions "
@@ -274,6 +279,11 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   def registerStoreCallbacks(sqlContext: SQLContext,table: String, userSchema: StructType, externalStore: ExternalStore) = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase, userSchema, externalStore)
   }
+
+  private def removePool(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    Iterator.empty
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
@@ -284,13 +294,12 @@ final class DefaultSource extends ColumnarRelationProvider {
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(options)
     StoreUtils.removeInternalProps(parametersForShadowTable)
 
-    val table = StoreUtils.removeInternalProps(parameters)
-
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
     val (url, driver, poolProps, connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
 
@@ -313,7 +322,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, schemaExtension, ddlExtensionForShadowTable, Seq.empty.toArray,
+      getClass.getCanonicalName, mode, schema, schemaExtension, ddlExtensionForShadowTable, Array[Partition](),
       poolProps, connProps, hikariCP, options, externalStore, blockMap, sqlContext)()
   }
 

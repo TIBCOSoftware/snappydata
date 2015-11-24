@@ -5,17 +5,16 @@ import java.util.Properties
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
-
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{SQLConf, SQLContext, SnappyContext}
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.{Utils, ExecutorLocalPartition}
+import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Accumulator, Partition, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark.{Accumulator, Partition, SparkEnv, TaskContext}
 
 /**
   * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's
@@ -37,7 +36,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     DriverRegistry.register(driver)
     JdbcDialects.get(url) match {
       case d: JdbcExtendedDialect =>
-        val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
+        val extraProps = d.extraDriverProperties(isLoner).propertyNames
         while (extraProps.hasMoreElements) {
           val p = extraProps.nextElement()
           if (connProperties.get(p) != null) {
@@ -72,6 +71,4 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
   def createPartition(index: Int,
       blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
-
-
 }
