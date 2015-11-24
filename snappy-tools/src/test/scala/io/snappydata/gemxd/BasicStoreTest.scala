@@ -26,29 +26,29 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     conn.close()
   }
 
-  @throws(classOf[Exception])
-  def testStringAsDatatype_runInXD() {
-    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
-    val st: Statement = conn.createStatement
-    var rs: ResultSet = null
-    st.execute("create table t1 (c1 int primary key, c2 String)")
-    val pstmt: PreparedStatement = conn.prepareStatement("insert into t1 values(?,?)")
-    pstmt.setInt(1, 111)
-    pstmt.setString(2, "aaaaa")
-    pstmt.executeUpdate
-    pstmt.setInt(1, 222)
-    pstmt.setString(2, "")
-    pstmt.executeUpdate
-    st.execute("select c1 from t1 where c2 like '%a%'")
-    rs = st.getResultSet
-    System.out.println("rs=" + rs)
-    assert(rs.next)
-    val ret1: Int = rs.getInt(1)
-    //println("vivek = " + ret1)
-    assert(111 == ret1)
-    assert(!rs.next)
-    conn.close()
-  }
+//  @throws(classOf[Exception])
+//  def testStringAsDatatype_runInXD {
+//    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
+//    val st: Statement = conn.createStatement
+//    var rs: ResultSet = null
+//    st.execute("create table t1 (c1 int primary key, c2 String)")
+//    val pstmt: PreparedStatement = conn.prepareStatement("insert into t1 values(?,?)")
+//    pstmt.setInt(1, 111)
+//    pstmt.setString(2, "aaaaa")
+//    pstmt.executeUpdate
+//    pstmt.setInt(1, 222)
+//    pstmt.setString(2, "")
+//    pstmt.executeUpdate
+//    st.execute("select c1 from t1 where c2 like '%a%'")
+//    rs = st.getResultSet
+//    System.out.println("rs=" + rs)
+//    assert(rs.next == true)
+//    val ret1: Int = rs.getInt(1)
+//    //println("vivek = " + ret1)
+//    assert(111 == ret1)
+//    assert(rs.next == false)
+//    conn.close()
+//  }
 
   @throws(classOf[Exception])
   def testStringAsDatatype_runInSpark() {
@@ -93,29 +93,29 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   }
 
   // Copy from BugsTest to verify basic JUnit is running in Scala
-  @throws(classOf[Exception])
-  def testBug47329() {
-    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
-    val st: Statement = conn.createStatement
-    var rs: ResultSet = null
-    st.execute("create table t1 (c1 int primary key, c2  varchar(10))")
-    st.execute("create index idx on  t1(c2)")
-    val pstmt: PreparedStatement = conn.prepareStatement("insert into t1 values(?,?)")
-    pstmt.setInt(1, 111)
-    pstmt.setString(2, "aaaaa")
-    pstmt.executeUpdate
-    pstmt.setInt(1, 222)
-    pstmt.setString(2, "")
-    pstmt.executeUpdate
-    st.execute("select c1 from t1 where c2 like '%a%'")
-    rs = st.getResultSet
-    System.out.println("rs=" + rs)
-    assert(rs.next)
-    val ret1: Int = rs.getInt(1)
-    doPrint("vivek = " + ret1)
-    assert(111 == ret1)
-    assert(!rs.next)
-  }
+//  @throws(classOf[Exception])
+//  def testBug47329 {
+//    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
+//    val st: Statement = conn.createStatement
+//    var rs: ResultSet = null
+//    st.execute("create table t1 (c1 int primary key, c2  varchar(10))")
+//    st.execute("create index idx on  t1(c2)")
+//    val pstmt: PreparedStatement = conn.prepareStatement("insert into t1 values(?,?)")
+//    pstmt.setInt(1, 111)
+//    pstmt.setString(2, "aaaaa")
+//    pstmt.executeUpdate
+//    pstmt.setInt(1, 222)
+//    pstmt.setString(2, "")
+//    pstmt.executeUpdate
+//    st.execute("select c1 from t1 where c2 like '%a%'")
+//    rs = st.getResultSet
+//    System.out.println("rs=" + rs)
+//    assert(rs.next == true)
+//    val ret1: Int = rs.getInt(1)
+//    doPrint("vivek = " + ret1)
+//    assert(111 == ret1)
+//    assert(rs.next == false)
+//  }
 
   def doPrint(s: String): Unit = {
     //println(s)
