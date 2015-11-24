@@ -1,5 +1,10 @@
 package org.apache.spark.sql
 
+import java.sql.Connection
+import java.util.Properties
+
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -446,9 +451,7 @@ class SnappyContext private(sc: SparkContext)
    * Create Index on an external table (created by a call to createExternalTable).
    */
   def createIndexOnExternalTable(tableName: String, sql: String): Unit = {
-    println("vivek:")
-    println("tablename=" + tableName)
-    println("sql=" + sql)
+    println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
 
     if (catalog.tableExists(tableName)) {
       println(tableName + " exists")
@@ -471,20 +474,32 @@ class SnappyContext private(sc: SparkContext)
       case _ => throw new AnalysisException(
         s"$tableName is not an indexable table")
     }
+  }
 
-    /*
-    val plan = try {
-      catalog.lookupRelation(tableName)
+  /**
+   * Create Index on an external table (created by a call to createExternalTable).
+   */
+  def dropIndexOnExternalTable(sql: String): Unit = {
+    println("drop-index" + " sql=" + sql)
+
+    var conn: Connection = null
+    try {
+      conn = JdbcUtils.createConnection(ExternalStoreUtils.defaultStoreURL(sc), new Properties()/*connProperties*/)
+      JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
-      case ae: AnalysisException => throw ae
+      case sqle: java.sql.SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+            "Ensure that the 'driver' option is set appropriately and " +
+            "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      if (conn != null) {
+        conn.close()
+      }
     }
-    snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(i: IndexableRelation) =>
-        println("Is IndexableRelation")
-      case _ => throw new AnalysisException(
-        s"$tableName is not an indexable table but $plan")
-    }
-    */
   }
 
   /**

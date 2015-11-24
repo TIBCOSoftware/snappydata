@@ -279,7 +279,7 @@ class JDBCMutableRelation(
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
 
-      // Create the table if the table didn't exist.
+      // Create the Index if the table exist.
       if (tableExists) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
       }
@@ -299,17 +299,6 @@ class JDBCMutableRelation(
       if (conn != null) {
         conn.close()
       }
-    }
-
-
-    val connection = ConnectionPool.getPoolConnection(table, Some(driver), dialect,
-      poolProperties, connProperties, hikariCP)
-    try {
-      val stmt = connection.prepareStatement(sql)
-      val result = stmt.executeUpdate()
-      stmt.close()
-    } finally {
-      connection.close()
     }
   }
 }

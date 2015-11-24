@@ -71,7 +71,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream | createSampled | strmctxt | truncateTable | createIndex
+        createStream | createSampled | strmctxt | truncateTable | createIndex | dropIndex
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -151,6 +151,12 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     (CREATE ~> INDEX ~> ident) ~ (ON ~> ident) ~ wholeInput ^^ {
       case indexName ~ tableName ~ sql =>
         CreateIndex(tableName, sql)
+    }
+
+  protected lazy val dropIndex: Parser[LogicalPlan] =
+    (DROP ~> INDEX ~> ident) ~ wholeInput ^^ {
+      case indexName ~ sql =>
+        DropIndex(sql)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
@@ -283,6 +289,16 @@ private[sql] case class CreateIndex(
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = SnappyContext(sqlContext.sparkContext)
     snc.createIndexOnExternalTable(tableName, sql)
+    Seq.empty
+  }
+}
+
+private[sql] case class DropIndex(
+    sql: String) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    snc.dropIndexOnExternalTable(sql)
     Seq.empty
   }
 }

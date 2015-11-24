@@ -42,6 +42,14 @@ class CreateIndexTest extends SnappyFunSuite {
       case ae: org.apache.spark.sql.AnalysisException => // ignore
       case e: Exception => throw e
     }
+
+    try {
+      snContext.sql("drop index test1 ")
+      fail("Should not drop index on column table")
+    } catch {
+      case ae: com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException => // ignore
+      case e: Exception => throw e
+    }
   }
 
   test("Test create Index on Row Table using Snappy API") {
@@ -62,18 +70,23 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.createExternalTable(tableName, "jdbc", dataDF.schema, props)
     dataDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
+    doPrint("Create Index - Start")
+    snContext.sql("create index test1 on " + tableName + " (COL1)")
+    doPrint("Create Index - Done")
+
     // TODO fails if column name not in caps
     val result = snContext.sql("select COL1 from " +
         tableName +
         " where COL2 like '%a%'")
     doPrint("")
     doPrint("=============== RESULTS START ===============")
-    //result.collect.foreach(println)
+    result.collect.foreach(println)
     result.collect.foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
 
-    //snContext.sql("create index on " + tableName)
-    snContext.sql("create index test1 on " + tableName + " (COL1)")
+    doPrint("Drop Index - Start")
+    snContext.sql("drop index test1")
+    doPrint("Drop Index - Done")
   }
 
   def verifyRows(r: Row) : Unit = {
@@ -82,6 +95,6 @@ class CreateIndexTest extends SnappyFunSuite {
   }
 
   def doPrint(s: String): Unit = {
-    println(s)
+    //println(s)
   }
 }
