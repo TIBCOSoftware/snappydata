@@ -5,12 +5,9 @@ import scala.Predef._
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.cache.control.{HeapMemoryMonitor, InternalResourceManager}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import dunit.DistributedTestBase
 import io.snappydata.ServiceManager
 
-import org.apache.spark.SparkEnv
-import org.apache.spark.storage.{RDDInfo, StorageLevel}
+import org.apache.spark.storage.RDDInfo
 
 /**
  * Created by shirishd on 19/10/15.
@@ -58,19 +55,15 @@ object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
 
   def runSparkJob(): Unit = {
     val rdd1 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
-    println(rdd1.count)
+    println(rdd1.count())
     assert(!sc.getRDDStorageInfo.isEmpty)
-  }
-
-  def assertShuffleMemoryManagerBehavior(): Unit = {
-    assert(SparkEnv.get.shuffleMemoryManager.tryToAcquire(1000) == 0)
   }
 
   def getInMemorySizeForCachedRDDs: Long = {
     val rddInfo: Array[RDDInfo] = sc.getRDDStorageInfo
-    var sum = 0L;
-    for (i <- 0 to rddInfo.length - 1) {
-      sum = sum + rddInfo(i).memSize
+    var sum = 0L
+    for (info <- rddInfo) {
+      sum = sum + info.memSize
     }
     sum
   }
@@ -80,7 +73,7 @@ object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
     println("1. cached rdd mem size before caching rdd when critical or eviction up = " + sum1)
 
     val rdd2 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
-    println(rdd2.count)
+    println(rdd2.count())
     val sum2: Long = getInMemorySizeForCachedRDDs
     println("2. cached rdd mem size after caching first rdd when critical or eviction up = " + sum2)
     // make sure that after eviction up new rdd being cached does not result in
@@ -88,7 +81,7 @@ object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
     assert(!(sum2 > sum1))
 
     val rdd3 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
-    println(rdd3.count)
+    println(rdd3.count())
     val sum3: Long = getInMemorySizeForCachedRDDs
     println("3. cached rdd mem size after caching second rdd when critical or eviction up = " + sum3)
     // make sure that after eviction up new rdd being cached does not result in
@@ -105,7 +98,7 @@ object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
     HeapMemoryMonitor.setTestBytesUsedForThresholdSet(92)
     resMgr.setCriticalHeapPercentage(90F)
 
-    resMgr.getHeapMonitor().updateStateAndSendEvent(92);
+    resMgr.getHeapMonitor.updateStateAndSendEvent(92)
     println("CRITICAL UP event sent")
   }
 
@@ -117,9 +110,8 @@ object SnappyResourceEventsDUnitTest extends ClusterManagerTestUtils {
     resMgr.getHeapMonitor.setTestMaxMemoryBytes(100)
     HeapMemoryMonitor.setTestBytesUsedForThresholdSet(90)
     resMgr.setEvictionHeapPercentage(40F)
-    resMgr.getHeapMonitor().updateStateAndSendEvent(85);
+    resMgr.getHeapMonitor.updateStateAndSendEvent(85)
     println("EVICTION UP event sent")
-
   }
 
   def resetGFResourceManager(): Unit = {

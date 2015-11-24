@@ -227,7 +227,7 @@ class JDBCAppendableRelation(
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, bucketId integer, stats blob, " +
+        "not null, bucketId integer, numRows integer, stats blob, " +
         userSchema.fields.map(structField => columnPrefix + structField.name + " blob")
             .mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy",

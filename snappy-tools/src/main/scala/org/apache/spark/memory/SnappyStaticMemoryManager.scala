@@ -8,25 +8,28 @@ import org.apache.spark.storage.{BlockStatus, BlockId}
 /**
  * Created by shirishd on 17/11/15.
  */
-private[spark] class SnappyStaticMemoryManager(override val conf: SparkConf,
+private[spark] class SnappyStaticMemoryManager(
+    override val conf: SparkConf,
     override val maxExecutionMemory: Long,
-    override val maxStorageMemory: Long) extends StaticMemoryManager(
-  conf: SparkConf, maxExecutionMemory, maxStorageMemory) {
+    override val maxStorageMemory: Long,
+    numCores: Int)
+    extends StaticMemoryManager(conf, maxExecutionMemory,
+      maxStorageMemory, numCores) {
 
-  def this(conf: SparkConf) {
-    this(
-      conf,
+  def this(conf: SparkConf, numCores: Int) {
+    this(conf,
       StaticMemoryManager.getMaxExecutionMemory(conf),
-      StaticMemoryManager.getMaxStorageMemory(conf))
+      StaticMemoryManager.getMaxStorageMemory(conf),
+      numCores)
   }
 
-  override def acquireExecutionMemory(
+  override def doAcquireExecutionMemory(
       numBytes: Long,
       evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)]): Long = synchronized {
     if (SnappyMemoryUtils.isCriticalUp || SnappyMemoryUtils.isEvictionUp) {
       0
     } else {
-      super.acquireExecutionMemory(numBytes, evictedBlocks)
+      super.doAcquireExecutionMemory(numBytes, evictedBlocks)
     }
   }
 

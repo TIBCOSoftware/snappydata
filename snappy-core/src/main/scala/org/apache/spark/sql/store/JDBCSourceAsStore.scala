@@ -64,8 +64,9 @@ class JDBCSourceAsStore(_url: String,
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, uuid.getUUID.toString)
         stmt.setInt(2, uuid.getBucketId)
-        stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
-        var columnIndex = 4
+        stmt.setInt(3, batch.numRows)
+        stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
+        var columnIndex = 5
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
           columnIndex += 1
@@ -177,7 +178,8 @@ class JDBCSourceAsStore(_url: String,
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
-    requiredColumns: Array[String], ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
+    requiredColumns: Array[String], ps: PreparedStatement, rs: ResultSet)
+    extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
   var _hasNext = moveNext()
@@ -205,14 +207,15 @@ final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
       rs: ResultSet, connType: ConnectionType): CachedBatch = {
     // it will be having the information of the columns to fetch
     val numCols = requiredColumns.length
-    val colBuffers = new ArrayBuffer[Array[Byte]]()
-    for (i <- 0 until numCols) {
-      colBuffers += rs.getBytes(requiredColumns(i)).array
+    val colBuffers = new Array[Array[Byte]](numCols)
+    var i = 0
+    while (i < numCols) {
+      colBuffers(i) = rs.getBytes(i + 1)
+      i += 1
     }
-    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.wrap(rs.getBytes("stats")))
+    val stats = serializer.newInstance().deserialize[InternalRow](
+        ByteBuffer.wrap(rs.getBytes("stats")))
 
-    CachedBatch(colBuffers.toArray, stats)
+    CachedBatch(rs.getInt("numRows"), colBuffers, stats)
   }
-
 }
-

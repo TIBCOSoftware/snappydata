@@ -43,7 +43,7 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
         _.columnStats.collectedStatistics).flatMap(_.values))
       // TODO: somehow push into global batchStats
       result = batchAggregate(result,
-        CachedBatch(columnBuilders.map(_.build().array()), stats))
+        CachedBatch(rowCount, columnBuilders.map(_.build().array()), stats))
       // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
       if (newBuilders) columnBuilders = getColumnBuilders
       rowCount = 0

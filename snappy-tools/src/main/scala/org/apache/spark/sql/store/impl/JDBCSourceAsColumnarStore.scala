@@ -81,8 +81,9 @@ final class JDBCSourceAsColumnarStore(_url: String,
       val stmt = connection.prepareStatement(rowInsertStr)
       stmt.setString(1, uuid.getUUID.toString)
       stmt.setInt(2, uuid.getBucketId)
-      stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
-      var columnIndex = 4
+      stmt.setInt(3, batch.numRows)
+      stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
+      var columnIndex = 5
       batch.buffers.foreach(buffer => {
         stmt.setBytes(columnIndex, buffer)
         columnIndex += 1
@@ -109,13 +110,16 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
       case conn =>
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
         val par = split.index
-        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+        val ps1 = conn.prepareStatement(
+          "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+        ps1.setString(1, resolvedName)
+        ps1.setInt(2, par)
         ps1.execute()
-        val ps = conn.prepareStatement(s"select stats, " +
-            requiredColumns.mkString(", ") + s" from $tableName")
 
+        val ps = conn.prepareStatement("select " + requiredColumns.mkString(
+          ", ") + " numRows, stats from " + tableName)
         val rs = ps.executeQuery()
-
+        ps1.close()
         new CachedBatchIteratorOnRS(conn, store.connectionType, requiredColumns, ps, rs)
     }, closeOnSuccess = false)
   }
@@ -130,6 +134,5 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val tableSchema = conn.getSchema
         StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap)
     })
-
   }
 }
