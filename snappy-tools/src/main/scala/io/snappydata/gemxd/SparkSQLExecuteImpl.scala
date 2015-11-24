@@ -83,6 +83,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     }
     else {
       if (rowsSent == 0) {
+        // Just send the metadata once
         val x  = df.queryExecution.analyzed.output
         val tableNames = new Array[String](x.length)
         val nullability = new Array[Boolean](x.length)
