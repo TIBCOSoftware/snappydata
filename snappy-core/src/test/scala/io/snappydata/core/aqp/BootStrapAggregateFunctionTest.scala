@@ -38,7 +38,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
     conf.set("spark.sql.unsafe.enabled", "false")
 
-    conf.set(Constants.keyNumBootStrapTrials, "100")
+    conf.set(Constants.keyNumBootStrapTrials, "3")
     conf
   }
 
@@ -85,8 +85,8 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
   }
 
 
-  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" ignore {
-    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable group by l_orderkey confidence 95")
+  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" in {
+    val result = spc.sql("SELECT sum(l_quantity) as T, l_orderkey FROM mainTable group by l_orderkey confidence 95")
 
     result.show()
     val rows2 = result.collect()

@@ -29,7 +29,7 @@ import org.apache.spark.unsafe.KVIterator
  * sorted by values of [[groupingKeyAttributes]].
  */
 class SnappySortBasedAggregationIterator(
-    groupingKeyAttributes: Seq[Attribute],
+    groupingExpressions: Seq[NamedExpression],
     valueAttributes: Seq[Attribute],
     inputKVIterator: KVIterator[InternalRow, InternalRow],
 
@@ -41,13 +41,14 @@ class SnappySortBasedAggregationIterator(
     numOutputRows: LongSQLMetric,
         newAggregateBuffer : ()=> Array[DelegateAggregateFunction] ,
 resultExpressions: Seq[Expression],
-computedSchema: Seq[AttributeReference],
+computedSchema: Seq[Attribute],
 lenComptedAggregates: Int,
 delegatees: Array[Delegatee],
-    mode: AggregateMode
+    mode: AggregateMode,
+    outputSchema: Seq[Attribute]
     )
     extends SnappyAggregationIterator(
-      groupingKeyAttributes,
+      groupingExpressions,
       valueAttributes,
       mode,
       initialInputBufferOffset,
@@ -59,7 +60,8 @@ delegatees: Array[Delegatee],
       resultExpressions,
       computedSchema,
       lenComptedAggregates,
-      delegatees
+      delegatees,
+      outputSchema
     ) {
 
 
@@ -180,10 +182,11 @@ object SnappySortBasedAggregationIterator {
       numOutputRows: LongSQLMetric,
       newAggregateBuffer : ()=> Array[DelegateAggregateFunction] ,
   resultExpressions: Seq[Expression],
-  computedSchema: Seq[AttributeReference],
+  computedSchema: Seq[Attribute],
   lenComptedAggregates: Int,
   delegatees: Array[Delegatee],
-      mode: AggregateMode
+      mode: AggregateMode,
+      outputSchema: Seq[Attribute]
 
 
       ): SnappySortBasedAggregationIterator = {
@@ -197,7 +200,7 @@ object SnappySortBasedAggregationIterator {
     }
 
     new SnappySortBasedAggregationIterator(
-      groupingExprs.map(_.toAttribute),
+      groupingExprs,
       inputAttributes,
       kvIterator,
 
@@ -212,7 +215,8 @@ object SnappySortBasedAggregationIterator {
       computedSchema,
       lenComptedAggregates,
       delegatees,
-      mode
+      mode,
+    outputSchema
     )
   }
   // scalastyle:on

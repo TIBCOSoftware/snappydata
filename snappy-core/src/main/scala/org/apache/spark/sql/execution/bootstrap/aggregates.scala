@@ -19,6 +19,7 @@ package org.apache.spark.sql.execution.bootstrap
 
 import java.util.{HashMap => JHashMap, HashSet => JHashSet, LinkedHashMap => JLinkedHashMap}
 
+
 import org.apache.spark.SparkEnv
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -34,6 +35,7 @@ import org.apache.spark.storage.{BlockId,  StorageLevel}
 import scala.collection.JavaConversions._
 import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.sql.execution.aggregate.SnappySortBasedAggregationIterator
+import org.apache.spark.util.collection.BitSet
 
 trait DelegatedAggregate {
   self: UnaryNode =>
@@ -174,7 +176,7 @@ trait DelegatedAggregate {
   }
 
   /** The schema of the result of all aggregate evaluations */
-  protected[this] val computedSchema = computedAggregates.map(_.resultAttribute)
+  protected[this] val computedSchema = this.groupingExpressions.map( _.toAttribute) ++ computedAggregates.map(_.resultAttribute)
 
   /** Creates a new aggregate buffer for a group. */
   protected[this] def newAggregateBuffer() = {
@@ -209,7 +211,7 @@ trait DelegatedAggregate {
    * Substituted version of aggregateExpressions expressions which are used to compute final
    * output rows given a group and the result of all aggregate computations.
    */
-  protected[this] val resultExpressions: Seq[NamedExpression] = groupingExpressions ++ aggregateExpressions.map { agg =>
+  protected[this] val resultExpressions: Seq[NamedExpression] = this.groupingExpressions ++ aggregateExpressions.map { agg =>
     agg.transform {
 
       case exp@TaggedAggregateExpression2(tag:Tag, aggFunc:AggregateFunction2,_,_,_) if resultMap.contains(aggFunc) => TaggedAlias(tag, resultMap(aggFunc), exp.name)(exp.exprId)
@@ -309,8 +311,13 @@ case class BootstrapSortedAggregate(
     partial: Boolean,
     groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
+    groupByBS: Option[BitSet],
     child: SparkPlan)
     extends UnaryNode with DelegatedAggregate {
+
+  if(aggregateExpressions.exists(_.name == "l_orderkey")) {
+    System.out.println("yoho")
+  }
 
   override private[sql] lazy val metrics = Map(
     "numInputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of input rows"),
@@ -339,6 +346,22 @@ case class BootstrapSortedAggregate(
     groupingExpressions.map(SortOrder(_, Ascending))
   }
 
+  override def output: Seq[Attribute] =  if(partial) {
+    super.output
+  }else {
+    super.output.zipWithIndex.filter { case (exp, index) => if (index >= this.groupingExpressions.length) {
+      true
+    } else {
+      groupByBS match {
+        case Some(fb) => fb.get(index)
+        case None => true
+      }
+    }
+
+    }.map { case (exp, i) => exp.toAttribute }
+  }
+
+
   protected override def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {val numInputRows = longMetric("numInputRows")
     val numOutputRows = longMetric("numOutputRows")
     child.execute().mapPartitions { iter =>
@@ -366,8 +389,8 @@ case class BootstrapSortedAggregate(
           computedSchema,
         computedAggregates.length,
         delegatees,
-        if(this.partial) Partial else Final
-
+        if(this.partial) Partial else Final,
+        this.output
 
         )
         if (!hasInput && groupingExpressions.isEmpty) {
@@ -399,6 +422,7 @@ case class SortedAggregateWith2Inputs2Outputs(
     integrityInfo: Option[IntegrityInfo],
     groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
+    groupByBS : Option[BitSet],
     child: SparkPlan
 
     )(
@@ -435,12 +459,22 @@ case class SortedAggregateWith2Inputs2Outputs(
           numInputRows,
           numOutputRows,
           newAggregateBuffer _,
-          resultExpressions,
-          computedSchema,
-          computedAggregates.length,
-          delegatees,
+          resultExpressions.zipWithIndex.filter{case(exp, index) => if(index >= this.groupingExpressions.length ) {
+             true
+          }else {
+            groupByBS match {
+              case Some(fb) => fb.get(index)
+              case None => true
+            }
+          }
 
-          if(this.partial) Partial else Final)
+          }.map{case (exp,i) => exp},
+          computedSchema,
+           computedAggregates.length,
+          delegatees,
+          if(this.partial) Partial else Final,
+          this.output
+        )
 
           if (!hasInput && groupingExpressions.isEmpty) {
             // There is no input and there is no grouping expressions.
@@ -457,6 +491,17 @@ case class SortedAggregateWith2Inputs2Outputs(
   override protected final def otherCopyArgs =  trace :: opId :: Nil
 
   override def simpleString: String = s"${super.simpleString} $opId"
+
+  override def output: Seq[Attribute] =  resultExpressions.zipWithIndex.filter{case(exp, index) => if(index >= this.groupingExpressions.length ) {
+    true
+  }else {
+    groupByBS match {
+      case Some(fb) => fb.get(index)
+      case None => true
+    }
+  }
+
+  }.map{case (exp,i) => exp.toAttribute}
 
 
 }

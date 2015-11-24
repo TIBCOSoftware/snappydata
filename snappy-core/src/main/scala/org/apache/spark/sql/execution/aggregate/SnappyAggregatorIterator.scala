@@ -35,7 +35,7 @@ import scala.collection.mutable.ArrayBuffer
  *    is used to generate result.
  */
 abstract class SnappyAggregationIterator(
-    groupingKeyAttributes: Seq[Attribute],
+    groupingExpressions: Seq[NamedExpression],
     valueAttributes: Seq[Attribute],
     val aggregationMode: AggregateMode,
     initialInputBufferOffset: Int,
@@ -43,9 +43,10 @@ abstract class SnappyAggregationIterator(
     outputsUnsafeRows: Boolean,
     newAggregateBuffer : ()=> Array[DelegateAggregateFunction] ,
     resultExpressions: Seq[Expression],
-    computedSchema: Seq[AttributeReference],
+    computedSchema: Seq[Attribute],
     lenComptedAggregates: Int,
-    delegatees: Array[Delegatee]
+    delegatees: Array[Delegatee],
+    outputSchema: Seq[Attribute]
     )
     extends Iterator[InternalRow] with Logging {
 
@@ -336,7 +337,7 @@ abstract class SnappyAggregationIterator(
     aggregationMode match {
       // Partial-only or PartialMerge-only: every output row is basically the values of
       // the grouping expressions and the corresponding aggregation buffer.
-      case Partial|Final =>
+      case Partial =>
 
 
         // Because we cannot copy a joinedRow containing a UnsafeRow (UnsafeRow does not
@@ -349,7 +350,7 @@ abstract class SnappyAggregationIterator(
           // rowToBeEvaluated(currentGroupingKey, currentBuffer)
          // if(groupingKeyAttributes.isEmpty) {
 
-            val resultProjection = new InterpretedProjection(resultExpressions, computedSchema)
+            val resultProjection = new InterpretedProjection( resultExpressions, computedSchema)
             val aggregateResults = new GenericMutableRow(lenComptedAggregates)
 
             var i = delegatees.length
@@ -358,12 +359,63 @@ abstract class SnappyAggregationIterator(
               i += 1
             }
 
-            resultProjection(aggregateResults)
+
+
+          val joinedRow = new JoinedRow()
+          /*val resultProjection = new InterpretedMutableProjection(resultExpressions,
+            computedSchema ++ namedGroups.map(_._2))*/
+          // Broadcast the old results
+
+
+          resultProjection(joinedRow(currentGroupingKey, aggregateResults))
+
+
+
+
+
+
         /*  }else {
             val rowToBeEvaluated = new JoinedRow
             throw new UnsupportedOperationException("not implemented")
           }*/
         }
+
+      case Final =>
+
+
+        // Because we cannot copy a joinedRow containing a UnsafeRow (UnsafeRow does not
+        // support generic getter), we create a mutable projection to output the
+        // JoinedRow(currentGroupingKey, currentBuffer)
+
+
+        (currentGroupingKey: InternalRow, currentBuffer: Array[DelegateAggregateFunction]) => {
+          //resultProjection(rowToBeEvaluated(currentGroupingKey, currentBuffer))
+          // rowToBeEvaluated(currentGroupingKey, currentBuffer)
+          // if(groupingKeyAttributes.isEmpty) {
+
+          val resultProjection = new InterpretedProjection(resultExpressions, computedSchema)
+          val aggregateResults = new GenericMutableRow(lenComptedAggregates)
+
+          var i = delegatees.length
+          while (i < currentBuffer.length) {
+            currentBuffer(i).evaluate(aggregateResults)
+            i += 1
+          }
+          i = 0
+
+
+          /*val resultProjection = new InterpretedMutableProjection(resultExpressions,
+                    computedSchema ++ namedGroups.map(_._2))*/
+          // Broadcast the old results
+
+          val joinedRow = new JoinedRow()
+          resultProjection(joinedRow(currentGroupingKey, aggregateResults))
+          /*  }else {
+              val rowToBeEvaluated = new JoinedRow
+              throw new UnsupportedOperationException("not implemented")
+            }*/
+        }
+
 
       // Final-only, Complete-only and Final-Complete: every output row contains values representing
       // resultExpressions.
