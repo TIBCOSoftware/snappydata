@@ -312,12 +312,9 @@ case class BootstrapSortedAggregate(
     groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
     groupByBS: Option[BitSet],
+    groupbyPosInResults: ArrayBuffer[Int],
     child: SparkPlan)
     extends UnaryNode with DelegatedAggregate {
-
-  if(aggregateExpressions.exists(_.name == "l_orderkey")) {
-    System.out.println("yoho")
-  }
 
   override private[sql] lazy val metrics = Map(
     "numInputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of input rows"),
@@ -349,7 +346,7 @@ case class BootstrapSortedAggregate(
   override def output: Seq[Attribute] =  if(partial) {
     super.output
   }else {
-    super.output.zipWithIndex.filter { case (exp, index) => if (index >= this.groupingExpressions.length) {
+    val temp = super.output.zipWithIndex.filter { case (exp, index) => if (index >= this.groupingExpressions.length) {
       true
     } else {
       groupByBS match {
@@ -359,6 +356,23 @@ case class BootstrapSortedAggregate(
     }
 
     }.map { case (exp, i) => exp.toAttribute }
+    if(!groupbyPosInResults.isEmpty) {
+      val shuffled = scala.collection.mutable.ArrayBuffer[Attribute]()
+      var j = 0
+      var i = groupbyPosInResults.length
+      0 until temp.length foreach { k =>
+        if(j < groupbyPosInResults.length && groupbyPosInResults(j) == k) {
+          shuffled += temp(j)
+          j = j + 1
+        }else {
+          shuffled += temp(i)
+          i = i + 1
+        }
+      }
+      shuffled.toSeq
+    }else {
+      temp
+    }
   }
 
 
@@ -423,6 +437,7 @@ case class SortedAggregateWith2Inputs2Outputs(
     groupingExpressions: Seq[NamedExpression],
     aggregateExpressions: Seq[NamedExpression],
     groupByBS : Option[BitSet],
+    groupByPosInRS: ArrayBuffer[Int],
     child: SparkPlan
 
     )(

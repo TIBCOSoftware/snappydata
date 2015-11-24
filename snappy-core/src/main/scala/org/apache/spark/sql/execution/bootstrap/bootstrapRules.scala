@@ -533,7 +533,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
 
                             val newSumChildOption = child match {
-                              case bsa@BootstrapSortedAggregate(_, groupings, aggExp, _,_) => {
+                              case bsa@BootstrapSortedAggregate(_, groupings, aggExp, _,_,_) => {
 
 
                                 val exp = aggExp.zipWithIndex.filter { case (x, idx) => {
@@ -632,12 +632,23 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
                 case (expr:NamedExpression, _) => expr :: Nil
               } :+ aBtCnt
+              val groupByPosInResulst = new scala.collection.mutable.ArrayBuffer[Int]()
               val bs = if(!(partial || groupings.isEmpty)) {
                  val bsTemp = new BitSet(groupings.length)
+
+                 val resultExpWithIndex = resultExpressions.zipWithIndex
                  0 until groupings.length foreach { i =>
-                   if(resultExpressions.exists(_.toAttribute.exprId == groupings(i).exprId)) {
-                     bsTemp.set(i)
+                   resultExpWithIndex.find{ case(p,_) => p.toAttribute.exprId == groupings(i).exprId } match {
+                     case Some((_, index)) => {
+                       bsTemp.set(i)
+                       groupByPosInResulst +=(index)
+                     }
+                     case None =>
+
                    }
+                   /*if(resultExpWithIndex.exists(_.toAttribute.exprId == groupings(i).exprId)) {
+                     bsTemp.set(i)
+                   }*/
                  }
                  Some(bsTemp)
 
@@ -647,7 +658,8 @@ object PropagateBootstrap extends Rule[SparkPlan] {
 
               i = i + 1
 
-              BootstrapSortedAggregate(partial, groupings, newAggrs.asInstanceOf[Seq[NamedExpression]], bs, newChild)
+              BootstrapSortedAggregate(partial, groupings, newAggrs.asInstanceOf[Seq[NamedExpression]], bs,
+                groupByPosInResulst, newChild)
 
             case _ => aggregate
 
@@ -792,11 +804,11 @@ object IdentifyUncertainTuples extends Rule[SparkPlan] {
         BootstrapAggregate(partial, groupings, aggrs :+ flag, child)
       }
 
-    case aggregate@BootstrapSortedAggregate(partial, groupings, aggrs, bs, child) =>
+    case aggregate@BootstrapSortedAggregate(partial, groupings, aggrs, bs, groupByPosInRs, child) =>
       val btCnt = BootStrapUtils.getBtCnt(child.output).get
       if (partial) {
         BootStrapUtils.getFlag(child.output) match {
-          case Some(flag) => BootstrapSortedAggregate(partial, groupings :+ flag, aggrs :+ flag, bs, child)
+          case Some(flag) => BootstrapSortedAggregate(partial, groupings :+ flag, aggrs :+ flag, bs, groupByPosInRs, child)
           case _ => aggregate
         }
       } else {
@@ -809,7 +821,7 @@ object IdentifyUncertainTuples extends Rule[SparkPlan] {
               ForAllPlaceholder(ByteNonZero(Delegate(btCnt, Count01(BootStrapUtils.boolTrue)))),
               "_flag")()
         }
-        BootstrapSortedAggregate(partial, groupings, aggrs :+ flag, bs, child)
+        BootstrapSortedAggregate(partial, groupings, aggrs :+ flag, bs, groupByPosInRs, child)
       }
     case join@BroadcastHashJoin(leftKeys, rightKeys, buildSide, left, right) =>
       postprocess(join)
@@ -924,7 +936,7 @@ object PruneColumns extends Rule[SparkPlan] {
           aggregates.filter(e => used.contains(e.exprId)), child)
         used ++= aggregate.references.map(_.exprId)
         aggregate
-      case bsa@BootstrapSortedAggregate(partial, groupings, aggregates, bs, child) =>
+      case bsa@BootstrapSortedAggregate(partial, groupings, aggregates, bs, groupByPosInRS, child) =>
         //Identify those from output result expressions which are not used by the outer parent,
         //which will then be used to filter the aggregate expression
         val unusedIndices = bsa.output.zipWithIndex.filter{case (e,indx) => !used.contains(e.exprId)}.map{ case(_, index) => index }
@@ -932,7 +944,7 @@ object PruneColumns extends Rule[SparkPlan] {
 
         val newAggs = aggregates.zipWithIndex.filter{case (e, index) => !unusedIndices.contains(index + groupings.length)}.map{case(e,_) => e}
         val aggregate = BootstrapSortedAggregate(partial, groupings,
-         newAggs, bs, child)
+         newAggs, bs, groupByPosInRS, child)
         used ++= aggregate.references.map(_.exprId)
         aggregate
 
@@ -987,9 +999,9 @@ object PruneProjects extends Rule[SparkPlan] {
       if simpleCopy(projectList) =>
       BootstrapAggregate(partial, groupings, aggregates, child)
 
-    case BootstrapSortedAggregate(partial, groupings, aggregates, bs, Project(projectList, child))
+    case BootstrapSortedAggregate(partial, groupings, aggregates, bs, groupByPosInRS, Project(projectList, child))
       if simpleCopy(projectList) =>
-      BootstrapSortedAggregate(partial, groupings, aggregates, bs, child)
+      BootstrapSortedAggregate(partial, groupings, aggregates, bs, groupByPosInRS, child)
 
     case CollectPlaceholder(projectList1, Project(projectList2, child))
       if projectList2.forall {
@@ -1132,8 +1144,8 @@ case class ConsolidateBootstrap(numTrials: Int, debug: Boolean) extends Rule[Spa
       case BootstrapAggregate(partial, groupings, aggrs, child) =>
         BootstrapAggregate(partial, groupings, flattenNamed(aggrs), child)
 
-      case BootstrapSortedAggregate(partial, groupings, aggrs, bs, child) =>
-        BootstrapSortedAggregate(partial, groupings, flattenNamed(aggrs), bs, child)
+      case BootstrapSortedAggregate(partial, groupings, aggrs, bs, groupByPosInRS,  child) =>
+        BootstrapSortedAggregate(partial, groupings, flattenNamed(aggrs), bs, groupByPosInRS, child)
 
       case Filter(condition, child) =>
         Filter(flatten(condition).head, child)
@@ -1171,7 +1183,7 @@ object IdentifyLazyEvaluates extends Rule[SparkPlan] {
       System.out.print(withNewLeaves)
 
       withNewLeaves match {
-        case aggregate@BootstrapSortedAggregate(false, groupings, aggrs, bs, child) =>
+        case aggregate@BootstrapSortedAggregate(false, groupings, aggrs, bs, groupByPosInRS, child) =>
           // An partial aggregate does not need to be converted to lazy evaluates,
           // even if its input has lazy evaluates,
           // because its output won't be reused
@@ -1212,7 +1224,7 @@ object IdentifyLazyEvaluates extends Rule[SparkPlan] {
                 aggregateFunction, name)(taggedExpr.exprId, taggedExpr.qualifiers)
             case expr => expr
           }
-          BootstrapSortedAggregate(partial = false, groupings, newAggrs, bs, child)
+          BootstrapSortedAggregate(partial = false, groupings, newAggrs, bs, groupByPosInRS, child)
 
         case aggregate@BootstrapAggregate(false, groupings, aggrs, child) =>
           // An partial aggregate does not need to be converted to lazy evaluates,
@@ -1267,8 +1279,8 @@ object EmbedLineage extends Rule[SparkPlan] {
     case BootstrapAggregate(partial, grouping, aggrs, child) =>
       BootstrapAggregate(partial, grouping, aggrs ++ lineageNeedToPropagate(aggrs), child)
 
-    case BootstrapSortedAggregate(partial, grouping, aggrs, bs, child) =>
-      BootstrapSortedAggregate(partial, grouping, aggrs ++ lineageNeedToPropagate(aggrs), bs, child)
+    case BootstrapSortedAggregate(partial, grouping, aggrs, bs, groupByPosInRS, child) =>
+      BootstrapSortedAggregate(partial, grouping, aggrs ++ lineageNeedToPropagate(aggrs), bs,  groupByPosInRS, child)
     case Project(projectList, child) =>
       Project(projectList ++ lineageNeedToPropagate(projectList), child)
   }
@@ -1364,7 +1376,7 @@ case class ImplementAggregate(slackParam: Double)
           groupings, aggrs, child)(-1 :: Nil, opId = opId)
       }
 
-    case aggregate@BootstrapSortedAggregate(partial, groupings, aggrs, bs, child) =>
+    case aggregate@BootstrapSortedAggregate(partial, groupings, aggrs, bs, groupByPosInRS, child) =>
       val opId = aggrs.collectFirst {
         case TaggedAlias(tag: LazyAggregate, _, _) => tag.opId
       }.getOrElse(OpId.newOpId)
@@ -1383,7 +1395,7 @@ case class ImplementAggregate(slackParam: Double)
 
         SortedAggregateWith2Inputs2Outputs(BootStrapUtils.getFlag(child.output),
           BootStrapUtils.collectLineageRelay(aggregate.output), BootStrapUtils.collectIntegrityInfo(aggrs, slackParam),
-          groupings, aggrs, bs, child)(-1 :: Nil, opId = opId)
+          groupings, aggrs, bs, groupByPosInRS, child)(-1 :: Nil, opId = opId)
       }
   }
 
