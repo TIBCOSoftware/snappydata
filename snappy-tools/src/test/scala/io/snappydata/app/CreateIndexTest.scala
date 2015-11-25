@@ -48,6 +48,7 @@ class CreateIndexTest extends SnappyFunSuite {
       fail("Should not drop index on column table")
     } catch {
       case ae: com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException => // ignore
+      case ax:  com.pivotal.gemfirexd.internal.impl.jdbc.SQLExceptionFactory40.EmbedSQLSyntaxErrorException => // ignore
       case e: Exception => throw e
     }
   }
@@ -80,7 +81,7 @@ class CreateIndexTest extends SnappyFunSuite {
         " where COL2 like '%a%'")
     doPrint("")
     doPrint("=============== RESULTS START ===============")
-    result.collect.foreach(println)
+    result.collect.foreach(doPrint)
     result.collect.foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
 
@@ -94,7 +95,7 @@ class CreateIndexTest extends SnappyFunSuite {
     assert(r.toString() == "[111]", "got=" + r.toString() + " but expected 111")
   }
 
-  def doPrint(s: String): Unit = {
+  def doPrint(s: Any): Unit = {
     //println(s)
   }
 }

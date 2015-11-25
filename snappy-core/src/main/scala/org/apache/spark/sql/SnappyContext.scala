@@ -1,7 +1,6 @@
 package org.apache.spark.sql
 
 import java.sql.Connection
-import java.util.Properties
 
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 
@@ -451,17 +450,17 @@ class SnappyContext private(sc: SparkContext)
    * Create Index on an external table (created by a call to createExternalTable).
    */
   def createIndexOnExternalTable(tableName: String, sql: String): Unit = {
-    println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
+    //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
 
     if (catalog.tableExists(tableName)) {
-      println(tableName + " exists")
+      //println(tableName + " exists")
     } else {
       throw new AnalysisException(
         s"$tableName is not an indexable table")
     }
 
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
-    println("qualifiedTable=" + qualifiedTable)
+    //println("qualifiedTable=" + qualifiedTable)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
     } catch {
@@ -480,11 +479,13 @@ class SnappyContext private(sc: SparkContext)
    * Create Index on an external table (created by a call to createExternalTable).
    */
   def dropIndexOnExternalTable(sql: String): Unit = {
-    println("drop-index" + " sql=" + sql)
+    //println("drop-index" + " sql=" + sql)
 
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(ExternalStoreUtils.defaultStoreURL(sc), new Properties()/*connProperties*/)
+      val (url, _, poolProps, connProps, hikariCP) =
+        ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
+      conn = JdbcUtils.createConnection(url, connProps)
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
