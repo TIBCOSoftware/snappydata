@@ -118,7 +118,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
-    val ddlExtension = StoreUtils.ddlExtensionStringForShadowTable(parameters)
+    val ddlExtension = StoreUtils.ddlExtensionStringForColumnTable(parameters)
     //val preservepartitions = parameters.remove("preservepartitions")
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
