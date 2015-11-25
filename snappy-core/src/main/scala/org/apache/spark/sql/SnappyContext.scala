@@ -504,19 +504,23 @@ class SnappyContext private(sc: SparkContext)
     }
 
   @transient
-  override protected[sql] val planner = new SparkPlanner with SnappyStrategies {
+  override protected[sql] val planner = new org.apache.spark.sql.execution.SparkPlanner(this)
+      with SnappyStrategies {
+
     val snappyContext = self
 
     // TODO temporary flag till we determine every thing works fine with the optimizations
-    val storeOptimization  = snappyContext.sparkContext.getConf.get(
-        "snappy.store.optimization", "true").toBoolean
+    val storeOptimization = snappyContext.sparkContext.getConf.get(
+      "snappy.store.optimization", "true").toBoolean
 
-    val storeOptimizedRules : Seq[Strategy] = if(storeOptimization)
-        Seq(StoreDataSourceStrategy, LocalJoinStrategies) else Nil
-    override def strategies: Seq[Strategy] = Seq(SnappyStrategies,
-        StreamStrategy, StoreStrategy) ++
-        storeOptimizedRules ++
-        super.strategies
+    val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
+      Seq(StoreDataSourceStrategy, LocalJoinStrategies)
+    else Nil
+
+    override def strategies: Seq[Strategy] =
+      Seq(SnappyStrategies, StreamStrategy, StoreStrategy) ++
+          storeOptimizedRules ++
+          super.strategies
   }
 
   /**

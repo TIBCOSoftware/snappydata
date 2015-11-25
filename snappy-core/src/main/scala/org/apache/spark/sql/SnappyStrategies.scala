@@ -6,17 +6,16 @@ import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{Filter, PartitionedDataSourceScan, SparkPlan, StratifiedSample, joins}
+import org.apache.spark.sql.execution.{Filter, PartitionedDataSourceScan, SparkPlan, SparkPlanner, StratifiedSample, joins}
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of enhancements specific to Snappy.
  */
 private[sql] trait SnappyStrategies {
 
-  self: SQLContext#SparkPlanner =>
+  self: SparkPlanner =>
 
   val snappyContext: SnappyContext
-
 
   object SnappyStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {

@@ -67,7 +67,8 @@ class JDBCMutableRelation(
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = ExternalStoreUtils.getConnection(url, connProperties,
+        dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
       logInfo("Applying DDL : "+ url + " connproperties " + connProperties)
       var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
