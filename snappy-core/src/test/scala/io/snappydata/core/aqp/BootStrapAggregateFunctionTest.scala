@@ -61,7 +61,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
    behavior of "aggregate on sample table"
 
-   "Sample Table Query on Sum aggregate " should "be correct" in {
+   "Sample Table Query on Sum aggregate " should "be correct" ignore {
     val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
 
     result.show()
@@ -74,7 +74,21 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   }
 
-  "Sample Table Query alias on Sum aggregate " should "be correct" in {
+
+  "Sample Table Query on avg aggregate " should "be correct" in {
+    val result = spc.sql("SELECT avg(l_quantity) as T FROM mainTable confidence 95")
+
+    result.show()
+   /* val rows2 = result.collect()
+    val struct = rows2(0).getStruct(0)
+    msg("estimate=" + struct.getDouble(0))
+    val estimate = struct.getDouble(0)
+    assert( estimate === (17 + 36 + 8 + 28  + 24 + 32  + 38  +  45 +  49 + 27 + 2 + 28 + 26))
+    msg("bound=" + struct.getDouble(1) + "," + struct.getDouble(2))
+   */
+  }
+
+  "Sample Table Query alias on Sum aggregate " should "be correct" ignore {
     val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
 
     result.show()
@@ -85,16 +99,69 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
   }
 
 
-  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" in {
+  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" ignore {
     val result = spc.sql("SELECT sum(l_quantity) as T, l_orderkey FROM mainTable group by l_orderkey confidence 95")
 
     result.show()
-    val rows2 = result.collect()
+    val rows = result.collect()
+    assert(rows.length === 3)
+    val row1 = rows(0)
+    val col11 = row1.getInt(1)
+    val col12 = row1.getStruct(0)
+    assert(col11  === 1)
+    assert(col12.getDouble(0) === 145 )
 
+    val row2 = rows(1)
+    val col21 = row2.getInt(1)
+    val col22 = row2.getStruct(0)
+    assert(col21  === 2)
+    assert(col22.getDouble(0) === 38 )
+
+    val row3 = rows(2)
+    val col31 = row3.getInt(1)
+    val col32 = row3.getStruct(0)
+    assert(col31  === 3)
+    assert(col32.getDouble(0) === 177 )
 
   }
 
-  "Sample Table Query with a given confidence " should "use correct quntiles" in {
+
+
+
+
+  "Sample Table Query with multiple aggregate  on Sum aggregate with group by clause " should "be correct" ignore {
+    val result = spc.sql("SELECT sum(l_quantity) as T, l_orderkey, sum(l_linenumber) FROM mainTable group by l_orderkey confidence 95")
+
+    result.show()
+    val rows = result.collect()
+    assert(rows.length === 3)
+    val row1 = rows(0)
+    val col11 = row1.getInt(1)
+    val col12 = row1.getStruct(0)
+    val col13 = row1.getStruct(2)
+    assert(col11  === 1)
+    assert(col12.getDouble(0) === 145 )
+    assert(col13.getDouble(0) === 21 )
+
+    val row2 = rows(1)
+    val col21 = row2.getInt(1)
+    val col22 = row2.getStruct(0)
+    val col23 = row2.getStruct(2)
+    assert(col21  === 2)
+    assert(col22.getDouble(0) === 38 )
+    assert(col23.getDouble(0) === 1 )
+
+    val row3 = rows(2)
+    val col31 = row3.getInt(1)
+    val col32 = row3.getStruct(0)
+    val col33 = row3.getStruct(2)
+    assert(col31  === 3)
+    assert(col32.getDouble(0) === 177 )
+    assert(col33.getDouble(0) === 21 )
+
+  }
+
+  "Sample Table Query with a given confidence " should "use correct quntiles" ignore {
 
     spc.sparkContext.stop()
     val numBootStrapTrials = 100

@@ -1,10 +1,12 @@
 package org.apache.spark.sql.execution.bootstrap
 
 
+import org.apache.spark.sql.sources.MapColumnToWeight
+
 import scala.collection.mutable
 
 
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{expressions, InternalRow}
 import org.apache.spark.sql.catalyst.analysis.HiveTypeCoercion
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
 import org.apache.spark.sql.catalyst.expressions.Count
@@ -521,6 +523,38 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                 case (a:AggregateExpression2, index: Int) =>
                   val newExpr = a.transformUp {
 
+                    case avg@org.apache.spark.sql.catalyst.expressions.aggregate.Average(e) =>
+                      val dAvg = if (partial) {
+                        var weightCol: MapColumnToWeight = null
+                        //extract out weightage column as it is showing as Coalesce with the averaged quantity
+                         val modified = avg.transformUp {
+                           case Coalesce(seq) => {
+                             val newSeq = seq.map {
+                               case weight: MapColumnToWeight => {
+                                 weightCol = weight
+                                 Literal(null)
+                               }
+                               case x => x
+                             }
+                             Coalesce(newSeq)
+                           }
+                         }.asInstanceOf[org.apache.spark.sql.catalyst.expressions.aggregate.Average]
+                         val sumExpression = if (weightCol != null) {
+                           Multiply(weightCol, modified.child)
+                         } else {
+                           e
+                         }
+
+                        DelegateFunction(btCnt, org.apache.spark.sql.catalyst.expressions.aggregate.Sum(sumExpression))
+                      } else {
+                        //remap the parameter
+                        // find exchange operator
+
+                        remapExchange(btCnt, exchangeOption, avg)
+                      }
+
+                      dAvg
+
                     case sum: org.apache.spark.sql.catalyst.expressions.aggregate.Sum =>
                       val dSum = if (partial) {
                         DelegateFunction(btCnt, sum)
@@ -528,54 +562,7 @@ object PropagateBootstrap extends Rule[SparkPlan] {
                         //remap the parameter
                         // find exchange operator
 
-                        val z = exchangeOption match {
-                          case Some(Exchange(_, child)) =>
-
-
-                            val newSumChildOption = child match {
-                              case bsa@BootstrapSortedAggregate(_, groupings, aggExp, _,_,_) => {
-
-
-                                val exp = aggExp.zipWithIndex.filter { case (x, idx) => {
-                                  sum.children.flatMap(_.references).forall{
-                                    attrib => x.flatMap(_.references).exists{
-                                      _.exprId == attrib.exprId
-                                    }
-
-                                  }
-
-                                }
-
-                                }
-
-                                if (!exp.isEmpty) {
-                                  val (temp,idx)  = exp(0)
-                                  Some(AttributeReference("dummy_replace", temp.dataType,
-                                    temp.nullable,
-                                    temp.metadata)(
-                                    bsa.output(groupings.length + idx).exprId,
-                                    temp.qualifiers))
-
-                                } else {
-                                  None
-                                }
-                              }
-
-                              case _ => None
-                            }
-
-                            newSumChildOption match {
-
-                              case Some(newSumChild) => sum.withNewChildren(newSumChild :: Nil)
-                              case None => sum
-
-                            }
-
-                          case None => throw new UnsupportedOperationException("no exchange operator found")
-                        }
-
-                        //Cast(scale(DelegateFunction(btCnt, sum), ScaleFactor()), sum.dataType)
-                        DelegateFunction(btCnt, z.asInstanceOf[org.apache.spark.sql.catalyst.expressions.aggregate.Sum])
+                        remapExchange(btCnt, exchangeOption, sum)
                       }
 
                       dSum
@@ -698,6 +685,57 @@ object PropagateBootstrap extends Rule[SparkPlan] {
       transformed.transformExpressionsUp(BootStrapUtils.simplifyCast)
 
 
+  }
+
+  def  remapExchange[T <: AggregateFunction2](btCnt: TaggedAttribute, exchangeOption: Option[SparkPlan], aggFunc2: T): DelegateFunction = {
+    val z = exchangeOption match {
+      case Some(Exchange(_, child)) =>
+
+
+        val newAggChildOption = child match {
+          case bsa@BootstrapSortedAggregate(_, groupings, aggExp, _, _, _) => {
+
+
+            val exp = aggExp.zipWithIndex.filter { case (x, idx) => {
+              aggFunc2.children.flatMap(_.references).forall {
+                attrib => x.flatMap(_.references).exists {
+                  _.exprId == attrib.exprId
+                }
+
+              }
+
+            }
+
+            }
+
+            if (!exp.isEmpty) {
+              val (temp, idx) = exp(0)
+              Some(AttributeReference("dummy_replace", temp.dataType,
+                temp.nullable,
+                temp.metadata)(
+                bsa.output(groupings.length + idx).exprId,
+                temp.qualifiers))
+
+            } else {
+              None
+            }
+          }
+
+          case _ => None
+        }
+
+        newAggChildOption match {
+
+          case Some(newAggChild) => aggFunc2.withNewChildren(newAggChild :: Nil)
+          case None => aggFunc2
+
+        }
+
+      case None => throw new scala.UnsupportedOperationException("no exchange operator found")
+    }
+
+    //Cast(scale(DelegateFunction(btCnt, sum), ScaleFactor()), sum.dataType)
+    DelegateFunction(btCnt, z.asInstanceOf[T])
   }
 
   def deterministicKeys(keys: Seq[Expression]): Boolean =

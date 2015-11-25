@@ -30,6 +30,8 @@ import org.apache.spark.sql.catalyst.plans.physical.{AllTuples, ClusteredDistrib
 import org.apache.spark.sql.execution.aggregate.SortBasedAggregationIterator
 import org.apache.spark.sql.execution.metric.{LongSQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.{SparkPlan, UnaryNode}
+import org.apache.spark.sql.sources.MapColumnToWeight
+
 //import org.apache.spark.sql.hive.online.ComposeRDDFunctions._
 import org.apache.spark.storage.{BlockId,  StorageLevel}
 import scala.collection.JavaConversions._
@@ -166,6 +168,31 @@ trait DelegatedAggregate {
           val delegate = BindReferences.bindReference(DelegateCount01(e, bind(as), offset), child.output)
           offset += as.length
           delegate
+        case (avg@org.apache.spark.sql.catalyst.expressions.aggregate.Average(e), as) => {
+          var weightCol: MapColumnToWeight = null
+          //extract out weightage column as it is showing as Coalesce with the averaged quantity
+         /* val modified = avg.transformUp {
+            case Coalesce(seq) => {
+              val newSeq = seq.map {
+                case weight: MapColumnToWeight => {
+                  weightCol = weight
+                  Literal(null)
+                }
+                case x => x
+              }
+              Coalesce(newSeq)
+            }
+          }.asInstanceOf[org.apache.spark.sql.catalyst.expressions.aggregate.Average]
+          val sumExpression = if (weightCol != null) {
+            Multiply(weightCol, modified.child)
+          } else {
+            e
+          }
+          val del = BindReferences.bindReference(Divide(DelegateSum(sumExpression, bind(as), offset), DelegateCount(e, bind(as), offset)), child.output)
+          offset += as.length
+          del*/
+          null
+        }
       }.toArray
     }catch {
       case th: Throwable => {
