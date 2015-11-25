@@ -2,7 +2,7 @@ package org.apache.spark.sql.store.impl
 
 
 import java.net.ConnectException
-import java.sql.{DriverManager, Connection}
+import java.sql.{SQLException, DriverManager, Connection}
 import java.util.Properties
 
 import com.gemstone.gemfire.internal.SocketCreator
@@ -172,17 +172,17 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
 
   def getConnection(hostList: ArrayBuffer[(String, String)]): Connection = {
     val localhost = SocketCreator.getLocalHost
-    val index = {
-      val index = hostList.indexWhere(e => e._2.contains(localhost.getHostAddress))
-      if (index < 0) Random.nextInt(hostList.size)
-      else index
-    }
+    var index = -1
+      if (index < 0)  index = hostList.indexWhere(e => e._2.contains(localhost.getHostAddress))
+      if (index < 0 ) index = hostList.indexWhere(e => e._2.contains(localhost.getCanonicalHostName))
+      if (index < 0) index = Random.nextInt(hostList.size)
+
     try {
       DriverManager.getConnection(hostList(index)._2)
     } catch {
-      case connectException: ConnectException =>
+      case sqlException: SQLException =>
         if (hostList.size == 1)
-          throw connectException
+          throw sqlException
         else {
           hostList.remove(index)
           getConnection(hostList)
