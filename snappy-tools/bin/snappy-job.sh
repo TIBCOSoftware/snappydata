@@ -52,30 +52,28 @@ done
 # verify parameters
 
 if [[ $submit = "true" ]]; then
- if [[ $jobID != "" ]]; then
-  showUsage "--job-id"
- fi
+  if [[ $jobID != "" ]]; then
+    showUsage "--job-id"
+  fi
+elif [[ $submit = "false" ]]; then
+  if [[ $appName != "" ]]; then
+    showUsage "--app-name"
+  elif [[ $jobClass != "" ]]; then
+    showUsage "--class"
+  elif [[ $appjar != "" ]]; then
+    showUsage "--app-jar"
+  fi
 else
- if [[ $appName != "" ]]; then
-  showUsage "--app-name"
- elif [[ $jobClass != "" ]]; then
-  showUsage "--class"
- elif [[ $appjar != "" ]]; then
-  showUsage "--app-jar"
- else
-    showUsage
- fi
+  showUsage
 fi
 
 if [[ $submit = "true" ]]; then
-
- jobServerURL="$hostnamePort/jobs?appName=${appName}&classPath=${jobClass}"
-
- if [[ $appjar != "" ]]; then
-  curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
- fi
- curl -d "" ${jobServerURL} $CURL_OPTS
+  jobServerURL="$hostnamePort/jobs?appName=${appName}&classPath=${jobClass}"
+  if [[ $appjar != "" ]]; then
+    curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
+  fi
+  curl -d "" ${jobServerURL} $CURL_OPTS
 else
- curl ${hostnamePort}\/jobs\/${jobID} $CURL_OPTS
+  curl ${hostnamePort}\/jobs\/${jobID} $CURL_OPTS
 fi
 
