@@ -8,6 +8,8 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import io.snappydata.Property
+import io.snappydata.Constant
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.Hive
 
@@ -121,24 +123,15 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     logInfo("default warehouse location is " + warehouse)
 
-    val sparkConf = context.sparkContext.conf
-    //val dburl = sparkConf.get("gemfirexd.db.url")
-    //val driver = sparkConf.get("gemfirexd.db.driver")
-    /*
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-      "jdbc:gemfirexd://localhost:1527")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      "com.pivotal.gemfirexd.jdbc.ClientDriver")
-    */
-    // `configure` goes second to override other settings.
-    // `configure` goes second to override other settings.
-    if (sparkConf.contains("gemfirexd.db.url") && sparkConf.contains("gemfirexd.db.driver")) {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-        sparkConf.get("gemfirexd.db.url"))
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        sparkConf.get("gemfirexd.db.driver"))
-      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "APP")
+    val (useGemxd, dburl, dbdriver) = resolveMetastoreDBPrpops
+    if (useGemxd) {
+      logInfo(s"using gemfirexd as metastore, dburl = $dburl")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dburl)
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER, dbdriver)
+      metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME, "HIVE_METASTORE")
+    }
+    else {
+      logInfo(s"using derby as metastoredb")
     }
 
     //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
@@ -219,6 +212,24 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
         sharedPrefixes = hiveMetastoreSharedPrefixes()).client
+    }
+  }
+
+  private def resolveMetastoreDBPrpops : (Boolean, String, String) = {
+    val sparkConf = context.sparkContext.conf
+    val useGemxd = sparkConf.get(Property.useGemxdForMetaStore, "true").toBoolean
+    logInfo("SnappyStoreHiveCatalog using gemfirexd as metastore db " + useGemxd)
+    if (!useGemxd) {
+      val url = sparkConf.get(Property.metastoreDBURL, null)
+      val driver = sparkConf.get(Property.metastoreDBURL, null)
+      logInfo(s"returning property $useGemxd $url and $driver")
+      (useGemxd, url, driver)
+    }
+    else {
+      val url = sparkConf.get(Property.metastoreDBURL, ExternalStoreUtils.defaultStoreURL(context.sparkContext))
+      val driver = sparkConf.get(Property.metastoreDriver, Constant.EMBEDDED_GEMXD_URL)
+      logInfo(s"returning property $useGemxd $url and $driver")
+      (useGemxd, url, driver)
     }
   }
 

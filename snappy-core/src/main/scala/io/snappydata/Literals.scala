@@ -20,6 +20,10 @@ object Constant {
   private[snappydata] val PROPERTY_PREFIX = "snappydata."
 
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
+
+  val EMBEDDED_GEMXD_URL = "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
+
+  val DEFAULT_SCHEMA = "APP"
 }
 
 /**
@@ -38,4 +42,11 @@ object Property {
   val jobserverConfigFile = s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile"
 
   val embedded =  "embedded"
+
+  val metastoreDBURL = s"${Constant.PROPERTY_PREFIX}metastore-db-url"
+
+  val metastoreDriver = s"${Constant.PROPERTY_PREFIX}metastore-db-driver"
+
+  // Only for testing purpose
+  val useGemxdForMetaStore = s"${Constant.PROPERTY_PREFIX}metastore-db-gemxd"
 }

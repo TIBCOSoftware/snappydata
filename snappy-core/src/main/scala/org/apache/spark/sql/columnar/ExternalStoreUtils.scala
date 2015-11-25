@@ -81,7 +81,7 @@ private[sql] object ExternalStoreUtils {
   def defaultStoreURL(sc: SparkContext): String = {
     if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       // Already connected to SnappyData in embedded mode.
-      Constant.DEFAULT_EMBEDDED_URL
+      Constant.DEFAULT_EMBEDDED_URL + "route-query=false"
     } else {
       val isLoner = Utils.isLoner(sc)
       sc.conf.getOption(Property.locators).map(
@@ -94,7 +94,7 @@ private[sql] object ExternalStoreUtils {
             sys.error("Option 'url' not specified")
           }
         }
-      } + (if (isLoner) "" else ";host-data=false")
+      } + (if (isLoner) "" else ";host-data=false") + (";route-query=false")
     }
   }
 

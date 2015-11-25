@@ -8,7 +8,7 @@ import scala.collection.JavaConverters._
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
 import dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable}
-import io.snappydata.{Locator, Server, ServiceManager}
+import io.snappydata.{Property, Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
@@ -105,7 +105,7 @@ class ClusterManagerTestUtils {
   var snc: SnappyContext = _
 
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
-    startSnappyLead(locatorPort, props, addUrlForHiveMetaStore = false)
+    startSnappyLead(locatorPort, props, useGemxdformetastore = false)
   }
 
   /**
@@ -117,10 +117,10 @@ class ClusterManagerTestUtils {
     */
   def startSnappyLead(locatorPort: Int,
       props: Properties,
-      addUrlForHiveMetaStore: Boolean): Unit = {
+      useGemxdformetastore: Boolean): Unit = {
     assert(sc == null)
     props.setProperty("host-data", "false")
-    props.setProperty("log-level", "info")
+    // props.setProperty("log-level", "fine")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf().setMaster(s"snappydata://localhost[$locatorPort]")
         .setAppName("myapp")
@@ -133,15 +133,13 @@ class ClusterManagerTestUtils {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
+    conf.set("snappydata.metastore-db-gemxd", "false")
+    if (useGemxdformetastore) {
+      conf.set("snappydata.metastore-db-gemxd", "true")
+    }
     props.asScala.foreach({ case (k, v) =>
       conf.set(io.snappydata.Constant.PROPERTY_PREFIX + k, v)
     })
-    if (addUrlForHiveMetaStore) {
-      val snappydataurl = "jdbc:snappydata:;locators=localhost[" +
-          locatorPort + "];route-query=false;user=HIVE_METASTORE;default-persistent=true"
-      conf.set("gemfirexd.db.url", snappydataurl)
-      conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-    }
     logger.info(s"About to create SparkContext with conf \n" + conf.toDebugString)
     sc = new SparkContext(conf)
     logger.info("SparkContext CREATED, about to create SnappyContext.")
@@ -157,7 +155,7 @@ class ClusterManagerTestUtils {
     */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
-    props.setProperty("log-level", "info")
+    // props.setProperty("log-level", "info")
     val server: Server = ServiceManager.getServerInstance
     server.start(props)
     assert(server.status == FabricService.State.RUNNING)
