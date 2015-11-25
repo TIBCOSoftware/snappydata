@@ -385,6 +385,12 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
+task copyResourcesAll << {
+  copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
+  copyTestsCommonResources(project(":snappy-tools_${scalaBinaryVersion}").buildDir)
+  copyTestsCommonResources(project(':snappy-dunits').buildDir)
+}
+
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }

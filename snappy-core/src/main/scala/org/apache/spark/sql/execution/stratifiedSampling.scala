@@ -37,20 +37,22 @@ case class StratifiedSample(var options: Map[String, Any],
 
   override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
 
-  /**
-   * Perform stratified sampling given a Query-Column-Set (QCS). This variant
-   * can also use a fixed fraction to be sampled instead of fixed number of
-   * total samples since it is also designed to be used with streaming data.
-   */
-  case class Execute(override val child: SparkPlan,
-      override val output: Seq[Attribute]) extends UnaryNode {
+  def getExecution(plan: SparkPlan) = StratifiedSampleExecute(plan, output,
+    options, qcs)
+}
 
-    protected override def doExecute(): RDD[InternalRow] =
-      new StratifiedSampledRDD(child.execute(), qcs,
-        sqlContext.conf.columnBatchSize, options, schema)
-  }
+/**
+ * Perform stratified sampling given a Query-Column-Set (QCS). This variant
+ * can also use a fixed fraction to be sampled instead of fixed number of
+ * total samples since it is also designed to be used with streaming data.
+ */
+case class StratifiedSampleExecute(override val child: SparkPlan,
+    override val output: Seq[Attribute], options: Map[String, Any],
+    qcs: Array[Int]) extends UnaryNode {
 
-  def getExecution(plan: SparkPlan) = Execute(plan, output)
+  protected override def doExecute(): RDD[InternalRow] =
+    new StratifiedSampledRDD(child.execute(), qcs,
+      sqlContext.conf.columnBatchSize, options, schema)
 }
 
 private final class ExecutorPartitionInfo(val blockId: BlockManagerId,
