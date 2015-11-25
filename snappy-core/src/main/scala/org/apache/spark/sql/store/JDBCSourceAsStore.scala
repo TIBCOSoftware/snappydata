@@ -1,7 +1,7 @@
 package org.apache.spark.sql.store
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet}
+import java.sql.{Statement, Connection, PreparedStatement, ResultSet}
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 
@@ -144,7 +144,7 @@ class JDBCSourceAsStore(override val url: String,
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
-    requiredColumns: Array[String], ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
+    requiredColumns: Array[String], ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
   var _hasNext = moveNext()
