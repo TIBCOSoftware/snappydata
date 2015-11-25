@@ -12,6 +12,7 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.NetworkInterface
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
@@ -89,12 +90,12 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     sparkContext = new SparkContext(conf)
 
-    SnappyContext(sparkContext)
   }
 
-  private[snappydata] def internalStart(conf: SparkConf): Unit = {
+  private[snappydata] def internalStart(sc: SparkContext): Unit = {
 
-    initStartupArgs(conf)
+    val conf = sc.getConf // this will get you a cloned copy
+    initStartupArgs(conf, sc)
 
     logInfo("cluster configuration after overriding certain properties \n"
       + conf.toDebugString)
@@ -166,7 +167,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
   }
 
-  private[snappydata] def initStartupArgs(conf: SparkConf) = {
+  private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {
 
     def changeOrAppend(attr: String, value: String,
                        overwrite: Boolean = false,
@@ -182,7 +183,19 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
 
     changeOrAppend(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
-    changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", overwrite = true)
+
+    assert(conf.getOption(Property.locators).isDefined ||
+        conf.getOption(Property.mcastPort).isDefined,
+      s"Either ${Property.locators} or ${Property.mcastPort} " +
+          s"must be defined for SnappyData cluster to start")
+    import org.apache.spark.sql.collection.Utils
+    // skip overriding host-data if loner VM.
+    if(sc != null && Utils.isLoner(sc)) {
+      changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "true", overwrite = true)
+    }
+    else {
+      changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", overwrite = true)
+    }
     changeOrAppend(Property.jobserverEnabled, "false", ignoreIfPresent = true)
 
     conf
@@ -224,7 +237,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
       // until now.
       logInfo("Connecting to snappydata cluster now...")
-      internalStart(sc.getConf)
+      internalStart(sc)
     }
 
     val jobServerEnabled = bootProperties.getProperty(Property.jobserverEnabled).toBoolean
@@ -304,9 +317,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
 object LeadImpl {
 
-  def invokeLeadStart(conf: SparkConf): Unit = {
+  def invokeLeadStart(sc: SparkContext): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.internalStart(conf)
+    lead.internalStart(sc)
   }
 
   def invokeLeadStartAddonService(sc: SparkContext): Unit = {

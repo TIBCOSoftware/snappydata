@@ -22,4 +22,11 @@ object Utils {
     }
   }
 
+  def getFields(o: Any): Map[String, Any] = {
+    val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
+      field.setAccessible(true)
+      (field.getName, field.get(o))
+    }
+    Map(fieldsAsPairs: _*)
+  }
 }
