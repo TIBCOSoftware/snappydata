@@ -1,4 +1,4 @@
-package org.apache.spark.sql.store.util
+package org.apache.spark.sql.store
 
 import java.util.Properties
 
@@ -10,8 +10,7 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD}
+import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
 
@@ -42,6 +41,7 @@ object StoreUtils {
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_OFFHEAP = "OFFHEAP"
   val PRIMARY_KEY = "PRIMARY KEY"
+  val LRUCOUNT = "LRUCOUNT"
 
   val EMPTY_STRING = ""
 
@@ -118,16 +118,6 @@ object StoreUtils {
     }
   }
 
-  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
-    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-    parameters.remove("serialization.format")
-    table
-  }
-
   def ddlExtensionString(parameters: mutable.Map[String, String]): String = {
     val sb = new StringBuilder()
 
@@ -153,6 +143,45 @@ object StoreUtils {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
         .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
+        .getOrElse(EMPTY_STRING))
+
+    sb.toString()
+  }
+
+  def getPartitioningColumn(parameters: mutable.Map[String, String]) : Seq[String] = {
+    parameters.remove(PARTITION_BY).map(v => {
+      v.split(",").toSeq.map(a => a.trim)
+    }).getOrElse(Seq.empty[String])
+  }
+
+  def ddlExtensionStringForColumnTable(parameters: mutable.Map[String, String]): String = {
+    val sb = new StringBuilder()
+
+    sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
+        .getOrElse(s"$GEM_BUCKETS 199 ")) //Defaulting to higher numbered buckets for column tables
+    // it also does temporarily fix the row-column join
+    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
+        .getOrElse(EMPTY_STRING))
+    sb.append(parameters.remove(EVICTION_BY).map(v => {
+      v.contains(LRUCOUNT) match {
+        case true => throw new DDLException(
+          "Column table cannot take LRUCOUNT as Evcition Attributes")
+        case _ =>
+      }
+      s"$GEM_EVICTION_BY $v "
+    }).getOrElse(EMPTY_STRING))
+
     sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")

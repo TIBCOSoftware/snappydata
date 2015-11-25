@@ -28,7 +28,6 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 object ExecutorInitiator extends Logging {
 
   val SNAPPY_MEMORY_MANAGER = "org.apache.spark.memory.SnappyStaticMemoryManager"
-  val SNAPPY_SHUFFLE_MEMORY_MANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
@@ -128,10 +127,9 @@ object ExecutorInitiator extends Logging {
                   //TODO: this conf that was received from driver.
                     //use Snappy static memory manager
                     driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
-                    driverConf.set("spark.shuffle.memoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
-                      Runtime.getRuntime().availableProcessors())
+                      Runtime.getRuntime().availableProcessors() * 2)
 
                     env = SparkCallbacks.createExecutorEnv(
                       driverConf, memberId, executorHost, port, cores, false)

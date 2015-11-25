@@ -9,6 +9,7 @@ import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.hive.ql.metadata.Hive
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -140,6 +141,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
         "APP")
     }
+
     //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
 
     val allConfig = metadataConf.asScala.map(e =>
@@ -559,7 +561,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
-            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
+            val extraProps = d.extraDriverProperties(isLoner).propertyNames
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
@@ -567,6 +569,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
                     "shouldn't exist here in Executors")
               }
             }
+          case _ =>
         }
 
         val conn = ExternalStoreUtils.getConnection(externalStore.url,
@@ -592,7 +595,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val dialect = JdbcDialects.get(externalStore.url)
     dialect match {
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(isLoner))
+        connProps.putAll(d.extraDriverProperties(isLoner))
     }
 
     externalStore.tryExecute(tableName, {
@@ -682,6 +685,10 @@ object SnappyStoreHiveCatalog {
     } else {
       Utils.normalizeId(tableIdentifier)
     }
+  }
+
+  def closeCurrent(): Unit = {
+    Hive.closeCurrent()
   }
 }
 

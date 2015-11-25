@@ -1,26 +1,25 @@
 package org.apache.spark.sql.rowtable
 
-import java.sql.{ResultSet, Connection}
+import java.sql.{Connection, ResultSet}
 import java.util.Properties
 
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.{PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.commons.lang3.StringUtils
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, ExecutorLocalPartition}
+import org.apache.spark.sql.collection.MultiExecutorLocalPartition
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
-import org.apache.spark.sql.store.util.StoreUtils
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{Decimal, StructType}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{AccumulatorParam, SparkContext, TaskContext, Partition}
-
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables. This scans row tables in parallel unlike Spark's
@@ -43,7 +42,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
    */
   private val filterWhereClause: String = {
     val filterStrings = filters map compileFilter filter (_ != null)
-    if (filterStrings.size > 0) {
+    if (filterStrings.length > 0) {
       val sb = new StringBuilder("WHERE ")
       filterStrings.foreach(x => sb.append(x).append(" AND "))
       sb.substring(0, sb.length - 5)
@@ -77,7 +76,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   private val columnList: String = {
     val sb = new StringBuilder()
     columns.foreach(x => sb.append(",").append(x))
-    if (sb.length == 0) "1" else sb.substring(1)
+    if (sb.isEmpty) "1" else sb.substring(1)
   }
 
   /**
@@ -95,8 +94,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       val part = thePart.asInstanceOf[MultiExecutorLocalPartition]
       val conn = getConnection()
 
-      conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
-      val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema())
+      val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
 
       if (region.isInstanceOf[PartitionedRegion]) {
@@ -122,7 +120,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       val conversions = getConversions(schema)
       val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
 
-      def getNext(): InternalRow = {
+      def getNext: InternalRow = {
         if (rs.next()) {
           var i = 0
           while (i < conversions.length) {
@@ -166,16 +164,15 @@ class RowFormatScanRDD(@transient sc: SparkContext,
                   mutableRow.update(i, null)
                 }
               case BinaryConversion => mutableRow.update(i, rs.getBytes(pos))
-              case BinaryLongConversion => {
+              case BinaryLongConversion =>
                 val bytes = rs.getBytes(pos)
                 var ans = 0L
                 var j = 0
                 while (j < bytes.size) {
                   ans = 256 * ans + (255 & bytes(j))
-                  j = j + 1;
+                  j = j + 1
                 }
                 mutableRow.setLong(i, ans)
-              }
             }
             if (rs.wasNull) mutableRow.setNullAt(i)
             i = i + 1
@@ -216,7 +213,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       override def hasNext: Boolean = {
         if (!finished) {
           if (!gotNext) {
-            nextValue = getNext()
+            nextValue = getNext
             if (finished) {
               close()
             }

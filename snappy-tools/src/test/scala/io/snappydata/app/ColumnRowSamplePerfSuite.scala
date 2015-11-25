@@ -2,7 +2,11 @@ package io.snappydata.app
 
 import scala.actors.Futures._
 
+import io.snappydata.SnappyFunSuite
+import org.scalatest.BeforeAndAfterAll
+
 import org.apache.spark.sql._
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.snappy._
 
 /**
@@ -10,7 +14,29 @@ import org.apache.spark.sql.snappy._
  * Join Column with row, concurrency, speed
  * Created by jramnara on 10/28/15.
  */
-object ColumnRowSamplePerfTest extends App {
+class ColumnRowSamplePerfSuite
+    extends SnappyFunSuite
+    with BeforeAndAfterAll {
+
+  // context creation is handled by App main
+  override def beforeAll(): Unit = {
+  }
+
+  override def afterAll(): Unit = {
+    val snc = ColumnRowSamplePerfSuite.snContext
+    // cleanup metastore
+    if (snc != null) {
+      snc.clearCache()
+    }
+    super.afterAll()
+  }
+
+  test("Some performance tests for column store with airline schema") {
+    ColumnRowSamplePerfSuite.main(Array[String]())
+  }
+}
+
+object ColumnRowSamplePerfSuite extends App {
 
   //var hfile: String = "/Users/jramnara/Downloads/2007-8.01.csv.parts"
   // Too large ... You need to download from GoogleDrive/snappyDocuments/data; or, use the one below
@@ -62,20 +88,23 @@ object ColumnRowSamplePerfTest extends App {
   createTableLoadData()
 
   // run several queries concurrently in threads ...
-  val tasks = for (i <- 1 to 10) yield future {
+  val tasks = for (i <- 1 to 5) yield future {
     println("Executing task " + i)
     Thread.sleep(1000L)
     runQueries(snContext)
   }
 
-  val ret = awaitAll(20000000L, tasks: _*) // wait a lot
+  // wait a lot
+  awaitAll(20000000L, tasks: _*)
 
   def createTableLoadData() = {
 
     if (loadData) {
       // All these properties will default when using snappyContext in the release
+      val props = Map[String, String]()
+      /*
       val props = Map(
-        "url" -> "jdbc:gemfirexd:;mcast-port=0;",
+        "url" -> "jdbc:snappydata:;mcast-port=0;",
         //"poolImpl" -> "tomcat",   // DOESN'T WORK?
         //"poolProps" -> "",
         //"single-hop-enabled" -> "true",
@@ -85,6 +114,7 @@ object ColumnRowSamplePerfTest extends App {
         "password" -> "app"
         //"persistent" -> "SYNCHRONOUS"  // THIS DOESN'T WORK .. SHOULD
       )
+      */
 
       if (hfile.endsWith(".parquet")) {
         airlineDataFrame = snContext.read.load(hfile)
@@ -158,7 +188,7 @@ object ColumnRowSamplePerfTest extends App {
     var end: Long = 0
     var results: DataFrame = null
 
-    for (i <- 0 to 3) {
+    for (i <- 0 to 1) {
 
       start = System.currentTimeMillis
       results = sqlContext.sql(s"SELECT count(*) FROM $tableName")

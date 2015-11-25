@@ -27,7 +27,7 @@ class JDBCMutableRelation(
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
-    _poolProps: Map[String, String],
+    val poolProperties: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
     val origOptions: Map[String, String],
@@ -45,13 +45,10 @@ class JDBCMutableRelation(
 
   val driver = DriverRegistry.getDriverClassName(url)
 
-  val poolProperties = ExternalStoreUtils
-      .getAllPoolProperties(url, driver, _poolProps, hikariCP)
-
   final val dialect = JdbcDialects.get(url)
 
   // create table in external store once upfront
-  createTable(mode)
+  val tableSchema = createTable(mode)
 
   override val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
@@ -67,18 +64,16 @@ class JDBCMutableRelation(
     }
   }: _*)
 
-  def createTable(mode: SaveMode): Unit = {
+  def createTable(mode: SaveMode): String = {
     var conn: Connection = null
     try {
-
-      conn = ExternalStoreUtils.getConnection(url, connProperties,
-        dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
+      conn = JdbcUtils.createConnection(url, connProperties)
       logInfo("Applying DDL : "+ url + " connproperties " + connProperties)
-
-      var tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
+      val tableSchema = JdbcExtendedUtils.getCurrentSchema(conn, dialect)
       if (mode == SaveMode.Ignore && tableExists) {
-        return
+        return tableSchema
       }
 
       if (mode == SaveMode.ErrorIfExists && tableExists) {
@@ -111,6 +106,7 @@ class JDBCMutableRelation(
           case _ => // Do Nothing
         }
       }
+      tableSchema
     } catch {
       case sqle: java.sql.SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
@@ -127,12 +123,14 @@ class JDBCMutableRelation(
     }
   }
 
+  final lazy val connector = JDBCMutableRelation.getConnector(table, driver,
+    dialect, poolProperties, connProperties, hikariCP)
+
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     new JDBCRDD(
       sqlContext.sparkContext,
-      JDBCMutableRelation.getConnector(table, driver, poolProperties,
-        connProperties, hikariCP),
+      connector,
       JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
@@ -165,7 +163,7 @@ class JDBCMutableRelation(
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.insert: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
@@ -188,7 +186,7 @@ class JDBCMutableRelation(
   }
 
   override def executeUpdate(sql: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
@@ -218,7 +216,7 @@ class JDBCMutableRelation(
               s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
     }
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
@@ -237,7 +235,7 @@ class JDBCMutableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val whereStr =
@@ -282,16 +280,12 @@ class JDBCMutableRelation(
 
 object JDBCMutableRelation extends Logging {
 
-  def getConnector(id: String, driver: String, poolProps: Map[String, String],
-      connProps: Properties, hikariCP: Boolean): () => Connection = {
+  def getConnector(id: String, driver: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): () => Connection = {
     () => {
-      try {
-        if (driver != null) DriverRegistry.register(driver)
-      } catch {
-        case cnfe: ClassNotFoundException =>
-          logWarning(s"Couldn't find driver class $driver", cnfe)
-      }
-      ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
+      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
+        poolProps, connProps, hikariCP)
     }
   }
 
@@ -392,8 +386,4 @@ object JDBCMutableRelation extends Logging {
   }
 }
 
-final class DefaultSource
-    extends MutableRelationProvider {
-
-
-}
+final class DefaultSource extends MutableRelationProvider

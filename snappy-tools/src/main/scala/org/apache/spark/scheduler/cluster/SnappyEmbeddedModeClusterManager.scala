@@ -1,11 +1,11 @@
 package org.apache.spark.scheduler.cluster
 
 import io.snappydata.impl.LeadImpl
-import io.snappydata.{Constant, Property}
+import io.snappydata.{Constant, Property, Utils}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
-import org.apache.spark.scheduler.{ExternalClusterManager, SchedulerBackend, SnappyTaskSchedulerImpl, TaskScheduler, TaskSchedulerImpl}
+import org.apache.spark.scheduler._
 
 /**
   * Snappy's cluster manager that is responsible for creating
@@ -41,15 +41,16 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         else if (locator.isEmpty ||
             locator == "" ||
             locator == "null" ||
-            !locator.matches(".+\\[[0-9]+\\]")
+            !Utils.LocatorURLPattern.matcher(locator).matches()
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }
         (Property.locators, locator)
       }
 
-      logger.info(s"setting from url ${prop} with ${value}")
+      logger.info(s"setting from url $prop with $value")
       sc.conf.set(prop, value)
+      sc.conf.set(Property.embedded , "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }

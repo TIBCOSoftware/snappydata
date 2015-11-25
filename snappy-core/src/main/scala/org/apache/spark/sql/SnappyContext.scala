@@ -6,19 +6,17 @@ import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
-import io.snappydata.{Constant, ToolsCallback}
+import io.snappydata.Constant
 import io.snappydata.util.SqlUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -44,6 +42,11 @@ class SnappyContext private(sc: SparkContext)
   // initialize GemFireXDDialect so that it gets registered
   GemFireXDDialect.init()
 
+  protected[sql] override lazy val conf: SQLConf = new SQLConf {
+    override def caseSensitiveAnalysis: Boolean =
+      getConf(SQLConf.CASE_SENSITIVE, false)
+  }
+
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
 
@@ -60,7 +63,7 @@ class SnappyContext private(sc: SparkContext)
   override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
   @transient
-  override protected[sql] val cacheManager = new SnappyCacheManager
+  override protected[sql] val cacheManager = new SnappyCacheManager()
 
   def saveStream[T: ClassTag](stream: DStream[T],
       aqpTables: Seq[String],
@@ -501,27 +504,19 @@ class SnappyContext private(sc: SparkContext)
     }
 
   @transient
-  override protected[sql] val planner = new execution.SparkPlanner(this) {
+  override protected[sql] val planner = new SparkPlanner with SnappyStrategies {
     val snappyContext = self
 
-    override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+    // TODO temporary flag till we determine every thing works fine with the optimizations
+    val storeOptimization  = snappyContext.sparkContext.getConf.get(
+        "snappy.store.optimization", "true").toBoolean
 
-    object SnappyStrategies extends Strategy {
-      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-        case s@StratifiedSample(options, child, _) =>
-          s.getExecution(planLater(child)) :: Nil
-        case PhysicalOperation(projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-          pruneFilterProject(
-            projectList,
-            filters,
-            identity[Seq[Expression]], // All filters still need to be evaluated
-            InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
-        case _ => Nil
-      }
-    }
-
+    val storeOptimizedRules : Seq[Strategy] = if(storeOptimization)
+        Seq(StoreDataSourceStrategy, LocalJoinStrategies) else Nil
+    override def strategies: Seq[Strategy] = Seq(SnappyStrategies,
+        StreamStrategy, StoreStrategy) ++
+        storeOptimizedRules ++
+        super.strategies
   }
 
   /**
@@ -731,22 +726,7 @@ object SnappyContext extends Logging {
   @volatile private[this] var _globalContext: SparkContext = _
   @volatile private[this] var _globalSNContext: SnappyContext = _
 
-  private[spark] def globalContext = _globalContext
-
-  lazy val toolsCallback = {
-    import org.apache.spark.util.Utils
-    try {
-      val c = Utils.classForName("io.snappydata.ToolsCallbackImpl$")
-      val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logInfo("toolsCallback initialized")
-      tc
-    } catch {
-      case cnf: ClassNotFoundException =>
-        logWarning("toolsCallback couldn't be INITIALIZED." +
-            "DriverURL won't get published to others.")
-        null
-    }
-  }
+  private[spark] final def globalContext = _globalContext
 
   private[this] val contextLock = new AnyRef
 
@@ -757,7 +737,7 @@ object SnappyContext extends Logging {
   )
 
   def apply(): SnappyContext = {
-    val gc = globalContext
+    val gc = _globalContext
     if (gc != null) {
       new SnappyContext(gc)
     } else {
@@ -802,17 +782,23 @@ object SnappyContext extends Logging {
   // TODO: add initialization required for non-embedded mode etc here
   private def initSparkContext(sc: SparkContext): Unit = {
     if (sc.master.startsWith(Constant.SNAPPY_URL_PREFIX) &&
-        toolsCallback != null) {
+      ToolsCallbackInit.toolsCallback != null) {
       // NOTE: if Property.jobServer.enabled is true
       // this will trigger SnappyContext.apply() method
       // prior to `new SnappyContext(sc)` after this
       // method ends.
-      toolsCallback.invokeLeadStartAddonService(sc)
+      ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+    } else if (ExternalStoreUtils.isExternalShellMode(sc) &&
+      ToolsCallbackInit.toolsCallback != null) {
+      ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc)
     }
   }
 
   def stop(): Unit = {
-    val sc = _globalContext
+    var sc = _globalContext
+    if (sc == null) {
+      sc = SparkContext.activeContext.get()
+    }
     if (sc != null && !sc.isStopped) {
       // clean up the connection pool on executors first
       Utils.mapExecutors(sc, { (tc, p) =>
@@ -821,7 +807,12 @@ object SnappyContext extends Logging {
       }).count()
       // then on the driver
       ConnectionPool.clear()
+      // clear current hive catalog connection
+      SnappyStoreHiveCatalog.closeCurrent()
+      if (ExternalStoreUtils.isExternalShellMode(sc))
+        ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
       sc.stop()
+      _globalContext = null
     }
   }
 
