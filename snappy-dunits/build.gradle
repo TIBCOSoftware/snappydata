@@ -31,7 +31,7 @@ testClasses.doLast {
 
 test {
   dependsOn ':cleanDUnit'
-
+  dependsOn ':product'
   maxParallelForks = 1
   minHeapSize '128m'
   maxHeapSize '1g'

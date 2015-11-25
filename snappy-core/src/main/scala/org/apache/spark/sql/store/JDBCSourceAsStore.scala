@@ -1,14 +1,9 @@
 package org.apache.spark.sql.store
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet}
-import java.util.{UUID, Properties}
+import java.sql.{Connection, ResultSet, Statement}
+import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.util.Random
 
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -18,6 +13,11 @@ import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.{SparkContext, SparkEnv}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.util.Random
 
 /*
 Generic class to query column table from Snappy.
@@ -166,7 +166,7 @@ class JDBCSourceAsStore(override val url: String,
 }
 
 final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
-    requiredColumns: Array[String], ps: PreparedStatement, rs: ResultSet) extends Iterator[CachedBatch] {
+    requiredColumns: Array[String], ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
   var _hasNext = moveNext()

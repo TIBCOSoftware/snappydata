@@ -16,7 +16,7 @@ import org.apache.spark.sql.columnar.CachedBatch
  */
 trait ExternalStore extends Serializable {
 
-  def storeCachedBatch(batch: CachedBatch, tableName: String): UUIDRegionKey
+  def storeCachedBatch(batch: CachedBatch, tableName: String ): UUIDRegionKey
 
   def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId : Int, tableName: String): UUIDRegionKey
 

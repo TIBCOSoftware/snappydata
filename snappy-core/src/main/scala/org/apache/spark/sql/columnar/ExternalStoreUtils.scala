@@ -5,7 +5,7 @@ import java.util.Properties
 
 import io.snappydata.{Constant, Property}
 import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -101,7 +101,12 @@ private[sql] object ExternalStoreUtils extends Logging {
 
   def validateAndGetAllProps(sc : SparkContext,
       parameters: mutable.Map[String, String]) = {
-    val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
+
+    val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
+      ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
+    }
+    else
+      parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
     val dialect = JdbcDialects.get(url)
     val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
@@ -151,7 +156,7 @@ private[sql] object ExternalStoreUtils extends Logging {
   def getConnectionType(url: String) = {
     JdbcDialects.get(url) match {
       case GemFireXDDialect => ConnectionType.Embedded
-      case GemFireXDClientDialect => ConnectionType.Net
+      case GemFireXDClientDialect =>   ConnectionType.Net
       case _ => ConnectionType.Unknown
     }
   }
@@ -274,6 +279,14 @@ private[sql] object ExternalStoreUtils extends Logging {
       col += 1
     }
   }
+
+  def isExternalShellMode (sparkContext: SparkContext): Boolean ={
+    sparkContext.getConf.getOption(Property.locators).exists { s => !s.isEmpty &&
+      !sparkContext.getConf.getOption(Property.mcastPort).exists {_.toInt > 0 }
+    } &&
+      !sparkContext.getConf.getOption(Property.embedded).exists(_.toBoolean)
+  }
+
 }
 
 object ConnectionType extends Enumeration {
