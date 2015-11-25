@@ -116,7 +116,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
   private def checkForShuffle(plan :LogicalPlan, snc : SnappyContext, shuffleExpected : Boolean): Unit ={
 
     val qe = new QueryExecution(snc, plan)
-    println(qe.executedPlan)
+    //println(qe.executedPlan)
     val lj = qe.executedPlan collect {
       case ex : Exchange => ex
     }
