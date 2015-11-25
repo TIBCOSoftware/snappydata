@@ -21,14 +21,16 @@ import org.apache.spark.sql.types._
 /**
  * Created by skumar on 6/11/15.
  */
-object StoreCallbacksImpl extends StoreCallbacks with Logging {
+object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
-  private var sqlContext = None: Option[SQLContext]
+  @transient private var sqlContext = None: Option[SQLContext]
   val stores = new mutable.HashMap[String, (StructType, ExternalStore)]
 
+  var useCompression = false
+  var cachedBatchSize = 0
 
   def registerExternalStoreAndSchema(context: SQLContext, tableName: String,
-      schema: StructType, externalStore: ExternalStore) = {
+      schema: StructType, externalStore: ExternalStore, batchSize: Int, compress : Boolean) = {
     stores.synchronized {
       stores.get(tableName) match {
         case None => stores.put(tableName, (schema, externalStore))
@@ -36,7 +38,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging {
       }
     }
     sqlContext = Some(context)
-    GemFireCacheImpl.setColumnBatchSize(context.conf.columnBatchSize)
+    useCompression = compress
+    cachedBatchSize = batchSize
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID, bucketID: Int) = {
@@ -53,8 +56,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging {
           false, 0, TransactionController.MODE_RECORD,
           TransactionController.ISOLATION_NOLOCK /* not used */ , null, null, 0, null, null, 0, null);
 
-        val batchCreator = new CachedBatchCreator(sqlContext.getOrElse(sys.error("SQLContext value not set")),
-          s"${container.getTableName}_SHADOW_", schema, externalStore)
+        val batchCreator = new CachedBatchCreator(s"${container.getTableName}_SHADOW_", schema,
+          externalStore, cachedBatchSize, useCompression)
         batchCreator.createAndStoreBatch(sc, row, batchID, bucketID)
       }
       finally {

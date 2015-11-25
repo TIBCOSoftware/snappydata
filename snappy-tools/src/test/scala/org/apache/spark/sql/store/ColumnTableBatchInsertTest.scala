@@ -1,6 +1,7 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.core.{TestData, Data, TestSqlContext, FileCleaner}
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.{TestData, Data, FileCleaner}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
 
@@ -10,33 +11,22 @@ import org.apache.spark.{SparkContext, Logging}
 /**
  * Created by skumar on 13/11/15.
  */
-class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
+class ColumnTableBatchInsertTest extends SnappyFunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
 
-  var sc: SparkContext = null
 
-  var snc: SnappyContext = null
+  val tableName: String = "ColumnTable"
+
+  val props = Map.empty[String, String]
 
   override def afterAll(): Unit = {
     sc.stop()
     FileCleaner.cleanStoreFiles()
   }
 
-  override def beforeAll(): Unit = {
-    if (sc == null) {
-      sc = TestSqlContext.newSparkContext
-      snc = SnappyContext(sc)
-    }
-  }
-
-  val tableName: String = "ColumnTable"
-
-  val props = Map.empty[String, String]
-
   after {
     snc.dropExternalTable(tableName, true)
     snc.dropExternalTable("ColumnTable2", true)
   }
-
 
   ignore("test the shadow table creation") {
     //snc.sql(s"DROP TABLE IF EXISTS $tableName")
@@ -209,18 +199,5 @@ class ColumnTableBatchInsertTest extends FunSuite with Logging with BeforeAndAft
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")
-  }
-
-  test("test the shadow table with eviction options LRUCOUNT on compressed table") {
-    intercept[DDLException] {
-      val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING)" +
-          "USING column " +
-          "options " +
-          "(" +
-          "PARTITION_BY 'Key1'," +
-          "BUCKETS '213'," +
-          "REDUNDANCY '2'," +
-          "EVICTION_BY 'LRUCOUNT 20')")
-    }
   }
 }

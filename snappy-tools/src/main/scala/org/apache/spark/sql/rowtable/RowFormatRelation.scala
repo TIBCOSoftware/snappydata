@@ -89,7 +89,7 @@ final class DefaultSource extends MutableRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps, poolProps, hikariCP, table, None)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 

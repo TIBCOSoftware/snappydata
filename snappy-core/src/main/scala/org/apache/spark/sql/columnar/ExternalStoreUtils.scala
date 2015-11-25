@@ -212,6 +212,25 @@ private[sql] object ExternalStoreUtils extends Logging {
     sb.append("?)").toString()
   }
 
+  // table has generated columns. gemfirexd bug?
+  def getInsertStringWithColumnName(table: String, rddSchema: StructType) = {
+    val sql = new StringBuilder(s"INSERT INTO $table (")
+    var fieldsLeft = rddSchema.fields.length
+    rddSchema.fields map { field =>
+      sql.append(field.name)
+      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
+      fieldsLeft = fieldsLeft - 1
+    }
+    sql.append("VALUES (")
+    fieldsLeft = rddSchema.fields.length
+    while (fieldsLeft > 0) {
+      sql.append("?")
+      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
+      fieldsLeft = fieldsLeft - 1
+    }
+    sql.toString()
+  }
+
   def setStatementParameters(stmt: PreparedStatement,
       columns: Array[StructField], row: Row, dialect: JdbcDialect): Unit = {
     var col = 0

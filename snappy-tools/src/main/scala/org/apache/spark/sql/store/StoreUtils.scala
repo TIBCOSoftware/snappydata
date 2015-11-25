@@ -7,9 +7,11 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD}
+import org.apache.spark.sql.store.{ExternalStore, MembershipAccumulator, StoreInitRDD}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
 
@@ -109,12 +111,16 @@ object StoreUtils {
   }
 
   def initStore(sqlContext: SQLContext, url: String,
-      connProps: Properties): Map[InternalDistributedMember, BlockManagerId] = {
+      connProps: Properties,
+      poolProps: Map[String, String],
+      hikariCP: Boolean,
+      table: String,
+      schema: Option[StructType]): Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
     // everytime we can get a map from SnappyCluster
     val map = Map[InternalDistributedMember, BlockManagerId]()
     val memberAccumulator = sqlContext.sparkContext.accumulator(map)(MembershipAccumulator)
-    new StoreInitRDD(sqlContext, url, connProps)(memberAccumulator).collect()
+    new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table, schema)(memberAccumulator).collect()
     memberAccumulator.value
   }
 

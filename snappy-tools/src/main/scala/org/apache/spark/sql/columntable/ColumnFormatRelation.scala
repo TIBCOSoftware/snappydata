@@ -72,7 +72,7 @@ class ColumnFormatRelation(
   lazy val connFunctor = ExternalStoreUtils.getConnector(table, driver, dialect, _poolProps,
     connProperties, hikariCP)
 
-  val rowInsertStr = ExternalStoreUtils.getInsertString(table, userSchema)
+  val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
@@ -242,7 +242,7 @@ class ColumnFormatRelation(
     var conn: Connection = null
     try {
       conn = JdbcUtils.createConnection(url, connProperties)
-      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
         val sql = s"CREATE TABLE ${tableName} $schemaExtensions "
@@ -277,7 +277,8 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   // bucket region can insert into the column table
 
   def registerStoreCallbacks(sqlContext: SQLContext,table: String, userSchema: StructType, externalStore: ExternalStore) = {
-    StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase, userSchema, externalStore)
+    StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase, userSchema,
+      externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression)
   }
 
   private def removePool(table: String): () => Iterator[Unit] = () => {
@@ -306,7 +307,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps, poolProps, hikariCP, table, Some(schema))
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
@@ -317,7 +318,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       s"$schemaString $ddlExtension"
     }
 
-    val externalStore = getExternalSource(sqlContext, url, driver, poolProps, connProps, hikariCP)
+    val externalStore = getExternalSource(sqlContext, url, driver, poolProps, connProps, hikariCP, table, schema)
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table, schema, externalStore)
 
     new ColumnFormatRelation(url,
@@ -326,16 +327,18 @@ final class DefaultSource extends ColumnarRelationProvider {
       poolProps, connProps, hikariCP, options, externalStore, blockMap, sqlContext)()
   }
 
-  override def getExternalSource(sqlContext: SQLContext, url: String,
+  def getExternalSource(sqlContext: SQLContext, url: String,
       driver: String,
       poolProps: Map[String, String],
       connProps: Properties,
-      hikariCP: Boolean): ExternalStore = {
+      hikariCP: Boolean,
+      table:String,
+      schema:StructType): ExternalStore = {
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps, poolProps, hikariCP, table, Some(schema))
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)

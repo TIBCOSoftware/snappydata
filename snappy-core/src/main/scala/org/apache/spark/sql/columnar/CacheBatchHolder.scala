@@ -51,7 +51,7 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
       }
     }
 
-    if(!createOneBatch || forceCreate) {
+    if (!createOneBatch || forceCreate) {
       createCachedBatch
     }
   }

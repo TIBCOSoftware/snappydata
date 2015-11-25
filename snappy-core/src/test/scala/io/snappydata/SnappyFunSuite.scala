@@ -3,6 +3,8 @@ package io.snappydata
 import java.io.File
 import java.sql.{SQLException, DriverManager}
 
+import org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdConfOnlyAuthorizerFactory
+
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
@@ -34,6 +36,8 @@ abstract class SnappyFunSuite
   }
   protected def snc: SnappyContext = _snc.getOrElse {
     val ctx = SnappyContext(sc)
+    ctx.setConf("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+    ctx.setConf("spark.sql.inMemoryColumnarStorage.compressed", "true")
     _snc = Some(ctx)
     ctx
   }

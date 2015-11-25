@@ -24,10 +24,11 @@ import org.apache.spark.unsafe.types.UTF8String
  * Created by skumar on 5/11/15.
  */
 class CachedBatchCreator(
-    val sqlContext: SQLContext,
     val tableName: String,
     val schema: StructType,
-    val externalStore: ExternalStore) {
+    val externalStore: ExternalStore,
+    val columnBatchSize: Int,
+    val useCompression: Boolean) {
 
   abstract class JDBCConversion
 
@@ -140,11 +141,6 @@ class CachedBatchCreator(
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
       batchID: UUID, bucketID: Int): Unit = {
 
-    val useCompression = sqlContext.conf.useCompression
-    val columnBatchSize = sqlContext.conf.columnBatchSize
-    //10000//we have to set MAX so that only one cached batch is created per call
-
-
     def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
       val uuid = externalStore.storeCachedBatch(batch, batchID, bucketID, tableName)
@@ -160,17 +156,16 @@ class CachedBatchCreator(
     }.toArray
 
     // adding one variable so that only one cached batch is created
-
     val holder = new CachedBatchHolder(columnBuilders, 0, true, columnBatchSize, schema,
       new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
-    val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
+    //val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
     try {
       while (sc.fetchNext(row)) {
         // extract columns using getXXX etc like for ResultSet and create CachedBatches
-        batches.appendRow((), createInternalRow(row))
+        holder.appendRow((), createInternalRow(row))
       }
-      batches.forceEndOfBatch
+      holder.forceEndOfBatch
     } finally {
       sc.close();
     }

@@ -26,7 +26,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId])
+    val blockMap: Map[InternalDistributedMember, BlockManagerId] = null)
     extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
@@ -92,7 +92,6 @@ final class JDBCSourceAsColumnarStore(_url: String,
     val connection: java.sql.Connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
-
         case ConnectionType.Embedded =>
           val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
           val region = Misc.getRegionForTable(resolvedName, true)
