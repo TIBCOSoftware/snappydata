@@ -116,13 +116,14 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
   private def checkForShuffle(plan :LogicalPlan, snc : SnappyContext, shuffleExpected : Boolean): Unit ={
 
     val qe = new QueryExecution(snc, plan)
+    println(qe.executedPlan)
     val lj = qe.executedPlan collect {
       case ex : Exchange => ex
     }
     if(shuffleExpected){
       if(lj.length == 0) sys.error(s"Shuffle Expected , but was not found")
     }else{
-      lj.foreach(a => a.child.collectFirst { // this means no Exhange should have child as PartitionedPhysicalRDD
+      lj.foreach(a => a.child.collect { // this means no Exhange should have child as PartitionedPhysicalRDD
         case p : PartitionedPhysicalRDD => sys.error(s"Did not expect exchange with partitioned scan with same partitions")
         case p : PhysicalRDD => sys.error(s"Did not expect PhyscialRDD with PartitionedDataSourceScan")
         case _ => // do nothing, may be some other Exchange and not with scan
@@ -130,7 +131,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     }
   }
 
-  test("PR table join with PR Table") {
+  test("Row PR table join with PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
@@ -160,88 +161,33 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val dimensionDf = snc.createDataFrame(dimension2)
     dimensionDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE2")
 
-
-    val excatJoinKeys = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(excatJoinKeys.logicalPlan, snc, false)
-
-    val t1 = System.currentTimeMillis()
-    assert(excatJoinKeys.count() === 500) // Make sure aggregation is working with non-shuffled joins
-    val t2 = System.currentTimeMillis()
-    println("Time taken = "+ (t2-t1))
-    val df2 = excatJoinKeys.head(2)
-    df2.foreach(println)
-
-
-
-    // Reverse the join keys
-    val reverseJoinKeys = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P JOIN PR_TABLE2 R ON P.ORDERREF = R.ORDERREF AND P.ORDERID = R.ORDERID")
-    checkForShuffle(reverseJoinKeys.logicalPlan, snc, false)
-
-    // Partial join keys
-    val partialJoinKeys = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P JOIN PR_TABLE2 R ON P.ORDERREF = R.ORDERREF")
-    checkForShuffle(partialJoinKeys.logicalPlan, snc, true)
-
-    // More join keys than partitioning keys
-    val moreJoinKeys = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P JOIN PR_TABLE2 R ON P.ORDERREF = R.ORDERREF AND P.ORDERID = R.ORDERID AND P.DESCRIPTION = R.DESCRIPTION")
-    checkForShuffle(moreJoinKeys.logicalPlan, snc, true)
-
-
-    val leftSemijoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P LEFT SEMI JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(leftSemijoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(leftSemijoinDF.count() === 500)
-
-    val innerJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P INNER JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(innerJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(innerJoinDF.count() === 500)
-
-    val leftJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P LEFT JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(leftJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(leftJoinDF.count() == 1000)
-
-    val rightJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P RIGHT JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(rightJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(rightJoinDF.count() == 1000)
-
-    val leftOuterJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P LEFT OUTER JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(leftOuterJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(leftOuterJoinDF.count() == 1000)
-
-    val rightOuterJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P RIGHT OUTER JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(rightOuterJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(rightOuterJoinDF.count() == 1000)
-
-    val fullJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P FULL JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(fullJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(fullJoinDF.count() == 1500)
-
-    val fullOuterJoinDF = snc.sql("select P.ORDERREF, P.DESCRIPTION from PR_TABLE1 P FULL OUTER JOIN PR_TABLE2 R ON P.ORDERID = R.ORDERID AND P.ORDERREF = R.ORDERREF")
-    checkForShuffle(fullOuterJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
-    assert(fullOuterJoinDF.count() == 1500)
-
+    partitionToPartitionJoinAssertions(snc, "PR_TABLE1", "PR_TABLE2")
 
   }
 
-  // TODO should be enabled after column table schema works is finished
-/*  test("PR column table join with PR row Table") {
+  test("Column PR table join with PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
     val refDf = snc.createDataFrame(dimension1)
-    snc.sql("DROP TABLE IF EXISTS PR_TABLE1")
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE3")
 
-    snc.sql("CREATE TABLE PR_TABLE1(OrderId INT,description String, OrderRef INT)" +
+    snc.sql("CREATE TABLE PR_TABLE3(OrderId INT, description String, OrderRef INT)" +
         "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId, OrderRef')")
 
 
-    refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE1")
+    refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE3")
 
-    snc.sql("DROP TABLE IF EXISTS PR_TABLE2")
+    val countdf = snc.sql("select * from PR_TABLE3")
+    assert(countdf.count() == 1000)
 
-    snc.sql("CREATE TABLE PR_TABLE2(OrderId INT NOT NULL,description String, OrderRef INT)" +
-        "USING row " +
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE4")
+
+    snc.sql("CREATE TABLE PR_TABLE4(OrderId INT ,description String, OrderRef INT)" +
+        "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId,OrderRef')")
@@ -250,20 +196,257 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
       (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
 
     val dimensionDf = snc.createDataFrame(dimension2)
-    dimensionDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE2")
+    dimensionDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE4")
+    val countdf1 = snc.sql("select * from PR_TABLE4")
+    assert(countdf1.count() == 1000)
+    partitionToPartitionJoinAssertions(snc, "PR_TABLE3", "PR_TABLE4")
+
+  }
+
+  test("Column PR table join with Non user mentioned PR Table") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE5")
+
+    snc.sql("CREATE TABLE PR_TABLE5(OrderId INT, description String, OrderRef INT)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId, OrderRef')")
 
 
-    val countDf = snc.sql("select P.OrderRef, P.description from PR_TABLE1 P JOIN PR_TABLE2 R ON P.OrderId = R.ORDERID AND P.OrderRef = R.ORDERREF")
-    val t1 = System.currentTimeMillis()
-    assert(countDf.count() === 500) // Make sure aggregation is working with local join
-    val t2 = System.currentTimeMillis()
-    println("Time taken = "+ (t2-t1))
-    val df2 = countDf.head(2)
-    df2.foreach(println)
+    refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE5")
 
-    val semijoinDF = snc.sql("select P.OrderRef, P.description from PR_TABLE1 P LEFT SEMI JOIN PR_TABLE2 R ON P.OrderId = R.ORDERID AND P.OrderRef = R.ORDERREF")
-    println(semijoinDF.count())
-    assert(countDf.count() === 500)
+    val countdf = snc.sql("select * from PR_TABLE5")
+    assert(countdf.count() == 1000)
 
-  }*/
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE6")
+
+    snc.sql("CREATE TABLE PR_TABLE6(OrderId INT ,description String, OrderRef INT)" +
+        "USING column options()")
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+    dimensionDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE6")
+    val countdf1 = snc.sql("select * from PR_TABLE6")
+    assert(countdf1.count() == 1000)
+    val excatJoinKeys = snc.sql(s"select P.OrderRef, P.description from " +
+        s"PR_TABLE5 P JOIN PR_TABLE6 R ON P.OrderId = R.OrderId AND P.OrderRef = R.OrderRef")
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+
+  }
+
+ test("Column PR table join with Row PR Table") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE7")
+
+    snc.sql("CREATE TABLE PR_TABLE7(OrderId INT, description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId, OrderRef')")
+
+
+    refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE7")
+
+    val countdf = snc.sql("select * from PR_TABLE7")
+    assert(countdf.count() == 1000)
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE8")
+
+    snc.sql("CREATE TABLE PR_TABLE8(OrderId INT ,description String, OrderRef INT)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId, OrderRef')")
+
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+    dimensionDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE8")
+    val countdf1 = snc.sql("select * from PR_TABLE8")
+    assert(countdf1.count() == 1000)
+    val excatJoinKeys = snc.sql(s"select P.ORDERREF, P.DESCRIPTION from " +
+        s"PR_TABLE7 P JOIN PR_TABLE8 R ON P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef")
+   checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+    assert(excatJoinKeys.count() === 500)
+
+  }
+
+  test("Row PR table join with PR Table with unequal partitions") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE9")
+
+    snc.sql("CREATE TABLE PR_TABLE9(OrderId INT NOT NULL,description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId, OrderRef')")
+
+
+    refDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE9")
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE10")
+
+    snc.sql("CREATE TABLE PR_TABLE10(OrderId INT NOT NULL,description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef'," +
+        "BUCKETS '213')")
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+    dimensionDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE10")
+    val excatJoinKeys = snc.sql(s"select P.ORDERREF, P.DESCRIPTION from " +
+        s"PR_TABLE9 P JOIN PR_TABLE10 R ON P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef")
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+    assert(excatJoinKeys.count() === 500)
+
+  }
+
+  test("More than two table joins") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE11")
+
+    snc.sql("CREATE TABLE PR_TABLE11(OrderId INT NOT NULL,description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId, OrderRef')")
+
+
+    refDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE11")
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE12")
+
+    snc.sql("CREATE TABLE PR_TABLE12(OrderId INT NOT NULL,description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf2 = snc.createDataFrame(dimension2)
+    dimensionDf2.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE12")
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE13")
+
+    snc.sql("CREATE TABLE PR_TABLE13(OrderId INT NOT NULL,description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef'," +
+        "BUCKETS '213')")
+
+    val dimension3 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf3 = snc.createDataFrame(dimension3)
+    dimensionDf3.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE13")
+
+
+    val excatJoinKeys = snc.sql(s"select P.ORDERREF, P.DESCRIPTION from " +
+        s"PR_TABLE11 P ,PR_TABLE12 R, PR_TABLE13 Q where" +
+        s" P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef " +
+        s"AND " +
+        s"R.ORDERID = Q.OrderId AND R.ORDERREF = Q.OrderRef")
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+    assert(excatJoinKeys.count() === 500)
+
+  }
+
+
+  def partitionToPartitionJoinAssertions(snc : SnappyContext, t1 : String , t2 : String): Unit ={
+    val excatJoinKeys = snc.sql(s"select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderId = R.OrderId AND P.OrderRef = R.OrderRef")
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, false)
+    assert(excatJoinKeys.count() === 500) // Make sure aggregation is working with non-shuffled joins
+
+    // Reverse the join keys
+    val reverseJoinKeys = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderRef = R.OrderRef " +
+        "AND P.OrderId = R.OrderId")
+    checkForShuffle(reverseJoinKeys.logicalPlan, snc, false)
+
+    // Partial join keys
+    val partialJoinKeys = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderRef = R.OrderRef")
+    checkForShuffle(partialJoinKeys.logicalPlan, snc, true)
+
+    // More join keys than partitioning keys
+    val moreJoinKeys = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P JOIN $t2 R ON P.OrderRef = R.OrderRef AND " +
+        "P.OrderId = R.OrderId AND P.description = R.description")
+    checkForShuffle(moreJoinKeys.logicalPlan, snc, true)
+
+
+    val leftSemijoinDF = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P LEFT SEMI JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(leftSemijoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(leftSemijoinDF.count() === 500)
+
+    val innerJoinDF = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P INNER JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(innerJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(innerJoinDF.count() === 500)
+
+    val leftJoinDF = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P LEFT JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(leftJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(leftJoinDF.count() == 1000)
+
+    val rightJoinDF = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P RIGHT JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(rightJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(rightJoinDF.count() == 1000)
+
+    val leftOuterJoinDF = snc.sql("select P.OrderRef, P.description " +
+        s"from $t1 P LEFT OUTER JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(leftOuterJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(leftOuterJoinDF.count() == 1000)
+
+    val rightOuterJoinDF = snc.sql("select P.OrderRef, P.description " +
+        s"from $t1 P RIGHT OUTER JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(rightOuterJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(rightOuterJoinDF.count() == 1000)
+
+    val fullJoinDF = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P FULL JOIN $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(fullJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(fullJoinDF.count() == 1500)
+
+    val fullOuterJoinDF = snc.sql("select P.OrderRef, P.description from " +
+        s"$t1 P FULL OUTER JOIN   $t2 R ON P.OrderId = R.OrderId " +
+        "AND P.OrderRef = R.OrderRef")
+    checkForShuffle(fullOuterJoinDF.logicalPlan, snc, false) // We don't expect a shuffle here
+    assert(fullOuterJoinDF.count() == 1500)
+  }
+
 }

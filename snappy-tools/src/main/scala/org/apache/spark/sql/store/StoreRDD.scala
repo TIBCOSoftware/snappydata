@@ -38,41 +38,36 @@ class StoreRDD(@transient sc: SparkContext,
     getConnection: () => Connection,
     schema: StructType,
     preservePartitioning: Boolean,
-    blockMap: Map[InternalDistributedMember, BlockManagerId]) extends RDD[Row](sc, Nil) {
+    blockMap: Map[InternalDistributedMember, BlockManagerId],
+    partitionColumns: Seq[String]
+    ) extends RDD[Row](sc, Nil) {
 
-  val (partitionColumn, totalNumBucket) = getPartitioningInfo(getConnection, tableName)
 
-  private val part: Partitioner = new ColumnPartitioner(totalNumBucket)
-
-  private var serializer: Option[Serializer] = None // TDOD use tungsten or Spark inbuilt . Will be easy once this transform into a SparkPlan
-
-  override val partitioner = Some(part)
-
-  def getPartitioningInfo(getConnection: () => Connection, tableName: String): (Seq[String], Int) = {
+  private val totalNumPartitions = if (partitionColumns.isEmpty) prev.partitions.length
+  else {
     executeWithConnection(getConnection, {
       case conn => val tableSchema = conn.getSchema
         val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-        val (partitionColumn, totalNumBucket) = if (region.isInstanceOf[PartitionedRegion]) {
-          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-          val numPartitions = region.getTotalNumberOfBuckets
-          val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-          val parColumn = resolver.getColumnNames
-
-          (parColumn.toSeq, numPartitions)
-
-        } else {
-          (Seq.empty[String], 0)
-        }
-        (partitionColumn, totalNumBucket)
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+        region.getTotalNumberOfBuckets
     })
   }
 
+  private val part: Partitioner = new ColumnPartitioner(totalNumPartitions)
+
+  private var serializer: Option[Serializer] = None // TDOD use tungsten or Spark inbuilt .
+  // Will be easy once this transform into a SparkPlan
+
+  override val partitioner = Some(part)
+
+
   override def getDependencies: Seq[Dependency[_]] = {
-    if (preservePartitioning && prev.partitions.length != totalNumBucket) {
-      throw new RuntimeException(s"Preserve partitions can be set if partition of input dataset is equal to partitions of table ")
+    if (preservePartitioning && prev.partitions.length != totalNumPartitions) {
+      throw new RuntimeException(s"Preserve partitions" +
+          s" can be set if partition of input " +
+          s"dataset is equal to partitions of table ")
     }
-    if (prev.partitioner == Some(part) || preservePartitioning || partitionColumn.isEmpty) {
+    if (prev.partitioner == Some(part) || preservePartitioning || partitionColumns.isEmpty) {
       logDebug("Adding one-to-one dependency with " + prev)
       List(new OneToOneDependency(prev))
     } else {
@@ -84,11 +79,10 @@ class StoreRDD(@transient sc: SparkContext,
         prev.mapPartitions { iter =>
           val mutablePair = new MutablePair[Int, Row]()
 
-          val ordinals = partitionColumn.map(col => {
-            schema.getFieldIndex(col.toUpperCase).getOrElse {
-              throw new RuntimeException(s"Partition column $col} not found in schema $schema")
+          val ordinals = partitionColumns.map(col => {
+            schema.getFieldIndex(col).getOrElse {
+              throw new RuntimeException(s"Partition column $col not found in schema $schema")
             }
-
           })
           iter.map { row =>
             val parKey = ordinals.map(k => row.get(k))
@@ -141,44 +135,21 @@ class StoreRDD(@transient sc: SparkContext,
       case conn =>
         val tableSchema = conn.getSchema
         val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+        val partitions = new Array[Partition](totalNumPartitions)
 
-        if (region.isInstanceOf[PartitionedRegion]) {
-          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-          val numPartitions = region.getTotalNumberOfBuckets
-
-          val partitions = new Array[Partition](numPartitions)
-
-          for (p <- 0 until numPartitions) {
-            val distMember = region.getBucketPrimary(p)
-            partitions(p) = getPartition(p, distMember)
-          }
-          partitions
-        } else {
-          val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
-          val partitions = new Array[Partition](prev.partitions.length)
-
-          val member = if (localBackend) {
-            Misc.getGemFireCache.getDistributedSystem.getDistributedMember
-          } else {
-            Misc.getGemFireCache.getMembers(region).iterator().next()
-          }
-
-
-          for (p <- 0 until partitions.length) {
-            val distMember = member.asInstanceOf[InternalDistributedMember]
-            partitions(p) = getPartition(p, distMember)
-          }
-          partitions
+        for (p <- 0 until totalNumPartitions) {
+          val distMember = region.getBucketPrimary(p)
+          partitions(p) = getPartition(p, distMember)
         }
-    })
+        partitions
 
+    })
   }
 
   private def getPartition(index: Int, distMember: InternalDistributedMember): Partition = {
 
     val prefNode = blockMap.get(distMember)
-
     val narrowDep = dependencies.head match {
       case s: ShuffleDependency[_, _, _] =>
         None
@@ -189,24 +160,7 @@ class StoreRDD(@transient sc: SparkContext,
   }
 }
 
-/**
- * :: DeveloperApi ::
- * Used by test code to determine dependency..
- */
-object StoreRDD {
 
-  def apply(sc: SparkContext, prev: RDD[Row], schema: StructType, partitionColumn: Option[String], preservePartitioning: Boolean, numPartitions: Int): StoreRDD = {
-    new StoreRDD(
-      sc,
-      prev,
-      "",
-      null,
-      schema,
-      preservePartitioning,
-      null
-    )
-  }
-}
 
 
 

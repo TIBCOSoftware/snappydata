@@ -3,7 +3,7 @@ package org.apache.spark.sql.execution
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.physical.{OrderLessHashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
 
 
@@ -24,10 +24,12 @@ private[sql] case class PartitionedPhysicalRDD(
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override def outputPartitioning: Partitioning = {
     if (numPartition == 1) SinglePartition
-    else OrderLessHashPartitioning(partitionColumns, numPartition)
+    else OrderlessHashPartitioning(partitionColumns, numPartition)
   }
 
-  override def simpleString: String = "Partitioned Scan " + extraInformation + output.mkString("[", ",", "]")
+  override def simpleString: String = "Partitioned Scan " + extraInformation +
+      " , Requested Columns = " + output.mkString("[", ",", "]") +
+      " partitionColumns = " + partitionColumns.mkString("[", ",", "]")
 }
 
 private[sql] object PartitionedPhysicalRDD {
@@ -37,7 +39,8 @@ private[sql] object PartitionedPhysicalRDD {
       partitionColumns: Seq[Attribute],
       rdd: RDD[InternalRow],
       relation: BaseRelation): PartitionedPhysicalRDD = {
-    PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns, relation.toString)
+    PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns,
+      relation.toString)
   }
 }
 

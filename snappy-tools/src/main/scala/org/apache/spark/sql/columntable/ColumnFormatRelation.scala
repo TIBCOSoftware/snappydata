@@ -3,23 +3,30 @@ package org.apache.spark.sql.columntable
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.sources.JdbcExtendedDialect
+import org.apache.spark.sql.store.StoreFunctions._
+import org.apache.spark.sql.store.{StoreRDD, ExternalStore}
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SQLContext, SaveMode}
+import org.apache.spark.sql.{SnappyContext, DataFrame, SQLContext, SaveMode}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
 
 /**
  * Created by rishim on 29/10/15.
- * This class acts as a DataSource provider for column format tables provided Snappy. It uses GemFireXD as actual datastore to physically locate the tables.
+ * This class acts as a DataSource provider for column format tables provided Snappy.
+ * It uses GemFireXD as actual datastore to physically locate the tables.
  * Column tables can be used for storing data in columnar compressed format.
  * A example usage is given below.
  *
@@ -41,15 +48,65 @@ class ColumnFormatRelation(
     override val provider: String,
     override val mode: SaveMode,
     userSchema: StructType,
-    parts: Array[Partition],
-    _poolProps: Map[String, String],
+    ddlExtensionForShadowTable: String,
+    poolProps: Map[String, String],
     override val connProperties: Properties,
     override val hikariCP: Boolean,
     override val origOptions: Map[String, String],
     override val externalStore: ExternalStore,
+    blockMap: Map[InternalDistributedMember, BlockManagerId],
+    partitioningColumns: Seq[String],
     @transient override val sqlContext: SQLContext
     ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema,
-      parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
+        Array[Partition](), poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
+     with PartitionedDataSourceScan {
+
+  override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
+     val rdd = new StoreRDD(sqlContext.sparkContext,
+      df.rdd,
+      table,
+      connector,
+      schema,
+      false,
+      blockMap,
+      partitioningColumns
+      )
+    super.insert(rdd, df, overwrite)
+
+  }
+
+  override def numPartitions: Int = {
+    executeWithConnection(connector, {
+      case conn => val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(table, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+        region.getTotalNumberOfBuckets
+    })
+  }
+
+  override def partitionColumns: Seq[String] = {
+    partitioningColumns
+  }
+
+  override def createExternalTableForCachedBatches(tableName: String,
+      externalStore: ExternalStore): Unit = {
+    require(tableName != null && tableName.length > 0,
+      "createExternalTableForCachedBatches: expected non-empty table name")
+
+    val (primarykey, partitionStrategy) = dialect match {
+      // The driver if not a loner should be an accessor only
+      case d: JdbcExtendedDialect =>
+        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
+            "primary key (uuid, bucketId) ", d.getPartitionByClause("bucketId"))
+      case _ => ("primary key (uuid)", "") //TODO. How to get primary key contraint from each DB
+    }
+    val colocationClause = s"" // To be Filled in by Suranjan
+
+    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
+        "not null, bucketId integer, stats blob, " +
+        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
+        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable", tableName, dropIfExists = false)
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
@@ -60,28 +117,13 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-    //val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+    val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
+    val ddlExtension = StoreUtils.ddlExtensionStringForShadowTable(parameters)
     //val preservepartitions = parameters.remove("preservepartitions")
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    //val dialect = JdbcDialects.get(url)
     //val schemaExtension = s"$schema $ddlExtension"
-
-    val externalStore = getExternalSource(sc, url, driver, poolProps,
-      connProps, hikariCP)
-
-    new ColumnFormatRelation(url,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, Array[Partition](),
-      poolProps, connProps, hikariCP, options, externalStore, sqlContext)
-  }
-
-  override def getExternalSource(sc: SparkContext, url: String,
-      driver: String,
-      poolProps: Map[String, String],
-      connProps: Properties,
-      hikariCP: Boolean): ExternalStore = {
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
@@ -89,6 +131,24 @@ final class DefaultSource extends ColumnarRelationProvider {
         case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
-    new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)
+
+    val externalStore = new JDBCSourceAsColumnarStore(url, driver, poolProps,
+      connProps, hikariCP, blockMap)
+
+    new ColumnFormatRelation(url,
+      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      getClass.getCanonicalName,
+      mode,
+      schema,
+      ddlExtension,
+      poolProps,
+      connProps,
+      hikariCP,
+      options,
+      externalStore,
+      blockMap,
+      partitioningColumn,
+      sqlContext)
   }
+
 }

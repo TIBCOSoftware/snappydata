@@ -93,9 +93,8 @@ class RowFormatRelation(
     val resolvedName = StoreUtils.lookupName(table, tableSchema)
     val region = Misc.getRegionForTable(resolvedName, true)
     if (region.isInstanceOf[PartitionedRegion]) {
-      /*          val par = region.asInstanceOf[PartitionedRegion]
-                par.getTotalNumberOfBuckets*/
-      sqlContext.conf.numShufflePartitions
+      val par = region.asInstanceOf[PartitionedRegion]
+      par.getTotalNumberOfBuckets
     } else {
       1
     }
@@ -114,12 +113,14 @@ class RowFormatRelation(
     }
     partitionColumn
   }
+
 }
 
 final class DefaultSource extends MutableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {
+
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
 
