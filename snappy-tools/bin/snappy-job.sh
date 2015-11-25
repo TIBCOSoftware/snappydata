@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #set -vx 
 
-usage=$'Usage: snappy-job.sh submit --lead <hostname:port> --app-name <appName> --class <jobCass> [--app-jar jarPath]
-       snappy-job.sh status --lead <hostname:port> --job-id jobId'
+usage=$'Usage: snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar jar-path]
+       snappy-job.sh status --lead <hostname:port> --job-id <job-id>'
 
 function showUsage {
   echo "ERROR: incorrect argument specified: " "$@"
