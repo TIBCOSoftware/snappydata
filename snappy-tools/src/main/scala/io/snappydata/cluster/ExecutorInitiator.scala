@@ -105,7 +105,6 @@ object ExecutorInitiator extends Logging {
                     val props = SparkCallbacks.fetchDriverProperty(executorHost,
                       executorConf, port, url)
 
-
                     val driverConf = new SparkConf()
                     // Specify a default directory for executor, if the local directory for executor
                     // is set via the executor conf,
@@ -134,9 +133,12 @@ object ExecutorInitiator extends Logging {
                     env = SparkCallbacks.createExecutorEnv(
                       driverConf, memberId, executorHost, port, cores, false)
 
-                    // SparkEnv sets spark.executor.port so it shouldn't be 0 anymore.
-                    val boundport = env.conf.getInt("spark.executor.port", 0)
-                    assert(boundport != 0)
+                    // SparkEnv will set spark.executor.port if the rpc env is listening for incoming
+                    // connections (e.g., if it's using akka). Otherwise, the executor is running in
+                    // client mode only, and does not accept incoming connections.
+                    val sparkHostPort = env.conf.getOption("spark.executor.port").map { port =>
+                      executorHost + ":" + port
+                    }.orNull
 
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
@@ -144,10 +146,10 @@ object ExecutorInitiator extends Logging {
                     val rpcenv = SparkCallbacks.getRpcEnv(env)
 
                     val executor = new SnappyCoarseGrainedExecutorBackend(
-                      rpcenv, url, memberId, executorHost + ":" + boundport,
+                      rpcenv, url, memberId, sparkHostPort,
                       cores, userClassPath, env)
 
-                    val endPoint = rpcenv.setupEndpoint("Executor", executor)
+                    rpcenv.setupEndpoint("Executor", executor)
                   }
                 case None =>
                 // If driver url is none, already running executor is stopped.
