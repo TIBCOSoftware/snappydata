@@ -70,7 +70,6 @@ class ColumnFormatRelation(
       partitioningColumns
       )
     super.insert(rdd, df, overwrite)
-
   }
 
   override def numPartitions: Int = {
@@ -101,9 +100,11 @@ class ColumnFormatRelation(
     val colocationClause = s"" // To be Filled in by Suranjan
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, bucketId integer, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable", tableName, dropIfExists = false)
+        "not null, bucketId integer not null, numRows integer not null, " +
+        "stats blob, " + userSchema.fields.map(structField => columnPrefix +
+        structField.name + " blob").mkString(" ", ",", " ") +
+        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
+      tableName, dropIfExists = false)
   }
 }
 
