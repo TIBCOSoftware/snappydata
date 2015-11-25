@@ -16,10 +16,10 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{Utils, UUIDRegionKey}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.GemFireXDBaseDialect
+import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDBaseDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
@@ -53,8 +53,14 @@ class JDBCAppendableRelation(
 
   self =>
 
-  private final val columnPrefix = "Col_"
+  protected final val columnPrefix = "Col_"
+
+
+  val driver = DriverRegistry.getDriverClassName(url)
   final val dialect = JdbcDialects.get(url)
+
+  final lazy val connector = JDBCMutableRelation.getConnector(table, driver,
+    dialect, _poolProps, connProperties, hikariCP)
 
   createTable(mode)
   private val bufferLock = new ReentrantReadWriteLock()
@@ -143,6 +149,11 @@ class JDBCAppendableRelation(
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
+    insert(df.rdd, df, overwrite)
+  }
+
+  protected def insert(rdd : RDD[Row], df: DataFrame, overwrite: Boolean) : Unit = {
+
     assert(df.schema.equals(schema))
 
     // We need to truncate the table
@@ -153,10 +164,10 @@ class JDBCAppendableRelation(
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
     val output = df.logicalPlan.output
-    val cached = df.mapPartitions { rowIterator =>
+    val cached = rdd.mapPartitionsWithIndex({case (split, rowIterator) =>
       def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        val uuid = externalStore.storeCachedBatch(batch, table)
+        val uuid = externalStore.storeCachedBatch(batch, table, split)
         accumulated += uuid
       }
 
@@ -175,11 +186,12 @@ class JDBCAppendableRelation(
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
-    }
+    },true)
     // trigger an Action to materialize 'cached' batch
     cached.count()
     appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
   }
+
 
   def appendUUIDBatch(batch: RDD[UUIDRegionKey]) = writeLock {
     uuidList += batch
@@ -212,7 +224,7 @@ class JDBCAppendableRelation(
     createExternalTableForCachedBatches(table, externalStore)
   }
 
-  private def createExternalTableForCachedBatches(tableName: String,
+  protected def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")

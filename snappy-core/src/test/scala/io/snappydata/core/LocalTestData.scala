@@ -44,7 +44,8 @@ object LocalSparkConf {
     val conf = new SparkConf().
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
-    // conf.set("spark.sql.unsafe.enabled", "false")
+    conf.set("snappy.store.optimization", "true")
+    //    .set("spark.sql.unsafe.enabled", "false")
     conf
   }
 }

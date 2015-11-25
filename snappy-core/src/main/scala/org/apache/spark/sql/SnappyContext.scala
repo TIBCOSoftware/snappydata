@@ -12,13 +12,13 @@ import io.snappydata.util.SqlUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.plans.physical._
+import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -44,6 +44,16 @@ class SnappyContext private(sc: SparkContext)
   // initialize GemFireXDDialect so that it gets registered
   GemFireXDDialect.init()
 
+  protected class SQLSession extends super.SQLSession {
+    protected[sql] override lazy val conf: SQLConf = new SQLConf {
+      override def caseSensitiveAnalysis: Boolean = getConf(SQLConf.CASE_SENSITIVE, false)
+    }
+  }
+
+  override protected[sql] def createSession(): SQLSession = {
+    new this.SQLSession()
+  }
+
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
 
@@ -59,7 +69,9 @@ class SnappyContext private(sc: SparkContext)
   @transient
   override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
-  @transient
+
+
+    @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
 
   def saveStream[T: ClassTag](stream: DStream[T],
@@ -501,27 +513,19 @@ class SnappyContext private(sc: SparkContext)
     }
 
   @transient
-  override protected[sql] val planner = new execution.SparkPlanner(this) {
+  override protected[sql] val planner = new SparkPlanner with SnappyStrategies {
     val snappyContext = self
 
-    override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+    // TODO temporary flag till we determine every thing works fine with the optimizations
+    val storeOptimization  = snappyContext.sparkContext.getConf.get(
+        "snappy.store.optimization", "true").toBoolean
 
-    object SnappyStrategies extends Strategy {
-      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-        case s@StratifiedSample(options, child, _) =>
-          s.getExecution(planLater(child)) :: Nil
-        case PhysicalOperation(projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-          pruneFilterProject(
-            projectList,
-            filters,
-            identity[Seq[Expression]], // All filters still need to be evaluated
-            InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
-        case _ => Nil
-      }
-    }
-
+    val storeOptimizedRules : Seq[Strategy] = if(storeOptimization)
+        Seq(StoreDataSourceStrategy, LocalJoinStrategies) else Nil
+    override def strategies: Seq[Strategy] = Seq(SnappyStrategies,
+        StreamStrategy, StoreStrategy) ++
+        storeOptimizedRules ++
+        super.strategies
   }
 
   /**
