@@ -13,7 +13,11 @@ object Constant {
 
   val JDBC_URL_PREFIX = "snappydata://"
 
-  val PROPERTY_PREFIX = "snappydata."
+  val JDBC_EMBEDDED_DRIVER = "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
+
+  val JDBC_CLIENT_DRIVER ="com.pivotal.gemfirexd.jdbc.ClientDriver"
+
+  private[snappydata] val PROPERTY_PREFIX = "snappydata."
 
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 }
@@ -32,4 +36,6 @@ object Property {
   val jobserverEnabled = s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled"
 
   val jobserverConfigFile = s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile"
+
+  val embedded =  "embedded"
 }

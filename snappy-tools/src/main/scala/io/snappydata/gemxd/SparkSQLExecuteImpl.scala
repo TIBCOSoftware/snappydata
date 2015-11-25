@@ -1,19 +1,18 @@
 package io.snappydata.gemxd
 
-import java.io.{IOException, DataInput, DataOutput}
+import java.io.{DataInput, DataOutput}
 
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.internal.{InternalDataSerializer, HeapDataOutputStream}
 import com.gemstone.gemfire.internal.shared.Version
-import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
-import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, GfxdHeapDataOutputStream}
+import com.gemstone.gemfire.internal.{HeapDataOutputStream, InternalDataSerializer}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.iapi.services.sanity.SanityManager
-import com.pivotal.gemfirexd.internal.iapi.types.SQLClob
+import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, GfxdHeapDataOutputStream}
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Row, SnappyContext, DataFrame}
+import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
 
 /**
  * Created by kneeraj on 20/10/15.
@@ -54,17 +53,16 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     }
   }
 
-  override def getColumnNames: Array[String] = {
+  private def getColumnNames: Array[String] = {
     df.schema.fieldNames
   }
 
-  override def getNumColumns: Int = df.schema.size
+  private def getNumColumns: Int = df.schema.size
 
-  override def getColumnTypes: Array[Int] = {
+  private def getColumnTypes: Array[(Int, Int, Int)] = {
     val numCols = getNumColumns
     val schema = df.schema
-    val types = (0 until numCols).map(i => getSQLType(i, schema))
-    types.toArray
+    (0 until numCols).map(i => getSQLType(i, schema)).toArray
   }
 
   override def serializeRows(out: DataOutput) = {
@@ -85,10 +83,38 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     }
     else {
       if (rowsSent == 0) {
+        // Just send the metadata once
+        val x  = df.queryExecution.analyzed.output
+        val tableNames = new Array[String](x.length)
+        val nullability = new Array[Boolean](x.length)
+        var i = 0
+        x.foreach( a => {
+          val fn = a.qualifiedName
+          val dotIdx = fn.indexOf('.')
+          if (dotIdx > 0) {
+            val tname = fn.substring(0, dotIdx)
+            tableNames(i) = tname
+          }
+          else {
+            tableNames(i) = ""
+          }
+          nullability(i) = a.nullable
+          i = i + 1
+        })
         // byte 1 will indicate that the metainfo is being packed too
         hdos.writeByte(0x01);
+        DataSerializer.writeStringArray(tableNames, hdos)
         DataSerializer.writeStringArray(getColumnNames, hdos)
-        DataSerializer.writeIntArray(getColumnTypes, hdos)
+        DataSerializer.writeBooleanArray(nullability, hdos)
+        val colTypes = getColumnTypes
+        colTypes.foreach(x => {
+          val t = x._1
+          InternalDataSerializer.writeSignedVL(t, hdos)
+          if ( t == StoredFormatIds.SQL_DECIMAL_ID) {
+            InternalDataSerializer.writeSignedVL(x._2, hdos) // precision
+            InternalDataSerializer.writeSignedVL(x._3, hdos) // scale
+          }
+        })
       }
       else {
         hdos.clearForReuse()
@@ -157,22 +183,22 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     }
   }
 
-  private def getSQLType(i: Int, schema: StructType): Int = {
+  private def getSQLType(i: Int, schema: StructType): (Int, Int, Int) = {
     val sf = schema(i)
     sf.dataType match {
-      case TimestampType => StoredFormatIds.SQL_TIMESTAMP_ID
-      case BooleanType => StoredFormatIds.SQL_BOOLEAN_ID
-      case DateType => StoredFormatIds.SQL_DATE_ID
-      case LongType => StoredFormatIds.SQL_LONGINT_ID
-      case ShortType => StoredFormatIds.SQL_SMALLINT_ID
-      case ByteType => StoredFormatIds.SQL_TINYINT_ID
-      case IntegerType => StoredFormatIds.SQL_INTEGER_ID
-      case t: DecimalType => StoredFormatIds.SQL_DECIMAL_ID
-      case FloatType => StoredFormatIds.SQL_REAL_ID
-      case DoubleType => StoredFormatIds.SQL_DOUBLE_ID
-      case StringType => StoredFormatIds.SQL_CLOB_ID
+      case TimestampType => (StoredFormatIds.SQL_TIMESTAMP_ID, -1, -1)
+      case BooleanType => (StoredFormatIds.SQL_BOOLEAN_ID, -1, -1)
+      case DateType => (StoredFormatIds.SQL_DATE_ID, -1, -1)
+      case LongType => (StoredFormatIds.SQL_LONGINT_ID, -1, -1)
+      case ShortType => (StoredFormatIds.SQL_SMALLINT_ID, -1, -1)
+      case ByteType => (StoredFormatIds.SQL_TINYINT_ID, -1, -1)
+      case IntegerType => (StoredFormatIds.SQL_INTEGER_ID, -1, -1)
+      case t: DecimalType => (StoredFormatIds.SQL_DECIMAL_ID, t.precision, t.scale)
+      case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
+      case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
+      case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
-      //case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
+      // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
   }
 }

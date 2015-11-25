@@ -1,6 +1,6 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{Connection, DriverManager}
+import java.sql.{SQLException, Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.AvailablePortHelper
@@ -34,26 +34,67 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm0.invoke(this.getClass, "createTablesAndInsertData")
     val conn = getANetConnection(netport1)
     val s = conn.createStatement()
-//    Misc.getMemStore.initExternalCatalog
-//    s.execute("select col1 from ColumnTableQR")
-//    val rs = s.getResultSet
-//    var cnt = 0
-//    while(rs.next()) {
-//      cnt += 1
-//    }
-//    assert(cnt == 5)
-    s.execute("select * from ColumnTableQR")
-    val rs = s.getResultSet
+    s.execute("select col1 from ColumnTableQR")
+    var rs = s.getResultSet
     var cnt = 0
     while(rs.next()) {
       cnt += 1
     }
     assert(cnt == 5)
+
+    var md = rs.getMetaData
+    println("KN: metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    assert(md.getColumnCount == 1)
+    assert(md.getColumnName(1).equals("col1"))
+    assert (md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+
+    // 2nd query which compiles in gemxd too but needs to be routed
+    s.execute("select * from ColumnTableQR")
+    rs = s.getResultSet
+    cnt = 0
+    while(rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 5)
+    md = rs.getMetaData
+    println("KN: 2nd metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    assert(md.getColumnCount == 3)
+    assert(md.getColumnName(1).equals("col1"))
+    assert(md.getColumnName(2).equals("col2"))
+    assert(md.getColumnName(3).equals("col3"))
+    assert (md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+    assert (md.getTableName(2).equalsIgnoreCase("columnTableqr"))
+    assert (md.getTableName(3).equalsIgnoreCase("columnTableqr"))
     val catalog = Misc.getMemStore.getExternalCatalog
-    val tt = catalog.isColumnTable("ColumnTableQR")
-    println("KN: tt for isColumn for ColumnTable = " + tt)
-    QueryRoutingDUnitTest.stopSpark()
-    //QueryRoutingDUnitTest.stopAny()
+    assert(catalog.isColumnTable("ColumnTableQR"))
+
+    // Now give a syntax error which will give parse error on spark sql side as well
+    try {
+      s.execute("select ** from sometable")
+    }
+    catch {
+      case sqe: SQLException => {
+        println("KN: sql state = " + sqe.getSQLState)
+        sqe.printStackTrace()
+        val cause = sqe.getCause
+        if (cause != null) {
+          cause.printStackTrace()
+        }
+        assert("42X01".equalsIgnoreCase(sqe.getSQLState) || "38000".equalsIgnoreCase(sqe.getSQLState))
+      }
+      case e: Exception => throw new RuntimeException("unexpected exception " + e.getMessage, e)
+    }
+    s.execute("select col1, col2 from ColumnTableQR")
+    rs = s.getResultSet
+    cnt = 0
+    while(rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 5)
+    md = rs.getMetaData
+    println("KN: 3rd metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    assert(md.getColumnCount == 2)
+    QueryRoutingDUnitTest.stopSpark
   }
 }
 
