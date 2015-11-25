@@ -148,7 +148,7 @@ class JDBCSourceAsStore(_url: String,
   protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?, ? , ? " + ",?" * numOfColumns + ")")
+        s"insert into $tableName values(?,?,?,?${",?" * numOfColumns})")
       insertStrings.put(tableName, s)
     }
     insertStrings.get(tableName).get

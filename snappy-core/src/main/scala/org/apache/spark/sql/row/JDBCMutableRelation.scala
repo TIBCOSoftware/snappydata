@@ -106,7 +106,8 @@ class JDBCMutableRelation(
         logInfo("Applying DDL : "+ sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table, conn)
+          case d: JdbcExtendedDialect => d.initializeTable(table,
+            sqlContext.conf.caseSensitiveAnalysis, conn)
           case _ => // Do Nothing
         }
       }

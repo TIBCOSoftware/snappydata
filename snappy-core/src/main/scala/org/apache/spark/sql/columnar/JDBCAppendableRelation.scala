@@ -227,9 +227,9 @@ class JDBCAppendableRelation(
     }
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, bucketId integer, numRows integer, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob")
-            .mkString(" ", ",", " ") +
+        "not null, bucketId integer not null, numRows integer not null, " +
+        "stats blob, " + userSchema.fields.map(structField => columnPrefix +
+        structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false
   }
@@ -248,7 +248,8 @@ class JDBCAppendableRelation(
         if (!tableExists) {
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
-            case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
+            case d: JdbcExtendedDialect => d.initializeTable(tableName,
+              sqlContext.conf.caseSensitiveAnalysis, conn)
             case _ => // do nothing
 
           }

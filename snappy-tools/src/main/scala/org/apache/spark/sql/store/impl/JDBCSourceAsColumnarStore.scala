@@ -117,7 +117,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         ps1.execute()
 
         val ps = conn.prepareStatement("select " + requiredColumns.mkString(
-          ", ") + " numRows, stats from " + tableName)
+          ", ") + ", numRows, stats from " + tableName)
         val rs = ps.executeQuery()
         ps1.close()
         new CachedBatchIteratorOnRS(conn, store.connectionType, requiredColumns, ps, rs)

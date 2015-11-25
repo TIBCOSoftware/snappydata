@@ -9,14 +9,14 @@ import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import org.apache.hadoop.hive.conf.HiveConf
-import org.stringtemplate.v4.misc.Misc
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.{JDBCAppendableRelation, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
@@ -603,7 +603,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         }
         JdbcExtendedUtils.executeUpdate(tableStr, conn)
         dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
+          case d: JdbcExtendedDialect => d.initializeTable(tableName,
+            conf.caseSensitiveAnalysis, conn)
         }
     })
   }

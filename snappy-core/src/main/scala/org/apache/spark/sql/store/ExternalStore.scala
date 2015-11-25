@@ -39,17 +39,18 @@ trait ExternalStore extends Serializable {
 
   def connProps: java.util.Properties
 
-  def tryExecute[T: ClassTag](tableName: String, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean = true): T = {
+  def tryExecute[T: ClassTag](tableName: String,
+      f: PartialFunction[(Connection), T],
+      closeOnSuccess: Boolean = true): T = {
     val conn = getConnection(tableName)
-    var isClosed = false;
+    var isClosed = false
     try {
       f(conn)
     } catch {
-      case t: Throwable => {
+      case t: Throwable =>
         conn.close()
         isClosed = true
-        throw t;
-      }
+        throw t
     } finally {
       if (closeOnSuccess && !isClosed) {
         conn.close()

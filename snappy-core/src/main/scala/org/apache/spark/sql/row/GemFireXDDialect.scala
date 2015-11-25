@@ -49,7 +49,8 @@ case object GemFireXDClientDialect extends GemFireXDBaseDialect {
   // register the dialect
   JdbcDialects.registerDialect(GemFireXDClientDialect)
 
-  def canHandle(url: String): Boolean = (url.startsWith("jdbc:gemfirexd://") || url.startsWith("jdbc:snappydata://"))
+  def canHandle(url: String): Boolean = url.startsWith("jdbc:gemfirexd://") ||
+      url.startsWith("jdbc:snappydata://")
 
   override def getPartitionByClause(col : String): String = s"partition by column($col)"
 }
@@ -134,16 +135,24 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     }
   }
 
-  override def initializeTable(tableName: String, conn: Connection): Unit = {
-      val stmt = conn.createStatement()
-      val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='${tableName.toUpperCase}'")
-      val result = if (rs.next()) rs.getString(1) else null
-      if(result.equalsIgnoreCase("PARTITION") || result.equalsIgnoreCase("PERSISTENT_PARTITION")){
-        JdbcExtendedUtils.executeUpdate(
-          s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
-      }
-      rs.close()
-      stmt.close()
+  override def initializeTable(tableName: String, caseSensitive: Boolean,
+      conn: Connection): Unit = {
+    val stmt = conn.createStatement()
+    // TODO: need to use quoted names with caseSensitive=true in create & query
+    /*
+    val table = if (caseSensitive) tableName
+    else Utils.normalizeIdUpperCase(tableName)
+    */
+    val table = Utils.normalizeIdUpperCase(tableName)
+    val rs = stmt.executeQuery("select datapolicy from sys.systables where " +
+        s"tablename='$table'")
+    val result = if (rs.next()) rs.getString(1) else null
+    rs.close()
+    stmt.close()
+    if ("PARTITION".equalsIgnoreCase(result) ||
+        "PERSISTENT_PARTITION".equalsIgnoreCase(result)) {
+      JdbcExtendedUtils.executeUpdate(
+        s"call sys.CREATE_ALL_BUCKETS('$table')", conn)
+    }
   }
-
 }

@@ -134,6 +134,7 @@ private[sql] object ExternalStoreUtils {
         // The driver if not a loner should be an accesor only
         case d: JdbcExtendedDialect =>
           connProperties.putAll(d.extraCreateTableProperties(isLoner))
+        case _ =>
       }
     }
     JdbcUtils.createConnection(url, connProperties)
