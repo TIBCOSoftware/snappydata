@@ -13,6 +13,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.plans.physical._
+import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
@@ -42,6 +44,16 @@ class SnappyContext private(sc: SparkContext)
   // initialize GemFireXDDialect so that it gets registered
   GemFireXDDialect.init()
 
+  protected class SQLSession extends super.SQLSession {
+    protected[sql] override lazy val conf: SQLConf = new SQLConf {
+      override def caseSensitiveAnalysis: Boolean = getConf(SQLConf.CASE_SENSITIVE, false)
+    }
+  }
+
+  override protected[sql] def createSession(): SQLSession = {
+    new this.SQLSession()
+  }
+
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
 
@@ -57,7 +69,9 @@ class SnappyContext private(sc: SparkContext)
   @transient
   override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
-  @transient
+
+
+    @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
 
   def saveStream[T: ClassTag](stream: DStream[T],
