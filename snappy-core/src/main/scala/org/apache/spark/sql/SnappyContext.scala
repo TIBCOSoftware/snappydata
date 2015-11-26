@@ -477,7 +477,7 @@ class SnappyContext private(sc: SparkContext)
     try {
       val (url, _, poolProps, connProps, hikariCP) =
         ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
-      conn = JdbcUtils.createConnection(url, connProps)
+      conn = ExternalStoreUtils.getConnection(url, connProps)
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
