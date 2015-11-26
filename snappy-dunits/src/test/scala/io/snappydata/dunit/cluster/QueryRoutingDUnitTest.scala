@@ -1,9 +1,11 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{SQLException, Connection, DriverManager}
+import java.sql.{Connection, DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import dunit.AvailablePortHelper
+import io.snappydata.gemxd.SparkSQLExecuteImpl
 
 import org.apache.spark.sql.SaveMode
 
@@ -19,11 +21,11 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def testDummy(): Unit = {
+  def _testDummy(): Unit = {
 
   }
 
-  def _testQueryRouting(): Unit = {
+  def testQueryRouting(): Unit = {
     // Lead is started before other servers are started.
     QueryRoutingDUnitTest.startSnappyServer(locatorPort, props)
     val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
@@ -94,9 +96,21 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     md = rs.getMetaData
     println("KN: 3rd metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 2)
+
+    vm0.invoke(this.getClass, "setResultStreamBatchSize")
+    s.execute("select col1 from ColumnTableQR order by col1")
+    rs = s.getResultSet
+    cnt = 0
+    while(rs.next()) {
+//      println("----" + rs.getInt(1))
+      cnt += 1
+    }
+    assert(cnt == 5)
     QueryRoutingDUnitTest.stopSpark
   }
 }
+
+
 
 case class Data(col1: Int, col2: Int, col3: Int)
 
@@ -122,6 +136,13 @@ object QueryRoutingDUnitTest extends ClusterManagerTestUtils {
     val dataDF = snc.createDataFrame(rdd)
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+  }
+
+  def setResultStreamBatchSize(): Unit = {
+    // reducing max no of rows in one batch
+    SparkSQLExecuteImpl.NUM_ROWS_IN_BATCH = 3
+    // reducing batch DML size to force flush
+    GemFireXDUtils.DML_MAX_CHUNK_SIZE = 50
   }
 }
 
