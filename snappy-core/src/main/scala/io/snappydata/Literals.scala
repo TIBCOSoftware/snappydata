@@ -3,8 +3,9 @@ package io.snappydata
 /**
  * Created by soubhikc on 11/11/15.
  *
- * Constant names sugged per naming convention
+ * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
+ *
  * we decided to use upper case with underscore word separator.
  */
 object Constant {
@@ -19,7 +20,9 @@ object Constant {
 
   private[snappydata] val PROPERTY_PREFIX = "snappydata."
 
-  val JOBSERVER_PROPERTY_PREFIX = "jobserver."
+  private[snappydata] val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+
+  private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 }
 
 /**
@@ -29,9 +32,9 @@ object Constant {
  */
 object Property {
 
-  val locators = s"${Constant.PROPERTY_PREFIX}locators"
+  val locators = s"${Constant.STORE_PROPERTY_PREFIX}locators"
 
-  val mcastPort = s"${Constant.PROPERTY_PREFIX}mcast-port"
+  val mcastPort = s"${Constant.STORE_PROPERTY_PREFIX}mcast-port"
 
   val jobserverEnabled = s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled"
 

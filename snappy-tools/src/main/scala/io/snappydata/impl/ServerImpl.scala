@@ -13,21 +13,6 @@ import io.snappydata.{Constant, Property, Utils, ProtocolOverrides, Server}
   */
 class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
-  // Add SnappyData specific properties to gemxd so that it doesn't yells.
-  Utils.getFields(Property).
-      foreach({
-        case (_, propValue) if propValue.isInstanceOf[String] =>
-          val propName = propValue.asInstanceOf[String]
-          if (propName.startsWith(Constant.PROPERTY_PREFIX)) {
-            val property = propName.substring(Constant.PROPERTY_PREFIX.length)
-            if (!GfxdConstants.validExtraGFXDProperties.
-                contains(property)) {
-              GfxdConstants.validExtraGFXDProperties.add(property)
-            }
-          }
-        case _ =>
-      })
-
   @throws(classOf[SQLException])
   override def start(bootProperties: Properties): Unit = start(bootProperties, false)
 

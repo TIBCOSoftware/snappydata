@@ -53,6 +53,19 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
+  private[snappydata] val snappyProperties = Utils.getFields(Property).
+      map({
+        case (_, propValue) if propValue.isInstanceOf[String] =>
+          val propName = propValue.asInstanceOf[String]
+          if (propName.startsWith(Constant.PROPERTY_PREFIX)) {
+            propName.substring(Constant.PROPERTY_PREFIX.length)
+          } else {
+            propName
+          }
+        case (propField, _) => s"Property Field=${propField} non string"
+      }).toSet
+
+
   var _directApiInvoked: Boolean = false
 
   def directApiInvoked: Boolean = _directApiInvoked
@@ -74,11 +87,18 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       setAppName("leaderLauncher").
       set(Property.jobserverEnabled, "true")
 
+    // inspect user input and add appropriate prefixes
+    // if property doesn't contain '.'
+    // if input prop key is found in io.snappydata.Property,
+    // its prefixed with 'snappydata.' otherwise its assumed
+    // to be snappydata.store.
     bootProperties.asScala.foreach({ case (k, v) =>
-      val key = if (!k.startsWith(Constant.PROPERTY_PREFIX) &&
-        !k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX)
-      ) {
-        Constant.PROPERTY_PREFIX + k
+      val key = if (k.indexOf(".") < 0) {
+        if (snappyProperties(k)) {
+          Constant.PROPERTY_PREFIX + k
+        } else {
+          Constant.STORE_PROPERTY_PREFIX + k
+        }
       }
       else {
         k
@@ -104,9 +124,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     val storeProps = new Properties()
     
     val filteredProp = confProps.filter {
-      case (k, _) => k.startsWith(Constant.PROPERTY_PREFIX)
+      case (k, _) => k.startsWith(Constant.STORE_PROPERTY_PREFIX)
     }.map {
-      case (k, v) => (k.replaceFirst(Constant.PROPERTY_PREFIX, ""), v)
+      case (k, v) => (k.replaceFirst(Constant.STORE_PROPERTY_PREFIX, ""), v)
     }
     storeProps.putAll(filteredProp.toMap.asJava)
 
@@ -182,7 +202,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       }
     }
 
-    changeOrAppend(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
+    changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+        com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
 
     assert(conf.getOption(Property.locators).isDefined ||
         conf.getOption(Property.mcastPort).isDefined,
@@ -191,10 +212,14 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     import org.apache.spark.sql.collection.Utils
     // skip overriding host-data if loner VM.
     if(sc != null && Utils.isLoner(sc)) {
-      changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "true", overwrite = true)
+      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+          com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+        "true", overwrite = true)
     }
     else {
-      changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", overwrite = true)
+      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+          com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+        "false", overwrite = true)
     }
     changeOrAppend(Property.jobserverEnabled, "false", ignoreIfPresent = true)
 
