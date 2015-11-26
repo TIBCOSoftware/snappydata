@@ -452,22 +452,14 @@ class SnappyContext private(sc: SparkContext)
   def createIndexOnExternalTable(tableName: String, sql: String): Unit = {
     //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
 
-    if (catalog.tableExists(tableName)) {
-      //println(tableName + " exists")
-    } else {
+    if (!catalog.tableExists(tableName)) {
       throw new AnalysisException(
         s"$tableName is not an indexable table")
     }
 
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     //println("qualifiedTable=" + qualifiedTable)
-    val plan = try {
-      catalog.lookupRelation(qualifiedTable, None)
-    } catch {
-      case ae: AnalysisException => throw ae
-    }
-
-    snappy.unwrapSubquery(plan) match {
+    snappy.unwrapSubquery(catalog.lookupRelation(qualifiedTable, None)) match {
       case LogicalRelation(i: IndexableRelation) =>
         i.createIndex(tableName, sql)
       case _ => throw new AnalysisException(

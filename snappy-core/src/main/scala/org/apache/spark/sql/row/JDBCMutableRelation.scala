@@ -284,7 +284,7 @@ class JDBCMutableRelation(
         JdbcExtendedUtils.executeUpdate(sql, conn)
       }
       else {
-        sys.error(s"Table $table do not exists.")
+        throw new AnalysisException(s"Table $table do not exists.")
       }
     } catch {
       case sqle: java.sql.SQLException =>
