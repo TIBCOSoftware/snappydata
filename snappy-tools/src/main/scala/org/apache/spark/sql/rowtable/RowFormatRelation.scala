@@ -132,13 +132,6 @@ final class DefaultSource extends MutableRelationProvider {
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 
-    dialect match {
-      // The driver if not a loner should be an accesor only
-      case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraDriverProperties(Utils.isLoner(sc)))
-      case _ =>
-    }
-
     new RowFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
