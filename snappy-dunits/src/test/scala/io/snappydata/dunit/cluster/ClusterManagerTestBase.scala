@@ -134,7 +134,12 @@ class ClusterManagerTestUtils {
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
     props.asScala.foreach({ case (k, v) =>
-      conf.set(io.snappydata.Constant.PROPERTY_PREFIX + k, v)
+      if (k.indexOf(".") < 0) {
+        conf.set(io.snappydata.Constant.STORE_PROPERTY_PREFIX + k, v)
+      }
+      else {
+        conf.set(k, v)
+      }
     })
     if (addUrlForHiveMetaStore) {
       val snappydataurl = "jdbc:snappydata:;locators=localhost[" +
