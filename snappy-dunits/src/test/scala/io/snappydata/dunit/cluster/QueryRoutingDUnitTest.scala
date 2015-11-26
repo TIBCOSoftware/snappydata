@@ -21,11 +21,11 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def _testDummy(): Unit = {
+  def testDummy(): Unit = {
 
   }
 
-  def testQueryRouting(): Unit = {
+  def _testQueryRouting(): Unit = {
     // Lead is started before other servers are started.
     QueryRoutingDUnitTest.startSnappyServer(locatorPort, props)
     val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
@@ -141,7 +141,7 @@ object QueryRoutingDUnitTest extends ClusterManagerTestUtils {
   def setResultStreamBatchSize(): Unit = {
     // reducing max no of rows in one batch
     SparkSQLExecuteImpl.NUM_ROWS_IN_BATCH = 3
-    // reducing batch DML size to force flush
+    // reducing batch DML size to force flush on smaller batch size
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = 50
   }
 }
