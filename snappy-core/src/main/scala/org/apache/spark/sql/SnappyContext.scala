@@ -514,7 +514,7 @@ class SnappyContext private(sc: SparkContext)
       "snappy.store.optimization", "true").toBoolean
 
     val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
-      Seq(StoreDataSourceStrategy /*, LocalJoinStrategies*/)
+      Seq(StoreDataSourceStrategy , LocalJoinStrategies)
     else Nil
 
     override def strategies: Seq[Strategy] =

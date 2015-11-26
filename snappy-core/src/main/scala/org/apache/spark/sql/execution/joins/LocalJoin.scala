@@ -1,5 +1,7 @@
 package org.apache.spark.sql.execution.joins
 
+import java.io.{ObjectOutputStream, IOException}
+
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -7,7 +9,8 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{BinaryNode, SparkPlan}
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.util.Utils
+import org.apache.spark.{OneToOneDependency, Partition, SparkContext, TaskContext}
 
 
 /**
@@ -70,7 +73,7 @@ private[spark] class NarrowPartitionsRDD(
     var buildRDD: RDD[InternalRow],
     var streamRDD: RDD[InternalRow],
     preservesPartitioning: Boolean = false)
-    extends RDD[InternalRow](sc, Nil) {
+    extends RDD[InternalRow](sc, Seq(new OneToOneDependency(streamRDD))) {
 
   override def compute(s: Partition, context: TaskContext): Iterator[InternalRow] = {
     val partitions = s.asInstanceOf[NarrowPartitionsPartition]
@@ -88,7 +91,7 @@ private[spark] class NarrowPartitionsRDD(
       val locs = if (!exactMatchLocations.isEmpty) exactMatchLocations else
                          (streamLocs ++ buildLocs).distinct
 
-      new NarrowPartitionsPartition(part, streamRDD.partitions(i) , locs)
+      new NarrowPartitionsPartition(part.index, buildRDD, i, streamRDD , locs)
     }
   }
 
@@ -96,14 +99,32 @@ private[spark] class NarrowPartitionsRDD(
     s.asInstanceOf[NarrowPartitionsPartition].preferredLocations
   }
 
+  override def clearDependencies() {
+    super.clearDependencies()
+    buildRDD = null
+    streamRDD = null
+    f = null
+  }
+
 }
 
 private[spark] class NarrowPartitionsPartition(
-    var buildRDDPartition: Partition,
-    var streamRDDPartition: Partition,
+    buildIdx : Int,
+    @transient var buildRDD: RDD[InternalRow],
+    streamIdx: Int,
+    @transient var streamRDD: RDD[InternalRow],
     @transient val preferredLocations: Seq[String])
     extends Partition {
-  override val index: Int = streamRDDPartition.index
-  val buildPartition = buildRDDPartition
-  val streamPartition = streamRDDPartition
+  override val index: Int = streamIdx
+  var buildPartition = buildRDD.partitions(buildIdx)
+  var streamPartition = streamRDD.partitions(streamIdx)
+
+  @throws(classOf[IOException])
+  private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
+    // Update the reference to parent split at the time of task serialization
+    buildPartition = buildRDD.partitions(buildIdx)
+    streamPartition = streamRDD.partitions(streamIdx)
+
+    oos.defaultWriteObject()
+  }
 }

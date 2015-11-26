@@ -60,16 +60,20 @@ class ColumnFormatRelation(
      with PartitionedDataSourceScan {
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
-     val rdd = new StoreRDD(sqlContext.sparkContext,
-      df.rdd,
-      table,
-      connector,
-      schema,
-      false,
-      blockMap,
-      partitioningColumns
+    if (partitioningColumns.isEmpty) {
+      val rdd = new StoreRDD(sqlContext.sparkContext,
+        df.rdd,
+        table,
+        connector,
+        schema,
+        false,
+        blockMap,
+        partitioningColumns
       )
-    super.insert(rdd, df, overwrite)
+      super.insert(rdd, df, overwrite)
+    } else {
+      super.insert(df, overwrite)
+    }
   }
 
   override def numPartitions: Int = {

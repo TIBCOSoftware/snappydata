@@ -387,4 +387,21 @@ class ColumnTableTest
     assert(count === 1000)
   }
 
+  test("Test Non parttitioned tables") {
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE10")
+
+    snc.sql("CREATE TABLE row_table2(OrderId INT ,ItemId INT)" +
+        "USING column options()")
+
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMN_TEST_TABLE10")
+
+    val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
+    assert(count === 1000)
+  }
+
 }
