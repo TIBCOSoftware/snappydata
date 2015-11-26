@@ -1,5 +1,9 @@
 package org.apache.spark.sql
 
+import java.sql.Connection
+
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -443,8 +447,57 @@ class SnappyContext private(sc: SparkContext)
   }
 
   /**
-    * Drop a temporary table.
-    */
+   * Create Index on an external table (created by a call to createExternalTable).
+   */
+  def createIndexOnExternalTable(tableName: String, sql: String): Unit = {
+    //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
+
+    if (!catalog.tableExists(tableName)) {
+      throw new AnalysisException(
+        s"$tableName is not an indexable table")
+    }
+
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    //println("qualifiedTable=" + qualifiedTable)
+    snappy.unwrapSubquery(catalog.lookupRelation(qualifiedTable, None)) match {
+      case LogicalRelation(i: IndexableRelation) =>
+        i.createIndex(tableName, sql)
+      case _ => throw new AnalysisException(
+        s"$tableName is not an indexable table")
+    }
+  }
+
+  /**
+   * Create Index on an external table (created by a call to createExternalTable).
+   */
+  def dropIndexOnExternalTable(sql: String): Unit = {
+    //println("drop-index" + " sql=" + sql)
+
+    var conn: Connection = null
+    try {
+      val (url, _, poolProps, connProps, hikariCP) =
+        ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
+      conn = JdbcUtils.createConnection(url, connProps)
+      JdbcExtendedUtils.executeUpdate(sql, conn)
+    } catch {
+      case sqle: java.sql.SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+            "Ensure that the 'driver' option is set appropriately and " +
+            "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      if (conn != null) {
+        conn.close()
+      }
+    }
+  }
+
+  /**
+   * Drop a temporary table.
+   */
   def dropTempTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {

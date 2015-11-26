@@ -29,7 +29,7 @@ import org.apache.spark.{Partition, SparkContext, TaskContext}
 import io.snappydata.{Constant, Utils}
 
 import scala.util.Random
-
+import com.pivotal.gemfirexd.Attribute
 /**
  * Columnar Store implementation for GemFireXD.
  *
@@ -211,6 +211,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
   private def getBucketToServerMapping(resolvedName: String): Array[Array[(String, String)]] = {
     //todo - replicated regions needs to be handled or not required????
     val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
+    val queryRouteSuffix= "/" + Attribute.ROUTE_QUERY + "=false"
     val region: PartitionedRegion = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
     val bidToAdvisorMap = region.getRegionAdvisor.getAllBucketAdvisorsHostedAndProxies
     val distributedMembersToNetServerMap = GemFireXDUtils.getGfxdAdvisor.
@@ -231,7 +232,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
                   hostNameWithAddress(1)
                 else hostNameWithAddress (0)
                 val clientPort = netServer.substring(netServer.indexOf("[") + 1, netServer.indexOf("]"))
-                Tuple2(bOwner.getIpAddress.getHostAddress, s"$urlPrefix$host:$clientPort")
+                Tuple2(bOwner.getIpAddress.getHostAddress, s"$urlPrefix$host:$clientPort$queryRouteSuffix")
               }
           }
           serverPerBucket

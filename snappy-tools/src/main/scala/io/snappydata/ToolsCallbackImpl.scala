@@ -46,9 +46,12 @@ object ToolsCallbackImpl extends ToolsCallback {
     val locatorUrl = getAllLocators(sc).filter(x => x._2 != null && !x._2.isEmpty)
       .map(locator => {
         val url = locator._2
-        val host = url.substring(0, url.indexOf("/"))
-        val port = url.substring(url.indexOf("["))
-        host + port
+        val hostHostNameEndIndex = url.indexOf("/")
+        val hostAddressEndIndex = url.indexOf("[")
+        val hostName = url.substring(0, hostHostNameEndIndex).trim
+        val hostAddress = url.substring(hostHostNameEndIndex + 1, hostAddressEndIndex).trim
+        val port = url.substring(hostAddressEndIndex)
+        (if (hostName.length == 0) hostName else hostAddress ) + port
       }).mkString(",")
 
     "jdbc:" + Constant.JDBC_URL_PREFIX + (if (locatorUrl.contains(",")) {
