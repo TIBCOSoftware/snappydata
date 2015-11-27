@@ -1,9 +1,10 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{DriverManager, Connection}
+import java.sql.{Connection, DriverManager}
+
 import com.pivotal.gemfirexd.internal.engine.Misc
-import dunit.AvailablePortHelper
-import org.apache.commons.lang.exception.ExceptionUtils
+import dunit.{SerializableRunnable, AvailablePortHelper}
+
 import org.apache.spark.sql.SaveMode
 
 /**
@@ -19,16 +20,11 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testDDLRouting(): Unit = {
-    // Lead is started before other servers are started.
-    DDLRoutingDUnitTest.startSnappyServer(locatorPort, props)
-    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
-    Misc.getMemStore.initExternalCatalog
     val tableName: String = "ColumnTableQR"
 
-    val netport1 = AvailablePortHelper.getRandomAvailableTCPPort
-    DDLRoutingDUnitTest.startNetServer(netport1)
-    val conn = getANetConnection(netport1)
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
 
     createTableXD(conn, tableName)
     tableMetadataXD(tableName)
@@ -39,9 +35,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     // Will be enabled after introduction of shadow table
     //insertDataXD(conn, tableName)
-    vm0.invoke(this.getClass, "insertData", tableName)
-
-    vm0.invoke(this.getClass, "queryData", tableName)
+    insertData(tableName)
+    queryData(tableName)
   }
 
   def createTableXD(conn : Connection, tableName : String): Unit = {
@@ -65,9 +60,12 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 
   def tableMetadataXD(tableName: String): Unit = {
-    val catalog = Misc.getMemStore.getExternalCatalog
-    val tt = catalog.isColumnTable("ColumnTableQR")
-    assert(tt)
+    vm0.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val catalog = Misc.getMemStore.getExternalCatalog
+        assert(catalog.isColumnTable("ColumnTableQR"))
+      }
+    })
   }
 
   def insertDataXD(conn: Connection, tableName: String): Unit = {
@@ -79,13 +77,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val s = conn.createStatement()
     s.execute("drop table " + tableName)
   }
-}
 
-case class insertData(col1: Int, col2: Int, col3: Int)
-/**
- * Since this object derives from ClusterManagerTestUtils
- */
-object DDLRoutingDUnitTest extends ClusterManagerTestUtils {
   def insertData(tableName: String): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
     val data = Seq(Seq(10, 200, 3), Seq(70, 800, 9), Seq(90, 200, 3), Seq(40, 200, 3), Seq(50, 600, 7))
@@ -109,3 +101,4 @@ object DDLRoutingDUnitTest extends ClusterManagerTestUtils {
   }
 }
 
+case class insertData(col1: Int, col2: Int, col3: Int)

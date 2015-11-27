@@ -146,7 +146,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     public String toString() {
-      return "HiveMetaStoreQuery:query type = " + this.qType + " tname = " + this.tableName + " db = " + this.dbName;
+      return "HiveMetaStoreQuery:query type = " + this.qType + " tname = " +
+          this.tableName + " db = " + this.dbName;
     }
 
     private void initHMC() {

@@ -2,11 +2,9 @@ package org.apache.spark.sql.columnar
 
 import java.util.Properties
 
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import scala.collection.mutable
 
-import io.snappydata.{Constant, Property}
+import io.snappydata.Constant
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -14,6 +12,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtil
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql._
 
 /**
  * Utility methods used by external storage layers.
@@ -79,33 +78,33 @@ private[sql] object ExternalStoreUtils {
   }
 
   def defaultStoreURL(sc: SparkContext): String = {
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
-      // Already connected to SnappyData in embedded mode.
-      Constant.DEFAULT_EMBEDDED_URL + "route-query=false"
-    } else {
-      val isLoner = Utils.isLoner(sc)
-      sc.conf.getOption(Property.locators).map(
-        Constant.DEFAULT_EMBEDDED_URL + "locators=" + _).getOrElse {
-        sc.conf.getOption(Property.mcastPort).map(
-          Constant.DEFAULT_EMBEDDED_URL + "mcast-port=" + _).getOrElse {
-          if (isLoner) {
-            Constant.DEFAULT_EMBEDDED_URL + "mcast-port=0"
-          } else {
-            sys.error("Option 'url' not specified")
-          }
-        }
-      } + (if (isLoner) "" else ";host-data=false") + (";route-query=false")
+    val modeUrl = SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) =>
+        // Already connected to SnappyData in embedded mode.
+        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case SnappyShellMode(_, _) =>
+        ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
+      case ExternalEmbeddedMode(_, url) =>
+        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
+      case LonerMode(_, url) => Constant.DEFAULT_EMBEDDED_URL +
+          (if (url == null) ";mcast-port=0" else ";" + url)
+      case ExternalClusterMode(_, _) =>
+        throw new AnalysisException("Option 'url' not specified")
+    }
+    modeUrl + ";route-query=false"
+  }
+
+  def isExternalShellMode(sparkContext: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case SnappyShellMode(_, _) => true
+      case _ => false
     }
   }
 
   def validateAndGetAllProps(sc : SparkContext,
       parameters: mutable.Map[String, String]) = {
 
-    val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
-      ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
-    }
-    else
-      parameters.remove("url").getOrElse(defaultStoreURL(sc))
+    val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
     val dialect = JdbcDialects.get(url)
     val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
@@ -159,14 +158,6 @@ private[sql] object ExternalStoreUtils {
       case _ => ConnectionType.Unknown
     }
   }
-
-  def isExternalShellMode (sparkContext: SparkContext): Boolean ={
-    sparkContext.getConf.getOption(Property.locators).exists { s => !s.isEmpty &&
-      !sparkContext.getConf.getOption(Property.mcastPort).exists {_.toInt > 0 }
-    } &&
-      !sparkContext.getConf.getOption(Property.embedded).exists(_.toBoolean)
-  }
-
 }
 
 object ConnectionType extends Enumeration {

@@ -9,6 +9,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.SparkContext
+
 /**
   * Created by soubhikc on 11/11/15.
   */
@@ -56,7 +57,7 @@ object ToolsCallbackImpl extends ToolsCallback {
 
     "jdbc:" + Constant.JDBC_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
-          ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
-    } else locatorUrl)
+          ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1) + '/'
+    } else locatorUrl + '/')
   }
 }

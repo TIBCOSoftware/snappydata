@@ -12,7 +12,6 @@ import com.gemstone.gemfire.distributed.internal.locks.{DLockService, Distribute
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.NetworkInterface
-import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
@@ -227,7 +226,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     conf
   }
 
-  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit = this.notificationCallback = f
+  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit =
+    this.notificationCallback = f
 
   private[snappydata] def scheduleWaitForPrimaryDeparture() = {
 
@@ -238,7 +238,10 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           primaryLeaderLock.lockInterruptibly()
           latch.countDown()
           logInfo("Notifying status ...")
-          notificationCallback()
+          val callback = notificationCallback
+          if (callback != null) {
+            callback()
+          }
         } catch {
           case ie: InterruptedException =>
             logInfo("Thread interrupted. Shutting down primary lead node lock waiter.")
@@ -357,5 +360,4 @@ object LeadImpl {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     lead.internalStop(shutdownCredentials)
   }
-
 }

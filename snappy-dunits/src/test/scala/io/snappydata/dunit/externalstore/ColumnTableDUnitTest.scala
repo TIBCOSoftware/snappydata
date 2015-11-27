@@ -1,7 +1,6 @@
 package io.snappydata.dunit.externalstore
 
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
-import io.snappydata.dunit.cluster.ClusterManagerTestUtils
 
 import org.apache.spark.sql.SaveMode
 
@@ -11,36 +10,13 @@ import org.apache.spark.sql.SaveMode
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
-    // Lead is started before other servers are started
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-
-    vm0.invoke(this.getClass, "startSparkJob")
-    vm0.invoke(this.getClass, "stopSpark")
+    startSparkJob()
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob2")
-    vm0.invoke(this.getClass, "stopSpark")
+    startSparkJob2()
   }
-}
 
-/**
- * Since this object derives from ClusterManagerTestUtils
- */
-object ColumnTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]

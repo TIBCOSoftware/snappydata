@@ -1,7 +1,6 @@
 package io.snappydata
 
 import java.io.File
-import java.sql.{SQLException, DriverManager}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -24,19 +23,12 @@ abstract class SnappyFunSuite
   protected var testName: String = _
   protected var dirList = ArrayBuffer[String]()
 
-  private var _sc: Option[SparkContext] = None
-  private var _snc: Option[SnappyContext] = None
-
-  protected def sc: SparkContext = _sc.getOrElse {
-    val ctx = new SparkContext(newSparkConf())
-    _sc = Some(ctx)
-    ctx
+  protected def sc: SparkContext = {
+    val ctx = SnappyContext.globalSparkContext
+    if (ctx != null) ctx
+    else new SparkContext(newSparkConf())
   }
-  protected def snc: SnappyContext = _snc.getOrElse {
-    val ctx = SnappyContext(sc)
-    _snc = Some(ctx)
-    ctx
-  }
+  protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 
   /**
    * Copied from SparkFunSuite.
@@ -68,7 +60,8 @@ abstract class SnappyFunSuite
 
   private def baseCleanup(): Unit = {
     try {
-      if (_sc.isDefined) {
+      val sc = this.sc
+      if (sc != null && !sc.isStopped) {
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
             snc.dropExternalTable(tableName, ifExists = true)
@@ -76,23 +69,11 @@ abstract class SnappyFunSuite
         }
       }
       SnappyContext.stop()
-
-      DriverManager.getConnection("jdbc:snappydata:;shutdown=true")
-    } catch {
-      case sqlEx: SQLException =>
-        if (sqlEx.getSQLState != "08001" && sqlEx.getSQLState != "08006" &&
-            sqlEx.getSQLState != "XJ015") {
-          throw sqlEx
-        }
     } finally {
-      _snc = None
-      _sc = None
-
       if (dirList.nonEmpty) {
         dirList.foreach(FileCleaner.deletePath)
         dirList.clear()
       }
-      // FileCleaner.cleanStoreFiles()
     }
   }
 

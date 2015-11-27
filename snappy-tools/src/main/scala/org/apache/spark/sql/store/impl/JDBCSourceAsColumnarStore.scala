@@ -232,7 +232,8 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
                   hostNameWithAddress(1)
                 else hostNameWithAddress (0)
                 val clientPort = netServer.substring(netServer.indexOf("[") + 1, netServer.indexOf("]"))
-                Tuple2(bOwner.getIpAddress.getHostAddress, s"$urlPrefix$host:$clientPort$queryRouteSuffix")
+                (bOwner.getIpAddress.getHostAddress,
+                    s"$urlPrefix$host:$clientPort$queryRouteSuffix")
               }
           }
           serverPerBucket
@@ -240,5 +241,4 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext, schema: Str
     }
     serverToBucketMapping
   }
-
 }

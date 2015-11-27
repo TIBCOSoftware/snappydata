@@ -10,7 +10,7 @@ package io.snappydata
  */
 object Constant {
 
-  val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
+  val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
 
   val JDBC_URL_PREFIX = "snappydata://"
 
@@ -18,7 +18,7 @@ object Constant {
 
   val JDBC_CLIENT_DRIVER = "com.pivotal.gemfirexd.jdbc.ClientDriver"
 
-  private[snappydata] val PROPERTY_PREFIX = "snappydata."
+  val PROPERTY_PREFIX = "snappydata."
 
   private[snappydata] val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
 

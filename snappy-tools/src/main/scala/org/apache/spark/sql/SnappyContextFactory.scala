@@ -13,7 +13,7 @@ class SnappyContextFactory extends SparkContextFactory {
   type C = SnappyJobContext
 
   def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
-    new SnappyJobContext(SnappyContext.globalContext, SnappyContext())
+    new SnappyJobContext(SnappyContext.globalSparkContext, SnappyContext())
   }
 }
 
