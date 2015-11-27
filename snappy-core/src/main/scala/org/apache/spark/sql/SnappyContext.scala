@@ -852,6 +852,7 @@ object SnappyContext extends Logging {
          sc.conf.set(Constant.PROPERTY_PREFIX + "persist-dd", "false")
          ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc)
        }
+      case _ => // ignore
     }
   }
 
