@@ -52,7 +52,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
       logger.info(s"setting from url ${prop} with ${value}")
       sc.conf.set(prop, value)
-      sc.conf.set(Property.embedded , "true")
+      sc.conf.set(Property.embedded, "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }
@@ -76,7 +76,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
     schedulerImpl.initialize(backend)
 
-    LeadImpl.invokeLeadStart(schedulerImpl.sc.conf)
+    LeadImpl.invokeLeadStart(schedulerImpl.sc)
   }
 
   def stopLead(): Unit = {

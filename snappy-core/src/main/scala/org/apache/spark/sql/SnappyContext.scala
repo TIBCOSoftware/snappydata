@@ -477,7 +477,7 @@ class SnappyContext private(sc: SparkContext)
     try {
       val (url, _, poolProps, connProps, hikariCP) =
         ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
-      conn = JdbcUtils.createConnection(url, connProps)
+      conn = ExternalStoreUtils.getConnection(url, connProps)
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
@@ -852,8 +852,9 @@ object SnappyContext extends Logging {
       ConnectionPool.clear()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isExternalShellMode(sc))
+      if (ExternalStoreUtils.isExternalShellMode(sc)) {
         ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+      }
       sc.stop()
       _globalContext = null
     }
