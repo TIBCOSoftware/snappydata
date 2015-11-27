@@ -75,8 +75,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         if ("42X01" != sqe.getSQLState && "38000" != sqe.getSQLState) {
           throw sqe
         }
-      case e: _ =>
-        throw new RuntimeException("unexpected exception " + e.getMessage, e)
     }
     s.execute("select col1, col2 from ColumnTableQR")
     rs = s.getResultSet
