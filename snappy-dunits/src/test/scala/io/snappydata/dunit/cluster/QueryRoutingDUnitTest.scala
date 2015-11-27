@@ -70,16 +70,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     // Now give a syntax error which will give parse error on spark sql side as well
     try {
       s.execute("select ** from sometable")
-    }
-    catch {
-      case sqe: SQLException => {
-        val cause = sqe.getCause
-        if (cause != null) {
-          cause.printStackTrace()
+    } catch {
+      case sqe: SQLException =>
+        if ("42X01" != sqe.getSQLState && "38000" != sqe.getSQLState) {
+          throw sqe
         }
-        assert("42X01" == sqe.getSQLState || "38000" == sqe.getSQLState)
-      }
-      case e: Exception =>
+      case e: _ =>
         throw new RuntimeException("unexpected exception " + e.getMessage, e)
     }
     s.execute("select col1, col2 from ColumnTableQR")

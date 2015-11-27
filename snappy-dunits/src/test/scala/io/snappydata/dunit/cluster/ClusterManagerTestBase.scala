@@ -113,7 +113,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     GemFireXDUtils.IS_TEST_MODE = false
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
-      Array(getClass.getName, getName)))
+      Array[AnyRef](getClass.getName, getName)))
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     stopNetworkServers()
     bootProps.clear()
