@@ -5,6 +5,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{TestData2, TestData, Data}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import scala.collection.JavaConverters._
 
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
@@ -338,6 +339,29 @@ class ColumnTableTest
         "EVICTION_BY 'LRUMEMSIZE 200')")
 
     Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+  }
+
+  test("Test PR with Colocation") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    //snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE20(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EVICTION_BY 'LRUMEMSIZE 200')")
+
+    //snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE21(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "COLOCATE_WITH 'COLUMN_TEST_TABLE20')")
+
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE20", true).asInstanceOf[PartitionedRegion]
+    assert(region.colocatedByList.size() == 1)
   }
 
   test("Test PR with PERSISTENT") {

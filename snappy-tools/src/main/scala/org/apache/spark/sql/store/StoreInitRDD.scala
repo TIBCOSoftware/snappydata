@@ -22,13 +22,12 @@ import org.apache.spark.{Accumulator, Partition, SparkContext, SparkEnv, TaskCon
   */
 class StoreInitRDD(@transient sc: SparkContext, url: String,
     val connProperties: Properties)
-    (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
-    extends RDD[InternalRow](sc, Nil) {
+    extends RDD[(InternalDistributedMember, BlockManagerId)](sc, Nil) {
 
   val driver = DriverRegistry.getDriverClassName(url)
   val isLoner = Utils.isLoner(sc)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(InternalDistributedMember, BlockManagerId)] = {
     GemFireXDDialect.init()
     DriverRegistry.register(driver)
     JdbcDialects.get(url) match {
@@ -44,8 +43,8 @@ class StoreInitRDD(@transient sc: SparkContext, url: String,
     }
     val conn = JdbcUtils.createConnection(url, connProperties)
     conn.close()
-    param += Map(Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)
-    Iterator.empty
+    Seq((Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)).iterator
+
   }
 
   override def getPartitions: Array[Partition] = {

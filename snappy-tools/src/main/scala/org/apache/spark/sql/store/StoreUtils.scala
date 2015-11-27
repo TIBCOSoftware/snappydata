@@ -104,11 +104,8 @@ object StoreUtils {
   def initStore(sc: SparkContext, url: String,
       connProps: Properties): Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    // everytime we can get a map from SnappyCluster
-    val map = Map[InternalDistributedMember, BlockManagerId]()
-    val memberAccumulator = sc.accumulator(map)(MembershipAccumulator)
-    new StoreInitRDD(sc, url, connProps)(memberAccumulator).collect()
-    memberAccumulator.value
+    val blockMap = new StoreInitRDD(sc, url, connProps).collect()
+    blockMap.toMap
   }
 
   def appendClause(sb: mutable.StringBuilder, getClause: () => String): Unit = {
@@ -162,11 +159,13 @@ object StoreUtils {
   def ddlExtensionStringForColumnTable(parameters: mutable.Map[String, String]): String = {
     val sb = new StringBuilder()
 
+    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH ($v) ")
+        .getOrElse(EMPTY_STRING))
+
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(s"$GEM_BUCKETS 199 ")) //Defaulting to higher numbered buckets for column tables
     // it also does temporarily fix the row-column join
-    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
-        .getOrElse(EMPTY_STRING))
+
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
