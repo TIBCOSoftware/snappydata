@@ -8,10 +8,9 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
-import io.snappydata.Property
-import io.snappydata.Constant
+import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hadoop.hive.ql.metadata.{HiveException, Hive}
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -238,7 +237,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       (false, url, driver)
     } else SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) | SnappyShellMode(_, _) |
-           ExternalEmbeddedMode(_, _) | LonerMode(_, _) =>
+           ExternalEmbeddedMode(_, _) | LocalMode(_, _) =>
         (true, ExternalStoreUtils.defaultStoreURL(sc) +
             ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
       case ExternalClusterMode(_, _) =>

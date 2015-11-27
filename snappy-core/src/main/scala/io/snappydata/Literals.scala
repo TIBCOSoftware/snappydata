@@ -20,7 +20,7 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  private[snappydata] val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+  val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
 
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 

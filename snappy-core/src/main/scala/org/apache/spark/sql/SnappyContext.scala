@@ -2,8 +2,6 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -31,7 +29,7 @@ import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{SparkException, Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -474,7 +472,7 @@ class SnappyContext private(sc: SparkContext)
 
     var conn: Connection = null
     try {
-      val (url, _, poolProps, connProps, hikariCP) =
+      val (url, _, _, connProps, _) =
         ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
       conn = ExternalStoreUtils.getConnection(url, connProps)
       JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -800,7 +798,7 @@ object SnappyContext extends Logging {
       val gnc = _globalSNContext
       if (gnc != null) new SnappyContext(sc)
       else {
-        initSparkContext(sc)
+        initGlobalSnappyContext(sc)
         _globalSNContext = new SnappyContext(sc)
         _globalSNContext
       }
@@ -836,23 +834,37 @@ object SnappyContext extends Logging {
     }
   }
 
-  private def initSparkContext(sc: SparkContext): Unit = {
+  private def initGlobalSnappyContext(sc: SparkContext): Unit = {
     getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
-        if (ToolsCallbackInit.toolsCallback != null) {
-          // NOTE: if Property.jobServer.enabled is true
-          // this will trigger SnappyContext.apply() method
-          // prior to `new SnappyContext(sc)` after this
-          // method ends.
-          ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        }
+        // NOTE: if Property.jobServer.enabled is true
+        // this will trigger SnappyContext.apply() method
+        // prior to `new SnappyContext(sc)` after this
+        // method ends.
+        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
       case SnappyShellMode(_, _) =>
-       if (ToolsCallbackInit.toolsCallback != null) {
-         // no DataDictionary persistence for non-embedded mode
-         sc.conf.set(Constant.PROPERTY_PREFIX + "persist-dd", "false")
-         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc)
-       }
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = false)
+      case ExternalEmbeddedMode(_, url) =>
+        urlToConf(url, sc)
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = false)
+      case LocalMode(_, url) =>
+        urlToConf(url, sc)
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = true)
       case _ => // ignore
+    }
+  }
+
+  private def urlToConf(url: String, sc: SparkContext): Unit = {
+    val propValues = url.split(';')
+    propValues.foreach { s =>
+      val propValue = s.split('=')
+      // propValue should always give proper result since the string
+      // is created internally by evalClusterMode
+      sc.conf.set(Constant.STORE_PROPERTY_PREFIX + propValue(0),
+        propValue(1))
     }
   }
 
@@ -877,27 +889,34 @@ object SnappyContext extends Logging {
 
   private def evalClusterMode(sc: SparkContext): ClusterMode = {
     if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+      if (ToolsCallbackInit.toolsCallback == null) {
+        throw new SparkException(
+          "Missing 'io.snappydata.ToolsCallbackImpl$' from SnappyData tools package")
+      }
       SnappyEmbeddedMode(sc,
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
-    } else {
+    } else if (ToolsCallbackInit.toolsCallback != null) {
       val conf = sc.conf
-      val loner = Utils.isLoner(sc)
+      val local = Utils.isLoner(sc)
       val embedded = conf.getOption(Property.embedded).exists(_.toBoolean)
       conf.getOption(Property.locators).collectFirst {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
-          if (loner) LonerMode(sc, url)
+          if (local) LocalMode(sc, url)
           else if (embedded) ExternalEmbeddedMode(sc, url)
           else SnappyShellMode(sc, url)
       }.orElse(conf.getOption(Property.mcastPort).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
-          if (loner) LonerMode(sc, url)
+          if (local) LocalMode(sc, url)
           else if (embedded) ExternalEmbeddedMode(sc, url)
           else SnappyShellMode(sc, url)
       }).getOrElse {
-        if (loner) LonerMode(sc, null) else ExternalClusterMode(sc, sc.master)
+        if (local) LocalMode(sc, "mcast-port=0")
+        else ExternalClusterMode(sc, sc.master)
       }
+    } else {
+      ExternalClusterMode(sc, sc.master)
     }
   }
 
@@ -1143,7 +1162,7 @@ case class SnappyShellMode(override val sc: SparkContext,
 case class ExternalEmbeddedMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
-case class LonerMode(override val sc: SparkContext,
+case class LocalMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
 case class ExternalClusterMode(override val sc: SparkContext,

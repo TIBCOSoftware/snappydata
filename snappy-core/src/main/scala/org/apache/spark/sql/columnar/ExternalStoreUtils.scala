@@ -86,8 +86,8 @@ private[sql] object ExternalStoreUtils {
         ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
-      case LonerMode(_, url) => Constant.DEFAULT_EMBEDDED_URL +
-          (if (url == null) ";mcast-port=0" else ";" + url)
+      case LocalMode(_, url) =>
+        Constant.DEFAULT_EMBEDDED_URL + ';' + url
       case ExternalClusterMode(_, _) =>
         throw new AnalysisException("Option 'url' not specified")
     }

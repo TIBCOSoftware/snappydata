@@ -20,7 +20,7 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     GemFireXDUtils.IS_TEST_MODE = false
-    super.afterAll()
+    dirCleanup()
   }
 
   test("Snappy Server start") {

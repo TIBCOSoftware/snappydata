@@ -25,7 +25,7 @@ abstract class SnappyFunSuite
 
   protected def sc: SparkContext = {
     val ctx = SnappyContext.globalSparkContext
-    if (ctx != null) ctx
+    if (ctx != null && !ctx.isStopped) ctx
     else new SparkContext(newSparkConf())
   }
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
@@ -58,7 +58,14 @@ abstract class SnappyFunSuite
 
   protected def newSparkConf(): SparkConf = LocalSparkConf.newConf()
 
-  private def baseCleanup(): Unit = {
+  protected def dirCleanup(): Unit = {
+    if (dirList.nonEmpty) {
+      dirList.foreach(FileCleaner.deletePath)
+      dirList.clear()
+    }
+  }
+
+  protected def baseCleanup(): Unit = {
     try {
       val sc = this.sc
       if (sc != null && !sc.isStopped) {
@@ -68,12 +75,8 @@ abstract class SnappyFunSuite
           case _ =>
         }
       }
-      SnappyContext.stop()
     } finally {
-      if (dirList.nonEmpty) {
-        dirList.foreach(FileCleaner.deletePath)
-        dirList.clear()
-      }
+      dirCleanup()
     }
   }
 

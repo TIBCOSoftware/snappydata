@@ -446,18 +446,18 @@ class ExecutorLocalShellPartition(override val index: Int, val hostList: Array[(
   override def toString = s"ExecutorLocalShellPartition($index, " + hostList(index)._1 + ")"
 }
 
-
 object ToolsCallbackInit extends Logging {
   final val toolsCallback = {
     try {
-      val c = org.apache.spark.util.Utils.classForName("io.snappydata.ToolsCallbackImpl$")
+      val c = org.apache.spark.util.Utils.classForName(
+        "io.snappydata.ToolsCallbackImpl$")
       val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
       logInfo("toolsCallback initialized")
       tc
     } catch {
       case cnf: ClassNotFoundException =>
         logWarning("toolsCallback couldn't be INITIALIZED." +
-          "DriverURL won't get published to others.")
+            "DriverURL won't get published to others.")
         null
     }
   }
