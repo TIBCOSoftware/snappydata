@@ -109,7 +109,9 @@ abstract class SnappyFunSuite
   }
 
   def createDir(fileName: String): String = {
-    new File(fileName).mkdir()
+    val f = new File(fileName)
+    f.mkdir()
+    f.deleteOnExit()
     dirList += fileName
     fileName
   }
