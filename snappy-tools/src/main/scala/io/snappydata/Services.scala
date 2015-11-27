@@ -30,7 +30,7 @@ trait ProtocolOverrides extends FabricServiceImpl {
     "jdbc:snappydata:"
   }
 
-  abstract override def getNetProtocol = {
+  abstract override def getNetProtocol: String = {
     "jdbc:snappydata:"
   }
 

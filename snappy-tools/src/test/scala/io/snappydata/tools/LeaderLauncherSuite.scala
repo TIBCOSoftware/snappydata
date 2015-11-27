@@ -194,10 +194,33 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         .setAppName(testName)
         .setMaster(Constant.JDBC_URL_PREFIX + s"localhost[${availablePort}]")
         // .set(Prop.Store.locators, s"localhost[${availablePort}]")
-        .set(Constant.PROPERTY_PREFIX + Attribute.SYS_PERSISTENT_DIR, dirname)
+        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.SYS_PERSISTENT_DIR, dirname)
 
     val sc = new SparkContext(conf)
 
     sc.stop()
   }
+
+  test("simple leader spark properties") {
+
+    val dirname = createDir("tests-snappy-leader-spark-prop")
+
+    try {
+      LeaderLauncher.main(Array(
+        "start",
+        "-dir=" + dirname,
+        s"-locators=localhost[${availablePort}]",
+        s"-spark.ui.port=3344",
+        s"-jobserver.enabled=true",
+        s"-embedded=true"
+      ))
+    } finally {
+      LeaderLauncher.main(Array(
+        "stop",
+        "-dir=" + dirname
+      ))
+    }
+
+  }
+
 }

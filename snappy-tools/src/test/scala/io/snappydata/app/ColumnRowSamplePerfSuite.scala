@@ -6,7 +6,6 @@ import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.snappy._
 
 /**

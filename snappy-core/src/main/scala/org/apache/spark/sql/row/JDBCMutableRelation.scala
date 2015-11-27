@@ -3,6 +3,8 @@ package org.apache.spark.sql.row
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import org.apache.spark.sql.columnar.ExternalStoreUtils
+
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
@@ -38,6 +40,7 @@ class JDBCMutableRelation(
     with UpdatableRelation
     with DeletableRelation
     with DestroyRelation
+    with IndexableRelation
     with Logging {
 
   override val needConversion: Boolean = false
@@ -268,6 +271,36 @@ class JDBCMutableRelation(
     }
     finally {
       conn.close()
+    }
+  }
+
+  override def createIndex(tableName: String, sql: String): Unit = {
+    var conn: Connection = null
+    try {
+      conn = ExternalStoreUtils.getConnection(url, connProperties)
+      val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
+        dialect, sqlContext)
+
+      // Create the Index if the table exist.
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      }
+      else {
+        throw new AnalysisException(s"Table $table do not exists.")
+      }
+    } catch {
+      case sqle: java.sql.SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      if (conn != null) {
+        conn.close()
+      }
     }
   }
 }
