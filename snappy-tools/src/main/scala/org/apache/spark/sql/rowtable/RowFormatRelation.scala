@@ -51,6 +51,8 @@ class RowFormatRelation(
       origOptions,
       sqlContext) with PartitionedDataSourceScan {
 
+  override def toString: String = s"RowFormatRelation[$table]"
+
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
   override def buildScan(requiredColumns: Array[String],

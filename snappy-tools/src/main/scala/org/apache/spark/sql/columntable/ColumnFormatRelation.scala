@@ -59,6 +59,8 @@ class ColumnFormatRelation(
         Array[Partition](), poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
      with PartitionedDataSourceScan {
 
+  override def toString: String = s"ColumnFormatRelation[$table]"
+
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
     if (partitioningColumns.isEmpty) {
       val rdd = new StoreRDD(sqlContext.sparkContext,
