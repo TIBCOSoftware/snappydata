@@ -47,6 +47,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm0.invoke(this.getClass, "insertData", tableName)
 
     vm0.invoke(this.getClass, "queryData", tableName)
+
+    createTempTableXD(conn)
   }
 
   def createTableXD(conn : Connection, tableName : String): Unit = {
@@ -93,6 +95,20 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def dropTableXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("drop table " + tableName)
+  }
+
+  def createTempTableXD(conn : Connection): Unit = {
+    try
+    {
+      val s = conn.createStatement()
+      s.execute("CREATE TABLE airlineRef_temp(Code VARCHAR(25),Description VARCHAR(25)) USING parquet OPTIONS()")
+      //println("Successfully Created ColumnTable = " + tableName)
+    }
+    catch {
+      case e: java.sql.SQLException => //println("create temp: Caught exception " + e.getMessage)
+      //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
+    }
+    //println("Created ColumnTable = " + tableName)
   }
 }
 
