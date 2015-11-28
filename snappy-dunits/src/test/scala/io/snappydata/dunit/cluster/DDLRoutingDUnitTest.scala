@@ -26,8 +26,13 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
 
+    // first fail a statement
+    failCreateTableXD(conn, tableName, true)
+
     createTableXD(conn, tableName)
     tableMetadataXD(tableName)
+    // Test create table - error for recreate
+    failCreateTableXD(conn, tableName, false)
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)
@@ -37,10 +42,21 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     //insertDataXD(conn, tableName)
     insertData(tableName)
     queryData(tableName)
+    createTempTableXD(conn)
   }
 
   def createTableXD(conn : Connection, tableName : String): Unit = {
-//    try
+    val s = conn.createStatement()
+    val options = "OPTIONS (url 'jdbc:snappydata:;user=app;password=app;persist-dd=false;route-query=false' ," +
+      "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
+      "poolImpl 'tomcat', " +
+      "user 'app', " +
+      "password 'app' ) "
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " + options)
+  }
+
+  def failCreateTableXD(conn : Connection, tableName : String, doFail : Boolean): Unit = {
+    try
     {
       val s = conn.createStatement()
       val options = "OPTIONS (url 'jdbc:snappydata:;user=app;password=app;persist-dd=false;route-query=false' ," +
@@ -48,14 +64,14 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "poolImpl 'tomcat', " +
         "user 'app', " +
         "password 'app' ) "
-      s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING column " + options)
+      s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + (if (doFail) "fail" orElse  "") + " USING column " + options)
       //println("Successfully Created ColumnTable = " + tableName)
     }
-//    catch {
-//      case e: Exception => println("create: Caught exception " + e.getMessage +
-//        " for ColumnTable = " + tableName)
-//        println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
-//    }
+    catch {
+      case e: Exception => println("create: Caught exception " + e.getMessage +
+        " for ColumnTable = " + tableName)
+      //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
+    }
     //println("Created ColumnTable = " + tableName)
   }
 
@@ -76,6 +92,20 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def dropTableXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("drop table " + tableName)
+  }
+
+  def createTempTableXD(conn : Connection): Unit = {
+    try
+    {
+      val s = conn.createStatement()
+      s.execute("CREATE TABLE airlineRef_temp(Code VARCHAR(25),Description VARCHAR(25)) USING parquet OPTIONS()")
+      //println("Successfully Created ColumnTable = " + tableName)
+    }
+    catch {
+      case e: java.sql.SQLException => //println("create temp: Caught exception " + e.getMessage)
+      //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
+    }
+    //println("Created ColumnTable = " + tableName)
   }
 
   def insertData(tableName: String): Unit = {
