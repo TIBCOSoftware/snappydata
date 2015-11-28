@@ -56,19 +56,13 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def getLocatorJDBCURL(sc: SparkContext): String = {
 
     val locatorUrl = getAllLocators(sc).filter(x => x._2 != null && !x._2.isEmpty)
-      .map(locator => {
-        val url = locator._2
-        val hostHostNameEndIndex = url.indexOf("/")
-        val hostAddressEndIndex = url.indexOf("[")
-        val hostName = url.substring(0, hostHostNameEndIndex).trim
-        val hostAddress = url.substring(hostHostNameEndIndex + 1, hostAddressEndIndex).trim
-        val port = url.substring(hostAddressEndIndex)
-        (if (hostName.length == 0) hostName else hostAddress ) + port
-      }).mkString(",")
+        .map(locator => {
+          org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
+        }).mkString(",")
 
     "jdbc:" + Constant.JDBC_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
-          ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1) + '/'
-    } else locatorUrl + '/')
+          ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
+    } else locatorUrl)
   }
 }

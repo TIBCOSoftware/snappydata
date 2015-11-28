@@ -23,16 +23,23 @@ private[sql] object ExternalStoreUtils {
       poolProps: Map[String, String], hikariCP: Boolean) = {
     val urlProp = if (hikariCP) "jdbcUrl" else "url"
     val driverClassProp = "driverClassName"
-    if (driver == null || driver.isEmpty) {
-      if (poolProps.isEmpty) {
-        Map(urlProp -> url)
+    val props = {
+      if (driver == null || driver.isEmpty) {
+        if (poolProps.isEmpty) {
+          Map(urlProp -> url)
+        } else {
+          poolProps + (urlProp -> url)
+        }
+      } else if (poolProps.isEmpty) {
+        Map(urlProp -> url, driverClassProp -> driver)
       } else {
-        poolProps + (urlProp -> url)
+        poolProps + (urlProp -> url) + (driverClassProp -> driver)
       }
-    } else if (poolProps.isEmpty) {
-      Map(urlProp -> url, driverClassProp -> driver)
+    }
+    if (hikariCP) {
+      props + ("minimumIdle" -> "4")
     } else {
-      poolProps + (urlProp -> url) + (driverClassProp -> driver)
+      props + ("initialSize" -> "4")
     }
   }
 
@@ -78,12 +85,13 @@ private[sql] object ExternalStoreUtils {
   }
 
   def defaultStoreURL(sc: SparkContext): String = {
-    val modeUrl = SnappyContext.getClusterMode(sc) match {
+    SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
         // Already connected to SnappyData in embedded mode.
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
       case SnappyShellMode(_, _) =>
-        ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
+        ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc) +
+            "/route-query=false"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>
@@ -91,7 +99,6 @@ private[sql] object ExternalStoreUtils {
       case ExternalClusterMode(_, _) =>
         throw new AnalysisException("Option 'url' not specified")
     }
-    modeUrl + ";route-query=false"
   }
 
   def isExternalShellMode(sparkContext: SparkContext): Boolean = {
@@ -137,7 +144,7 @@ private[sql] object ExternalStoreUtils {
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
     dialect match {
-      case GemFireXDDialect | GemFireXDClientDialect =>
+      case GemFireXDClientDialect =>
         connProps.setProperty("route-query", "false")
       case _ =>
     }

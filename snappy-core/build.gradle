@@ -22,8 +22,8 @@ dependencies {
     compile 'org.apache.spark:snappy-spark-mllib_' + scalaBinaryVersion + ':' + sparkVersion
   }
 
-  compile 'org.apache.tomcat:tomcat-jdbc:8.0.24'
-  compile 'com.zaxxer:HikariCP-java6:2.3.9'
+  compile 'org.apache.tomcat:tomcat-jdbc:8.0.28'
+  compile 'com.zaxxer:HikariCP-java6:2.3.12'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'

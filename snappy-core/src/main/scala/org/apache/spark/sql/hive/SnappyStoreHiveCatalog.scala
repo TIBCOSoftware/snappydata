@@ -125,7 +125,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     logInfo("Default warehouse location is " + warehouse)
 
-    val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps
+    val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
     if (useSnappyStore) {
       logInfo(s"Using SnappyStore as metastore database, dbURL = $dbURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
@@ -228,7 +228,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
   }
 
-  private def resolveMetaStoreDBProps: (Boolean, String, String) = {
+  private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
     val sc = context.sparkContext
     val sparkConf = sc.conf
     val url = sparkConf.get(Property.metastoreDBURL, null)
@@ -236,10 +236,14 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       val driver = sparkConf.get(Property.metastoreDriver, null)
       (false, url, driver)
     } else SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) | SnappyShellMode(_, _) |
-           ExternalEmbeddedMode(_, _) | LocalMode(_, _) =>
+      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+           LocalMode(_, _) =>
         (true, ExternalStoreUtils.defaultStoreURL(sc) +
             ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
+      case SnappyShellMode(_, props) =>
+        (true, Constant.DEFAULT_EMBEDDED_URL +
+            ";host-data=false;default-persistent=true;" + props,
+            Constant.JDBC_EMBEDDED_DRIVER)
       case ExternalClusterMode(_, _) =>
         (false, null, null)
     }

@@ -26,10 +26,7 @@ class ExternalShellDUnitTest(s: String)
 
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
-  def testDummy(): Unit = {
-  }
-
-  def _testTableCreation(): Unit = {
+  def testTableCreation(): Unit = {
     vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
@@ -104,7 +101,7 @@ object ExternalShellDUnitTest {
     val conf = new SparkConf().
         setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("snappydata.locators", s"localhost:$locatorPort")
+        .set("snappydata.store.locators", s"localhost:$locatorPort")
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
 

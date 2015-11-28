@@ -2,6 +2,8 @@ package org.apache.spark.sql.collection
 
 import java.io.{IOException, ObjectOutputStream}
 
+import scala.collection.mutable.ArrayBuffer
+
 import _root_.io.snappydata.ToolsCallback
 
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
@@ -282,6 +284,18 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     }
   }
 
+  def getClientHostPort(netServer: String): String = {
+    val addrIdx = netServer.indexOf('/')
+    val portEndIndex = netServer.indexOf(']')
+    if (addrIdx > 0) {
+      val portIndex = netServer.indexOf('[')
+      netServer.substring(0, addrIdx) +
+          netServer.substring(portIndex, portEndIndex + 1)
+    } else {
+      netServer.substring(addrIdx + 1, portEndIndex + 1)
+    }
+  }
+
   def isLoner(sc: SparkContext): Boolean = sc.schedulerBackend match {
     case lb: LocalBackend => true
     case _ => false
@@ -440,10 +454,9 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-
-class ExecutorLocalShellPartition(override val index: Int, val hostList: Array[(String, String)])
-  extends Partition {
-  override def toString = s"ExecutorLocalShellPartition($index, " + hostList(index)._1 + ")"
+class ExecutorLocalShellPartition(override val index: Int,
+    val hostList: ArrayBuffer[(String, String)]) extends Partition {
+  override def toString = s"ExecutorLocalShellPartition($index, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {
