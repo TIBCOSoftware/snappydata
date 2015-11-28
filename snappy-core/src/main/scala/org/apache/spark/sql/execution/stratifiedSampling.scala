@@ -26,16 +26,18 @@ case class StratifiedSample(var options: Map[String, Any],
     // pre-compute QCS because it is required by
     // other API invoked from driver
     (val qcs: Array[Int] = resolveQCS(options, child.schema.fieldNames,
-      "StratifiedSample")) extends logical.UnaryNode {
+      "StratifiedSample"), weightedColumn: AttributeReference = AttributeReference(
+      WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)())
+    extends logical.UnaryNode {
 
   /**
    * StratifiedSample will add one additional column for the ratio of total
    * rows seen for a stratum to the number of samples picked.
    */
-  override val output = child.output :+ AttributeReference(
-    WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
+  override val output = child.output :+ weightedColumn
 
-  override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
+  override protected final def otherCopyArgs: Seq[AnyRef] =
+    Seq(qcs, weightedColumn)
 
   def getExecution(plan: SparkPlan) = StratifiedSampleExecute(plan, output,
     options, qcs)
