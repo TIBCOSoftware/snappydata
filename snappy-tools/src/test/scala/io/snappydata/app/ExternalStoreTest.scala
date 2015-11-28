@@ -70,12 +70,6 @@ object ExternalStoreTest extends App {
     conf.set("spark.executor.extraJavaOptions", executorExtraJavaOptions)
   }
 
-  // Set the url of the database
-  // use these two when you want to test with snappydata database url
-  // Alter the url property when creating the table below as well
-  //conf.set("gemfirexd.db.url", "jdbc:snappydata:;mcast-port=45672;persist-dd=false;")
-  //conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
-
   var start: Long = 0
   var end: Long = 0
   var results: DataFrame = null

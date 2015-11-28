@@ -35,15 +35,12 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   override def afterAll(): Unit = {
-    try {
-      GfxdDistributionLocator.main(Array(
-        "stop",
-        "-dir=tests-snappy-loc-dir"
-      ))
-      CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
-    } finally {
-      super.afterAll()
-    }
+    GfxdDistributionLocator.main(Array(
+      "stop",
+      "-dir=tests-snappy-loc-dir"
+    ))
+    CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
+    dirCleanup()
   }
 
   test("leader api") {

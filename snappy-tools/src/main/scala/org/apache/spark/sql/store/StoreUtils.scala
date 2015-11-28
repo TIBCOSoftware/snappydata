@@ -1,4 +1,4 @@
-package org.apache.spark.sql.store.util
+package org.apache.spark.sql.store
 
 import java.util.Properties
 
@@ -10,7 +10,6 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.store.{MembershipAccumulator, StoreInitRDD}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
 
