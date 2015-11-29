@@ -50,7 +50,7 @@ object StoreUtils {
 
   val SHADOW_COLUMN_NAME = "shadow_uuid"
 
-  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int generated always as identity"
+  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int primary key generated always as identity"
 
 
   def lookupName(tableName: String, schema: String): String = {

@@ -122,7 +122,7 @@ class ClusterManagerTestUtils {
       addUrlForHiveMetaStore: Boolean): Unit = {
     assert(sc == null)
     props.setProperty("host-data", "false")
-    props.setProperty("log-level", "info")
+    props.setProperty("log-level", "fine")
     SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf().setMaster(s"snappydata://localhost[$locatorPort]")
         .setAppName("myapp")
@@ -167,7 +167,7 @@ class ClusterManagerTestUtils {
     */
   def startSnappyServer(locatorPort: Int, props: Properties): Unit = {
     props.setProperty("locators", "localhost[" + locatorPort + ']')
-    props.setProperty("log-level", "info")
+    props.setProperty("log-level", "fine")
     val server: Server = ServiceManager.getServerInstance
     server.start(props)
     assert(server.status == FabricService.State.RUNNING)

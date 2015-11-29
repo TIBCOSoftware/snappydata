@@ -4,6 +4,7 @@ import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.snappy.CallbackFactoryProvider
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext

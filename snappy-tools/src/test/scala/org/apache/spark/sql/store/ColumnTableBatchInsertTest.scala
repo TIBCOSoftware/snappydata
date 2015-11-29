@@ -1,12 +1,10 @@
 package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.{TestData, Data, FileCleaner}
-import org.apache.spark.sql.execution.datasources.DDLException
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
-
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
-import org.apache.spark.{SparkContext, Logging}
+import io.snappydata.core.{Data, FileCleaner, TestData}
+import org.apache.spark.Logging
+import org.apache.spark.sql.SaveMode
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 /**
  * Created by skumar on 13/11/15.

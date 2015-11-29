@@ -99,7 +99,7 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
 
     val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
 
-    val data = Seq(Seq(1, 2), Seq(7, 8)) //, Seq(9, 2), Seq(4, 2), Seq(5, 6))
+    val data = Seq(Seq(1, 2), Seq(7, 8) , Seq(9, 2))//, Seq(4, 2), Seq(5, 6))
 
     val rdd = sc.parallelize(data, data.length).map(s => new MyTestData(s(0), s(1)))
 
@@ -114,15 +114,15 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
 
     val result = snc.sql("SELECT * FROM  COLUMNTABLE4")
     val r = result.collect
-    assert(r.length == 2)
+    assert(r.length == 3)
 
     val rCopy = region.getPartitionAttributes.getRedundantCopies
     assert(rCopy == 2)
 
     assert(GemFireCacheImpl.getColumnBatchSize == 3)
 
-    assert(region.size == 2)
-    assert(shadowRegion.size == 0)
+    assert(region.size == 0)
+    assert(shadowRegion.size == 1)
     println("Success")
   }
 
@@ -152,6 +152,46 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
     //      snc.sql("insert into COLUMNTABLE3 VALUES(3,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(4,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(5,11)")
+    val result = snc.sql("SELECT * FROM  COLUMNTABLE4")
+    val r = result.collect
+    assert(r.length == 5)
+
+    val rCopy = region.getPartitionAttributes.getRedundantCopies
+    assert(rCopy == 2)
+
+    //assert(GemFireCacheImpl.getColumnBatchSize == 2)
+    // sometimes sizes may be different depending on how are the rows distributed
+    if (GemFireCacheImpl.getColumnBatchSize == 3) {
+      assert(region.size == 0)
+      assert(shadowRegion.size == 2)
+    }
+    else {
+      assert(region.size == 5)
+      assert(shadowRegion.size == 0)
+    }
+
+    println("Success")
+  }
+
+  test("Test ShadowTable with 1 bucket, single insert") {
+    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE4")
+    snc.sql("CREATE TABLE COLUMNTABLE4(Key1 INT ,Value INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'Key1'," +
+        "BUCKETS '1'," +
+        "REDUNDANCY '2')")
+
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+
+    snc.sql("insert into COLUMNTABLE4 VALUES(1,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(2,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(3,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(4,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(5,11)")
+
     val result = snc.sql("SELECT * FROM  COLUMNTABLE4")
     val r = result.collect
     assert(r.length == 5)

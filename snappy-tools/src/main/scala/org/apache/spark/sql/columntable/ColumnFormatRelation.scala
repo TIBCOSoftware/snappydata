@@ -269,6 +269,23 @@ class ColumnFormatRelation(
       }
     }
   }
+
+  /**
+   * Execute a DML SQL and return the number of rows affected.
+   */
+  override def executeUpdate(sql: String): Int = {
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+      _poolProps, connProperties, hikariCP)
+    try {
+      val stmt = connection.prepareStatement(sql)
+      //stmt.setSt
+      val result = stmt.executeUpdate()
+      stmt.close()
+      result
+    } finally {
+      connection.close()
+    }
+  }
 }
 
 
