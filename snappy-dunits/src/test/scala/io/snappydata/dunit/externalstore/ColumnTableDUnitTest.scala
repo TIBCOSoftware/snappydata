@@ -3,7 +3,6 @@ package io.snappydata.dunit.externalstore
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
-import io.snappydata.dunit.cluster.ClusterManagerTestUtils
 
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.Row
@@ -14,91 +13,32 @@ import scala.util.Random
  */
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  def _testTableCreation(): Unit = {
-    // Lead is started before other servers are started
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
 
-    vm0.invoke(this.getClass, "startSparkJob")
-    vm0.invoke(this.getClass, "stopSpark")
+  def testTableCreation(): Unit = {
+    startSparkJob()
   }
 
-  def _testCreateInsertAndDropOfTable(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob2")
-    vm0.invoke(this.getClass, "stopSpark")
+  def testCreateInsertAndDropOfTable(): Unit = {
+    startSparkJob2()
   }
 
 
-  def _testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob3")
-    vm0.invoke(this.getClass, "stopSpark")
+  def testCreateInsertAndDropOfTableProjectionQuery(): Unit = {
+    startSparkJob3()
   }
 
-  def _testCreateInsertAndDropOfTableWithPartition(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob4")
-    vm0.invoke(this.getClass, "stopSpark")
+  def testCreateInsertAndDropOfTableWithPartition(): Unit = {
+    startSparkJob4()
   }
 
-  def _testCreateInsertAPI(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob5")
-    vm0.invoke(this.getClass, "stopSpark")
+  def testCreateInsertAPI(): Unit = {
+    startSparkJob5()
   }
 
   def testCreateAndSingleInsertAPI(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    // val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob6")
-    vm0.invoke(this.getClass, "stopSpark")
+    startSparkJob6()
   }
 
-}
-
-/**
- * Since this object derives from ClusterManagerTestUtils
- */
-object ColumnTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "ColumnTable"
   private val tableNameWithPartition: String = "ColumnTablePartition"
 

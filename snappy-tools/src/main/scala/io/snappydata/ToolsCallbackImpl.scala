@@ -9,6 +9,8 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.AnalysisException
+
 /**
   * Created by soubhikc on 11/11/15.
   */
@@ -18,14 +20,24 @@ object ToolsCallbackImpl extends ToolsCallback {
     LeadImpl.invokeLeadStartAddonService(sc)
   }
 
-  override def invokeStartFabricServer(sc: SparkContext): Unit = {
-    val locator = sc.getConf.get(Property.locators)
-    if (!Utils.LocatorURLPattern.matcher(locator).matches()) {
-      throw new Exception(s"locator info should be provided in the format host[port]")
-    }
+  override def invokeStartFabricServer(sc: SparkContext,
+      hostData: Boolean): Unit = {
     val properties = new Properties()
-    properties.setProperty("locators", locator)
-    properties.setProperty("host-data", "false")
+    sc.getConf.getOption(Property.locators).map { locator =>
+      if (!Utils.LocatorURLPattern.matcher(locator).matches()) {
+        throw new AnalysisException(
+          "locator info should be provided in the format host[port]", null)
+      }
+      properties.setProperty("locators", locator)
+      sc.getConf.getOption(Property.mcastPort).map(
+        properties.setProperty("mcast-port", _))
+    }.getOrElse(properties.setProperty("mcast-port",
+      sc.getConf.get(Property.mcastPort)))
+    if (!hostData) {
+      properties.setProperty("host-data", "false")
+      // no DataDictionary persistence for non-embedded mode
+      properties.setProperty("persist-dd", "false")
+    }
     ServiceManager.getServerInstance.start(properties)
   }
 
@@ -44,15 +56,9 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def getLocatorJDBCURL(sc: SparkContext): String = {
 
     val locatorUrl = getAllLocators(sc).filter(x => x._2 != null && !x._2.isEmpty)
-      .map(locator => {
-        val url = locator._2
-        val hostHostNameEndIndex = url.indexOf("/")
-        val hostAddressEndIndex = url.indexOf("[")
-        val hostName = url.substring(0, hostHostNameEndIndex).trim
-        val hostAddress = url.substring(hostHostNameEndIndex + 1, hostAddressEndIndex).trim
-        val port = url.substring(hostAddressEndIndex)
-        (if (hostName.length == 0) hostName else hostAddress ) + port
-      }).mkString(",")
+        .map(locator => {
+          org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
+        }).mkString(",")
 
     "jdbc:" + Constant.JDBC_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +

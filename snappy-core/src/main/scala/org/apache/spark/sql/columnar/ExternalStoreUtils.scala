@@ -5,6 +5,18 @@ import java.util.Properties
 
 import io.snappydata.{Constant, Property}
 import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.execution.datasources.ResolvedDataSource
+import scala.collection.mutable
+
+import io.snappydata.{Constant, Property}
+
+import org.apache.spark.SparkContext
+import scala.collection.mutable
+
+import io.snappydata.Constant
+
+import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -15,6 +27,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row}
 
 import scala.collection.mutable
+import org.apache.spark.sql._
 
 /**
  * Utility methods used by external storage layers.
@@ -25,16 +38,23 @@ private[sql] object ExternalStoreUtils extends Logging {
       poolProps: Map[String, String], hikariCP: Boolean) = {
     val urlProp = if (hikariCP) "jdbcUrl" else "url"
     val driverClassProp = "driverClassName"
-    if (driver == null || driver.isEmpty) {
-      if (poolProps.isEmpty) {
-        Map(urlProp -> url)
+    val props = {
+      if (driver == null || driver.isEmpty) {
+        if (poolProps.isEmpty) {
+          Map(urlProp -> url)
+        } else {
+          poolProps + (urlProp -> url)
+        }
+      } else if (poolProps.isEmpty) {
+        Map(urlProp -> url, driverClassProp -> driver)
       } else {
-        poolProps + (urlProp -> url)
+        poolProps + (urlProp -> url) + (driverClassProp -> driver)
       }
-    } else if (poolProps.isEmpty) {
-      Map(urlProp -> url, driverClassProp -> driver)
+    }
+    if (hikariCP) {
+      props + ("minimumIdle" -> "4")
     } else {
-      poolProps + (urlProp -> url) + (driverClassProp -> driver)
+      props + ("initialSize" -> "4")
     }
   }
 
@@ -80,33 +100,33 @@ private[sql] object ExternalStoreUtils extends Logging {
   }
 
   def defaultStoreURL(sc: SparkContext): String = {
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
-      // Already connected to SnappyData in embedded mode.
-      Constant.DEFAULT_EMBEDDED_URL
-    } else {
-      val isLoner = Utils.isLoner(sc)
-      sc.conf.getOption(Property.locators).map(
-        Constant.DEFAULT_EMBEDDED_URL + "locators=" + _).getOrElse {
-        sc.conf.getOption(Property.mcastPort).map(
-          Constant.DEFAULT_EMBEDDED_URL + "mcast-port=" + _).getOrElse {
-          if (isLoner) {
-            Constant.DEFAULT_EMBEDDED_URL + "mcast-port=0"
-          } else {
-            sys.error("Option 'url' not specified")
-          }
-        }
-      } + (if (isLoner) "" else ";host-data=false")
+    SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) =>
+        // Already connected to SnappyData in embedded mode.
+        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
+      case SnappyShellMode(_, _) =>
+        ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc) +
+            "/route-query=false"
+      case ExternalEmbeddedMode(_, url) =>
+        Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
+      case LocalMode(_, url) =>
+        Constant.DEFAULT_EMBEDDED_URL + ';' + url
+      case ExternalClusterMode(_, _) =>
+        throw new AnalysisException("Option 'url' not specified")
+    }
+  }
+
+  def isExternalShellMode(sparkContext: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case SnappyShellMode(_, _) => true
+      case _ => false
     }
   }
 
   def validateAndGetAllProps(sc : SparkContext,
       parameters: mutable.Map[String, String]) = {
 
-    val url = if (ExternalStoreUtils.isExternalShellMode(sc)) {
-      ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc)
-    }
-    else
-      parameters.remove("url").getOrElse(defaultStoreURL(sc))
+    val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
     val dialect = JdbcDialects.get(url)
     val driver = parameters.remove("driver").getOrElse(getDriver(url, dialect))
@@ -139,7 +159,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
     dialect match {
-      case GemFireXDDialect | GemFireXDClientDialect =>
+      case GemFireXDClientDialect =>
         connProps.setProperty("route-query", "false")
       case _ =>
     }
@@ -279,14 +299,6 @@ private[sql] object ExternalStoreUtils extends Logging {
       col += 1
     }
   }
-
-  def isExternalShellMode (sparkContext: SparkContext): Boolean ={
-    sparkContext.getConf.getOption(Property.locators).exists { s => !s.isEmpty &&
-      !sparkContext.getConf.getOption(Property.mcastPort).exists {_.toInt > 0 }
-    } &&
-      !sparkContext.getConf.getOption(Property.embedded).exists(_.toBoolean)
-  }
-
 }
 
 object ConnectionType extends Enumeration {

@@ -10,7 +10,7 @@ package io.snappydata
  */
 object Constant {
 
-  val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:;"
+  val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
 
   val JDBC_URL_PREFIX = "snappydata://"
 
@@ -18,11 +18,13 @@ object Constant {
 
   val JDBC_CLIENT_DRIVER = "com.pivotal.gemfirexd.jdbc.ClientDriver"
 
-  private[snappydata] val PROPERTY_PREFIX = "snappydata."
+  val PROPERTY_PREFIX = "snappydata."
 
-  private[snappydata] val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+  val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
 
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
+
+  val DEFAULT_SCHEMA = "APP"
 }
 
 /**
@@ -41,4 +43,8 @@ object Property {
   val jobserverConfigFile = s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile"
 
   val embedded = s"${Constant.PROPERTY_PREFIX}embedded"
+
+  val metastoreDBURL = s"${Constant.PROPERTY_PREFIX}metastore-db-url"
+
+  val metastoreDriver = s"${Constant.PROPERTY_PREFIX}metastore-db-driver"
 }

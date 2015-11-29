@@ -6,7 +6,7 @@ import java.util.Properties
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
-import org.apache.spark.sql.collection.{Utils, UUIDRegionKey}
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.ConnectionPool
@@ -16,16 +16,14 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.store.util.StoreUtils
-import org.apache.spark.sql.types._
-import org.apache.spark.sql._
+import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.{Logging, Partition}
 
 import scala.collection.mutable.ArrayBuffer
-
 /**
  * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy. It uses GemFireXD as actual datastore to physically locate the tables.
