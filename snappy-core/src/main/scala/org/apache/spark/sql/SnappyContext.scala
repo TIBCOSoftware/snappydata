@@ -1,5 +1,7 @@
 package org.apache.spark.sql
 
+import org.apache.spark.sql.streaming._
+
 import java.sql.Connection
 
 import scala.collection.mutable
@@ -32,12 +34,13 @@ import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{SparkException, Logging, Partition, Partitioner, SparkContext, TaskContext}
 
 /**
-  * An instance of the Spark SQL execution engine that delegates to supplied
-  * SQLContext offering additional capabilities.
-  *
-  * Created by Soubhik on 5/13/15.
-  */
-class SnappyContext private(sc: SparkContext)
+ * An instance of the Spark SQL execution engine that delegates to supplied
+ * SQLContext offering additional capabilities.
+ *
+ * Created by Soubhik on 5/13/15.
+ */
+
+class SnappyContext (sc: SparkContext)
     extends SQLContext(sc) with Serializable with Logging {
 
   self =>
@@ -203,16 +206,15 @@ class SnappyContext private(sc: SparkContext)
         sys.error(s"couldn't cache table $tableIdent")
       }
     }
-
     val cached = rdd.mapPartitions { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
-
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
+
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
@@ -291,8 +293,9 @@ class SnappyContext private(sc: SparkContext)
   def registerTopK(tableName: String, streamTableName: String,
       topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit = {
     val topKRDD = SnappyContext.createTopKRDD(tableName, self.sc, isStreamSummary)
+    //TODO Yogesh, this needs to handle all types of StreamRelations
     catalog.registerTopK(tableName, streamTableName,
-      catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
+      catalog.getStreamTableSchema(streamTableName), topkOptions, topKRDD)
   }
 
   override def createExternalTable(
@@ -555,7 +558,7 @@ class SnappyContext private(sc: SparkContext)
     val snappyContext = self
 
     override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+      SnappyStrategies, StreamDDLStrategy, StoreStrategy, StreamQueryStrategy) ++ super.strategies
 
     object SnappyStrategies extends Strategy {
       def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
@@ -572,6 +575,18 @@ class SnappyContext private(sc: SparkContext)
       }
     }
 
+    /** Stream related strategies to map stream specific logical plan to physical plan. */
+    object StreamQueryStrategy extends Strategy {
+      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+        case LogicalDStreamPlan(output, stream) =>
+          PhysicalDStreamPlan(output, stream) :: Nil
+        case WindowLogicalPlan(d, s, child) =>
+          WindowPhysicalPlan(d, s, planLater(child)) :: Nil
+        case l @LogicalRelation(t: StreamPlan) =>
+          PhysicalDStreamPlan(l.output, t.stream) :: Nil
+        case _ => Nil
+      }
+    }
   }
 
   /**
@@ -735,10 +750,6 @@ object snappy extends Serializable {
     }
   }
 
-  implicit def snappyOperationsOnDStream[T: ClassTag](
-      ds: DStream[T]): SnappyDStreamOperations[T] =
-    SnappyDStreamOperations(SnappyContext(ds.context.sparkContext), ds)
-
   implicit class SparkContextOperations(val s: SparkContext) {
     def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
       StreamingCtxtHolder(s, batchInterval)
@@ -785,8 +796,11 @@ object SnappyContext extends Logging {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName
+    "socket_stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
+    "file_stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
+    "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName
   )
 
   def globalSparkContext: SparkContext = SparkContext.activeContext.get()
@@ -1225,49 +1239,3 @@ private[sql] case class SnappyOperations(context: SnappyContext,
   }
 }
 
-private[sql] case class SnappyDStreamOperations[T: ClassTag](
-    context: SnappyContext, ds: DStream[T]) {
-
-  def saveStream(sampleTab: Seq[String],
-      formatter: (RDD[T], StructType) => RDD[Row],
-      schema: StructType,
-      transform: RDD[Row] => RDD[Row] = null): Unit =
-    context.saveStream(ds, sampleTab, formatter, schema, transform)
-
-  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
-      jdbcSource: Map[String, String]): Unit = {
-    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  def saveToExternalTable(externalTable: String, schema: StructType,
-      jdbcSource: Map[String, String]): Unit = {
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  private def saveStreamToExternalTable(externalTable: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = context.catalog.getExternalTable(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-
-    ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
-  }
-}
