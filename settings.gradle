@@ -4,6 +4,7 @@ rootProject.name = 'snappy-commons_' + scalaBinaryVersion
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-tools_' + scalaBinaryVersion
 include 'snappy-dunits'
+include 'snappy-examples'
 
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
 project(':snappy-tools_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-tools" as File

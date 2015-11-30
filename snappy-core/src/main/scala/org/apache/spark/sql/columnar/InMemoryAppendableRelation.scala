@@ -176,6 +176,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
   protected override def doExecute(): RDD[InternalRow] = {
 
     val rdd = relation.reservoirRDD
+    val rel = relation.output
     if (rdd.isEmpty) {
       return super.doExecute()
     }
@@ -186,7 +187,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
       // minimum default element size).
       val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
         val (narrowestOrdinal, narrowestDataType) =
-          relation.output.zipWithIndex.map { case (a, ordinal) =>
+          rel.zipWithIndex.map { case (a, ordinal) =>
             ordinal -> a.dataType
           } minBy { case (_, dataType) =>
             ColumnType(dataType).defaultSize
@@ -194,7 +195,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
         Seq(narrowestOrdinal) -> Seq(narrowestDataType)
       } else {
         attributes.map { a =>
-          relation.output.indexWhere(_.exprId == a.exprId) -> a.dataType
+          rel.indexWhere(_.exprId == a.exprId) -> a.dataType
         }.unzip
       }
 
