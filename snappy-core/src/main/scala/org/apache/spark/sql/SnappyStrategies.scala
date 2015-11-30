@@ -7,6 +7,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{Filter, PartitionedDataSourceScan, SparkPlan, SparkPlanner, StratifiedSample, joins}
+import org.apache.spark.sql.streaming._
 
 /**
  * This trait is an extension to SparkPlanner and introduces number of enhancements specific to Snappy.
@@ -28,6 +29,19 @@ private[sql] trait SnappyStrategies {
           filters,
           identity[Seq[Expression]], // All filters still need to be evaluated
           InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
+      case _ => Nil
+    }
+  }
+
+  /** Stream related strategies to map stream specific logical plan to physical plan. */
+  object StreamQueryStrategy extends Strategy {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+      case LogicalDStreamPlan(output, stream) =>
+        PhysicalDStreamPlan(output, stream) :: Nil
+      case WindowLogicalPlan(d, s, child) =>
+        WindowPhysicalPlan(d, s, planLater(child)) :: Nil
+      case l @LogicalRelation(t: StreamPlan, _) =>
+        PhysicalDStreamPlan(l.output, t.stream) :: Nil
       case _ => Nil
     }
   }

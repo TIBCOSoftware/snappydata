@@ -3,13 +3,16 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
+import org.apache.spark.sql.streaming.{FileStreamRelation, KafkaStreamRelation, SocketStreamRelation}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hadoop.hive.ql.metadata.Hive
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -28,7 +31,6 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.streaming.StreamRelation
 import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
@@ -80,6 +82,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] def hiveMetastoreSharedPrefixes(): Seq[String] =
     context.getConf(HIVE_METASTORE_SHARED_PREFIXES, jdbcPrefixes())
         .filterNot(_ == "")
+
   private def jdbcPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
     "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc")
 
@@ -104,7 +107,9 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
    * meta-store that is configured in the hive-site.xml file.
    */
   @transient
-  protected[sql] val client: ClientInterface = {
+  protected[sql] var client: ClientInterface = newClient()
+
+  private def newClient(): ClientInterface = {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
@@ -119,30 +124,32 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       warehouse = new java.io.File("./warehouse").getCanonicalPath
       metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse)
     }
-    logInfo("default warehouse location is " + warehouse)
+    logInfo("Default warehouse location is " + warehouse)
 
-    val sparkConf = context.sparkContext.conf
-    //val dburl = sparkConf.get("gemfirexd.db.url")
-    //val driver = sparkConf.get("gemfirexd.db.driver")
-    /*
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-      "jdbc:gemfirexd://localhost:1527")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      "com.pivotal.gemfirexd.jdbc.ClientDriver")
-    */
-    // `configure` goes second to override other settings.
-    // `configure` goes second to override other settings.
-    if (sparkConf.contains("gemfirexd.db.url") &&
-        sparkConf.contains("gemfirexd.db.driver")) {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-        sparkConf.get("gemfirexd.db.url"))
+    val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
+    if (useSnappyStore) {
+      logInfo(s"Using SnappyStore as metastore database, dbURL = $dbURL")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        sparkConf.get("gemfirexd.db.driver"))
+        dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "APP")
+        "HIVE_METASTORE")
+    } else if (dbURL != null) {
+      logInfo(s"Using specified metastore database, dbURL = $dbURL")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
+      if (dbDriver != null) {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+          dbDriver)
+      } else {
+        metadataConf.unset(
+          HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER.varname)
+      }
+      metadataConf.unset(
+        HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME.varname)
+    } else {
+      logInfo("Using Hive metastore database, dbURL = " +
+          metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
-
-    //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -217,6 +224,27 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
         sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
+    }
+  }
+
+  private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
+    val sc = context.sparkContext
+    val sparkConf = sc.conf
+    val url = sparkConf.get(Property.metastoreDBURL, null)
+    if (url != null) {
+      val driver = sparkConf.get(Property.metastoreDriver, null)
+      (false, url, driver)
+    } else SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+           LocalMode(_, _) =>
+        (true, ExternalStoreUtils.defaultStoreURL(sc) +
+            ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
+      case SnappyShellMode(_, props) =>
+        (true, Constant.DEFAULT_EMBEDDED_URL +
+            ";host-data=false;default-persistent=true;" + props,
+            Constant.JDBC_EMBEDDED_DRIVER)
+      case ExternalClusterMode(_, _) =>
+        (false, null, null)
     }
   }
 
@@ -387,7 +415,16 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def unregisterExternalTable(tableIdent: QualifiedTableName): Unit = {
-    client.dropTable(tableIdent.getDatabase(client), tableIdent.table)
+    val dbName = tableIdent.getDatabase(client)
+    try {
+      client.dropTable(dbName, tableIdent.table)
+    } catch {
+      case he: HiveException if isDisconnectException(he) =>
+        // stale GemXD connection
+        Hive.closeCurrent()
+        client = newClient()
+        client.dropTable(dbName, tableIdent.table)
+    }
   }
 
   /**
@@ -447,15 +484,34 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
     tableProperties.put("EXTERNAL", tableType.toString)
 
-    client.createTable(
-      HiveTable(
-        specifiedDatabase = Option(tableIdent.getDatabase(client)),
-        name = tableIdent.table,
-        schema = Seq.empty,
-        partitionColumns = metastorePartitionColumns,
-        tableType = ExternalTable,
-        properties = tableProperties.toMap,
-        serdeProperties = options))
+    val hiveTable = HiveTable(
+      specifiedDatabase = Option(tableIdent.getDatabase(client)),
+      name = tableIdent.table,
+      schema = Seq.empty,
+      partitionColumns = metastorePartitionColumns,
+      tableType = ExternalTable,
+      properties = tableProperties.toMap,
+      serdeProperties = options)
+    try {
+      client.createTable(hiveTable)
+    } catch {
+      case he: HiveException if isDisconnectException(he) =>
+        // stale GemXD connection
+        Hive.closeCurrent()
+        client = newClient()
+        client.createTable(hiveTable)
+    }
+  }
+
+  private def isDisconnectException(t: Throwable): Boolean = {
+    if (t != null) {
+      val tClass = t.getClass.getName
+      tClass.contains("DisconnectedException") ||
+          tClass.contains("DisconnectException") ||
+          isDisconnectException(t.getCause)
+    } else {
+      false
+    }
   }
 
   def registerSampleTable(table: String, schema: StructType,
@@ -632,20 +688,21 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         s"$partitionStrategy", tableName, dropIfExists = true)
   }
 
-  /** tableName is assumed to be pre-normalized with processTableIdentifier */
-  private[sql] def getStreamTableRelation[T](
-      tableIdentifier: String): StreamRelation[T] = {
-    getStreamTableRelation(newQualifiedTableName(tableIdentifier))
+  /** tableName is assumed to be pre-normalized with processTableIdentifier*/
+  private[sql] def getStreamTableSchema(
+      tableIdentifier: String): StructType = {
+    getStreamTableSchema(newQualifiedTableName(tableIdentifier))
   }
 
   /** tableName is assumed to be pre-normalized with processTableIdentifier */
-  private[sql] def getStreamTableRelation[T](
-      tableName: QualifiedTableName): StreamRelation[T] = {
+  private[sql] def getStreamTableSchema[T](
+      tableName: QualifiedTableName): StructType = {
     val plan: LogicalPlan = tables.getOrElse(tableName,
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
-
     plan match {
-      case LogicalRelation(sr: StreamRelation[T], _) => sr
+      case LogicalRelation(sr: SocketStreamRelation[T], _) => sr.schema
+      case LogicalRelation(kr: KafkaStreamRelation, _) => kr.schema
+      case LogicalRelation(fr: FileStreamRelation, _) => fr.schema
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }
@@ -723,11 +780,11 @@ object ExternalTableType extends Enumeration {
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
 
-  def getTableType(relation : BaseRelation) : ExternalTableType.Type ={
+  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
     relation match {
-      case x : JDBCMutableRelation  => ExternalTableType.Row
-      case x : JDBCAppendableRelation => ExternalTableType.Columnar
-      case _=> ExternalTableType.Row
+      case x: JDBCMutableRelation => ExternalTableType.Row
+      case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case _ => ExternalTableType.Row
     }
   }
 }

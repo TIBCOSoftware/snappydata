@@ -24,6 +24,6 @@ class ColumnTableSpec extends SnappyFunSuite {
     val dataDF = snc.createDataFrame(rdd)
     dataDF.registerTempTable("temp_table")
 
-    //snc.registerAndInsertIntoExternalStore("table_name", props)
+    // snc.registerAndInsertIntoExternalStore("table_name", props)
   }
 }

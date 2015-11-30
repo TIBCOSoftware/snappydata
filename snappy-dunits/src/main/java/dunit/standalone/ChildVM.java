@@ -7,12 +7,12 @@
  */
 package dunit.standalone;
 
-import com.gemstone.gemfire.internal.OSProcess;
+import java.rmi.Naming;
+
+import com.gemstone.gemfire.internal.shared.NativeCalls;
 import dunit.standalone.DUnitLauncher.MasterRemote;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-
-import java.rmi.Naming;
 
 /**
  * @author dsmith
@@ -25,7 +25,7 @@ public class ChildVM {
     try {
       int namingPort = Integer.getInteger(DUnitLauncher.RMI_PORT_PARAM).intValue();
       int vmNum = Integer.getInteger(DUnitLauncher.VM_NUM_PARAM).intValue();
-      int pid = OSProcess.getId();
+      int pid = NativeCalls.getInstance().getProcessId();
       logger.info("VM" + vmNum + " is launching" + (pid > 0 ? " with PID " + pid : ""));
       MasterRemote holder = (MasterRemote) Naming.lookup("//localhost:" + namingPort + "/" + DUnitLauncher.MASTER_PARAM);
       DUnitLauncher.init(holder);
