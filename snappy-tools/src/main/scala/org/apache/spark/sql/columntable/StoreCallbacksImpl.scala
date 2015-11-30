@@ -44,30 +44,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     cachedBatchSize = batchSize
   }
 
-  def createCachedBatchWithConn(region: BucketRegion, batchID: UUID, bucketID: Int) = {
-    val container: GemFireContainer = region.getPartitionedRegion.getUserAttribute.asInstanceOf[GemFireContainer]
-    val tableName = container.getTableName
-    if (stores.get(tableName) != None) {
-      val (schema, externalStore) = stores.get(container.getTableName).get
-
-      val conn = externalStore.getConnection(container.getTableName)
-
-      Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
-      val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION($tableName, $bucketID)")
-      ps1.execute()
-      val ps2 = conn.prepareStatement(s"SELECT * FROM $tableName")
-      val rs = ps2.executeQuery()
-      val batchCreator = new CachedBatchCreator(s"${container.getTableName}_SHADOW_", schema,
-             externalStore, cachedBatchSize, useCompression)
-
-      batchCreator.createAndStoreBatchFromRS(rs, batchID, bucketID)
-    }
-  }
-
   override def createCachedBatch(region: BucketRegion, batchID: UUID, bucketID: Int) : java.util.Set[Any] = {
     val container: GemFireContainer = region.getPartitionedRegion.getUserAttribute.asInstanceOf[GemFireContainer]
-
-    println("ABCD creating cached batch for batchID  " + batchID)
 
     if (stores.get(container.getTableName) != None) {
       val (schema, externalStore) = stores.get(container.getTableName).get

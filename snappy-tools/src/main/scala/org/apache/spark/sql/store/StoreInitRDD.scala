@@ -76,7 +76,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     getPeerPartitions
   }
 
-  def getPeerPartitions(): Array[Partition] = {
+  def getPeerPartitions: Array[Partition] = {
     val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sqlContext.sparkContext).
         keySet.zipWithIndex
 

@@ -25,40 +25,10 @@ abstract class SnappyFunSuite
   protected var testName: String = _
   protected var dirList = ArrayBuffer[String]()
 
-<<<<<<< HEAD
-  private var _sc: Option[SparkContext] = None
-  private var _snc: Option[SnappyContext] = None
-
-  protected def sc: SparkContext = _sc.getOrElse {
-    val ctx = new SparkContext(newSparkConf())
-    _sc = Some(ctx)
-    ctx
-  }
-  protected def snc: SnappyContext = _snc.getOrElse {
-    val ctx = SnappyContext(sc)
-    ctx.setConf("spark.sql.inMemoryColumnarStorage.batchSize", "3")
-    ctx.setConf("spark.sql.inMemoryColumnarStorage.compressed", "true")
-    _snc = Some(ctx)
-    ctx
-||||||| merged common ancestors
-  private var _sc: Option[SparkContext] = None
-  private var _snc: Option[SnappyContext] = None
-
-  protected def sc: SparkContext = _sc.getOrElse {
-    val ctx = new SparkContext(newSparkConf())
-    _sc = Some(ctx)
-    ctx
-  }
-  protected def snc: SnappyContext = _snc.getOrElse {
-    val ctx = SnappyContext(sc)
-    _snc = Some(ctx)
-    ctx
-=======
   protected def sc: SparkContext = {
     val ctx = SnappyContext.globalSparkContext
     if (ctx != null && !ctx.isStopped) ctx
     else new SparkContext(newSparkConf())
->>>>>>> master
   }
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 

@@ -513,7 +513,7 @@ class SnappyContext private(sc: SparkContext)
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {
       case LogicalRelation(r: RowInsertableRelation) => r.insert(rows)
-      case x => throw new AnalysisException(
+      case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
   }
