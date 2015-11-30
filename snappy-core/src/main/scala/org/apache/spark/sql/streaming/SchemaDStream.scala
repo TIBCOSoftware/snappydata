@@ -68,10 +68,6 @@ final class SchemaDStream(
     streams
   }
 
-  //TODO Yogesh Does it make sense to add following APIS
-  //printSchema
-  //explain
-  //columns
   def explain(): Unit = explain(extended = false)
 
   /**
