@@ -27,8 +27,6 @@ class ExternalShellDUnitTest(s: String)
   override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
   def testTableCreation(): Unit = {
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",

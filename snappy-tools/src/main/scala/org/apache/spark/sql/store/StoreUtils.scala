@@ -1,18 +1,20 @@
 package org.apache.spark.sql.store
 
+import java.sql.Connection
 import java.util.Properties
 
+import com.gemstone.gemfire.cache.Region
+import com.pivotal.gemfirexd.internal.engine.Misc
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
-
 /**
   * Created by rishim on 6/10/15.
   */
@@ -150,5 +152,17 @@ object StoreUtils {
         .getOrElse(EMPTY_STRING))
 
     sb.toString()
+  }
+
+  def getTotalNumberOfBuckets(url: String, connProperties: Properties, tableName: String): Int = {
+    val conn: Connection = JdbcUtils.createConnection(url, connProperties)
+    try {
+      Misc.getRegionForTable(StoreUtils.lookupName(tableName, conn.getSchema), true).asInstanceOf[Region[_, _]] match {
+        case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
+        case _ =>  -1
+      }
+    } finally {
+      conn.close()
+    }
   }
 }

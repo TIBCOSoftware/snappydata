@@ -13,7 +13,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.collection.{Utils, UUIDRegionKey}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, UUIDRegionKey}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
@@ -152,11 +152,17 @@ class JDBCAppendableRelation(
     val useCompression = sqlContext.conf.useCompression
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
+    val maxPartitionForTable =
+      if (ExternalStoreUtils.isExternalShellMode(sqlContext.sparkContext)) {
+        ToolsCallbackInit.toolsCallback.getTotalNumberOfBuckets(url, connProperties, table)
+      }
+      else -1
+
     val output = df.logicalPlan.output
     val cached = df.mapPartitions { rowIterator =>
       def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        val uuid = externalStore.storeCachedBatch(batch, table)
+        val uuid = externalStore.storeCachedBatch(batch, table , maxPartitionForTable)
         accumulated += uuid
       }
 

@@ -1,6 +1,8 @@
 package io.snappydata
 
 
+import java.util.Properties
+
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -12,4 +14,5 @@ trait ToolsCallback {
   def invokeStartFabricServer(sc: SparkContext, hostData: Boolean)
   def invokeStopFabricServer(sc: SparkContext)
   def getLocatorJDBCURL(sc:SparkContext):String
+  def getTotalNumberOfBuckets(url:String , connProperties:Properties , tableName:String):Int
 }

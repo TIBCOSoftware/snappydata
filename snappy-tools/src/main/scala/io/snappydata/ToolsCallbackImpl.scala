@@ -1,6 +1,10 @@
 package io.snappydata
 
+import java.sql.Connection
 import java.util.Properties
+
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.store.StoreUtils
 
 import scala.collection.JavaConversions._
 
@@ -64,5 +68,9 @@ object ToolsCallbackImpl extends ToolsCallback {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl)
+  }
+
+  def getTotalNumberOfBuckets(url:String , connProperties:Properties , tableName:String):Int = {
+    StoreUtils.getTotalNumberOfBuckets(url,connProperties,tableName)
   }
 }
