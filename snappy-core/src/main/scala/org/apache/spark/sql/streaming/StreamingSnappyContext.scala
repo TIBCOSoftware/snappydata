@@ -23,7 +23,7 @@ import scala.reflect.runtime.{universe => u}
  * Created by ymahajan on 25/09/15.
  */
 
-final class StreamingSnappyContext(@transient val streamingContext: StreamingContext)
+final class StreamingSnappyContext private (@transient val streamingContext: StreamingContext)
   extends SnappyContext(streamingContext.sparkContext) with Serializable {
 
   self =>
@@ -110,8 +110,7 @@ object StreamingSnappyContext {
   @volatile private[this] var globalContext: StreamingSnappyContext = _
   private[this] val contextLock = new AnyRef
 
-  def apply(sc: StreamingContext,
-            init: StreamingSnappyContext => StreamingSnappyContext = identity): StreamingSnappyContext = {
+  def apply(sc: StreamingContext): StreamingSnappyContext = {
     val snc = globalContext
     if (snc != null) {
       snc
@@ -120,7 +119,9 @@ object StreamingSnappyContext {
       if (snc != null) {
         snc
       } else {
-        val snc = init(new StreamingSnappyContext(sc))
+        // global initialization of SnappyContext
+        SnappyContext.getOrCreate(sc.sparkContext)
+        val snc = new StreamingSnappyContext(sc)
         StreamingCtxtHolder.apply(sc)
         globalContext = snc
         snc
