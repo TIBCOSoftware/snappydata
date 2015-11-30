@@ -24,12 +24,13 @@ import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{SparkException, Logging, Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, SparkException, TaskContext}
 
 /**
   * An instance of the Spark SQL execution engine that delegates to supplied
@@ -109,7 +110,7 @@ class SnappyContext private(sc: SparkContext)
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {
       case (name, samplingOptions, schema, output, relation) =>
-        (relation, rows.mapPartitions(rowIterator => {
+        (relation, rows.mapPartitionsPreserve(rowIterator => {
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
@@ -165,7 +166,7 @@ class SnappyContext private(sc: SparkContext)
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
-    val cached = df.mapPartitions { rowIterator =>
+    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, output)
@@ -204,7 +205,7 @@ class SnappyContext private(sc: SparkContext)
       }
     }
 
-    val cached = rdd.mapPartitions { rowIterator =>
+    val cached = rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
@@ -621,8 +622,6 @@ class SnappyContext private(sc: SparkContext)
       }
     }
   }
-
-  import snappy.RDDExtensions
 
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long,
@@ -1075,7 +1074,7 @@ object SnappyContext extends Logging {
     val partitioner = topKRDD.partitioner.get
     // val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
     val batches = mutable.ArrayBuffer.empty[(Int, mutable.ArrayBuffer[Any])]
-    val pairRDD = rows.mapPartitions[(Int, mutable.ArrayBuffer[Any])](iter => {
+    val pairRDD = rows.mapPartitionsPreserve[(Int, mutable.ArrayBuffer[Any])](iter => {
       val map = iter.foldLeft(mutable.Map.empty[Int, mutable.ArrayBuffer[Any]])((m, x) => {
         val (partitionID, elem) = topkWrapper.rowToTupleConverter(x, partitioner)
         val list = m.getOrElse(partitionID, mutable.ArrayBuffer[Any]()) += elem
@@ -1091,7 +1090,7 @@ object SnappyContext extends Logging {
     }, preservesPartitioning = true)
 
     val nameAsString = name.toString
-    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitions[(Int, TopK)](
+    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitionsPreserve[(Int, TopK)](
       iterator => {
         val (key, (topkIterable, dataIterable)) = iterator.next()
         val tsCol = if (topkWrapper.timeInterval > 0) {
