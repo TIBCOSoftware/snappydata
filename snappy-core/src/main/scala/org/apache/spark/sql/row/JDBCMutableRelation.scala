@@ -3,15 +3,15 @@ package org.apache.spark.sql.row
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import org.apache.spark.sql.columnar.ExternalStoreUtils
+
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
@@ -28,7 +28,7 @@ class JDBCMutableRelation(
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
-    _poolProps: Map[String, String],
+    val poolProperties: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
     val origOptions: Map[String, String],
@@ -40,14 +40,12 @@ class JDBCMutableRelation(
     with UpdatableRelation
     with DeletableRelation
     with DestroyRelation
+    with IndexableRelation
     with Logging {
 
   override val needConversion: Boolean = false
 
   val driver = DriverRegistry.getDriverClassName(url)
-
-  val poolProperties = ExternalStoreUtils
-      .getAllPoolProperties(url, driver, _poolProps, hikariCP)
 
   final val dialect = JdbcDialects.get(url)
 
@@ -73,7 +71,7 @@ class JDBCMutableRelation(
     try {
 
       conn = JdbcUtils.createConnection(url, connProperties)
-      var tableExists = JdbcExtendedUtils.tableExists(conn, table,
+      var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         return
@@ -124,12 +122,14 @@ class JDBCMutableRelation(
     }
   }
 
+  final lazy val connector = JDBCMutableRelation.getConnector(table, driver,
+    dialect, poolProperties, connProperties, hikariCP)
+
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     new JDBCRDD(
       sqlContext.sparkContext,
-      JDBCMutableRelation.getConnector(table, driver, poolProperties,
-        connProperties, hikariCP),
+      connector,
       JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
@@ -162,7 +162,7 @@ class JDBCMutableRelation(
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.insert: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
@@ -185,7 +185,7 @@ class JDBCMutableRelation(
   }
 
   override def executeUpdate(sql: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
@@ -215,7 +215,7 @@ class JDBCMutableRelation(
               s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
     }
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
@@ -234,7 +234,7 @@ class JDBCMutableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table,
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val whereStr =
@@ -273,20 +273,46 @@ class JDBCMutableRelation(
       conn.close()
     }
   }
+
+  override def createIndex(tableName: String, sql: String): Unit = {
+    var conn: Connection = null
+    try {
+      conn = ExternalStoreUtils.getConnection(url, connProperties)
+      val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
+        dialect, sqlContext)
+
+      // Create the Index if the table exist.
+      if (tableExists) {
+        JdbcExtendedUtils.executeUpdate(sql, conn)
+      }
+      else {
+        throw new AnalysisException(s"Table $table do not exists.")
+      }
+    } catch {
+      case sqle: java.sql.SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+              "Ensure that the 'driver' option is set appropriately and " +
+              "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      if (conn != null) {
+        conn.close()
+      }
+    }
+  }
 }
 
 object JDBCMutableRelation extends Logging {
 
-  def getConnector(id: String, driver: String, poolProps: Map[String, String],
-      connProps: Properties, hikariCP: Boolean): () => Connection = {
+  def getConnector(id: String, driver: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): () => Connection = {
     () => {
-      try {
-        if (driver != null) DriverRegistry.register(driver)
-      } catch {
-        case cnfe: ClassNotFoundException =>
-          logWarning(s"Couldn't find driver class $driver", cnfe)
-      }
-      ConnectionPool.getPoolConnection(id, poolProps, connProps, hikariCP)
+      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
+        poolProps, connProps, hikariCP)
     }
   }
 
@@ -387,8 +413,4 @@ object JDBCMutableRelation extends Logging {
   }
 }
 
-final class DefaultSource
-    extends MutableRelationProvider {
-
-
-}
+final class DefaultSource extends MutableRelationProvider

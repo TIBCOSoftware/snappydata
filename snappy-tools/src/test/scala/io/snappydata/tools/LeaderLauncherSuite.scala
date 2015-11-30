@@ -1,15 +1,17 @@
 package io.snappydata.tools
 
-import java.io.{PrintStream, ByteArrayOutputStream}
+import java.io.{ByteArrayOutputStream, PrintStream}
 
-import scala.util.matching.Regex
-import scala.util.{Success, Failure, Try}
+import scala.util.{Failure, Success, Try}
 
+import com.gemstone.gemfire.internal.AvailablePort
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
-import com.gemstone.gemfire.internal.{DistributionLocator, AvailablePort}
+import com.pivotal.gemfirexd.{TestUtil, FabricService, Attribute}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, ServiceManager, Lead, Constant, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Created by soubhikc on 6/10/15.
@@ -19,8 +21,9 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
 
   override def beforeAll(): Unit = {
-    val f = new java.io.File("tests-snappy-loc-dir");
+    val f = new java.io.File("tests-snappy-loc-dir")
     f.mkdir()
+    dirList += f.getAbsolutePath
 
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = true
     GfxdDistributionLocator.main(Array(
@@ -36,8 +39,23 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       "stop",
       "-dir=tests-snappy-loc-dir"
     ))
-    deleteDir(new java.io.File("tests-snappy-loc-dir"))
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
+    dirCleanup()
+  }
+
+  test("leader api") {
+    val dirname = createDir("tests-snappy-leader-api")
+    val fs: Lead = ServiceManager.getLeadInstance
+
+    val props = TestUtil.doCommonSetup(null)
+
+    props.setProperty(Property.locators, s"localhost[${availablePort}]")
+    props.setProperty(Attribute.SYS_PERSISTENT_DIR, dirname)
+    fs.start(props)
+
+    assert(ServiceManager.getLeadInstance.status == FabricService.State.RUNNING)
+
+    fs.stop(null)
   }
 
   test("simple leader launch") {
@@ -65,8 +83,8 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
           val outputLines = stream.toString
           assert(outputLines.replaceAll("\n", "").matches(
             "SnappyData Leader pid: [0-9]+ status: running" +
-              "  Distributed system now has [0-9]+ members." +
-              "  Other members: .*([0-9]+:.*)<.*>:[0-9]+".r), outputLines)
+                "  Distributed system now has [0-9]+ members." +
+                "  Other members: .*([0-9]+:.*)<.*>:[0-9]+".r), outputLines)
 
         }
       }, {
@@ -83,12 +101,11 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "-dir=" + dirname
       ))
     }
-
   }
 
   test("leader standby") {
 
-    def verifyStatus(workingDir: String, expectedOutput: String) = {
+    def verifyStatus(workingDir: String, expectedOutput: String): Try[Unit] = {
       val stream = new ByteArrayOutputStream()
       Try {
         System.setOut(new PrintStream(stream))
@@ -153,18 +170,54 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     } finally {
       System.setOut(currentOut)
-      if (isLeader1NotStopped)
+      if (isLeader1NotStopped) {
         LeaderLauncher.main(Array(
           "stop",
           "-dir=" + leader1
         ))
+      }
 
       LeaderLauncher.main(Array(
         "stop",
         "-dir=" + leader2
       ))
     }
+  }
 
+  test("leader startup using SparkContext") {
+    val dirname = createDir("tests-snappy-leader-by-conf")
+
+    val conf = new SparkConf()
+        .setAppName(testName)
+        .setMaster(Constant.JDBC_URL_PREFIX + s"localhost[${availablePort}]")
+        // .set(Prop.Store.locators, s"localhost[${availablePort}]")
+        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.SYS_PERSISTENT_DIR, dirname)
+
+    val sc = new SparkContext(conf)
+
+    sc.stop()
+  }
+
+  test("simple leader spark properties") {
+
+    val dirname = createDir("tests-snappy-leader-spark-prop")
+
+    try {
+      LeaderLauncher.main(Array(
+        "start",
+        "-dir=" + dirname,
+        s"-locators=localhost[${availablePort}]",
+        s"-spark.ui.port=3344",
+        s"-jobserver.enabled=true",
+        s"-embedded=true"
+      ))
+    } finally {
+      LeaderLauncher.main(Array(
+        "stop",
+        "-dir=" + dirname
+      ))
+    }
 
   }
+
 }

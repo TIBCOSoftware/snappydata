@@ -10,21 +10,25 @@ import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.{LogicalRDD, StratifiedSample, TopK, TopKWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
@@ -37,7 +41,6 @@ import org.apache.spark.{Logging, Partition, TaskContext}
  */
 final class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
-
 
   override val conf = context.conf
 
@@ -79,6 +82,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] def hiveMetastoreSharedPrefixes(): Seq[String] =
     context.getConf(HIVE_METASTORE_SHARED_PREFIXES, jdbcPrefixes())
         .filterNot(_ == "")
+
   private def jdbcPrefixes() = Seq("com.pivotal.gemfirexd", "com.mysql.jdbc",
     "org.postgresql", "com.microsoft.sqlserver", "oracle.jdbc")
 
@@ -103,7 +107,9 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
    * meta-store that is configured in the hive-site.xml file.
    */
   @transient
-  protected[sql] val client: ClientInterface = {
+  protected[sql] var client: ClientInterface = newClient()
+
+  private def newClient(): ClientInterface = {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
@@ -118,29 +124,32 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       warehouse = new java.io.File("./warehouse").getCanonicalPath
       metadataConf.setVar(HiveConf.ConfVars.METASTOREWAREHOUSE, warehouse)
     }
-    logInfo("default warehouse location is " + warehouse)
+    logInfo("Default warehouse location is " + warehouse)
 
-    val sparkConf = context.sparkContext.conf
-    //val dburl = sparkConf.get("gemfirexd.db.url")
-    //val driver = sparkConf.get("gemfirexd.db.driver")
-    /*
-    metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-      "jdbc:gemfirexd://localhost:1527")
-    metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-      "com.pivotal.gemfirexd.jdbc.ClientDriver")
-    */
-    // `configure` goes second to override other settings.
-    // `configure` goes second to override other settings.
-    if (sparkConf.contains("gemfirexd.db.url")  && sparkConf.contains("gemfirexd.db.driver")) {
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-        sparkConf.get("gemfirexd.db.url"))
+    val (useSnappyStore, dbURL, dbDriver) = resolveMetaStoreDBProps()
+    if (useSnappyStore) {
+      logInfo(s"Using SnappyStore as metastore database, dbURL = $dbURL")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
-        sparkConf.get("gemfirexd.db.driver"))
+        dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "APP")
+        "HIVE_METASTORE")
+    } else if (dbURL != null) {
+      logInfo(s"Using specified metastore database, dbURL = $dbURL")
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
+      if (dbDriver != null) {
+        metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
+          dbDriver)
+      } else {
+        metadataConf.unset(
+          HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER.varname)
+      }
+      metadataConf.unset(
+        HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME.varname)
+    } else {
+      logInfo("Using Hive metastore database, dbURL = " +
+          metadataConf.getVar(HiveConf.ConfVars.METASTORECONNECTURLKEY))
     }
-    //metadataConf.setVar(HiveConf.ConfVars.METASTORE_TRANSACTION_ISOLATION, "")
-
 
     val allConfig = metadataConf.asScala.map(e =>
       e.getKey -> e.getValue).toMap ++ configure
@@ -217,6 +226,27 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         isolationOn = true,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
         sharedPrefixes = hiveMetastoreSharedPrefixes()).client
+    }
+  }
+
+  private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
+    val sc = context.sparkContext
+    val sparkConf = sc.conf
+    val url = sparkConf.get(Property.metastoreDBURL, null)
+    if (url != null) {
+      val driver = sparkConf.get(Property.metastoreDriver, null)
+      (false, url, driver)
+    } else SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+           LocalMode(_, _) =>
+        (true, ExternalStoreUtils.defaultStoreURL(sc) +
+            ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
+      case SnappyShellMode(_, props) =>
+        (true, Constant.DEFAULT_EMBEDDED_URL +
+            ";host-data=false;default-persistent=true;" + props,
+            Constant.JDBC_EMBEDDED_DRIVER)
+      case ExternalClusterMode(_, _) =>
+        (false, null, null)
     }
   }
 
@@ -395,13 +425,23 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   def registerExternalTable(tableName: QualifiedTableName,
       userSpecifiedSchema: Option[StructType],
       partitionColumns: Array[String], provider: String,
-      options: Map[String, String]): Unit = {
-    createDataSourceTable(tableName, ExternalTableType.Row,
+      options: Map[String, String],
+      tableType: ExternalTableType.Type): Unit = {
+    createDataSourceTable(tableName, tableType,
       userSpecifiedSchema, partitionColumns, provider, options)
   }
 
   def unregisterExternalTable(tableIdent: QualifiedTableName): Unit = {
-    client.dropTable(tableIdent.getDatabase(client), tableIdent.table)
+    val dbName = tableIdent.getDatabase(client)
+    try {
+      client.dropTable(dbName, tableIdent.table)
+    } catch {
+      case he: HiveException if isDisconnectException(he) =>
+        // stale GemXD connection
+        Hive.closeCurrent()
+        client = newClient()
+        client.dropTable(dbName, tableIdent.table)
+    }
   }
 
   /**
@@ -461,15 +501,34 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
     tableProperties.put("EXTERNAL", tableType.toString)
 
-    client.createTable(
-      HiveTable(
-        specifiedDatabase = Option(tableIdent.getDatabase(client)),
-        name = tableIdent.table,
-        schema = Seq.empty,
-        partitionColumns = metastorePartitionColumns,
-        tableType = ExternalTable,
-        properties = tableProperties.toMap,
-        serdeProperties = options))
+    val hiveTable = HiveTable(
+      specifiedDatabase = Option(tableIdent.getDatabase(client)),
+      name = tableIdent.table,
+      schema = Seq.empty,
+      partitionColumns = metastorePartitionColumns,
+      tableType = ExternalTable,
+      properties = tableProperties.toMap,
+      serdeProperties = options)
+    try {
+      client.createTable(hiveTable)
+    } catch {
+      case he: HiveException if isDisconnectException(he) =>
+        // stale GemXD connection
+        Hive.closeCurrent()
+        client = newClient()
+        client.createTable(hiveTable)
+    }
+  }
+
+  private def isDisconnectException(t: Throwable): Boolean = {
+    if (t != null) {
+      val tClass = t.getClass.getName
+      tClass.contains("DisconnectedException") ||
+          tClass.contains("DisconnectException") ||
+          isDisconnectException(t.getCause)
+    } else {
+      false
+    }
   }
 
   def registerSampleTable(table: String, schema: StructType,
@@ -562,12 +621,12 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     }
     val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
         .loadClass(externalSource).getConstructor(classOf[Map[String, String]])
-    return constructor.newInstance(options).asInstanceOf[ExternalStore]
+    constructor.newInstance(options).asInstanceOf[ExternalStore]
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean) = {
-    val isLoner = context.isLoner
+      tableName: String, dropIfExists: Boolean): Unit = {
+    val isLoner = Utils.isLoner(context.sparkContext)
 
     val rdd = new DummyRDD(context) {
       override def compute(split: Partition,
@@ -575,7 +634,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
         DriverRegistry.register(externalStore.driver)
         JdbcDialects.get(externalStore.url) match {
           case d: JdbcExtendedDialect =>
-            val extraProps = d.extraCreateTableProperties(isLoner).propertyNames
+            val extraProps = d.extraDriverProperties(isLoner).propertyNames
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
               if (externalStore.connProps.get(p) != null) {
@@ -583,6 +642,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
                     "shouldn't exist here in Executors")
               }
             }
+          case _ =>
         }
 
         val conn = ExternalStoreUtils.getConnection(externalStore.url,
@@ -608,7 +668,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     val dialect = JdbcDialects.get(externalStore.url)
     dialect match {
       case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraCreateTableProperties(isLoner))
+        connProps.putAll(d.extraDriverProperties(isLoner))
     }
 
     externalStore.tryExecute(tableName, {
@@ -707,6 +767,10 @@ object SnappyStoreHiveCatalog {
       tableIdentifier.map(Utils.normalizeId)
     }
   }
+
+  def closeCurrent(): Unit = {
+    Hive.closeCurrent()
+  }
 }
 
 /** A fully qualified identifier for a table (i.e. [dbName.]schema.tableName) */
@@ -739,4 +803,12 @@ object ExternalTableType extends Enumeration {
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
+
+  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
+    relation match {
+      case x: JDBCMutableRelation => ExternalTableType.Row
+      case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case _ => ExternalTableType.Row
+    }
+  }
 }

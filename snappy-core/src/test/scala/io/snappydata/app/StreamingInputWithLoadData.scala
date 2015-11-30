@@ -117,7 +117,7 @@ object StreamingInputWithLoadData extends Serializable {
     //    } onSuccess { case ret => println("YAHOOOOO!!!!...." + ret) }
 
     Thread.sleep(35000) // sleep well otherwise stopping the stream will erase SAMPLING!!
-    println("SB: About to STOP......")
+    println("About to STOP......")
 
 
     ssc.stop(false, true)
