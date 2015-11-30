@@ -10,7 +10,7 @@ dependencies {
   compile project(':snappy-tools_' + scalaBinaryVersion)
 }
 
-task product(dependsOn: 'jar') << {
+task productExamples(dependsOn: 'jar') << {
   def productDir = file("${rootProject.buildDir}/snappy")
   productDir.mkdirs()
   def exampleArchiveName = "quickstart-${version}.jar"
