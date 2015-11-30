@@ -27,6 +27,8 @@ case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStrea
 
   override def doExecute(): RDD[InternalRow] = {
     assert(validTime != null)
+    //For dynamic CQ
+    //if(!stream.isInitialized) stream.initializeAfterContextStart(validTime)
     StreamUtils.invoke(classOf[DStream[Row]], stream, "getOrCompute", (classOf[Time], validTime))
       .asInstanceOf[Option[RDD[InternalRow]]]
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))

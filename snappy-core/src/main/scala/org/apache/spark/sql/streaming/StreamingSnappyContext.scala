@@ -1,5 +1,6 @@
 package org.apache.spark.sql.streaming
 
+
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -22,7 +23,7 @@ import scala.reflect.runtime.{universe => u}
  * Created by ymahajan on 25/09/15.
  */
 
-protected final class StreamingSnappyContext(@transient val streamingContext: StreamingContext)
+final class StreamingSnappyContext(@transient val streamingContext: StreamingContext)
   extends SnappyContext(streamingContext.sparkContext) with Serializable {
 
   self =>
@@ -44,7 +45,19 @@ protected final class StreamingSnappyContext(@transient val streamingContext: St
     val plan = sql(queryStr).queryExecution.logical
     //TODO Yogesh, This needs to get registered with catalog
     //catalog.registerCQ(queryStr, plan)
-    new SchemaDStream(self, plan)
+    val dStream = new SchemaDStream(self, plan)
+    //TODO Yogesh, Remove this hack
+    /*if (streamingContext.getState() == StreamingContextState.ACTIVE) {
+      val zeroTime = streamingContext.graph.zeroTime
+      var currentTime = Time(System.currentTimeMillis())
+      while (!(currentTime - zeroTime).isMultipleOf(dStream.slideDuration)) {
+        currentTime = Time(System.currentTimeMillis())
+      }
+      // For dynamic CQ
+      dStream.initializeAfterContextStart(currentTime)
+      //streamingContext.graph.addOutputStream(dStream)
+    }*/
+    dStream
   }
 
   /**

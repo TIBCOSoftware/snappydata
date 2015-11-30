@@ -257,7 +257,7 @@ private[sql] case class CreateExternalTableUsing(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options)
@@ -275,7 +275,7 @@ private[sql] case class CreateExternalTableUsingSelect(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -292,7 +292,7 @@ private[sql] case class DropTable(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -305,7 +305,7 @@ private[sql] case class TruncateTable(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
     Seq.empty
@@ -364,7 +364,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
       Array.empty[String], provider, options)
     val plan = LogicalRelation(resolved.relation)
     val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
@@ -392,7 +392,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
       case 1 =>
         // Register sampling of all the streams
-        val snappyCtxt = SnappyContext(sqlContext.sparkContext)
+        val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
         val catalog = snappyCtxt.catalog
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
@@ -434,7 +434,7 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     val table = options(BASETABLE)
 
     val snappyCtxt = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else SnappyContext(sqlContext.sparkContext)
+      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val catalog = snappyCtxt.catalog
 
     val tableIdent = catalog.newQualifiedTableName(table)

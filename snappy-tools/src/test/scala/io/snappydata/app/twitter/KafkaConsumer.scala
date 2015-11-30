@@ -2,11 +2,9 @@ package io.snappydata.app.twitter
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamingSnappyContext}
 import org.apache.spark.streaming._
-import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
+import org.apache.spark.sql.SaveMode
 
 /**
  * Created by ymahajan on 28/10/15.
@@ -20,102 +18,163 @@ object KafkaConsumer {
     "user" -> "app",
     "password" -> "app"
   )
-  val options =  "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false' ," +
-    "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
-    "poolimpl 'tomcat', " +
-    "user 'app', " +
-    "password 'app' ) "
+//  val options =  "OPTIONS (url 'jdbc:gemfirexd:;mcast-port=33619;user=app;password=app;persist-dd=false' ," +
+//    "driver 'com.pivotal.gemfirexd.jdbc.EmbeddedDriver' ," +
+//    "poolimpl 'tomcat', " +
+//    "user 'app', " +
+//    "password 'app' ) "
 
 
   def main(args: Array[String]) {
-    val sc = new org.apache.spark.SparkConf()
-      .setMaster("local[2]")
+    val sparkConf = new org.apache.spark.SparkConf()
+     .setMaster("local[2]")
+      //.setMaster("snappydata://localhost:10334")
       .setAppName("kafkaconsumer")
       .set("snappydata.store.locators", "localhost")
-    val ssc = new StreamingContext(new SparkContext(sc), Milliseconds(200))
-    val snsc = StreamingSnappyContext(ssc);
+    //.set("snappydata.store.locators", "localhost:1527")
+
+    val sc = new SparkContext(sparkConf)
+    val ssc = new StreamingContext(sc, Milliseconds(200))
+    ssc.remember(Milliseconds(60000+1))
+    ssc.checkpoint("/home/ymahajan/checkpoint")
+    val ssnc = StreamingSnappyContext(ssc);
 
     val streamTable = "directKafkaStreamTable"
-    snsc.sql("create stream table "+ streamTable + " (id long, text string, fullName string, country string, retweets int) using kafka_stream options (storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter' ," +
+    ssnc.sql("create stream table "+ streamTable + " (id long, text string, fullName string, country string, retweets int) " +
+      "using kafka_stream options " +
+      "(storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter' ," +
       " kafkaParams 'metadata.broker.list->localhost:9092', topics 'tweetstream')")
 
-    snsc.sql("create sampled table directKafkaStreamTable_sampled Options (basetable 'directKafkaStreamTable', qcs 'text', fraction '0.005', strataReservoirSize '100' )")
-    snsc.cacheTable("directKafkaStreamTable_sampled")
+    ssnc.sql("create sampled table directKafkaStreamTable_sampled Options " +
+      "(basetable 'directKafkaStreamTable', qcs 'text', fraction '0.005', strataReservoirSize '100' )")
+    ssnc.cacheTable("directKafkaStreamTable_sampled")
 
-    val tableStream = snsc.getSchemaDStream(streamTable)
-    //val tableSchema = snsc.getSchema(streamTable)
-    snsc.dropExternalTable("kafkaExtTable", true)
-    snsc.createExternalTable("kafkaExtTable" , "column", tableStream.schema, Map.empty[String,String])
+    val tableStream = ssnc.getSchemaDStream(streamTable)
+
+//    tableStream.
+    ssnc.dropExternalTable("kafkaExtTable", true)
+    ssnc.createExternalTable("kafkaExtTable" , "column", tableStream.schema, Map.empty[String,String])
 
     tableStream.foreachRDD(rdd =>
-      println(s"Saving Twitter stream:" +
+      //println(s"Saving Twitter stream:" +
+      println(s"" +
         s" ${
-          //snsc.appendToCacheRDD(rdd, "kafkaExtTable", tableStream.schema)
-          val df = snsc.createDataFrame(rdd, tableStream.schema)
-          //df.show()
-          df.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
+          val df = ssnc.createDataFrame(rdd, tableStream.schema)
+          //df.show
+          df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("kafkaExtTable")
         }")
     )
+    ssnc.sql( """STREAMING CONTEXT START """)
+
+    val resultSet: SchemaDStream = ssnc.registerCQ("SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%the%'")
+    //    val resultSet: SchemaDStream = ssnc.registerCQ("select * from directKafkaStreamTable " +
+    //      "window (duration '4' seconds, slide '4' seconds) d, kafkaExtTable k where d.id=k.id and d.text like '%girl%'")
+    resultSet.foreachRDD(rdd =>
+      println(s"Received Twitter stream results. Count:" +
+        s" ${if(!rdd.isEmpty()) {
+          val df = ssnc.createDataFrame(rdd, resultSet.schema)
+          df.show
+          //df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
+          //ssnc.appendToCacheRDD(rdd, streamTable, resultSet.schema)
+        }
+        }")
+    )
+    Thread.sleep(12344)
+    val resultSet2: SchemaDStream = ssnc.registerCQ("SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%the%'")
+    //    val resultSet: SchemaDStream = ssnc.registerCQ("select * from directKafkaStreamTable " +
+    //      "window (duration '4' seconds, slide '4' seconds) d, kafkaExtTable k where d.id=k.id and d.text like '%girl%'")
+    resultSet2.foreachRDD(rdd =>
+      println(s"Received Twitter stream results. Count:" +
+        s" ${if(!rdd.isEmpty()) {
+          val df = ssnc.createDataFrame(rdd, resultSet.schema)
+          df.show
+          //df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
+          //ssnc.appendToCacheRDD(rdd, streamTable, resultSet.schema)
+        }
+        }")
+    )
+
+
+    //    tableStream.foreachRDD(rdd =>
+//      println(s"Saving Twitter stream:" +
+//        s" ${
+//          //ssnc.appendToCacheRDD(rdd, "kafkaExtTable", tableStream.schema)
+//          //OR
+//          val df = ssnc.createDataFrame(rdd, tableStream.schema)
+//          df.write.format("row").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("kafkaExtTable")
+//        }")
+//    )
+
 //    import StreamingSnappyContext._
 //    tableStream.saveToExternalTable("kafkaExtTable", tableStream.schema, Map.empty[String,String])
 
 //    tableStream.foreachRDD(rdd => {
-//      val df = snsc.createDataFrame(rdd, tableStream.schema)
+//      val df = ssnc.createDataFrame(rdd, tableStream.schema)
 //      //df.show()
 //      //df.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
 //    }
 //    )
-//    val result = snsc.sql("SELECT * FROM kafkaExtTable")
+//    val result = ssnc.sql("SELECT * FROM kafkaExtTable")
 //    val r = result.collect
 //    System.out.println("YOGS result ",r.length)
 
-    //snsc.cacheTable(streamTable)
-    //snsc.udf.register("sentiment", sentiment _)
+    //ssnc.cacheTable(streamTable)
 
-    val query1 = "SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where country='jp'"
-    val query2 = "SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%girl%' limit 10"
-    val query3 = "SELECT retweets, max(retweets), min(retweets), avg(retweets) FROM directKafkaStreamTable window (duration '20' seconds, slide '20' seconds) group by retweets"
-    val query4 = "SELECT sentiment(text) FROM directKafkaStreamTable window (duration '10' seconds, slide '10' seconds) where text like '%girl%' group by sentiment(text)"
-    val query5 = "SELECT retweets, max(retweets), min(retweets), avg(retweets) FROM directKafkaStreamTable window (duration '4' seconds, slide '4' seconds) group by retweets"
+    //ssnc.udf.register("sentiment", sentiment _)
 
-    val resultSet: SchemaDStream = snsc.registerCQ("select * from directKafkaStreamTable " +
-      "window (duration '4' seconds, slide '4' seconds) d, kafkaExtTable k where d.id=k.id and d.text like '%girl%'")
-    resultSet.printSchema()
-    resultSet.explain()
-    println("columns ", resultSet.columns)
-    resultSet.foreachRDD(rdd =>
-      println(s"Received Twitter stream results. Count:" +
-        s" ${if(!rdd.isEmpty()) {
-          val df = snsc.createDataFrame(rdd, resultSet.schema)
-          df.show()
-          //df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
-          //snsc.appendToCacheRDD(rdd, streamTable, resultSet.schema)
-        }
-        }")
-    )
+//    val query1 = "SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where country='jp'"
+//    val query2 = "SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%girl%' limit 10"
+//    val query3 = "SELECT retweets, max(retweets), min(retweets), avg(retweets) FROM directKafkaStreamTable window (duration '20' seconds, slide '20' seconds) group by retweets"
+//    val query4 = "SELECT sentiment(text) FROM directKafkaStreamTable window (duration '10' seconds, slide '10' seconds) where text like '%girl%' group by sentiment(text)"
+//    val query5 = "SELECT retweets, max(retweets), min(retweets), avg(retweets) FROM directKafkaStreamTable window (duration '4' seconds, slide '4' seconds) group by retweets"
+
+   // ssnc.sql( """STREAMING CONTEXT START """)
+
+
+//    val resultSet: SchemaDStream = ssnc.registerCQ("SELECT * FROM directKafkaStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%girl%'")
+////    val resultSet: SchemaDStream = ssnc.registerCQ("select * from directKafkaStreamTable " +
+////      "window (duration '4' seconds, slide '4' seconds) d, kafkaExtTable k where d.id=k.id and d.text like '%girl%'")
+//    resultSet.foreachRDD(rdd =>
+//      println(s"Received Twitter stream results. Count:" +
+//        s" ${if(!rdd.isEmpty()) {
+//          val df = ssnc.createDataFrame(rdd, resultSet.schema)
+//          df.show()
+//          //df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
+//          //ssnc.appendToCacheRDD(rdd, streamTable, resultSet.schema)
+//        }
+//        }")
+//    )
+
+
+        resultSet.foreachRDD(rdd =>
+            {
+              val df = ssnc.createDataFrame(rdd, resultSet.schema)
+              df.show()
+              df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
+            }
+        )
     //resultSet.foreachRDD { r => r.foreach(println) }
 
     //Thread.sleep(40000)
 
-    snsc.sql("select * from kafkaExtTable").show()
-    //snsc.sql("select * from directKafkaStreamTable_sampled").show()
+    //ssnc.sql("select * from kafkaExtTable").show()
+    //ssnc.sql("select * from directKafkaStreamTable_sampled").show()
 
 //    val directKafkaStoreTable = "directKafkaStoreTable"
-//    snsc.sql("CREATE TABLE " + directKafkaStoreTable + " USING column " +
+//    ssnc.sql("CREATE TABLE " + directKafkaStoreTable + " USING column " +
 //      options + " AS (SELECT * FROM " + streamTable + ")")
-//    snsc.sql("SELECT * FROM " + directKafkaStoreTable).show()
-//    snsc.sql("DROP TABLE " + directKafkaStoreTable)
+//    ssnc.sql("SELECT * FROM " + directKafkaStoreTable).show()
+//    ssnc.sql("DROP TABLE " + directKafkaStoreTable)
 
-//    val tableDStream: SchemaDStream = snsc.getSchemaDStream("directKafkaStreamTable")
+//    val tableDStream: SchemaDStream = ssnc.getSchemaDStream("directKafkaStreamTable")
 //    import org.apache.spark.sql.streaming.snappy._
 //    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema, props)
-//    snsc.sql("select count(*) as count from kafkaStreamGemXdTable").show()
+//    ssnc.sql("select count(*) as count from kafkaStreamGemXdTable").show()
 
-    snsc.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(30* 1000)
-    snsc.sql( """STREAMING CONTEXT STOP """)
-    //snsc.sql("select * from directKafkaStreamTable_sampled").show()
-    snsc.sql("select * from kafkaExtTable").show()
+    ssc.awaitTerminationOrTimeout(300* 1000)
+    ssnc.sql( """STREAMING CONTEXT STOP """)
+    //ssnc.sql("select * from directKafkaStreamTable_sampled").show()
+    //ssnc.sql("select * from kafkaExtTable").show()
 
   }
 
