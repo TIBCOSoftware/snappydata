@@ -1,6 +1,6 @@
 package io.snappydata.dunit.externalstore
 
-import io.snappydata.dunit.cluster.{ClusterManagerTestUtils, ClusterManagerTestBase}
+import io.snappydata.dunit.cluster.ClusterManagerTestBase
 
 import org.apache.spark.sql.SaveMode
 
@@ -10,32 +10,13 @@ import org.apache.spark.sql.SaveMode
 class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
-    // Lead is started before other servers are started
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-
-    vm0.invoke(this.getClass, "startSparkJob")
+    startSparkJob()
   }
 
   def testCreateInsertAndDropOfTable(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm3.invoke(this.getClass, "startSnappyServer", startArgs)
-    Thread.sleep(5000)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm0.invoke(this.getClass, "startSparkJob2")
+    startSparkJob2()
   }
-}
 
-/**
- * Since this object derives from ClusterManagerTestUtils
- */
-object RowTableDUnitTest extends ClusterManagerTestUtils {
   private val tableName: String = "RowTable"
 
   val props = Map.empty[String, String]
@@ -53,7 +34,7 @@ object RowTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 0)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -73,7 +54,7 @@ object RowTableDUnitTest extends ClusterManagerTestUtils {
     assert(r.length == 5)
 
     snc.dropExternalTable(tableName, ifExists = true)
-    println("Successful")
+    logger.info("Successful")
   }
 }
 

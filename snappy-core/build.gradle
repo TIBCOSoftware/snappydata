@@ -26,8 +26,8 @@ dependencies {
     compile 'org.apache.spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
   }
 
-  compile 'org.apache.tomcat:tomcat-jdbc:8.0.24'
-  compile 'com.zaxxer:HikariCP-java6:2.3.9'
+  compile 'org.apache.tomcat:tomcat-jdbc:8.0.28'
+  compile 'com.zaxxer:HikariCP-java6:2.3.12'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
@@ -40,10 +40,22 @@ dependencies {
   }
 }
 
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+}
+
 scalaTest {
   maxParallelForks = 1
   maxHeapSize '4g'
   dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
 }
 test {
   maxParallelForks = 4

@@ -16,11 +16,11 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Extending server launcher to init Jobserver as part of lead
- * node startup. This node won't start DRDA network server.
- *
- * Created by soubhikc on 30/09/15.
- */
+  * Extending server launcher to init Jobserver as part of lead
+  * node startup. This node won't start DRDA network server.
+  *
+  * Created by soubhikc on 30/09/15.
+  */
 class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   val genericLogger = LoggerFactory.getLogger(getClass)
@@ -28,12 +28,12 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   @throws(classOf[Exception])
   override protected def getFabricServiceInstance: FabricService = ServiceManager.getLeadInstance
 
-  def initStartupArgs(args: ArrayBuffer[String]) = {
+  def initStartupArgs(args: ArrayBuffer[String]): Array[String] = {
 
-//    if (args.length == 0) {
-//      usage()
-//      System.exit(1)
-//    }
+    //    if (args.length == 0) {
+    //      usage()
+    //      System.exit(1)
+    //    }
     assert(args.length > 0, LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
 
     def changeOrAppend(attr: String, value: String, overwrite: Boolean = false) = {
@@ -57,7 +57,9 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   override protected def usage(): Unit = {
     val script: String = LocalizedMessages.res.getTextMessage("SD_LEAD_SCRIPT")
     val name: String = LocalizedMessages.res.getTextMessage("SD_LEAD_NAME")
-    val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP", script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), LocalizedResource.getMessage("FS_EXTRA_HELP"))
+    val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP",
+      script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"),
+      LocalizedResource.getMessage("FS_EXTRA_HELP"))
     printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
   }
 
@@ -67,7 +69,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   @throws(classOf[Exception])
   override protected def startAdditionalServices(cache: Cache,
-                                                 options: java.util.Map[String, Object], props: Properties): Unit = {
+      options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.
     // We don't want to init net-server in leader.
 
@@ -77,7 +79,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
       case State.STARTING =>
         Thread.sleep(1000)
       case State.STANDBY =>
-        status = CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.STANDBY, getProcessId)
+        status = CacheServerLauncher.createStatus(this.baseName,
+          CacheServerLauncher.STANDBY, getProcessId)
         genericLogger.info("Parking this lead node in standby mode")
 
         val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
@@ -90,7 +93,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   def writeRunningStatus(): Unit = {
     genericLogger.info("Becoming primary Lead Node in absence of existing primary.")
-    status = CacheServerLauncher.createStatus(this.baseName, CacheServerLauncher.RUNNING, getProcessId)
+    status = CacheServerLauncher.createStatus(this.baseName,
+      CacheServerLauncher.RUNNING, getProcessId)
     writeStatus(status)
   }
 
