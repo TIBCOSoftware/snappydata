@@ -27,7 +27,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore, StoreUtils}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
 
 /**
  * Columnar Store implementation for GemFireXD.
@@ -115,7 +115,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
 class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     tableName: String,
     requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
-    extends RDD[CachedBatch](_sc, Nil) {
+    extends RDD[CachedBatch](_sc, Nil) with Logging {
 
   override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName, {

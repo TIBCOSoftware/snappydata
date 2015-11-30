@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical
@@ -78,7 +79,7 @@ private final class ExecutorPartitionInfo(val blockId: BlockManagerId,
 
 final class SamplePartition(val parent: Partition, override val index: Int,
     @transient private[this] val _partInfo: ExecutorPartitionInfo,
-    var isLastHostPartition: Boolean) extends Partition with Serializable {
+    var isLastHostPartition: Boolean) extends Partition with Serializable with Logging {
 
   val blockId = _partInfo.blockId
 
@@ -86,6 +87,7 @@ final class SamplePartition(val parent: Partition, override val index: Int,
 
   override def toString =
     s"SamplePartition($index, $blockId, isLast=$isLastHostPartition)"
+
 }
 
 final class StratifiedSampledRDD(@transient parent: RDD[InternalRow],
@@ -145,11 +147,12 @@ final class StratifiedSampledRDD(@transient parent: RDD[InternalRow],
 
         // first find all executors for preferred hosts of parent partition
         plocs.flatMap { loc =>
-          val underscoreIndex = loc.indexOf('_')
+          val underscoreIndex = loc.lastIndexOf('_')
           if (underscoreIndex >= 0) {
             // if the preferred location is already an executorId then search
             // in available executors for its host
-            val host = loc.substring(0, underscoreIndex)
+            val host = loc.substring(TaskLocation.executorLocationTag.length,
+              underscoreIndex)
             val executorId = loc.substring(underscoreIndex + 1)
             val executors = peerExecutorMap.getOrElse(host, Iterator.empty)
             executors.find(_.blockId.executorId == executorId) match {
