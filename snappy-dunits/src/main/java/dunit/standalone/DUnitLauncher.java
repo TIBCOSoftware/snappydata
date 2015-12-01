@@ -132,7 +132,10 @@ public class DUnitLauncher {
     return "localhost[" + locatorPort + "]";
   }
 
-  
+  public static int getLocator() {
+    return locatorPort;
+  }
+
   private static void launch() throws URISyntaxException, AlreadyBoundException, IOException, InterruptedException, NotBoundException  {
     DUNIT_SUSPECT_FILE = new File(SUSPECT_FILENAME);
     DUNIT_SUSPECT_FILE.delete();
@@ -172,8 +175,6 @@ public class DUnitLauncher {
     host.init(registry, NUM_VMS);
 
     init(master);
-    
-    //startLocator(registry);
   }
   
   public static Properties getDistributedSystemProperties() {

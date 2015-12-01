@@ -1,5 +1,6 @@
 package org.apache.spark.sql
 
+import java.sql.SQLException
 import java.util.regex.Pattern
 
 import org.apache.spark.SparkContext
@@ -83,6 +84,17 @@ object SnappyParser extends SqlParserBase {
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(Seq(r)), s)
     }
+
+  override def parseExpression(input: String): Expression = synchronized {
+    // Initialize the Keywords.
+    initLexical
+    phrase(projection)(new lexical.Scanner(input)) match {
+      case Success(plan, _) => plan
+      //case failureOrError => sys.error(failureOrError.toString)
+      case failureOrError => throw new SQLException(failureOrError.toString, "42X01")
+    }
+  }
+
 }
 
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */

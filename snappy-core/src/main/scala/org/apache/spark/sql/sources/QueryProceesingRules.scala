@@ -8,7 +8,7 @@ import scala.util.control.Breaks._
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan, UnaryNode}
+import org.apache.spark.sql.catalyst.plans.logical.{Project, Subquery, LogicalPlan, UnaryNode}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.{StratifiedSample}
 
@@ -126,7 +126,12 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
         //println("aqpTable" + aqp)
         val newPlan = aqp match {
-          case (sample, name) => ErrorAndConfidence(errorPercent, confidence, Subquery(name, sample))
+          case (sample, name) =>
+            val baseAttribs = sample.child.output
+           val expressions = p.child.output.zipWithIndex.map{ case(attribute,index) => Alias(baseAttribs(index), baseAttribs(index).name)(
+            attribute.exprId )} :+ sample.output.last
+            val node = Project(expressions,Subquery(name, sample))
+           ErrorAndConfidence(errorPercent, confidence, node)
           case _ => p
         }
         newPlan

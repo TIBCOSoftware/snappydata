@@ -1,6 +1,5 @@
 package org.apache.spark.sql.store.impl
 
-import java.sql.Connection
 import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
@@ -13,7 +12,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, UUIDRegionKey}
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, ConnectionType}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType}
 import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore}
 import org.apache.spark.storage.BlockManagerId
@@ -28,7 +27,8 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId]) extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
+    val blockMap: Map[InternalDistributedMember, BlockManagerId])
+    extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
@@ -47,12 +47,6 @@ final class JDBCSourceAsColumnarStore(_url: String,
         })
         new UnionRDD[CachedBatch](sparkContext, rddList)
     }
-  }
-
-  override def getConnection(id: String): Connection = {
-    val conn = ExternalStoreUtils.getPoolConnection(id, None, poolProps, connProps, _hikariCP)
-    conn.setTransactionIsolation(Connection.TRANSACTION_NONE)
-    conn
   }
 
   override def storeCachedBatch(batch: CachedBatch,
@@ -110,9 +104,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val par = split.index
         val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
         ps1.execute()
-        val ps = conn.prepareStatement(s"select stats , " +
-            requiredColumns.mkString(" ", ",", " ") +
-            s" from $tableName")
+        val ps = conn.prepareStatement(s"select stats, " +
+            requiredColumns.mkString(", ") + s" from $tableName")
 
         val rs = ps.executeQuery()
 
