@@ -2,7 +2,7 @@ package io.snappydata.gemxd
 
 import java.io.{DataInput, DataOutput}
 
-import scala.collection.mutable.MutableList
+import scala.collection.mutable.ListBuffer
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.InternalDataSerializer
@@ -14,11 +14,11 @@ import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, Gfxd
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
+import org.apache.spark.storage.{RDDBlockId, StorageLevel}
+import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Created by kneeraj on 20/10/15.
@@ -34,144 +34,88 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
     ctx.sql(sql)
   }
 
+  private lazy val hdos = new GfxdHeapDataOutputStream(Misc.getMemStore.thresholdListener(),
+    sql, true, senderVersion)
+
+  private lazy val schema = df.schema
+
   private val resultsRdd = df.queryExecution.executedPlan.execute()
-  private val rowBuffer = new FlushBuffer[InternalRow](sql, senderVersion, df.schema,
-    df.queryExecution.analyzed.output, SparkSQLExecuteImpl.NUM_ROWS_IN_BATCH)
 
   override def serializeRows(out: DataOutput) = {
-    rowBuffer.serializeRows(out)
+    var numBytes = 0
+    if (hdos != null && hdos.size > 0) {
+      numBytes = hdos.size
+      InternalDataSerializer.writeArrayLength(numBytes, out)
+      hdos.sendTo(out)
+    }
+    else {
+      InternalDataSerializer.writeArrayLength(numBytes, out)
+    }
   }
 
   override def packRows(msg: LeadNodeExecutorMsg[_],
       snappyResultHolder: SnappyResultHolder): Unit = {
-    //adds result rows to to FlushBuffer and flushes periodically
+
+    val bm = SparkEnv.get.blockManager
+    val partitionIdList = new ListBuffer[Int]()
+    //get the results and put those in block manager to avoid going OOM
     SnappyContext.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
-      (i, arr: Array[InternalRow]) => {
+      (partitionId, arr: Array[InternalRow]) => {
         if (arr.length > 0) {
-          rowBuffer.addAndFlush(new MutableList().++(arr), msg, snappyResultHolder)
-        } else {
-          rowBuffer
+          bm.putSingle(RDDBlockId(resultsRdd.id, partitionId), arr, StorageLevel.MEMORY_AND_DISK,
+            false)
+          partitionIdList.+=(partitionId)
         }
       })
-    //flush remaining
-    rowBuffer.flushAll(msg, snappyResultHolder)
-  }
-}
 
-object SparkSQLExecuteImpl {
-  var NUM_ROWS_IN_BATCH = 10000
-  def unpackRows(in: DataInput) = {
+    hdos.clearForReuse()
+    partitionIdList.sorted.foreach(p => {
+//      logTrace("Sending data for partition id = " + p)
+      val partitionData: Array[InternalRow] = bm.getLocal(RDDBlockId(resultsRdd.id, p)) match {
+        case Some(block) => block.data.next().asInstanceOf[Array[InternalRow]]
+     // case None => throw new Exception(s"SparkSQLExecuteImpl: packRows() block $RDDBlockId not found")
+      }
 
-  }
-}
+      var numRowsSentInBatch = 0
+      var totalRowsSentForPartition = 0
+      while (totalRowsSentForPartition < partitionData.length) {
+        partitionData.takeWhile(_ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(row =>
+        {
+          if (numRowsSentInBatch == 0) sendMetaData()
+          writeRow(row)
 
-/** A class that holds data in a buffer and sends to GfxdHeapDataOutputStream (and to XD node
-  * via LeadNodeExecutorMsg) when buffer reaches desired size (numRowsInBatch). The buffer will
-  * be flushed chunks of size GemFireXDUtils.DML_MAX_CHUNK_SIZE, so the actual no of rows flushed
-  * in one flush op could be less than numRowsInBatch
-  *
-  * @author shirishd
-  *
-  * @param sql
-  * @param senderVersion
-  * @param schema
-  * @param numRowsInBatch
-  * @tparam T
-  */
-class FlushBuffer[T](val sql: String, senderVersion: Version,
-    schema: StructType, output : Seq[Attribute], numRowsInBatch: Int)
-    extends MutableList[T] with Logging {
+          numRowsSentInBatch += 1
+        })
+        msg.sendResult(snappyResultHolder)
+        logTrace(s"Sent one batch for partition $p. No of rows sent in batch = $numRowsSentInBatch" )
+        totalRowsSentForPartition += numRowsSentInBatch
+        numRowsSentInBatch = 0;
+        hdos.clearForReuse()
+      }
 
-  logTrace(s"FlushBuffer GemFireXDUtils.DML_MAX_CHUNK_SIZE = ${GemFireXDUtils.DML_MAX_CHUNK_SIZE} " +
-      s" numRowsInBatch = $numRowsInBatch")
+      logTrace(s"Finished sending data for partition $p")
+    })
 
-  private lazy val hdos = new GfxdHeapDataOutputStream(Misc.getMemStore.thresholdListener(),
-    sql, true, senderVersion)
-  // using the gemfirexd way of sending results where in the number of
-  // columns in each row is divided into sets of 8 columns. Per eight column group a
-  // byte will be sent to indicate which all column in that group has a
-  // non-null value.
-  private lazy val (numCols, numEightColGroups, numPartCols) = getNumColumnGroups(
-    this.head.asInstanceOf[InternalRow])
-
-  /**
-   * add an element to the buffer if the buffer contains desired no of rows flush those
-   *
-   * @param a
-   * @param msg
-   * @param snappyResultHolder
-   * @return
-   */
-  def addAndFlush(a: MutableList[T], msg: LeadNodeExecutorMsg[_],
-      snappyResultHolder: SnappyResultHolder): FlushBuffer[T] = {
-    super.++=(a)
-
-    if (this.size == numRowsInBatch) {
-      flush(msg, snappyResultHolder)
-    }
-    this
-  }
-
-  /**
-   * Flush all rows in the buffer
-   * @param msg
-   * @param snappyResultHolder
-   */
-  def flushAll(msg: LeadNodeExecutorMsg[_], snappyResultHolder: SnappyResultHolder): Unit = {
-    //flush till buffer not empty
-    while (flush(msg, snappyResultHolder) == true) {}
     //TODO: could we avoid sending metadata for dummy last result
     hdos.clearForReuse();
     sendMetaData();
     msg.lastResult(snappyResultHolder)
-  }
 
-  /**
-   * Flush rows(to hdos and send further to XD node) in GemFireXDUtils.DML_MAX_CHUNK_SIZE chunks
-   * and return true if the buffer not empty
-   * @param msg
-   * @param snappyResultHolder
-   * @return
-   */
-  def flush(msg: LeadNodeExecutorMsg[_], snappyResultHolder: SnappyResultHolder): Boolean = {
-    var dataRemaining = false
-    hdos.clearForReuse()
-    if (this.size == 0) {
-     return dataRemaining
-    }
-
-    var numRowsSent = 0
-    this.takeWhile(_ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
-      if (numRowsSent == 0) sendMetaData()
-      logTrace(s"sending row = " + i.asInstanceOf[InternalRow])
-      writeRow(i.asInstanceOf[InternalRow])
-      numRowsSent += 1
-    })
-
-    msg.sendResult(snappyResultHolder)
-    logTrace(s"sending results no of rows sent = $numRowsSent" + numRowsSent)
-
-    // remove the rows sent from buffer
-    if (numRowsSent == this.size) {
-      this.clear()
-    } else {
-      val (l, r) = this.splitAt(numRowsSent)
-      this.clear()
-      this.++=(r)
-      dataRemaining = true
-    }
-    dataRemaining
+    // remove cached results from block manager
+    val numBlocksRemoved = bm.removeRdd(resultsRdd.id)
+    assert(numBlocksRemoved == partitionIdList.size)
   }
 
   private lazy val (tableNames, nullability) = getTableNamesAndNullability()
 
   def getTableNamesAndNullability():(Array[String], Array[Boolean])= {
     var i = 0
+    val output = df.queryExecution.analyzed.output
     val tables = new Array[String](output.length)
     val nullables = new Array[Boolean](output.length)
     output.foreach(a => {
       val fn = a.qualifiedName
-      val dotIdx = fn.indexOf('.')
+      val dotIdx = fn.lastIndexOf('.')
       if (dotIdx > 0) {
         tables(i) = fn.substring(0, dotIdx)
       }
@@ -231,19 +175,24 @@ class FlushBuffer[T](val sql: String, senderVersion: Version,
     }
   }
 
-  private def getNumColumnGroups(row: InternalRow): (Int, Int, Int) = {
+  var (numCols, numEightColGroups, numPartCols) = (-1, -1, -1)
+  private def getNumColumnGroups(row: InternalRow) = {
     if (row != null) {
-      val nc = row.numFields
-      val numGroups = (nc + 7) / 8
-      val partCols = ((nc - 1) % 8) + 1
-      (nc, numGroups, partCols)
-    } else {
-      (-1, -1, -1)
+      numCols = row.numFields
+      numEightColGroups = (numCols + 7) / 8
+      numPartCols = ((numCols - 1) % 8) + 1
     }
   }
 
   private def writeRow(r: InternalRow) = {
     var groupNum: Int = 0
+    // using the gemfirexd way of sending results where in the number of
+    // columns in each row is divided into sets of 8 columns. Per eight column group a
+    // byte will be sent to indicate which all column in that group has a
+    // non-null value.
+    if (numCols == -1) {
+      getNumColumnGroups(r)
+    }
     while (groupNum < numEightColGroups - 1) {
       writeAGroup(groupNum, 8, r, hdos)
       groupNum += 1;
@@ -258,7 +207,8 @@ class FlushBuffer[T](val sql: String, senderVersion: Version,
     while (index < numColsInGrp) {
       colIndex = (groupNum << 3) + index
       if (!row.isNullAt(colIndex)) {
-        activeByteForGroup = ActiveColumnBits.setFlagForNormalizedColumnPosition(index, activeByteForGroup)
+        activeByteForGroup = ActiveColumnBits.setFlagForNormalizedColumnPosition(index,
+          activeByteForGroup)
       }
       index += 1;
     }
@@ -283,7 +233,8 @@ class FlushBuffer[T](val sql: String, senderVersion: Version,
       case ShortType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
       case ByteType => DataSerializer.writePrimitiveByte(row.getByte(colIndex), hdos)
       case IntegerType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
-      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(colIndex, t.precision, t.scale), hdos)
+      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(colIndex, t.precision,
+        t.scale), hdos)
       case FloatType => hdos.writeFloat(row.getFloat(colIndex))
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
       case StringType => DataSerializer.writeString(row.getString(colIndex), hdos)
@@ -291,17 +242,12 @@ class FlushBuffer[T](val sql: String, senderVersion: Version,
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
   }
+}
 
-  def serializeRows(out: DataOutput) = {
-    var numBytes = 0
-    if (hdos != null && hdos.size > 0) {
-      numBytes = hdos.size
-      InternalDataSerializer.writeArrayLength(numBytes, out)
-      hdos.sendTo(out)
-    }
-    else {
-      InternalDataSerializer.writeArrayLength(numBytes, out)
-    }
+object SparkSQLExecuteImpl {
+  def unpackRows(in: DataInput) = {
+
   }
- }
+}
+
 
