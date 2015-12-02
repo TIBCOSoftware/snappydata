@@ -25,7 +25,14 @@ case class SocketStreamRelation[T](dStream: DStream[T],
 
   import scala.reflect.runtime.{universe => ru}
 
-  val streamToRow = StreamUtils.loadClass(options("streamToRow")).newInstance().asInstanceOf[MessageToRowConverter]
+  private val streamToRow = {
+    try {
+      val clz = StreamUtils.loadClass(options("streamToRow"))
+      clz.newInstance().asInstanceOf[MessageToRowConverter]
+    } catch {
+      case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
+    }
+  }
   val clazz: Class[_] = streamToRow.getTargetType()
   val mirror = ru.runtimeMirror(clazz.getClassLoader)
   val sym = mirror.staticClass(clazz.getName)

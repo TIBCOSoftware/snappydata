@@ -39,7 +39,7 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
 
   private val streamToRow = {
     try {
-      val clz = Class.forName(options("streamToRow"))
+      val clz = StreamUtils.loadClass(options("streamToRow"))
       clz.newInstance().asInstanceOf[MessageToRowConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
