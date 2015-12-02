@@ -68,7 +68,7 @@ final class StatCounterWithFullCount(var weightedCount: Double)
   }
 
   def merge(other: StatCounterWithFullCount) {
-    if (other != this) {
+    if (other ne this) {
       super.mergeDistinctCounter(other)
       weightedCount += other.weightedCount
     } else {
@@ -171,7 +171,7 @@ private[spark] case object StatCounterUDT
       // TODO: somehow cache this at the whole evaluation level
       // (wrapper LogicalPlan with StudentTCacher?)
       // the expensive t-distribution
-      else stdev * new TDistribution(errorStats.count - 1)
+      else stdev * new TDistribution(math.max(1.0, errorStats.count - 1))
           .inverseCumulativeProbability(0.5 + confidence / 2.0)
 
     aggType match {

@@ -20,6 +20,7 @@ import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDBaseDialect, JDBCMutableRelation}
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
@@ -53,8 +54,9 @@ class JDBCAppendableRelation(
 
   self =>
 
-  protected final val columnPrefix = "Col_"
+  override val needConversion: Boolean = false
 
+  protected final val columnPrefix = "Col_"
 
   val driver = DriverRegistry.getDriverClassName(url)
   final val dialect = JdbcDialects.get(url)
@@ -107,10 +109,9 @@ class JDBCAppendableRelation(
         sqlContext.sparkContext)
     }
 
-    val outputTypes = requestedColumns.map { a => schema(a) }
-    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
-    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
-    cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
+    //val outputTypes = requestedColumns.map { a => schema(a) }
+    //val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
+    cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
       // minimum default element size).
@@ -118,7 +119,8 @@ class JDBCAppendableRelation(
         schema.getFieldIndex(a).get -> schema(a).dataType
       }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-      def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
+      def cachedBatchesToRows(
+        cacheBatches: Iterator[CachedBatch]): Iterator[InternalRow] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
           val columnAccessors = requestedColumnIndices.zipWithIndex.map {
@@ -142,10 +144,11 @@ class JDBCAppendableRelation(
             override def hasNext: Boolean = columnAccessors.head.hasNext
           }
         }
-        rows.map(converter(_).asInstanceOf[Row])
+        //rows.map(converter(_).asInstanceOf[Row])
+        rows
       }
       cachedBatchesToRows(cachedBatchIterator)
-    }
+    }.asInstanceOf[RDD[Row]]
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
