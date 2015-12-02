@@ -3,6 +3,7 @@ package io.snappydata.app
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.sources.SpecificationNotMeetException
 import org.apache.spark.sql.types._
 
 object ParseUtils extends java.io.Serializable {
@@ -86,6 +87,7 @@ object SparkSQLTest extends App {
 
   val conf = new org.apache.spark.SparkConf().setAppName("SparkSQLTest")
       .set("spark.logConf", "true")
+      .set("spark.sql.unsafe.enabled", "false")
   //.set("spark.shuffle.sort.serializeMapOutputs", "true")
   //.set("spark.executor.memory", "1g")
   //.set("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
@@ -298,6 +300,23 @@ object SparkSQLTest extends App {
   println("=============== APPROX RESULTS ===============")
   results_sampledC = results_sampled.collect()
   results_sampledC.foreach(println)
+
+  /*-----------------------------------*/
+  val results_sampled_table = snContext.sql(
+    """SELECT SUM(ArrDelay),
+        UniqueCarrier, Year, Month FROM airline GROUP BY
+        UniqueCarrier, Year, Month ERRORPERCENT 15""")
+  println()
+  println("=============== APPROX RESULTS WITH ERROR PERCENT ===============")
+  try {
+    //try/catch to proceed test in case of error exception
+    val results_sampledC_table = results_sampled_table.collect()
+    results_sampledC_table.foreach(println)
+  }
+  catch {
+    case ex : RuntimeException => println("Expected.."+ ex.getMessage)
+  }
+    /*------------------------------------*/
 
   // error estimates and precise errors comparing against exact data queries
   val airlineSampled = snContext.table("airline_sampled")

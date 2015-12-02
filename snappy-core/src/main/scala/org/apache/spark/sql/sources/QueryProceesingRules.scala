@@ -1,6 +1,7 @@
 package org.apache.spark.sql.sources
 
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{FloatType, DoubleType, IntegralType}
 
 import scala.collection.mutable
@@ -8,7 +9,7 @@ import scala.util.control.Breaks._
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan, UnaryNode}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Subquery, LogicalPlan, UnaryNode}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.execution.{StratifiedSample}
 
@@ -16,11 +17,15 @@ import org.apache.spark.sql.execution.{StratifiedSample}
  * Created by sbhokare on 4/11/15.
  */
 object ReplaceWithSampleTable extends Rule[LogicalPlan] {
+
   val DEFAULT_CONFIDENCE: Double = 95
   val DEFAULT_ERROR: Double = 10
+
   def apply(plan: LogicalPlan): LogicalPlan = {
+
     var errorPercent: Double = -1
     var confidence: Double = -1
+    var applyClosedForm: Boolean = true
 
     def convertToDouble(expr: Expression): Double = expr.dataType match {
       case _: IntegralType => expr.eval().asInstanceOf[Int]
@@ -40,17 +45,18 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
       }
     }
 
-     plan transformDown {
+     plan transformDown  {
 
       case ErrorPercent(expr, child) => {
         errorPercent = convertToDouble(expr)
         child
       } //TODO:Store confidence level some where for post-query triage
-      case Confidence(expr, child) => {
 
+      case Confidence(expr, child) => {
         confidence = convertToDouble(expr)
         child
       } //TODO:Store confidence level some where for post-query triage
+
       case p@Subquery(name, child) if (!child.isInstanceOf[StratifiedSample] && (errorPercent != -1
         || confidence != -1 || SnappyContext.SnappySC.catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
         && (planX match {
@@ -126,7 +132,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
         //println("aqpTable" + aqp)
         val newPlan = aqp match {
-          case (sample, name) => ErrorAndConfidence(errorPercent, confidence, Subquery(name, sample))
+          case (sample, name) => ErrorAndConfidence(errorPercent, confidence, applyClosedForm, Subquery(name, sample))
           case _ => p
         }
         newPlan
@@ -136,20 +142,51 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
   }
 }
 
-
 @transient
-object TestRule extends Rule[LogicalPlan] {
-  def apply(plan: LogicalPlan): LogicalPlan = plan transformDown {
+object ClosedFormErrorEstimateRule extends Rule[LogicalPlan] {
+
+  var error: Double = 10.0
+  var conf: Double = 95
+  var applyClosedForm = false
+
+  def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
+
+    case e: ErrorAndConfidence => {
+      error = e.error
+      conf = e.confidence
+      applyClosedForm = e.applyClosedForm
+      e
+    }
+
     case a: org.apache.spark.sql.catalyst.plans.logical.Aggregate => {
-      for (aa <- a.aggregateExpressions.seq) {
-        if (aa.isInstanceOf[Alias]) {
-          if (/*aa.asInstanceOf[Alias].child.isInstanceOf[WeightedAverage] ||*/
-              aa.asInstanceOf[Alias].child.isInstanceOf[WeightedSum])
-            //println("Run")
-            ErrorEstimateAggregate(aa, 0.75, null, false, ErrorAggregate.Sum)
+      a transformExpressions {
+        case al: Alias => {
+          if (applyClosedForm && (al.child.isInstanceOf[WeightedAverage] || al.child.isInstanceOf[WeightedSum])) {
+            val isStratifiedSample = a find {
+              case ss: StratifiedSample => true
+              case _ => false
+            }
+            val hiddenCol = isStratifiedSample match {
+              case Some(stratifiedSample) =>
+                stratifiedSample.asInstanceOf[StratifiedSample].output.
+                    find(p => {
+                      p.name == Utils.WEIGHTAGE_COLUMN_NAME
+                    }).getOrElse(throw new IllegalStateException(
+                  "Hidden column for ratio not found."))
+              // The aggregate is not on a StratifiedSample. No transformations needed.
+              case _ => return a
+            }
+            val ratioExpr = new MapColumnToWeight(hiddenCol)
+            var aggType = ErrorAggregate.Sum
+            if (al.child.isInstanceOf[WeightedAverage]) aggType = ErrorAggregate.Avg
+
+            new Alias(ClosedFormErrorEstimate(al.child, conf / 100, ratioExpr, true, aggType, error.toInt), al.name)(al.exprId,
+              al.qualifiers, al.explicitMetadata)
+          }
+          else
+            al
         }
       }
-      a
     }
   }
 }
@@ -163,9 +200,6 @@ case class Confidence(confidenceExpr: Expression, child: LogicalPlan) extends Un
   override def output: Seq[Attribute] = child.output
 }
 
-case class ErrorAndConfidence( error: Double,  confidence: Double, child: LogicalPlan) extends  UnaryNode {
+case class ErrorAndConfidence( error: Double,  confidence: Double, applyClosedForm: Boolean, child: LogicalPlan) extends  UnaryNode {
   override def output: Seq[Attribute] = child.output
 }
-/*case class SampleTable(child: LogicalPlan) extends UnaryNode {
-  override def output: Seq[Attribute] = child.output
-}*/
