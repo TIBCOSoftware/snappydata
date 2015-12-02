@@ -53,7 +53,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }
   }
-  
+
   @transient private val kafkaStream = if (options.exists(_._1 == ZK_QUORUM)) {
     val zkQuorum: String = options(ZK_QUORUM)
     val groupId: String = options(GROUP_ID)

@@ -9,6 +9,10 @@ import twitter4j.conf.{ConfigurationBuilder, Configuration}
  */
 object TwitterStream {
 
+  def main(args: Array[String]) {
+    println("ok")
+  }
+
   private val getTwitterConf: Configuration = {
     val twitterConf = new ConfigurationBuilder()
       .setOAuthConsumerKey("***REMOVED***")
