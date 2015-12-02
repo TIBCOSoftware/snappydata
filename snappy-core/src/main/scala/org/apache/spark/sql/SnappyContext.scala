@@ -2,7 +2,13 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+import scala.reflect.runtime.{universe => u}
+
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
@@ -16,6 +22,7 @@ import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
@@ -23,11 +30,6 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, SparkException, TaskContext}
-
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import scala.reflect.runtime.{universe => u}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied
@@ -113,7 +115,7 @@ class SnappyContext (sc: SparkContext)
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {
       case (name, samplingOptions, schema, output, relation) =>
-        (relation, rows.mapPartitions(rowIterator => {
+        (relation, rows.mapPartitionsPreserve(rowIterator => {
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
@@ -169,7 +171,7 @@ class SnappyContext (sc: SparkContext)
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
-    val cached = df.mapPartitions { rowIterator =>
+    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation, output)
@@ -208,7 +210,7 @@ class SnappyContext (sc: SparkContext)
       }
     }.cachedRepresentation
 
-    val cached = rdd.mapPartitions { rowIterator =>
+    val cached = rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation, schema.toAttributes)
@@ -624,8 +626,6 @@ class SnappyContext (sc: SparkContext)
     }
   }
 
-  import snappy.RDDExtensions
-
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long,
       topkWrapper: TopKWrapper, k: Int, topkRDD: RDD[(Int, TopK)]): DataFrame = {
@@ -770,8 +770,26 @@ object snappy extends Serializable {
         (context: TaskContext, index: Int, iter: Iterator[T]) => cleanedF(iter),
         preservesPartitioning)
     }
-  }
 
+    /**
+     * Return a new RDD by applying a function to each partition of given RDD,
+     * while tracking the index of the original partition.
+     * This variant also preserves the preferred locations of parent RDD.
+     *
+     * `preservesPartitioning` indicates whether the input function preserves
+     * the partitioner, which should be `false` unless this is a pair RDD and
+     * the input function doesn't modify the keys.
+     */
+    def mapPartitionsPreserveWithIndex[U: ClassTag](
+        f: (Int, Iterator[T]) => Iterator[U],
+        preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
+      val cleanedF = rdd.sparkContext.clean(f)
+      new MapPartitionsPreserveRDD(rdd,
+        (context: TaskContext, index: Int, iter: Iterator[T]) =>
+          cleanedF(index, iter),
+        preservesPartitioning)
+    }
+  }
 }
 
 object SnappyContext extends Logging {
@@ -1076,7 +1094,7 @@ object SnappyContext extends Logging {
     val partitioner = topKRDD.partitioner.get
     // val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
     val batches = mutable.ArrayBuffer.empty[(Int, mutable.ArrayBuffer[Any])]
-    val pairRDD = rows.mapPartitions[(Int, mutable.ArrayBuffer[Any])](iter => {
+    val pairRDD = rows.mapPartitionsPreserve[(Int, mutable.ArrayBuffer[Any])](iter => {
       val map = iter.foldLeft(mutable.Map.empty[Int, mutable.ArrayBuffer[Any]])((m, x) => {
         val (partitionID, elem) = topkWrapper.rowToTupleConverter(x, partitioner)
         val list = m.getOrElse(partitionID, mutable.ArrayBuffer[Any]()) += elem
@@ -1092,7 +1110,7 @@ object SnappyContext extends Logging {
     }, preservesPartitioning = true)
 
     val nameAsString = name.toString
-    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitions[(Int, TopK)](
+    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitionsPreserve[(Int, TopK)](
       iterator => {
         val (key, (topkIterable, dataIterable)) = iterator.next()
         val tsCol = if (topkWrapper.timeInterval > 0) {
