@@ -20,6 +20,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCPart
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
@@ -52,8 +53,10 @@ class JDBCAppendableRelation(
 
   self =>
 
-  final val columnPrefix = "Col_"
   final val shadowTableNamePrefix = "_shadow_"
+  override val needConversion: Boolean = false
+  final val columnPrefix = "Col_"
+
   final val dialect = JdbcDialects.get(url)
   val driver = DriverRegistry.getDriverClassName(url)
   val schemaFields = Map(userSchema.fields.flatMap { f =>
@@ -110,10 +113,7 @@ class JDBCAppendableRelation(
         sqlContext.sparkContext)
     }
 
-    val outputTypes = requestedColumns.map { a => schema(a) }
-    //val converter = outputTypes.map(CatalystTypeConverters.createToScalaConverter)
-    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
-    cachedColumnBuffers.mapPartitions { cachedBatchIterator =>
+    cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
       // minimum default element size).
@@ -121,7 +121,8 @@ class JDBCAppendableRelation(
         schema.getFieldIndex(a).get -> schema(a).dataType
       }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-      def cachedBatchesToRows(cacheBatches: Iterator[CachedBatch]): Iterator[Row] = {
+      def cachedBatchesToRows(
+          cacheBatches: Iterator[CachedBatch]): Iterator[InternalRow] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
           val columnAccessors = requestedColumnIndices.zipWithIndex.map {
@@ -142,13 +143,13 @@ class JDBCAppendableRelation(
               if (requiredColumns.isEmpty) InternalRow.empty else nextRow
             }
 
-            override def hasNext: Boolean = columnAccessors(0).hasNext
+            override def hasNext: Boolean = columnAccessors.head.hasNext
           }
         }
-        rows.map(converter(_).asInstanceOf[Row])
+        rows
       }
       cachedBatchesToRows(cachedBatchIterator)
-    }
+    }.asInstanceOf[RDD[Row]]
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
@@ -162,7 +163,7 @@ class JDBCAppendableRelation(
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
     val output = df.logicalPlan.output
-    val cached = df.mapPartitions { rowIterator =>
+    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
       def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
         val uuid = externalStore.storeCachedBatch(batch, table)

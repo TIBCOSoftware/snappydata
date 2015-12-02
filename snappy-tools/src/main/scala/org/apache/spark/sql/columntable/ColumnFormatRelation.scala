@@ -66,30 +66,14 @@ class ColumnFormatRelation(
     with RowInsertableRelation {
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
-
   lazy val connFunctor = ExternalStoreUtils.getConnector(table, driver, dialect, _poolProps,
     connProperties, hikariCP)
-
   val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-    val requestedColumns = if (requiredColumns.isEmpty) {
-      val narrowField =
-        schema.fields.minBy { a =>
-          ColumnType(a.dataType).defaultSize
-        }
-
-      Array(narrowField.name)
-    } else {
-      requiredColumns
-    }
-
-    val outputTypes = requestedColumns.map { a => schema(a) }
-    val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
-
     val colRDD = super.scanTable(table+shadowTableNamePrefix, requiredColumns, filters)
 
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
@@ -106,7 +90,7 @@ class ColumnFormatRelation(
           parts,
           blockMap,
           connProperties
-        ).map(converter(_).asInstanceOf[Row])
+        ).asInstanceOf[RDD[Row]]
 
       case _ => super.buildScan(requiredColumns, filters)
     })
