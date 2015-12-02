@@ -3,7 +3,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.sql.catalyst.analysis._
 
-import org.apache.spark.sql.sources.{ErrorAndConfidence, SampleTableQuery, WeightageRule, ReplaceWithSampleTable}
+import org.apache.spark.sql.sources.{WeightageRule, ReplaceWithSampleTable, ClosedFormErrorEstimateRule, ErrorAndConfidence, SampleTableQuery}
 
 import org.apache.spark.sql.{SnappyContext}
 import org.apache.spark.sql.catalyst.plans.logical.{Subquery}
@@ -46,13 +46,13 @@ extends QueryExecution(sqlContext, logical) {
     newPlan
   }*/
 
-  private def modifyRule  = this.analyzed.find {
-        case SampleTableQuery(_, _, _, _) => true
-        case _ => false
-      } match {
-      case Some(sampleTableNode) =>
-        val debug = sqlContext.conf.getConfString(Constants.keyAQPDebug, "false").toBoolean
-
+  private def modifyRule = this.analyzed.find {
+    case SampleTableQuery(_, _, _, _, _) => true
+    case _ => false
+  } match {
+    case Some(sampleTableNode) =>
+      val debug = sqlContext.conf.getConfString(Constants.keyAQPDebug, "false").toBoolean
+      if (sampleTableNode.asInstanceOf[SampleTableQuery].useBootstrap) {
         new RuleExecutor[SparkPlan] {
 
           val batches = Seq(
@@ -99,8 +99,12 @@ extends QueryExecution(sqlContext, logical) {
           )
         }
 
-      case None => sqlContext.prepareForExecution
-    }
+      }
+      else
+        sqlContext.prepareForExecution
+
+    case None => sqlContext.prepareForExecution
+  }
 
 
 
@@ -130,7 +134,7 @@ private class AQPQueryAnalyzer ( sqlContext: SnappyContext, queryExecutor: Snapp
       datasources.PreInsertCastAndRename ::
       ReplaceWithSampleTable ::
       WeightageRule ::
-      //TestRule::
+      ClosedFormErrorEstimateRule::
       Nil
 
   override val extendedCheckRules = Seq(
@@ -140,31 +144,32 @@ private class AQPQueryAnalyzer ( sqlContext: SnappyContext, queryExecutor: Snapp
     val plan = super.execute(logical)
 
     SnappyQueryExecution.analyzedPlanHasSampleTable(plan) match {
-      case Some((error, confidence, newPlan)) =>  SampleTableQuery(newPlan, queryExecutor, error,
-        confidence)
+      case Some((error, confidence, useBootstrap, newPlan)) =>  SampleTableQuery(newPlan, queryExecutor, error,
+        confidence, useBootstrap)
       case None => plan
     }
   }
-
 }
 
 object SnappyQueryExecution {
 
-  def analyzedPlanHasSampleTable(analyzed : LogicalPlan) : Option[(Double, Double, LogicalPlan)] = {
-   var foundSample : Boolean = false
-   var error: Double = 0;
+  def analyzedPlanHasSampleTable(analyzed: LogicalPlan): Option[(Double, Double, Boolean, LogicalPlan)] = {
+    var useBootstrap: Boolean = true
+    var foundSample: Boolean = false
+    var error: Double = 0;
     var confidence: Double = 0;
-   val modifiedPlan = analyzed.transformDown{
-     case ErrorAndConfidence(err, confidenceX, child) => {
-       error = err
-       foundSample = true
-       confidence = confidenceX
-       child
-     }
+    val modifiedPlan = analyzed.transformDown {
+      case e: ErrorAndConfidence => {
+        error = e.error
+        foundSample = true
+        confidence = e.confidence
+        useBootstrap = !e.applyClosedForm
+        e.child
+      }
     }
-    if(foundSample) {
-      Some((error, confidence, modifiedPlan))
-    }else {
+    if (foundSample) {
+      Some((error, confidence, useBootstrap, modifiedPlan))
+    } else {
       None
     }
   }
