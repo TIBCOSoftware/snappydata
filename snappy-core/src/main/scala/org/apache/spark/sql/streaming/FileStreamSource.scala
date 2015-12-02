@@ -11,6 +11,6 @@ final class FileStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
                               options: Map[String, String], schema: StructType): BaseRelation = {
-    new KafkaStreamRelation(sqlContext, options, schema)
+    new FileStreamRelation(sqlContext, options, schema)
   }
 }
