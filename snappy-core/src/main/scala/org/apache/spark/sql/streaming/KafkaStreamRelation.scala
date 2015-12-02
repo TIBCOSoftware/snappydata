@@ -47,7 +47,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
 
   private val streamToRow = {
     try {
-      val clz = Class.forName(options("streamToRow"))
+      val clz = org.apache.spark.util.Utils.classForName(options("streamToRow"))
       clz.newInstance().asInstanceOf[MessageToRowConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")

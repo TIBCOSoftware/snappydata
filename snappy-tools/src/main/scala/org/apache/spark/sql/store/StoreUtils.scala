@@ -8,7 +8,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext}
+import org.apache.spark.{Logging, Partition, SparkContext}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -16,7 +16,7 @@ import scala.collection.mutable
 /**
   * Created by rishim on 6/10/15.
   */
-object StoreUtils {
+object StoreUtils extends Logging {
 
   val PARTITION_BY = "PARTITION_BY"
   val BUCKETS = "BUCKETS"
