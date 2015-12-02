@@ -23,7 +23,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     // spark context will be constructed by now as this will be invoked when drda queries
     // will reach the lead node
     // TODO: KN Later get the SnappyContext as per the ctx passed to this executor
-    val ctx = SnappyContext(null)
+    val ctx = SnappyContext()
     ctx.sql(sql)
   }
 

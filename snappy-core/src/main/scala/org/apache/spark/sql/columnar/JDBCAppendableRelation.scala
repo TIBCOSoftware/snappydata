@@ -109,8 +109,6 @@ class JDBCAppendableRelation(
         sqlContext.sparkContext)
     }
 
-    //val outputTypes = requestedColumns.map { a => schema(a) }
-    //val converter = CatalystTypeConverters.createToScalaConverter(StructType(outputTypes))
     cachedColumnBuffers.mapPartitionsPreserve { cachedBatchIterator =>
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
@@ -120,7 +118,7 @@ class JDBCAppendableRelation(
       }.unzip
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
       def cachedBatchesToRows(
-        cacheBatches: Iterator[CachedBatch]): Iterator[InternalRow] = {
+          cacheBatches: Iterator[CachedBatch]): Iterator[InternalRow] = {
         val rows = cacheBatches.flatMap { cachedBatch =>
           // Build column accessors
           val columnAccessors = requestedColumnIndices.zipWithIndex.map {
@@ -144,7 +142,6 @@ class JDBCAppendableRelation(
             override def hasNext: Boolean = columnAccessors.head.hasNext
           }
         }
-        //rows.map(converter(_).asInstanceOf[Row])
         rows
       }
       cachedBatchesToRows(cachedBatchIterator)
@@ -167,7 +164,7 @@ class JDBCAppendableRelation(
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
     val output = df.logicalPlan.output
-    val cached = rdd.mapPartitionsWithIndex({case (split, rowIterator) =>
+    val cached = rdd.mapPartitionsPreserveWithIndex({case (split, rowIterator) =>
       def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
         val uuid = externalStore.storeCachedBatch(batch, table, split)
