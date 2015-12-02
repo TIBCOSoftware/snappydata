@@ -32,9 +32,9 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
 
   val directory = options(DIRECTORY)
 
-  val context = StreamingCtxtHolder.streamingContext
+  @transient val context = StreamingCtxtHolder.streamingContext
 
-  val fileStream: DStream[String] = context.textFileStream(directory)
+  @transient val fileStream: DStream[String] = context.textFileStream(directory)
   //TODO: Yogesh, add support for other types of files streams
 
   private val streamToRow = {
