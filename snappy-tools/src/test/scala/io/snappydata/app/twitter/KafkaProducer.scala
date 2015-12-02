@@ -2,11 +2,14 @@ package io.snappydata.app.twitter
 
 import java.util.Properties
 
+import twitter4j.conf.{ConfigurationBuilder, Configuration}
+
+import scala.util.Random
+
+import io.snappydata.app.twitter.twitter.OnTweetPosted
 import kafka.javaapi.producer.Producer
 import kafka.producer.{KeyedMessage, ProducerConfig}
-import io.snappydata.app.twitter.TwitterStream.OnTweetPosted
-import org.apache.spark.sql.streaming.Tweet
-import twitter4j.{TwitterObjectFactory, Status, FilterQuery, TwitterFactory}
+import twitter4j._
 
 /**
  * Created by ymahajan on 28/10/15.
@@ -14,31 +17,69 @@ import twitter4j.{TwitterObjectFactory, Status, FilterQuery, TwitterFactory}
 
 object KafkaProducer {
 
-  val KafkaTopic = "tweetstream"
+  val KafkaTopic = "streamtweet"
 
   val kafkaProducer = {
     val props = new Properties()
-    props.put("metadata.broker.list", "localhost:9092")//,localhost:9093")//conf.getString("kafka.brokers"))
+    props.put("metadata.broker.list", "rdu-w28:9092,rdu-w29:9092,rdu-w30:9092,rdu-w31:9092,rdu-w32:9092")
+    //,localhost:9093")//conf.getString("kafka.brokers"))
     props.put("request.required.acks", "1")
     val config = new ProducerConfig(props)
+    println(" XXXXXXXXXXXXX Starting KafkaProducer")
     new Producer[String,  Array[Byte]](config)
   }
 
-
-  val filterUsOnly = new FilterQuery().locations(
-    Array(-126.562500,30.448674),
-    Array(-61.171875,44.087585))
-
-
   def main (args: Array[String]) {
-    val twitterStream = TwitterStream.getStream
+    val twitterStream = twitter.getStream
     twitterStream.addListener(new OnTweetPosted(s => sendToKafka(s)))
-    twitterStream.filter(filterUsOnly)
+    twitterStream.filter(new FilterQuery().locations(
+      Array(-180,-90),
+      Array(180,90))
+    )
     //twitterStream.sample()
   }
 
   private def sendToKafka(s: Status) {
-    val msg = new KeyedMessage[String, Array[Byte]](KafkaTopic, TwitterObjectFactory.getRawJSON(s).getBytes)
+    if (!PrintJSON.printed) {
+      println("XXXXXXXXXX: " + s.toString)
+      PrintJSON.printed = true
+    }
+    val msg = new KeyedMessage[String, Array[Byte]](KafkaTopic,
+      TwitterObjectFactory.getRawJSON(s).getBytes)
     kafkaProducer.send(msg)
+  }
+}
+
+object PrintJSON {
+  var printed = false
+}
+
+
+object twitter {
+
+  private val getTwitterConf: Configuration = {
+    val twitterConf = new ConfigurationBuilder()
+      .setOAuthConsumerKey("0Xo8rg3W0SOiqu14HZYeyFPZi")
+      .setOAuthConsumerSecret("gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR")
+      .setOAuthAccessToken("43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq")
+      .setOAuthAccessTokenSecret("aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu")
+      .setJSONStoreEnabled(true)
+      .build()
+    twitterConf
+  }
+
+  def getStream = new TwitterStreamFactory(getTwitterConf).getInstance()
+
+  class OnTweetPosted(cb: Status => Unit) extends StatusListener {
+
+    override def onStatus(status: Status): Unit = {
+      cb(status)}
+    override def onException(ex: Exception): Unit = throw ex
+
+    // no-op for the following events
+    override def onStallWarning(warning: StallWarning): Unit = {}
+    override def onDeletionNotice(statusDeletionNotice: StatusDeletionNotice): Unit = {}
+    override def onScrubGeo(userId: Long, upToStatusId: Long): Unit = {}
+    override def onTrackLimitationNotice(numberOfLimitedStatuses: Int): Unit = {}
   }
 }
