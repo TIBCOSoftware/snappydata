@@ -16,8 +16,6 @@ import scala.collection.mutable.Queue
  */
 class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAfterAll {
 
-  private var sparkC: SparkContext = _
-
   private var ssc: StreamingContext = _
 
   private var snsc: StreamingSnappyContext = _
@@ -28,11 +26,13 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
 
   def batchDuration: Duration = Seconds(1)
 
-  val sparkConf = new SparkConf()
-    .setMaster(master)
-    .setAppName(framework)
-    .set("snappydata.store.locators", "localhost")
-
+  override def newSparkConf(): SparkConf = {
+    val sparkConf = new SparkConf()
+      .setMaster(master)
+      .setAppName(framework)
+      .set("snappydata.store.locators", "localhost")
+    sparkConf
+  }
 
   override def afterAll(): Unit = {
     if (ssc != null) {
@@ -41,8 +41,8 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
   }
 
   override def beforeAll(): Unit = {
-    sparkC = new SparkContext(sparkConf)
-    ssc = new StreamingContext(sparkC, batchDuration)
+    //sparkC = new SparkContext(sparkConf)
+    ssc = new StreamingContext(sc, batchDuration)
     //ssc.checkpoint(null)//Duration(60*1000))
     snsc = StreamingSnappyContext(ssc);
   }
