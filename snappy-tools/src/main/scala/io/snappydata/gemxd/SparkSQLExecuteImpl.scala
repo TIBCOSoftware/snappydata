@@ -25,14 +25,12 @@ import org.apache.spark.{Logging, SparkEnv}
  */
 class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
-  private lazy val df: DataFrame = {
-    // spark context will be constructed by now as this will be invoked when drda queries
-    // will reach the lead node
-    // TODO: KN Later get the SnappyContext as per the ctx passed to this executor
-    val ctx = SnappyContext(null)
 
-    ctx.sql(sql)
-  }
+  // spark context will be constructed by now as this will be invoked when drda queries
+  // will reach the lead node
+  // TODO: KN Later get the SnappyContext as per the ctx passed to this executor
+  private lazy val snx = SnappyContext(null)
+  private lazy val df: DataFrame = snx.sql(sql)
 
   private lazy val hdos = new GfxdHeapDataOutputStream(Misc.getMemStore.thresholdListener(),
     sql, true, senderVersion)
@@ -53,13 +51,13 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
     }
   }
 
-  override def packRows(msg: LeadNodeExecutorMsg[_],
+  override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
 
     val bm = SparkEnv.get.blockManager
     val partitionIdList = new ListBuffer[Int]()
     //get the results and put those in block manager to avoid going OOM
-    SnappyContext.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
+    snx.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
       (partitionId, arr: Array[InternalRow]) => {
         if (arr.length > 0) {
           bm.putSingle(RDDBlockId(resultsRdd.id, partitionId), arr, StorageLevel.MEMORY_AND_DISK,

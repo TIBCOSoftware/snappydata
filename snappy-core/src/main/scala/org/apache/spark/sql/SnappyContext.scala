@@ -698,6 +698,13 @@ class SnappyContext private(sc: SparkContext)
   def getExternalStoreConfig: Map[String, String] = {
     storeConfig
   }
+
+  def runJob[T, U: ClassTag](
+      rdd: RDD[T],
+      processPartition: Iterator[T] => U,
+      resultHandler: (Int, U) => Unit): Unit = {
+    self.sc.runJob(rdd, processPartition, resultHandler)
+  }
 }
 
 // scalastyle:off
@@ -942,13 +949,6 @@ object SnappyContext extends Logging {
 
   def getProvider(providerName: String): String =
     builtinSources.getOrElse(providerName, providerName)
-
-  def runJob[T, U: ClassTag](
-      rdd: RDD[T],
-      processPartition: Iterator[T] => U,
-      resultHandler: (Int, U) => Unit): Unit = {
-    globalContext.runJob(rdd, processPartition, resultHandler)
-  }
 
   def createTopKRDD(name: String, context: SparkContext,
       isStreamSummary: Boolean): RDD[(Int, TopK)] = {
