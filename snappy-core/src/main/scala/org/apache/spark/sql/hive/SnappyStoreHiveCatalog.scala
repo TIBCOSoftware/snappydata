@@ -587,28 +587,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       schema, Some(streamTable)) -> rdd)
   }
 
-  def registerAndInsertIntoExternalStore(df: DataFrame, table: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
-    require(table != null && table.length > 0,
-      "registerAndInsertIntoExternalStore: expected non-empty table name")
-
-    val tableIdent = newQualifiedTableName(table)
-    val externalStore = getExternalTable(jdbcSource)
-    createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    tables.put(tableIdent, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF,
-      Some(tableIdent.table), externalStore)
-
-    context.appendToCache(df, tableIdent.table)
-  }
-
   // TODO: The JDBC source is currently reading a property jdbcStore
   // to find out the type of the jdbc store. This is a
   // temporary arrangement.
