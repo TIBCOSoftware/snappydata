@@ -28,18 +28,18 @@ class PreparedStatementDUnitTest(val s: String) extends ClusterManagerTestBase(s
 
     createTablesAndInsertData()
     val conn = getANetConnection(netPort1)
-    val ps = conn.prepareStatement("select col1 from ColumnTableQR where  col1 > ? and col1 < ?")
+    val ps = conn.prepareStatement("select col1 from ColumnTableQR where  col1 >?and col1 < ?")
     ps.setInt(1, 1)
     ps.setInt(2, 1000)
     val rs2 = ps.executeQuery()
     var cnt2 = 0
     while(rs2.next()) {
       //println("KN: row["+cnt2+"] = " + rs2.getObject(1) + ", " + rs2.getObject(2) + ", " + rs2.getObject(3))
-      println("KN: row["+cnt2+"] = " + rs2.getObject(1))
+      //println("KN: row["+cnt2+"] = " + rs2.getObject(1))
       cnt2 += 1
     }
-    println("KN: total count is = " + cnt2)
-    assert(cnt2 == 5)
+    //println("KN: total count is = " + cnt2)
+    assert(cnt2 == 4)
   }
 
   def createTablesAndInsertData(): Unit = {
