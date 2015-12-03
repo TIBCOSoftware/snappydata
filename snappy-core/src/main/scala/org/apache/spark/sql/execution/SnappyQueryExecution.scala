@@ -93,7 +93,8 @@ extends QueryExecution(sqlContext, logical) {
               // ImplementJoin(),
               ImplementProject(),
               ImplementAggregate(2),
-              ImplementCollect(),
+              ImplementCollect( sampleTableNode.asInstanceOf[SampleTableQuery].confidence / 100,
+                sampleTableNode.asInstanceOf[SampleTableQuery].error),
               CleanupAnalysisExpressions
             )
           )

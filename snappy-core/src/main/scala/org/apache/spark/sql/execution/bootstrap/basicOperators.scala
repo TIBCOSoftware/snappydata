@@ -63,6 +63,8 @@ case class OnlineProject(
 }
 
 case class Collect(
+    confidence: Double,
+    errorPercent: Double,
     cacheFilter: Option[Attribute],
     projectList: Seq[NamedExpression],
     child: SparkPlan)(

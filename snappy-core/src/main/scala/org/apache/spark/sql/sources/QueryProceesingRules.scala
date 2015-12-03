@@ -19,6 +19,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
   val DEFAULT_CONFIDENCE: Double = 95
   val DEFAULT_ERROR: Double = 10
   def apply(plan: LogicalPlan): LogicalPlan = {
+
     var errorPercent: Double = -1
     var confidence: Double = -1
 
@@ -44,12 +45,27 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
       case ErrorPercent(expr, child) => {
         errorPercent = convertToDouble(expr)
-        child
+        child match {
+          case Confidence(childExpr, grandChild) =>  {
+            confidence = convertToDouble(childExpr)
+            grandChild
+          }
+          case _ => child
+
+        }
+
       } //TODO:Store confidence level some where for post-query triage
       case Confidence(expr, child) => {
-
         confidence = convertToDouble(expr)
-        child
+        child match {
+          case ErrorPercent(childExpr, grandChild) =>  {
+            errorPercent = convertToDouble(childExpr)
+            grandChild
+          }
+          case _ => child
+
+        }
+
       } //TODO:Store confidence level some where for post-query triage
       case p@Subquery(name, child) if (!child.isInstanceOf[StratifiedSample] && (errorPercent != -1
         || confidence != -1 || SnappyContext.SnappySC.catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
@@ -127,10 +143,19 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
         //println("aqpTable" + aqp)
         val newPlan = aqp match {
           case (sample, name) =>
-            val baseAttribs = sample.child.output
-           val expressions = p.child.output.zipWithIndex.map{ case(attribute,index) => Alias(baseAttribs(index), baseAttribs(index).name)(
-            attribute.exprId )} :+ sample.output.last
-            val node = Project(expressions,Subquery(name, sample))
+            val baseSampleAttribs = sample.child.output
+            val baseMainAttribs = p.child.output
+
+            val node = if(baseSampleAttribs.corresponds(baseMainAttribs)(_.exprId == _.exprId )) {
+              Subquery(name, sample)
+            }else {
+              val expressions = baseMainAttribs.zipWithIndex.map {
+                case(attribute,index) => Alias(baseSampleAttribs(index), baseSampleAttribs(index).name)(
+                  attribute.exprId )
+              } :+ sample.output.last
+              Project(expressions,Subquery(name, sample))
+            }
+
            ErrorAndConfidence(errorPercent, confidence, node)
           case _ => p
         }

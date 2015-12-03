@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{GenericMutableRow, BoundReference, Expression}
 import org.apache.spark.sql.execution.bootstrap.ApproxColumn
+import org.apache.spark.sql.sources.ReplaceWithSampleTable
 import org.scalatest._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, DataFrame, SQLContext, SnappyContext}
@@ -61,7 +62,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
    behavior of "aggregate on sample table"
 
-   "Sample Table Query on Sum aggregate " should "be correct" ignore {
+   "Sample Table Query on Sum aggregate " should "be correct" in {
     val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
 
     result.show()
@@ -88,7 +89,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
    */
   }
 
-  "Sample Table Query alias on Sum aggregate " should "be correct" ignore {
+  "Sample Table Query alias on Sum aggregate " should "be correct" in {
     val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
 
     result.show()
@@ -99,7 +100,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
   }
 
 
-  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" ignore {
+  "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" in {
     val result = spc.sql("SELECT sum(l_quantity) as T, l_orderkey FROM mainTable group by l_orderkey confidence 95")
 
     result.show()
@@ -125,11 +126,90 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   }
 
+  "Sample Table Query with error % & confidence %" should "get both values correctly set " in {
+
+    spc.sparkContext.stop()
+    val numBootStrapTrials = 100
+    conf = createDefaultConf
+    val confidence = 85
+    val errorPercent = 7
+    val path: Path = Path (" /tmp/hive")
+    Try(path.deleteRecursively())
+
+    conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
+    spc = initTestTables(conf)
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+      + " ERRORPERCENT " + errorPercent + " confidence " + confidence)
+
+    val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode.confidence === confidence/100d)
+    assert(collectNode.errorPercent === errorPercent)
+  }
 
 
+  "Bug SNAP-225 Sample Table Query with  confidence % & error % " should "get both values correctly set " in {
+
+    spc.sparkContext.stop()
+    val numBootStrapTrials = 100
+    conf = createDefaultConf
+    val confidence = 85
+    val errorPercent = 7
+    val path: Path = Path (" /tmp/hive")
+    Try(path.deleteRecursively())
+
+    conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
+    spc = initTestTables(conf)
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+      + " confidence " + confidence + " ERRORPERCENT " + errorPercent)
+
+    val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode.confidence === confidence/100d)
+    assert(collectNode.errorPercent === errorPercent)
+  }
+
+  "Sample Table Query with error %  " should "get error value correctly set " in {
+
+    spc.sparkContext.stop()
+    val numBootStrapTrials = 100
+    conf = createDefaultConf
+
+    val errorPercent = 13
+    val path: Path = Path (" /tmp/hive")
+    Try(path.deleteRecursively())
+
+    conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
+    spc = initTestTables(conf)
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+      + " ERRORPERCENT " + errorPercent )
+
+    val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode.confidence === ReplaceWithSampleTable.DEFAULT_CONFIDENCE/100d)
+    assert(collectNode.errorPercent === errorPercent)
+  }
 
 
-  "Sample Table Query with multiple aggregate  on Sum aggregate with group by clause " should "be correct" ignore {
+  "Sample Table Query with confidence %  " should "get confidence value correctly set " in {
+
+    spc.sparkContext.stop()
+    val numBootStrapTrials = 100
+    conf = createDefaultConf
+
+    val confidence = 87
+    val path: Path = Path (" /tmp/hive")
+    Try(path.deleteRecursively())
+
+    conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
+    spc = initTestTables(conf)
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+      + " Confidence " + confidence )
+
+    val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode.confidence === confidence/100d)
+    assert(collectNode.errorPercent === ReplaceWithSampleTable.DEFAULT_ERROR)
+  }
+
+
+  "Sample Table Query with multiple aggregate  on Sum aggregate with group by clause " should "be correct" in {
     val result = spc.sql("SELECT sum(l_quantity) as T, l_orderkey, sum(l_linenumber) FROM mainTable group by l_orderkey confidence 95")
 
     result.show()
@@ -161,7 +241,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   }
 
-  "Sample Table Query with a given confidence " should "use correct quntiles" ignore {
+  "Sample Table Query with a given confidence " should "use correct quntiles" in {
 
     spc.sparkContext.stop()
     val numBootStrapTrials = 100

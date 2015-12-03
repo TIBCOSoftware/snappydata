@@ -1557,10 +1557,10 @@ case class ImplementJoin extends Rule[SparkPlan] {
   }
 }*/
 
-case class ImplementCollect extends Rule[SparkPlan] {
+case class ImplementCollect(confidence: Double, errorPercent: Double) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     case CollectPlaceholder(projectList, child) =>
-      Collect(BootStrapUtils.getFlag(child.output),
+      Collect(confidence, errorPercent, BootStrapUtils.getFlag(child.output),
         projectList, child)()
   }
 }
