@@ -1,11 +1,13 @@
 package io.snappydata.app
 
 import scala.actors.Futures._
+import scala.util.control.NonFatal
 
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.snappy._
 
 /**
@@ -19,6 +21,16 @@ class ColumnRowSamplePerfSuite
 
   // context creation is handled by App main
   override def beforeAll(): Unit = {
+    super.beforeAll()
+    val toolsCallback = ToolsCallbackInit.toolsCallback
+    if (toolsCallback != null) {
+      try {
+        toolsCallback.invokeStopFabricServer(sc)
+      } catch {
+        case NonFatal(_) => // ignore
+      }
+    }
+    SnappyContext.stop()
   }
 
   override def afterAll(): Unit = {

@@ -9,9 +9,8 @@ import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUti
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, SaveMode}
 import org.apache.spark.storage.BlockManagerId

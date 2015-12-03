@@ -52,6 +52,20 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
+  private[snappydata] val snappyProperties = Utils.getFields(Property).
+      map({
+        case (_, propValue) if propValue.isInstanceOf[String] =>
+          val propName = propValue.asInstanceOf[String]
+          if (propName.startsWith(Constant.PROPERTY_PREFIX) &&
+              !propName.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
+            propName.substring(Constant.PROPERTY_PREFIX.length)
+          } else {
+            ""
+          }
+        case (propField, _) => s"Property Field=${propField} non string"
+      }).toSet
+
+
   var _directApiInvoked: Boolean = false
 
   def directApiInvoked: Boolean = _directApiInvoked
@@ -73,11 +87,18 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       setAppName("leaderLauncher").
       set(Property.jobserverEnabled, "true")
 
+    // inspect user input and add appropriate prefixes
+    // if property doesn't contain '.'
+    // if input prop key is found in io.snappydata.Property,
+    // its prefixed with 'snappydata.' otherwise its assumed
+    // to be snappydata.store.
     bootProperties.asScala.foreach({ case (k, v) =>
-      val key = if (!k.startsWith(Constant.PROPERTY_PREFIX) &&
-        !k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX)
-      ) {
-        Constant.PROPERTY_PREFIX + k
+      val key = if (k.indexOf(".") < 0) {
+        if (snappyProperties(k)) {
+          Constant.PROPERTY_PREFIX + k
+        } else {
+          Constant.STORE_PROPERTY_PREFIX + k
+        }
       }
       else {
         k
@@ -89,12 +110,12 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     sparkContext = new SparkContext(conf)
 
-    SnappyContext(sparkContext)
   }
 
-  private[snappydata] def internalStart(conf: SparkConf): Unit = {
+  private[snappydata] def internalStart(sc: SparkContext): Unit = {
 
-    initStartupArgs(conf)
+    val conf = sc.getConf // this will get you a cloned copy
+    initStartupArgs(conf, sc)
 
     logInfo("cluster configuration after overriding certain properties \n"
       + conf.toDebugString)
@@ -103,9 +124,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     val storeProps = new Properties()
     
     val filteredProp = confProps.filter {
-      case (k, _) => k.startsWith(Constant.PROPERTY_PREFIX)
+      case (k, _) => k.startsWith(Constant.STORE_PROPERTY_PREFIX)
     }.map {
-      case (k, v) => (k.replaceFirst(Constant.PROPERTY_PREFIX, ""), v)
+      case (k, v) => (k.replaceFirst(Constant.STORE_PROPERTY_PREFIX, ""), v)
     }
     storeProps.putAll(filteredProp.toMap.asJava)
 
@@ -166,7 +187,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
   }
 
-  private[snappydata] def initStartupArgs(conf: SparkConf) = {
+  private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {
 
     def changeOrAppend(attr: String, value: String,
                        overwrite: Boolean = false,
@@ -181,14 +202,32 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       }
     }
 
-    changeOrAppend(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
-    changeOrAppend(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA, "false", overwrite = true)
+    changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+        com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
+
+    assert(conf.getOption(Property.locators).isDefined ||
+        conf.getOption(Property.mcastPort).isDefined,
+      s"Either ${Property.locators} or ${Property.mcastPort} " +
+          s"must be defined for SnappyData cluster to start")
+    import org.apache.spark.sql.collection.Utils
+    // skip overriding host-data if loner VM.
+    if(sc != null && Utils.isLoner(sc)) {
+      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+          com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+        "true", overwrite = true)
+    }
+    else {
+      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+          com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+        "false", overwrite = true)
+    }
     changeOrAppend(Property.jobserverEnabled, "false", ignoreIfPresent = true)
 
     conf
   }
 
-  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit = this.notificationCallback = f
+  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit =
+    this.notificationCallback = f
 
   private[snappydata] def scheduleWaitForPrimaryDeparture() = {
 
@@ -199,7 +238,10 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           primaryLeaderLock.lockInterruptibly()
           latch.countDown()
           logInfo("Notifying status ...")
-          notificationCallback()
+          val callback = notificationCallback
+          if (callback != null) {
+            callback()
+          }
         } catch {
           case ie: InterruptedException =>
             logInfo("Thread interrupted. Shutting down primary lead node lock waiter.")
@@ -224,7 +266,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
       // until now.
       logInfo("Connecting to snappydata cluster now...")
-      internalStart(sc.getConf)
+      internalStart(sc)
     }
 
     val jobServerEnabled = bootProperties.getProperty(Property.jobserverEnabled).toBoolean
@@ -304,9 +346,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
 object LeadImpl {
 
-  def invokeLeadStart(conf: SparkConf): Unit = {
+  def invokeLeadStart(sc: SparkContext): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
-    lead.internalStart(conf)
+    lead.internalStart(sc)
   }
 
   def invokeLeadStartAddonService(sc: SparkContext): Unit = {
@@ -318,5 +360,4 @@ object LeadImpl {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     lead.internalStop(shutdownCredentials)
   }
-
 }

@@ -1,7 +1,7 @@
 package org.apache.spark.sql.store
 
 import java.nio.ByteBuffer
-import java.sql.{Statement, Connection, PreparedStatement, ResultSet}
+import java.sql.{Connection, ResultSet, Statement}
 import java.util.Properties
 import java.util.concurrent.locks.ReentrantLock
 
@@ -13,10 +13,10 @@ import scala.util.Random
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.ConnectionType.ConnectionType
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.snappy._
 import org.apache.spark.{SparkContext, SparkEnv}
 
 /*
@@ -26,7 +26,7 @@ class JDBCSourceAsStore(override val url: String,
     override val driver: String,
     override val poolProps: Map[String, String],
     override val connProps: Properties,
-    hikariCP: Boolean) extends ExternalStore {
+    val hikariCP: Boolean) extends ExternalStore {
 
   @transient
   protected lazy val serializer = SparkEnv.get.serializer
@@ -44,7 +44,7 @@ class JDBCSourceAsStore(override val url: String,
       sparkContext: SparkContext): RDD[CachedBatch] = {
     var rddList = new ArrayBuffer[RDD[CachedBatch]]()
     uuidList.foreach(x => {
-      val y = x.mapPartitions { uuidItr =>
+      val y = x.mapPartitionsPreserve { uuidItr =>
         getCachedBatchIterator(tableName, requiredColumns, uuidItr)
       }
       rddList += y
@@ -98,7 +98,7 @@ class JDBCSourceAsStore(override val url: String,
         }
         val rs = ps.executeQuery()
 
-        new CachedBatchIteratorOnRS(conn, connectionType, requiredColumns, ps, rs)
+        new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs)
     }, closeOnSuccess = false))
   }
 
@@ -143,8 +143,9 @@ class JDBCSourceAsStore(override val url: String,
   }
 }
 
-final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
-    requiredColumns: Array[String], ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
+final class CachedBatchIteratorOnRS(conn: Connection,
+    requiredColumns: Array[String],
+    ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
 
   private val serializer = SparkEnv.get.serializer
   var _hasNext = moveNext()
@@ -152,33 +153,36 @@ final class CachedBatchIteratorOnRS(conn: Connection, connType: ConnectionType,
   override def hasNext: Boolean = _hasNext
 
   override def next() = {
-    val result = getCachedBatchFromRow(requiredColumns, rs, connType)
+    val result = getCachedBatchFromRow(requiredColumns, rs)
     _hasNext = moveNext()
     result
   }
 
   private def moveNext(): Boolean = {
-    if (rs.next()) {
-      true
-    } else {
-      rs.close()
-      ps.close()
-      conn.close()
-      false
+    var success = false
+    try {
+      success = rs.next()
+      success
+    } finally {
+      if (!success) {
+        rs.close()
+        ps.close()
+        conn.close()
+      }
     }
   }
 
   private def getCachedBatchFromRow(requiredColumns: Array[String],
-      rs: ResultSet, connType: ConnectionType): CachedBatch = {
+      rs: ResultSet): CachedBatch = {
     // it will be having the information of the columns to fetch
     val numCols = requiredColumns.length
     val colBuffers = new ArrayBuffer[Array[Byte]]()
     for (i <- 0 until numCols) {
       colBuffers += rs.getBytes(requiredColumns(i)).array
     }
-    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.wrap(rs.getBytes("stats")))
+    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.
+        wrap(rs.getBytes("stats")))
 
     CachedBatch(colBuffers.toArray, stats)
   }
-
 }

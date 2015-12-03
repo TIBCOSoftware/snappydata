@@ -3,6 +3,8 @@ package org.apache.spark.sql.row
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import org.apache.spark.sql.columnar.ExternalStoreUtils
+
 import scala.collection.mutable
 
 import org.apache.spark.rdd.RDD
@@ -275,7 +277,7 @@ class JDBCMutableRelation(
   override def createIndex(tableName: String, sql: String): Unit = {
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = ExternalStoreUtils.getConnection(url, connProperties)
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
 

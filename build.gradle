@@ -143,9 +143,6 @@ subprojects {
     actions = [ new com.github.maiflai.ScalaTestAction() ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
-
-    environment 'SNAPPY_HOME': snappyProductDir
-
     maxParallelForks = 1
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
@@ -167,7 +164,6 @@ subprojects {
     reports.junitXml.destination = file(workingDir)
   }
   test {
-    environment 'SNAPPY_HOME': snappyProductDir
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '1g'
     jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
@@ -178,15 +174,14 @@ subprojects {
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
-
-
   }
 
   gradle.taskGraph.whenReady({ graph ->
     tasks.withType(Test).each { test ->
       test.configure {
         onlyIf { !Boolean.getBoolean('skip.tests') }
-        environment 'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
+        environment 'SNAPPY_HOME': snappyProductDir,
+          'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
         def eol = System.getProperty('line.separator')
         beforeTest { desc ->
@@ -214,7 +209,7 @@ subprojects {
       }
     }
   })
-        check.dependsOn test, scalaTest
+  check.dependsOn test, scalaTest
 
   // apply default manifest
   jar {
@@ -304,6 +299,7 @@ task generateSources {
 
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
+  dependsOn ':snappy-examples:jar'
   
   doFirst {
     delete snappyProductDir
@@ -331,9 +327,17 @@ task product {
     release << "Build flags: ${buildFlags}\n"
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
+    def examplesProject = project(':snappy-examples')
     def baseName = 'snappy-spark-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
+    def exampleArchiveName = "quickstart-${version}.jar"
     file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${snappyProductDir}/lib/${archiveName}")
+    copy {
+      from "${examplesProject.buildDir}/libs"
+      into "${snappyProductDir}/lib"
+      include "${examplesProject.jar.archiveName}"
+      rename { filename -> exampleArchiveName }
+    }
     copy {
       from "${project(':snappy-spark').projectDir}/bin"
       into "${snappyProductDir}/bin"

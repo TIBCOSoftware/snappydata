@@ -14,7 +14,6 @@ import org.apache.spark.serializer.Serializer
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.collection.{CoGroupExecutorLocalPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.store.StoreFunctions._
-import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.util.MutablePair
