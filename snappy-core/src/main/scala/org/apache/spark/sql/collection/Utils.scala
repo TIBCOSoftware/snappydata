@@ -1,23 +1,10 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.apache.spark.sql.collection
 
 import java.io.{IOException, ObjectOutputStream}
+
+import scala.collection.mutable.ArrayBuffer
+
+import _root_.io.snappydata.ToolsCallback
 
 import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
 import scala.collection.{Map => SMap, Traversable, mutable}
@@ -30,10 +17,10 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, Partitioner, SparkContext, SparkEnv, TaskContext}
+import org.apache.spark._
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
@@ -279,6 +266,36 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
   }
 
+  def getInternalType(dataType: DataType): Class[_] = {
+    dataType match {
+      case ByteType => classOf[scala.Byte]
+      case IntegerType => classOf[scala.Int]
+      case DoubleType => classOf[scala.Double]
+      //case "numeric" => org.apache.spark.sql.types.DoubleType
+      //case "character" => org.apache.spark.sql.types.StringType
+      case StringType => classOf[String]
+      //case "binary" => org.apache.spark.sql.types.BinaryType
+      //case "raw" => org.apache.spark.sql.types.BinaryType
+      //case "logical" => org.apache.spark.sql.types.BooleanType
+      //case "boolean" => org.apache.spark.sql.types.BooleanType
+      //case "timestamp" => org.apache.spark.sql.types.TimestampType
+      //case "date" => org.apache.spark.sql.types.DateType
+      case _ => throw new IllegalArgumentException(s"Invalid type $dataType")
+    }
+  }
+
+  def getClientHostPort(netServer: String): String = {
+    val addrIdx = netServer.indexOf('/')
+    val portEndIndex = netServer.indexOf(']')
+    if (addrIdx > 0) {
+      val portIndex = netServer.indexOf('[')
+      netServer.substring(0, addrIdx) +
+          netServer.substring(portIndex, portEndIndex + 1)
+    } else {
+      netServer.substring(addrIdx + 1, portEndIndex + 1)
+    }
+  }
+
   def isLoner(sc: SparkContext): Boolean = sc.schedulerBackend match {
     case lb: LocalBackend => true
     case _ => false
@@ -435,4 +452,26 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def toString = s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
+}
+
+class ExecutorLocalShellPartition(override val index: Int,
+    val hostList: ArrayBuffer[(String, String)]) extends Partition {
+  override def toString = s"ExecutorLocalShellPartition($index, $hostList"
+}
+
+object ToolsCallbackInit extends Logging {
+  final val toolsCallback = {
+    try {
+      val c = org.apache.spark.util.Utils.classForName(
+        "io.snappydata.ToolsCallbackImpl$")
+      val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
+      logInfo("toolsCallback initialized")
+      tc
+    } catch {
+      case cnf: ClassNotFoundException =>
+        logWarning("toolsCallback couldn't be INITIALIZED." +
+            "DriverURL won't get published to others.")
+        null
+    }
+  }
 }

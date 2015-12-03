@@ -8,7 +8,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.{SnappyTaskSchedulerImpl,
   ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
 import org.apache.spark.sql.SnappyContext
-
+import io.snappydata.Utils
 /**
   * Snappy's cluster manager that is responsible for creating
   * scheduler and scheduler backend.
@@ -43,7 +43,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         else if (locator.isEmpty ||
             locator == "" ||
             locator == "null" ||
-            !(locator.matches("(.+:[0-9]+)|(.+\\[[0-9]+\\])"))
+            !(Utils.LocatorURLPattern.matcher(locator).matches())
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }
@@ -52,6 +52,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
       logger.info(s"setting from url ${prop} with ${value}")
       sc.conf.set(prop, value)
+      sc.conf.set(Property.embedded, "true")
     }
     new SnappyTaskSchedulerImpl(sc)
   }
@@ -75,7 +76,7 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
     schedulerImpl.initialize(backend)
 
-    LeadImpl.invokeLeadStart(schedulerImpl.sc.conf)
+    LeadImpl.invokeLeadStart(schedulerImpl.sc)
   }
 
   def stopLead(): Unit = {

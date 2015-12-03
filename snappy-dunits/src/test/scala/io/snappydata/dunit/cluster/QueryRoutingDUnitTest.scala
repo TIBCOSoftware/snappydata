@@ -3,13 +3,15 @@ package io.snappydata.dunit.cluster
 import java.sql.{SQLException, Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
-import dunit.AvailablePortHelper
+import dunit.{SerializableRunnable, AvailablePortHelper}
 
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SnappyContext, SaveMode}
 
 /**
-  * Created by kneeraj on 29/10/15.
-  */
+ * Tests for query routing from JDBC client driver.
+ *
+ * Created by kneeraj on 29/10/15.
+ */
 class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   private def getANetConnection(netPort: Int): Connection = {
@@ -19,109 +21,145 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def testDummy(): Unit = {
+  def testQueryRouting(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-  }
-
-  def _testQueryRouting(): Unit = {
-    // Lead is started before other servers are started.
-    QueryRoutingDUnitTest.startSnappyServer(locatorPort, props)
-    val fullStartArgs = startArgs :+ true.asInstanceOf[AnyRef]
-    vm0.invoke(this.getClass, "startSnappyLead", fullStartArgs)
-    val netport1 = AvailablePortHelper.getRandomAvailableTCPPort
-    QueryRoutingDUnitTest.startNetServer(netport1)
-
-    vm0.invoke(this.getClass, "createTablesAndInsertData")
-    val conn = getANetConnection(netport1)
+    createTableAndInsertData()
+    val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
     s.execute("select col1 from ColumnTableQR")
     var rs = s.getResultSet
     var cnt = 0
-    while(rs.next()) {
+    while (rs.next()) {
       cnt += 1
     }
     assert(cnt == 5)
 
     var md = rs.getMetaData
-    println("KN: metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    println("metadata col cnt = " + md.getColumnCount + " col name = " +
+        md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 1)
     assert(md.getColumnName(1).equals("col1"))
-    assert (md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+    assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
 
     // 2nd query which compiles in gemxd too but needs to be routed
     s.execute("select * from ColumnTableQR")
     rs = s.getResultSet
     cnt = 0
-    while(rs.next()) {
+    while (rs.next()) {
       cnt += 1
     }
     assert(cnt == 5)
     md = rs.getMetaData
-    println("KN: 2nd metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    println("2nd metadata col cnt = " + md.getColumnCount + " col name = " +
+        md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 3)
     assert(md.getColumnName(1).equals("col1"))
     assert(md.getColumnName(2).equals("col2"))
     assert(md.getColumnName(3).equals("col3"))
-    assert (md.getTableName(1).equalsIgnoreCase("columnTableqr"))
-    assert (md.getTableName(2).equalsIgnoreCase("columnTableqr"))
-    assert (md.getTableName(3).equalsIgnoreCase("columnTableqr"))
-    val catalog = Misc.getMemStore.getExternalCatalog
-    assert(catalog.isColumnTable("ColumnTableQR"))
+    assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+    assert(md.getTableName(2).equalsIgnoreCase("columnTableqr"))
+    assert(md.getTableName(3).equalsIgnoreCase("columnTableqr"))
+
+    vm1.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val catalog = Misc.getMemStore.getExternalCatalog
+        assert(catalog.isColumnTable("ColumnTableQR"))
+      }
+    })
 
     // Now give a syntax error which will give parse error on spark sql side as well
     try {
       s.execute("select ** from sometable")
-    }
-    catch {
-      case sqe: SQLException => {
-        println("KN: sql state = " + sqe.getSQLState)
-        sqe.printStackTrace()
-        val cause = sqe.getCause
-        if (cause != null) {
-          cause.printStackTrace()
+    } catch {
+      case sqe: SQLException =>
+        if ("42X01" != sqe.getSQLState && "38000" != sqe.getSQLState) {
+          throw sqe
         }
-        assert("42X01".equalsIgnoreCase(sqe.getSQLState) || "38000".equalsIgnoreCase(sqe.getSQLState))
-      }
-      case e: Exception => throw new RuntimeException("unexpected exception " + e.getMessage, e)
     }
     s.execute("select col1, col2 from ColumnTableQR")
     rs = s.getResultSet
     cnt = 0
-    while(rs.next()) {
+    while (rs.next()) {
       cnt += 1
     }
     assert(cnt == 5)
     md = rs.getMetaData
-    println("KN: 3rd metadata col cnt = " + md.getColumnCount + " col name = " + md.getColumnName(1) + " col table name = " + md.getTableName(1))
+    println("3rd metadata col cnt = " + md.getColumnCount + " col name = " +
+        md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 2)
-    QueryRoutingDUnitTest.stopSpark
+
+    conn.close()
+  }
+
+  def testSNAP193(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData2()
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+
+    val numExpectedRows = 1888622
+    val rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
+    assert(rs.next())
+    assert(rs.getInt(1) == numExpectedRows, "got rows=" + rs.getInt(1))
+    assert(!rs.next())
+
+    val md = rs.getMetaData
+    println("metadata colCount=" + md.getColumnCount + " colName=" +
+        md.getColumnName(1) + " tableName=" + md.getTableName(1))
+    assert(md.getColumnCount == 1)
+    assert(md.getColumnName(1) == "_c0", "columnName=" + md.getColumnName(1))
+
+    // below hangs in CREATE TABLE for some reason; need to check
+    /*
+    stmt.execute("CREATE TABLE airline2 USING column AS " +
+        "(select * from airline limit 10000)")
+    rs = stmt.executeQuery("select count(*) from Airline2")
+    assert(rs.next())
+    assert(rs.getInt(1) == 10000, "got rows=" + rs.getInt(1))
+    assert(!rs.next())
+
+    // now check for ClassCastException with a "select *"
+    rs = stmt.executeQuery("select * from Airline2")
+    var cnt = 0
+    while (rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 10000, "got cnt=" + cnt)
+    */
+
+    conn.close()
+  }
+
+  def createTableAndInsertData(): Unit = {
+    val snc = SnappyContext(sc)
+    val tableName: String = "ColumnTableQR"
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createExternalTable(tableName, "column", dataDF.schema,
+      Map.empty[String, String])
+    dataDF.write.format("column").mode(SaveMode.Append)
+        .saveAsTable(tableName)
+  }
+
+  def createTableAndInsertData2(): Unit = {
+    val snc = SnappyContext(sc)
+    val tableName: String = "Airline"
+
+    val hfile = getClass.getResource("/2015.parquet").getPath
+    val dataDF = snc.read.load(hfile)
+    snc.createExternalTable(tableName, "column", dataDF.schema,
+      Map.empty[String, String])
+    dataDF.write.format("column").mode(SaveMode.Append)
+        .saveAsTable(tableName)
   }
 }
 
 case class Data(col1: Int, col2: Int, col3: Int)
-
-/**
-  * Since this object derives from ClusterManagerTestUtils
-  */
-object QueryRoutingDUnitTest extends ClusterManagerTestUtils {
-  def createTablesAndInsertData(): Unit = {
-    logger.info("KN: spark context = " + sc + " and spark conf = \n" + sc.getConf.toDebugString)
-    val snc = org.apache.spark.sql.SnappyContext(sc)
-    val tableName: String = "ColumnTableQR"
-
-    val props = Map(
-      "url" -> "jdbc:snappydata:;persist-dd=false;route-query=false",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "poolImpl" -> "tomcat",
-      "user" -> "app",
-      "password" -> "app"
-    )
-
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
-    val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
-  }
-}
-

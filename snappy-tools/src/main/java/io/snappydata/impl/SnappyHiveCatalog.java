@@ -1,5 +1,6 @@
 package io.snappydata.impl;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -10,14 +11,19 @@ import java.util.concurrent.ThreadFactory;
 import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.thrift.TException;
 
 /**
+ * Encapsulates the hive catalog as created by Snappy Spark.
+ * <p/>
  * Created by kneeraj on 10/1/15.
  */
 public class SnappyHiveCatalog implements ExternalCatalog {
@@ -146,14 +152,15 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     public String toString() {
-      return "HiveMetaStoreQuery:query type = " + this.qType + " tname = " + this.tableName + " db = " + this.dbName;
+      return "HiveMetaStoreQuery:query type = " + this.qType + " tname = " +
+          this.tableName + " db = " + this.dbName;
     }
 
     private void initHMC() {
-      String snappydataurl = "jdbc:snappydata:;route-query=false;user=HIVE_METASTORE";
+      String snappyDataUrl = "jdbc:snappydata:;user=HIVE_METASTORE";
       HiveConf metadataConf = new HiveConf();
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-          snappydataurl);
+          snappyDataUrl);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
 
@@ -166,9 +173,17 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       }
     }
 
-    private String getType(HiveMetaStoreClient hmc) throws TException {
-      Table t = hmc.getTable(this.dbName, this.tableName);
-      return t.getParameters().get("EXTERNAL");
+    private String getType(HiveMetaStoreClient hmc) throws SQLException {
+      try {
+        Table t = hmc.getTable(this.dbName, this.tableName);
+        return t.getParameters().get("EXTERNAL");
+      } catch (NoSuchObjectException nsoe) {
+        throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
+            this.tableName);
+      } catch (TException te) {
+        throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
+            this.tableName, te);
+      }
     }
   }
 }

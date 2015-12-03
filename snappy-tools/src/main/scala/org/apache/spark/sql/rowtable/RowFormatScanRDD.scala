@@ -15,7 +15,7 @@ import org.apache.spark.sql.collection.MultiExecutorLocalPartition
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
-import org.apache.spark.sql.store.util.StoreUtils
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{Decimal, StructType}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
