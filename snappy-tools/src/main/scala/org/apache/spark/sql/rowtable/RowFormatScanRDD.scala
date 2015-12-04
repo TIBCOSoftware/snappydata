@@ -8,22 +8,19 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.commons.lang3.StringUtils
 
-import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.{Utils, MultiExecutorLocalPartition}
+import org.apache.spark.sql.collection.MultiExecutorLocalPartition
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.types.{StringType, Decimal, StructType}
+import org.apache.spark.sql.types.{Decimal, StructType}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
-
-case class StringEquals(attribute: String, value: Any) extends Filter
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables. This scans row tables in parallel unlike Spark's
@@ -41,13 +38,11 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     properties: Properties)
     extends JDBCRDD(sc, getConnection, schema, tableName, columns, filters, partitions, properties) {
 
-  final val schemaFields = Utils.schemaFields(schema)
-
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
    */
   private val filterWhereClause: String = {
-    val filterStrings = convertFilters(filters) map compileFilter filter (_ != null)
+    val filterStrings = filters map compileFilter filter (_ != null)
     if (filterStrings.length > 0) {
       val sb = new StringBuilder("WHERE ")
       filterStrings.foreach(x => sb.append(x).append(" AND "))
@@ -55,30 +50,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     } else ""
   }
 
-  def convertFilters(filters: Array[Filter]): Array[Filter] = {
-    val newFilters = filters.map { f =>
-      f match {
-        case EqualTo(_, _) => {
-          val filter = f.asInstanceOf[EqualTo]
-          val col = filter.attribute
-          val field = schemaFields.getOrElse(col, schemaFields.getOrElse(Utils.normalizeId(col),
-            throw new AnalysisException("RowFormatScanRDD: Cannot resolve " +
-                s"""column name "$col" among (${schemaFields.keys.mkString(", ")})""")
-          ))
-          if (field.dataType == StringType) {
-            StringEquals(filter.attribute, filter.value)
-          } else {
-            f
-          }
-        }
-        case _ => f
-      }
-    }
-    newFilters
-  }
-
   private def compileFilter(f: Filter): String = f match {
-    case StringEquals(attr, value) => s"$attr LIKE ${compileValue(value)}"
     case EqualTo(attr, value) => s"$attr = ${compileValue(value)}"
     case LessThan(attr, value) => s"$attr < ${compileValue(value)}"
     case GreaterThan(attr, value) => s"$attr > ${compileValue(value)}"
