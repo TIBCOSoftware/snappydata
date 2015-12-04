@@ -21,11 +21,13 @@ import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.{Logging, SparkEnv}
 
 /**
+ * Encapsulates a Spark execution for use in query routing from JDBC.
+ *
  * Created by kneeraj on 20/10/15.
  */
-class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
+class SparkSQLExecuteImpl(val sql: String,
+    val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
-
   // spark context will be constructed by now as this will be invoked when drda queries
   // will reach the lead node
   // TODO: KN Later get the SnappyContext as per the ctx passed to this executor
@@ -193,7 +195,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
     }
     while (groupNum < numEightColGroups - 1) {
       writeAGroup(groupNum, 8, r, hdos)
-      groupNum += 1;
+      groupNum += 1
     }
     writeAGroup(groupNum, numPartCols, r, hdos)
   }
@@ -208,7 +210,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
         activeByteForGroup = ActiveColumnBits.setFlagForNormalizedColumnPosition(index,
           activeByteForGroup)
       }
-      index += 1;
+      index += 1
     }
     DataSerializer.writePrimitiveByte(activeByteForGroup, dos)
     index = 0
@@ -217,7 +219,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext,
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
         writeColDataInOptimizedWay(row, colIndex, hdos)
       }
-      index += 1;
+      index += 1
     }
   }
 
