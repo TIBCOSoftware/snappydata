@@ -17,7 +17,7 @@ class KafkaMessageToRowConverter extends MessageToRowConverter with Serializable
     val status: Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
     InternalRow.fromSeq(Seq(status.getId, UTF8String.fromString(status.getText),
       UTF8String.fromString(status.getUser().getName), UTF8String.fromString(status.getUser.getLang),
-      status.getRetweetCount))
+      status.getRetweetCount,UTF8String.fromString(status.getHashtagEntities.mkString(",")) ))
   }
 
   /*override def toRow(message: Any): Seq[InternalRow] = {

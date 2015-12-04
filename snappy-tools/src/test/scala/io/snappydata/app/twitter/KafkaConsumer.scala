@@ -15,8 +15,9 @@ object KafkaConsumer {
 
   def main(args: Array[String]) {
     val sparkConf = new org.apache.spark.SparkConf()
-      .setAppName("kafkaconsumer")
-    //.set("snappydata.store.locators", "rdu-w27:10101")
+    .setAppName("kafkaconsumer")
+    //.set("snappydata.store.locators", "localhost:10101")
+    .setMaster("local[2]")
     //.set("snappydata.embedded", "true")
 
     val sc = new SparkContext(sparkConf)
@@ -24,7 +25,10 @@ object KafkaConsumer {
     SnappyContext.getOrCreate(sc)
     val ssnc = StreamingSnappyContext(ssc)
 
-    val urlString = "jdbc:snappydata:;locators=rdu-w27:10101;persist-dd=false;member-timeout=600000;" +
+//    val urlString = "jdbc:snappydata:;locators=rdu-w27:10101;persist-dd=false;member-timeout=600000;" +
+//      "jmx-manager-start=false;enable-time-statistics=false;statistic-sampling-enabled=false"
+
+    val urlString = "jdbc:snappydata:;locators=localhost:10101;persist-dd=false;member-timeout=600000;" +
       "jmx-manager-start=false;enable-time-statistics=false;statistic-sampling-enabled=false"
 
     val props = Map(
@@ -40,8 +44,9 @@ object KafkaConsumer {
       "country string, retweets int, hashtag string) " +
       "using kafka_stream options " +
       "(storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter' ," +
-      " kafkaParams 'metadata.broker.list->rdu-w28:9092,rdu-w29:9092,rdu-w30:9092,rdu-w31:9092,rdu-w32:9092'," +
-      " topics 'streamtweet')")
+      //" kafkaParams 'metadata.broker.list->rdu-w28:9092,rdu-w29:9092,rdu-w30:9092,rdu-w31:9092,rdu-w32:9092'," +
+      " kafkaParams 'metadata.broker.list->localhost:9092'," +
+      " topics 'tweetstream')")
 
 
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
