@@ -30,7 +30,7 @@ import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
 /**
- * Columnar Store implementation for GemFireXD.
+ * Column Store implementation for GemFireXD.
  */
 final class JDBCSourceAsColumnarStore(_url: String,
     _driver: String,
@@ -52,9 +52,14 @@ final class JDBCSourceAsColumnarStore(_url: String,
           // remove the url property from poolProps since that will be
           // partition-specific
           val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
-          new ShellPartitionedRDD[CachedBatch](sparkContext,
-            getConnection(tableName).getSchema, tableName, requiredColumns,
-            poolProps, connProps, hikariCP)
+          val conn = getConnection(tableName)
+          try {
+            new ShellPartitionedRDD[CachedBatch](sparkContext,
+              conn.getSchema, tableName, requiredColumns,
+              poolProps, connProps, hikariCP)
+          } finally {
+            conn.close()
+          }
         } else {
           var rddList = new ArrayBuffer[RDD[CachedBatch]]()
           uuidList.foreach(x => {
@@ -70,7 +75,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
 
   override def storeCachedBatch(batch: CachedBatch,
       tableName: String): UUIDRegionKey = {
-    val connection: java.sql.Connection = getConnection(tableName)
+    val connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
         case ConnectionType.Embedded =>
