@@ -38,6 +38,8 @@ class ColumnTableTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
+
+
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)

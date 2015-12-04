@@ -3,20 +3,8 @@ package org.apache.spark.sql.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
-import io.snappydata.{Constant, Property}
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import scala.collection.mutable
-
-import io.snappydata.{Constant, Property}
-
-import org.apache.spark.SparkContext
-import scala.collection.mutable
-
 import io.snappydata.Constant
-
-import org.apache.spark.SparkContext
+import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -24,10 +12,9 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row}
+import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
 
 import scala.collection.mutable
-import org.apache.spark.sql._
 
 /**
  * Utility methods used by external storage layers.

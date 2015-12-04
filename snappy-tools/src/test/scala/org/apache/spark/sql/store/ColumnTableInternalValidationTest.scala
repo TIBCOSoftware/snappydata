@@ -14,20 +14,18 @@ import scala.util.Try
 /**
  * Created by skumar on 23/11/15.
  */
-class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
-
-  override def afterAll(): Unit = {
-    sc.stop()
-    FileCleaner.cleanStoreFiles()
-  }
+class ColumnTableInternalValidationTest extends SnappyFunSuite
+with Logging
+with BeforeAndAfter
+with BeforeAndAfterAll {
 
   val tableName: String = "ColumnTable"
-
   val props = Map.empty[String, String]
 
   after {
     snc.dropExternalTable(tableName, true)
     snc.dropExternalTable("ColumnTable2", true)
+    snc.dropExternalTable("COLUMNTABLE7", true)
   }
 
   test("test the shadow table with eviction options LRUCOUNT on compressed table") {
@@ -86,8 +84,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
   // TODO: Need to check insert individually is not working for column table asks for UpdatableRelation
   // withSQLConf doesn't work with sql, as in that case another sqlcontext is used.
   test("Test ShadowTable with 1 bucket") {
-    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE4")
-    snc.sql("CREATE TABLE COLUMNTABLE4(Key1 INT ,Value INT) " +
+    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
+    snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
         "USING column " +
         "options " +
         "(" +
@@ -95,9 +93,9 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE7_SHADOW_", true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8) , Seq(9, 2))//, Seq(4, 2), Seq(5, 6))
 
@@ -105,14 +103,14 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMNTABLE4")
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMNTABLE7")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(1,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(2,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(3,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(4,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(5,11)")
 
-    val result = snc.sql("SELECT * FROM  COLUMNTABLE4")
+    val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
     val r = result.collect
     assert(r.length == 3)
 
@@ -127,8 +125,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
   }
 
   test("Test ShadowTable with 2 buckets") {
-    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE4")
-    snc.sql("CREATE TABLE COLUMNTABLE4(Key1 INT ,Value INT) " +
+    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
+    snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
         "USING column " +
         "options " +
         "(" +
@@ -136,23 +134,23 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
         "BUCKETS '2'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE7_SHADOW_", true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
 
     val rdd = sc.parallelize(data, data.length).map(s => new MyTestData(s(0), s(1)))
 
     val dataDF = snc.createDataFrame(rdd)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMNTABLE4")
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMNTABLE7")
 
     //      snc.sql("insert into COLUMNTABLE3 VALUES(1,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(2,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(3,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(4,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(5,11)")
-    val result = snc.sql("SELECT * FROM  COLUMNTABLE4")
+    val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
     val r = result.collect
     assert(r.length == 5)
 
@@ -162,8 +160,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
     //assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
     if (GemFireCacheImpl.getColumnBatchSize == 3) {
-      assert(region.size == 0)
-      assert(shadowRegion.size == 2)
+      assert(region.size == 2)
+      assert(shadowRegion.size > 0)
     }
     else {
       assert(region.size == 5)
@@ -174,8 +172,9 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
   }
 
   test("Test ShadowTable with 1 bucket, single insert") {
-    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE4")
-    snc.sql("CREATE TABLE COLUMNTABLE4(Key1 INT ,Value INT) " +
+    snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
+    snc.dropExternalTable("COLUMNTABLE7", true)
+    snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
         "USING column " +
         "options " +
         "(" +
@@ -183,16 +182,16 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE7_SHADOW_", true).asInstanceOf[PartitionedRegion]
 
-    snc.sql("insert into COLUMNTABLE4 VALUES(1,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(2,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(3,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(4,11)")
-    snc.sql("insert into COLUMNTABLE4 VALUES(5,11)")
+    snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
+    snc.sql("insert into COLUMNTABLE7 VALUES(2,11)")
+    snc.sql("insert into COLUMNTABLE7 VALUES(3,11)")
+    snc.sql("insert into COLUMNTABLE7 VALUES(4,11)")
+    snc.sql("insert into COLUMNTABLE7 VALUES(5,11)")
 
-    val result = snc.sql("SELECT * FROM  COLUMNTABLE4")
+    val result = snc.sql("SELECT * FROM  COLUMNTABLE7")
     val r = result.collect
     assert(r.length == 5)
 
@@ -202,8 +201,8 @@ class ColumnTableInternalValidationTest extends SnappyFunSuite with Logging with
     //assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
     if (GemFireCacheImpl.getColumnBatchSize == 3) {
-      assert(region.size == 0)
-      assert(shadowRegion.size == 2)
+      assert(region.size == 2)
+      assert(shadowRegion.size == 1)
     }
     else {
       assert(region.size == 5)
