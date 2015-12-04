@@ -65,7 +65,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable("ColumnTableQR"))
+        assert(catalog.isColumnTable("ColumnTableQR", false))
       }
     })
 
@@ -155,6 +155,42 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     */
 
     conn.close()
+  }
+
+  def testSystablesQueries(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData()
+    val conn = getANetConnection(netPort1)
+    try {
+      val s = conn.createStatement()
+
+      // SYSTABLES queries
+      s.execute("CREATE TABLE COLUMNTABLE (Col1 INT, Col2 INT, Col3 INT) USING column OPTIONS ()")
+      s.execute("select * from sys.systables where tablename='COLUMNTABLE'")
+      var rs = s.getResultSet
+      assert(rs.next())
+      var tableType = rs.getString("tabletype")
+      assert("C".equals(tableType))
+
+      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row OPTIONS ()")
+      s.execute("select * from sys.systables where tablename='ROWTABLE'")
+      rs = s.getResultSet
+      assert(rs.next())
+      tableType = rs.getString("tabletype")
+      assert("T".equals(tableType))
+
+      s.execute("select * from sys.systables where tableschemaname='APP'")
+      rs = s.getResultSet
+      var cnt = 0
+      while (rs.next()) {
+        cnt += 1
+      }
+      assert(cnt == 3) // ColumnTableQR, COLUMNTABLE and ROWTABLE
+    } finally {
+      conn.close()
+    }
   }
 
   def createTableAndInsertData(): Unit = {
