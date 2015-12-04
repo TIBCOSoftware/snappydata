@@ -16,8 +16,7 @@ import scala.util.Try
  */
 class ColumnTableInternalValidationTest extends SnappyFunSuite
 with Logging
-with BeforeAndAfter
-with BeforeAndAfterAll {
+with BeforeAndAfter {
 
   val tableName: String = "ColumnTable"
   val props = Map.empty[String, String]

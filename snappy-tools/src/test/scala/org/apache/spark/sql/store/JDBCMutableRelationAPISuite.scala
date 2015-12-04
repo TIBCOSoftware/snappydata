@@ -1,4 +1,4 @@
-package io.snappydata.core
+package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 

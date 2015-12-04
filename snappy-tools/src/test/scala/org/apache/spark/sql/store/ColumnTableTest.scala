@@ -15,11 +15,9 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
 class ColumnTableTest
     extends SnappyFunSuite
     with Logging
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
+    with BeforeAndAfter {
 
   val tableName: String = "ColumnTable"
-
   val props = Map.empty[String, String]
 
   after {

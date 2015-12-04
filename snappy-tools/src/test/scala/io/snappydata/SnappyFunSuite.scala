@@ -1,7 +1,9 @@
 package io.snappydata
 
 import java.io.File
+import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
 import org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdConfOnlyAuthorizerFactory
 
 import scala.collection.mutable.ArrayBuffer
@@ -88,6 +90,8 @@ abstract class SnappyFunSuite
 
   override def afterAll(): Unit = {
     baseCleanup()
+    SnappyContext.stop()
+    FabricServiceImpl.getInstance.stop(new Properties())
   }
 
   def createDir(fileName: String): String = {
