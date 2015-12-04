@@ -3,7 +3,7 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
-import org.apache.spark.sql.streaming.{FileStreamRelation, KafkaStreamRelation, SocketStreamRelation}
+import org.apache.spark.sql.streaming.{TwitterStreamRelation, FileStreamRelation, KafkaStreamRelation, SocketStreamRelation}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -703,6 +703,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       case LogicalRelation(sr: SocketStreamRelation, _) => sr.schema
       case LogicalRelation(kr: KafkaStreamRelation, _) => kr.schema
       case LogicalRelation(fr: FileStreamRelation, _) => fr.schema
+      case LogicalRelation(tr: TwitterStreamRelation, _) => tr.schema
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }

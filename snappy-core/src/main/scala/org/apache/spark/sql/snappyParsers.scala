@@ -11,7 +11,7 @@ import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentif
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.streaming.{StreamPlan, WindowLogicalPlan, SocketStreamRelation, StreamingCtxtHolder}
+import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
@@ -447,6 +447,12 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
           //TODO Yogesh, need to see if this needs to be extended for other stream relations
           case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
             (streamTableName, sr.asInstanceOf[SocketStreamRelation])
+          case (streamTableName, LogicalRelation(sr: FileStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[FileStreamRelation])
+          case (streamTableName, LogicalRelation(sr: KafkaStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[KafkaStreamRelation])
+          case (streamTableName, LogicalRelation(sr: TwitterStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[TwitterStreamRelation])
         }
         streamTables.foreach {
           case (streamTableName, sr) =>
