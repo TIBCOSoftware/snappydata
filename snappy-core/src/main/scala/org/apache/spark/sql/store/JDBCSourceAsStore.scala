@@ -11,6 +11,7 @@ import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.snappy._
 import org.apache.spark.{SparkContext, SparkEnv}
 
 import scala.collection.mutable
@@ -43,7 +44,7 @@ class JDBCSourceAsStore(override val url: String,
       sparkContext: SparkContext): RDD[CachedBatch] = {
     var rddList = new ArrayBuffer[RDD[CachedBatch]]()
     uuidList.foreach(x => {
-      val y = x.mapPartitions { uuidItr =>
+      val y = x.mapPartitionsPreserve { uuidItr =>
         getCachedBatchIterator(tableName, requiredColumns, uuidItr)
       }
       rddList += y
@@ -189,7 +190,6 @@ final class CachedBatchIteratorOnRS(conn: Connection,
         rs.close()
         ps.close()
         conn.close()
-        false
       }
     }
   }
