@@ -9,17 +9,14 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 /**
  * Created by skumar on 13/11/15.
  */
-class ColumnTableBatchInsertTest extends SnappyFunSuite with Logging with BeforeAndAfterAll with BeforeAndAfter {
+class ColumnTableBatchInsertTest extends SnappyFunSuite
+with Logging
+with BeforeAndAfter
+with BeforeAndAfterAll {
 
 
   val tableName: String = "ColumnTable"
-
   val props = Map.empty[String, String]
-
-  override def afterAll(): Unit = {
-    sc.stop()
-    FileCleaner.cleanStoreFiles()
-  }
 
   after {
     snc.dropExternalTable(tableName, true)
@@ -49,7 +46,6 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite with Logging with Before
     assert(r2.length == 5)
     println("Successful")
   }
-
 
   test("test the shadow table creation heavy insert") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")

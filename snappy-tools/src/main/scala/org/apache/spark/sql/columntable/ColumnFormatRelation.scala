@@ -5,7 +5,6 @@ import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar._
@@ -78,6 +77,7 @@ class ColumnFormatRelation(
 
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
+    // TODO: can we optimize the union by providing partitioner
     colRDD.union(connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
@@ -297,6 +297,8 @@ final class DefaultSource extends ColumnarRelationProvider {
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
 
+    val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
+
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
@@ -311,7 +313,8 @@ final class DefaultSource extends ColumnarRelationProvider {
       }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
     val schemaExtension = if (schemaString.length > 0) {
-      val temp = schemaString.substring(0, schemaString.length - 1).concat(s", ${StoreUtils.SHADOW_COLUMN} )")
+      val temp = schemaString.substring(0, schemaString.length - 1).
+          concat(s", ${StoreUtils.SHADOW_COLUMN}, $primaryKeyClause )")
       s"$temp $ddlExtension"
     } else {
       s"$schemaString $ddlExtension"

@@ -48,7 +48,7 @@ object StoreUtils {
 
   val SHADOW_COLUMN_NAME = "shadow_uuid"
 
-  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int primary key generated always as identity"
+  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int generated always as identity"
 
 
   def lookupName(tableName: String, schema: String): String = {
@@ -139,15 +139,29 @@ object StoreUtils {
     table
   }
 
+  def getPrimaryKeyClause(parameters: mutable.Map[String, String]): String = {
+    val sb = new StringBuilder()
+    sb.append(parameters.get(PARTITION_BY).map(v => {
+      val primaryKey = {
+        v match {
+          case PRIMARY_KEY => ""
+          case _ => s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
+        }
+      }
+      primaryKey
+    }).getOrElse(s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"))
+    sb.toString
+  }
+
   def ddlExtensionString(parameters: mutable.Map[String, String], isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
     if (!isShadowTable) {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
-        val parClause = {
+        val (parClause) = {
           v match {
             case PRIMARY_KEY => PRIMARY_KEY
-            case _ => if (isRowTable) s"COLUMN ($v)" else s"COLUMN ($v, $SHADOW_COLUMN_NAME)"
+            case _ => s"COLUMN ($v)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
