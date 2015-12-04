@@ -30,6 +30,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
+  // Easier to switch ON traces. thats why added this.
+  // bootProps.setProperty("gemfirexd.debug.true", "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
 
   val host = Host.getHost(0)
