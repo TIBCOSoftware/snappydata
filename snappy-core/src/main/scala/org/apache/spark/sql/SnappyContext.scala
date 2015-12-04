@@ -784,9 +784,9 @@ object GlobalSnappyInit {
   private[this] val contextLock = new AnyRef
 
   private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
-    if (_globalSNContextInitialized == false) {
+    if (!_globalSNContextInitialized ) {
       contextLock.synchronized {
-        if (_globalSNContextInitialized == false) {
+        if (!_globalSNContextInitialized) {
           invokeServices(sc)
           _globalSNContextInitialized = true
           ShutdownHookManager.addShutdownHook(() =>  _globalSNContextInitialized = false )
@@ -838,7 +838,7 @@ object SnappyContext extends Logging {
   private def newSnappyContext(sc: SparkContext) = {
     val snc = new SnappyContext(sc)
     // No need to synchronize. any occurrence would do
-    if (_anySNContext != null) {
+    if (_anySNContext == null) {
       _anySNContext = snc
     }
     snc
@@ -955,6 +955,7 @@ object SnappyContext extends Logging {
       sc.stop()
     }
     _clusterMode = null
+    _anySNContext = null
   }
 
   def getProvider(providerName: String): String =
