@@ -46,7 +46,7 @@ object StoreUtils {
 
   val EMPTY_STRING = ""
 
-  val SHADOW_COLUMN_NAME = "shadow_uuid"
+  val SHADOW_COLUMN_NAME = "rowid"
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int generated always as identity"
 
