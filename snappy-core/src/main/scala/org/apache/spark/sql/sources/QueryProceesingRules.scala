@@ -41,6 +41,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
       }
     }
 
+
      plan transformDown {
 
       case ErrorPercent(expr, child) => {
@@ -68,7 +69,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
       } //TODO:Store confidence level some where for post-query triage
       case p@Subquery(name, child) if (!child.isInstanceOf[StratifiedSample] && (errorPercent != -1
-        || confidence != -1 || SnappyContext.SnappySC.catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
+        || confidence != -1 || SnappyContext.getOrCreate(null).catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
         && (planX match {
           case StratifiedSample(_,_,_) => true
           case _ => false
@@ -98,7 +99,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
           }
         }
 
-        val aqpTables = SnappyContext.SnappySC.catalog.tables.collect {
+        val aqpTables = SnappyContext.getOrCreate(null).catalog.tables.collect {
           case (sampleTableIdent, ss: StratifiedSample)
             if sampleTableIdent.table.contains(p.alias + "_") => {
             //if ss.table.equals(p.alias) => {
