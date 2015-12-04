@@ -9,7 +9,7 @@ import org.scalatest.BeforeAndAfterAll
 /**
   * Created by hemantb.
   */
-class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
+class ServerStartSuite extends SnappyToolFunSuite with BeforeAndAfterAll {
   var props: Properties = null
 
   override def beforeAll(): Unit = {

@@ -2,7 +2,7 @@ package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
 import io.snappydata.core.FileCleaner
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.datasources.DDLException
@@ -14,7 +14,7 @@ import scala.util.Try
 /**
  * Created by skumar on 23/11/15.
  */
-class ColumnTableInternalValidationTest extends SnappyFunSuite
+class ColumnTableInternalValidationTest extends SnappyToolFunSuite
 with Logging
 with BeforeAndAfter {
 

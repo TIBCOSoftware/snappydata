@@ -3,7 +3,7 @@ package io.snappydata.app
 import scala.actors.Futures._
 import scala.util.control.NonFatal
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
@@ -16,7 +16,7 @@ import org.apache.spark.sql.snappy._
  * Created by jramnara on 10/28/15.
  */
 class ColumnRowSamplePerfSuite
-    extends SnappyFunSuite
+    extends SnappyToolFunSuite
     with BeforeAndAfterAll {
 
   // context creation is handled by App main

@@ -1,18 +1,13 @@
 package io.snappydata
 
 import java.io.File
-import java.util.Properties
-
-import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
-import org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdConfOnlyAuthorizerFactory
-
-import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
-
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
@@ -90,8 +85,6 @@ abstract class SnappyFunSuite
 
   override def afterAll(): Unit = {
     baseCleanup()
-    SnappyContext.stop()
-    FabricServiceImpl.getInstance.stop(new Properties())
   }
 
   def createDir(fileName: String): String = {

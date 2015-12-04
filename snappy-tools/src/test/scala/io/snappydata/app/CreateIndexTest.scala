@@ -1,12 +1,12 @@
 package io.snappydata.app
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
 import org.apache.spark.sql.{Row, SaveMode}
 
 /**
  * Created by vivekb on 27/10/15.
  */
-class CreateIndexTest extends SnappyFunSuite {
+class CreateIndexTest extends SnappyToolFunSuite {
 
   test("Test create Index on Column Table using Snappy API") {
     val tableName : String = "tcol1"

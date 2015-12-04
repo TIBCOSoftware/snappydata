@@ -1,6 +1,6 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
 import io.snappydata.core.Data
 import org.apache.spark.Logging
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
@@ -13,7 +13,7 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
  * Created by Suranjan on 14/10/15.
  */
 class ColumnTableTest
-    extends SnappyFunSuite
+    extends SnappyToolFunSuite
     with Logging
     with BeforeAndAfter {
 

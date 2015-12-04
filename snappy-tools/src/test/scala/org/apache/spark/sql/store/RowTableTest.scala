@@ -1,6 +1,6 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
@@ -12,7 +12,7 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
  * Created by rishim on 6/11/15.
  */
 class RowTableTest
-    extends SnappyFunSuite
+    extends SnappyToolFunSuite
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
