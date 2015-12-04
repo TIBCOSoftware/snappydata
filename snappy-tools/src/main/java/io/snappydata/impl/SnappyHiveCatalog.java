@@ -12,6 +12,7 @@ import com.gemstone.gemfire.internal.LogWriterImpl;
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog;
 import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
+import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
@@ -57,7 +58,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // just run a task to initialize the HMC for the thread. Assumption is that this should be outside
     // any lock
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.INIT, null, null);
+    q.resetValues(HMSQuery.INIT, null, null, false);
     Future<Boolean> ret = hmsQueriesExecutorService.submit(q);
     try {
       ret.get();
@@ -66,16 +67,16 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
-  public boolean isColumnTable(String tableName) {
+  public boolean isColumnTable(String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, DEFAULT_DB_NAME);
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, DEFAULT_DB_NAME, skipLocks);
     Future<Boolean> f = this.hmsQueriesExecutorService.submit(q);
     return handleFutureResult(f);
   }
 
-  public boolean isRowTable(String tableName) {
+  public boolean isRowTable(String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName, DEFAULT_DB_NAME);
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName, DEFAULT_DB_NAME, skipLocks);
     Future<Boolean> f = this.hmsQueriesExecutorService.submit(q);
     return handleFutureResult(f);
   }
@@ -112,6 +113,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private int qType;
     private String tableName;
     private String dbName;
+    private boolean skipLock;
 
     private static final int INIT = 0;
     private static final int ISROWTABLE_QUERY = 1;
@@ -123,14 +125,19 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     HMSQuery() {
     }
 
-    public void resetValues(int queryType, String tableName, String dbName) {
+    public void resetValues(int queryType, String tableName, String dbName, boolean skipLocks) {
       this.qType = queryType;
       this.tableName = tableName;
       this.dbName = dbName;
+      this.skipLock = skipLocks;
     }
 
     @Override
     public Boolean call() throws Exception {
+      try {
+        if (this.skipLock) {
+          GfxdDataDictionary.SKIP_LOCKS.set(true);
+        }
       switch (this.qType) {
         case INIT:
           initHMC();
@@ -148,6 +155,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
         default:
           throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
+      }
+      } finally {
+        GfxdDataDictionary.SKIP_LOCKS.set(false);
       }
     }
 

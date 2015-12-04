@@ -79,7 +79,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable("ColumnTableQR"))
+        assert(catalog.isColumnTable("ColumnTableQR", false))
       }
     })
   }
