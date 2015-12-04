@@ -2,6 +2,8 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import org.apache.spark.util.ShutdownHookManager
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -45,6 +47,7 @@ class SnappyContext private(sc: SparkContext)
 
   // initialize GemFireXDDialect so that it gets registered
   GemFireXDDialect.init()
+  GlobalSnappyInit.initGlobalSnappyContext(sc)
 
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
@@ -63,6 +66,7 @@ class SnappyContext private(sc: SparkContext)
 
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager(self)
+
 
   def saveStream[T: ClassTag](stream: DStream[T],
       aqpTables: Seq[String],
@@ -775,10 +779,52 @@ object snappy extends Serializable {
 
 }
 
+object GlobalSnappyInit {
+  @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  private[this] val contextLock = new AnyRef
+
+  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
+    if (!_globalSNContextInitialized ) {
+      contextLock.synchronized {
+        if (!_globalSNContextInitialized) {
+          invokeServices(sc)
+          _globalSNContextInitialized = true
+        }
+      }
+    }
+  }
+
+  private[sql] def  resetGlobalSNContext:Unit = _globalSNContextInitialized=false
+
+  private def invokeServices(sc: SparkContext): Unit = {
+    SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) =>
+        // NOTE: if Property.jobServer.enabled is true
+        // this will trigger SnappyContext.apply() method
+        // prior to `new SnappyContext(sc)` after this
+        // method ends.
+        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+      case SnappyShellMode(_, _) =>
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = false)
+      case ExternalEmbeddedMode(_, url) =>
+        SnappyContext.urlToConf(url, sc)
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = false)
+      case LocalMode(_, url) =>
+        SnappyContext.urlToConf(url, sc)
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = true)
+      case _ => // ignore
+    }
+  }
+
+}
+
 object SnappyContext extends Logging {
 
+  @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
-  @volatile private[this] var _globalSNContext: SnappyContext = _
 
   private[this] val contextLock = new AnyRef
 
@@ -791,17 +837,12 @@ object SnappyContext extends Logging {
   def globalSparkContext: SparkContext = SparkContext.activeContext.get()
 
   private def newSnappyContext(sc: SparkContext) = {
-    val gnc = _globalSNContext
-    if (gnc != null) new SnappyContext(sc)
-    else contextLock.synchronized {
-      val gnc = _globalSNContext
-      if (gnc != null) new SnappyContext(sc)
-      else {
-        initGlobalSnappyContext(sc)
-        _globalSNContext = new SnappyContext(sc)
-        _globalSNContext
-      }
+    val snc = new SnappyContext(sc)
+    // No need to synchronize. any occurrence would do
+    if (_anySNContext == null) {
+      _anySNContext = snc
     }
+    snc
   }
 
   def apply(): SnappyContext = {
@@ -822,10 +863,10 @@ object SnappyContext extends Logging {
   }
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
-    val gnc = _globalSNContext
+    val gnc = _anySNContext
     if (gnc != null) gnc
     else contextLock.synchronized {
-      val gnc = _globalSNContext
+      val gnc = _anySNContext
       if (gnc != null) gnc
       else {
         apply(sc)
@@ -833,30 +874,8 @@ object SnappyContext extends Logging {
     }
   }
 
-  private def initGlobalSnappyContext(sc: SparkContext): Unit = {
-    getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) =>
-        // NOTE: if Property.jobServer.enabled is true
-        // this will trigger SnappyContext.apply() method
-        // prior to `new SnappyContext(sc)` after this
-        // method ends.
-        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-      case SnappyShellMode(_, _) =>
-        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
-          hostData = false)
-      case ExternalEmbeddedMode(_, url) =>
-        urlToConf(url, sc)
-        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
-          hostData = false)
-      case LocalMode(_, url) =>
-        urlToConf(url, sc)
-        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
-          hostData = true)
-      case _ => // ignore
-    }
-  }
 
-  private def urlToConf(url: String, sc: SparkContext): Unit = {
+  def urlToConf(url: String, sc: SparkContext): Unit = {
     val propValues = url.split(';')
     propValues.foreach { s =>
       val propValue = s.split('=')
@@ -937,7 +956,8 @@ object SnappyContext extends Logging {
       sc.stop()
     }
     _clusterMode = null
-    _globalSNContext = null
+    _anySNContext = null
+    GlobalSnappyInit.resetGlobalSNContext
   }
 
   def getProvider(providerName: String): String =
