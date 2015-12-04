@@ -69,6 +69,7 @@ class SparkSQLExecuteImpl(val sql: String,
       })
 
     hdos.clearForReuse()
+    var metaDataSent = false
     partitionIdList.sorted.foreach(p => {
 //      logTrace("Sending data for partition id = " + p)
       val partitionData: Array[InternalRow] = bm.getLocal(RDDBlockId(resultsRdd.id, p)) match {
@@ -81,7 +82,14 @@ class SparkSQLExecuteImpl(val sql: String,
       while (totalRowsSentForPartition < partitionData.length) {
         partitionData.takeWhile(_ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(row =>
         {
-          if (numRowsSentInBatch == 0) sendMetaData()
+          //send metadata once per result set
+          if (!metaDataSent) {
+            sendMetaData()
+            metaDataSent = true
+          } else {
+            //indicates no metadata being sent
+            hdos.writeByte(0x0);
+          }
           writeRow(row)
 
           numRowsSentInBatch += 1
@@ -96,9 +104,7 @@ class SparkSQLExecuteImpl(val sql: String,
       logTrace(s"Finished sending data for partition $p")
     })
 
-    //TODO: could we avoid sending metadata for dummy last result
     hdos.clearForReuse();
-    sendMetaData();
     msg.lastResult(snappyResultHolder)
 
     // remove cached results from block manager
