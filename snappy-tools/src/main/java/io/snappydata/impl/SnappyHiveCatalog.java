@@ -178,8 +178,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         Table t = hmc.getTable(this.dbName, this.tableName);
         return t.getParameters().get("EXTERNAL");
       } catch (NoSuchObjectException nsoe) {
-        throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
-            this.tableName);
+        // assume ROW type in GemFireXD
+        return ExternalTableType.Row().toString();
       } catch (TException te) {
         throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
             this.tableName, te);
