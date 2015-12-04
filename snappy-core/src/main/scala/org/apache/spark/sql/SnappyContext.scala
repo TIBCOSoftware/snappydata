@@ -789,11 +789,12 @@ object GlobalSnappyInit {
         if (!_globalSNContextInitialized) {
           invokeServices(sc)
           _globalSNContextInitialized = true
-          ShutdownHookManager.addShutdownHook(() =>  _globalSNContextInitialized = false )
         }
       }
     }
   }
+
+  private[sql] def  resetGlobalSNContext:Unit = _globalSNContextInitialized=false
 
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
@@ -956,6 +957,7 @@ object SnappyContext extends Logging {
     }
     _clusterMode = null
     _anySNContext = null
+    GlobalSnappyInit.resetGlobalSNContext
   }
 
   def getProvider(providerName: String): String =
