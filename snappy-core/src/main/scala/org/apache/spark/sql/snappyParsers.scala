@@ -413,7 +413,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val snc = if(StreamPlan.currentContext.get()!= null)
       StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
-    val streamTable = catalog.newQualifiedTableName(streamIdent)
+    val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
       case None => catalog.tables.put(streamTable, plan)
@@ -445,8 +445,8 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
           // runtime type is erased to Any, but we keep the actual ClassTag
           // around in StreamRelation so as to give the proper runtime type
           //TODO Yogesh, need to see if this needs to be extended for other stream relations
-          case (streamTableName, LogicalRelation(sr: SocketStreamRelation[_], _)) =>
-            (streamTableName, sr.asInstanceOf[SocketStreamRelation[Any]])
+          case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[SocketStreamRelation])
         }
         streamTables.foreach {
           case (streamTableName, sr) =>
@@ -459,8 +459,9 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
                 if topK.streamTable == streamTable => topKIdent.table
             }
             if (aqpTables.nonEmpty) {
-              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
-                sr.schema)(sr.ct)
+              //TODO Yogesh, check with Sumedh and fix. We need to remove the formatter
+//              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
+//                sr.schema)(sr.ct)
             }
         }
         // start the streaming

@@ -17,12 +17,12 @@ import twitter4j._
 
 object KafkaProducer {
 
-  val KafkaTopic = "streamtweet"
+  val KafkaTopic = "tweetstream"
 
   val kafkaProducer = {
     val props = new Properties()
-    props.put("metadata.broker.list", "rdu-w28:9092,rdu-w29:9092,rdu-w30:9092,rdu-w31:9092,rdu-w32:9092")
-    //,localhost:9093")//conf.getString("kafka.brokers"))
+    //props.put("metadata.broker.list", "rdu-w28:9092,rdu-w29:9092,rdu-w30:9092,rdu-w31:9092,rdu-w32:9092")
+    props.put("metadata.broker.list","localhost:9092")//conf.getString("kafka.brokers"))
     props.put("request.required.acks", "1")
     val config = new ProducerConfig(props)
     println(" XXXXXXXXXXXXX Starting KafkaProducer")

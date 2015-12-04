@@ -25,7 +25,8 @@ final class SchemaDStream(
                            @transient val queryExecution: org.apache.spark.sql.execution.QueryExecution)
   extends DStream[Row](streamingSnappy.streamingContext) {
 
-  def this(streamingSnappy: StreamingSnappyContext, logicalPlan: LogicalPlan) = this(streamingSnappy, streamingSnappy.executePlan(logicalPlan))
+  def this(streamingSnappy: StreamingSnappyContext, logicalPlan: LogicalPlan) =
+    this(streamingSnappy, streamingSnappy.executePlan(logicalPlan))
 
   /** Returns the schema of this SchemaDStream (represented by a [[StructType]]). */
   def schema: StructType = queryExecution.analyzed.schema
