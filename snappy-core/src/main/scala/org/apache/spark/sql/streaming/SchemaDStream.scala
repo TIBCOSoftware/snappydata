@@ -53,7 +53,7 @@ final class SchemaDStream(
   override def compute(validTime: Time): Option[RDD[Row]] = {
     // Set the valid batch duration for this rule to get
     // correct RDD in DStream of this batch duration
-    DStreamHelper.setValidTime(validTime)
+    StreamHelper.setValidTime(validTime)
     // Scan the streaming logic plan to convert streaming plan
     // to specific RDD logic plan.
     val converter = CatalystTypeConverters.createToScalaConverter(schema)

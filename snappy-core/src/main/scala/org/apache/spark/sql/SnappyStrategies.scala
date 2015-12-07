@@ -6,7 +6,7 @@ import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{Filter, PartitionedDataSourceScan, SparkPlan, SparkPlanner, StratifiedSample, joins}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.streaming._
 
 /**
@@ -33,7 +33,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  /** Stream related strategies to map stream specific logical plan to physical plan. */
+  /**Stream related strategies to map stream specific logical plan to physical plan*/
   object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, stream) =>
@@ -42,6 +42,22 @@ private[sql] trait SnappyStrategies {
         WindowPhysicalPlan(d, s, planLater(child)) :: Nil
       case l @LogicalRelation(t: StreamPlan, _) =>
         PhysicalDStreamPlan(l.output, t.stream) :: Nil
+      case _ => Nil
+    }
+  }
+
+  /**Stream related strategies DDL stratgies*/
+  object StreamDDLStrategy extends Strategy {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+      case CreateStreamTable(streamName, userColumns, options) =>
+        ExecutedCommand(
+          CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
+      case CreateSampledTable(streamName, options) =>
+        ExecutedCommand(
+          CreateSampledTableCmd(streamName, options)) :: Nil
+      case StreamOperationsLogicalPlan(action, batchInterval) =>
+        ExecutedCommand(
+          StreamingCtxtActionsCmd(action, batchInterval)) :: Nil
       case _ => Nil
     }
   }
