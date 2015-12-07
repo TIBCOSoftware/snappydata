@@ -38,6 +38,7 @@ object ExecutorInitiator extends Logging {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = null
     var stopTask = false
+    var retryTask = false
     private val lock = new ReentrantLock
 
     val membershipListener = new MembershipListener {
@@ -60,6 +61,11 @@ object ExecutorInitiator extends Logging {
       }
     }
 
+    def retryConnection() : Unit = lock.synchronized {
+      retryTask = true
+      lock.notify()
+    }
+
     def setDriverDetails(url: Option[String],
         dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
@@ -75,13 +81,21 @@ object ExecutorInitiator extends Logging {
             .addMembershipListener(membershipListener)
         while (!stopTask) {
           try {
+
             Misc.checkIfCacheClosing(null)
-            if (prevDriverURL == getDriverURL) {
+            if (prevDriverURL == getDriverURL && !retryTask) {
               lock.synchronized {
                 lock.wait()
               }
             }
             else {
+              if (retryTask) {
+                // if it's a retry, wait for sometime before we retry.
+                // This is a measure to ensure that some unforeseen circumstance
+                // does not lead to continous retries and the thread hogs the CPU.
+                Thread.sleep(3000)
+                retryTask = false
+              }
               // kill if an executor is already running.
               SparkCallbacks.stopExecutor(env)
               env = null
@@ -192,6 +206,10 @@ object ExecutorInitiator extends Logging {
       executorRunnable.stopTask = true
     }
     executorRunnable.setDriverDetails(None, null)
+  }
+
+  def restartExecutor() : Unit = {
+    executorRunnable.retryConnection()
   }
 
   /**
