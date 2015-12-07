@@ -1,22 +1,23 @@
 package org.apache.spark.sql
 
+import java.sql.Connection
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
-import io.snappydata.util.SqlUtils
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
@@ -25,22 +26,23 @@ import org.apache.spark.sql.execution.{TopKStub, _}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 
 import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
-import org.apache.spark.{Partition, Partitioner, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, Partitioner, SparkContext, SparkException, TaskContext}
 
 import org.apache.spark.sql.{execution => sparkexecution}
 /**
- * An instance of the Spark SQL execution engine that delegates to supplied
- * SQLContext offering additional capabilities.
- *
- * Created by Soubhik on 5/13/15.
- */
-protected[sql] class SnappyContext(sc: SparkContext)
-    extends SQLContext(sc) with Serializable {
+  * An instance of the Spark SQL execution engine that delegates to supplied
+  * SQLContext offering additional capabilities.
+  *
+  * Created by Soubhik on 5/13/15.
+  */
+class SnappyContext private(sc: SparkContext)
+    extends SQLContext(sc) with Serializable with Logging {
 
   self =>
 
@@ -115,7 +117,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // TODO: this iterates rows multiple times
     val rdds = sampleTables.map {
       case (name, samplingOptions, schema, output, relation) =>
-        (relation, rows.mapPartitions(rowIterator => {
+        (relation, rows.mapPartitionsPreserve(rowIterator => {
           val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
             nameSuffix = "", columnBatchSize, schema, cached = true)
           // create a new holder for set of CachedBatches
@@ -129,7 +131,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
     topKWrappers.foreach {
       case (name, (topKWrapper, topkRDD)) =>
-        val clazz = SqlUtils.getInternalType(
+        val clazz = Utils.getInternalType(
           topKWrapper.schema(topKWrapper.key.name).dataType)
         val ct = ClassTag(clazz)
         SnappyContext.populateTopK(rows, topKWrapper, self,
@@ -171,7 +173,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
-    val cached = df.mapPartitions { rowIterator =>
+    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, output)
@@ -210,7 +212,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
       }
     }
 
-    val cached = rdd.mapPartitions { rowIterator =>
+    val cached = rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
@@ -252,7 +254,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
   }
 
-  def registerTable[A <: Product : u.TypeTag](tableName: String) = {
+  def registerTable[A <: Product : u.TypeTag](tableName: String): Unit = {
     if (u.typeOf[A] =:= u.typeOf[Nothing]) {
       sys.error("Type of case class object not mentioned. " +
           "Mention type information for e.g. registerSampleTableOn[<class>]")
@@ -295,7 +297,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
   }
 
   def registerTopK(tableName: String, streamTableName: String,
-      topkOptions: Map[String, Any], isStreamSummary: Boolean) = {
+      topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit = {
     val topKRDD = SnappyContext.createTopKRDD(tableName, self.sc, isStreamSummary)
     catalog.registerTopK(tableName, streamTableName,
       catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
@@ -322,8 +324,8 @@ protected[sql] class SnappyContext(sc: SparkContext)
   }
 
   /**
-   * Create an external table with given options.
-   */
+    * Create an external table with given options.
+    */
   private[sql] def createTable(
       tableIdent: QualifiedTableName,
       provider: String,
@@ -345,8 +347,12 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // add tableName in properties if not already present
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
-      dbtableProp))) options
-    else options + (dbtableProp -> tableIdent.toString)
+      dbtableProp))) {
+      options
+    }
+    else {
+      options + (dbtableProp -> tableIdent.toString)
+    }
 
     val source = SnappyContext.getProvider(provider)
     val resolved = schemaDDL match {
@@ -361,13 +367,16 @@ protected[sql] class SnappyContext(sc: SparkContext)
     }
 
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params,  ExternalTableType.getTableType(resolved.relation))
-    LogicalRelation(resolved.relation)
+      Array.empty[String], source, params,
+      ExternalTableType.getTableType(resolved.relation))
+    val r = LogicalRelation(resolved.relation)
+    println(r)
+    r
   }
 
   /**
-   * Create an external table with given options.
-   */
+    * Create an external table with given options.
+    */
   private[sql] def createTable(
       tableIdent: QualifiedTableName,
       provider: String,
@@ -396,8 +405,12 @@ protected[sql] class SnappyContext(sc: SparkContext)
     // add tableName in properties if not already present
     val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
     val params = if (options.keysIterator.exists(_.equalsIgnoreCase(
-      dbtableProp))) options
-    else options + (dbtableProp -> tableIdent.toString)
+      dbtableProp))) {
+      options
+    }
+    else {
+      options + (dbtableProp -> tableIdent.toString)
+    }
 
     // this gives the provider..
 
@@ -417,8 +430,8 @@ protected[sql] class SnappyContext(sc: SparkContext)
   }
 
   /**
-   * Drop an external table created by a call to createExternalTable.
-   */
+    * Drop an external table created by a call to createExternalTable.
+    */
   def dropExternalTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
@@ -437,6 +450,55 @@ protected[sql] class SnappyContext(sc: SparkContext)
         }
       case _ => throw new AnalysisException(
         s"dropExternalTable: Table $tableName not an external table")
+    }
+  }
+
+  /**
+   * Create Index on an external table (created by a call to createExternalTable).
+   */
+  def createIndexOnExternalTable(tableName: String, sql: String): Unit = {
+    //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
+
+    if (!catalog.tableExists(tableName)) {
+      throw new AnalysisException(
+        s"$tableName is not an indexable table")
+    }
+
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    //println("qualifiedTable=" + qualifiedTable)
+    snappy.unwrapSubquery(catalog.lookupRelation(qualifiedTable, None)) match {
+      case LogicalRelation(i: IndexableRelation) =>
+        i.createIndex(tableName, sql)
+      case _ => throw new AnalysisException(
+        s"$tableName is not an indexable table")
+    }
+  }
+
+  /**
+   * Create Index on an external table (created by a call to createExternalTable).
+   */
+  def dropIndexOnExternalTable(sql: String): Unit = {
+    //println("drop-index" + " sql=" + sql)
+
+    var conn: Connection = null
+    try {
+      val (url, _, _, connProps, _) =
+        ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
+      conn = ExternalStoreUtils.getConnection(url, connProps)
+      JdbcExtendedUtils.executeUpdate(sql, conn)
+    } catch {
+      case sqle: java.sql.SQLException =>
+        if (sqle.getMessage.contains("No suitable driver found")) {
+          throw new AnalysisException(s"${sqle.getMessage}\n" +
+            "Ensure that the 'driver' option is set appropriately and " +
+            "the driver jars available (--jars option in spark-submit).")
+        } else {
+          throw sqle
+        }
+    } finally {
+      if (conn != null) {
+        conn.close()
+      }
     }
   }
 
@@ -523,20 +585,22 @@ protected[sql] class SnappyContext(sc: SparkContext)
         case _ => Nil
       }
     }
+
   }
 
   /**
-   * Queries the topK structure between two points in time. If the specified
-   * time lies between a topK interval the whole interval is considered
-   *
-   * @param topKName - The topK structure that is to be queried.
-   * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
-   *                  If passed as null, oldest interval is considered as the start interval.
-   * @param endTime  end time as string of the format "yyyy-mm-dd hh:mm:ss".
-   *                 If passed as null, newest interval is considered as the last interval.
-   * @param k Optional. Number of elements to be queried. This is to be passed only for stream summary
-   * @return returns the top K elements with their respective frequencies between two time
-   */
+    * Queries the topK structure between two points in time. If the specified
+    * time lies between a topK interval the whole interval is considered
+    *
+    * @param topKName - The topK structure that is to be queried.
+    * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
+    *                  If passed as null, oldest interval is considered as the start interval.
+    * @param endTime  end time as string of the format "yyyy-mm-dd hh:mm:ss".
+    *                 If passed as null, newest interval is considered as the last interval.
+    * @param k Optional. Number of elements to be queried.
+    *          This is to be passed only for stream summary
+    * @return returns the top K elements with their respective frequencies between two time
+    */
   def queryTopK[T: ClassTag](topKName: String,
       startTime: String = null, endTime: String = null,
       k: Int = -1): DataFrame = {
@@ -558,7 +622,7 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val topKIdent = catalog.newQualifiedTableName(topK)
     topKLocks(topKIdent.toString()).executeInReadLock {
       val (topkWrapper, rdd) = catalog.topKStructures(topKIdent)
-      //requery the catalog to obtain the TopKRDD
+      // requery the catalog to obtain the TopKRDD
 
       val size = if (k > 0) k else topkWrapper.size
 
@@ -571,8 +635,6 @@ protected[sql] class SnappyContext(sc: SparkContext)
       }
     }
   }
-
-  import snappy.RDDExtensions
 
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long,
@@ -613,11 +675,13 @@ protected[sql] class SnappyContext(sc: SparkContext)
     val rdd = topkRDD.mapPartitionsPreserve[(T, Approximate)] { iter =>
       iter.next()._2 match {
         case x: TopKHokusai[_] =>
-          val arrayTopK = if (x.windowSize == Long.MaxValue)
+          val arrayTopK = if (x.windowSize == Long.MaxValue) {
             Some(x.asInstanceOf[TopKHokusai[T]].getTopKInCurrentInterval)
-          else
+          }
+          else {
             x.asInstanceOf[TopKHokusai[T]].getTopKBetweenTime(startTime,
               endTime)
+          }
 
           arrayTopK.map(_.toIterator).getOrElse(Iterator.empty)
         case _ => Iterator.empty
@@ -640,22 +704,18 @@ protected[sql] class SnappyContext(sc: SparkContext)
 
   private var storeConfig: Map[String, String] = _
 
-  def setExternalStoreConfig(conf: Map[String, String]) = {
+  def setExternalStoreConfig(conf: Map[String, String]): Unit = {
     self.storeConfig = conf
   }
 
   def getExternalStoreConfig: Map[String, String] = {
     storeConfig
   }
-
-  def isLoner = sparkContext.schedulerBackend match {
-    case lb: LocalBackend => true
-    case _ => false
-  }
-
 }
 
+// scalastyle:off
 object snappy extends Serializable {
+  // scalastyle:on
 
   implicit def snappyOperationsOnDataFrame(df: DataFrame): SnappyOperations = {
     df.sqlContext match {
@@ -700,8 +760,8 @@ object snappy extends Serializable {
   implicit class RDDExtensions[T: ClassTag](rdd: RDD[T]) extends Serializable {
 
     /**
-     * Return a new RDD by applying a function to all elements of this RDD.
-     */
+      * Return a new RDD by applying a function to all elements of this RDD.
+      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
       new MapPartitionsPreserveRDD[U, T](rdd,
@@ -709,13 +769,13 @@ object snappy extends Serializable {
     }
 
     /**
-     * Return a new RDD by applying a function to each partition of given RDD.
-     * This variant also preserves the preferred locations of parent RDD.
-     *
-     * `preservesPartitioning` indicates whether the input function preserves
-     * the partitioner, which should be `false` unless this is a pair RDD and
-     * the input function doesn't modify the keys.
-     */
+      * Return a new RDD by applying a function to each partition of given RDD.
+      * This variant also preserves the preferred locations of parent RDD.
+      *
+      * `preservesPartitioning` indicates whether the input function preserves
+      * the partitioner, which should be `false` unless this is a pair RDD and
+      * the input function doesn't modify the keys.
+      */
     def mapPartitionsPreserve[U: ClassTag](
         f: Iterator[T] => Iterator[U],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
@@ -728,53 +788,154 @@ object snappy extends Serializable {
 
 }
 
-object SnappyContext {
+object SnappyContext extends Logging {
 
+  @volatile private[this] var _clusterMode: ClusterMode = _
+  @volatile private[this] var _globalSNContext: SnappyContext = _
   @volatile private[this] var globalContext: SparkContext = _
-  var SnappySC:SnappyContext = null
+ // var SnappySC:SnappyContext = null
 
   private[this] val contextLock = new AnyRef
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "column" ->  classOf[columnar.DefaultSource].getCanonicalName
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName
   )
 
+  def globalSparkContext: SparkContext = SparkContext.activeContext.get()
+
+  private def newSnappyContext(sc: SparkContext) = {
+    val gnc = _globalSNContext
+    if (gnc != null) new SnappyContext(sc)
+    else contextLock.synchronized {
+      val gnc = _globalSNContext
+      if (gnc != null) new SnappyContext(sc)
+      else {
+        initGlobalSnappyContext(sc)
+        _globalSNContext = new SnappyContext(sc)
+        _globalSNContext
+      }
+    }
+  }
+
   def apply(): SnappyContext = {
-    val gc = globalContext
+    val gc = globalSparkContext
     if (gc != null) {
-      new SnappyContext(gc)
+      newSnappyContext(gc)
     } else {
       null
     }
   }
 
   def apply(sc: SparkContext): SnappyContext = {
-    val gc = globalContext
-    if (gc == sc) {
-      new SnappyContext(sc)
-    } else if (sc == null) {
-      new SnappyContext(gc)
-    } else contextLock.synchronized {
-      val gc = globalContext
-      if (gc == sc) {
-        new SnappyContext(sc)
-      } else {
-        globalContext = sc
-        initSparkContext(sc)
-        SnappySC =new SnappyContext(sc)
-        SnappySC
+    if (sc != null) {
+      newSnappyContext(sc)
+    } else {
+      apply()
+    }
+  }
+
+  def getOrCreate(sc: SparkContext): SnappyContext = {
+    val gnc = _globalSNContext
+    if (gnc != null) gnc
+    else contextLock.synchronized {
+      val gnc = _globalSNContext
+      if (gnc != null) gnc
+      else {
+        apply(sc)
       }
     }
   }
 
-  // TODO: add initialization required for non-embedded mode etc here
-  private def initSparkContext(sc: SparkContext): Unit = {
+  private def initGlobalSnappyContext(sc: SparkContext): Unit = {
+    getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) =>
+        // NOTE: if Property.jobServer.enabled is true
+        // this will trigger SnappyContext.apply() method
+        // prior to `new SnappyContext(sc)` after this
+        // method ends.
+        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+      case SnappyShellMode(_, _) =>
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = false)
+      case ExternalEmbeddedMode(_, url) =>
+        urlToConf(url, sc)
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = false)
+      case LocalMode(_, url) =>
+        urlToConf(url, sc)
+        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
+          hostData = true)
+      case _ => // ignore
+    }
+  }
+
+  private def urlToConf(url: String, sc: SparkContext): Unit = {
+    val propValues = url.split(';')
+    propValues.foreach { s =>
+      val propValue = s.split('=')
+      // propValue should always give proper result since the string
+      // is created internally by evalClusterMode
+      sc.conf.set(Constant.STORE_PROPERTY_PREFIX + propValue(0),
+        propValue(1))
+    }
+  }
+
+  def getClusterMode(sc: SparkContext): ClusterMode = {
+    val mode = _clusterMode
+    if ((mode != null && mode.sc == sc) || sc == null) {
+      mode
+    } else if (mode != null) {
+      evalClusterMode(sc)
+    } else contextLock.synchronized {
+      val mode = _clusterMode
+      if ((mode != null && mode.sc == sc) || sc == null) {
+        mode
+      } else if (mode != null) {
+        evalClusterMode(sc)
+      } else {
+        _clusterMode = evalClusterMode(sc)
+        _clusterMode
+      }
+    }
+  }
+
+  private def evalClusterMode(sc: SparkContext): ClusterMode = {
+    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
+      if (ToolsCallbackInit.toolsCallback == null) {
+        throw new SparkException(
+          "Missing 'io.snappydata.ToolsCallbackImpl$' from SnappyData tools package")
+      }
+      SnappyEmbeddedMode(sc,
+        sc.master.substring(Constant.JDBC_URL_PREFIX.length))
+    } else if (ToolsCallbackInit.toolsCallback != null) {
+      val conf = sc.conf
+      val local = Utils.isLoner(sc)
+      val embedded = conf.getOption(Property.embedded).exists(_.toBoolean)
+      conf.getOption(Property.locators).collectFirst {
+        case s if !s.isEmpty =>
+          val url = "locators=" + s + ";mcast-port=0"
+          if (local) LocalMode(sc, url)
+          else if (embedded) ExternalEmbeddedMode(sc, url)
+          else SnappyShellMode(sc, url)
+      }.orElse(conf.getOption(Property.mcastPort).collectFirst {
+        case s if s.toInt > 0 =>
+          val url = "mcast-port=" + s
+          if (local) LocalMode(sc, url)
+          else if (embedded) ExternalEmbeddedMode(sc, url)
+          else SnappyShellMode(sc, url)
+      }).getOrElse {
+        if (local) LocalMode(sc, "mcast-port=0")
+        else ExternalClusterMode(sc, sc.master)
+      }
+    } else {
+      ExternalClusterMode(sc, sc.master)
+    }
   }
 
   def stop(): Unit = {
-    val sc = globalContext
+    val sc = globalSparkContext
     if (sc != null && !sc.isStopped) {
       // clean up the connection pool on executors first
       Utils.mapExecutors(sc, { (tc, p) =>
@@ -783,8 +944,15 @@ object SnappyContext {
       }).count()
       // then on the driver
       ConnectionPool.clear()
+      // clear current hive catalog connection
+      SnappyStoreHiveCatalog.closeCurrent()
+      if (ExternalStoreUtils.isExternalShellMode(sc)) {
+        ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+      }
       sc.stop()
     }
+    _clusterMode = null
+    _globalSNContext = null
   }
 
   def getProvider(providerName: String): String =
@@ -809,9 +977,12 @@ object SnappyContext {
       iterator: Iterator[Any]): (() => Long, Iterator[Any], Int) = {
     if (iterator.hasNext) {
       var tupleIterator = iterator
-      val tsCol = if (topkWrapper.timeInterval > 0)
+      val tsCol = if (topkWrapper.timeInterval > 0) {
         topkWrapper.timeSeriesColumn
-      else -1
+      }
+      else {
+        -1
+      }
       val epoch = () => {
         if (topkWrapper.epoch != -1L) {
           topkWrapper.epoch
@@ -859,7 +1030,7 @@ object SnappyContext {
     } else {
       null
     }
-    //val topKKeyIndex = topKWrapper.schema.fieldIndex(topKWrapper.key.name)
+    // val topKKeyIndex = topKWrapper.schema.fieldIndex(topKWrapper.key.name)
     if (tsCol < 0) {
       if (stsummary) {
         throw new IllegalStateException(
@@ -870,7 +1041,7 @@ object SnappyContext {
           topKHokusai.addEpochData(tupleIterator.asInstanceOf[Iterator[T]].
               toSeq.foldLeft(
             scala.collection.mutable.Map.empty[T, Long]) {
-            (m, x) => m + ((x, m.getOrElse(x, 0l) + 1))
+            (m, x) => m + ((x, m.getOrElse(x, 0L) + 1))
           }, time)
         case Some(freqCol) =>
           val datamap = mutable.Map[T, Long]()
@@ -903,10 +1074,12 @@ object SnappyContext {
           }
           dataBuffer
       }
-      if (stsummary)
+      if (stsummary) {
         streamSummaryAggr.addItems(buffer)
-      else
+      }
+      else {
         topKHokusai.addTimestampedData(buffer)
+      }
     }
   }
 
@@ -914,9 +1087,9 @@ object SnappyContext {
       context: SnappyContext, name: QualifiedTableName, topKRDD: RDD[(Int, TopK)],
       time: Long) {
     val partitioner = topKRDD.partitioner.get
-    //val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
+    // val pairRDD = rows.map[(Int, Any)](topkWrapper.rowToTupleConverter(_, partitioner))
     val batches = mutable.ArrayBuffer.empty[(Int, mutable.ArrayBuffer[Any])]
-    val pairRDD = rows.mapPartitions[(Int, mutable.ArrayBuffer[Any])](iter => {
+    val pairRDD = rows.mapPartitionsPreserve[(Int, mutable.ArrayBuffer[Any])](iter => {
       val map = iter.foldLeft(mutable.Map.empty[Int, mutable.ArrayBuffer[Any]])((m, x) => {
         val (partitionID, elem) = topkWrapper.rowToTupleConverter(x, partitioner)
         val list = m.getOrElse(partitionID, mutable.ArrayBuffer[Any]()) += elem
@@ -932,12 +1105,15 @@ object SnappyContext {
     }, preservesPartitioning = true)
 
     val nameAsString = name.toString
-    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitions[(Int, TopK)](
+    val newTopKRDD = topKRDD.cogroup(pairRDD).mapPartitionsPreserve[(Int, TopK)](
       iterator => {
         val (key, (topkIterable, dataIterable)) = iterator.next()
-        val tsCol = if (topkWrapper.timeInterval > 0)
+        val tsCol = if (topkWrapper.timeInterval > 0) {
           topkWrapper.timeSeriesColumn
-        else -1
+        }
+        else {
+          -1
+        }
 
         topkIterable.head match {
           case z: TopKStub =>
@@ -973,10 +1149,10 @@ object SnappyContext {
       }, preservesPartitioning = true)
 
     newTopKRDD.persist()
-    //To allow execution of RDD
+    // To allow execution of RDD
     newTopKRDD.count()
     context.catalog.topKStructures.put(name, topkWrapper -> newTopKRDD)
-    //Unpersist old rdd in a write lock
+    // Unpersist old rdd in a write lock
 
     context.topKLocks(name.toString()).executeInWriteLock {
       topKRDD.unpersist(false)
@@ -984,17 +1160,37 @@ object SnappyContext {
   }
 }
 
-//end of SnappyContext
+// end of SnappyContext
+
+abstract class ClusterMode {
+  val sc: SparkContext
+  val url: String
+}
+
+case class SnappyEmbeddedMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+case class SnappyShellMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+case class ExternalEmbeddedMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+case class LocalMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
+
+case class ExternalClusterMode(override val sc: SparkContext,
+    override val url: String) extends ClusterMode
 
 private[sql] case class SnappyOperations(context: SnappyContext,
     df: DataFrame) {
 
   /**
-   * Creates stratified sampled data from given DataFrame
-   * {{{
-   *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
-   * }}}
-   */
+    * Creates stratified sampled data from given DataFrame
+    * {{{
+    *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
+    * }}}
+    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
     new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan)())
 
@@ -1007,7 +1203,7 @@ private[sql] case class SnappyOperations(context: SnappyContext,
 
     val topKWrapper = TopKWrapper(name, options, schema)
 
-    val clazz = SqlUtils.getInternalType(
+    val clazz = Utils.getInternalType(
       topKWrapper.schema(topKWrapper.key.name).dataType)
     val ct = ClassTag(clazz)
     context.topKLocks += name.toString() -> new ReadWriteLock()
@@ -1017,22 +1213,24 @@ private[sql] case class SnappyOperations(context: SnappyContext,
     SnappyContext.populateTopK(df.rdd, topKWrapper, context,
       name, topKRDD, System.currentTimeMillis())(ct)
 
-    /*df.foreachPartition((x: Iterator[Row]) => {
+    /*
+     df.foreachPartition((x: Iterator[Row]) => {
       context.addDataForTopK(name, topKWrapper, x)(ct)
-    })*/
+    })
+    */
   }
 
   /**
-   * Table must be registered using #registerSampleTable.
-   */
-  def insertIntoSampleTables(sampleTableName: String*) =
+    * Table must be registered using #registerSampleTable.
+    */
+  def insertIntoSampleTables(sampleTableName: String*): Unit =
     context.collectSamples(df.rdd, sampleTableName, System.currentTimeMillis())
 
   /**
-   * Append to an existing cache table.
-   * Automatically uses #cacheQuery if not done already.
-   */
-  def appendToCache(tableName: String) = context.appendToCache(df, tableName)
+    * Append to an existing cache table.
+    * Automatically uses #cacheQuery if not done already.
+    */
+  def appendToCache(tableName: String): Unit = context.appendToCache(df, tableName)
 
   def registerAndInsertIntoExternalStore(tableName: String,
       jdbcSource: Map[String, String]): Unit = {

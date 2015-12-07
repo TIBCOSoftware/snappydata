@@ -3,22 +3,20 @@ package io.snappydata.dunit
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import dunit.{AvailablePortHelper, DistributedTestBase, Host}
-import io.snappydata.ServiceManager
-import io.snappydata.dunit.cluster.{ClusterManagerTestUtils, ClusterManagerTestBase}
+import dunit.AvailablePortHelper
+import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.{Property, ServiceManager}
 
 import org.apache.spark.sql.collection.ReusableRow
-import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.apache.spark.sql.{SaveMode, DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, SaveMode}
 
 /**
- * Basic hive meta-store client test in Snappy cluster.
- *
- * @author kneeraj
- */
+  * Basic hive meta-store client test in Snappy cluster.
+  *
+  * @author kneeraj
+  */
 class HiveMetastoreClientAccessDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) {
 
@@ -30,11 +28,6 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
     helloWorld()
   }
 
-  override def tearDown2(): Unit = {
-    super.tearDown2()
-    stopAny()
-  }
-
   def _testOne(): Unit = {
     val serverNetPort = AvailablePortHelper.getRandomAvailableTCPPort
 
@@ -43,10 +36,10 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
       Array(locStr.asInstanceOf[AnyRef]))
 
     startHiveMetaClientInGfxdPeerNode(locStr, serverNetPort)
-    //Misc.getMemStore.initExternalCatalog
-    //val cc = Misc.getMemStore.getExternalCatalog
-    //assert(cc.isColumnTable("airline"))
-    //assert(cc.isRowTable("row_table"))
+    // Misc.getMemStore.initExternalCatalog
+    // val cc = Misc.getMemStore.getExternalCatalog
+    // assert(cc.isColumnTable("airline"))
+    // assert(cc.isRowTable("row_table"))
   }
 
   def startHiveMetaClientInGfxdPeerNode(locatorStr: String, netPort: Int): Unit = {
@@ -58,7 +51,7 @@ class HiveMetastoreClientAccessDUnitTest(val s: String)
   }
 }
 
-object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
+object HiveMetastoreClientAccessDUnitTest {
 
   def helloWorld(): Unit = {
     hello("Hello World! " + this.getClass)
@@ -75,14 +68,6 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
     println("Driver vm type = " + GemFireStore.getBootedInstance.getMyVMKind)
     println("locator prop in driver app = " + InternalDistributedSystem
         .getConnectedInstance.getConfig.getLocators)
-  }
-
-  def stopLocator(): Unit = {
-    val server = ServiceManager.getServerInstance
-
-    if (server != null) {
-      server.stop(null)
-    }
   }
 
   object ParseUtils extends java.io.Serializable {
@@ -161,28 +146,15 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set("snappydata.store.locators", locStr)
+        .set(Property.locators, locStr)
 
     if (setMaster != null) {
-      conf.setMaster(setMaster)
+      conf.setMaster(setMaster).set(Property.embedded, "true")
     }
-
-    // Set the url from the locator
-    val snappydataurl = "jdbc:snappydata:;locators=" + locStr
-    conf.set("gemfirexd.db.url", snappydataurl)
-    conf.set("gemfirexd.db.driver", "com.pivotal.gemfirexd.jdbc.EmbeddedDriver")
 
     val sc = new org.apache.spark.SparkContext(conf)
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     snContext.sql("set spark.sql.shuffle.partitions=6")
-
-    val props = Map(
-      "url" -> snappydataurl,
-      "poolImpl" -> "tomcat",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "user" -> "app",
-      "password" -> "app"
-    )
 
     if (loadData) {
       val airlineDataFrame: DataFrame =
@@ -225,14 +197,16 @@ object HiveMetastoreClientAccessDUnitTest extends ClusterManagerTestUtils {
           snContext.createDataFrame(rowRDD, schema)
         }
 
-      airlineDataFrame.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("airline")
-      //airlineDataFrame.registerAndInsertIntoExternalStore("airline", props)
+      airlineDataFrame.write.format("column").mode(SaveMode.Append)
+          .options(Map.empty[String, String]).saveAsTable("airline")
+      // airlineDataFrame.registerAndInsertIntoExternalStore("airline", bootProps)
     }
 
     val rdd = sc.parallelize(
       (1 to 1000).map(i => TestData(i, s"$i")))
     val dataDF = snContext.createDataFrame(rdd)
 
-    snContext.createExternalTable("row_table", "jdbc", dataDF.schema, props)
+    snContext.createExternalTable("row_table", "row", dataDF.schema,
+      Map.empty[String, String])
   }
 }

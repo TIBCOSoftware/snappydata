@@ -6,17 +6,19 @@ import io.snappydata.impl.LeadImpl
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.LocalizedMessages
+import io.snappydata.{Constant, Property, LocalizedMessages}
 import org.scalatest.{Matchers, WordSpec}
 
+import org.apache.spark.{SparkContext, SparkConf}
+
 /**
- * BDD style tests
- *
- * Created by soubhikc on 7/10/15.
- */
+  * BDD style tests
+  *
+  * Created by soubhikc on 7/10/15.
+  */
 class LeaderLauncherSpec extends WordSpec with Matchers {
 
-  def doExtract(param: String, prop: String) = param.toLowerCase.startsWith("-" + prop)
+  private def doExtract(param: String, prop: String) = param.toLowerCase.startsWith("-" + prop)
 
   "leader" when {
     "started" should {
@@ -24,9 +26,10 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         {
 
           val l = new LeadImpl
-          val opts = l.initStartupArgs(new Properties)
+          val opts = l.initStartupArgs((new SparkConf).set(Property.mcastPort, "4958"))
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+          val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+              com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
 
           assert(hdProp != null)
           assert(hdProp.toBoolean == false)
@@ -34,12 +37,13 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeadImpl
-          val p = new Properties()
-          p.setProperty("host-data", "true")
+          val p = (new SparkConf).set(Property.mcastPort, "4958")
+          p.set("host-data", "true")
 
           val opts = l.initStartupArgs(p)
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+          val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+              com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
 
           assert(hdProp != null)
           assert(hdProp.toBoolean == false)
@@ -47,12 +51,58 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
       }
 
+      "have host-data true for loner" in {
+
+//        {
+//
+//          val l = new LeadImpl
+//          val conf = new SparkConf().
+//              setMaster(s"${Constant.JDBC_URL_PREFIX}${Property.mcastPort}=0").
+//              setAppName("check hostdata true")
+//          val sc = new SparkContext(conf)
+//          try {
+//            val opts = l.initStartupArgs(conf, sc)
+//
+//            val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+//                com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+//
+//            assert(hdProp != null)
+//            assert(hdProp.toBoolean == true)
+//          } finally {
+//            sc.stop()
+//          }
+//        }
+
+        {
+          val l = new LeadImpl
+          val conf = (new SparkConf).
+              setMaster("local[3]").setAppName("with local master")
+          conf.set(Property.mcastPort, "0")
+          conf.set(Constant.STORE_PROPERTY_PREFIX + "host-data", "false")
+
+          val sc = new SparkContext(conf)
+          try {
+            val opts = l.initStartupArgs(conf, sc)
+
+            val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+                com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
+
+            assert(hdProp != null)
+            assert(hdProp.toBoolean == true)
+          } finally {
+            sc.stop()
+          }
+        }
+
+      }
+
       "always add implicit server group" in {
         {
           val l = new LeadImpl
-          val opts = l.initStartupArgs(new Properties())
+          val opts = l.initStartupArgs((new SparkConf).set(Property.mcastPort, "4958"))
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
+          val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+              com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
           assert(hdProp == l.LEADER_SERVERGROUP)
@@ -60,11 +110,13 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeadImpl
-          val p = new Properties()
-          p.setProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, "DUMMY,GRP")
+          val p = (new SparkConf).set(Property.mcastPort, "4958")
+          p.set(Constant.STORE_PROPERTY_PREFIX +
+              com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, "DUMMY,GRP")
           val opts = l.initStartupArgs(p)
 
-          val hdProp = opts.getProperty(com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
+          val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
+              com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
           assert(hdProp.endsWith("," + l.LEADER_SERVERGROUP))
@@ -102,7 +154,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         }.getMessage.equals(LocalizedMessages.res.getTextMessage("SD_ZERO_ARGS"))
       }
 
-    } //end started
+    } // end started
   }
 
 }

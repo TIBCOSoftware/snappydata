@@ -1,5 +1,6 @@
 package org.apache.spark.sql
 
+import java.sql.SQLException
 import java.util.regex.Pattern
 
 import org.apache.spark.SparkContext
@@ -46,8 +47,8 @@ object SnappyParser extends SqlParserBase {
         sortType.? ~
         (LIMIT ~> expression).? ~
         (ERRORPERCENT ~> expression).? ~
-        (CONFIDENCE ~> expression).? ^^ {
-      case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c =>
+        (CONFIDENCE ~> expression).? ~ (ERRORPERCENT ~> expression).? ^^ {
+      case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c ~ err =>
         val base = r.getOrElse(OneRowRelation)
         val withFilter = f.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, base)).getOrElse(base)
         val withProjection = g
@@ -60,7 +61,8 @@ object SnappyParser extends SqlParserBase {
         //      withLimit
         val withErrorPercent = e.map(ErrorPercent(_, withLimit)).getOrElse(withLimit)
         val withConfidence = c.map(Confidence(_, withErrorPercent)).getOrElse(withErrorPercent)
-        withConfidence
+        val withErrorPercent1 = err.map(ErrorPercent(_, withConfidence)).getOrElse(withConfidence)
+        withErrorPercent1
     }
 
   override protected lazy val function = functionDef |
@@ -83,6 +85,17 @@ object SnappyParser extends SqlParserBase {
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(Seq(r)), s)
     }
+
+  override def parseExpression(input: String): Expression = synchronized {
+    // Initialize the Keywords.
+    initLexical
+    phrase(projection)(new lexical.Scanner(input)) match {
+      case Success(plan, _) => plan
+      //case failureOrError => sys.error(failureOrError.toString)
+      case failureOrError => throw new SQLException(failureOrError.toString, "42X01")
+    }
+  }
+
 }
 
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
@@ -101,7 +114,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream | createSampled | strmctxt | truncateTable
+        createStream | createSampled | strmctxt | truncateTable | createIndex | dropIndex
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
@@ -112,6 +125,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val INIT = Keyword("INIT")
   protected val DROP = Keyword("DROP")
   protected val TRUNCATE = Keyword("TRUNCATE")
+  protected val INDEX = Keyword("INDEX")
+  protected val ON = Keyword("ON")
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s+" +
       OPTIONS.str, Pattern.CASE_INSENSITIVE)
@@ -173,6 +188,18 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
               schemaDDL, provider, allowExisting.isDefined, options)
           }
         }
+    }
+
+  protected lazy val createIndex: Parser[LogicalPlan] =
+    (CREATE ~> INDEX ~> ident) ~ (ON ~> ident) ~ wholeInput ^^ {
+      case indexName ~ tableName ~ sql =>
+        CreateIndex(tableName, sql)
+    }
+
+  protected lazy val dropIndex: Parser[LogicalPlan] =
+    (DROP ~> INDEX ~> ident) ~ wholeInput ^^ {
+      case indexName ~ sql =>
+        DropIndex(sql)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
@@ -297,6 +324,28 @@ private[sql] case class TruncateTable(
     Seq.empty
   }
 }
+
+private[sql] case class CreateIndex(
+    tableName: String,
+    sql: String) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    snc.createIndexOnExternalTable(tableName, sql)
+    Seq.empty
+  }
+}
+
+private[sql] case class DropIndex(
+    sql: String) extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val snc = SnappyContext(sqlContext.sparkContext)
+    snc.dropIndexOnExternalTable(sql)
+    Seq.empty
+  }
+}
+
 case class DMLExternalTable(
     tableName: String,
     child: LogicalPlan,

@@ -10,41 +10,34 @@ import org.apache.spark.sql.{Row, SnappyContext}
  */
 class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
+  import ClusterMgrDUnitTest._
+
   /**
    * This test starts a lead node and two server nodes. Executes a job.
    * Then stops the lead node and starts lead in another node and then executes
    * the same job.
    */
   def testMultipleDriver(): Unit = {
-    // Lead is started before other servers are started.
-    vm1.invoke(this.getClass, "startSnappyServer", startArgs)
-    vm0.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm2.invoke(this.getClass, "startSnappyServer", startArgs)
-
     // Execute the job
-    vm0.invoke(this.getClass, "startSparkJob")
-    vm0.invoke(this.getClass, "startGemJob")
-    Thread.sleep(10000)
-
+    startSparkJob()
+    startGemJob()
     // Stop the lead node
-    vm0.invoke(this.getClass, "stopAny")
-    Thread.sleep(5000)
+    ClusterManagerTestBase.stopSpark()
 
     // Start the lead node in another JVM. The executors should
     // connect with this new lead.
     // In this case servers are already running and a lead comes
     // and join
-    vm3.invoke(this.getClass, "startSnappyLead", startArgs)
-    vm3.invoke(this.getClass, "startSparkJob")
-    vm3.invoke(this.getClass, "startGemJob")
-    Thread.sleep(10000)
+    vm3.invoke(getClass, "startSnappyLead", startArgs)
+    vm3.invoke(getClass, "startSparkJob")
+    vm3.invoke(getClass, "startGemJob")
+    vm3.invoke(getClass, "stopSpark")
   }
 }
 
-/**
- * Since this object derives from ClusterManagerTestUtils
- */
-object ClusterMgrDUnitTest extends ClusterManagerTestUtils {
+object ClusterMgrDUnitTest {
+
+  private def sc = SnappyContext.globalSparkContext
 
   def startSparkJob(): Unit = {
     val slices = 5
@@ -92,7 +85,6 @@ object ClusterMgrDUnitTest extends ClusterManagerTestUtils {
     println(s"Expected rows: ${expected.mkString(",")}")
     assert(returnedRows.toSet == expected)
 
-    // This code needs to be removed when we use gemxd for hivemetastore.
     snContext.sql("drop table if exists airline")
   }
 }

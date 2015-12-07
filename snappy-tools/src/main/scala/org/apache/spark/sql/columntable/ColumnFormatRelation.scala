@@ -2,20 +2,15 @@ package org.apache.spark.sql.columntable
 
 import java.util.Properties
 
-import scala.collection.mutable
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.datasources.CaseInsensitiveMap
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.store.util.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, SaveMode}
 import org.apache.spark.storage.BlockManagerId
@@ -52,36 +47,32 @@ class ColumnFormatRelation(
     override val origOptions: Map[String, String],
     override val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext
-    ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema, parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
+    ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema,
+      parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
 }
 
-final class DefaultSource
-    extends ColumnarRelationProvider {
+final class DefaultSource extends ColumnarRelationProvider {
 
-  override def createRelation(sqlContext: SQLContext, mode: SaveMode, options: Map[String, String], schema: StructType) = {
+  override def createRelation(sqlContext: SQLContext, mode: SaveMode,
+      options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
-    val table = StoreUtils.removeInternalProps(parameters)
-
+    val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
-    val preservepartitions = parameters.remove("preservepartitions")
+    //val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+    //val preservepartitions = parameters.remove("preservepartitions")
     val (url, driver, poolProps, connProps, hikariCP) =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters.toMap)
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
+    //val dialect = JdbcDialects.get(url)
+    //val schemaExtension = s"$schema $ddlExtension"
 
-    val dialect = JdbcDialects.get(url)
-
-
-    val schemaExtension = s"$schema $ddlExtension"
-
-
-
-    val externalStore = getExternalSource(sc, url, driver, poolProps, connProps, hikariCP)
+    val externalStore = getExternalSource(sc, url, driver, poolProps,
+      connProps, hikariCP)
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, Seq.empty.toArray,
+      getClass.getCanonicalName, mode, schema, Array[Partition](),
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)
   }
 
@@ -99,5 +90,4 @@ final class DefaultSource
       }
     new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)
   }
-
 }
