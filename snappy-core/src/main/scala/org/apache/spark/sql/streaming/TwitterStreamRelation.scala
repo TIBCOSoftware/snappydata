@@ -18,8 +18,7 @@ import twitter4j.conf.{ConfigurationBuilder, Configuration}
 case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
                                  options: Map[String, String],
                                  override val schema: StructType)
-  extends StreamBaseRelation with DeletableRelation
-  with DestroyRelation with Logging with StreamPlan with Serializable {
+  extends StreamBaseRelation with Logging with StreamPlan with Serializable {
 
   @transient val context = StreamingCtxtHolder.streamingContext
 
@@ -65,17 +64,5 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
   }
 
   @transient val stream: DStream[InternalRow] = twitterStream.map(streamToRow.toRow)
-
-  override def destroy(ifExists: Boolean): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  override def delete(filterExpr: String): Int = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  def truncate(): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be truncated")
-  }
 }
 

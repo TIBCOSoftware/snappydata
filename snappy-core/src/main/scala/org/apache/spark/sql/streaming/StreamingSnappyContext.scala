@@ -223,4 +223,3 @@ object StreamPlan {
   val currentContext = new ThreadLocal[StreamingSnappyContext]()
 }
 
-abstract class StreamBaseRelation extends BaseRelation with StreamPlan with Serializable

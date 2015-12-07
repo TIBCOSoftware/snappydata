@@ -13,8 +13,7 @@ import org.apache.spark.streaming.dstream.DStream
 case class FileStreamRelation(@transient val sqlContext: SQLContext,
                               options: Map[String, String],
                               override val schema: StructType)
-  extends StreamBaseRelation with DeletableRelation
-  with DestroyRelation with Logging with StreamPlan with Serializable {
+  extends StreamBaseRelation with Logging with StreamPlan with Serializable {
 
   val DIRECTORY = "directory"
   // HDFS directory to monitor for new file
@@ -47,16 +46,4 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
   }
 
   @transient val stream: DStream[InternalRow] = fileStream.map(streamToRow.toRow)
-
-  override def destroy(ifExists: Boolean): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  override def delete(filterExpr: String): Int = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  def truncate(): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be truncated")
-  }
 }
