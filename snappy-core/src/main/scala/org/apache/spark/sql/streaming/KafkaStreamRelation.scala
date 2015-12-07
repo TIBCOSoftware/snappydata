@@ -17,8 +17,7 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
                                options: Map[String, String],
                                override val schema: StructType)
-  extends StreamBaseRelation with DeletableRelation
-  with DestroyRelation with Logging with StreamPlan with Serializable {
+  extends StreamBaseRelation with Logging with StreamPlan with Serializable {
 
   val ZK_QUORUM = "zkquorum"
   //Zookeeper quorum (hostname:port,hostname:port,..)
@@ -82,15 +81,4 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
 
   @transient val stream: DStream[InternalRow] = kafkaStream.map(_._2).map(streamToRow.toRow)
 
-  override def destroy(ifExists: Boolean): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  override def delete(filterExpr: String): Int = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  def truncate(): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be truncated")
-  }
 }
