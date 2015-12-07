@@ -12,7 +12,7 @@ import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
+import org.apache.spark.sql.jdbc.{JdbcType, JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext, SaveMode}
@@ -154,6 +154,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
     new Properties()
 
   def getPartitionByClause(col : String) : String
+
 }
 
 object JdbcExtendedUtils {
@@ -179,7 +180,7 @@ object JdbcExtendedUtils {
     schema.fields.foreach { field =>
       val dataType = field.dataType
       val typeString: String =
-        dialect.getJDBCType(dataType).map(_.databaseTypeDefinition).getOrElse(
+        dialect.getJDBCType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
           dataType match {
             case IntegerType => "INTEGER"
             case LongType => "BIGINT"
