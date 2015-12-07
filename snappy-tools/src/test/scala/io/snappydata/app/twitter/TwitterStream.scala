@@ -1,7 +1,7 @@
 package io.snappydata.app.twitter
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.streaming.{MessageToRowConverter, StreamUtils, StreamingSnappyContext}
+import org.apache.spark.sql.streaming.{MessageToRowConverter, StreamingSnappyContext}
 import org.apache.spark.streaming.{Seconds, StreamingContext}
 
 /**

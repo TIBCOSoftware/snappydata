@@ -7,6 +7,7 @@ import org.apache.spark.sql.sources.{DeletableRelation, DestroyRelation}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.util.Utils
 
 /**
  * Created by ymahajan on 25/09/15.
@@ -33,7 +34,8 @@ case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
 
   @transient private val socketStream =
     if (options.exists(_._1 == CONVERTER)) {
-      val converter = StreamUtils.loadClass(options(CONVERTER)).newInstance().asInstanceOf[StreamConverter]
+      val converter = Utils.getContextOrSparkClassLoader.loadClass(
+        options(CONVERTER)).newInstance().asInstanceOf[StreamConverter]
       val clazz: Class[_] = converter.getTargetType()
       val mirror = ru.runtimeMirror(clazz.getClassLoader)
       val sym = mirror.staticClass(clazz.getName) // obtain class symbol for `c`
@@ -54,7 +56,7 @@ case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
 
   private val streamToRow = {
     try {
-      val clz = StreamUtils.loadClass(options("streamToRow"))
+      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRow"))
       clz.newInstance().asInstanceOf[MessageToRowConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")

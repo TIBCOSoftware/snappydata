@@ -17,14 +17,13 @@ case class WindowPhysicalPlan(
   extends execution.UnaryNode with StreamPlan {
 
   override def doExecute(): RDD[InternalRow] = {
-    import DStreamHelper._
+    import StreamHelper._
     assert(validTime != null)
     // For dynamic CQ
     //if(!stream.isInitialized) stream.initializeAfterContextStart(validTime)
     //val sc = StreamingCtxtHolder.streamingContext
     //sc.graph.addOutputStream(stream)
-    StreamUtils.invoke(classOf[DStream[InternalRow]], stream, "getOrCompute", (classOf[Time], validTime))
-      .asInstanceOf[Option[RDD[InternalRow]]]
+    stream.getOrCompute(validTime)
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 

@@ -21,16 +21,14 @@ import org.apache.spark.streaming.dstream.DStream
 case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStream[InternalRow])
   extends SparkPlan with StreamPlan {
 
-  import DStreamHelper._
-
   def children = Nil
 
   override def doExecute(): RDD[InternalRow] = {
+    import StreamHelper._
     assert(validTime != null)
     //For dynamic CQ
     //if(!stream.isInitialized) stream.initializeAfterContextStart(validTime)
-    StreamUtils.invoke(classOf[DStream[Row]], stream, "getOrCompute", (classOf[Time], validTime))
-      .asInstanceOf[Option[RDD[InternalRow]]]
+    stream.getOrCompute(validTime)
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 }

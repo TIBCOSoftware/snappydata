@@ -1,6 +1,7 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.sources.{BaseRelation, DeletableRelation, DestroyRelation}
+import org.apache.spark.streaming.Time
 
 /**
  * Created by ymahajan on 7/12/15.
@@ -17,5 +18,18 @@ with DestroyRelation with Serializable {
 
   def truncate(): Unit = {
     throw new IllegalAccessException("Stream tables cannot be truncated")
+  }
+}
+
+private object StreamHelper {
+  var validTime: Time = null
+
+  def setValidTime(time: Time): Unit = {
+    if (validTime == null) {
+      validTime = time
+    } else if (validTime != time) {
+      validTime = time
+    } else {
+    }
   }
 }

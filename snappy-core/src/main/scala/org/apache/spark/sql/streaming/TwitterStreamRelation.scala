@@ -9,6 +9,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.twitter.TwitterUtils
+import org.apache.spark.util.Utils
 import twitter4j.auth.{OAuthAuthorization, NullAuthorization, Authorization}
 import twitter4j.conf.{ConfigurationBuilder, Configuration}
 
@@ -56,7 +57,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
 
   private val streamToRow = {
     try {
-      val clz = StreamUtils.loadClass(options("streamToRow"))
+      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRow"))
       clz.newInstance().asInstanceOf[MessageToRowConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
