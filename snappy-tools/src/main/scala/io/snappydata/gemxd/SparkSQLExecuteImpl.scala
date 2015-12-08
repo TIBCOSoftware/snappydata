@@ -11,13 +11,18 @@ import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, Gfxd
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
 
 /**
+ * Encapsulates a Spark execution for use in query routing from JDBC.
+ *
  * Created by kneeraj on 20/10/15.
  */
-class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, senderVersion: Version) extends SparkSQLExecute {
+class SparkSQLExecuteImpl(val sql: String,
+    val ctx: LeadNodeExecutionContext,
+    senderVersion: Version) extends SparkSQLExecute with Logging {
 
   private lazy val df: DataFrame = {
     // spark context will be constructed by now as this will be invoked when drda queries
@@ -27,19 +32,20 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     ctx.sql(sql)
   }
 
-  private lazy val hdos = new GfxdHeapDataOutputStream(Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
+  private lazy val hdos = new GfxdHeapDataOutputStream(
+    Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
   private lazy val rows = df.collect()
 
   private var rowsSent = 0
 
-  private lazy val totalRows = rows.size
+  private lazy val totalRows = rows.length
 
   // using the gemfirexd way of sending results where in the number of
   // columns in each row is divided into sets of 8 columns. Per eight column group a
   // byte will be sent to indicate which all column in that group has a
   // non-null value.
-  private lazy val (numCols, numEightColGroups, numPartCols) = getNumColumnGroups(rows)
+  private lazy val (_, numEightColGroups, numPartCols) = getNumColumnGroups(rows)
 
   private def getNumColumnGroups(rows: Array[Row]): (Int, Int, Int) = {
     if (rows != null && rows(0) != null) {
@@ -78,57 +84,58 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
   }
 
   override def packRows(): Boolean = {
-    if (totalRows == rowsSent) {
+    // send metadata once even if totalRows is zero
+    if (rowsSent == 0) {
+      // Just send the metadata once
+      val x  = df.queryExecution.analyzed.output
+      val tableNames = new Array[String](x.length)
+      val nullability = new Array[Boolean](x.length)
+      var i = 0
+      x.foreach { a =>
+        val fn = a.qualifiedName
+        val dotIdx = fn.indexOf('.')
+        if (dotIdx > 0) {
+          val tname = fn.substring(0, dotIdx)
+          tableNames(i) = tname
+        }
+        else {
+          tableNames(i) = ""
+        }
+        nullability(i) = a.nullable
+        i = i + 1
+      }
+      // byte 1 will indicate that the metainfo is being packed too
+      hdos.writeByte(0x01)
+      DataSerializer.writeStringArray(tableNames, hdos)
+      DataSerializer.writeStringArray(getColumnNames, hdos)
+      DataSerializer.writeBooleanArray(nullability, hdos)
+      val colTypes = getColumnTypes
+      colTypes.foreach(x => {
+        val t = x._1
+        InternalDataSerializer.writeSignedVL(t, hdos)
+        if ( t == StoredFormatIds.SQL_DECIMAL_ID) {
+          InternalDataSerializer.writeSignedVL(x._2, hdos) // precision
+          InternalDataSerializer.writeSignedVL(x._3, hdos) // scale
+        }
+      })
+    }
+    if (totalRows <= rowsSent) {
       false
     }
     else {
-      if (rowsSent == 0) {
-        // Just send the metadata once
-        val x  = df.queryExecution.analyzed.output
-        val tableNames = new Array[String](x.length)
-        val nullability = new Array[Boolean](x.length)
-        var i = 0
-        x.foreach( a => {
-          val fn = a.qualifiedName
-          val dotIdx = fn.indexOf('.')
-          if (dotIdx > 0) {
-            val tname = fn.substring(0, dotIdx)
-            tableNames(i) = tname
-          }
-          else {
-            tableNames(i) = ""
-          }
-          nullability(i) = a.nullable
-          i = i + 1
-        })
-        // byte 1 will indicate that the metainfo is being packed too
-        hdos.writeByte(0x01);
-        DataSerializer.writeStringArray(tableNames, hdos)
-        DataSerializer.writeStringArray(getColumnNames, hdos)
-        DataSerializer.writeBooleanArray(nullability, hdos)
-        val colTypes = getColumnTypes
-        colTypes.foreach(x => {
-          val t = x._1
-          InternalDataSerializer.writeSignedVL(t, hdos)
-          if ( t == StoredFormatIds.SQL_DECIMAL_ID) {
-            InternalDataSerializer.writeSignedVL(x._2, hdos) // precision
-            InternalDataSerializer.writeSignedVL(x._3, hdos) // scale
-          }
-        })
-      }
-      else {
+      if (rowsSent != 0) {
         hdos.clearForReuse()
         // byte 0 will indicate that the metainfo is not being sent
-        hdos.writeByte(0x00);
+        hdos.writeByte(0x00)
       }
 
       val start = rowsSent
-      // TODO: Take care of this chunking and streaming a bit later. After verifying the functionality.
-      (start until totalRows).takeWhile(_ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
+      (start until totalRows).takeWhile(
+        _ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach { i =>
         val r = rows(i)
         writeRow(r, hdos)
         rowsSent += 1
-      })
+      }
       true
     }
   }
@@ -137,7 +144,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
     var groupNum: Int = 0
     while (groupNum < numEightColGroups - 1) {
       writeAGroup(groupNum, 8, r, hdos)
-      groupNum += 1;
+      groupNum += 1
     }
     writeAGroup(groupNum, numPartCols, r, hdos)
   }
@@ -151,7 +158,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
       if (!row.isNullAt(colIndex)) {
         activeByteForGroup = ActiveColumnBits.setFlagForNormalizedColumnPosition(index, activeByteForGroup)
       }
-      index += 1;
+      index += 1
     }
     DataSerializer.writePrimitiveByte(activeByteForGroup, dos)
     index = 0
@@ -160,7 +167,7 @@ class SparkSQLExecuteImpl(val sql: String, val ctx: LeadNodeExecutionContext, se
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
         writeColDataInOptimizedWay(row, colIndex, hdos)
       }
-      index += 1;
+      index += 1
     }
   }
 

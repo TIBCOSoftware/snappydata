@@ -5,9 +5,11 @@ import java.sql.{SQLException, Connection, DriverManager}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.{SerializableRunnable, AvailablePortHelper}
 
-import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.{SnappyContext, SaveMode}
 
 /**
+ * Tests for query routing from JDBC client driver.
+ *
  * Created by kneeraj on 29/10/15.
  */
 class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
@@ -23,7 +25,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    createTablesAndInsertData()
+    createTableAndInsertData()
     val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
     s.execute("select col1 from ColumnTableQR")
@@ -63,7 +65,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable("ColumnTableQR"))
+        assert(catalog.isColumnTable("ColumnTableQR", false))
       }
     })
 
@@ -87,25 +89,135 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     println("3rd metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 2)
+
+    s.execute("select * from ColumnTableQR where col1 > 4")
+    rs = s.getResultSet
+    cnt = 0
+    while (rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 3)
+
+    s.execute("select col1 from ColumnTableQR where col1 > 0 order by col1 desc")
+    rs = s.getResultSet
+    cnt = 0
+    // 1, 7, 9, 4, 5
+    while (rs.next()) {
+      cnt += 1
+      cnt match {
+        case 1 => assert(9 == rs.getInt(1))
+        case 2 => assert(7 == rs.getInt(1))
+        case 3 => assert(5 == rs.getInt(1))
+        case 4 => assert(4 == rs.getInt(1))
+        case 5 => assert(1 == rs.getInt(1))
+      }
+    }
+    assert(cnt == 5)
+    conn.close()
   }
 
-  def createTablesAndInsertData(): Unit = {
-    val snc = org.apache.spark.sql.SnappyContext(sc)
+  def testSNAP193(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData2()
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+
+    val numExpectedRows = 1888622
+    val rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
+    assert(rs.next())
+    assert(rs.getInt(1) == numExpectedRows, "got rows=" + rs.getInt(1))
+    assert(!rs.next())
+
+    val md = rs.getMetaData
+    println("metadata colCount=" + md.getColumnCount + " colName=" +
+        md.getColumnName(1) + " tableName=" + md.getTableName(1))
+    assert(md.getColumnCount == 1)
+    assert(md.getColumnName(1) == "_c0", "columnName=" + md.getColumnName(1))
+
+    // below hangs in CREATE TABLE for some reason; need to check
+    /*
+    stmt.execute("CREATE TABLE airline2 USING column AS " +
+        "(select * from airline limit 10000)")
+    rs = stmt.executeQuery("select count(*) from Airline2")
+    assert(rs.next())
+    assert(rs.getInt(1) == 10000, "got rows=" + rs.getInt(1))
+    assert(!rs.next())
+
+    // now check for ClassCastException with a "select *"
+    rs = stmt.executeQuery("select * from Airline2")
+    var cnt = 0
+    while (rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 10000, "got cnt=" + cnt)
+    */
+
+    conn.close()
+  }
+
+  def testSystablesQueries(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData()
+    val conn = getANetConnection(netPort1)
+    try {
+      val s = conn.createStatement()
+
+      // SYSTABLES queries
+      s.execute("CREATE TABLE COLUMNTABLE (Col1 INT, Col2 INT, Col3 INT) USING column OPTIONS ()")
+      s.execute("select * from sys.systables where tablename='COLUMNTABLE'")
+      var rs = s.getResultSet
+      assert(rs.next())
+      var tableType = rs.getString("tabletype")
+      assert("C".equals(tableType))
+
+      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row OPTIONS ()")
+      s.execute("select * from sys.systables where tablename='ROWTABLE'")
+      rs = s.getResultSet
+      assert(rs.next())
+      tableType = rs.getString("tabletype")
+      assert("T".equals(tableType))
+
+      s.execute("select * from sys.systables where tableschemaname='APP'")
+      rs = s.getResultSet
+      var cnt = 0
+      while (rs.next()) {
+        cnt += 1
+      }
+      assert(cnt == 3) // ColumnTableQR, COLUMNTABLE and ROWTABLE
+    } finally {
+      conn.close()
+    }
+  }
+
+  def createTableAndInsertData(): Unit = {
+    val snc = SnappyContext(sc)
     val tableName: String = "ColumnTableQR"
 
-    val props = Map(
-      "url" -> "jdbc:snappydata:;persist-dd=false;route-query=false",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "poolImpl" -> "tomcat",
-      "user" -> "app",
-      "password" -> "app"
-    )
-
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createExternalTable(tableName, "column", dataDF.schema,
+      Map.empty[String, String])
+    dataDF.write.format("column").mode(SaveMode.Append)
+        .saveAsTable(tableName)
+  }
+
+  def createTableAndInsertData2(): Unit = {
+    val snc = SnappyContext(sc)
+    val tableName: String = "Airline"
+
+    val hfile = getClass.getResource("/2015.parquet").getPath
+    val dataDF = snc.read.load(hfile)
+    snc.createExternalTable(tableName, "column", dataDF.schema,
+      Map.empty[String, String])
+    dataDF.write.format("column").mode(SaveMode.Append)
+        .saveAsTable(tableName)
   }
 }
 

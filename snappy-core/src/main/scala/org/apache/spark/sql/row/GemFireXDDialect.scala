@@ -70,6 +70,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
   protected val bitTypeName = "bit".normalize
   protected val floatTypeName = "float".normalize
   protected val realTypeName = "real".normalize
+  protected val varcharTypeName = "varchar".normalize
 
   override def getCatalystType(sqlType: Int, typeName: String,
                       size: Int, md: MetadataBuilder): Option[DataType] = {
@@ -81,6 +82,10 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     } else if (sqlType == Types.BIT && size > 1 &&
       typeName.normalize.equals(bitTypeName)) {
       Some(BinaryType)
+    } else if (sqlType == Types.VARCHAR && size > 1 &&
+        typeName.normalize.equals(varcharTypeName)) {
+      md.putLong("maxlength", size)
+      Some(StringType)
     } else None
   }
 
@@ -94,6 +99,21 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     case DecimalType.Fixed(precision, scale) =>
       Some(JdbcType(s"DECIMAL($precision,$scale)", java.sql.Types.DECIMAL))
     case _ => None
+  }
+
+  /**
+   * Look SPARK-10101 issue for similar problem. If the PR raised is
+   * ever merged we can remove this method here.
+   */
+  override def getJDBCType(dt: DataType, md: Metadata): Option[JdbcType] = dt match {
+    case StringType => {
+      if (md.contains("maxlength")) {
+        Some(JdbcType(s"VARCHAR(${md.getLong("maxlength")})", java.sql.Types.VARCHAR))
+      } else {
+        Some(JdbcType("CLOB", java.sql.Types.CLOB))
+      }
+    }
+    case _ => getJDBCType(dt)
   }
 
   override def getCurrentSchema(conn: Connection): String = {

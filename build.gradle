@@ -331,7 +331,12 @@ task product {
     def baseName = 'snappy-spark-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     def exampleArchiveName = "quickstart-${version}.jar"
-    file("${toolsProject.buildDir}/libs/${toolsProject.shadowJar.archiveName}").renameTo("${snappyProductDir}/lib/${archiveName}")
+    copy {
+      from("${toolsProject.buildDir}/libs")
+      into "${snappyProductDir}/lib"
+      include "${toolsProject.shadowJar.archiveName}"
+      rename { filename -> archiveName }
+    }
     copy {
       from "${examplesProject.buildDir}/libs"
       into "${snappyProductDir}/lib"

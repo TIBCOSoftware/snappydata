@@ -215,10 +215,12 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
           com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
         "true", overwrite = true)
-    }
-    else {
+    } else {
       changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
           com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
+        "false", overwrite = true)
+      changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
+          com.pivotal.gemfirexd.Attribute.GFXD_PERSIST_DD,
         "false", overwrite = true)
     }
     changeOrAppend(Property.jobserverEnabled, "false", ignoreIfPresent = true)
