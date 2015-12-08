@@ -39,6 +39,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
+  GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
 
   override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
     GemFireXDDialect.init()

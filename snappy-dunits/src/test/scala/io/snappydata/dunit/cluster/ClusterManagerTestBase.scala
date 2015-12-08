@@ -30,6 +30,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
   bootProps.setProperty("log-level", "config")
+  // Easier to switch ON traces. thats why added this.
+  // bootProps.setProperty("gemfirexd.debug.true", "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
 
   val host = Host.getHost(0)
@@ -166,6 +168,8 @@ object ClusterManagerTestBase {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
+    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+
     props.asScala.foreach({ case (k, v) =>
       if (k.indexOf(".") < 0) {
         conf.set(io.snappydata.Constant.STORE_PROPERTY_PREFIX + k, v)

@@ -1,11 +1,11 @@
 package io.snappydata.app
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
 
 /**
  * Created by skumar on 17/9/15
  */
-class ColumnTableSpec extends SnappyFunSuite {
+class ColumnTableSpec extends SnappyToolFunSuite {
 
   test( """ This test will create simple table""") {
     /*

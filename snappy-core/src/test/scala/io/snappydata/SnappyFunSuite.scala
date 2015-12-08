@@ -2,15 +2,12 @@ package io.snappydata
 
 import java.io.File
 
-import org.apache.hadoop.hive.ql.security.authorization.plugin.sqlstd.SQLStdConfOnlyAuthorizerFactory
-
-import scala.collection.mutable.ArrayBuffer
-
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
-
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.

@@ -1,19 +1,20 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.SnappyFunSuite
+import java.util.Properties
+
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
+import io.snappydata.{SnappyToolFunSuite, ServiceManager, SnappyFunSuite}
 import io.snappydata.core.{Data, FileCleaner, TestData}
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.{BeforeAndAfter}
 
 /**
  * Created by skumar on 13/11/15.
  */
-class ColumnTableBatchInsertTest extends SnappyFunSuite
+class ColumnTableBatchInsertTest extends SnappyToolFunSuite
 with Logging
-with BeforeAndAfter
-with BeforeAndAfterAll {
-
+with BeforeAndAfter {
 
   val tableName: String = "ColumnTable"
   val props = Map.empty[String, String]
