@@ -312,7 +312,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
-    new QualifiedTableName(tableIdent.database, tableIdent.table)
+    new QualifiedTableName(tableIdent.database,
+      SnappyStoreHiveCatalog.processTableIdentifier(tableIdent.table, conf))
 
   def newQualifiedTableName(tableIdent: String): QualifiedTableName = {
     val tableName = processTableIdentifier(tableIdent)
@@ -589,28 +590,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
     topKStructures.put(qualifiedTable, TopKWrapper(qualifiedTable, topkOptions,
       schema, Some(streamTable)) -> rdd)
-  }
-
-  def registerAndInsertIntoExternalStore(df: DataFrame, table: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
-    require(table != null && table.length > 0,
-      "registerAndInsertIntoExternalStore: expected non-empty table name")
-
-    val tableIdent = newQualifiedTableName(table)
-    val externalStore = getExternalTable(jdbcSource)
-    createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    tables.put(tableIdent, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF,
-      Some(tableIdent.table), externalStore)
-
-    context.appendToCache(df, tableIdent.table)
   }
 
   // TODO: The JDBC source is currently reading a property jdbcStore

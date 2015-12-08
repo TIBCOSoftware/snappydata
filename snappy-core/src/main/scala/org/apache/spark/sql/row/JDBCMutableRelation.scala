@@ -55,16 +55,7 @@ class JDBCMutableRelation(
   override val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
 
-  final val schemaFields = Map(schema.fields.flatMap { f =>
-    val name =
-      if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
-    val nname = Utils.normalizeId(name)
-    if (name != nname) {
-      Iterator((name, f), (Utils.normalizeId(name), f))
-    } else {
-      Iterator((name, f))
-    }
-  }: _*)
+  final val schemaFields = Utils.schemaFields(schema)
 
   def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
