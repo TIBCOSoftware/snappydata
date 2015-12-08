@@ -2,6 +2,7 @@ package org.apache.spark.sql.execution
 
 
 import org.apache.spark.sql.catalyst.analysis._
+import org.apache.spark.sql.catalyst.expressions.NamedExpression
 
 import org.apache.spark.sql.sources.{ErrorAndConfidence, SampleTableQuery, WeightageRule, ReplaceWithSampleTable}
 
@@ -47,7 +48,7 @@ extends QueryExecution(sqlContext, logical) {
   }*/
 
   private def modifyRule  = this.analyzed.find {
-        case SampleTableQuery(_, _, _, _) => true
+        case SampleTableQuery(_, _, _, _,_) => true
         case _ => false
       } match {
       case Some(sampleTableNode) =>
@@ -94,7 +95,8 @@ extends QueryExecution(sqlContext, logical) {
               ImplementProject(),
               ImplementAggregate(2),
               ImplementCollect( sampleTableNode.asInstanceOf[SampleTableQuery].confidence / 100,
-                sampleTableNode.asInstanceOf[SampleTableQuery].error),
+                sampleTableNode.asInstanceOf[SampleTableQuery].error,
+                sampleTableNode.asInstanceOf[SampleTableQuery].errorEstimates),
               CleanupAnalysisExpressions
             )
           )
@@ -141,8 +143,8 @@ private class AQPQueryAnalyzer ( sqlContext: SnappyContext, queryExecutor: Snapp
     val plan = super.execute(logical)
 
     SnappyQueryExecution.analyzedPlanHasSampleTable(plan) match {
-      case Some((error, confidence, newPlan)) =>  SampleTableQuery(newPlan, queryExecutor, error,
-        confidence)
+      case Some((error, confidence, errorEstimates, newPlan)) =>  SampleTableQuery(newPlan, queryExecutor, error,
+        confidence, errorEstimates)
       case None => plan
     }
   }
@@ -151,20 +153,24 @@ private class AQPQueryAnalyzer ( sqlContext: SnappyContext, queryExecutor: Snapp
 
 object SnappyQueryExecution {
 
-  def analyzedPlanHasSampleTable(analyzed : LogicalPlan) : Option[(Double, Double, LogicalPlan)] = {
+  def analyzedPlanHasSampleTable(analyzed : LogicalPlan) : Option[(Double, Double, Option[Seq[(NamedExpression, Int)]],
+    LogicalPlan)] = {
    var foundSample : Boolean = false
    var error: Double = 0;
     var confidence: Double = 0;
+    var errorEstimates: Option[Seq[(NamedExpression, Int)]] = None
+
    val modifiedPlan = analyzed.transformDown{
-     case ErrorAndConfidence(err, confidenceX, child) => {
+     case ErrorAndConfidence(err, confidenceX,  errorEstimatesX, child) => {
        error = err
        foundSample = true
        confidence = confidenceX
+       errorEstimates = errorEstimatesX
        child
      }
     }
     if(foundSample) {
-      Some((error, confidence, modifiedPlan))
+      Some((error, confidence, errorEstimates, modifiedPlan))
     }else {
       None
     }

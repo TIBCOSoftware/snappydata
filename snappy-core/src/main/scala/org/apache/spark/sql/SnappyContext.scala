@@ -579,7 +579,7 @@ class SnappyContext private(sc: SparkContext)
             filters,
             identity[Seq[Expression]], // All filters still need to be evaluated
             InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
-        case s@SampleTableQuery(child, _,_,_) => planLater(child):: Nil
+        case s@SampleTableQuery(child, _,_,_,_) => planLater(child):: Nil
         case _ => Nil
       }
 

@@ -17,6 +17,7 @@ package org.apache.spark.sql.execution.bootstrap
  * limitations under the License.
  */
 
+import org.apache.spark.sql.catalyst.analysis.UnresolvedException
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{Final, PartialMerge, Complete, Partial, AggregateMode, AlgebraicAggregate, AggregateFunction2}
@@ -734,5 +735,24 @@ case class ApproxColumn (
       row(2) = sorted((values.length * upper).ceil.toInt - 1)
     }
     row
+  }
+}
+
+object ApproxColumn {
+  val LOWER_BOUND = "lower_bound"
+  val UPPER_BOUND = "upper_bound"
+  val ESTIMATE = "estimate"
+  def getOrdinal (x: NamedExpression, funcName: String ): Int = {
+    val lcaseFuncName = funcName.toLowerCase
+    if(lcaseFuncName == LOWER_BOUND) {
+      1
+    }
+    else if(lcaseFuncName == UPPER_BOUND) {
+      2
+    }else if(lcaseFuncName == ESTIMATE) {
+      0
+    }else {
+      throw new UnresolvedException(x, lcaseFuncName + " not found")
+    }
   }
 }

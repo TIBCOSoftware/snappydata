@@ -39,7 +39,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     conf.set("spark.sql.hive.metastore.sharedPrefixes","com.mysql.jdbc,org.postgresql,com.microsoft.sqlserver,oracle.jdbc,com.mapr.fs.shim.LibraryLoader,com.mapr.security.JNISecurity,com.mapr.fs.jni,org.apache.commons")
     conf.set("spark.sql.unsafe.enabled", "false")
 
-    conf.set(Constants.keyNumBootStrapTrials, "3")
+    conf.set(Constants.keyNumBootStrapTrials, "4")
     conf
   }
 
@@ -57,27 +57,44 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
         "strataReservoirSize" -> 50), Some("mainTable"))
 
     mainTable.insertIntoSampleTables("mainTable_sampled")
+
     snc
   }
 
    behavior of "aggregate on sample table"
 
-   "Sample Table Query on Sum aggregate " should "be correct" in {
-    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
+
+
+
+  "Sample Table Query on Sum aggregate with hidden column" should "be correct" in {
+    val result = spc.sql("SELECT sum(l_quantity) as x, lower_bound(x) , upper_bound(x) FROM mainTable   confidence 95")
 
     result.show()
     val rows2 = result.collect()
-    val struct = rows2(0).getStruct(0)
-    msg("estimate=" + struct.getDouble(0))
-    val estimate = struct.getDouble(0)
+    val estimate = rows2(0).getDouble(0)
+    msg("estimate=" + estimate)
+
     assert( estimate === (17 + 36 + 8 + 28  + 24 + 32  + 38  +  45 +  49 + 27 + 2 + 28 + 26))
-    msg("bound=" + struct.getDouble(1) + "," + struct.getDouble(2))
+    msg("lower bound=" + rows2(0).getDouble(1) + ", upper bound" + rows2(0).getDouble(2))
+
+  }
+
+   "Sample Table Query on Sum aggregate " should "be correct" in {
+    val result = spc.sql("SELECT sum(l_quantity) as T, lower_bound(T), upper_bound(T)  FROM mainTable confidence 95")
+
+    result.show()
+    val rows2 = result.collect()
+    val estimate = rows2(0).getDouble(0)
+    msg("estimate=" + estimate)
+
+    assert( estimate === (17 + 36 + 8 + 28  + 24 + 32  + 38  +  45 +  49 + 27 + 2 + 28 + 26))
+     msg("lower bound=" + rows2(0).getDouble(1) + ", upper bound" + rows2(0).getDouble(2))
 
   }
 
 
   "Sample Table Query on avg aggregate " should "be correct" in {
-    val result = spc.sql("SELECT avg(l_quantity) as T FROM mainTable confidence 95")
+    val result = spc.sql("SELECT avg(l_quantity) as y,  upper_bound(y), lower_bound(y)  as T FROM mainTable confidence 95")
 
     result.show()
    /* val rows2 = result.collect()
@@ -94,11 +111,65 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
     result.show()
     val rows2 = result.collect()
-    val struct = rows2(0).getStruct(0)
+    val estimate = rows2(0).getDouble(0)
     assert(rows2(0).schema.apply(0).name === "T")
 
   }
 
+  "Sample Table Query with error % & confidence %" should "get both values correctly set " in {
+
+    //spc.sparkContext.stop()
+    SnappyContext.stop()
+    val numBootStrapTrials = 100
+    conf = createDefaultConf
+    val confidence = 87
+    val errorPercent = 7
+    val path: Path = Path ("/tmp/hive")
+    Try(path.deleteRecursively())
+
+    // conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
+    spc = initTestTables(conf)
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+
+    +  "  errorpercent " + errorPercent + " confidence " + confidence)
+
+     val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+     assert(collectNode.confidence === confidence/100d)
+     assert(collectNode.errorPercent === errorPercent)
+    result.show()
+  }
+
+  "same Sample Table Query fired multiple times" should " be parsed correctly  " in {
+
+
+    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+
+      +  "  errorpercent " + 7 + " confidence " + 92)
+
+    val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode.confidence === 92/100d)
+    assert(collectNode.errorPercent === 7)
+    result.show()
+
+    val result1 = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+
+      +  "  errorpercent " + 7 + " confidence " + 92)
+    val collectNode1 = result1.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode1.confidence === 92/100d)
+    assert(collectNode1.errorPercent === 7)
+
+    result1.show()
+
+    val result2 = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
+
+      +  "  errorpercent " + 9 + " confidence " + 93)
+
+    val collectNode2 = result2.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
+    assert(collectNode2.confidence === 93/100d)
+    assert(collectNode2.errorPercent === 9)
+    result2.show()
+
+  }
 
   "Sample Table Query alias on Sum aggregate with group by clause " should "be correct" in {
     val result = spc.sql("SELECT sum(l_quantity) as T, l_orderkey FROM mainTable group by l_orderkey confidence 95")
@@ -108,48 +179,48 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
     assert(rows.length === 3)
     val row1 = rows(0)
     val col11 = row1.getInt(1)
-    val col12 = row1.getStruct(0)
+    val col12 = row1.getDouble(0)
+    assert(col12 == row1.getAs[Double]("T"))
     assert(col11  === 1)
-    assert(col12.getDouble(0) === 145 )
+    assert(col12 === 145 )
 
     val row2 = rows(1)
     val col21 = row2.getInt(1)
-    val col22 = row2.getStruct(0)
+    val col22 = row2.getDouble(0)
     assert(col21  === 2)
-    assert(col22.getDouble(0) === 38 )
+    assert(col22 === 38 )
 
     val row3 = rows(2)
     val col31 = row3.getInt(1)
-    val col32 = row3.getStruct(0)
+    val col32 = row3.getDouble(0)
     assert(col31  === 3)
-    assert(col32.getDouble(0) === 177 )
+    assert(col32 === 177 )
 
   }
 
-  "Sample Table Query with error % & confidence %" should "get both values correctly set " in {
 
-    spc.sparkContext.stop()
-    val numBootStrapTrials = 100
-    conf = createDefaultConf
-    val confidence = 85
-    val errorPercent = 7
-    val path: Path = Path (" /tmp/hive")
-    Try(path.deleteRecursively())
+  "Sample Table Query with  alias for lower bound and upper bound  " should "should work correctly " in {
 
-    conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
-    spc = initTestTables(conf)
-    val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
-      + " ERRORPERCENT " + errorPercent + " confidence " + confidence)
+    val result = spc.sql("SELECT sum(l_quantity) as col1, lower_bound(col1) as col2 , upper_bound(col1)  FROM mainTable"
+      + " ERRORPERCENT " + 13 + " confidence " + 85 )
 
-    val collectNode = result.queryExecution.executedPlan.asInstanceOf[org.apache.spark.sql.execution.bootstrap.Collect]
-    assert(collectNode.confidence === confidence/100d)
-    assert(collectNode.errorPercent === errorPercent)
+    result.show()
+    val rows = result.collect()
+    val col1 = rows(0).getDouble(0)
+    val col2 = rows(0).getDouble(1)
+    val col3 = rows(0).getDouble(2)
+
+    assert(col1 === rows(0).getAs[Double]("col1"))
+    assert(col2 === rows(0).getAs[Double]("col2"))
+   
   }
 
 
   "Bug SNAP-225 Sample Table Query with  confidence % & error % " should "get both values correctly set " in {
 
-    spc.sparkContext.stop()
+    spc.sql("DROP TABLE IF EXISTS " + "mainTable")
+    spc.sql("DROP TABLE IF EXISTS " + "mainTable" + "_sampled" )
+    SnappyContext.stop()
     val numBootStrapTrials = 100
     conf = createDefaultConf
     val confidence = 85
@@ -159,6 +230,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
     conf.set(Constants.keyNumBootStrapTrials, numBootStrapTrials.toString)
     spc = initTestTables(conf)
+
     val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable"
       + " confidence " + confidence + " ERRORPERCENT " + errorPercent)
 
@@ -169,7 +241,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   "Sample Table Query with error %  " should "get error value correctly set " in {
 
-    spc.sparkContext.stop()
+    SnappyContext.stop()
     val numBootStrapTrials = 100
     conf = createDefaultConf
 
@@ -190,7 +262,7 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
   "Sample Table Query with confidence %  " should "get confidence value correctly set " in {
 
-    spc.sparkContext.stop()
+    SnappyContext.stop()
     val numBootStrapTrials = 100
     conf = createDefaultConf
 
@@ -214,36 +286,37 @@ class BootStrapAggregateFunctionTest extends FlatSpec with Matchers {
 
     result.show()
     val rows = result.collect()
+
     assert(rows.length === 3)
     val row1 = rows(0)
     val col11 = row1.getInt(1)
-    val col12 = row1.getStruct(0)
-    val col13 = row1.getStruct(2)
+    val col12 = row1.getDouble(0)
+    val col13 = row1.getDouble(2)
     assert(col11  === 1)
-    assert(col12.getDouble(0) === 145 )
-    assert(col13.getDouble(0) === 21 )
+    assert(col12 === 145 )
+    assert(col13 === 21 )
 
     val row2 = rows(1)
     val col21 = row2.getInt(1)
-    val col22 = row2.getStruct(0)
-    val col23 = row2.getStruct(2)
+    val col22 = row2.getDouble(0)
+    val col23 = row2.getDouble(2)
     assert(col21  === 2)
-    assert(col22.getDouble(0) === 38 )
-    assert(col23.getDouble(0) === 1 )
+    assert(col22 === 38 )
+    assert(col23 === 1 )
 
     val row3 = rows(2)
     val col31 = row3.getInt(1)
-    val col32 = row3.getStruct(0)
-    val col33 = row3.getStruct(2)
+    val col32 = row3.getDouble(0)
+    val col33 = row3.getDouble(2)
     assert(col31  === 3)
-    assert(col32.getDouble(0) === 177 )
-    assert(col33.getDouble(0) === 21 )
+    assert(col32 === 177 )
+    assert(col33 === 21 )
 
   }
 
   "Sample Table Query with a given confidence " should "use correct quntiles" in {
 
-    spc.sparkContext.stop()
+    SnappyContext.stop()
     val numBootStrapTrials = 100
     conf = createDefaultConf
     val confidence = 90

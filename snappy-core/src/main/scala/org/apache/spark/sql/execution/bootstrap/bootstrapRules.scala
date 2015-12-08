@@ -7,7 +7,7 @@ import scala.collection.mutable
 
 
 import org.apache.spark.sql.catalyst.{expressions, InternalRow}
-import org.apache.spark.sql.catalyst.analysis.HiveTypeCoercion
+import org.apache.spark.sql.catalyst.analysis._
 import org.apache.spark.sql.catalyst.errors.TreeNodeException
 import org.apache.spark.sql.catalyst.expressions.Count
 import org.apache.spark.sql.catalyst.expressions.Sum
@@ -21,7 +21,7 @@ import org.apache.spark.sql.execution.aggregate.SortBasedAggregate
 import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.hive.SampledRelation
 import org.apache.spark.sql.hive.execution.HiveTableScan
-import org.apache.spark.sql.types.{IntegerType, Metadata, BooleanType, DataType}
+import org.apache.spark.sql.types._
 import org.apache.spark.util.collection.BitSet
 
 /**
@@ -950,6 +950,7 @@ case class InsertCollect(isDebug: Boolean, confidence: Double) extends Rule[Spar
           }
         case None => plan.output
       }
+
       CollectPlaceholder(projectList, plan)
     case None => plan
   }
@@ -1557,14 +1558,129 @@ case class ImplementJoin extends Rule[SparkPlan] {
   }
 }*/
 
-case class ImplementCollect(confidence: Double, errorPercent: Double) extends Rule[SparkPlan] {
+case class ImplementCollect(confidence: Double, errorPercent: Double,
+                             errorEstimates: Option[Seq[(NamedExpression, Int)]]) extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
-    case CollectPlaceholder(projectList, child) =>
+    case CollectPlaceholder(projectList, child) => {
+      val approxColumns = scala.collection.mutable.ArrayBuffer[NamedExpression]()
+
+      val newProjPart1 = projectList.map {x =>
+        val apprxCol = x.find {
+          case ApproxColumn(_,_,_,_) => true
+          case _ => false
+        }
+        apprxCol match {
+          case Some(_) => {
+            approxColumns += x
+            ApproxColumnExtractor(x.toAttribute, x.name, ApproxColumn.getOrdinal(x, ApproxColumn.ESTIMATE),
+              x.dataType.asInstanceOf[StructType](ApproxColumn.getOrdinal(x, ApproxColumn.ESTIMATE)).dataType)()
+          }
+          case None => x
+        }
+      }
+
+      // Now insert error estimates.
+     val newProj =  errorEstimates match {
+        case Some(errors) => {
+          val errorProjs = errors.map {
+            case(namedExpr, pos) => namedExpr.children match {
+              case Seq(UnresolvedFunction(funcName, Seq( UnresolvedAttribute(Seq(attrib_name))), _)) => {
+                approxColumns.find(_.name == attrib_name)
+                match {
+                  case Some(x) => {
+                    val aliasName = namedExpr match {
+                      case Alias(_, aliasname) => aliasname
+                      case UnresolvedAlias(_) => funcName + "(" + attrib_name + ")"
+                      case _ => throw new UnresolvedException(namedExpr, "alias name could not be found")
+
+                    }
+                    ApproxColumnExtractor(x.toAttribute, aliasName ,
+                      ApproxColumn.getOrdinal(x, funcName),
+                      x.dataType.asInstanceOf[StructType](ApproxColumn.getOrdinal(x, funcName)).dataType)() -> pos
+                  }
+
+                  case None => throw new UnresolvedException(namedExpr, funcName + " not found")
+
+                }
+              }
+              case _ => throw new UnresolvedException(namedExpr, "multiple children found or unresolved function not found")
+            }
+
+          }
+          var i = 0
+          var j = 0
+
+          val y = for (x <- newProjPart1) yield {
+            if (j < errorProjs.length && i == errorProjs(j)._2 - 1) {
+              x +: (for (k <- errorProjs.slice(j, errorProjs.length) if (i == k._2 - 1)) yield {
+                j = j + 1
+                i = i + 1
+                k._1
+              })
+
+            } else {
+              i = i + 1
+              Seq(x)
+            }
+          }
+          y.flatten
+
+        }
+        case None => newProjPart1
+      }
+
+
+
+
       Collect(confidence, errorPercent, BootStrapUtils.getFlag(child.output),
-        projectList, child)()
+        newProj,  Project(projectList, child))()
+    }
   }
 }
 
+case class ApproxColumnExtractor(child: Expression, name: String, ordinal: Int, dataType: DataType )(
+  val exprId: ExprId = NamedExpression.newExprId,
+  val qualifiers: Seq[String] = Nil
+ )
+  extends UnaryExpression with NamedExpression  {
+  // Alias(Generator, xx) need to be transformed into Generate(generator, ...)
+  override lazy val resolved = true
+
+  override def eval(input: InternalRow): Any =  {
+    val row = child.eval(input).asInstanceOf[InternalRow]
+    row.get(ordinal, dataType)
+  }
+
+  /** Just a simple passthrough for code generation. */
+  override def gen(ctx: CodeGenContext): GeneratedExpressionCode = throw new UnsupportedOperationException("not implemented")
+  override protected def genCode(ctx: CodeGenContext, ev: GeneratedExpressionCode): String = ""
+
+
+  override def nullable: Boolean = child.nullable
+  override def metadata: Metadata = Metadata.empty
+
+  override def toAttribute: Attribute = {
+    if (resolved) {
+      AttributeReference(name, dataType, child.nullable, metadata)(exprId, qualifiers)
+    } else {
+      UnresolvedAttribute(name)
+    }
+  }
+
+  override def toString: String = s"$child AS $name#${exprId.id}$typeSuffix"
+
+  override protected final def otherCopyArgs: Seq[AnyRef] = {
+    exprId  :: qualifiers :: Nil
+  }
+
+  override def equals(other: Any): Boolean = other match {
+    case a: Alias =>
+      name == a.name && exprId == a.exprId && child == a.child
+
+    case _ => false
+  }
+
+}
 object CleanupAnalysisExpressions extends Rule[SparkPlan] {
   override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
     case q: SparkPlan => q.transformExpressionsUp {
