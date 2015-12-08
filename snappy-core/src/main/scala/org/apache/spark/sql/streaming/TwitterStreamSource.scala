@@ -10,7 +10,8 @@ import org.apache.spark.sql.types.StructType
 final class TwitterStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
-                              options: Map[String, String], schema: StructType): BaseRelation = {
+                              options: Map[String, String],
+                              schema: StructType): BaseRelation = {
     new TwitterStreamRelation(sqlContext, options, schema)
   }
 }

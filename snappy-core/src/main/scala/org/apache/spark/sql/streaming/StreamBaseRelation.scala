@@ -1,13 +1,15 @@
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.sources.{BaseRelation, DeletableRelation, DestroyRelation}
+import org.apache.spark.sql.sources.{BaseRelation,
+DeletableRelation, DestroyRelation}
 import org.apache.spark.streaming.Time
 
 /**
  * Created by ymahajan on 7/12/15.
  */
-abstract class StreamBaseRelation extends BaseRelation with StreamPlan with DeletableRelation
-with DestroyRelation with Serializable {
+abstract class StreamBaseRelation extends BaseRelation with StreamPlan
+with DeletableRelation with DestroyRelation with Serializable {
+
   override def destroy(ifExists: Boolean): Unit = {
     throw new IllegalAccessException("Stream tables cannot be dropped")
   }

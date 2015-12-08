@@ -10,7 +10,8 @@ import org.apache.spark.sql.types.StructType
 
 final class SocketStreamSource extends SchemaRelationProvider {
   override def createRelation(sqlContext: SQLContext,
-                              options: Map[String, String], schema: StructType) = {
+                              options: Map[String, String],
+                              schema: StructType) = {
     new SocketStreamRelation(sqlContext, options, schema)
   }
 }

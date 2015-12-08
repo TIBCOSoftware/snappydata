@@ -18,7 +18,8 @@ import org.apache.spark.streaming.dstream.DStream
  * Created by ymahajan on 25/09/15.
  *
  */
-case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStream[InternalRow])
+case class PhysicalDStreamPlan(output: Seq[Attribute],
+                               @transient stream: DStream[InternalRow])
   extends SparkPlan with StreamPlan {
 
   def children = Nil
@@ -27,7 +28,8 @@ case class PhysicalDStreamPlan(output: Seq[Attribute], @transient stream: DStrea
     import StreamHelper._
     assert(validTime != null)
     //For dynamic CQ
-    //if(!stream.isInitialized) stream.initializeAfterContextStart(validTime)
+    //if(!stream.isInitialized) stream
+    // .initializeAfterContextStart(validTime)
     stream.getOrCompute(validTime)
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }

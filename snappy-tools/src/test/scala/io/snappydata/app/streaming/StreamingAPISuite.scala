@@ -30,7 +30,6 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
     val sparkConf = new SparkConf()
       .setMaster(master)
       .setAppName(framework)
-      .set("snappydata.store.locators", "localhost")
     sparkConf
   }
 
@@ -41,7 +40,6 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
   }
 
   override def beforeAll(): Unit = {
-    //sparkC = new SparkContext(sparkConf)
     ssc = new StreamingContext(sc, batchDuration)
     //ssc.checkpoint(null)//Duration(60*1000))
     snsc = StreamingSnappyContext(ssc);
@@ -79,38 +77,39 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
     })
     snsc.registerStreamAsTable("tweetStream2", schemaStream2)
 
-    val resultStream: SchemaDStream = snsc.registerCQ("SELECT t1.id, t1.text FROM tweetStream1 window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
-      "tweetStream1 t2 ON t1.id = t2.id ")
+    val resultStream: SchemaDStream = snsc.registerCQ("SELECT t1.id, t1.text FROM " +
+      "tweetStream1 window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
+      "tweetStream2 t2 ON t1.id = t2.id ")
 
     snsc.dropExternalTable("gemxdColumnTable", true)
-    snsc.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema, Map.empty[String, String])
+    snsc.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+      Map.empty[String, String])
 
     resultStream.foreachRDD(rdd => {
       val df = snsc.createDataFrame(rdd, schemaStream1.schema)
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String]).saveAsTable("gemxdColumnTable")
-    }
-    )
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
+        .saveAsTable("gemxdColumnTable")
+    })
 
     val df = snsc.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.registerTempTable("tweetTable")
 
-    val resultSet = snsc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window (duration '4' seconds, slide '4' seconds) " +
+    val resultSet = snsc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
+      "(duration '4' seconds, slide '4' seconds) " +
       "t1 JOIN tweetTable t2 ON t1.id = t2.id")
     resultSet.foreachRDD(rdd => {
       val df = snsc.createDataFrame(rdd, schemaStream1.schema)
-      df.show
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String]).saveAsTable("gemxdColumnTable")
-    }
-    )
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
+        .saveAsTable("gemxdColumnTable")
+    })
 
     ssc.start
     ssc.awaitTerminationOrTimeout(20 * 1000)
 
     val result = snsc.sql("select * from gemxdColumnTable")
     val r = result.collect
-    assert(r.length == 100)
-    println("successful")
+    assert(r.length == 10)
   }
 
   ignore("dynamic CQ") {
@@ -143,15 +142,18 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
     })
     snsc.registerStreamAsTable("tweetStream2", schemaStream2)
 
-    val resultStream: SchemaDStream = snsc.registerCQ("SELECT t1.id, t1.text FROM tweetStream1 window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
-      "tweetStream1 t2 ON t1.id = t2.id ")
+    val resultStream: SchemaDStream = snsc.registerCQ("SELECT t1.id, t1.text FROM tweetStream1" +
+      " window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
+      "tweetStream2 t2 ON t1.id = t2.id ")
 
     snsc.dropExternalTable("gemxdColumnTable", true)
-    snsc.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema, Map.empty[String, String])
+    snsc.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+      Map.empty[String, String])
 
     resultStream.foreachRDD(rdd => {
       val df = snsc.createDataFrame(rdd, schemaStream1.schema)
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String]).saveAsTable("gemxdColumnTable")
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
+        .saveAsTable("gemxdColumnTable")
     }
     )
 
@@ -161,72 +163,23 @@ class StreamingAPISuite extends SnappyFunSuite with Eventually with BeforeAndAft
 
     ssc.start
 
-    val resultSet = snsc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window (duration '4' seconds, slide '4' seconds) " +
+    val resultSet = snsc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window" +
+      " (duration '4' seconds, slide '4' seconds) " +
       "t1 JOIN tweetTable t2 ON t1.id = t2.id")
 
     resultSet.foreachRDD(rdd => {
       val df = snsc.createDataFrame(rdd, schemaStream1.schema)
       df.show
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String]).saveAsTable("gemxdColumnTable")
-    }
-    )
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
+        .saveAsTable("gemxdColumnTable")
+    })
     ssc.awaitTerminationOrTimeout(20 * 1000)
 
     val result = snsc.sql("select * from gemxdColumnTable")
     val r = result.collect
-    assert(r.length == 100)
+    assert(r.length == 10)
     println("successful")
   }
-
-
-  /* test("slice") {
-     def withStreamingContext[R](ssc: StreamingContext)(block: StreamingContext => R): R = {
-       try {
-         block(ssc)
-       } finally {
-         try {
-           ssc.stop(stopSparkContext = true)
-         } catch {
-           case e: Exception =>
-             logError("Error stopping StreamingContext", e)
-         }
-       }
-     }
-     withStreamingContext(new StreamingContext(sparkConf, Seconds(1))) { ssc =>
-       val input = Seq(Seq(1), Seq(2), Seq(3), Seq(4))
-       val stream = new TestInputStream[Int](ssc, input, 2)
-       stream.foreachRDD(_ => {})  // Dummy output stream
-       ssc.start()
-       Thread.sleep(4000)
-       def getInputFromSlice(fromMillis: Long, toMillis: Long): Set[Int] = {
-         stream.slice(new Time(fromMillis), new Time(toMillis)).flatMap(_.collect()).toSet
-       }
-
-       assert(getInputFromSlice(0, 1000) == Set(1))
-       assert(getInputFromSlice(0, 2000) == Set(1, 2))
-       assert(getInputFromSlice(1000, 2000) == Set(1, 2))
-       assert(getInputFromSlice(2000, 4000) == Set(2, 3, 4))
-     }
-   }*/
-
-  /*test("more api") {
-  sc = new SparkContext(sparkConf)
-  ssc = new StreamingContext(sc, batchDuration)
-  snsc = StreamingSnappyContext(ssc);
-
-  val userRDD1 = sc.parallelize(1 to 100).map(i => Tweet(i / 2, s"$i"))
-  val userStream1 = snsc.createSchemaDStream(
-    new ConstantInputDStream[Tweet](ssc, userRDD1))
-  snsc.registerStreamAsTable("user" , userStream1)
-
-  val dStream  = ssc.socketTextStream("localhost", 9999, StorageLevel.MEMORY_AND_DISK_2)
-  val schemaDStream = snsc.createSchemaDStream[String](dStream)
-  snsc.registerStreamAsTable("people", schemaDStream)
-
-  ssc.start
-  ssc.awaitTerminationOrTimeout(20 * 1000)
-}*/
-
 }
 
 case class Tweet(id: Int, text: String)

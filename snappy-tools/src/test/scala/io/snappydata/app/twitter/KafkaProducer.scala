@@ -17,7 +17,8 @@ import twitter4j._
 
 object KafkaProducer {
 
-  val KafkaTopic = "tweetstream"
+  //val KafkaTopic = "tweetstream"
+  val KafkaTopic = "tweets"
 
   val kafkaProducer = {
     val props = new Properties()

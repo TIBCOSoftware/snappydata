@@ -30,7 +30,8 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
   //Kafka configuration parameters ("metadata.broker.list" or "bootstrap.servers")
   val FROM_OFFSETS = "fromoffsets"
   //Per-topic/partition Kafka offsets defining the (inclusive) starting point of the stream
-  val MESSAGE_HINDLER = "messagehandler" //Function for translating each message and metadata into the desired type
+  val MESSAGE_HINDLER = "messagehandler"
+  //Function for translating each message and metadata into the desired type
 
   @transient val context = StreamingCtxtHolder.streamingContext
 
@@ -80,6 +81,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     //TODO Yogesh, need to provide typed decoders to createDirectStream
   }
 
-  @transient val stream: DStream[InternalRow] = kafkaStream.map(_._2).map(streamToRow.toRow)
+  @transient val stream: DStream[InternalRow] =
+    kafkaStream.map(_._2).map(streamToRow.toRow)
 
 }

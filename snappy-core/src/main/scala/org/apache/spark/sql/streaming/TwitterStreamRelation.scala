@@ -64,6 +64,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     }
   }
 
-  @transient val stream: DStream[InternalRow] = twitterStream.map(streamToRow.toRow)
+  @transient val stream: DStream[InternalRow] =
+    twitterStream.map(streamToRow.toRow)
 }
 
