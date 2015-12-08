@@ -37,8 +37,8 @@ object ExecutorInitiator extends Logging {
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = null
-    var stopTask = false
-    var retryTask = false
+    @volatile var stopTask = false
+    private var retryTask : Boolean = false
     private val lock = new ReentrantLock
 
     val membershipListener = new MembershipListener {
@@ -61,10 +61,15 @@ object ExecutorInitiator extends Logging {
       }
     }
 
-    def retryConnection() : Unit = lock.synchronized {
-      retryTask = true
+    def setRetryFlag(retry : Boolean = true) : Unit = lock.synchronized {
+      retryTask = retry
       lock.notify()
     }
+    def getRetryFlag() : Boolean = lock.synchronized {
+      retryTask
+    }
+
+    def getDriverURL: Option[String] = lock.synchronized { driverURL }
 
     def setDriverDetails(url: Option[String],
         dm: InternalDistributedMember): Unit = lock.synchronized {
@@ -76,6 +81,7 @@ object ExecutorInitiator extends Logging {
     override def run(): Unit = {
       var prevDriverURL = ""
       var env: SparkEnv = null
+      var numTries = 0
       try {
         GemFireXDUtils.getGfxdAdvisor.getDistributionManager
             .addMembershipListener(membershipListener)
@@ -83,25 +89,31 @@ object ExecutorInitiator extends Logging {
           try {
 
             Misc.checkIfCacheClosing(null)
-            if (prevDriverURL == getDriverURL && !retryTask) {
+            if (prevDriverURL == getDriverURLString && !getRetryFlag) {
               lock.synchronized {
-                lock.wait()
+                if (prevDriverURL == getDriverURLString && !getRetryFlag) {
+                  lock.wait()
+                }
               }
             }
             else {
-              if (retryTask) {
+              if (getRetryFlag ) {
+                if (numTries >= 50) {
+                  logError("Exhausted number of retries to connect to the driver. Exiting.")
+                  return
+                }
                 // if it's a retry, wait for sometime before we retry.
                 // This is a measure to ensure that some unforeseen circumstance
                 // does not lead to continous retries and the thread hogs the CPU.
+                numTries = numTries + 1
                 Thread.sleep(3000)
-                retryTask = false
+                setRetryFlag(false)
               }
               // kill if an executor is already running.
               SparkCallbacks.stopExecutor(env)
               env = null
-              prevDriverURL = getDriverURL
 
-              driverURL match {
+              getDriverURL match {
                 case Some(url) =>
 
                   /**
@@ -109,8 +121,8 @@ object ExecutorInitiator extends Logging {
                    * CoarseGrainedExecutorBackend.
                    * We need to track the changes there and merge them here on a regular basis.
                    */
-                  val executorHost = GemFireCacheImpl.getInstance().getMyId.getHost
-                  val memberId = GemFireCacheImpl.getInstance().getMyId.toString
+                  val executorHost = GemFireCacheImpl.getExisting().getMyId.getHost
+                  val memberId = GemFireCacheImpl.getExisting().getMyId.toString
                   SparkHadoopUtil.get.runAsSparkUser { () =>
 
                     // Fetch the driver's Spark properties.
@@ -167,6 +179,8 @@ object ExecutorInitiator extends Logging {
                 case None =>
                 // If driver url is none, already running executor is stopped.
               }
+              prevDriverURL = getDriverURLString
+
             }
           } catch {
             case e@(NonFatal(_) | _: InterruptedException) =>
@@ -190,7 +204,7 @@ object ExecutorInitiator extends Logging {
       }
     }
 
-    def getDriverURL: String = driverURL match {
+    def getDriverURLString: String = getDriverURL match {
       case Some(x) => x
       case None => ""
     }
@@ -209,7 +223,7 @@ object ExecutorInitiator extends Logging {
   }
 
   def restartExecutor() : Unit = {
-    executorRunnable.retryConnection()
+    executorRunnable.setRetryFlag()
   }
 
   /**

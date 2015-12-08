@@ -33,7 +33,7 @@ class SnappyCoarseGrainedExecutorBackend(
     // https://issues.apache.org/jira/browse/SPARK-9820 and
     // https://issues.apache.org/jira/browse/SPARK-8592. To overcome such
     // issues, try restarting the executor
-    if (stopped == true) {
+    if (stopped) {
       logWarning("Executor has failed to start: Restarting.")
       ExecutorInitiator.restartExecutor()
     }
