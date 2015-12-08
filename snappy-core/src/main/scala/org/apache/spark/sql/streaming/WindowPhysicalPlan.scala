@@ -31,9 +31,11 @@ case class WindowPhysicalPlan(
     new DStream[InternalRow](streamingSnappyCtx.streamingContext) {
       override def dependencies = parentStreams.toList
 
-      override def slideDuration: Duration = parentStreams.head.slideDuration
+      override def slideDuration: Duration =
+        parentStreams.head.slideDuration
 
-      override def compute(validTime: Time): Option[RDD[InternalRow]] = Some(child.execute())
+      override def compute(validTime: Time): Option[RDD[InternalRow]] =
+        Some(child.execute())
 
       private lazy val parentStreams = {
         def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
@@ -45,7 +47,8 @@ case class WindowPhysicalPlan(
       }
     }
 
-  @transient val stream = slideDuration.map(wrappedStream.window(windowDuration, _))
+  @transient val stream = slideDuration.map(
+    wrappedStream.window(windowDuration, _))
     .getOrElse(wrappedStream.window(windowDuration))
 
   override def output = child.output

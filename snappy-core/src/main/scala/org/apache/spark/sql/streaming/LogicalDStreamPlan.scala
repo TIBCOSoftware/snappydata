@@ -17,12 +17,14 @@ import org.apache.spark.streaming.dstream.DStream
  *
  * Created by ymahajan on 25/09/15.
  */
-case class LogicalDStreamPlan(output: Seq[Attribute], stream: DStream[InternalRow])
+case class LogicalDStreamPlan(output: Seq[Attribute],
+                              stream: DStream[InternalRow])
                              (val streaminSnappy: StreamingSnappyContext)
   extends LogicalPlan with MultiInstanceRelation {
 
   def newInstance() =
-    LogicalDStreamPlan(output.map(_.newInstance()), stream)(streaminSnappy).asInstanceOf[this.type]
+    LogicalDStreamPlan(output.map(_.newInstance()),
+      stream)(streaminSnappy).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
     sizeInBytes = BigInt(streaminSnappy.conf.defaultSizeInBytes)

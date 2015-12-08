@@ -3,17 +3,10 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
-import org.apache.spark.sql.streaming.{TwitterStreamRelation, FileStreamRelation, KafkaStreamRelation, SocketStreamRelation}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
@@ -30,8 +23,13 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.streaming.{FileStreamRelation, KafkaStreamRelation, SocketStreamRelation, TwitterStreamRelation}
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -307,7 +305,8 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
-    new QualifiedTableName(tableIdent.database, tableIdent.table)
+    new QualifiedTableName(tableIdent.database,
+      SnappyStoreHiveCatalog.processTableIdentifier(tableIdent.table, conf))
 
   def newQualifiedTableName(tableIdent: String): QualifiedTableName = {
     val tableName = processTableIdentifier(tableIdent)

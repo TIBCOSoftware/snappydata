@@ -1,11 +1,11 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.execution.{ExplainCommand, SparkPlan}
+import org.apache.spark.sql.execution.{QueryExecution, ExplainCommand, SparkPlan}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
 
@@ -13,7 +13,9 @@ import org.apache.spark.streaming.{Duration, Time}
  * A SQL based DStream with support for schema/Product
  * This class offers the ability to manipulate SQL query on DStreams
  * It is similar to SchemaRDD, which offers the similar functions
- * Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables
+ * Internally, RDD of each batch duration is treated as a small
+ * table and CQs are evaluated on those small tables
+ *
  * @param streamingSnappy
  * @param queryExecution
  *
@@ -22,13 +24,14 @@ import org.apache.spark.streaming.{Duration, Time}
 
 final class SchemaDStream(
                            @transient val streamingSnappy: StreamingSnappyContext,
-                           @transient val queryExecution: org.apache.spark.sql.execution.QueryExecution)
+                           @transient val queryExecution: QueryExecution)
   extends DStream[Row](streamingSnappy.streamingContext) {
 
   def this(streamingSnappy: StreamingSnappyContext, logicalPlan: LogicalPlan) =
     this(streamingSnappy, streamingSnappy.executePlan(logicalPlan))
 
-  /** Returns the schema of this SchemaDStream (represented by a [[StructType]]). */
+  /** Returns the schema of this SchemaDStream (represented by
+    * a [[StructType]]). */
   def schema: StructType = queryExecution.analyzed.schema
 
   /** List of parent DStreams on which this DStream depends on */

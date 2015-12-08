@@ -6,7 +6,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.{LogicalRDD, RDDConversions, SparkPlan}
-import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState, Time}
@@ -23,12 +22,14 @@ import scala.reflect.runtime.{universe => u}
  * Created by ymahajan on 25/09/15.
  */
 
-final class StreamingSnappyContext private(@transient val streamingContext: StreamingContext)
-  extends SnappyContext(streamingContext.sparkContext) with Serializable {
+final class StreamingSnappyContext private(@transient val streamingContext:
+                                           StreamingContext)
+  extends SnappyContext(streamingContext.sparkContext)
+  with Serializable {
 
   self =>
 
-  override def sql(sqlText : String) : DataFrame = {
+  override def sql(sqlText: String): DataFrame = {
     StreamPlan.currentContext.set(self) //StreamingSnappyContext
     super.sql(sqlText)
   }
@@ -43,7 +44,7 @@ final class StreamingSnappyContext private(@transient val streamingContext: Stre
     SparkPlan.currentContext.set(self) //SQLContext
     StreamPlan.currentContext.set(self) //StreamingSnappyContext
     val plan = sql(queryStr).queryExecution.logical
-    //TODO Yogesh, This needs to get registered with catalog
+    // TODO Yogesh, This needs to get registered with catalog
     //catalog.registerCQ(queryStr, plan)
     val dStream = new SchemaDStream(self, plan)
     //TODO Yogesh, Remove this hack
@@ -76,33 +77,39 @@ final class StreamingSnappyContext private(@transient val streamingContext: Stre
   }
 
   /**
-   * Creates a [[SchemaDStream]] from [[DStream]] containing [[Row]]s using the given schema.
-   * It is important to make sure that the structure of every [[Row]] of the provided DStream matches
-   * the provided schema.
+   * Creates a [[SchemaDStream]] from [[DStream]] containing [[Row]]s using
+   * the given schema. It is important to make sure that the structure of
+   * every [[Row]] of the provided DStream matches the provided schema.
    */
-  def createSchemaDStream(dStream: DStream[Any], schema: StructType): SchemaDStream = {
+  def createSchemaDStream(dStream: DStream[Any],
+                          schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
     SparkPlan.currentContext.set(self)
     StreamPlan.currentContext.set(self)
-    val logicalPlan = LogicalDStreamPlan(attributes, dStream.asInstanceOf[DStream[InternalRow]])(self)
+    val logicalPlan = LogicalDStreamPlan(attributes,
+      dStream.asInstanceOf[DStream[InternalRow]])(self)
     new SchemaDStream(self, logicalPlan)
   }
 
   /**
    * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
    */
-  implicit def createSchemaDStream[A <: Product : TypeTag](stream: DStream[A]): SchemaDStream = {
+  implicit def createSchemaDStream[A <: Product : TypeTag]
+  (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
     SparkPlan.currentContext.set(self)
     StreamPlan.currentContext.set(self)
-    val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd(rdd, schema.map(_.dataType)))
-    new SchemaDStream(self, LogicalDStreamPlan(attributeSeq, rowStream)(self))
+    val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
+    (rdd, schema.map(_.dataType)))
+    new SchemaDStream(self, LogicalDStreamPlan(attributeSeq,
+      rowStream)(self))
   }
 }
 
 object snappy extends Serializable {
-  implicit def snappyOperationsOnDStream[T: ClassTag](ds: DStream[T]): SnappyStreamOperations[T] =
+  implicit def snappyOperationsOnDStream[T: ClassTag]
+  (ds: DStream[T]): SnappyStreamOperations[T] =
     SnappyStreamOperations(StreamingSnappyContext(ds.context), ds)
 }
 
@@ -132,7 +139,8 @@ object StreamingSnappyContext {
   }
 }
 
-case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext, ds: DStream[T]) {
+case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
+                                               ds: DStream[T]) {
 
   def saveStream(sampleTab: Seq[String],
                  formatter: (RDD[T], StructType) => RDD[Row],
@@ -152,7 +160,8 @@ case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext, 
   }
 
   private def saveStreamToExternalTable(externalTable: String,
-                                        schema: StructType, jdbcSource: Map[String, String]): Unit = {
+                                        schema: StructType,
+                                        jdbcSource: Map[String, String]): Unit = {
     require(externalTable != null && externalTable.length > 0,
       "saveToExternalTable: expected non-empty table name")
 

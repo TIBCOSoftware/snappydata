@@ -41,8 +41,10 @@ case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
       val sym = mirror.staticClass(clazz.getName) // obtain class symbol for `c`
       val tpe = sym.selfType // obtain type object for `c`
       val tt = ru.TypeTag[Product](mirror, new reflect.api.TypeCreator {
-            def apply[U <: reflect.api.Universe with Singleton](m: reflect.api.Mirror[U]) = {
-                assert(m eq mirror, s"TypeTag[$tpe] defined in $mirror cannot be migrated to $m.")
+            def apply[U <: reflect.api.Universe with Singleton](m:
+            reflect.api.Mirror[U]) = {
+                assert(m eq mirror, s"TypeTag[$tpe] defined in $mirror " +
+                s"cannot be migrated to $m.")
                 tpe.asInstanceOf[U#Type]
             }
         })

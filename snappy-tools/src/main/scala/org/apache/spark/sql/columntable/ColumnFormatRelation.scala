@@ -61,7 +61,7 @@ class ColumnFormatRelation(
   override def toString: String = s"ColumnFormatRelation[$table]"
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
-    if (partitioningColumns.isEmpty) {
+    if (!partitioningColumns.isEmpty) {
       val rdd = new StoreRDD(sqlContext.sparkContext,
         df.rdd,
         table,

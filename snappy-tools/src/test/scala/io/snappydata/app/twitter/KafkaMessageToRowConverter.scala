@@ -52,6 +52,7 @@ class KafkaMessageToRowConverter extends MessageToRowConverter with Serializable
   override def getTargetType = classOf[String]
 }
 
+/*
 object KafkaMessageToRowConverter {
   private val rand = new Random
-}
+}*/
