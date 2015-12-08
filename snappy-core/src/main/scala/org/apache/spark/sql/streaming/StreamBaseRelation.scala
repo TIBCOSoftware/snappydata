@@ -15,7 +15,7 @@ with DeletableRelation with DestroyRelation with Serializable {
   }
 
   override def delete(filterExpr: String): Int = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
+    throw new IllegalAccessException("Stream table does not support deletes")
   }
 
   def truncate(): Unit = {
@@ -24,6 +24,7 @@ with DeletableRelation with DestroyRelation with Serializable {
 }
 
 private object StreamHelper {
+
   var validTime: Time = null
 
   def setValidTime(time: Time): Unit = {
