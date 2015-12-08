@@ -30,7 +30,7 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
 
 /**
- * Columnar Store implementation for GemFireXD.
+ * Column Store implementation for GemFireXD.
  */
 final class JDBCSourceAsColumnarStore(_url: String,
     _driver: String,
@@ -52,9 +52,14 @@ final class JDBCSourceAsColumnarStore(_url: String,
           // remove the url property from poolProps since that will be
           // partition-specific
           val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
-          new ShellPartitionedRDD[CachedBatch](sparkContext,
-            getConnection(tableName).getSchema, tableName, requiredColumns,
-            poolProps, connProps, hikariCP)
+          val conn = getConnection(tableName)
+          try {
+            new ShellPartitionedRDD[CachedBatch](sparkContext,
+              conn.getSchema, tableName, requiredColumns,
+              poolProps, connProps, hikariCP)
+          } finally {
+            conn.close()
+          }
         } else {
           var rddList = new ArrayBuffer[RDD[CachedBatch]]()
           uuidList.foreach(x => {
