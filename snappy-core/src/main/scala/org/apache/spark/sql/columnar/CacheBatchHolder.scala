@@ -18,7 +18,8 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
    * if not present or has exceeded its capacity)
    * later it can be shifted to REPLICATED Table in gemfireXD
    */
-  private def appendRow_(newBuilders: Boolean, row: InternalRow): Unit = {
+  private def appendRow_(newBuilders: Boolean, row: InternalRow,
+    flush: Boolean): Unit = {
     val rowLength = if (row == expressions.EmptyRow) 0 else row.numFields
     if (rowLength > 0) {
       // Added for SPARK-6082. This assertion can be useful for scenarios when
@@ -36,7 +37,7 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
       }
       rowCount += 1
     }
-    if (rowCount >= batchSize) {
+    if (rowCount >= batchSize || flush) {
       // create a new CachedBatch and push into the array of
       // CachedBatches so far in this iteration
       val stats = InternalRow.fromSeq(columnBuilders.map(
@@ -51,17 +52,14 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
   }
 
   def appendRow(u: Unit, row: InternalRow): Unit =
-    appendRow_(newBuilders = true, row)
+    appendRow_(newBuilders = true, row, flush = false)
 
   // empty for now
   def endRows(u: Unit): Unit = {}
 
   def forceEndOfBatch(): T = {
     if (rowCount > 0) {
-      // setting rowCount to batchSize temporarily will automatically
-      // force creation of a new batch in appendRow
-      rowCount = batchSize
-      appendRow_(newBuilders = false, expressions.EmptyRow)
+      appendRow_(newBuilders = false, expressions.EmptyRow, flush = true)
     }
     result
   }
