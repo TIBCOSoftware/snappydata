@@ -30,7 +30,7 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /**
- * Columnar Store implementation for GemFireXD.
+ * Column Store implementation for GemFireXD.
  */
 final class JDBCSourceAsColumnarStore(_url: String,
     _driver: String,
@@ -52,9 +52,24 @@ final class JDBCSourceAsColumnarStore(_url: String,
           // remove the url property from poolProps since that will be
           // partition-specific
           val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
+<<<<<<< HEAD
           new ShellPartitionedRDD[CachedBatch](sparkContext,
             getConnection(tableName).getSchema, tableName, requiredColumns,
             poolProps, connProps, hikariCP , url)
+||||||| merged common ancestors
+          new ShellPartitionedRDD[CachedBatch](sparkContext,
+            getConnection(tableName).getSchema, tableName, requiredColumns,
+            poolProps, connProps, hikariCP)
+=======
+          val conn = getConnection(tableName)
+          try {
+            new ShellPartitionedRDD[CachedBatch](sparkContext,
+              conn.getSchema, tableName, requiredColumns,
+              poolProps, connProps, hikariCP)
+          } finally {
+            conn.close()
+          }
+>>>>>>> 3aced53c225c3e4032bb44c8469144ac17d3d5fa
         } else {
           var rddList = new ArrayBuffer[RDD[CachedBatch]]()
           uuidList.foreach(x => {
@@ -69,8 +84,16 @@ final class JDBCSourceAsColumnarStore(_url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
+<<<<<<< HEAD
       tableName: String , maxPartitions:Int = -1): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
+||||||| merged common ancestors
+      tableName: String): UUIDRegionKey = {
+    val connection: java.sql.Connection = getConnection(tableName)
+=======
+      tableName: String): UUIDRegionKey = {
+    val connection = getConnection(tableName)
+>>>>>>> 3aced53c225c3e4032bb44c8469144ac17d3d5fa
     try {
       val uuid = connectionType match {
         case ConnectionType.Embedded =>
@@ -78,8 +101,10 @@ final class JDBCSourceAsColumnarStore(_url: String,
           val region = Misc.getRegionForTable(resolvedName, true)
           region.asInstanceOf[Region[_, _]] match {
             case pr: PartitionedRegion =>
-              genUUIDRegionKey(rand.nextInt(
-                pr.getDataStore.getNumLocalPrimaryBuckets))
+              val primaryBucketIds = pr.getDataStore.
+                  getAllLocalPrimaryBucketIdArray
+              genUUIDRegionKey(primaryBucketIds.getQuick(
+                rand.nextInt(primaryBucketIds.size())))
             case _ =>
               genUUIDRegionKey()
           }
