@@ -30,7 +30,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
   //Kafka configuration parameters ("metadata.broker.list" or "bootstrap.servers")
   val FROM_OFFSETS = "fromoffsets"
   //Per-topic/partition Kafka offsets defining the (inclusive) starting point of the stream
-  val MESSAGE_HINDLER = "messagehandler"
+  val MESSAGE_HANDLER = "messagehandler"
   //Function for translating each message and metadata into the desired type
 
   @transient val context = StreamingCtxtHolder.streamingContext
