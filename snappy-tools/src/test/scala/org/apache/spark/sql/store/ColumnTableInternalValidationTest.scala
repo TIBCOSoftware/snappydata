@@ -159,7 +159,7 @@ with BeforeAndAfter {
     //assert(GemFireCacheImpl.getColumnBatchSize == 2)
     // sometimes sizes may be different depending on how are the rows distributed
     if (GemFireCacheImpl.getColumnBatchSize == 3) {
-      assert(region.size == 2)
+      assert(region.size > 0)
       assert(shadowRegion.size > 0)
     }
     else {
