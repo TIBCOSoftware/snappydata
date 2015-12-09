@@ -342,6 +342,19 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
 
     override def apply() = empty
   }
+
+  def schemaFields(schema : StructType) = {
+    Map(schema.fields.flatMap { f =>
+      val name =
+        if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
+      val nname = Utils.normalizeId(name)
+      if (name != nname) {
+        Iterator((name, f), (Utils.normalizeId(name), f))
+      } else {
+        Iterator((name, f))
+      }
+    }: _*)
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext,

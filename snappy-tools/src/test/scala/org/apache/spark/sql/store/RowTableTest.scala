@@ -261,4 +261,37 @@ class RowTableTest
 
     println("Successful")
   }
+
+  test("Test the update table ") {
+    snc.sql("CREATE TABLE RowTableUpdate(CODE INT,DESCRIPTION varchar(100))" +
+        "USING row " +
+        "options()")
+
+    snc.sql("insert into RowTableUpdate values (5,'test')")
+    snc.sql("insert into RowTableUpdate values (6,'test1')")
+
+    val df1 = snc.sql("select DESCRIPTION from RowTableUpdate where DESCRIPTION='test'")
+    assert(df1.count() == 1)
+
+    val d1 = snc.sql("select * from  RowTableUpdate")
+
+    snc.sql("CREATE TABLE RowTableUpdate2 " +
+        "USING row " +
+        "options() AS (select * from  RowTableUpdate)")
+
+    val d2 = snc.sql("select * from  RowTableUpdate2")
+    assert(d2.count() == 2)
+
+    snc.sql("update RowTableUpdate2 set DESCRIPTION ='No#complaints' where CODE = 5")
+
+    val df2 = snc.sql("select DESCRIPTION from RowTableUpdate2 where DESCRIPTION = 'No#complaints' ")
+    assert(df2.count() == 1)
+
+    val df3 = snc.sql("select DESCRIPTION from RowTableUpdate2 where DESCRIPTION  in ('No#complaints', 'test1') ")
+    assert(df3.count() == 2)
+
+    snc.dropExternalTable("RowTableUpdate")
+    snc.dropExternalTable("RowTableUpdate2")
+    println("Successful")
+  }
 }
