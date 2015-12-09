@@ -2,7 +2,7 @@ package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 
-import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
+import io.snappydata.{SnappyFunSuite}
 import org.apache.spark.sql.SaveMode
 import org.scalatest.BeforeAndAfterAll
 
@@ -12,7 +12,7 @@ import org.scalatest.BeforeAndAfterAll
  * Created by rishim on 3/11/15.
  */
 class JDBCColumnarRelationAPISuite
-    extends SnappyToolFunSuite
+    extends SnappyFunSuite
     with BeforeAndAfterAll {
 
   private val path = "JDBCColumnarRelationAPISuite"

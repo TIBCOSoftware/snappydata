@@ -16,7 +16,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Created by soubhikc on 6/10/15.
  */
-class LeaderLauncherSuite extends SnappyToolFunSuite with BeforeAndAfterAll {
+class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
 

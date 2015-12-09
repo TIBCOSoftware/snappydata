@@ -2,7 +2,7 @@ package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 
-import io.snappydata.{SnappyToolFunSuite, SnappyFunSuite}
+import io.snappydata.{SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
 //scalastyle:ignore
@@ -15,7 +15,7 @@ import org.apache.spark.sql.SaveMode
  * Created by rishim on 27/8/15.
  */
 class JDBCMutableRelationAPISuite
-    extends SnappyToolFunSuite
+    extends SnappyFunSuite
     with BeforeAndAfterAll {
 
   val path = "JDBCMutableRelationAPISuite"

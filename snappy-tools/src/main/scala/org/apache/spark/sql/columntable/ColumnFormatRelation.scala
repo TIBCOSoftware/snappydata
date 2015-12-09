@@ -3,13 +3,16 @@ package org.apache.spark.sql.columntable
 import java.sql.Connection
 import java.util.Properties
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRDD, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -21,11 +24,10 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
-
-import scala.collection.mutable.ArrayBuffer
 /**
  * Created by rishim on 29/10/15.
- * This class acts as a DataSource provider for column format tables provided Snappy. It uses GemFireXD as actual datastore to physically locate the tables.
+ * This class acts as a DataSource provider for column format tables provided Snappy.
+ * It uses GemFireXD as actual datastore to physically locate the tables.
  * Column tables can be used for storing data in columnar compressed format.
  * A example usage is given below.
  *
@@ -67,10 +69,15 @@ class ColumnFormatRelation(
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
   lazy val connFunctor = ExternalStoreUtils.getConnector(table, driver, dialect, _poolProps,
     connProperties, hikariCP)
+
+  final lazy val connector = ExternalStoreUtils.getConnector(table, driver,
+    dialect, _poolProps, connProperties, hikariCP)
   val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
+
+
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     val colRDD = super.scanTable(table+shadowTableNamePrefix, requiredColumns, filters)
@@ -92,7 +99,18 @@ class ColumnFormatRelation(
           connProperties
         ).asInstanceOf[RDD[Row]]
 
-      case _ => super.buildScan(requiredColumns, filters)
+        //TODO: This needs to be changed for non-embedded mode, inefficient
+      case _ =>
+        new JDBCRDD(
+          sqlContext.sparkContext,
+          ExternalStoreUtils.getConnector(url, connProperties),
+          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
+          table,
+          requiredColumns,
+          filters,
+          parts,
+          connProperties
+        ).asInstanceOf[RDD[Row]]
     })
   }
 
@@ -213,7 +231,8 @@ class ColumnFormatRelation(
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, stats blob, " +
         userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
-        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable", tableName, dropIfExists = false)
+        s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
+      tableName, dropIfExists = false)
   }
 
 
@@ -239,9 +258,9 @@ class ColumnFormatRelation(
     catch {
       case sqle: java.sql.SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
-          throw new AnalysisException(s"${sqle.getMessage}\n" +
+          throw new java.sql.SQLException(s"${sqle.getMessage}\n" +
               "Ensure that the 'driver' option is set appropriately and " +
-              "the driver jars available (--jars option in spark-submit).")
+              "the driver jars available (--jars option in spark-submit).", sqle.getSQLState)
         } else {
           throw sqle
         }
@@ -275,7 +294,8 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
 
-  def registerStoreCallbacks(sqlContext: SQLContext,table: String, userSchema: StructType, externalStore: ExternalStore) = {
+  def registerStoreCallbacks(sqlContext: SQLContext,table: String,
+      userSchema: StructType, externalStore: ExternalStore) = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression)
   }
@@ -308,7 +328,8 @@ final class DefaultSource extends ColumnarRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps, poolProps, hikariCP, table, Some(schema))
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url,
+          connProps, poolProps, hikariCP, table, Some(schema))
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
@@ -340,7 +361,8 @@ final class DefaultSource extends ColumnarRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps, poolProps, hikariCP, table, Some(schema))
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url,
+          connProps, poolProps, hikariCP, table, Some(schema))
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     new JDBCSourceAsColumnarStore(url, driver, poolProps, connProps, hikariCP, blockMap)

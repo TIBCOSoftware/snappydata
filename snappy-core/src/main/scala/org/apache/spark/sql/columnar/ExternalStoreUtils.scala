@@ -3,8 +3,10 @@ package org.apache.spark.sql.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import scala.collection.mutable
+
 import io.snappydata.Constant
-import org.apache.spark.{Logging, SparkContext}
+
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -13,8 +15,7 @@ import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
-
-import scala.collection.mutable
+import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Utility methods used by external storage layers.
@@ -155,6 +156,13 @@ private[sql] object ExternalStoreUtils extends Logging {
     (url, driver, allPoolProps, connProps, hikariCP)
   }
 
+  def getConnector(url: String, connProps: Properties): () => Connection = {
+    () => {
+      connProps.remove("poolProperties")
+      JdbcUtils.createConnection(url, connProps)
+    }
+  }
+
   def getConnection(url: String, connProperties: Properties) = {
     connProperties.remove("poolProperties")
     JdbcUtils.createConnection(url, connProperties)
@@ -220,27 +228,25 @@ private[sql] object ExternalStoreUtils extends Logging {
   def getInsertString(table: String, userSchema: StructType) = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
-    (1 until userSchema.length).foreach(sb.append("?,"))
+    (1 until userSchema.length).foreach { _ =>
+      sb.append("?,")
+    }
     sb.append("?)").toString()
   }
 
-  // table has generated columns. gemfirexd bug?
   def getInsertStringWithColumnName(table: String, rddSchema: StructType) = {
-    val sql = new StringBuilder(s"INSERT INTO $table (")
-    var fieldsLeft = rddSchema.fields.length
-    rddSchema.fields map { field =>
-      sql.append(field.name)
-      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
-      fieldsLeft = fieldsLeft - 1
+    val sb = new StringBuilder(s"INSERT INTO $table (")
+    val schemaFields = rddSchema.fields
+    (0 until (schemaFields.length - 1)).foreach { i =>
+      sb.append(schemaFields(i).fieldName).append(',')
     }
-    sql.append("VALUES (")
-    fieldsLeft = rddSchema.fields.length
-    while (fieldsLeft > 0) {
-      sql.append("?")
-      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
-      fieldsLeft = fieldsLeft - 1
+    sb.append(schemaFields(schemaFields.length - 1).fieldName).append(") ")
+    sb.append(" VALUES (")
+
+    (1 until rddSchema.length).foreach { _ =>
+      sb.append("?,")
     }
-    sql.toString()
+    sb.append("?)").toString()
   }
 
   def setStatementParameters(stmt: PreparedStatement,

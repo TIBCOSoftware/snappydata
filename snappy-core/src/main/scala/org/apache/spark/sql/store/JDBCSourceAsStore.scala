@@ -19,6 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.Random
 
+
 /*
 Generic class to query column table from Snappy.
  */
@@ -133,7 +134,7 @@ class JDBCSourceAsStore(override val url: String,
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
-  protected def genUUIDRegionKey(bucketID: Int , batchID: UUID) = new UUIDRegionKey(bucketID, batchID)
+  protected def genUUIDRegionKey(bucketID: Int, batchID: UUID) = new UUIDRegionKey(bucketID, batchID)
 
   protected val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()

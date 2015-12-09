@@ -4,8 +4,8 @@ import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.snappy.CallbackFactoryProvider
 import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
@@ -49,7 +49,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     // We are creating JDBCSourceAsColumnarStore without blockMap as storing at each executor
     // doesn't require blockMap
     userSchema match {
-      case Some(schema) => val store = new JDBCSourceAsColumnarStore(url, driver, poolProps, connProperties, hikariCP)
+      case Some(schema) =>
+        val store = new JDBCSourceAsColumnarStore(url, driver, poolProps, connProperties, hikariCP)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
           schema, store, columnBatchSize, userCompression)
       case None =>
@@ -78,8 +79,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
   }
 
   def getPeerPartitions: Array[Partition] = {
-    val numberedPeers = org.apache.spark.sql.collection.Utils.getAllExecutorsMemoryStatus(sqlContext.sparkContext).
-        keySet.zipWithIndex
+    val numberedPeers = org.apache.spark.sql.collection.Utils.
+        getAllExecutorsMemoryStatus(sqlContext.sparkContext).keySet.zipWithIndex
 
     if (numberedPeers.nonEmpty) {
       numberedPeers.map {

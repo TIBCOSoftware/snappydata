@@ -2,9 +2,13 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.datasources.DDLException
@@ -12,9 +16,6 @@ import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
 
 /*/10/15.
   */
@@ -48,7 +49,7 @@ object StoreUtils {
 
   val SHADOW_COLUMN_NAME = "rowid"
 
-  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME int generated always as identity"
+  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
 
   def lookupName(tableName: String, schema: String): String = {
@@ -118,7 +119,8 @@ object StoreUtils {
     // everytime we can get a map from SnappyCluster
     val map = Map[InternalDistributedMember, BlockManagerId]()
     val memberAccumulator = sqlContext.sparkContext.accumulator(map)(MembershipAccumulator)
-    new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table, schema)(memberAccumulator).collect()
+    new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table,
+      schema)(memberAccumulator).collect()
     memberAccumulator.value
   }
 
@@ -153,14 +155,21 @@ object StoreUtils {
     sb.toString
   }
 
-  def ddlExtensionString(parameters: mutable.Map[String, String], isRowTable: Boolean, isShadowTable: Boolean): String = {
+  def ddlExtensionString(parameters: mutable.Map[String, String],
+      isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
     if (!isShadowTable) {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
         val (parClause) = {
           v match {
-            case PRIMARY_KEY => PRIMARY_KEY
+            case PRIMARY_KEY => if (isRowTable){
+              PRIMARY_KEY
+            }
+            else {
+              throw new DDLException("Column table cannot be partitioned on" +
+                  " PRIMARY KEY as no primary key")
+            }
             case _ => s"COLUMN ($v)"
           }
         }
