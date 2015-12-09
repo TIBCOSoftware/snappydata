@@ -375,6 +375,10 @@ task product {
       from("${toolsProject.projectDir}/conf") 
       into "${snappyProductDir}/conf"
     }
+    copy {
+      from("${examplesProject.projectDir}/quickstart")
+      into "${snappyProductDir}/quickstart"
+    }
 
     def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
     if (file(sparkR).exists()) {
