@@ -52,25 +52,12 @@ final class JDBCSourceAsColumnarStore(_url: String,
           // remove the url property from poolProps since that will be
           // partition-specific
           val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
-<<<<<<< HEAD
+
           new ShellPartitionedRDD[CachedBatch](sparkContext,
             getConnection(tableName).getSchema, tableName, requiredColumns,
             poolProps, connProps, hikariCP , url)
-||||||| merged common ancestors
-          new ShellPartitionedRDD[CachedBatch](sparkContext,
-            getConnection(tableName).getSchema, tableName, requiredColumns,
-            poolProps, connProps, hikariCP)
-=======
-          val conn = getConnection(tableName)
-          try {
-            new ShellPartitionedRDD[CachedBatch](sparkContext,
-              conn.getSchema, tableName, requiredColumns,
-              poolProps, connProps, hikariCP)
-          } finally {
-            conn.close()
           }
->>>>>>> 3aced53c225c3e4032bb44c8469144ac17d3d5fa
-        } else {
+         else {
           var rddList = new ArrayBuffer[RDD[CachedBatch]]()
           uuidList.foreach(x => {
             val y = x.mapPartitions { uuidItr =>
@@ -84,16 +71,8 @@ final class JDBCSourceAsColumnarStore(_url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
-<<<<<<< HEAD
-      tableName: String , maxPartitions:Int = -1): UUIDRegionKey = {
+                                tableName: String, maxPartitions: Int): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
-||||||| merged common ancestors
-      tableName: String): UUIDRegionKey = {
-    val connection: java.sql.Connection = getConnection(tableName)
-=======
-      tableName: String): UUIDRegionKey = {
-    val connection = getConnection(tableName)
->>>>>>> 3aced53c225c3e4032bb44c8469144ac17d3d5fa
     try {
       val uuid = connectionType match {
         case ConnectionType.Embedded =>
@@ -102,7 +81,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
           region.asInstanceOf[Region[_, _]] match {
             case pr: PartitionedRegion =>
               val primaryBucketIds = pr.getDataStore.
-                  getAllLocalPrimaryBucketIdArray
+                getAllLocalPrimaryBucketIdArray
               genUUIDRegionKey(primaryBucketIds.getQuick(
                 rand.nextInt(primaryBucketIds.size())))
             case _ =>
@@ -179,24 +158,24 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     val par = split.index
     val resolvedName = StoreUtils.lookupName(tableName, schema)
     val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
-    val conn = getConnection(urlsOfNetServerHost)
+    val useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
 
+    val conn = getConnection(urlsOfNetServerHost, useLocatorURL)
     val query = "select stats, " + requiredColumns.mkString(",") +
-      " from " + resolvedName + ( if (useLocatorUrl(urlsOfNetServerHost)) s" where bucketId = $par"
-    else " " )
+      " from " + resolvedName + (if (useLocatorURL) s" where bucketId = $par"
+    else " ")
 
     val statement = conn.createStatement()
 
-    if (! useLocatorUrl(urlsOfNetServerHost))
-       statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+    if (!useLocatorURL)
+      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
     val rs = statement.executeQuery(query)
 
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
 
-  def getConnection(hostList: ArrayBuffer[(String, String)]): Connection = {
+  def getConnection(hostList: ArrayBuffer[(String, String)] , connectToLocator:Boolean): Connection = {
     val localhost = SocketCreator.getLocalHost
-    val connectToLocator = useLocatorUrl(hostList)
     var index = -1
 
     // setup pool properties
@@ -225,7 +204,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
           throw sqlException
         else {
           hostList.remove(index)
-          getConnection(hostList)
+          getConnection(hostList , connectToLocator)
         }
     }
   }

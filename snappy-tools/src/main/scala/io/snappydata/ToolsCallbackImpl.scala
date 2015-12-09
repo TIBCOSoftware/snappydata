@@ -70,7 +70,4 @@ object ToolsCallbackImpl extends ToolsCallback {
     } else locatorUrl)
   }
 
-  def getTotalNumberOfBuckets(url:String , connProperties:Properties , tableName:String):Int = {
-    StoreUtils.getTotalNumberOfBuckets(url,connProperties,tableName)
-  }
 }

@@ -154,17 +154,13 @@ class JDBCAppendableRelation(
     val useCompression = sqlContext.conf.useCompression
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
-    val maxPartitionForTable =
-      if (ExternalStoreUtils.isExternalShellMode(sqlContext.sparkContext)) {
-        ToolsCallbackInit.toolsCallback.getTotalNumberOfBuckets(url, connProperties, table)
-      }
-      else -1
-
     val output = df.logicalPlan.output
     val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
       def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        val uuid = externalStore.storeCachedBatch(batch, table , maxPartitionForTable)
+        //TODO - currently using the length from the part Object but it needs to be handled more generically
+        //in order to replace UUID
+        val uuid = externalStore.storeCachedBatch(batch, table , parts.length)
         accumulated += uuid
       }
 
@@ -316,38 +312,58 @@ class ColumnarRelationProvider
       options: Map[String, String], schema: StructType) = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
-    val partitionColumn = parameters.remove("partitioncolumn")
-    val lowerBound = parameters.remove("lowerbound")
-    val upperBound = parameters.remove("upperbound")
-    val numPartitions = parameters.remove("numpartitions")
+
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val partitionInfo = if (partitionColumn.isEmpty) {
-      null
-    } else {
-      if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
-        throw new IllegalArgumentException("JDBCAppendableRelation: " +
-            "incomplete partitioning specified")
-      }
-      JDBCPartitioningInfo(
-        partitionColumn.get,
-        lowerBound.get.toLong,
-        upperBound.get.toLong,
-        numPartitions.get.toInt)
-    }
-    val parts = JDBCRelation.columnPartition(partitionInfo)
-
     val externalStore = getExternalSource(sc, url, driver, poolProps,
       connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, parts,
+      getClass.getCanonicalName, mode, schema, getPartitionInfo(parameters),
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
+  }
+
+
+  //TODO - 1. similar code available in the JDBCMutable relation. Needs to be encapuslated in single class
+  //       2. after TPCH branch is merged DEFAULT_MAX_PARTITIONS should be reconfigured
+
+  def getPartitionInfo(parameters: mutable.Map[String, String]): Array[Partition] = {
+    val DEFAULT_PARTITION_COLUMN = "bucket_id"
+    val DEFAULT_MAX_PARTITIONS = "113"
+
+    var partitionColumn = parameters.remove("partitioncolumn")
+    val lowerBound = parameters.remove("lowerbound").
+      getOrElse(getDefaultOrThrowException(partitionColumn, "0"))
+    val upperBound = parameters.remove("upperbound").
+      getOrElse(getDefaultOrThrowException(partitionColumn, DEFAULT_MAX_PARTITIONS))
+    val numPartitions = parameters.remove("numpartitions").
+      getOrElse(getDefaultOrThrowException(partitionColumn, DEFAULT_MAX_PARTITIONS))
+
+    if (partitionColumn.isEmpty) {
+      partitionColumn = Option(DEFAULT_PARTITION_COLUMN)
+    }
+
+    val partitionInfo = JDBCPartitioningInfo(
+      partitionColumn.get,
+      lowerBound.toLong,
+      upperBound.toLong,
+      numPartitions.toInt)
+
+    JDBCRelation.columnPartition(partitionInfo)
+  }
+
+  private def getDefaultOrThrowException(partitioningColumn: Option[String], defaultValue: String): String = {
+    if (partitioningColumn.isEmpty)
+      defaultValue
+    else
+    //partition column is specified but other options are empty
+      throw new IllegalArgumentException("JDBCAppendableRelation: " +
+        "incomplete partitioning specified")
   }
 
   override def createRelation(sqlContext: SQLContext,

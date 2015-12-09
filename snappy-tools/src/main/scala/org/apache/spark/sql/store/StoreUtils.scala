@@ -154,15 +154,4 @@ object StoreUtils {
     sb.toString()
   }
 
-  def getTotalNumberOfBuckets(url: String, connProperties: Properties, tableName: String): Int = {
-    val conn: Connection = JdbcUtils.createConnection(url, connProperties)
-    try {
-      Misc.getRegionForTable(StoreUtils.lookupName(tableName, conn.getSchema), true).asInstanceOf[Region[_, _]] match {
-        case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
-        case _ =>  -1
-      }
-    } finally {
-      conn.close()
-    }
-  }
 }
