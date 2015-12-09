@@ -57,11 +57,6 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
-    val partitionColumn = parameters.remove("partitioncolumn")
-    val lowerBound = parameters.remove("lowerbound")
-    val upperBound = parameters.remove("upperbound")
-    val numPartitions = parameters.remove("numpartitions")
-
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     //val ddlExtension = StoreUtils.ddlExtensionString(parameters)

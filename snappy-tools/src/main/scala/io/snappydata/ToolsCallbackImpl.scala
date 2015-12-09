@@ -1,10 +1,7 @@
 package io.snappydata
 
-import java.sql.Connection
-import java.util.Properties
 
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.store.StoreUtils
+import java.util.Properties
 
 import scala.collection.JavaConversions._
 
