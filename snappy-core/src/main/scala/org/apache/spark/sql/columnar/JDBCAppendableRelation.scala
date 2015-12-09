@@ -36,7 +36,7 @@ class JDBCAppendableRelation(
     val provider: String,
     val mode: SaveMode,
     userSchema: StructType,
-    parts: Array[Partition],
+    numPartitions:Int,
     _poolProps: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
@@ -160,7 +160,7 @@ class JDBCAppendableRelation(
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
         //TODO - currently using the length from the part Object but it needs to be handled more generically
         //in order to replace UUID
-        val uuid = externalStore.storeCachedBatch(batch, table , parts.length)
+        val uuid = externalStore.storeCachedBatch(batch, table , numPartitions)
         accumulated += uuid
       }
 
@@ -285,7 +285,7 @@ object JDBCAppendableRelation {
       provider: String,
       mode: SaveMode,
       schema: StructType,
-      parts: Array[Partition],
+      numPartitions:Integer ,
       poolProps: Map[String, String],
       connProps: Properties,
       hikariCP: Boolean,
@@ -293,7 +293,7 @@ object JDBCAppendableRelation {
       sqlContext: SQLContext): JDBCAppendableRelation =
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, parts,
+      getClass.getCanonicalName, mode, schema, numPartitions,
       poolProps, connProps, hikariCP, options, null, sqlContext)()
 
   private def removePool(table: String): () => Iterator[Unit] = () => {
@@ -313,9 +313,14 @@ class ColumnarRelationProvider
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
+    //TODO - After TPCH checkin it will change
+    val DEFAULT_BUCKETS_FOR_COLUMN="113"
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
+
+    val numPartitions = parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN)
+
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
@@ -324,38 +329,10 @@ class ColumnarRelationProvider
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, getPartitionInfo(parameters),
+      getClass.getCanonicalName, mode, schema, numPartitions.toInt,
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
   }
 
-
-  //TODO - 1. similar code available in the JDBCMutable relation. Needs to be encapuslated in single class
-  //       2. after TPCH branch is merged DEFAULT_MAX_PARTITIONS should be reconfigured
-
-  def getPartitionInfo(parameters: mutable.Map[String, String]): Array[Partition] = {
-    val DEFAULT_PARTITION_COLUMN = "bucket_id"
-    val DEFAULT_MAX_PARTITIONS = "113"
-
-    var partitionColumn = parameters.remove("partitioncolumn")
-    val lowerBound = parameters.remove("lowerbound").
-      getOrElse(getDefaultOrThrowException(partitionColumn, "0"))
-    val upperBound = parameters.remove("upperbound").
-      getOrElse(getDefaultOrThrowException(partitionColumn, DEFAULT_MAX_PARTITIONS))
-    val numPartitions = parameters.remove("numpartitions").
-      getOrElse(getDefaultOrThrowException(partitionColumn, DEFAULT_MAX_PARTITIONS))
-
-    if (partitionColumn.isEmpty) {
-      partitionColumn = Option(DEFAULT_PARTITION_COLUMN)
-    }
-
-    val partitionInfo = JDBCPartitioningInfo(
-      partitionColumn.get,
-      lowerBound.toLong,
-      upperBound.toLong,
-      numPartitions.toInt)
-
-    JDBCRelation.columnPartition(partitionInfo)
-  }
 
   private def getDefaultOrThrowException(partitioningColumn: Option[String], defaultValue: String): String = {
     if (partitioningColumn.isEmpty)
