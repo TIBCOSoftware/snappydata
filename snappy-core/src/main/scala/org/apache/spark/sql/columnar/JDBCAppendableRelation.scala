@@ -313,13 +313,8 @@ class ColumnarRelationProvider
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-    //TODO - After TPCH checkin it will change
-    val DEFAULT_BUCKETS_FOR_COLUMN="113"
-
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-
-    val numPartitions = parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN)
 
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
@@ -329,18 +324,14 @@ class ColumnarRelationProvider
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, numPartitions.toInt,
+      getClass.getCanonicalName, mode, schema, getPartitions(parameters),
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
   }
 
-
-  private def getDefaultOrThrowException(partitioningColumn: Option[String], defaultValue: String): String = {
-    if (partitioningColumn.isEmpty)
-      defaultValue
-    else
-    //partition column is specified but other options are empty
-      throw new IllegalArgumentException("JDBCAppendableRelation: " +
-        "incomplete partitioning specified")
+  protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
+    //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
+    val DEFAULT_BUCKETS_FOR_COLUMN = "113"
+    parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
   }
 
   override def createRelation(sqlContext: SQLContext,
