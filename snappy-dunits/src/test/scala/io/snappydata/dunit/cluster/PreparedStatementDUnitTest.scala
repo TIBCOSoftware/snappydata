@@ -22,7 +22,7 @@ class PreparedStatementDUnitTest(val s: String) extends ClusterManagerTestBase(s
     DriverManager.getConnection(url)
   }
 
-  def testQueryRouting(): Unit = {
+  def testPrepStatementRouting(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -31,7 +31,19 @@ class PreparedStatementDUnitTest(val s: String) extends ClusterManagerTestBase(s
     val ps = conn.prepareStatement("select col1 from ColumnTableQR where  col1 >?and col1 < ?")
     ps.setInt(1, 1)
     ps.setInt(2, 1000)
-    val rs2 = ps.executeQuery()
+    val rs = ps.executeQuery()
+    var cnt = 0
+    while(rs.next()) {
+      //println("KN: row["+cnt2+"] = " + rs.getObject(1) + ", " + rs.getObject(2) + ", " + rs.getObject(3))
+      //println("KN: row["+cnt2+"] = " + rs.getObject(1))
+      cnt += 1
+    }
+    //println("KN: total count is = " + cnt2)
+    assert(cnt == 4)
+
+    // Test zero parameter
+    val ps2 = conn.prepareStatement("select col1 from ColumnTableQR where  col1 > 1 and col1 < 1000")
+    val rs2 = ps2.executeQuery()
     var cnt2 = 0
     while(rs2.next()) {
       //println("KN: row["+cnt2+"] = " + rs2.getObject(1) + ", " + rs2.getObject(2) + ", " + rs2.getObject(3))
@@ -57,8 +69,8 @@ class PreparedStatementDUnitTest(val s: String) extends ClusterManagerTestBase(s
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createExternalTable(tableName, "column", dataDF.schema, Map.empty[String, String])
+    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(tableName)
   }
 }
 
