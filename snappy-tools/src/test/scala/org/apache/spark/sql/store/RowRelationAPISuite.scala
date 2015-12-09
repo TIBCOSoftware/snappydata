@@ -2,7 +2,7 @@ package org.apache.spark.sql.store
 
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{SnappyFunSuite, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{TestData, TestData2}
 import org.scalatest.BeforeAndAfterAll
 

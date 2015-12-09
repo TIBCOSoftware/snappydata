@@ -1,6 +1,6 @@
 package io.snappydata.app
 
-import io.snappydata.{SnappyFunSuite, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 
 /**
  * Created by skumar on 17/9/15

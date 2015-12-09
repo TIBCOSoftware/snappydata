@@ -1,8 +1,8 @@
 package org.apache.spark.sql.store
 
-import io.snappydata.{SnappyFunSuite, SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 

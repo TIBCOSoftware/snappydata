@@ -1,15 +1,15 @@
 package org.apache.spark.sql.store
 
+import scala.util.Try
+
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{SnappyFunSuite}
-import io.snappydata.core.FileCleaner
-import org.apache.spark.Logging
-import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.{SQLConf, SaveMode}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import io.snappydata.SnappyFunSuite
+import org.scalatest.BeforeAndAfter
 
-import scala.util.Try
+import org.apache.spark.Logging
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.execution.datasources.DDLException
 
 /**
  * Created by skumar on 23/11/15.

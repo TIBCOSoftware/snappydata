@@ -2,6 +2,7 @@ package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 
+import io.snappydata.core.Data
 import io.snappydata.{SnappyFunSuite}
 import org.apache.spark.sql.SaveMode
 import org.scalatest.BeforeAndAfterAll

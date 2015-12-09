@@ -187,7 +187,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       while (rs.next()) {
         cnt += 1
       }
-      assert(cnt == 3) // ColumnTableQR, COLUMNTABLE and ROWTABLE
+      // ColumnTableQR, COLUMNTABLE and ROWTABLE, and shadow tables corresponding to Col table too
+      assert(cnt == 5)
     } finally {
       conn.close()
     }
