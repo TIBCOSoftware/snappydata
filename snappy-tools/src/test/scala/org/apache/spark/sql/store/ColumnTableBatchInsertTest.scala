@@ -3,7 +3,7 @@ package org.apache.spark.sql.store
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
-import io.snappydata.{SnappyToolFunSuite, ServiceManager, SnappyFunSuite}
+import io.snappydata.{ServiceManager, SnappyFunSuite}
 import io.snappydata.core.{Data, FileCleaner, TestData}
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
@@ -12,7 +12,7 @@ import org.scalatest.{BeforeAndAfter}
 /**
  * Created by skumar on 13/11/15.
  */
-class ColumnTableBatchInsertTest extends SnappyToolFunSuite
+class ColumnTableBatchInsertTest extends SnappyFunSuite
 with Logging
 with BeforeAndAfter {
 

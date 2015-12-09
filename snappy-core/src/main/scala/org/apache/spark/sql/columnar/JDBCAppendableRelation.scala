@@ -177,7 +177,7 @@ class JDBCAppendableRelation(
           attribute.name, useCompression)
       }.toArray
 
-      val holder = new CachedBatchHolder(columnBuilders, 0, false, columnBatchSize, schema,
+      val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize, schema,
         new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
       val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]

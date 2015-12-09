@@ -7,7 +7,7 @@ import org.apache.spark.sql.types.StructType
  * Created by skumar on 9/10/15.
  */
 private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
-    var rowCount: Int, val createOneBatch: Boolean, val batchSize: Int, schema: StructType,
+    var rowCount: Int, val batchSize: Int, schema: StructType,
     val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {
 
   var columnBuilders = getColumnBuilders
@@ -36,23 +36,18 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
       }
       rowCount += 1
     }
-    def createCachedBatch = {
-      if (rowCount >= batchSize || forceCreate) {
-        // create a new CachedBatch and push into the array of
-        // CachedBatches so far in this iteration
-        val stats = InternalRow.fromSeq(columnBuilders.map(
-          _.columnStats.collectedStatistics).flatMap(_.values))
-        // TODO: somehow push into global batchStats
-        result = batchAggregate(result,
-          CachedBatch(columnBuilders.map(_.build().array()), stats))
-        // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
-        if (newBuilders) columnBuilders = getColumnBuilders
-        rowCount = 0
-      }
-    }
 
-    if (!createOneBatch || forceCreate) {
-      createCachedBatch
+    if (rowCount >= batchSize || forceCreate) {
+      // create a new CachedBatch and push into the array of
+      // CachedBatches so far in this iteration
+      val stats = InternalRow.fromSeq(columnBuilders.map(
+        _.columnStats.collectedStatistics).flatMap(_.values))
+      // TODO: somehow push into global batchStats
+      result = batchAggregate(result,
+        CachedBatch(columnBuilders.map(_.build().array()), stats))
+      // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
+      if (newBuilders) columnBuilders = getColumnBuilders
+      rowCount = 0
     }
   }
 

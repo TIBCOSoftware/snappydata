@@ -2,10 +2,14 @@ package org.apache.spark.sql.columntable
 
 import java.util.UUID
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
@@ -14,9 +18,6 @@ import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnBuil
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * Created by skumar on 5/11/15.
@@ -29,50 +30,15 @@ class CachedBatchCreator(
     val columnBatchSize: Int,
     val useCompression: Boolean) {
 
-  abstract class JDBCConversion
+  type JDBCConversion = (SpecificMutableRow, ExecRow, Int) => Unit
 
-  case object BooleanConversion extends JDBCConversion
-  case object DateConversion extends JDBCConversion
-  case class DecimalConversion(precision: Int, scale: Int) extends JDBCConversion
-  case object DoubleConversion extends JDBCConversion
-  case object FloatConversion extends JDBCConversion
-  case object IntegerConversion extends JDBCConversion
-  case object LongConversion extends JDBCConversion
-  case object BinaryLongConversion extends JDBCConversion
-  case object StringConversion extends JDBCConversion
-  case object TimestampConversion extends JDBCConversion
-  case object BinaryConversion extends JDBCConversion
-
-  /**
-   * Maps a StructType to a type tag list.
-   */
-  def getConversions(schema: StructType): Array[JDBCConversion] = {
-    schema.fields.map(sf => sf.dataType match {
-      case BooleanType => BooleanConversion
-      case DateType => DateConversion
-      case DecimalType.Fixed(p, s) => DecimalConversion(p, s)
-      case DoubleType => DoubleConversion
-      case FloatType => FloatConversion
-      case IntegerType => IntegerConversion
-      case LongType =>
-        if (sf.metadata.contains("binarylong")) BinaryLongConversion else LongConversion
-      case StringType => StringConversion
-      case TimestampType => TimestampConversion
-      case BinaryType => BinaryConversion
-      case _ => throw new IllegalArgumentException(s"Unsupported field $sf")
-    }).toArray
-  }
-
-  def createInternalRow(execRow: ExecRow): InternalRow = {
-    val conversions = getConversions(schema)
-    val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
-
+  def createInternalRow(execRow: ExecRow, mutableRow: SpecificMutableRow): InternalRow = {
     var i = 0
-    while (i < conversions.length) {
+    while (i < schema.length) {
       val pos = i + 1
-      conversions(i) match {
-        case BooleanConversion => mutableRow.setBoolean(i, execRow.getColumn(pos).getBoolean())
-        case DateConversion =>
+      schema.fields(i).dataType match {
+        case BooleanType => mutableRow.setBoolean(i, execRow.getColumn(pos).getBoolean())
+        case DateType =>
           // DateTimeUtils.fromJavaDate does not handle null value, so we need to check it.
           val dateVal = execRow.getColumn(pos).getDate(null)
           if (dateVal != null) {
@@ -88,40 +54,45 @@ class CachedBatchCreator(
         // DecimalType(12, 2). Thus, after saving the dataframe into parquet file and then
         // retrieve it, you will get wrong result 199.99.
         // So it is needed to set precision and scale for Decimal based on JDBC metadata.
-        case DecimalConversion(p, s) =>
+        case DecimalType.Fixed(p, s) =>
           val decimalVal = execRow.getColumn(pos).typeToBigDecimal()
           if (decimalVal == null) {
             mutableRow.update(i, null)
           } else {
             mutableRow.update(i, Decimal(decimalVal, p, s))
           }
-        case DoubleConversion => mutableRow.setDouble(i, execRow.getColumn(pos).getDouble())
-        case FloatConversion => mutableRow.setFloat(i, execRow.getColumn(pos).getFloat())
-        case IntegerConversion => mutableRow.setInt(i, execRow.getColumn(pos).getInt())
-        case LongConversion => mutableRow.setLong(i, execRow.getColumn(pos).getLong())
+        case DoubleType => mutableRow.setDouble(i, execRow.getColumn(pos).getDouble())
+        case FloatType => mutableRow.setFloat(i, execRow.getColumn(pos).getFloat())
+        case IntegerType => mutableRow.setInt(i, execRow.getColumn(pos).getInt())
+        case LongType =>
+          if (schema.fields(i).metadata.contains("binarylong")) {
+            val bytes = execRow.getColumn(pos).getBytes()
+            var ans = 0L
+            var j = 0
+            while (j < bytes.size) {
+              ans = 256 * ans + (255 & bytes(j))
+              j = j + 1;
+            }
+            mutableRow.setLong(i, ans)
+          } else {
+            mutableRow.setLong(i, execRow.getColumn(pos).getLong())
+          }
         // TODO(davies): use getBytes for better performance, if the encoding is UTF-8
-        case StringConversion => mutableRow.update(i,
+        case StringType => mutableRow.update(i,
           UTF8String.fromString(execRow.getColumn(pos).getString()))
-        case TimestampConversion =>
+        case TimestampType =>
           val t = execRow.getColumn(pos).getTimestamp(null)
           if (t != null) {
             mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(t))
           } else {
             mutableRow.update(i, null)
           }
-        case BinaryConversion => mutableRow.update(i, execRow.getColumn(pos).getBytes())
-        case BinaryLongConversion => {
-          val bytes = execRow.getColumn(pos).getBytes()
-          var ans = 0L
-          var j = 0
-          while (j < bytes.size) {
-            ans = 256 * ans + (255 & bytes(j))
-            j = j + 1;
-          }
-          mutableRow.setLong(i, ans)
-        }
+        case BinaryType => mutableRow.update(i, execRow.getColumn(pos).getBytes())
+        case _ => throw new IllegalArgumentException(s"Unsupported field ${schema.fields(i)}")
       }
-      if (execRow.getColumn(pos).isNull) mutableRow.setNullAt(i)
+      if (execRow.getColumn(pos).isNull) {
+        mutableRow.setNullAt(i)
+      }
       i = i + 1
     }
     mutableRow
@@ -145,19 +116,17 @@ class CachedBatchCreator(
     }.toArray
 
     // adding one variable so that only one cached batch is created
-    val holder = new CachedBatchHolder(columnBuilders, 0, true, columnBatchSize, schema,
+    val holder = new CachedBatchHolder(columnBuilders, 0, Integer.MAX_VALUE, schema,
       new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
     val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
     val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
     memHeapScanController.setAddRegionAndKey
     val keySet = new mutable.HashSet[Any]
-    var count2 = 0
+    val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
     try {
       while (memHeapScanController.fetchNext(row)) {
-        CachedBatchCreator.count = CachedBatchCreator.count + 1
-        count2 = count2 + 1
-        batches.appendRow((), createInternalRow(row))
+        batches.appendRow((), createInternalRow(row, mutableRow))
         keySet.add(row.getAllRegionAndKeyInfo.first().getKey)
       }
       batches.forceEndOfBatch
@@ -166,8 +135,4 @@ class CachedBatchCreator(
       sc.close();
     }
   }
-}
-
-object CachedBatchCreator {
-  var count = 0
 }
