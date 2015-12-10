@@ -81,13 +81,12 @@ final class StreamingSnappyContext private(@transient val streamingContext:
    * the given schema. It is important to make sure that the structure of
    * every [[Row]] of the provided DStream matches the provided schema.
    */
-  def createSchemaDStream(dStream: DStream[Any],
+  implicit def createSchemaDStream(dStream: DStream[InternalRow],
                           schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
     SparkPlan.currentContext.set(self)
     StreamPlan.currentContext.set(self)
-    val logicalPlan = LogicalDStreamPlan(attributes,
-      dStream.asInstanceOf[DStream[InternalRow]])(self)
+    val logicalPlan = LogicalDStreamPlan(attributes, dStream)(self)
     new SchemaDStream(self, logicalPlan)
   }
 
@@ -116,8 +115,8 @@ object snappy extends Serializable {
 object StreamingSnappyContext {
 
   @volatile private[this] var globalContext: StreamingSnappyContext = _
-  private[this] val contextLock = new AnyRef
 
+  private[this] val contextLock = new AnyRef
 
   def apply(sc: StreamingContext): StreamingSnappyContext = {
     val snc = globalContext

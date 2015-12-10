@@ -58,7 +58,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
   private val streamToRow = {
     try {
       val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRow"))
-      clz.newInstance().asInstanceOf[MessageToRowConverter]
+      clz.newInstance().asInstanceOf[StreamToRowConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }

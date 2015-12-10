@@ -23,7 +23,8 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.streaming.{FileStreamRelation, KafkaStreamRelation, SocketStreamRelation, TwitterStreamRelation}
+import org.apache.spark.sql.streaming.{FileStreamRelation, KafkaStreamRelation,
+SocketStreamRelation, TwitterStreamRelation, DirectKafkaStreamRelation}
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
 
@@ -681,6 +682,7 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       case LogicalRelation(kr: KafkaStreamRelation, _) => kr.schema
       case LogicalRelation(fr: FileStreamRelation, _) => fr.schema
       case LogicalRelation(tr: TwitterStreamRelation, _) => tr.schema
+      case LogicalRelation(dkr: DirectKafkaStreamRelation, _) => dkr.schema
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }

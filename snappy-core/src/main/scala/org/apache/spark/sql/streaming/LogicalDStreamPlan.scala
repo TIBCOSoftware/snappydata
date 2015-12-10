@@ -7,16 +7,6 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.streaming.dstream.DStream
 
 
-/**
- *
- * A LogicalPlan wrapper of row based DStream.
- *
- * @param output
- * @param stream
- * @param streaminSnappy
- *
- * Created by ymahajan on 25/09/15.
- */
 case class LogicalDStreamPlan(output: Seq[Attribute],
                               stream: DStream[InternalRow])
                              (val streaminSnappy: StreamingSnappyContext)
