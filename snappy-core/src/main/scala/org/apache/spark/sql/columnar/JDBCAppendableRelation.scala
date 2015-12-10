@@ -13,7 +13,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.collection.{Utils, UUIDRegionKey}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, UUIDRegionKey}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
@@ -35,7 +35,7 @@ class JDBCAppendableRelation(
     val provider: String,
     val mode: SaveMode,
     userSchema: StructType,
-    parts: Array[Partition],
+    numPartitions:Int,
     _poolProps: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
@@ -166,7 +166,9 @@ class JDBCAppendableRelation(
     val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
       def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        val uuid = externalStore.storeCachedBatch(batch, table)
+        //TODO - currently using the length from the part Object but it needs to be handled more generically
+        //in order to replace UUID
+        val uuid = externalStore.storeCachedBatch(batch, table , numPartitions)
         accumulated += uuid
       }
 
@@ -291,7 +293,7 @@ object JDBCAppendableRelation extends Logging {
       provider: String,
       mode: SaveMode,
       schema: StructType,
-      parts: Array[Partition],
+      numPartitions:Integer ,
       poolProps: Map[String, String],
       connProps: Properties,
       hikariCP: Boolean,
@@ -299,7 +301,7 @@ object JDBCAppendableRelation extends Logging {
       sqlContext: SQLContext): JDBCAppendableRelation =
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, parts,
+      getClass.getCanonicalName, mode, schema, numPartitions,
       poolProps, connProps, hikariCP, options, null, sqlContext)()
 
   private def removePool(table: String): () => Iterator[Unit] = () => {
@@ -319,37 +321,25 @@ class ColumnarRelationProvider
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
-    val partitionColumn = parameters.remove("partitioncolumn")
-    val lowerBound = parameters.remove("lowerbound")
-    val upperBound = parameters.remove("upperbound")
-    val numPartitions = parameters.remove("numpartitions")
-
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
+
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val partitionInfo = if (partitionColumn.isEmpty) {
-      null
-    } else {
-      if (lowerBound.isEmpty || upperBound.isEmpty || numPartitions.isEmpty) {
-        throw new IllegalArgumentException("JDBCAppendableRelation: " +
-            "incomplete partitioning specified")
-      }
-      JDBCPartitioningInfo(
-        partitionColumn.get,
-        lowerBound.get.toLong,
-        upperBound.get.toLong,
-        numPartitions.get.toInt)
-    }
-    val parts = JDBCRelation.columnPartition(partitionInfo)
-
-    val externalStore = getExternalSource(sqlContext, url, driver, poolProps, connProps, hikariCP)
+    val externalStore = getExternalSource(sqlContext, url, driver, poolProps,
+      connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, parts,
+      getClass.getCanonicalName, mode, schema, getPartitions(parameters),
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
+  }
+
+  protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
+    //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
+    val DEFAULT_BUCKETS_FOR_COLUMN = "199"
+    parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
   }
 
   override def createRelation(sqlContext: SQLContext,

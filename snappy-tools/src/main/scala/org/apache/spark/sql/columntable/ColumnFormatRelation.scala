@@ -51,7 +51,7 @@ class ColumnFormatRelation(
     userSchema: StructType,
     schemaExtensions: String,
     ddlExtensionForShadowTable: String,
-    parts: Array[Partition],
+    numPartitions: Integer,
     _poolProps: Map[String, String],
     override val connProperties: Properties,
     override val hikariCP: Boolean,
@@ -62,7 +62,7 @@ class ColumnFormatRelation(
     )
     (private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] = new ArrayBuffer[RDD[UUIDRegionKey]]()
         )
-    extends JDBCAppendableRelation(url, table, provider, mode, userSchema, parts, _poolProps, connProperties,
+    extends JDBCAppendableRelation(url, table, provider, mode, userSchema, numPartitions, _poolProps, connProperties,
       hikariCP, origOptions, externalStore, sqlContext)()
     with RowInsertableRelation {
 
@@ -94,7 +94,7 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           filters,
-          parts,
+          Array.empty[Partition],
           blockMap,
           connProperties
         ).asInstanceOf[RDD[Row]]
@@ -108,7 +108,7 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           filters,
-          parts,
+          Array.empty[Partition],
           connProperties
         ).asInstanceOf[RDD[Row]]
     })
@@ -346,7 +346,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, schemaExtension, ddlExtensionForShadowTable, Array[Partition](),
+      getClass.getCanonicalName, mode, schema, schemaExtension, ddlExtensionForShadowTable, getPartitions(parameters),
       poolProps, connProps, hikariCP, options, externalStore, blockMap, sqlContext)()
   }
 
