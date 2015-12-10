@@ -1,24 +1,20 @@
 package org.apache.spark.sql.store.impl
 
 import java.sql.{Connection, SQLException}
-import java.util.Properties
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import scala.util.Random
+import java.util.{Properties, UUID}
 
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 import com.gemstone.gemfire.internal.SocketCreator
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, NoDataStoreAvailableException, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegion, DistributedRegion, NoDataStoreAvailableException, PartitionedRegion}
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.collection.{ExecutorLocalShellPartition, MultiExecutorLocalPartition, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
@@ -29,6 +25,10 @@ import org.apache.spark.sql.store.{JDBCSourceAsStore, CachedBatchIteratorOnRS, S
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+import scala.util.Random
 /**
  * Column Store implementation for GemFireXD.
  */
@@ -37,7 +37,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId])
+    val blockMap: Map[InternalDistributedMember, BlockManagerId] = null)
     extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
@@ -90,6 +90,42 @@ final class JDBCSourceAsColumnarStore(_url: String,
 
         case _ =>
           genUUIDRegionKey(rand.nextInt(maxPartitions))
+      }
+
+      val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+      val stmt = connection.prepareStatement(rowInsertStr)
+      stmt.setString(1, uuid.getUUID.toString)
+      stmt.setInt(2, uuid.getBucketId)
+      stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
+      var columnIndex = 4
+      batch.buffers.foreach(buffer => {
+        stmt.setBytes(columnIndex, buffer)
+        columnIndex += 1
+      })
+      stmt.executeUpdate()
+      stmt.close()
+      uuid
+    } finally {
+      connection.close()
+    }
+  }
+
+  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketID: Int,
+      tableName: String): UUIDRegionKey = {
+    val connection: java.sql.Connection = getConnection(tableName)
+    try {
+      val uuid = connectionType match {
+        case ConnectionType.Embedded =>
+          val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
+          val region = Misc.getRegionForTable(resolvedName, true)
+          region.asInstanceOf[AbstractRegion] match {
+            case pr: PartitionedRegion =>
+              genUUIDRegionKey(bucketID, batchID)
+            case _ =>
+              genUUIDRegionKey()
+          }
+
+        case _ => genUUIDRegionKey()
       }
 
       val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)

@@ -196,6 +196,49 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
   }
 
+  def testPrepStatementRouting(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData()
+    val conn = getANetConnection(netPort1)
+    try {
+      val ps = conn.prepareStatement("select col1 from ColumnTableQR where  col1 >?and col1 < ?")
+      ps.setInt(1, 1)
+      ps.setInt(2, 1000)
+      val rs = ps.executeQuery()
+      var cnt = 0
+      while (rs.next()) {
+        //println("KN: row["+cnt2+"] = " + rs.getObject(1) + ", " + rs.getObject(2) + ", " + rs.getObject(3))
+        //println("KN: row["+cnt2+"] = " + rs.getObject(1))
+        cnt += 1
+      }
+      //println("KN: total count is = " + cnt2)
+      assert(cnt == 4)
+
+      var md = rs.getMetaData
+//      println("metadata col cnt = " + md.getColumnCount + " col name = " +
+//          md.getColumnName(1) + " col table name = " + md.getTableName(1))
+      assert(md.getColumnCount == 1)
+      assert(md.getColumnName(1).equalsIgnoreCase("col1"))
+      assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+
+      // Test zero parameter
+      val ps2 = conn.prepareStatement("select col1 from ColumnTableQR where  col1 > 1 and col1 < 500")
+      val rs2 = ps2.executeQuery()
+      var cnt2 = 0
+      while (rs2.next()) {
+        //println("KN: row["+cnt2+"] = " + rs2.getObject(1) + ", " + rs2.getObject(2) + ", " + rs2.getObject(3))
+        //println("KN: row["+cnt2+"] = " + rs2.getObject(1))
+        cnt2 += 1
+      }
+      //println("KN: total count is = " + cnt2)
+      assert(cnt2 == 4)
+    } finally {
+      conn.close()
+    }
+  }
+
   def createTableAndInsertData(): Unit = {
     val snc = SnappyContext(sc)
     val tableName: String = "ColumnTableQR"

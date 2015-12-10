@@ -240,7 +240,7 @@ private[sql] case class CreateExternalTableUsing(
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options)
@@ -257,7 +257,7 @@ private[sql] case class CreateExternalTableUsingSelect(
     query: LogicalPlan) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -273,7 +273,7 @@ private[sql] case class DropTable(
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -285,7 +285,7 @@ private[sql] case class TruncateTable(
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
     Seq.empty
@@ -297,7 +297,7 @@ private[sql] case class CreateIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc =sqlContext.asInstanceOf[SnappyContext]
     snc.createIndexOnExternalTable(tableName, sql)
     Seq.empty
   }
@@ -307,7 +307,7 @@ private[sql] case class DropIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     snc.dropIndexOnExternalTable(sql)
     Seq.empty
   }
@@ -381,7 +381,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
       Array.empty[String], classOf[StreamSource].getCanonicalName, options)
     val plan = LogicalRelation(resolved.relation)
 
-    val catalog = SnappyContext(sqlContext.sparkContext).catalog
+    val catalog = sqlContext.asInstanceOf[SnappyContext].catalog
     val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
@@ -408,7 +408,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
       case 1 =>
         // Register sampling of all the streams
-        val snappyCtxt = SnappyContext(sqlContext.sparkContext)
+        val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
         val catalog = snappyCtxt.catalog
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
@@ -448,7 +448,7 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
 
     val table = OptsUtil.getOption(OptsUtil.BASETABLE, options)
 
-    val snappyCtxt = SnappyContext(sqlContext.sparkContext)
+    val snappyCtxt =  sqlContext.asInstanceOf[SnappyContext]
     val catalog = snappyCtxt.catalog
 
     val tableIdent = catalog.newQualifiedTableName(table)

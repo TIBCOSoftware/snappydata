@@ -56,7 +56,7 @@ class RowFormatRelation(
         new RowFormatScanRDD(
           sqlContext.sparkContext,
           connector,
-          JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
+          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
           filters,
@@ -77,7 +77,7 @@ final class DefaultSource extends MutableRelationProvider {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
 
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters, true, false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
@@ -88,7 +88,8 @@ final class DefaultSource extends MutableRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps,
+          poolProps, hikariCP, table, None)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 

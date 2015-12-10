@@ -2,8 +2,9 @@ package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import org.scalatest.BeforeAndAfter
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
@@ -13,17 +14,16 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
  */
 class ColumnTableTest
     extends SnappyFunSuite
-    with BeforeAndAfter
-    with BeforeAndAfterAll {
+    with Logging
+    with BeforeAndAfter {
+
+  val tableName: String = "ColumnTable"
+  val props = Map.empty[String, String]
 
   after {
     snc.dropExternalTable(tableName, ifExists = true)
     snc.dropExternalTable("ColumnTable2", ifExists = true)
   }
-
-  val tableName: String = "ColumnTable"
-
-  val props = Map.empty[String, String]
 
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
@@ -36,6 +36,8 @@ class ColumnTableTest
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
+
+
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)

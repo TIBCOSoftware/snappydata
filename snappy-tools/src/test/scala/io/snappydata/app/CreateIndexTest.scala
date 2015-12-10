@@ -1,6 +1,7 @@
 package io.snappydata.app
 
 import io.snappydata.SnappyFunSuite
+
 import org.apache.spark.sql.{Row, SaveMode}
 
 /**

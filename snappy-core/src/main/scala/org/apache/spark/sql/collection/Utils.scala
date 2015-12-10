@@ -24,7 +24,7 @@ import org.apache.spark._
 
 object Utils extends MutableMapFactory[mutable.HashMap] {
 
-  final val WEIGHTAGE_COLUMN_NAME = "__STRATIFIED_SAMPLER_WEIGHTAGE"
+  final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent = new NormalDistribution().

@@ -18,7 +18,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
-trait RowInsertableRelation {
+trait RowInsertableRelation extends SingleRowInsertableRelation {
 
   /**
    * Insert a sequence of rows into the table represented by this relation.
@@ -30,13 +30,18 @@ trait RowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
-@DeveloperApi
-trait UpdatableRelation {
 
+@DeveloperApi
+trait SingleRowInsertableRelation {
   /**
    * Execute a DML SQL and return the number of rows affected.
    */
   def executeUpdate(sql: String): Int
+
+}
+
+@DeveloperApi
+trait UpdatableRelation extends SingleRowInsertableRelation {
 
   /**
    * Update a set of rows matching given criteria.

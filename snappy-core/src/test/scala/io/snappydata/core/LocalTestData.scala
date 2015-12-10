@@ -45,6 +45,7 @@ object LocalSparkConf {
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
     // conf.set("spark.sql.unsafe.enabled", "false")
+    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
     conf
   }
 }
