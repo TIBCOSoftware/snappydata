@@ -83,12 +83,6 @@ final class JDBCSourceAsColumnarStore(_url: String,
           val region = Misc.getRegionForTable(resolvedName, true)
           region.asInstanceOf[Region[_, _]] match {
             case pr: PartitionedRegion =>
-              /*
-              val primaryBucketIds = pr.getDataStore.
-                  getAllLocalPrimaryBucketIdArray
-              genUUIDRegionKey(primaryBucketIds.getQuick(
-                rand.nextInt(primaryBucketIds.size())))
-              */
               genUUIDRegionKey(split)
             case _ =>
               genUUIDRegionKey()

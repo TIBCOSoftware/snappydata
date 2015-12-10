@@ -31,7 +31,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    // Now column table with partition only can expect
+    //local insertion. After Suranjan's change we can expect
+    //cached batches to inserted locally if no partitioning is given.
+    //TDOD : Merge and validate test after SNAP-105
+    val p = Map[String,String]("PARTITION_BY"-> "col1")
+    snc.createExternalTable(tableName, "column", dataDF.schema, p)
 
     // we don't expect any increase in put distribution stats
     val getPRMessageCount = new SerializableCallable[AnyRef] {
