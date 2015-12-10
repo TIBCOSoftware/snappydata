@@ -1,5 +1,5 @@
 ----- CREATE TEMP TABLE -----
-  CREATE TABLE IF NOT EXISTS AIRLINE_TEMP
+  CREATE TABLE IF NOT EXISTS AIRLINE_PARQUET_SOURCE
  (
   Year INTEGER,
   Month INTEGER,
@@ -31,8 +31,8 @@
   SecurityDelay INTEGER,
   LateAircraftDelay INTEGER,
   ArrDelaySlot INTEGER) 
-  USING parquet OPTIONS(path '/home/supriya/snappy/snappy-commons/snappy-examples/quickstart/data/airlineParquetData');
+  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');
 
 ----- CREATE COLUMN TABLE -----  
 
-CREATE TABLE IF NOT EXISTS AIRLINE USING column OPTIONS() AS (SELECT * FROM AIRLINE_TEMP);
+CREATE TABLE IF NOT EXISTS AIRLINE USING column OPTIONS() AS (SELECT * FROM AIRLINE_PARQUET_SOURCE);
