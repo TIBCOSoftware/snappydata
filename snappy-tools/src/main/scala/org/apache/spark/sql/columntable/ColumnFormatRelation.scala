@@ -12,7 +12,7 @@ import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRDD, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartition, JDBCRDD, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -81,7 +81,6 @@ class ColumnFormatRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     val colRDD = super.scanTable(table+shadowTableNamePrefix, requiredColumns, filters)
-
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
@@ -98,8 +97,7 @@ class ColumnFormatRelation(
           blockMap,
           connProperties
         ).asInstanceOf[RDD[Row]]
-
-        //TODO: This needs to be changed for non-embedded mode, inefficient
+      //TODO: This needs to be changed for non-embedded mode, inefficient
       case _ =>
         new JDBCRDD(
           sqlContext.sparkContext,
@@ -108,7 +106,7 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           filters,
-          Array.empty[Partition],
+          Array[Partition](JDBCPartition(null, 0)),
           connProperties
         ).asInstanceOf[RDD[Row]]
     })
