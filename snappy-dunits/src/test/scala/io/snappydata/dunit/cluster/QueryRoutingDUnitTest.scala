@@ -161,7 +161,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    createTableAndInsertData()
     val conn = getANetConnection(netPort1)
     try {
       val s = conn.createStatement()
@@ -173,21 +172,25 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       assert(rs.next())
       var tableType = rs.getString("tabletype")
       assert("C".equals(tableType))
+      var schemaname = rs.getString("tableschemaname")
+      assert("APP".equals(schemaname))
 
-      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row OPTIONS ()")
+      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row")
       s.execute("select * from sys.systables where tablename='ROWTABLE'")
       rs = s.getResultSet
       assert(rs.next())
       tableType = rs.getString("tabletype")
       assert("T".equals(tableType))
+      schemaname = rs.getString("tableschemaname")
+      assert("APP".equals(schemaname))
 
-      s.execute("select * from sys.systables where tableschemaname='APP'")
-      rs = s.getResultSet
-      var cnt = 0
-      while (rs.next()) {
-        cnt += 1
-      }
-      assert(cnt == 3) // ColumnTableQR, COLUMNTABLE and ROWTABLE
+      s.execute("drop table ROWTABLE")
+
+      // Ensure systables, members can be queried (SNAP-215)
+      s.execute("select * from sys.members")
+      assert(s.getResultSet.next())
+      s.execute("select * from sys.systables")
+      assert(s.getResultSet.next())
     } finally {
       conn.close()
     }
