@@ -19,7 +19,6 @@ import org.apache.spark.streaming.{Duration, Time}
  * @param streamingSnappy
  * @param queryExecution
  *
- * Created by ymahajan on 25/09/15.
  */
 
 final class SchemaDStream(

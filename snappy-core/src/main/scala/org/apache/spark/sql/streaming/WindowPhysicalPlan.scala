@@ -7,9 +7,6 @@ import org.apache.spark.sql.{Row, execution}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContextState, Duration, Time}
 
-/**
- * Created by ymahajan on 25/09/15.
- */
 case class WindowPhysicalPlan(
                                  windowDuration: Duration,
                                  slideDuration: Option[Duration],
@@ -20,9 +17,9 @@ case class WindowPhysicalPlan(
     import StreamHelper._
     assert(validTime != null)
     // For dynamic CQ
-    //if(!stream.isInitialized) stream.initializeAfterContextStart(validTime)
-    //val sc = StreamingCtxtHolder.streamingContext
-    //sc.graph.addOutputStream(stream)
+//    if(!stream.isInitialized) stream.initializeAfterContextStart(validTime)
+//    val sc = StreamingCtxtHolder.streamingContext
+//    sc.graph.addOutputStream(stream)
     stream.getOrCompute(validTime)
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }

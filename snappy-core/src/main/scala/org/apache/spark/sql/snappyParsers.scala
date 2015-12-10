@@ -64,33 +64,36 @@ object SnappyParser extends SqlParserBase {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
     }
 
-  protected lazy val durationType: Parser[Duration] =
-    (stringLit <~ MILLISECONDS ^^ { case s => Milliseconds(s.toInt) }
-      | stringLit <~ SECONDS ^^ { case s => Seconds(s.toInt) }
-      | stringLit <~ MINUTES ^^ { case s => Minutes(s.toInt) })
+  protected lazy val unit: Parser[Duration] =
+    (
+        stringLit <~ MILLISECONDS ^^ { case str => Milliseconds(str.toInt) }
+      | stringLit <~ SECONDS ^^ { case str => Seconds(str.toInt) }
+      | stringLit <~ MINUTES ^^ { case str => Minutes(str.toInt) }
+    )
 
   protected lazy val windowOptions: Parser[(Duration, Option[Duration])] =
-    WINDOW ~ "(" ~> (DURATION ~> durationType) ~
-      ("," ~ SLIDE ~> durationType).? <~ ")" ^^ {
-      case w ~ s => (w, s)
+    WINDOW ~ "(" ~> (DURATION ~> unit) ~
+      ("," ~ SLIDE ~> unit).? <~ ")" ^^ {
+      case duration ~ slide => (duration, slide)
     }
 
   protected override lazy val relationFactor: Parser[LogicalPlan] =
     (tableIdentifier ~ windowOptions.? ~ (opt(AS) ~> opt(ident)) ^^ {
-      case tableIdent ~ window ~ alias => window.map { w =>
+      case tableIdent ~ window ~ alias => window.map { win =>
         WindowLogicalPlan(
-          w._1,
-          w._2,
+          win._1,
+          win._2,
           UnresolvedRelation(tableIdent, alias))
       }.getOrElse(UnresolvedRelation(tableIdent, alias))
     }
-      | ("(" ~> start <~ ")") ~ windowOptions.? ~ (AS.? ~> ident) ^^ {
-      case s ~ w ~ a => w.map { x =>
+      |
+      ("(" ~> start <~ ")") ~ windowOptions.? ~ (AS.? ~> ident) ^^ {
+      case child ~ window ~ alias => window.map { win =>
         WindowLogicalPlan(
-          x._1,
-          x._2,
-          Subquery(a, s))
-      }.getOrElse(Subquery(a, s))
+          win._1,
+          win._2,
+          Subquery(alias, child))
+      }.getOrElse(Subquery(alias, child))
     })
 
   override def parseExpression(input: String): Expression = synchronized {
@@ -281,8 +284,9 @@ private[sql] case class CreateExternalTableUsing(
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    //    val snc = if(StreamPlan.currentContext.get()!= null)
+//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options)
@@ -299,8 +303,9 @@ private[sql] case class CreateExternalTableUsingSelect(
     query: LogicalPlan) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+//    val snc = if(StreamPlan.currentContext.get()!= null)
+//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -316,8 +321,9 @@ private[sql] case class DropTable(
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+//    val snc = if(StreamPlan.currentContext.get()!= null)
+//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -329,8 +335,9 @@ private[sql] case class TruncateTable(
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+//    val snc = if(StreamPlan.currentContext.get()!= null)
+//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
     Seq.empty
@@ -410,8 +417,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val resolved = ResolvedDataSource(sqlContext, userColumns,
       Array.empty[String], provider, options)
     val plan = LogicalRelation(resolved.relation)
-    val snc = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
     // add the stream to the tables in the catalog
@@ -453,6 +459,8 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
             (streamTableName, sr.asInstanceOf[KafkaStreamRelation])
           case (streamTableName, LogicalRelation(sr: TwitterStreamRelation, _)) =>
             (streamTableName, sr.asInstanceOf[TwitterStreamRelation])
+          case (streamTableName, LogicalRelation(sr: DirectKafkaStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[DirectKafkaStreamRelation])
         }
         streamTables.foreach {
           case (streamTableName, sr) =>
@@ -487,16 +495,17 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     val BASETABLE = "basetable"
     val table = options(BASETABLE)
 
-    val snappyCtxt = if(StreamPlan.currentContext.get()!= null)
-      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
-    val catalog = snappyCtxt.catalog
+//    val snappyCtxt = if(StreamPlan.currentContext.get()!= null)
+//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    val catalog = snc.catalog
 
     val tableIdent = catalog.newQualifiedTableName(table)
     val schema = catalog.getStreamTableSchema(tableIdent)
 
     // Add the sample table to the catalog as well.
     // StratifiedSampler is not expecting base table, remove it.
-    snappyCtxt.registerSampleTable(sampledTableName, schema,
+    snc.registerSampleTable(sampledTableName, schema,
       options - BASETABLE, Some(tableIdent.table))
 
     Seq.empty

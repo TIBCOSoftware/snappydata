@@ -1,4 +1,4 @@
-package io.snappydata.app.twitter
+package io.snappydata.app.streaming.kafka
 
 /**
  * Created by ymahajan on 28/10/15.
@@ -6,6 +6,7 @@ package io.snappydata.app.twitter
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamingSnappyContext}
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 import org.apache.spark.streaming._
@@ -25,8 +26,6 @@ object KafkaConsumer {
     SnappyContext.getOrCreate(sc)
     val ssnc = StreamingSnappyContext(ssc)
 
-//    val urlString = "jdbc:snappydata:;locators=rdu-w27:10101;persist-dd=false;member-timeout=600000;" +
-//      "jmx-manager-start=false;enable-time-statistics=false;statistic-sampling-enabled=false"
 
     val urlString = "jdbc:snappydata:;locators=localhost:10101;persist-dd=false;member-timeout=600000;" +
       "jmx-manager-start=false;enable-time-statistics=false;statistic-sampling-enabled=false"
@@ -43,7 +42,8 @@ object KafkaConsumer {
     ssnc.sql("create stream table tweetstreamtable (id long, text string, fullName string, " +
       "country string, retweets int, hashtag string) " +
       "using kafka_stream options " +
-      "(storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter' ," +
+      "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
+      "streamToRow 'io.snappydata.app.streaming.KafkaMessageToRowConverter' ," +
       //" kafkaParams 'metadata.broker.list->rdu-w28:9092,rdu-w29:9092,rdu-w30:9092,rdu-w31:9092,rdu-w32:9092'," +
       " kafkaParams 'metadata.broker.list->localhost:9092'," +
       " topics 'tweetstream')")
@@ -73,13 +73,7 @@ object KafkaConsumer {
 
       println("Top 10 hash tags from exact table")
       start = System.nanoTime()
-      /*
-      val hashtagDF = ssnc.sql("select hashTags from rawStreamColumnTable")
-      val top10Tags = hashtagDF.flatMap(_.getString(0).split(",").filter(_.nonEmpty).map(s => (s, 1)))
-          .reduceByKey(_ + _).map {
-        case (topic, count) => (count, topic)
-      }.sortByKey(ascending = false).top(10)
-      */
+
       val top10Tags = ssnc.sql("select count(*) as cnt, hashtag from rawStreamColumnTable " +
         "where length(hashtag) > 0 group by hashtag order by cnt desc limit 10").collect()
       end = System.nanoTime()
@@ -91,7 +85,6 @@ object KafkaConsumer {
         ssnc.sql("SELECT count(*) FROM rawStreamColumnTable").show()
       }
 
-      //ssnc.sql("SELECT count(*) as sample_count FROM tweetstreamtable_sampled").show()
       println("Top 10 hash tags from sample table")
       start = System.nanoTime()
       val stop10Tags = ssnc.sql("select count(*) as cnt, hashtag from tweetstreamtable_sampled " +
@@ -103,7 +96,8 @@ object KafkaConsumer {
     }
 
 /*
-        val resultSet2: SchemaDStream = ssnc.registerCQ("SELECT * FROM tweetStreamTable window (duration '2' seconds, slide '2' seconds) where text like '%the%'")
+        val resultSet2: SchemaDStream = ssnc.registerCQ("SELECT * FROM tweetStreamTable
+        window (duration '2' seconds, slide '2' seconds) where text like '%the%'")
         resultSet2.foreachRDD(rdd =>
           println(s"Received Twitter stream results. Count:" +
               s" ${if(!rdd.isEmpty()) {

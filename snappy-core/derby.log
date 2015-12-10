@@ -1,0 +1,351 @@
+----------------------------------------------------------------
+Tue Dec 08 16:36:58 IST 2015:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.10.2.0 - (1582446): instance a816c00e-0151-8145-dbcf-00000f9fd2b0 
+on database directory /home/ymahajan/git/snappy-commons/snappy-core/metastore_db with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Loaded from file:/home/ymahajan/.gradle/caches/modules-2/files-2.1/org.apache.derby/derby/10.10.2.0/47eba6736561c377f2132f5e09e2fe8084d899a9/derby-10.10.2.0.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_80-b15
+user.dir=/home/ymahajan/git/snappy-commons/snappy-core
+os.name=Linux
+os.arch=amd64
+os.version=3.16.0-38-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
+----------------------------------------------------------------
+Tue Dec 08 16:37:05 IST 2015:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.10.2.0 - (1582446): instance 66a1439a-0151-8145-dbcf-00000f9fd2b0 
+on database directory /home/ymahajan/git/snappy-commons/snappy-core/JDBCMutableRelationAPISuite with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Loaded from file:/home/ymahajan/.gradle/caches/modules-2/files-2.1/org.apache.derby/derby/10.10.2.0/47eba6736561c377f2132f5e09e2fe8084d899a9/derby-10.10.2.0.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_80-b15
+user.dir=/home/ymahajan/git/snappy-commons/snappy-core
+os.name=Linux
+os.arch=amd64
+os.version=3.16.0-38-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
+----------------------------------------------------------------
+Tue Dec 08 16:37:09 IST 2015:
+Shutting down instance 66a1439a-0151-8145-dbcf-00000f9fd2b0 on database directory /home/ymahajan/git/snappy-commons/snappy-core/JDBCMutableRelationAPISuite with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Tue Dec 08 16:37:09 IST 2015 Thread[ScalaTest-1,5,main] Cleanup action starting
+java.sql.SQLException: Database 'JDBCMutableRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.EmbeddedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCMutableRelationAPISuite.afterAll(JDBCMutableRelationAPISuite.scala:31)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.sql.SQLException: Database 'JDBCMutableRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	... 29 more
+============= begin nested exception, level (1) ===========
+java.sql.SQLException: Database 'JDBCMutableRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.EmbeddedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCMutableRelationAPISuite.afterAll(JDBCMutableRelationAPISuite.scala:31)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+============= end nested exception, level (1) ===========
+Cleanup action completed
+Tue Dec 08 16:37:09 IST 2015 Thread[ScalaTest-1,5,main] Cleanup action starting
+java.sql.SQLException: Database 'JDBCMutableRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.AutoloadedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCMutableRelationAPISuite.afterAll(JDBCMutableRelationAPISuite.scala:31)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.sql.SQLException: Database 'JDBCMutableRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	... 29 more
+============= begin nested exception, level (1) ===========
+java.sql.SQLException: Database 'JDBCMutableRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.AutoloadedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCMutableRelationAPISuite.afterAll(JDBCMutableRelationAPISuite.scala:31)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+============= end nested exception, level (1) ===========
+Cleanup action completed
+----------------------------------------------------------------
+Tue Dec 08 16:37:10 IST 2015:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.10.2.0 - (1582446): instance 046884b5-0151-8145-dbcf-00000f9fd2b0 
+on database directory /home/ymahajan/git/snappy-commons/snappy-core/JDBCMutableRelationAPISuite with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Loaded from file:/home/ymahajan/.gradle/caches/modules-2/files-2.1/org.apache.derby/derby/10.10.2.0/47eba6736561c377f2132f5e09e2fe8084d899a9/derby-10.10.2.0.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_80-b15
+user.dir=/home/ymahajan/git/snappy-commons/snappy-core
+os.name=Linux
+os.arch=amd64
+os.version=3.16.0-38-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
+----------------------------------------------------------------
+Tue Dec 08 16:40:38 IST 2015:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.10.2.0 - (1582446): instance 11ebc5c6-0151-8145-dbcf-00000f9fd2b0 
+on database directory /home/ymahajan/git/snappy-commons/snappy-core/JDBCColumnarRelationAPISuite with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Loaded from file:/home/ymahajan/.gradle/caches/modules-2/files-2.1/org.apache.derby/derby/10.10.2.0/47eba6736561c377f2132f5e09e2fe8084d899a9/derby-10.10.2.0.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_80-b15
+user.dir=/home/ymahajan/git/snappy-commons/snappy-core
+os.name=Linux
+os.arch=amd64
+os.version=3.16.0-38-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''
+----------------------------------------------------------------
+Tue Dec 08 16:40:40 IST 2015:
+Shutting down instance 11ebc5c6-0151-8145-dbcf-00000f9fd2b0 on database directory /home/ymahajan/git/snappy-commons/snappy-core/JDBCColumnarRelationAPISuite with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Tue Dec 08 16:40:40 IST 2015 Thread[ScalaTest-1,5,main] Cleanup action starting
+java.sql.SQLException: Database 'JDBCColumnarRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.EmbeddedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCColumnarRelationAPISuite.afterAll(JDBCColumnarRelationAPISuite.scala:29)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.sql.SQLException: Database 'JDBCColumnarRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	... 29 more
+============= begin nested exception, level (1) ===========
+java.sql.SQLException: Database 'JDBCColumnarRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.EmbeddedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCColumnarRelationAPISuite.afterAll(JDBCColumnarRelationAPISuite.scala:29)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+============= end nested exception, level (1) ===========
+Cleanup action completed
+Tue Dec 08 16:40:40 IST 2015 Thread[ScalaTest-1,5,main] Cleanup action starting
+java.sql.SQLException: Database 'JDBCColumnarRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.AutoloadedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCColumnarRelationAPISuite.afterAll(JDBCColumnarRelationAPISuite.scala:29)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+Caused by: java.sql.SQLException: Database 'JDBCColumnarRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	... 29 more
+============= begin nested exception, level (1) ===========
+java.sql.SQLException: Database 'JDBCColumnarRelationAPISuite' not found.
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.wrapArgsForTransportAcrossDRDA(Unknown Source)
+	at org.apache.derby.impl.jdbc.SQLExceptionFactory40.getSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.newEmbedSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.Util.generateCsSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.newSQLException(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.handleDBNotFound(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection.<init>(Unknown Source)
+	at org.apache.derby.impl.jdbc.EmbedConnection40.<init>(Unknown Source)
+	at org.apache.derby.jdbc.Driver40.getNewEmbedConnection(Unknown Source)
+	at org.apache.derby.jdbc.InternalDriver.connect(Unknown Source)
+	at org.apache.derby.jdbc.Driver20.connect(Unknown Source)
+	at org.apache.derby.jdbc.AutoloadedDriver.connect(Unknown Source)
+	at org.apache.spark.sql.execution.datasources.jdbc.DriverWrapper.connect(DriverWrapper.scala:45)
+	at java.sql.DriverManager.getConnection(DriverManager.java:571)
+	at java.sql.DriverManager.getConnection(DriverManager.java:233)
+	at io.snappydata.core.JDBCColumnarRelationAPISuite.afterAll(JDBCColumnarRelationAPISuite.scala:29)
+	at org.scalatest.BeforeAndAfterAll$class.afterAll(BeforeAndAfterAll.scala:213)
+	at io.snappydata.SnappyFunSuite.afterAll(SnappyFunSuite.scala:18)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:280)
+	at org.scalatest.BeforeAndAfterAll$$anonfun$run$1.apply(BeforeAndAfterAll.scala:278)
+	at org.scalatest.CompositeStatus.whenCompleted(Status.scala:377)
+	at org.scalatest.BeforeAndAfterAll$class.run(BeforeAndAfterAll.scala:278)
+	at io.snappydata.SnappyFunSuite.run(SnappyFunSuite.scala:18)
+	at org.scalatest.tools.SuiteRunner.run(SuiteRunner.scala:55)
+	at java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:471)
+	at java.util.concurrent.FutureTask.run(FutureTask.java:262)
+	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1145)
+	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:615)
+	at java.lang.Thread.run(Thread.java:745)
+============= end nested exception, level (1) ===========
+Cleanup action completed
+----------------------------------------------------------------
+Tue Dec 08 16:40:41 IST 2015:
+Booting Derby version The Apache Software Foundation - Apache Derby - 10.10.2.0 - (1582446): instance 3af2c6ae-0151-8145-dbcf-00000f9fd2b0 
+on database directory /home/ymahajan/git/snappy-commons/snappy-core/JDBCColumnarRelationAPISuite with class loader sun.misc.Launcher$AppClassLoader@19789a96 
+Loaded from file:/home/ymahajan/.gradle/caches/modules-2/files-2.1/org.apache.derby/derby/10.10.2.0/47eba6736561c377f2132f5e09e2fe8084d899a9/derby-10.10.2.0.jar
+java.vendor=Oracle Corporation
+java.runtime.version=1.7.0_80-b15
+user.dir=/home/ymahajan/git/snappy-commons/snappy-core
+os.name=Linux
+os.arch=amd64
+os.version=3.16.0-38-generic
+derby.system.home=null
+Database Class Loader started - derby.database.classpath=''

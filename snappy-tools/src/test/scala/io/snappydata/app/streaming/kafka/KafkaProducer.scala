@@ -1,4 +1,4 @@
-package io.snappydata.app.twitter
+package io.snappydata.app.streaming.kafka
 
 import java.util.Properties
 
@@ -6,7 +6,7 @@ import twitter4j.conf.{ConfigurationBuilder, Configuration}
 
 import scala.util.Random
 
-import io.snappydata.app.twitter.twitter.OnTweetPosted
+import twitter.OnTweetPosted
 import kafka.javaapi.producer.Producer
 import kafka.producer.{KeyedMessage, ProducerConfig}
 import twitter4j._

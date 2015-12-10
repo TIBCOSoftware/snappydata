@@ -15,7 +15,6 @@ import org.apache.spark.streaming.dstream.DStream
  * @param output
  * @param stream
  *
- * Created by ymahajan on 25/09/15.
  *
  */
 case class PhysicalDStreamPlan(output: Seq[Attribute],
@@ -28,8 +27,8 @@ case class PhysicalDStreamPlan(output: Seq[Attribute],
     import StreamHelper._
     assert(validTime != null)
     //For dynamic CQ
-    //if(!stream.isInitialized) stream
-    // .initializeAfterContextStart(validTime)
+    if(!stream.isInitialized) stream
+     .initializeAfterContextStart(validTime)
     stream.getOrCompute(validTime)
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
