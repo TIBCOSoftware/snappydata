@@ -214,6 +214,13 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       //println("KN: total count is = " + cnt2)
       assert(cnt == 4)
 
+      var md = rs.getMetaData
+//      println("metadata col cnt = " + md.getColumnCount + " col name = " +
+//          md.getColumnName(1) + " col table name = " + md.getTableName(1))
+      assert(md.getColumnCount == 1)
+      assert(md.getColumnName(1).equalsIgnoreCase("col1"))
+      assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+
       // Test zero parameter
       val ps2 = conn.prepareStatement("select col1 from ColumnTableQR where  col1 > 1 and col1 < 500")
       val rs2 = ps2.executeQuery()
