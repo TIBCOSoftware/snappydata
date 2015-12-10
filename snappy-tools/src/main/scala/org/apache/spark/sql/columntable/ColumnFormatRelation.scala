@@ -40,7 +40,7 @@ class ColumnFormatRelation(
     override val provider: String,
     override val mode: SaveMode,
     userSchema: StructType,
-    parts: Array[Partition],
+    numPartitions: Integer,
     _poolProps: Map[String, String],
     override val connProperties: Properties,
     override val hikariCP: Boolean,
@@ -48,7 +48,7 @@ class ColumnFormatRelation(
     override val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext
     ) extends JDBCAppendableRelation(url, table, provider, mode, userSchema,
-      parts, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
+      numPartitions, _poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)() {
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
@@ -72,7 +72,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     new ColumnFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, Array[Partition](),
+      getClass.getCanonicalName, mode, schema,getPartitions(parameters),
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)
   }
 
