@@ -758,7 +758,7 @@ object SnappyContext extends Logging {
     "socket_stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName,
-    "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName,
+    "directkafka_stream" -> classOf[streaming.DirectKafkaStreamSource].getCanonicalName,
     "twitter_stream" -> classOf[streaming.TwitterStreamSource].getCanonicalName
   )
 
