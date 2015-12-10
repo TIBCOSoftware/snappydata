@@ -17,7 +17,7 @@ class Snap_213
   with BeforeAndAfter
   with BeforeAndAfterAll {
 
-  test("Test gemxd simple Prepare Statement with bytes") {
+  test("Test to verify long bytes as parameters works in insert") {
     val props: Properties = new Properties()
     props.put("host-data", "true")
     val server: Server = ServiceManager.getServerInstance
