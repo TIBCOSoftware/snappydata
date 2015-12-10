@@ -54,7 +54,7 @@ class JDBCSourceAsStore(override val url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
-      tableName: String): UUIDRegionKey = {
+      tableName: String , maxPartitions:Int ): UUIDRegionKey = {
     tryExecute(tableName, {
       case connection =>
         val uuid = genUUIDRegionKey()

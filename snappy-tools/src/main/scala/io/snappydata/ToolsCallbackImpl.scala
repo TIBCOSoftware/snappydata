@@ -1,5 +1,6 @@
 package io.snappydata
 
+
 import java.util.Properties
 
 import scala.collection.JavaConversions._
@@ -65,4 +66,5 @@ object ToolsCallbackImpl extends ToolsCallback {
           ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl)
   }
+
 }
