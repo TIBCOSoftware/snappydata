@@ -285,8 +285,6 @@ private[sql] case class CreateExternalTableUsing(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    //    val snc = if(StreamPlan.currentContext.get()!= null)
-//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options)
@@ -304,8 +302,6 @@ private[sql] case class CreateExternalTableUsingSelect(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-//    val snc = if(StreamPlan.currentContext.get()!= null)
-//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -322,8 +318,6 @@ private[sql] case class DropTable(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-//    val snc = if(StreamPlan.currentContext.get()!= null)
-//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -335,8 +329,6 @@ private[sql] case class TruncateTable(
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-//    val snc = if(StreamPlan.currentContext.get()!= null)
-//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
@@ -495,8 +487,6 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     val BASETABLE = "basetable"
     val table = options(BASETABLE)
 
-//    val snappyCtxt = if(StreamPlan.currentContext.get()!= null)
-//      StreamPlan.currentContext.get() else sqlContext.asInstanceOf[SnappyContext]
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
 
