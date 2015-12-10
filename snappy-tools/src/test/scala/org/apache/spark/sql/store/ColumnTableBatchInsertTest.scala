@@ -1,13 +1,12 @@
 package org.apache.spark.sql.store
 
-import java.util.Properties
 
-import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
-import io.snappydata.{ServiceManager, SnappyFunSuite}
-import io.snappydata.core.{Data, FileCleaner, TestData}
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.{Data, TestData}
+import org.scalatest.BeforeAndAfter
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
-import org.scalatest.{BeforeAndAfter}
 
 /**
  * Created by skumar on 13/11/15.

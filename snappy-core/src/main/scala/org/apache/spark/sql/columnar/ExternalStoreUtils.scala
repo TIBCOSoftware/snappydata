@@ -158,8 +158,7 @@ private[sql] object ExternalStoreUtils extends Logging {
 
   def getConnector(url: String, connProps: Properties): () => Connection = {
     () => {
-      connProps.remove("poolProperties")
-      JdbcUtils.createConnection(url, connProps)
+      getConnection(url, connProps)
     }
   }
 
