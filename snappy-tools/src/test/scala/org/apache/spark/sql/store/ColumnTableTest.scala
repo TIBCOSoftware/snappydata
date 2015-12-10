@@ -341,9 +341,9 @@ class ColumnTableTest
     Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
   }
 
-  test("Test PR with Colocation") {
+   test("Test PR with Colocation") {
     val snc = org.apache.spark.sql.SnappyContext(sc)
-    //snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
+
     snc.sql("CREATE TABLE COLUMN_TEST_TABLE20(OrderId INT ,ItemId INT) " +
         "USING column " +
         "options " +
@@ -362,6 +362,8 @@ class ColumnTableTest
 
     val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE20", true).asInstanceOf[PartitionedRegion]
     assert(region.colocatedByList.size() == 1)
+     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
+     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
   }
 
   test("Test PR with PERSISTENT") {

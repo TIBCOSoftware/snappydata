@@ -137,6 +137,16 @@ object StreamingSnappyContext {
       }
     }
   }
+
+  def stop(stopSparkContext: Boolean = false,
+      stopGracefully: Boolean = true): Unit = {
+    val snc = globalContext
+    if (snc != null) {
+      snc.streamingContext.stop(stopSparkContext, stopGracefully)
+      StreamPlan.currentContext.remove()
+      globalContext = null
+    }
+  }
 }
 
 case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
