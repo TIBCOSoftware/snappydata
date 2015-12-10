@@ -3,7 +3,7 @@ package io.snappydata.app
 import scala.actors.Futures._
 import scala.util.control.NonFatal
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
@@ -172,7 +172,7 @@ object ColumnRowSamplePerfSuite extends App {
 
       // finally creates some samples
       val samples = airlineDataFrame.stratifiedSample(Map(
-        "qcs" -> "UniqueCarrier,Year,Month", "fraction" -> 0.03,
+        "qcs" -> "UniqueCarrier,YearI,MonthI", "fraction" -> 0.03,
         "strataReservoirSize" -> "50"))
       snContext.dropExternalTable("airlineSampled", ifExists = true)
       samples.write.format("column").options(props).saveAsTable("airlineSampled")
@@ -216,7 +216,7 @@ object ColumnRowSamplePerfSuite extends App {
       start = System.currentTimeMillis
       results = sqlContext.sql(
         s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier,
-	        Year, Month FROM $tableName GROUP BY UniqueCarrier, Year, Month""")
+	        YearI, MonthI FROM $tableName GROUP BY UniqueCarrier, YearI, MonthI""")
       results.collect() //.foreach(msg)
       end = System.currentTimeMillis
       msg("Time taken for AVG+count(*) with GROUP BY: " + (end - start) + "ms")
@@ -224,8 +224,8 @@ object ColumnRowSamplePerfSuite extends App {
       start = System.currentTimeMillis
       results = sqlContext.sql(
         s"""SELECT AVG(ArrDelay), count(*), UniqueCarrier, t2.DESCRIPTION,
-	        Year, Month FROM $tableName t1, airlineCode t2 where t1.UniqueCarrier = t2.CODE
-	        GROUP BY UniqueCarrier, DESCRIPTION, Year,Month""")
+	        YearI, MonthI FROM $tableName t1, airlineCode t2 where t1.UniqueCarrier = t2.CODE
+	        GROUP BY UniqueCarrier, DESCRIPTION, YearI,MonthI""")
       results.collect()
       end = System.currentTimeMillis
       msg("Time taken for AVG+count(*) with JOIN + GROUP BY: " + (end - start) + "ms")
@@ -234,9 +234,9 @@ object ColumnRowSamplePerfSuite extends App {
 
       start = System.currentTimeMillis
       results = sqlContext.sql(
-        s"""SELECT AVG(ArrDelay), UniqueCarrier, Year,
-	        Month FROM $tableName GROUP BY UniqueCarrier, Year, Month ORDER BY
-	        UniqueCarrier, Year, Month""")
+        s"""SELECT AVG(ArrDelay), UniqueCarrier, YearI,
+	        MonthI FROM $tableName GROUP BY UniqueCarrier, YearI, MonthI ORDER BY
+	        UniqueCarrier, YearI, MonthI""")
       //results.explain(true)
       results.collect() //.foreach(msg)
       end = System.currentTimeMillis
@@ -247,9 +247,9 @@ object ColumnRowSamplePerfSuite extends App {
 
       start = System.currentTimeMillis
       results = sqlContext.sql(
-        s"""SELECT AVG(ArrDelay), UniqueCarrier, Year,
-	        Month FROM $tableName GROUP BY UniqueCarrier, Year, Month
-	        ORDER BY Year, Month""")
+        s"""SELECT AVG(ArrDelay), UniqueCarrier, YearI,
+	        MonthI FROM $tableName GROUP BY UniqueCarrier, YearI, MonthI
+	        ORDER BY YearI, MonthI""")
       results.collect()
       end = System.currentTimeMillis
       msg("Time taken for worst carrier processing: " + (end - start) + "ms")

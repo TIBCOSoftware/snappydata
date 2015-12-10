@@ -6,6 +6,7 @@ import java.util.Properties
 import scala.collection.Map
 import scala.language.postfixOps
 import scala.sys.process._
+import scala.util.Random
 
 import dunit.AvailablePortHelper
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
@@ -60,10 +61,10 @@ object ExternalShellDUnitTest {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
     createTableUsingDataSourceAPI(snc, "embeddedModeTable1")
-    selectFromTable(snc, "embeddedModeTable1", 5)
+    selectFromTable(snc, "embeddedModeTable1", 1005)
 
     createTableUsingDataSourceAPI(snc, "embeddedModeTable2")
-    selectFromTable(snc, "embeddedModeTable2", 5)
+    selectFromTable(snc, "embeddedModeTable2", 1005)
 
     println("Successful")
   }
@@ -72,7 +73,7 @@ object ExternalShellDUnitTest {
     // embeddedModeTable1 is dropped in shell mode. recreate it
     val snc = org.apache.spark.sql.SnappyContext(sc)
     createTableUsingDataSourceAPI(snc, "embeddedModeTable1")
-    selectFromTable(snc, "embeddedModeTable1", 5)
+    selectFromTable(snc, "embeddedModeTable1", 1005)
 
     snc.dropExternalTable("embeddedModeTable1", ifExists = true)
 
@@ -80,14 +81,14 @@ object ExternalShellDUnitTest {
     snc.dropExternalTable("embeddedModeTable2", ifExists = true)
 
     // read data from shellModeTable1
-    selectFromTable(snc, "shellModeTable1", 5)
+    selectFromTable(snc, "shellModeTable1", 1005)
 
     // drop table created in shell mode
     snc.dropExternalTable("shellModeTable1", ifExists = true)
 
     // recreate the dropped table
     createTableUsingDataSourceAPI(snc, "shellModeTable1")
-    selectFromTable(snc, "shellModeTable1", 5)
+    selectFromTable(snc, "shellModeTable1", 1005)
     snc.dropExternalTable("shellModeTable1", ifExists = true)
     println("Successful")
   }
@@ -119,23 +120,26 @@ object ExternalShellDUnitTest {
       "Table embeddedModeTable1 already exists"))
 
     // select the data from table created in embedded mode
-    selectFromTable(snc, "embeddedModeTable1", 5)
+    selectFromTable(snc, "embeddedModeTable1", 1005)
 
     // drop the table created in embedded mode
     snc.dropExternalTable("embeddedModeTable1", ifExists = true)
 
     // select the data from table created in embedded mode
-    selectFromTable(snc, "embeddedModeTable2", 5)
+    selectFromTable(snc, "embeddedModeTable2", 1005)
 
     // create a table in shell mode
     createTableUsingDataSourceAPI(snc, "shellModeTable1")
-    selectFromTable(snc, "shellModeTable1", 5)
+    selectFromTable(snc, "shellModeTable1", 1005)
     println("Successful")
   }
 
   def createTableUsingDataSourceAPI(sqlContext: SQLContext, tableName: String) : Unit = {
     val context = sqlContext.sparkContext
-    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt)
+    }
     val rdd = context.parallelize(data, data.length).map(s => Data(s(0), s(1), s(2)))
 
     val dataDF = sqlContext.createDataFrame(rdd)

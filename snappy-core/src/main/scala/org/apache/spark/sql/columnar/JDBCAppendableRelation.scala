@@ -16,7 +16,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils, UUIDRegionKey}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCPartitioningInfo, JDBCRelation, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
@@ -24,7 +24,6 @@ import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
-
 /**
  * A LogicalPlan implementation for an external column table whose contents
  * are retrieved using a JDBC URL or DataSource.
@@ -54,11 +53,16 @@ class JDBCAppendableRelation(
 
   self =>
 
+  final val shadowTableNamePrefix = "_shadow_"
   override val needConversion: Boolean = false
-
-  private final val columnPrefix = "Col_"
+  final val columnPrefix = "Col_"
 
   final val dialect = JdbcDialects.get(url)
+  val driver = DriverRegistry.getDriverClassName(url)
+  val schemaFields = Map(userSchema.fields.flatMap { f =>
+    val name = if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
+    Iterator((name, f))
+  }: _*)
 
   createTable(mode)
   private val bufferLock = new ReentrantReadWriteLock()
@@ -87,7 +91,11 @@ class JDBCAppendableRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
+    scanTable(table, requiredColumns, filters)
+  }
 
+  def scanTable(tableName: String, requiredColumns: Array[String],
+      filters: Array[Filter]) :RDD[Row] = {
     val requestedColumns = if (requiredColumns.isEmpty) {
       val narrowField =
         schema.fields.minBy { a =>
@@ -100,7 +108,7 @@ class JDBCAppendableRelation(
     }
 
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
-      externalStore.getCachedBatchRDD(table,
+      externalStore.getCachedBatchRDD(tableName,
         requestedColumns.map(column => columnPrefix + column), uuidList,
         sqlContext.sparkContext)
     }
@@ -189,6 +197,7 @@ class JDBCAppendableRelation(
     uuidList += batch
   }
 
+  // truncate both actual and shadow table
   def truncate() = writeLock {
     val dialect = JdbcDialects.get(externalStore.url)
     externalStore.tryExecute(table, {
@@ -216,7 +225,7 @@ class JDBCAppendableRelation(
     createExternalTableForCachedBatches(table, externalStore)
   }
 
-  private def createExternalTableForCachedBatches(tableName: String,
+  def createExternalTableForCachedBatches(tableName: String,
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")
@@ -246,14 +255,13 @@ class JDBCAppendableRelation(
           JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
             ifExists = true)
         }
-        val tableExists = JdbcExtendedUtils.tableExists(table, conn,
+        val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
           dialect, sqlContext)
         if (!tableExists) {
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName, conn)
             case _ => // do nothing
-
           }
         }
     })
@@ -279,7 +287,7 @@ class JDBCAppendableRelation(
   }
 }
 
-object JDBCAppendableRelation {
+object JDBCAppendableRelation extends Logging {
   def apply(url: String,
       table: String,
       provider: String,
@@ -319,7 +327,7 @@ class ColumnarRelationProvider
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val externalStore = getExternalSource(sc, url, driver, poolProps,
+    val externalStore = getExternalSource(sqlContext, url, driver, poolProps,
       connProps, hikariCP)
 
     new JDBCAppendableRelation(url,
@@ -330,7 +338,7 @@ class ColumnarRelationProvider
 
   protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
     //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
-    val DEFAULT_BUCKETS_FOR_COLUMN = "113"
+    val DEFAULT_BUCKETS_FOR_COLUMN = "199"
     parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
   }
 
@@ -366,7 +374,7 @@ class ColumnarRelationProvider
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }
 
-  def getExternalSource(sc: SparkContext, url: String,
+  def getExternalSource(sqlContext: SQLContext, url: String,
       driver: String,
       poolProps: Map[String, String],
       connProps: Properties,
