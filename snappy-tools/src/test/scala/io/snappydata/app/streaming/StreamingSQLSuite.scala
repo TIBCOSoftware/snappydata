@@ -23,45 +23,31 @@ class StreamingSQLSuite extends SnappyFunSuite with Eventually with BeforeAndAft
 
   def batchDuration: Duration = Seconds(1)
 
-  override def newSparkConf(): SparkConf = {
+ /* override def newSparkConf(): SparkConf = {
       val sparkConf = new SparkConf()
         .setMaster(master)
         .setAppName(framework)
         //.set("snappydata.store.locators", "localhost")
     sparkConf
-  }
+  }*/
 
   override def afterAll(): Unit = {
-    if (ssc != null) {
-      ssc.stop()
+    if (snsc != null) {
+      StreamingSnappyContext.stop()
     }
+    super.afterAll()
   }
 
   override def beforeAll(): Unit = {
+    super.beforeAll()
     //sparkC = new SparkContext(sparkConf)
     ssc = new StreamingContext(sc, batchDuration)
     //ssc.checkpoint(null)//Duration(60*1000))
     snsc = StreamingSnappyContext(ssc);
   }
 
-  /*def beforeFunction(): Unit = {
-    val conf = new org.apache.spark.SparkConf()
-      .setMaster("local[2]")
-      .setAppName("streamingsql")
-      .set("spark.streaming.receiver.writeAheadLog.enable", "true")
-    ssc = new StreamingContext(new SparkContext(conf), Duration(10000))
-    ssc.checkpoint("tmp")
-    snsc = StreamingSnappyContext(ssc);
-  }
 
-  def afterFunction(): Unit = {
-    snsc.sql( """STREAMING CONTEXT STOP """)
-  }
-
-  before(beforeFunction)
-  after(afterFunction)*/
-
-  ignore("sql on socket streams") {
+  test("sql on socket streams") {
 
     snsc.sql("create stream table socketStreamTable (name string, age int) using " +
       "socket_stream options (hostname 'localhost', port '9998', " +
@@ -78,7 +64,7 @@ class StreamingSQLSuite extends SnappyFunSuite with Eventually with BeforeAndAft
     ssc.awaitTerminationOrTimeout(10000)
   }
 
-  test("sql on kafka streams") {
+  ignore("sql on kafka streams") {
     intercept[Exception] {
     snsc.sql("create stream table kafkaStreamTable (name string, age int) using kafka_stream options " +
      "(storagelevel 'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.twitter.KafkaMessageToRowConverter', " +

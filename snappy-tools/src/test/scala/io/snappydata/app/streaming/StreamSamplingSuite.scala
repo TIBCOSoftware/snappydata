@@ -25,22 +25,24 @@ class StreamSamplingSuite extends SnappyFunSuite with Eventually with BeforeAndA
 
   def batchDuration: Duration = Seconds(1)
 
-  override def newSparkConf(): SparkConf = {
+/*  override def newSparkConf(): SparkConf = {
     val sparkConf = new SparkConf()
       .setMaster(master)
       .setAppName(framework)
     sparkConf
-  }
+  }*/
 
   override def afterAll(): Unit = {
-    if (ssc != null) {
-      ssc.stop()
+    if (ssnc != null) {
+      StreamingSnappyContext.stop()
     }
+    super.afterAll()
   }
 
   override def beforeAll(): Unit = {
-    ssc = new StreamingContext(newSparkConf(), batchDuration)
-    ssnc = StreamingSnappyContext(ssc);
+    super.beforeAll()
+    ssc = new StreamingContext(sc, batchDuration)
+    ssnc = StreamingSnappyContext(ssc)
   }
 
 
@@ -55,6 +57,7 @@ class StreamSamplingSuite extends SnappyFunSuite with Eventually with BeforeAndA
     "user" -> "app",
     "password" -> "app"
   )
+
 
   test("sql stream sampling") {
 
