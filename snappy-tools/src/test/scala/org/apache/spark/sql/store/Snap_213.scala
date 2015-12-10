@@ -1,20 +1,15 @@
 package org.apache.spark.sql.store
 
-import java.io._
 import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
-import com.pivotal.gemfirexd.FabricService
-import io.snappydata.{Constant, ServiceManager, Server, SnappyFunSuite}
-import io.snappydata.core.Data
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.scalatest.{FunSuite, BeforeAndAfterAll, BeforeAndAfter}
-
-import org.apache.spark.sql.{AnalysisException, SaveMode}
-import util.TestException
 import scala.language.implicitConversions
 
-import scala.sys.process._
+import com.gemstone.gemfire.internal.AvailablePortHelper
+import io.snappydata.{Constant, Server, ServiceManager}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
+
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 
 
 class Snap_213
@@ -22,89 +17,44 @@ class Snap_213
   with BeforeAndAfter
   with BeforeAndAfterAll {
 
-
-  test("Tes gemxd simple Prepare Statement with bytes") {
-    //shouldn't be able to create without schema
-
-
-    //start spark cluster
-
-    // startSparkCluster
-
-    //start locator
-    /*    val locator = ServiceManager.getLocatorInstance
-        locator.start("localhost" , 10334 , null)
-
-        locator.startNetworkServer("localhost" , 1527 , null)*/
-
-
-    //start server
+  test("Test gemxd simple Prepare Statement with bytes") {
     val props: Properties = new Properties()
     props.put("host-data", "true")
     val server: Server = ServiceManager.getServerInstance
     server.start(props)
-    server.startNetworkServer("localhost", 1560, null)
+    val netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    server.startNetworkServer("localhost", netPort, null)
 
     println("server  started ")
-    //create client connection and load data
-    val obj: ObjectInputStream = new ObjectInputStream(new FileInputStream(new File("/home/namrata/serializedObject.ser")))
-    val myObject = obj.readObject().asInstanceOf[Array[Array[Byte]]]
-
-    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER);
-    val conn: Connection = DriverManager.getConnection("jdbc:snappydata://localhost:1560")
-
+    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
+    val conn: Connection = DriverManager.getConnection("jdbc:snappydata://localhost:" + netPort)
 
     val tableName = "TEST_TABLE"
-    //conn.createStatement().execute("drop table if exists airline " )
 
-    conn.createStatement().execute("create table " + tableName + " (uuid varchar(36) not null, bucketId integer, stats blob, " +
-      "Col_Year blob,Col_Month blob,Col_DayOfMonth blob,Col_DayOfWeek blob,Col_DepTime blob,Col_CRSDepTime blob," +
-      " Col_ArrTime blob,Col_CRSArrTime blob,Col_UniqueCarrier blob,Col_FlightNum blob,Col_TailNum blob,Col_ActualElapsedTime blob, " +
-      " Col_CRSElapsedTime blob,Col_AirTime blob,Col_ArrDelay blob,Col_DepDelay blob,Col_Origin blob,Col_Dest blob,Col_Distance blob,Col_TaxiIn blob," +
-      "Col_TaxiOut blob,Col_Cancelled blob,Col_CancellationCode blob,Col_Diverted blob,Col_CarrierDelay blob,Col_WeatherDelay blob," +
-      "Col_NASDelay blob,Col_SecurityDelay blob,Col_LateAircraftDelay blob,Col_ArrDelaySlot blob , " +
-      //"constraint airline_bucketCheck check (bucketId != -1)," +
-      "primary key (uuid, bucketId)) partition by column(bucketId)")
+    conn.createStatement().execute("create table " + tableName + " " +
+        "(fr varchar(23), id integer, b1 blob, b2 blob, b3 blob, b4 blob, " +
+        "b5 blob, b6 blob, b7 blob, secid integer)" + "partition by column(id)")
 
-    val stmt = conn.prepareStatement("insert into " + tableName + " values ( " + "? " + " , ? " * 32 + ") ")
-
-
-    stmt.setString(1, " first row")
-    stmt.setInt(2, 1)
-    stmt.setBytes(3, null)
-    var index = 4
-    myObject.foreach(buffer => {
-      //works for first 10. fails for 15
-      if (index <= 13)
-        stmt.setBytes(index, buffer)
-      else {
-        stmt.setBytes(index, null)
-      }
-      index = index + 1
-    }
-    )
-
-
+    val b1 = Array.fill[Byte](10000)(0)
+    val b2 = Array.fill[Byte](10000)(0)
+    val b3 = Array.fill[Byte](15000)(0)
+    val b4 = Array.fill[Byte](25000)(0)
+    val b5 = Array.fill[Byte](14000)(0)
+    val b6 = Array.fill[Byte](10000)(0)
+    val b7 = Array.fill[Byte](20000)(0)
+    val stmt = conn.prepareStatement("insert into " + tableName + " values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    stmt.setString(1, "firstRow");
+    stmt.setInt(2, 10);
+    stmt.setBytes(3, b1)
+    stmt.setBytes(4, b2)
+    stmt.setBytes(5, b3)
+    stmt.setBytes(6, b4)
+    stmt.setBytes(7, b5)
+    stmt.setBytes(8, b6)
+    stmt.setBytes(9, b7)
+    stmt.setInt(10, 20)
     stmt.execute()
-
     conn.close()
     server.stop(null)
-
   }
-
-  def getEnvironmentVariable(env: String): String = {
-    val value = scala.util.Properties.envOrElse(env, null)
-    if (env == null)
-      throw new TestException(s" Environment variable $env is not defined")
-    value
-  }
-
-  def startSparkCluster = {
-    (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/start-all.sh") !!
-  }
-
-  def stopSparkCluster = {
-    (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/stop-all.sh") !!
-  }
-
 }
