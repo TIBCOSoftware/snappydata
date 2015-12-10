@@ -117,8 +117,8 @@ object ExternalShellDUnitTest {
       case e: AnalysisException => tableAlreadyExistException = e
     }
     assert(tableAlreadyExistException != null)
-    assert(tableAlreadyExistException.getMessage.contains(
-      "Table embeddedModeTable1 already exists"))
+    assert(tableAlreadyExistException.getMessage.toLowerCase().contains(
+      "Table embeddedModeTable1 already exists.".toLowerCase))
 
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable1", 5)
