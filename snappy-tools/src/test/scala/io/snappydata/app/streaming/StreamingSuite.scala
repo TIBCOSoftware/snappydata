@@ -3,7 +3,7 @@ package io.snappydata.app.streaming
 import io.snappydata.SnappyFunSuite
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.streaming.{StreamToRowConverter, SchemaDStream, StreamingSnappyContext}
+import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter, StreamingSnappyContext}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.streaming._
 import org.apache.spark.unsafe.types.UTF8String
@@ -14,8 +14,8 @@ import twitter4j.{Status, TwitterObjectFactory}
 import scala.collection.mutable.Queue
 
 /**
- * Created by ymahajan on 25/09/15.
- */
+  * Created by ymahajan on 25/09/15.
+  */
 class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter {
 
   private var ssc: StreamingContext = _
@@ -31,12 +31,37 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
   before {
     ssc = new StreamingContext(sc, batchDuration)
     streamingSnappy = StreamingSnappyContext(ssc);
+    // ssc.checkpoint("/tmp")
   }
 
   after {
     if (streamingSnappy != null) {
       StreamingSnappyContext.stop()
     }
+  }
+
+  test("SNAP-240 NotSerializableException with checkpoint") {
+
+    def getQueueOfRDDs: Queue[RDD[Tweet]] = {
+      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
+      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
+      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
+      Queue(distData1, distData2, distData3)
+    }
+
+    import org.apache.spark.sql.snappy._
+
+    val dStream = ssc.queueStream[Tweet](getQueueOfRDDs)
+
+    val schemaDStream = streamingSnappy.createSchemaDStream(dStream)
+    schemaDStream.foreachRDD(rdd => {
+      // streamingSnappy.createDataFrame
+      // (rdd, schemaDStream.schema).show() //NotSerializableException
+      // println(rdd) // scalastyle:ignore
+    })
+
+    ssc.start
+    ssc.awaitTerminationOrTimeout(5 * 1000)
   }
 
   test("api stream to stream and stream to table join") {
@@ -136,9 +161,9 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     })
     streamingSnappy.registerStreamAsTable("tweetStream2", schemaStream2)
 
-    val resultStream: SchemaDStream = streamingSnappy.registerCQ("SELECT t1.id, t1.text FROM tweetStream1" +
-      " window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
-      "tweetStream2 t2 ON t1.id = t2.id ")
+    val resultStream: SchemaDStream = streamingSnappy.registerCQ("SELECT t1.id, t1.text" +
+      " FROM tweetStream1 window (duration '2' seconds, slide '2' seconds)" +
+      "t1 JOIN tweetStream2 t2 ON t1.id = t2.id ")
 
     streamingSnappy.dropExternalTable("gemxdColumnTable", true)
     streamingSnappy.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
@@ -175,14 +200,15 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
 
   test("sql stream sampling") {
 
-    streamingSnappy.sql("create stream table tweetstreamtable (id long, text string, fullName string, " +
+    streamingSnappy.sql("create stream table tweetstreamtable " +
+      "(id long, text string, fullName string, " +
       "country string, retweets int, hashtag string) " +
       "using twitter_stream options (" +
       "consumerKey '***REMOVED***', " +
       "consumerSecret '***REMOVED***', " +
       "accessToken '***REMOVED***', " +
       "accessTokenSecret '***REMOVED***', " +
-      "streamToRow 'io.snappydata.app.streaming.TweetToRowConverter')")
+      "streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter')")
 
     val tableStream = streamingSnappy.getSchemaDStream("tweetstreamtable")
 
@@ -211,20 +237,22 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("rawStreamColumnTable")
 
-      println("Top 10 hash tags from exact table")
-      val top10Tags = streamingSnappy.sql("select count(*) as cnt, hashtag from rawStreamColumnTable " +
-        "where length(hashtag) > 0 group by hashtag order by cnt desc limit 10").collect()
-      top10Tags.foreach(println)
+      println("Top 10 hash tags from exact table") // scalastyle:ignore
+    val top10Tags = streamingSnappy.sql("select count(*) as cnt, hashtag from " +
+        "rawStreamColumnTable where length(hashtag) > 0 group by hashtag " +
+        "order by cnt desc limit 10").collect()
+      top10Tags.foreach(println) // scalastyle:ignore
 
       numTimes += 1
       if ((numTimes % 18) == 1) {
         streamingSnappy.sql("SELECT count(*) FROM rawStreamColumnTable").show()
       }
 
-      println("Top 10 hash tags from sample table")
-      val stop10Tags = streamingSnappy.sql("select count(*) as cnt, hashtag from tweetstreamtable_sampled " +
-        "where length(hashtag) > 0 group by hashtag order by cnt desc limit 10").collect()
-      stop10Tags.foreach(println)
+      println("Top 10 hash tags from sample table") // scalastyle:ignore
+    val stop10Tags = streamingSnappy.sql("select count(*) as cnt, " +
+        "hashtag from tweetstreamtable_sampled where length(hashtag) > 0 " +
+        "group by hashtag order by cnt desc limit 10").collect()
+      stop10Tags.foreach(println) // scalastyle:ignore
     }
 
     streamingSnappy.sql( """STREAMING CONTEXT START """)
@@ -238,7 +266,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "hostname 'localhost', " +
       "port '9998', " +
       "storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "streamToRow 'io.snappydata.app.streaming.LineToRowConverter') ")
+      "streamToRows 'io.snappydata.app.streaming.LineToRowsConverter') ")
 
     streamingSnappy.registerCQ("SELECT * FROM socketStreamTable window " +
       "(duration '10' seconds, slide '10' seconds) ")
@@ -246,7 +274,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val thrown = intercept[Exception] {
       streamingSnappy.sql( """STREAMING CONTEXT START """)
     }
-    assert(thrown.getMessage === "requirement failed: No output operations registered, so nothing to execute")
+    assert(thrown.getMessage === "requirement failed: No output operations" +
+      " registered, so nothing to execute")
     ssc.awaitTerminationOrTimeout(10000)
   }
 
@@ -255,88 +284,103 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     streamingSnappy.sql("create stream table directKafkaStreamTable (name string, age int)" +
       " using kafka_stream options " +
       "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "streamToRow 'io.snappydata.app.streaming.KafkaStreamToRowConverter', " +
+      "streamToRows 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
       "zkQuorum 'localhost:2181', " +
       "groupId 'streamSQLConsumer', " +
       "topics 'tweets:01')")
 
-    /*val tableDStream: SchemaDStream = streamingSnappy.getSchemaDStream("directKafkaStreamTable")
+    /* val tableDStream: SchemaDStream = streamingSnappy.getSchemaDStream("directKafkaStreamTable")
     import org.apache.spark.sql.streaming.snappy._
-    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema, Map.empty[String, String])*/
+    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema,
+   Map.empty[String, String]) */
 
     val thrown = intercept[Exception] {
       streamingSnappy.sql( """STREAMING CONTEXT START """)
     }
-    assert(thrown.getMessage === "requirement failed: No output operations registered, so nothing to execute")
+    assert(thrown.getMessage === "requirement failed: No output operations " +
+      "registered, so nothing to execute")
     ssc.awaitTerminationOrTimeout(10000)
   }
 
 
   test("sql on direct kafka streams") {
 
-    val thrown = intercept[Exception] { //java.nio.channels.ClosedChannelException since no kafka cluster
-     streamingSnappy.sql("create stream table directKafkaStreamTable (name string, age int) " +
-      "using directkafka_stream options " +
-      "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-       "streamToRow 'io.snappydata.app.streaming.KafkaStreamToRowConverter', " +
-      " kafkaParams 'metadata.broker.list->localhost:9092', " +
-       "topics 'tweets')")
+    intercept[Exception] {
+      // java.nio.channels.ClosedChannelException since no kafka cluster
+      streamingSnappy.sql("create stream table directKafkaStreamTable (name string, age int) " +
+        "using directkafka_stream options " +
+        "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
+        "streamToRows 'io.snappydata.app.streaming.KafkastreamToRowsConverter', " +
+        " kafkaParams 'metadata.broker.list->localhost:9092', " +
+        "topics 'tweets')")
     }
 
     val ex = intercept[Exception] {
       streamingSnappy.sql( """STREAMING CONTEXT START """)
     }
-    assert(ex.getMessage === "requirement failed: No output operations registered, so nothing to execute")
+    assert(ex.getMessage === "requirement failed: No output operations" +
+      " registered, so nothing to execute")
   }
 
   test("sql on file streams") {
 
-    var hfile: String = getClass.getResource("/2015.parquet").getPath
-    streamingSnappy.sql("create stream table fileStreamTable (name string, age int) using file_stream options (storagelevel " +
-      "'MEMORY_AND_DISK_SER_2', streamToRow 'io.snappydata.app.streaming.KafkaStreamToRowConverter', " +
-      " directory '" + hfile + "')")
-    streamingSnappy.registerCQ("SELECT name FROM fileStreamTable window (duration '10' seconds, slide '10' seconds) WHERE age >= 18")
+    // var hfile: String = getClass.getResource("/2015.parquet").getPath
+    streamingSnappy.sql("create stream table fileStreamTable (name string, age int)" +
+      " using file_stream options " +
+      "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
+      "streamToRows 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
+      " directory '/tmp')")
+    streamingSnappy.registerCQ("SELECT name FROM fileStreamTable window " +
+      "(duration '10' seconds, slide '10' seconds) WHERE age >= 18")
     val thrown = intercept[Exception] {
       streamingSnappy.sql( """STREAMING CONTEXT START """)
     }
-    assert(thrown.getMessage === "requirement failed: No output operations registered, so nothing to execute")
+    assert(thrown.getMessage === "requirement failed: No output operations" +
+      " registered, so nothing to execute")
     ssc.awaitTerminationOrTimeout(5000)
   }
 }
 
 case class Tweet(id: Int, text: String)
 
-class TweetToRowConverter extends StreamToRowConverter with Serializable {
+class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 
-  override def toRow(message: Any): InternalRow = {
+  override def toRows(message: Any): Seq[InternalRow] = {
     val status: Status = message.asInstanceOf[Status]
-    InternalRow.fromSeq(Seq(status.getId, UTF8String.fromString(status.getText),
-      UTF8String.fromString(status.getUser().getName), UTF8String.fromString(status.getUser.getLang),
-      status.getRetweetCount, UTF8String.fromString(status.getHashtagEntities.mkString(","))))
+    Seq(InternalRow.fromSeq(Seq(status.getId,
+      UTF8String.fromString(status.getText),
+      UTF8String.fromString(status.getUser().getName),
+      UTF8String.fromString(status.getUser.getLang),
+      status.getRetweetCount, UTF8String.fromString(
+        status.getHashtagEntities.mkString(",")))))
   }
 
 }
 
-class LineToRowConverter extends StreamToRowConverter with Serializable {
+class LineToRowsConverter extends StreamToRowsConverter with Serializable {
 
-  override def toRow(message: Any): InternalRow = {
-    InternalRow.fromSeq(Seq(UTF8String.fromString(message.toString)))
+  override def toRows(message: Any): Seq[InternalRow] = {
+    Seq(InternalRow.fromSeq(Seq(UTF8String.fromString(message.toString))))
   }
 }
 
-class KafkaStreamToRowConverter extends StreamToRowConverter with Serializable {
+class KafkaStreamToRowsConverter extends StreamToRowsConverter with Serializable {
 
-  override def toRow(message: Any): InternalRow = {
+  override def toRows(message: Any): Seq[InternalRow] = {
     val status: Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
-    InternalRow.fromSeq(Seq(status.getId, UTF8String.fromString(status.getText),
-      UTF8String.fromString(status.getUser().getName), UTF8String.fromString(status.getUser.getLang),
-      status.getRetweetCount, UTF8String.fromString(status.getHashtagEntities.mkString(","))))
+    TwitterObjectFactory.getRawJSON(message)
+    Seq(InternalRow.fromSeq(Seq(status.getId,
+      UTF8String.fromString(status.getText),
+      UTF8String.fromString(status.getUser().getName),
+      UTF8String.fromString(status.getUser.getLang),
+      status.getRetweetCount, UTF8String.fromString(
+        status.getHashtagEntities.mkString(",")))))
   }
 
-  /*override def toRow(message: Any): Seq[InternalRow] = {
-    //TODO Yogesh. convert this raw JSON string to twitter4j.SatusJSONImpl
+  /* override def toRow(message: Any): Seq[InternalRow] = {
+    // TODO Yogesh. convert this raw JSON string to twitter4j.SatusJSONImpl
     val status : Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
-    //val tweet = new JSONObject(message.asInstanceOf[String])
+    // val tweet = new JSONObject(message.asInstanceOf[String])
     val hashTags = status.getHashtagEntities
 
     val limit = KafkaMessageToRowConverter.rand.nextInt(20000)
@@ -360,11 +404,11 @@ class KafkaStreamToRowConverter extends StreamToRowConverter with Serializable {
         }
       }
     }
-    //Row.fromSeq
-  }*/
+    // Row.fromSeq
+  }  */
 }
 
 /*
 object KafkaMessageToRowConverter {
   private val rand = new Random
-}*/
+} */

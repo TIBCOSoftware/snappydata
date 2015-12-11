@@ -1,26 +1,25 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.execution.{QueryExecution, ExplainCommand, SparkPlan}
+import org.apache.spark.sql.execution.{ExplainCommand, QueryExecution, SparkPlan}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
 
 /**
- * A SQL based DStream with support for schema/Product
- * This class offers the ability to manipulate SQL query on DStreams
- * It is similar to SchemaRDD, which offers the similar functions
- * Internally, RDD of each batch duration is treated as a small
- * table and CQs are evaluated on those small tables
- *
- * @param streamingSnappy
- * @param queryExecution
- *
- */
-
+  * A SQL based DStream with support for schema/Product
+  * This class offers the ability to manipulate SQL query on DStreams
+  * It is similar to SchemaRDD, which offers the similar functions
+  * Internally, RDD of each batch duration is treated as a small
+  * table and CQs are evaluated on those small tables
+  *
+  * @param streamingSnappy
+  * @param queryExecution
+  *
+  */
 final class SchemaDStream(
                            @transient val streamingSnappy: StreamingSnappyContext,
                            @transient val queryExecution: QueryExecution)
@@ -34,7 +33,7 @@ final class SchemaDStream(
   def schema: StructType = queryExecution.analyzed.schema
 
   /** List of parent DStreams on which this DStream depends on */
-  override def dependencies = parentStreams.toList
+  override def dependencies: List[DStream[InternalRow]] = parentStreams.toList
 
   def registerAsTable(tableName: String): Unit = {
     streamingSnappy.registerStreamAsTable(tableName, this)
@@ -74,20 +73,26 @@ final class SchemaDStream(
   def explain(): Unit = explain(extended = false)
 
   /**
-   * Explain the query to get logical plan as well as physical plan.
-   */
+    * Explain the query to get logical plan as well as physical plan.
+    */
   def explain(extended: Boolean): Unit = {
     val explain = ExplainCommand(queryExecution.logical, extended = extended)
     val sds: SchemaDStream = new SchemaDStream(streamingSnappy, explain)
     sds.queryExecution.executedPlan.executeCollect().map {
+      // scalastyle:off println
       r => println(r.getString(0))
+      // scalastyle:on println
     }
   }
 
   /**
-   * Returns all column names as an array.
-   */
+    * Returns all column names as an array.
+    */
   def columns: Array[String] = schema.fields.map(_.name)
 
-  def printSchema(): Unit = println(schema.treeString)
+  def printSchema(): Unit = {
+    // scalastyle:off println
+    println(schema.treeString)
+    // scalastyle:on println
+  }
 }

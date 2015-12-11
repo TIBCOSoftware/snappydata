@@ -6,7 +6,7 @@ import scala.concurrent._
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SnappyContext}
-import org.apache.spark.sql.streaming.snappy._
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Seconds
