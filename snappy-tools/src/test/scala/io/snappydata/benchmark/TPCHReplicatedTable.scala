@@ -1,0 +1,161 @@
+package io.snappydata.benchmark
+
+import org.apache.spark.SparkContext
+import org.apache.spark.sql.{SaveMode, SnappyContext}
+import java.sql.Statement
+
+/**
+ * Created by kishor on 19/10/15.
+ */
+object TPCHReplicatedTable {
+
+  def createRegionTable_Memsql(stmt:Statement): Unit = {
+    stmt.execute("CREATE REFERENCE TABLE REGION (" +
+        "R_REGIONKEY  INTEGER NOT NULL PRIMARY KEY," +
+        "R_NAME       CHAR(25) NOT NULL," +
+        "R_COMMENT    VARCHAR(152))"
+    )
+    println("Created Table REGION")
+  }
+
+  def createRegionTable(usingOptionString: String, sc: SparkContext): Unit = {
+    val snappyContext = SnappyContext(sc)
+    snappyContext.sql(
+      """CREATE TABLE REGION (
+            R_REGIONKEY INTEGER NOT NULL PRIMARY KEY,
+            R_NAME CHAR(25) NOT NULL,
+            R_COMMENT VARCHAR(152)
+         ) """ + usingOptionString
+    )
+    println("Created Table REGION")
+  }
+
+  def createNationTable_Memsql(stmt:Statement): Unit = {
+    stmt.execute("CREATE REFERENCE TABLE NATION  (" +
+        "N_NATIONKEY  INTEGER NOT NULL PRIMARY KEY," +
+        "N_NAME       CHAR(25) NOT NULL," +
+        "N_REGIONKEY  INTEGER NOT NULL," +
+        "N_COMMENT    VARCHAR(152))"
+    )
+    println("Created Table NATION")
+  }
+
+  def createNationTable(usingOptionString: String, sc: SparkContext): Unit = {
+    val snappyContext = SnappyContext(sc)
+    snappyContext.sql(
+      """CREATE TABLE NATION (
+            N_NATIONKEY INTEGER NOT NULL PRIMARY KEY,
+            N_NAME CHAR(25) NOT NULL,
+            N_REGIONKEY INTEGER NOT NULL REFERENCES REGION(R_REGIONKEY),
+            N_COMMENT VARCHAR(152)
+         ) """ + usingOptionString
+    )
+    println("Created Table NATION")
+  }
+
+  def createSupplierTable_Memsql(stmt:Statement): Unit = {
+    stmt.execute("CREATE REFERENCE TABLE SUPPLIER ( " +
+        "S_SUPPKEY     INTEGER NOT NULL PRIMARY KEY," +
+        "S_NAME        CHAR(25) NOT NULL," +
+        "S_ADDRESS     VARCHAR(40) NOT NULL," +
+        "S_NATIONKEY   INTEGER NOT NULL," +
+        "S_PHONE       CHAR(15) NOT NULL," +
+        "S_ACCTBAL     DECIMAL(15,2) NOT NULL," +
+        "S_COMMENT     VARCHAR(101) NOT NULL)"
+    )
+    println("Created Table SUPPLIER")
+  }
+
+  def createSupplierTable(usingOptionString: String, sc: SparkContext): Unit = {
+    val snappyContext = SnappyContext(sc)
+    snappyContext.sql(
+      """CREATE TABLE SUPPLIER (
+            S_SUPPKEY INTEGER NOT NULL PRIMARY KEY,
+            S_NAME CHAR(25) NOT NULL,
+            S_ADDRESS VARCHAR(40) NOT NULL,
+            S_NATIONKEY INTEGER NOT NULL,
+            S_PHONE CHAR(15) NOT NULL,
+            S_ACCTBAL DECIMAL(15,2) NOT NULL,
+            S_COMMENT VARCHAR(101) NOT NULL
+         ) """ + usingOptionString
+    )
+    println("Created Table SUPPLIER")
+  }
+
+  def populateRegionTable(props: Map[String, String], sc: SparkContext): Unit = {
+    val snappyContext = SnappyContext(sc)
+    val regionData = sc.textFile("/home/kishor/snappy/TPCH_Data/GB1/region.tbl")
+    val regionReadings = regionData.map(s => s.split('|')).map(s => parseRegionRow(s))
+    val regionDF = snappyContext.createDataFrame(regionReadings)
+    regionDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("REGION")
+  }
+
+  def populateNationTable(props: Map[String, String], sc: SparkContext): Unit = {
+    val snappyContext = SnappyContext(sc)
+    val nationData = sc.textFile("/home/kishor/snappy/TPCH_Data/GB1/nation.tbl")
+    val nationReadings = nationData.map(s => s.split('|')).map(s => parseNationRow(s))
+    val nationDF = snappyContext.createDataFrame(nationReadings)
+    nationDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("NATION")
+  }
+
+  def populateSupplierTable(props: Map[String, String], sc: SparkContext): Unit = {
+    val snappyContext = SnappyContext(sc)
+    val supplierData = sc.textFile("/home/kishor/snappy/TPCH_Data/GB1/supplier.tbl")
+    val supplierReadings = supplierData.map(s => s.split('|')).map(s => parseSupplierRow(s))
+    val supplierDF = snappyContext.createDataFrame(supplierReadings)
+    supplierDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("SUPPLIER")
+  }
+
+  case class StreamMessageRegionObject(
+      r_regionkey: Int,
+      r_name: String,
+      r_comment: String
+      )
+
+  def parseRegionRow(s: Array[String]): StreamMessageRegionObject = {
+    StreamMessageRegionObject(
+      s(0).toInt,
+      s(1),
+      s(2)
+    )
+  }
+
+  case class StreamMessageNationObject(
+      n_nationkey: Int,
+      n_name: String,
+      n_regionkey: Int,
+      n_comment: String
+      )
+
+  def parseNationRow(s: Array[String]): StreamMessageNationObject = {
+    StreamMessageNationObject(
+      s(0).toInt,
+      s(1),
+      s(2).toInt,
+      s(3)
+    )
+  }
+
+  case class StreamMessageSupplierObject(
+      s_suppkey: Int,
+      s_name: String,
+      s_address: String,
+      s_nationkey: Int,
+      s_phone: String,
+      s_acctbal: Double,
+      s_comment: String
+      )
+
+  def parseSupplierRow(s: Array[String]): StreamMessageSupplierObject = {
+    StreamMessageSupplierObject(
+      s(0).toInt,
+      s(1),
+      s(2),
+      s(3).toInt,
+      s(4),
+      s(5).toDouble,
+      s(6)
+    )
+  }
+
+}

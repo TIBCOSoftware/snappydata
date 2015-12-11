@@ -299,7 +299,7 @@ task generateSources {
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
   dependsOn ':snappy-examples:jar'
-  
+
   doFirst {
     delete snappyProductDir
     file("${snappyProductDir}/lib").mkdirs()
@@ -371,7 +371,7 @@ task product {
       into "${snappyProductDir}/sbin"
     }
     copy {
-      from("${toolsProject.projectDir}/conf") 
+      from("${toolsProject.projectDir}/conf")
       into "${snappyProductDir}/conf"
     }
 

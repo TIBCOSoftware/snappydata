@@ -27,8 +27,7 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
-  private val SNAPPY_BLOCK_MANAGER = "org.apache.spark.storage.SnappyBlockManager"
-  private val SNAPPY_SHUFFLE_MEMORY_MANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
+  val SNAPPY_MEMORY_MANAGER = "org.apache.spark.memory.SnappyStaticMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
@@ -132,7 +131,6 @@ object ExecutorInitiator extends Logging {
                     val props = SparkCallbacks.fetchDriverProperty(executorHost,
                       executorConf, port, url)
 
-
                     val driverConf = new SparkConf()
                     // Specify a default directory for executor, if the local directory for executor
                     // is set via the executor conf,
@@ -150,20 +148,23 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-                    // TODO: Hemant: add executor specific properties from local conf to
-                    // TODO: this conf that was received from driver.
-                    driverConf.set("spark.blockManager", SNAPPY_BLOCK_MANAGER)
-                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
+                  //TODO: Hemant: add executor specific properties from local conf to
+                  //TODO: this conf that was received from driver.
+                    //use Snappy static memory manager
+                    driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
-                      Runtime.getRuntime().availableProcessors())
+                      Runtime.getRuntime().availableProcessors() * 2)
 
                     env = SparkCallbacks.createExecutorEnv(
                       driverConf, memberId, executorHost, port, cores, false)
 
-                    // SparkEnv sets spark.executor.port so it shouldn't be 0 anymore.
-                    val boundport = env.conf.getInt("spark.executor.port", 0)
-                    assert(boundport != 0)
+                    // SparkEnv will set spark.executor.port if the rpc env is listening for incoming
+                    // connections (e.g., if it's using akka). Otherwise, the executor is running in
+                    // client mode only, and does not accept incoming connections.
+                    val sparkHostPort = env.conf.getOption("spark.executor.port").map { port =>
+                      executorHost + ":" + port
+                    }.orNull
 
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
@@ -171,10 +172,10 @@ object ExecutorInitiator extends Logging {
                     val rpcenv = SparkCallbacks.getRpcEnv(env)
 
                     val executor = new SnappyCoarseGrainedExecutorBackend(
-                      rpcenv, url, memberId, executorHost + ":" + boundport,
+                      rpcenv, url, memberId, sparkHostPort,
                       cores, userClassPath, env)
 
-                    val endPoint = rpcenv.setupEndpoint("Executor", executor)
+                    rpcenv.setupEndpoint("Executor", executor)
                   }
                 case None =>
                 // If driver url is none, already running executor is stopped.

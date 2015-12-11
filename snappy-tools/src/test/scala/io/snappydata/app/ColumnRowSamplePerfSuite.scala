@@ -30,6 +30,7 @@ class ColumnRowSamplePerfSuite
         case NonFatal(_) => // ignore
       }
     }
+    println(" stopping spark context ="+SnappyContext.globalSparkContext)
     SnappyContext.stop()
   }
 
@@ -91,7 +92,9 @@ object ColumnRowSamplePerfSuite extends App {
   var resultsC: Array[Row] = null
 
   val sc = new org.apache.spark.SparkContext(conf)
+
   val snContext = org.apache.spark.sql.SnappyContext(sc)
+  println(" Started spark context ="+SnappyContext.globalSparkContext)
   snContext.sql("set spark.sql.shuffle.partitions=6")
 
   var airlineDataFrame: DataFrame = null
