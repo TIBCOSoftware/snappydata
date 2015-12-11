@@ -515,7 +515,8 @@ class SnappyContext (sc: SparkContext)
   // insert/update/delete operations on an external table
 
   def insert(tableName: String, rows: Row*): Int = {
-    catalog.lookupRelation(tableName) match {
+    val plan = catalog.lookupRelation(tableName)
+    snappy.unwrapSubquery(plan) match {
       case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
@@ -524,7 +525,8 @@ class SnappyContext (sc: SparkContext)
 
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
-    catalog.lookupRelation(tableName) match {
+    val plan = catalog.lookupRelation(tableName)
+    snappy.unwrapSubquery(plan) match {
       case LogicalRelation(u: UpdatableRelation, _) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
@@ -533,7 +535,8 @@ class SnappyContext (sc: SparkContext)
   }
 
   def delete(tableName: String, filterExpr: String): Int = {
-    catalog.lookupRelation(tableName) match {
+    val plan = catalog.lookupRelation(tableName)
+    snappy.unwrapSubquery(plan) match {
       case LogicalRelation(d: DeletableRelation, _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")

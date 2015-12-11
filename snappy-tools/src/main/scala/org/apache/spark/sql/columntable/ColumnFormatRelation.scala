@@ -90,18 +90,21 @@ class ColumnFormatRelation(
   val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
 
   override def partitionColumns: Seq[String] = {
-    partitioningColumns
+    connectionType match {
+      case ConnectionType.Embedded => partitioningColumns
+      case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededd join
+    }
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-    val colRDD = super.scanTable(table+shadowTableNamePrefix, requiredColumns, filters)
+    val colRDD = super.scanTable(table + shadowTableNamePrefix, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
-    colRDD.union(connectionType match {
+    val union = colRDD.union(connectionType match {
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           sqlContext.sparkContext,
@@ -127,6 +130,7 @@ class ColumnFormatRelation(
           connProperties
         ).asInstanceOf[RDD[Row]]
     })
+    union
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
@@ -244,7 +248,7 @@ class ColumnFormatRelation(
     val colocationClause = s"COLOCATE WITH (${table})"
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        "not null, bucketId integer, stats blob, " +
+        "not null, bucketId integer, numRows integer not null, stats blob, " +
         userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
       tableName, dropIfExists = false)

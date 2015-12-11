@@ -1,5 +1,7 @@
 package org.apache.spark.sql
 
+import org.apache.spark.streaming.dstream.DStream
+
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
@@ -9,7 +11,7 @@ import org.apache.spark.sql.approximate.TopKUtil
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.{StratifiedSample, TopKWrapper}
-import org.apache.spark.sql.streaming.StreamingCtxtHolder
+import org.apache.spark.sql.streaming.{StreamingSnappyContext, SnappyStreamOperations, StreamingCtxtHolder}
 import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.{SparkContext, TaskContext}
 
@@ -36,6 +38,10 @@ object snappy extends Serializable {
       case _ => plan
     }
   }
+
+  implicit def snappyOperationsOnDStream[T: ClassTag]
+  (ds: DStream[T]): SnappyStreamOperations[T] =
+    SnappyStreamOperations(StreamingSnappyContext(ds.context), ds)
 
   implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
     df.sqlContext match {

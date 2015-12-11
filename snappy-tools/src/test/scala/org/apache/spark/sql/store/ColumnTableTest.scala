@@ -368,7 +368,7 @@ class ColumnTableTest
 
 
     val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE20", true).asInstanceOf[PartitionedRegion]
-    assert(region.colocatedByList.size() == 1)
+    assert(region.colocatedByList.size() == 2)
      snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
      snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
   }
