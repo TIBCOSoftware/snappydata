@@ -11,8 +11,8 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.util.Utils
 
 /**
- * Created by ymahajan on 25/09/15.
- */
+  * Created by ymahajan on 25/09/15.
+  */
 class KafkaStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
@@ -27,11 +27,14 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
                                override val schema: StructType)
   extends StreamBaseRelation with Logging with StreamPlan with Serializable {
 
+  // Zookeeper quorum (hostname:port,hostname:port,..)
   val ZK_QUORUM = "zkquorum"
-  //Zookeeper quorum (hostname:port,hostname:port,..)
+
+  // The group id for this consumer
   val GROUP_ID = "groupid"
-  //The group id for this consumer
-  val TOPICS = "topics" //Map of (topic_name -> numPartitions) to consume
+
+  // Map of (topic_name -> numPartitions) to consume
+  val TOPICS = "topics"
 
   val zkQuorum: String = options(ZK_QUORUM)
   val groupId: String = options(GROUP_ID)
@@ -46,10 +49,10 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     .map(StorageLevel.fromString)
     .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
 
-  private val streamToRow = {
+  private val streamToRows = {
     try {
-      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRow"))
-      clz.newInstance().asInstanceOf[StreamToRowConverter]
+      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRows"))
+      clz.newInstance().asInstanceOf[StreamToRowsConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }
@@ -61,5 +64,5 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     createStream(context, zkQuorum, groupId, topics, storageLevel)
 
   @transient val stream: DStream[InternalRow] =
-    kafkaStream.map(_._2).map(streamToRow.toRow)
+    kafkaStream.map(_._2).flatMap(streamToRows.toRows)
 }

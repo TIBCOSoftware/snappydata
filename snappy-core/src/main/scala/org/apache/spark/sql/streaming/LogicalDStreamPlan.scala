@@ -6,19 +6,21 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.streaming.dstream.DStream
 
+import scala.collection.immutable
+
 
 case class LogicalDStreamPlan(output: Seq[Attribute],
                               stream: DStream[InternalRow])
-                             (val streaminSnappy: StreamingSnappyContext)
+                             (val streamingSnappy: StreamingSnappyContext)
   extends LogicalPlan with MultiInstanceRelation {
 
-  def newInstance() =
+  def newInstance() : LogicalDStreamPlan =
     LogicalDStreamPlan(output.map(_.newInstance()),
-      stream)(streaminSnappy).asInstanceOf[this.type]
+      stream)(streamingSnappy).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(streaminSnappy.conf.defaultSizeInBytes)
+    sizeInBytes = BigInt(streamingSnappy.conf.defaultSizeInBytes)
   )
 
-  def children = Nil
+  def children: immutable.Nil.type = Nil
 }

@@ -12,8 +12,8 @@ import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.util.Utils
 
 /**
- * Created by ymahajan on 25/09/15.
- */
+  * Created by ymahajan on 25/09/15.
+  */
 class DirectKafkaStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
@@ -34,16 +34,15 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     .map(StorageLevel.fromString)
     .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
 
-  private val streamToRow = {
+  private val streamToRows = {
     try {
-      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRow"))
-      clz.newInstance().asInstanceOf[StreamToRowConverter]
+      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRows"))
+      clz.newInstance().asInstanceOf[StreamToRowsConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }
   }
 
-  //Direct Kafka
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
     t.split(", ").map { s =>
@@ -54,12 +53,11 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
 
   // Currently works with Strings only
   @transient private val kafkaStream = KafkaUtils
-  .createDirectStream[String, String, StringDecoder, StringDecoder](
-     context, kafkaParams, topicsSet)
-  //TODO Yogesh, need to provide typed decoders to createDirectStream
+    .createDirectStream[String, String, StringDecoder, StringDecoder](
+    context, kafkaParams, topicsSet)
+  // TODO Yogesh, need to provide typed decoders to createDirectStream
 
 
   @transient val stream: DStream[InternalRow] =
-    kafkaStream.map(_._2).map(streamToRow.toRow)
-
+    kafkaStream.map(_._2).flatMap(streamToRows.toRows)
 }
