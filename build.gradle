@@ -22,7 +22,6 @@ allprojects {
   gradle.startParameter.continueOnFailure = true
 
   repositories {
-    maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
     //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }

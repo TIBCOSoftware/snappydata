@@ -3,7 +3,7 @@ package io.snappydata.app
 import scala.actors.Futures._
 import scala.util.control.NonFatal
 
-import io.snappydata.{SnappyFunSuite}
+import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql._
@@ -202,7 +202,7 @@ object ColumnRowSamplePerfSuite extends App {
     var end: Long = 0
     var results: DataFrame = null
 
-    for (i <- 0 to 1) {
+    for (i <- 0 until 1) {
 
       start = System.currentTimeMillis
       results = sqlContext.sql(s"SELECT count(*) FROM $tableName")
