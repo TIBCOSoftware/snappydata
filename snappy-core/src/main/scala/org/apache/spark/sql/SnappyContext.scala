@@ -38,7 +38,7 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  * Created by Soubhik on 5/13/15.
  */
 
-class SnappyContext (sc: SparkContext)
+class SnappyContext protected (@transient sc: SparkContext)
     extends SQLContext(sc) with Serializable with Logging {
 
   self =>
@@ -691,19 +691,7 @@ class SnappyContext (sc: SparkContext)
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k)
   }
-
-  private var storeConfig: Map[String, String] = _
-
-  def setExternalStoreConfig(conf: Map[String, String]): Unit = {
-    self.storeConfig = conf
-  }
-
-  def getExternalStoreConfig: Map[String, String] = {
-    storeConfig
-  }
 }
-
-
 
 object GlobalSnappyInit {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
