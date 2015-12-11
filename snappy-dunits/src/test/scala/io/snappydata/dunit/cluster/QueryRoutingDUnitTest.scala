@@ -124,7 +124,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val conn = getANetConnection(netPort1)
     val stmt = conn.createStatement()
 
-    val numExpectedRows = 1888622
+    val numExpectedRows = 188894
     val rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
     assert(rs.next())
     assert(rs.getInt(1) == numExpectedRows, "got rows=" + rs.getInt(1))
@@ -283,7 +283,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
     val tableName: String = "Airline"
 
-    val hfile = getClass.getResource("/2015.parquet").getPath
+    val hfile = getClass.getResource("/2015-trimmed.parquet").getPath
     val dataDF = snc.read.load(hfile)
     snc.createExternalTable(tableName, "column", dataDF.schema,
       Map.empty[String, String])
