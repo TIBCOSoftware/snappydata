@@ -40,11 +40,15 @@ object FileCleaner {
 /** Default SparkConf used for local testing. */
 object LocalSparkConf {
 
-  def newConf(): SparkConf = {
+  def newConf(addOn: (SparkConf) => SparkConf = null): SparkConf = {
     val conf = new SparkConf().
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
     conf.set("snappy.store.optimization", "true")
+
+    if (addOn != null) {
+      addOn(conf)
+    }
     //    .set("spark.sql.unsafe.enabled", "false")
     conf
   }
