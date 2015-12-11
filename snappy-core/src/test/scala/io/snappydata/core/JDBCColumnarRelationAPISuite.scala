@@ -50,7 +50,7 @@ class JDBCColumnarRelationAPISuite
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_2")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val rdd = sc().parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).
         saveAsTable("TEST_JDBC_TABLE_2")
