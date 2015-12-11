@@ -169,14 +169,14 @@ class SnappyContext (sc: SparkContext)
       cacheManager.lookupCachedData(plan).getOrElse {
         sys.error(s"couldn't cache table $tableIdent")
       }
-    }.cachedRepresentation
+    }
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
     val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation, output)
+        tableIdent, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
 
@@ -187,7 +187,7 @@ class SnappyContext (sc: SparkContext)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation match {
+      relation.cachedRepresentation match {
         case externalStore: ExternalStoreRelation =>
           externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>
@@ -210,12 +210,12 @@ class SnappyContext (sc: SparkContext)
       cacheManager.lookupCachedData(plan).getOrElse {
         sys.error(s"couldn't cache table $tableIdent")
       }
-    }.cachedRepresentation
+    }
 
     val cached = rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation, schema.toAttributes)
+        tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
@@ -225,7 +225,7 @@ class SnappyContext (sc: SparkContext)
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation match {
+      relation.cachedRepresentation match {
         case externalStore: ExternalStoreRelation =>
           externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
         case appendable: InMemoryAppendableRelation =>

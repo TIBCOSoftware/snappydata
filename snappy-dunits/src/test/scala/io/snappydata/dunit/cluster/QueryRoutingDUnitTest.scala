@@ -1,6 +1,6 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{SQLException, Connection, DriverManager}
+import java.sql.{DatabaseMetaData, Statement, SQLException, Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.{SerializableRunnable, AvailablePortHelper}
@@ -161,8 +161,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    createTableAndInsertData()
     val conn = getANetConnection(netPort1)
+    var newConn: Connection = null
     try {
       val s = conn.createStatement()
 
@@ -173,24 +173,95 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       assert(rs.next())
       var tableType = rs.getString("tabletype")
       assert("C".equals(tableType))
+      var schemaname = rs.getString("tableschemaname")
+      assert("APP".equals(schemaname))
 
-      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row OPTIONS ()")
+      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row")
       s.execute("select * from sys.systables where tablename='ROWTABLE'")
       rs = s.getResultSet
       assert(rs.next())
       tableType = rs.getString("tabletype")
       assert("T".equals(tableType))
+      schemaname = rs.getString("tableschemaname")
+      assert("APP".equals(schemaname))
 
-      s.execute("select * from sys.systables where tableschemaname='APP'")
-      rs = s.getResultSet
+      val dbmd = conn.getMetaData()
+      val rSet = dbmd.getTables(null, "APP", null,
+        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+      assert(rSet.next())
+
+      s.execute("drop table ROWTABLE")
+
+      // Ensure systables, members can be queried (SNAP-215)
+      doQueries(s, dbmd)
+
+      // Ensure systables, members can be queried (SNAP-215) on a new connection too.
+      newConn = getANetConnection(netPort1)
+      doQueries(newConn.createStatement(), newConn.getMetaData())
+
+    } finally {
+      conn.close()
+      if (newConn != null) {
+        newConn.close()
+      }
+    }
+  }
+
+  def testPrepStatementRouting(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData()
+    val conn = getANetConnection(netPort1)
+    try {
+      val ps = conn.prepareStatement("select col1 from ColumnTableQR where  col1 >?and col1 < ?")
+      ps.setInt(1, 1)
+      ps.setInt(2, 1000)
+      val rs = ps.executeQuery()
       var cnt = 0
       while (rs.next()) {
+        //println("KN: row["+cnt2+"] = " + rs.getObject(1) + ", " + rs.getObject(2) + ", " + rs.getObject(3))
+        //println("KN: row["+cnt2+"] = " + rs.getObject(1))
         cnt += 1
       }
-      assert(cnt == 3) // ColumnTableQR, COLUMNTABLE and ROWTABLE
+      //println("KN: total count is = " + cnt2)
+      assert(cnt == 4)
+
+      var md = rs.getMetaData
+//      println("metadata col cnt = " + md.getColumnCount + " col name = " +
+//          md.getColumnName(1) + " col table name = " + md.getTableName(1))
+      assert(md.getColumnCount == 1)
+      assert(md.getColumnName(1).equalsIgnoreCase("col1"))
+      assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+
+      // Test zero parameter
+      val ps2 = conn.prepareStatement("select col1 from ColumnTableQR where  col1 > 1 and col1 < 500")
+      val rs2 = ps2.executeQuery()
+      var cnt2 = 0
+      while (rs2.next()) {
+        //println("KN: row["+cnt2+"] = " + rs2.getObject(1) + ", " + rs2.getObject(2) + ", " + rs2.getObject(3))
+        //println("KN: row["+cnt2+"] = " + rs2.getObject(1))
+        cnt2 += 1
+      }
+      //println("KN: total count is = " + cnt2)
+      assert(cnt2 == 4)
     } finally {
       conn.close()
     }
+  }
+
+  private def doQueries(s : Statement, dbmd : DatabaseMetaData): Unit = {
+    s.execute("select * from sys.members")
+    assert(s.getResultSet.next())
+    s.execute("select * from sys.systables")
+    assert(s.getResultSet.next())
+    s.execute("select * from sys.systables where tableschemaname='APP'")
+    assert(s.getResultSet.next())
+
+    // Simulates 'SHOW TABLES' of ij
+    val rSet = dbmd.getTables(null, "APP", null,
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+    assert(rSet.next())
   }
 
   def createTableAndInsertData(): Unit = {

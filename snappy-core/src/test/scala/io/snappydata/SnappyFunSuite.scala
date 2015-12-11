@@ -2,15 +2,17 @@ package io.snappydata
 
 import java.io.File
 
-import scala.collection.mutable.ArrayBuffer
-
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+
 //scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 //scalastyle:on
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
@@ -30,6 +32,7 @@ abstract class SnappyFunSuite
     if (ctx != null && !ctx.isStopped) ctx
     else new SparkContext(newSparkConf(addOn))
   }
+
 
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc())
 

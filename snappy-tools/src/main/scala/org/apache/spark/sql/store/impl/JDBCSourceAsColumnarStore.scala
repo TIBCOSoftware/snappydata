@@ -1,34 +1,34 @@
 package org.apache.spark.sql.store.impl
 
 import java.sql.{Connection, SQLException}
-import java.util.Properties
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.reflect.ClassTag
-import scala.util.Random
+import java.util.{Properties, UUID}
 
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+
+import scala.collection.JavaConverters._
+import scala.language.implicitConversions
 import com.gemstone.gemfire.internal.SocketCreator
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, NoDataStoreAvailableException, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegion, DistributedRegion, NoDataStoreAvailableException, PartitionedRegion}
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
-
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.collection.{ExecutorLocalShellPartition, MultiExecutorLocalPartition, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
-import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, JDBCSourceAsStore, StoreUtils}
+import org.apache.spark.sql.store.{JDBCSourceAsStore, CachedBatchIteratorOnRS, StoreUtils}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
 
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
+import scala.util.Random
 /**
  * Column Store implementation for GemFireXD.
  */
@@ -37,7 +37,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId])
+    val blockMap: Map[InternalDistributedMember, BlockManagerId] = null)
     extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
@@ -52,15 +52,12 @@ final class JDBCSourceAsColumnarStore(_url: String,
           // remove the url property from poolProps since that will be
           // partition-specific
           val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
-          val conn = getConnection(tableName)
-          try {
-            new ShellPartitionedRDD[CachedBatch](sparkContext,
-              conn.getSchema, tableName, requiredColumns,
-              poolProps, connProps, hikariCP)
-          } finally {
-            conn.close()
+
+          new ShellPartitionedRDD[CachedBatch](sparkContext,
+            getConnection(tableName).getSchema, tableName, requiredColumns,
+            poolProps, connProps, hikariCP , url)
           }
-        } else {
+         else {
           var rddList = new ArrayBuffer[RDD[CachedBatch]]()
           uuidList.foreach(x => {
             val y = x.mapPartitions { uuidItr =>
@@ -74,7 +71,7 @@ final class JDBCSourceAsColumnarStore(_url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
-      tableName: String, split: Int): UUIDRegionKey = {
+                                tableName: String, maxPartitions: Int): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
     try {
       val uuid = connectionType match {
@@ -83,13 +80,52 @@ final class JDBCSourceAsColumnarStore(_url: String,
           val region = Misc.getRegionForTable(resolvedName, true)
           region.asInstanceOf[Region[_, _]] match {
             case pr: PartitionedRegion =>
-              genUUIDRegionKey(split)
+              val primaryBucketIds = pr.getDataStore.
+                  getAllLocalPrimaryBucketIdArray
+              genUUIDRegionKey(primaryBucketIds.getQuick(
+                rand.nextInt(primaryBucketIds.size())))
             case _ =>
               genUUIDRegionKey()
           }
 
         case _ =>
-          genUUIDRegionKey(rand.nextInt(Integer.MAX_VALUE))
+          genUUIDRegionKey(rand.nextInt(maxPartitions))
+      }
+
+      val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+      val stmt = connection.prepareStatement(rowInsertStr)
+      stmt.setString(1, uuid.getUUID.toString)
+      stmt.setInt(2, uuid.getBucketId)
+      stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
+      var columnIndex = 4
+      batch.buffers.foreach(buffer => {
+        stmt.setBytes(columnIndex, buffer)
+        columnIndex += 1
+      })
+      stmt.executeUpdate()
+      stmt.close()
+      uuid
+    } finally {
+      connection.close()
+    }
+  }
+
+  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketID: Int,
+      tableName: String): UUIDRegionKey = {
+    val connection: java.sql.Connection = getConnection(tableName)
+    try {
+      val uuid = connectionType match {
+        case ConnectionType.Embedded =>
+          val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
+          val region = Misc.getRegionForTable(resolvedName, true)
+          region.asInstanceOf[AbstractRegion] match {
+            case pr: PartitionedRegion =>
+              genUUIDRegionKey(bucketID, batchID)
+            case _ =>
+              genUUIDRegionKey()
+          }
+
+        case _ => genUUIDRegionKey()
       }
 
       val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
@@ -151,37 +187,45 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
 class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     schema: String, tableName: String, requiredColumns: Array[String],
-    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
+    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean , locatorUrl:String)
     extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
-      context: TaskContext): Iterator[CachedBatch] = {
+                       context: TaskContext): Iterator[CachedBatch] = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-    val resolvedName = StoreUtils.lookupName(tableName, schema)
-
-    val conn = getConnection(
-      split.asInstanceOf[ExecutorLocalShellPartition].hostList)
-
     val par = split.index
+    val resolvedName = StoreUtils.lookupName(tableName, schema)
+    val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
+    val useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
+
+    val conn = getConnection(urlsOfNetServerHost, useLocatorURL)
+    val query = "select stats, " + requiredColumns.mkString(",") +
+      " from " + resolvedName + (if (useLocatorURL) s" where bucketId = $par"
+    else " ")
 
     val statement = conn.createStatement()
-    val query = "select " + requiredColumns.mkString(", ") +
-        ", numRows, stats from " + resolvedName
-    statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+    if (!useLocatorURL)
+      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
     val rs = statement.executeQuery(query)
+
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
 
-  def getConnection(hostList: ArrayBuffer[(String, String)]): Connection = {
+  def getConnection(hostList: ArrayBuffer[(String, String)] , connectToLocator:Boolean): Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
-    if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
-    if (index < 0) index = Random.nextInt(hostList.size)
 
     // setup pool properties
     val maxPoolSize = String.valueOf(math.max(
       32, Runtime.getRuntime.availableProcessors() * 2))
-    val jdbcUrl = hostList(index)._2
+
+    val jdbcUrl = if (connectToLocator) {
+      locatorUrl
+    } else {
+      if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
+      if (index < 0) index = Random.nextInt(hostList.size)
+      hostList(index)._2
+    }
     val props = if (hikariCP) {
       poolProps + ("jdbcUrl" -> jdbcUrl) + ("maximumPoolSize" -> maxPoolSize)
     } else {
@@ -193,14 +237,20 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         GemFireXDClientDialect, props, connProps, hikariCP)
     } catch {
       case sqlException: SQLException =>
-        if (hostList.size == 1)
+        if (hostList.size == 1 || connectToLocator)
           throw sqlException
         else {
           hostList.remove(index)
-          getConnection(hostList)
+          getConnection(hostList , connectToLocator)
         }
     }
   }
+
+  def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean = {
+    hostList.size == 0
+  }
+
+
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[ExecutorLocalShellPartition]
@@ -259,12 +309,6 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
           val netUrls = ArrayBuffer.empty[(String, String)]
           bOwners.asScala.foreach(fillNetUrlsForServer(_,
             membersToNetServers, urlPrefix, urlSuffix, netUrls))
-          // fail if there are no owners
-          if (netUrls.isEmpty) {
-            throw new NoDataStoreAvailableException(LocalizedStrings.
-                DistributedRegion_NO_DATA_STORE_FOUND_FOR_DISTRIBUTION.
-                toLocalizedString(pbr))
-          }
           allNetUrls(bid) = netUrls
         }
         allNetUrls
@@ -274,12 +318,6 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val netUrls = ArrayBuffer.empty[(String, String)]
         owners.asScala.foreach(fillNetUrlsForServer(_, membersToNetServers,
           urlPrefix, urlSuffix, netUrls))
-        // fail if there are no owners
-        if (netUrls.isEmpty) {
-          throw new NoDataStoreAvailableException(LocalizedStrings.
-              DistributedRegion_NO_DATA_STORE_FOUND_FOR_DISTRIBUTION.
-              toLocalizedString(dr))
-        }
         Array(netUrls)
 
       case r => sys.error("unexpected region with dataPolicy=" +

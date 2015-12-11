@@ -21,23 +21,14 @@ class SnappyCoarseGrainedExecutorBackend(
   extends CoarseGrainedExecutorBackend(rpcEnv, driverUrl,
     executorId, hostPort, cores, userClassPath, env) {
 
-  var stopped = false
-
   override def onStop() {
-    exitExecutor()
+    exitWithoutRestart()
   }
 
   override def onStart(): Unit = {
     super.onStart()
-    // Executor may fail to connect to the driver because of
-    // https://issues.apache.org/jira/browse/SPARK-9820 and
-    // https://issues.apache.org/jira/browse/SPARK-8592. To overcome such
-    // issues, try restarting the executor
-    if (stopped) {
-      logWarning("Executor has failed to start: Restarting.")
-      ExecutorInitiator.restartExecutor()
-    }
   }
+
   /**
    * Snappy addition (Replace System.exit with exitExecutor). We could have
    * added functions calling System.exit to SnappyCoarseGrainedExecutorBackend
@@ -45,8 +36,16 @@ class SnappyCoarseGrainedExecutorBackend(
    * after every merge.
    */
   override def exitExecutor(): Unit = {
-    stopped = true
+    exitWithoutRestart()
+    // Executor may fail to connect to the driver because of
+    // https://issues.apache.org/jira/browse/SPARK-9820 and
+    // https://issues.apache.org/jira/browse/SPARK-8592. To overcome such
+    // issues, try restarting the executor
+    logWarning("Executor has failed to start: Restarting.")
+    ExecutorInitiator.restartExecutor()
+  }
 
+  def exitWithoutRestart() : Unit = {
     if (executor != null) {
       // kill all the running tasks
       // InterruptThread is set as true.

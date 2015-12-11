@@ -3,6 +3,8 @@ package io.snappydata.dunit.cluster
 import java.io.File
 import java.util.Properties
 
+import com.gemstone.gemfire.internal.tools.gfsh.app.commands.value
+
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -166,6 +168,8 @@ object ClusterManagerTestBase {
     conf.set("spark.local.dir", dataDirForDriver)
     conf.set("spark.eventLog.enabled", "true")
     conf.set("spark.eventLog.dir", eventDirForDriver)
+    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+
     props.asScala.foreach({ case (k, v) =>
       if (k.indexOf(".") < 0) {
         conf.set(io.snappydata.Constant.STORE_PROPERTY_PREFIX + k, v)

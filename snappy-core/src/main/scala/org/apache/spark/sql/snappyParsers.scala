@@ -3,18 +3,15 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
-
+import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
-
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.plans.logical.{Subquery, LogicalPlan}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 /**
@@ -341,7 +338,7 @@ private[sql] case class CreateIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc =sqlContext.asInstanceOf[SnappyContext]
     snc.createIndexOnExternalTable(tableName, sql)
     Seq.empty
   }
@@ -351,7 +348,7 @@ private[sql] case class DropIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     snc.dropIndexOnExternalTable(sql)
     Seq.empty
   }
@@ -412,6 +409,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
+
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
       case None => catalog.tables.put(streamTable, plan)
@@ -489,7 +487,6 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
 
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
-
     val tableIdent = catalog.newQualifiedTableName(table)
     val schema = catalog.getStreamTableSchema(tableIdent)
 

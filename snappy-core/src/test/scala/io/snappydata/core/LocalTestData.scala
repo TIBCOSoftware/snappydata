@@ -45,11 +45,10 @@ object LocalSparkConf {
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
     conf.set("snappy.store.optimization", "true")
-
+    conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
     if (addOn != null) {
       addOn(conf)
     }
-    //    .set("spark.sql.unsafe.enabled", "false")
     conf
   }
 }

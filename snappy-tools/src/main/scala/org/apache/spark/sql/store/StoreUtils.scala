@@ -2,19 +2,22 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
-import com.pivotal.gemfirexd.internal.engine.Misc
-import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-/**
-  * Created by rishim on 6/10/15.
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
+
+import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import org.apache.spark.sql.execution.datasources.DDLException
+import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.{Logging, Partition, SparkContext}
+
+/*/10/15.
   */
 object StoreUtils extends Logging {
 
@@ -43,6 +46,11 @@ object StoreUtils extends Logging {
   val LRUCOUNT = "LRUCOUNT"
 
   val EMPTY_STRING = ""
+
+  val SHADOW_COLUMN_NAME = "rowid"
+
+  val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
+
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -88,7 +96,7 @@ object StoreUtils extends Logging {
       Misc.getGemFireCache.getMembers(region)
           .asScala.asInstanceOf[scala.collection.Set[InternalDistributedMember]]
     }
-    
+
     for (p <- 0 until numPartitions) {
 
       val prefNodes = distMembers.map(
@@ -100,10 +108,16 @@ object StoreUtils extends Logging {
     partitions
   }
 
-  def initStore(sc: SparkContext, url: String,
-      connProps: Properties): Map[InternalDistributedMember, BlockManagerId] = {
+  def initStore(sqlContext: SQLContext, url: String,
+      connProps: Properties,
+      poolProps: Map[String, String],
+      hikariCP: Boolean,
+      table: String,
+      schema: Option[StructType]): Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    val blockMap = new StoreInitRDD(sc, url, connProps).collect()
+
+    val blockMap = new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table,
+      schema).collect()
     blockMap.toMap
   }
 
@@ -114,19 +128,60 @@ object StoreUtils extends Logging {
     }
   }
 
-  def ddlExtensionString(parameters: mutable.Map[String, String]): String = {
-    val sb = new StringBuilder()
+  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
+    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
+    val table = parameters.remove(dbtableProp)
+        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
+    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
+    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
+    parameters.remove("serialization.format")
+    table
+  }
 
-    sb.append(parameters.remove(PARTITION_BY).map(v => {
-      val parClause = {
+  def getPrimaryKeyClause(parameters: mutable.Map[String, String]): String = {
+    val sb = new StringBuilder()
+    sb.append(parameters.get(PARTITION_BY).map(v => {
+      val primaryKey = {
         v match {
-          case PRIMARY_KEY => PRIMARY_KEY
-          case _ => s"COLUMN ($v)"
+          case PRIMARY_KEY => ""
+          case _ => s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
         }
       }
-      s"$GEM_PARTITION_BY $parClause "
+      primaryKey
+    }).getOrElse(s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"))
+    sb.toString
+  }
+
+  def ddlExtensionString(parameters: mutable.Map[String, String],
+      isRowTable: Boolean, isShadowTable: Boolean): String = {
+    val sb = new StringBuilder()
+
+    if (!isShadowTable) {
+      sb.append(parameters.remove(PARTITION_BY).map(v => {
+        val (parClause) = {
+          v match {
+            case PRIMARY_KEY => if (isRowTable){
+              PRIMARY_KEY
+            }
+            else {
+              throw new DDLException("Column table cannot be partitioned on" +
+                  " PRIMARY KEY as no primary key")
+            }
+            case _ => s"COLUMN ($v)"
+          }
+        }
+        s"$GEM_PARTITION_BY $parClause "
+      }
+      ).getOrElse(if (isRowTable) EMPTY_STRING else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME)"))
+    } else {
+      parameters.remove(PARTITION_BY).map(v => {
+        v match {
+          case PRIMARY_KEY => throw new DDLException("Column table cannot be partitioned on" +
+              " PRIMARY KEY as no primary key")
+          case _ =>
+        }
+      })
     }
-    ).getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
@@ -137,8 +192,20 @@ object StoreUtils extends Logging {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
-        .getOrElse(EMPTY_STRING))
+    if (!isShadowTable) {
+      sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
+          .getOrElse(EMPTY_STRING))
+    } else {
+      sb.append(parameters.remove(EVICTION_BY).map(v => {
+        v.contains(LRUCOUNT) match {
+          case true => throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+          case _ =>
+        }
+        s"$GEM_EVICTION_BY $v "
+      }).getOrElse(EMPTY_STRING))
+    }
+
+
     sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
