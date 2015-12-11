@@ -3,7 +3,7 @@ package org.apache.spark.sql.streaming
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{SchemaRelationProvider, TableScan}
+import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -44,7 +44,7 @@ case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
     if (options.exists(_._1 == CONVERTER)) {
       val converter = Utils.getContextOrSparkClassLoader.loadClass(
         options(CONVERTER)).newInstance().asInstanceOf[StreamConverter]
-      val clazz: Class[_] = converter.getTargetType()
+      val clazz: Class[_] = converter.getTargetType
       val mirror = ru.runtimeMirror(clazz.getClassLoader)
       val sym = mirror.staticClass(clazz.getName) // obtain class symbol for `c`
       val tpe = sym.selfType // obtain type object for `c`
