@@ -1,6 +1,6 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{SQLException, Connection, DriverManager}
+import java.sql.{DatabaseMetaData, Statement, SQLException, Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.{SerializableRunnable, AvailablePortHelper}
@@ -161,8 +161,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
-    createTableAndInsertData()
     val conn = getANetConnection(netPort1)
+    var newConn: Connection = null
     try {
       val s = conn.createStatement()
 
@@ -173,24 +173,37 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       assert(rs.next())
       var tableType = rs.getString("tabletype")
       assert("C".equals(tableType))
+      var schemaname = rs.getString("tableschemaname")
+      assert("APP".equals(schemaname))
 
-      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row OPTIONS ()")
+      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row")
       s.execute("select * from sys.systables where tablename='ROWTABLE'")
       rs = s.getResultSet
       assert(rs.next())
       tableType = rs.getString("tabletype")
       assert("T".equals(tableType))
+      schemaname = rs.getString("tableschemaname")
+      assert("APP".equals(schemaname))
 
-      s.execute("select * from sys.systables where tableschemaname='APP'")
-      rs = s.getResultSet
-      var cnt = 0
-      while (rs.next()) {
-        cnt += 1
-      }
-      // ColumnTableQR, COLUMNTABLE and ROWTABLE, and shadow tables corresponding to Col table too
-      assert(cnt == 5)
+      val dbmd = conn.getMetaData()
+      val rSet = dbmd.getTables(null, "APP", null,
+        Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+      assert(rSet.next())
+
+      s.execute("drop table ROWTABLE")
+
+      // Ensure systables, members can be queried (SNAP-215)
+      doQueries(s, dbmd)
+
+      // Ensure systables, members can be queried (SNAP-215) on a new connection too.
+      newConn = getANetConnection(netPort1)
+      doQueries(newConn.createStatement(), newConn.getMetaData())
+
     } finally {
       conn.close()
+      if (newConn != null) {
+        newConn.close()
+      }
     }
   }
 
@@ -235,6 +248,20 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     } finally {
       conn.close()
     }
+  }
+
+  private def doQueries(s : Statement, dbmd : DatabaseMetaData): Unit = {
+    s.execute("select * from sys.members")
+    assert(s.getResultSet.next())
+    s.execute("select * from sys.systables")
+    assert(s.getResultSet.next())
+    s.execute("select * from sys.systables where tableschemaname='APP'")
+    assert(s.getResultSet.next())
+
+    // Simulates 'SHOW TABLES' of ij
+    val rSet = dbmd.getTables(null, "APP", null,
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+    assert(rSet.next())
   }
 
   def createTableAndInsertData(): Unit = {
