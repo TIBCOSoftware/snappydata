@@ -65,7 +65,6 @@ object StreamingInputWithLoadData extends Serializable {
     val ingestionStream = stream.window(Seconds(5), Seconds(5))
 
 
-    import org.apache.spark.sql.streaming.snappy._
     import org.apache.spark.sql.snappy._
 
     val arS1 = snc.registerSampleTable("arSample1", schema, Map(

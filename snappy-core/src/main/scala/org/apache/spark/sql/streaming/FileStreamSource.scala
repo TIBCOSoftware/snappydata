@@ -9,8 +9,8 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
 /**
- * Created by ymahajan on 25/09/15.
- */
+  * Created by ymahajan on 25/09/15.
+  */
 final class FileStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
@@ -25,35 +25,42 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
                               override val schema: StructType)
   extends StreamBaseRelation with Logging with StreamPlan with Serializable {
 
+  // HDFS directory to monitor for new file
   val DIRECTORY = "directory"
+
   // HDFS directory to monitor for new file
   val KEY = "key:"
-  // Key type for reading HDFS file
-  val VALUE = "value"
-  //Value type for reading HDFS file
-  val INPUT_FORMAT_HDFS = "inputformathdfs" //Input format for reading HDFS file
 
+  // Value type for reading HDFS file
+  val VALUE = "value"
+
+  // Input format for reading HDFS file
+  val INPUT_FORMAT_HDFS = "inputformathdfs"
+
+  // Function to filter paths to process
   val FILTER = "filter"
-  //Function to filter paths to process
+
+  // Should process only new files and ignore existing files in the directory
   val NEW_FILES_ONLY = "newfilesonly"
-  //Should process only new files and ignore existing files in the directory
-  val CONF = "conf" //Hadoop configuration
+
+  // Hadoop configuration
+  val CONF = "conf"
 
   val directory = options(DIRECTORY)
 
   @transient val context = StreamingCtxtHolder.streamingContext
 
   @transient val fileStream: DStream[String] = context.textFileStream(directory)
-  //TODO: Yogesh, add support for other types of files streams
+  // TODO: Yogesh, add support for other types of files streams
 
-  private val streamToRow = {
+  private val streamToRows = {
     try {
-      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRow"))
-      clz.newInstance().asInstanceOf[StreamToRowConverter]
+      val clz = Utils.getContextOrSparkClassLoader.loadClass(options("streamToRows"))
+      clz.newInstance().asInstanceOf[StreamToRowsConverter]
     } catch {
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }
   }
 
-  @transient val stream: DStream[InternalRow] = fileStream.map(streamToRow.toRow)
+  @transient val stream: DStream[InternalRow] = fileStream.flatMap(streamToRows.toRows)
 }
