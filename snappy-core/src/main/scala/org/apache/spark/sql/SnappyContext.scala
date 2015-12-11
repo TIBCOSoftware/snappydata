@@ -790,7 +790,7 @@ object SnappyContext extends Logging {
     }
   }
 
-  def getOrCreate(sc: SparkContext): SnappyContext = {
+  def getOrCreate(sc: SparkContext = globalSparkContext): SnappyContext = {
     val gnc = _anySNContext
     if (gnc != null) gnc
     else contextLock.synchronized {
