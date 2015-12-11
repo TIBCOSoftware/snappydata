@@ -8,7 +8,7 @@ import com.gemstone.gemfire.internal.AvailablePort
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
 import com.pivotal.gemfirexd.{TestUtil, FabricService, Attribute}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
-import io.snappydata.{Property, ServiceManager, Lead, Constant, SnappyFunSuite}
+import io.snappydata._
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.{SparkConf, SparkContext}

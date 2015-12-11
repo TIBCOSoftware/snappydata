@@ -2,13 +2,8 @@ package org.apache.spark.sql.store
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.Properties
+import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.util.Random
 
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -18,6 +13,12 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.snappy._
 import org.apache.spark.{SparkContext, SparkEnv}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.util.Random
+
 
 /*
 Generic class to query column table from Snappy.
@@ -53,7 +54,8 @@ class JDBCSourceAsStore(override val url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
-      tableName: String, split : Int): UUIDRegionKey = {
+      tableName: String , maxPartitions:Int ): UUIDRegionKey = {
+
     tryExecute(tableName, {
       case connection =>
         val uuid = genUUIDRegionKey()
@@ -64,6 +66,26 @@ class JDBCSourceAsStore(override val url: String,
         stmt.setInt(3, batch.numRows)
         stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
         var columnIndex = 5
+        batch.buffers.foreach(buffer => {
+          stmt.setBytes(columnIndex, buffer)
+          columnIndex += 1
+        })
+        stmt.executeUpdate()
+        stmt.close()
+        uuid
+    })
+  }
+
+  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId: Int, tableName: String): UUIDRegionKey = {
+    tryExecute(tableName, {
+      case connection =>
+        val uuid = genUUIDRegionKey(bucketId, batchID)
+        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+        val stmt = connection.prepareStatement(rowInsertStr)
+        stmt.setString(1, uuid.getUUID.toString)
+        stmt.setInt(2, uuid.getBucketId)
+        stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
+        var columnIndex = 4
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
           columnIndex += 1
@@ -113,6 +135,8 @@ class JDBCSourceAsStore(override val url: String,
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
+
+  protected def genUUIDRegionKey(bucketID: Int, batchID: UUID) = new UUIDRegionKey(bucketID, batchID)
 
   protected val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()

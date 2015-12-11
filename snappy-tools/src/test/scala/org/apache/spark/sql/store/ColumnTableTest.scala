@@ -1,12 +1,13 @@
 package org.apache.spark.sql.store
 
-import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.{TestData2, TestData, Data}
+import io.snappydata.core.{Data, TestData, TestData2}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 import scala.collection.JavaConverters._
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
@@ -16,8 +17,11 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
  */
 class ColumnTableTest
     extends SnappyFunSuite
+    with Logging
     with BeforeAndAfter
     with BeforeAndAfterAll {
+
+
 
   after {
     snc.dropExternalTable(tableName, ifExists = true)
@@ -28,17 +32,20 @@ class ColumnTableTest
 
   val props = Map.empty[String, String]
 
- test("Test the creation/dropping of table using Snappy API") {
+  test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
       snc.createExternalTable(tableName, "column", props)
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     snc.createExternalTable(tableName, "column", dataDF.schema, props)
+
+
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
