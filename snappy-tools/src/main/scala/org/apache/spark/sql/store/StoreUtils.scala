@@ -167,12 +167,12 @@ object StoreUtils extends Logging {
               throw new DDLException("Column table cannot be partitioned on" +
                   " PRIMARY KEY as no primary key")
             }
-            case _ => s"COLUMN ($v)"
+            case _ => s"COLUMN ($v) "
           }
         }
         s"$GEM_PARTITION_BY $parClause "
       }
-      ).getOrElse(if (isRowTable) EMPTY_STRING else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME)"))
+      ).getOrElse(if (isRowTable) EMPTY_STRING else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).map(v => {
         v match {
@@ -182,10 +182,15 @@ object StoreUtils extends Logging {
         }
       })
     }
+
+    if (!isShadowTable) {
+      sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH ($v) ")
+          .getOrElse(EMPTY_STRING))
+    }
+
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
-        .getOrElse(EMPTY_STRING))
+
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
@@ -222,38 +227,5 @@ object StoreUtils extends Logging {
     }).getOrElse(Seq.empty[String])
   }
 
-  def ddlExtensionStringForColumnTable(parameters: mutable.Map[String, String]): String = {
-    val sb = new StringBuilder()
 
-    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH ($v) ")
-        .getOrElse(EMPTY_STRING))
-
-    sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
-        .getOrElse(s"$GEM_BUCKETS 199 ")) //Defaulting to higher numbered buckets for column tables
-    // it also does temporarily fix the row-column join
-
-    sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(EVICTION_BY).map(v => {
-      v.contains(LRUCOUNT) match {
-        case true => throw new DDLException(
-          "Column table cannot take LRUCOUNT as Evcition Attributes")
-        case _ =>
-      }
-      s"$GEM_EVICTION_BY $v "
-    }).getOrElse(EMPTY_STRING))
-
-    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
-        .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
-        .getOrElse(EMPTY_STRING))
-
-    sb.toString()
-  }
 }

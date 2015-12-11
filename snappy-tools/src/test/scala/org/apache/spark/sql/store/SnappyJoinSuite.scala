@@ -176,7 +176,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "USING column " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId, OrderRef')")
+        "PARTITION_BY 'OrderId,OrderRef')")
 
 
     refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE3")
@@ -277,7 +277,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     assert(countdf1.count() == 1000)
     val excatJoinKeys = snc.sql(s"select P.ORDERREF, P.DESCRIPTION from " +
         s"PR_TABLE7 P JOIN PR_TABLE8 R ON P.ORDERID = R.OrderId AND P.ORDERREF = R.OrderRef")
-   checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+   checkForShuffle(excatJoinKeys.logicalPlan, snc, false)
     assert(excatJoinKeys.count() === 500)
 
   }

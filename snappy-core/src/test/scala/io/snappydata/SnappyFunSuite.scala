@@ -27,14 +27,20 @@ abstract class SnappyFunSuite
   protected var testName: String = _
   protected var dirList = ArrayBuffer[String]()
 
-  protected def sc(addOn: (SparkConf) => SparkConf = null): SparkContext = {
+  protected def sc: SparkContext = {
+    val ctx = SnappyContext.globalSparkContext
+    if (ctx != null && !ctx.isStopped) ctx
+    else new SparkContext(newSparkConf())
+  }
+
+  protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
     if (ctx != null && !ctx.isStopped) ctx
     else new SparkContext(newSparkConf(addOn))
   }
 
 
-  protected def snc: SnappyContext = SnappyContext.getOrCreate(sc())
+  protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 
   /**
    * Copied from SparkFunSuite.
@@ -74,7 +80,7 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val scL = this.sc()
+      val scL = this.sc
       if (scL != null && !scL.isStopped) {
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>

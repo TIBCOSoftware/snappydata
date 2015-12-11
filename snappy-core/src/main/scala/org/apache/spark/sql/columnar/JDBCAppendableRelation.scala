@@ -353,7 +353,7 @@ class ColumnarRelationProvider
 
   protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
     //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
-    val DEFAULT_BUCKETS_FOR_COLUMN = "199"
+    val DEFAULT_BUCKETS_FOR_COLUMN = "113"
     parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
   }
 

@@ -166,6 +166,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
         val ps = conn.prepareStatement("select " + requiredColumns.mkString(
           ", ") + ", numRows, stats from " + tableName)
+
         val rs = ps.executeQuery()
         ps1.close()
         new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs)
@@ -199,8 +200,8 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     val useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
 
     val conn = getConnection(urlsOfNetServerHost, useLocatorURL)
-    val query = "select stats, " + requiredColumns.mkString(",") +
-      " from " + resolvedName + (if (useLocatorURL) s" where bucketId = $par"
+    val query = "select " + requiredColumns.mkString(", ") +
+        ", numRows, stats from " + resolvedName + (if (useLocatorURL) s" where bucketId = $par"
     else " ")
 
     val statement = conn.createStatement()
