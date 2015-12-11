@@ -237,7 +237,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("rawStreamColumnTable")
 
-      println("Top 10 hash tags from exact table") // scalastyle:ignore
+      // println("Top 10 hash tags from exact table") // scalastyle:ignore
     val top10Tags = streamingSnappy.sql("select count(*) as cnt, hashtag from " +
         "rawStreamColumnTable where length(hashtag) > 0 group by hashtag " +
         "order by cnt desc limit 10").collect()
@@ -248,7 +248,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
         streamingSnappy.sql("SELECT count(*) FROM rawStreamColumnTable").show()
       }
 
-      println("Top 10 hash tags from sample table") // scalastyle:ignore
+      // println("Top 10 hash tags from sample table") // scalastyle:ignore
     val stop10Tags = streamingSnappy.sql("select count(*) as cnt, " +
         "hashtag from tweetstreamtable_sampled where length(hashtag) > 0 " +
         "group by hashtag order by cnt desc limit 10").collect()
