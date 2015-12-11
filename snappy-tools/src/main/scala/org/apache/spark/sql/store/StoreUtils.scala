@@ -15,11 +15,11 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partition, SparkContext}
+import org.apache.spark.{Logging, Partition, SparkContext}
 
 /*/10/15.
   */
-object StoreUtils {
+object StoreUtils extends Logging {
 
   val PARTITION_BY = "PARTITION_BY"
   val BUCKETS = "BUCKETS"
@@ -75,8 +75,7 @@ object StoreUtils {
       val prefNodes = distMembers.map(
         m => blockMap.get(m)
       )
-
-      val prefNodeSeq = prefNodes.map(a => a.get).toSeq
+      val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
     partitions
@@ -116,12 +115,10 @@ object StoreUtils {
       table: String,
       schema: Option[StructType]): Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    // everytime we can get a map from SnappyCluster
-    val map = Map[InternalDistributedMember, BlockManagerId]()
-    val memberAccumulator = sqlContext.sparkContext.accumulator(map)(MembershipAccumulator)
-    new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table,
-      schema)(memberAccumulator).collect()
-    memberAccumulator.value
+
+    val blockMap = new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table,
+      schema).collect()
+    blockMap.toMap
   }
 
   def appendClause(sb: mutable.StringBuilder, getClause: () => String): Unit = {
@@ -170,12 +167,12 @@ object StoreUtils {
               throw new DDLException("Column table cannot be partitioned on" +
                   " PRIMARY KEY as no primary key")
             }
-            case _ => s"COLUMN ($v)"
+            case _ => s"COLUMN ($v) "
           }
         }
         s"$GEM_PARTITION_BY $parClause "
       }
-      ).getOrElse(if (isRowTable) EMPTY_STRING else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME)"))
+      ).getOrElse(if (isRowTable) EMPTY_STRING else s"$GEM_PARTITION_BY COLUMN ($SHADOW_COLUMN_NAME) "))
     } else {
       parameters.remove(PARTITION_BY).map(v => {
         v match {
@@ -185,10 +182,15 @@ object StoreUtils {
         }
       })
     }
+
+    if (!isShadowTable) {
+      sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH ($v) ")
+          .getOrElse(EMPTY_STRING))
+    }
+
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
-    sb.append(parameters.remove(COLOCATE_WITH).map(v => s"$GEM_COLOCATE_WITH $v ")
-        .getOrElse(EMPTY_STRING))
+
     sb.append(parameters.remove(REDUNDANCY).map(v => s"$GEM_REDUNDANCY $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(RECOVERYDELAY).map(v => s"$GEM_RECOVERYDELAY $v ")
@@ -218,4 +220,12 @@ object StoreUtils {
 
     sb.toString()
   }
+
+  def getPartitioningColumn(parameters: mutable.Map[String, String]) : Seq[String] = {
+    parameters.remove(PARTITION_BY).map(v => {
+      v.split(",").toSeq.map(a => a.trim)
+    }).getOrElse(Seq.empty[String])
+  }
+
+
 }

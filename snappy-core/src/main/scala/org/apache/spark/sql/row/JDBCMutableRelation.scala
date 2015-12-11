@@ -49,21 +49,25 @@ class JDBCMutableRelation(
   final val dialect = JdbcDialects.get(url)
 
   // create table in external store once upfront
-  createTable(mode)
+  val tableSchema = createTable(mode)
 
   override val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
 
   final val schemaFields = Utils.schemaFields(schema)
 
-  def createTable(mode: SaveMode): Unit = {
+  def createTable(mode: SaveMode): String = {
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = ExternalStoreUtils.getConnection(url, connProperties,
+        dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
+      logInfo("Applying DDL : "+ url + " connproperties " + connProperties)
+
       var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
+      val tableSchema = JdbcExtendedUtils.getCurrentSchema(conn, dialect)
       if (mode == SaveMode.Ignore && tableExists) {
-        return
+        return tableSchema
       }
 
       if (mode == SaveMode.ErrorIfExists && tableExists) {
@@ -91,10 +95,12 @@ class JDBCMutableRelation(
         logInfo("Applying DDL : " + sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(table, conn)
+          case d: JdbcExtendedDialect => d.initializeTable(table,
+            sqlContext.conf.caseSensitiveAnalysis, conn)
           case _ => // Do Nothing
         }
       }
+      tableSchema
     } catch {
       case sqle: java.sql.SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
@@ -245,7 +251,8 @@ class JDBCMutableRelation(
     // then on the driver
     JDBCMutableRelation.removePool(table)
     // drop the external table using a non-pool connection
-    val conn = JdbcUtils.createConnection(url, connProperties)
+    val conn = ExternalStoreUtils.getConnection(url, connProperties,
+      dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
     } finally {
@@ -254,7 +261,8 @@ class JDBCMutableRelation(
   }
 
   def truncate(): Unit = {
-    val conn = JdbcUtils.createConnection(url, connProperties)
+    val conn = ExternalStoreUtils.getConnection(url, connProperties,
+      dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
       JdbcExtendedUtils.truncateTable(conn, table, dialect)
     }
@@ -266,7 +274,8 @@ class JDBCMutableRelation(
   override def createIndex(tableName: String, sql: String): Unit = {
     var conn: Connection = null
     try {
-      conn = ExternalStoreUtils.getConnection(url, connProperties)
+      conn = ExternalStoreUtils.getConnection(url, connProperties,
+        dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
 

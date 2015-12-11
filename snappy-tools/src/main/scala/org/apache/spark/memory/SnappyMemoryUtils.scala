@@ -1,4 +1,4 @@
-package org.apache.spark.storage
+package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
