@@ -44,7 +44,7 @@ object LocalSparkConf {
     val conf = new SparkConf().
         setIfMissing("spark.master", "local[4]").
         setAppName(getClass.getName)
-    conf.set("snappy.store.optimization", "true")
+    conf.set("snappy.store.optimization", "false")
     conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
     if (addOn != null) {
       addOn(conf)
