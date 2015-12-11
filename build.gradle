@@ -23,7 +23,6 @@ allprojects {
 
   repositories {
     maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
-    mavenLocal()
     //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
