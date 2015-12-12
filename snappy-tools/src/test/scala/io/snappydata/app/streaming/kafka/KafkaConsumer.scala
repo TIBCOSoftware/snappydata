@@ -58,9 +58,7 @@ object KafkaConsumer {
       "strataReservoirSize" -> "300",
       "timeInterval" -> "3m"), Some("tweetstreamtable"))
 
-    ssnc.saveStream(tableStream, Seq("tweetstreamtable_sampled"), {
-      (rdd: RDD[Row], _) => rdd
-    }, tableStream.schema)
+    ssnc.saveStream(tableStream, Seq("tweetstreamtable_sampled"), tableStream.schema)
 
 
     var numTimes = 0

@@ -5,7 +5,8 @@ import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.{LogicalRDD, RDDConversions, SparkPlan}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.{StratifiedSample, LogicalRDD, RDDConversions, SparkPlan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState, Time}
@@ -28,6 +29,8 @@ final class StreamingSnappyContext private(@transient val streamingContext:
   with Serializable {
 
   self =>
+
+
 
   override def sql(sqlText: String): DataFrame = {
     StreamPlan.currentContext.set(self) // StreamingSnappyContext
@@ -131,8 +134,41 @@ object StreamingSnappyContext {
     }
   }
 
+  def start(): Unit = synchronized {
+    val snc = globalContext
+    val streamTables = snc.catalog.tables.collect {
+      case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
+        (streamTableName, sr.asInstanceOf[SocketStreamRelation])
+      case (streamTableName, LogicalRelation(sr: FileStreamRelation, _)) =>
+        (streamTableName, sr.asInstanceOf[FileStreamRelation])
+      case (streamTableName, LogicalRelation(sr: KafkaStreamRelation, _)) =>
+        (streamTableName, sr.asInstanceOf[KafkaStreamRelation])
+      case (streamTableName, LogicalRelation(sr: TwitterStreamRelation, _)) =>
+        (streamTableName, sr.asInstanceOf[TwitterStreamRelation])
+      case (streamTableName, LogicalRelation(sr: DirectKafkaStreamRelation, _)) =>
+        (streamTableName, sr.asInstanceOf[DirectKafkaStreamRelation])
+    }
+    streamTables.foreach {
+      case (streamTableName, sr) =>
+        val streamTable = Some(streamTableName)
+        val aqpTables = snc.catalog.tables.collect {
+          case (sampleTableIdent, sr: StratifiedSample)
+            if sr.streamTable == streamTable => sampleTableIdent.table
+        } ++ snc.catalog.topKStructures.collect {
+          case (topKIdent, (topK, _))
+            if topK.streamTable == streamTable => topKIdent.table
+        }
+        if (aqpTables.nonEmpty) {
+          snc.saveStream(sr.stream,
+            aqpTables.toSeq, sr.schema)
+        }
+    }
+    // start the streaming context
+    snc.streamingContext.start()
+  }
+
   def stop(stopSparkContext: Boolean = false,
-           stopGracefully: Boolean = true): Unit = {
+           stopGracefully: Boolean = true): Unit = synchronized {
     val snc = globalContext
     if (snc != null) {
       snc.streamingContext.stop(stopSparkContext, stopGracefully)
@@ -149,7 +185,7 @@ case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
                  formatter: (RDD[T], StructType) => RDD[Row],
                  schema: StructType,
                  transform: RDD[Row] => RDD[Row] = null): Unit =
-    context.saveStream(ds, sampleTab, formatter, schema, transform)
+    context.saveStream(ds, sampleTab, schema) // formatter, schema, transform)
 
   def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
                                                   jdbcSource: Map[String, String]): Unit = {
