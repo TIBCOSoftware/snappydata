@@ -1,15 +1,13 @@
 package org.apache.spark.sql.execution
 
-import scala.collection.mutable
-
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.Partitioner
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources.CastLongTime
-import org.apache.spark.sql.types.{ DataType, StructField, StructType }
-import org.apache.spark.sql.Row
-import org.apache.spark.Partitioner
-import org.apache.spark.sql.{ TimeEpoch, LockUtils }
+import org.apache.spark.sql.types.{DataType, StructField, StructType}
+import org.apache.spark.sql.{AnalysisException, Row}
+
+import scala.collection.mutable
 
 protected[sql] final class TopKWrapper(val name: QualifiedTableName,
   val cms: CMSParams, val size: Int, val timeSeriesColumn: Int,
