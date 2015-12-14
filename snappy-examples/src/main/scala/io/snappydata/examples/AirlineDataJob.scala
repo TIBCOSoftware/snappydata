@@ -10,16 +10,16 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
   */
 object AirlineDataJob extends SnappySQLJob {
 
-  override def runJob(snJobContext: C, jobConfig: Config): Any = {
+  override def runJob(snc: C, jobConfig: Config): Any = {
 
     val colTableName = "airline"
     val rowTableName = "airlineref"
 
     // Get the tables that were created using sql scripts via snappy-shell
-    val airlineDF: DataFrame = snJobContext.snc.table(colTableName)
+    val airlineDF: DataFrame = snc.table(colTableName)
 
     // Row table
-    val airlineCodeDF : DataFrame = snJobContext.snc.table(rowTableName)
+    val airlineCodeDF : DataFrame = snc.table(rowTableName)
 
 
     // Schema for column table
