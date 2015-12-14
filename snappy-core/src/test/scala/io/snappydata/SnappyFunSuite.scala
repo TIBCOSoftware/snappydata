@@ -3,6 +3,11 @@ package io.snappydata
 import java.io.File
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+
+//scalastyle:off
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+//scalastyle:on
+
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
@@ -27,6 +32,14 @@ abstract class SnappyFunSuite
     if (ctx != null && !ctx.isStopped) ctx
     else new SparkContext(newSparkConf())
   }
+
+  protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
+    val ctx = SnappyContext.globalSparkContext
+    if (ctx != null && !ctx.isStopped) ctx
+    else new SparkContext(newSparkConf(addOn))
+  }
+
+
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 
   /**
@@ -55,7 +68,8 @@ abstract class SnappyFunSuite
     FileCleaner.deletePath(dir)
   }
 
-  protected def newSparkConf(): SparkConf = LocalSparkConf.newConf()
+  protected def newSparkConf(addOn: (SparkConf) => SparkConf = null): SparkConf
+       = LocalSparkConf.newConf(addOn)
 
   protected def dirCleanup(): Unit = {
     if (dirList.nonEmpty) {
@@ -66,8 +80,8 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val sc = this.sc
-      if (sc != null && !sc.isStopped) {
+      val scL = this.sc
+      if (scL != null && !scL.isStopped) {
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
             snc.dropExternalTable(tableName, ifExists = true)

@@ -83,7 +83,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
 
     val conf = new SparkConf()
-    conf.setMaster(Constant.JDBC_URL_PREFIX + s"$locator").
+    conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
       setAppName("leaderLauncher").
       set(Property.jobserverEnabled, "true")
 

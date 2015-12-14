@@ -1,8 +1,11 @@
 package org.apache.spark.sql.store
 
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
-import org.scalatest.BeforeAndAfter
+import io.snappydata.core.{Data, TestData, TestData2}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import scala.collection.JavaConverters._
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{AnalysisException, SaveMode}
@@ -15,15 +18,19 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
 class ColumnTableTest
     extends SnappyFunSuite
     with Logging
-    with BeforeAndAfter {
+    with BeforeAndAfter
+    with BeforeAndAfterAll {
 
-  val tableName: String = "ColumnTable"
-  val props = Map.empty[String, String]
+
 
   after {
     snc.dropExternalTable(tableName, ifExists = true)
     snc.dropExternalTable("ColumnTable2", ifExists = true)
   }
+
+  val tableName: String = "ColumnTable"
+
+  val props = Map.empty[String, String]
 
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
@@ -32,6 +39,7 @@ class ColumnTableTest
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
@@ -104,7 +112,7 @@ class ColumnTableTest
     println("Successful")
   }
 
-  val options = "OPTIONS (PARTITION_BY 'Col1')"
+  val options = "OPTIONS (PARTITION_BY 'col1')"
 
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
@@ -264,4 +272,169 @@ class ColumnTableTest
 
     println("Successful")
   }
+
+  test("Test PR with REDUNDANCY") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE1")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE1(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "REDUNDANCY '2')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE1", true).asInstanceOf[PartitionedRegion]
+
+    val rCopy = region.getPartitionAttributes.getRedundantCopies
+    assert(rCopy === 2)
+  }
+
+  test("Test PR with buckets") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE2")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE2(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "BUCKETS '213')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE2", true).asInstanceOf[PartitionedRegion]
+
+    val numPartitions = region.getTotalNumberOfBuckets
+    assert(numPartitions === 213)
+  }
+
+
+  test("Test PR with RECOVERDELAY") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE4")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE4(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "BUCKETS '213'," +
+        "RECOVERYDELAY '2')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE4", true).asInstanceOf[PartitionedRegion]
+
+    val rDelay = region.getPartitionAttributes.getRecoveryDelay
+    assert(rDelay === 2)
+  }
+
+  test("Test PR with MAXPART") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE5")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE5(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "MAXPARTSIZE '200')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE5", true).asInstanceOf[PartitionedRegion]
+
+    val rMaxMem = region.getPartitionAttributes.getLocalMaxMemory
+    assert(rMaxMem === 200)
+  }
+
+  test("Test PR with EVICTION BY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE6")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE6(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EVICTION_BY 'LRUMEMSIZE 200')")
+
+    Misc.getRegionForTable("APP.COLUMN_TEST_TABLE6", true).asInstanceOf[PartitionedRegion]
+  }
+
+   test("Test PR with Colocation") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE20(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EVICTION_BY 'LRUMEMSIZE 200')")
+
+    //snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE21(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "COLOCATE_WITH 'COLUMN_TEST_TABLE20')")
+
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE20", true).asInstanceOf[PartitionedRegion]
+    assert(region.colocatedByList.size() == 2)
+     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE21")
+     snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE20")
+  }
+
+  test("Test PR with PERSISTENT") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE7")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE7(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE7", true).asInstanceOf[PartitionedRegion]
+    assert(region.getDiskStore != null)
+    assert(!region.getAttributes.isDiskSynchronous)
+  }
+
+  test("Test RR with PERSISTENT") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE8")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE8(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val region = Misc.getRegionForTable("APP.COLUMN_TEST_TABLE8", true).asInstanceOf[PartitionedRegion]
+    assert(region.getDiskStore != null)
+    assert(!region.getAttributes.isDiskSynchronous)
+  }
+
+  test("Test PR with multiple columns") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE9")
+    snc.sql("CREATE TABLE COLUMN_TEST_TABLE9(OrderId INT ,ItemId INT, ItemRef INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId, ItemRef'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMN_TEST_TABLE9")
+    val count = snc.sql("select * from COLUMN_TEST_TABLE9").count()
+    assert(count === 1000)
+  }
+
+  test("Test Non parttitioned tables") {
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => TestData(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE10")
+
+    snc.sql("CREATE TABLE row_table2(OrderId INT ,ItemId INT)" +
+        "USING column options()")
+
+
+    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMN_TEST_TABLE10")
+
+    val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
+    assert(count === 1000)
+  }
+
 }

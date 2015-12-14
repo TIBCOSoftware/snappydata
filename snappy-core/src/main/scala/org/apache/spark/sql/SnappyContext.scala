@@ -13,16 +13,15 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.approximate.TopKUtil
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
@@ -33,12 +32,13 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkContext, SparkException}
 
 /**
-  * An instance of the Spark SQL execution engine that delegates to supplied
-  * SQLContext offering additional capabilities.
-  *
-  * Created by Soubhik on 5/13/15.
-  */
-class SnappyContext private(sc: SparkContext)
+ * An instance of the Spark SQL execution engine that delegates to supplied
+ * SQLContext offering additional capabilities.
+ *
+ * Created by Soubhik on 5/13/15.
+ */
+
+class SnappyContext protected (@transient sc: SparkContext)
     extends SQLContext(sc) with Serializable with Logging {
 
   self =>
@@ -46,6 +46,11 @@ class SnappyContext private(sc: SparkContext)
   // initialize GemFireXDDialect so that it gets registered
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sc)
+
+  protected[sql] override lazy val conf: SQLConf = new SQLConf {
+    override def caseSensitiveAnalysis: Boolean =
+      getConf(SQLConf.CASE_SENSITIVE, false)
+  }
 
   @transient
   override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
@@ -63,7 +68,7 @@ class SnappyContext private(sc: SparkContext)
   override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
   @transient
-  override protected[sql] val cacheManager = new SnappyCacheManager(self)
+  override protected[sql] val cacheManager = new SnappyCacheManager()
 
 
   def saveStream[T: ClassTag](stream: DStream[T],
@@ -210,12 +215,12 @@ class SnappyContext private(sc: SparkContext)
     val cached = rdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation, schema.toAttributes)
-
+        tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
           .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
+
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
@@ -239,7 +244,7 @@ class SnappyContext private(sc: SparkContext)
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = catalog.lookupRelation(qualifiedTable, None)
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(br) =>
+      case LogicalRelation(br, _) =>
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
           case d: DestroyRelation => d.truncate()
@@ -262,7 +267,7 @@ class SnappyContext private(sc: SparkContext)
     val plan: LogicalRDD = LogicalRDD(schema.toAttributes,
       new DummyRDD(self))(self)
 
-    catalog.registerTable(Seq(tableName), plan)
+    catalog.registerTable(catalog.newQualifiedTableName(tableName), plan)
   }
 
   def registerSampleTable(tableName: String, schema: StructType,
@@ -288,9 +293,10 @@ class SnappyContext private(sc: SparkContext)
 
   def registerTopK(tableName: String, streamTableName: String,
       topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit = {
+    //TODO Yogesh, this needs to handle all types of StreamRelations
     val topKRDD = TopKUtil.createTopKRDD(tableName, self.sc, isStreamSummary)
     catalog.registerTopK(tableName, streamTableName,
-      catalog.getStreamTableRelation(streamTableName).schema, topkOptions, topKRDD)
+      catalog.getStreamTableSchema(streamTableName), topkOptions, topKRDD)
   }
 
   override def createExternalTable(
@@ -430,7 +436,7 @@ class SnappyContext private(sc: SparkContext)
     }
     // additional cleanup for external tables, if required
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(br) =>
+      case LogicalRelation(br, _) =>
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
@@ -455,7 +461,7 @@ class SnappyContext private(sc: SparkContext)
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     //println("qualifiedTable=" + qualifiedTable)
     snappy.unwrapSubquery(catalog.lookupRelation(qualifiedTable, None)) match {
-      case LogicalRelation(i: IndexableRelation) =>
+      case LogicalRelation(i: IndexableRelation, _) =>
         i.createIndex(tableName, sql)
       case _ => throw new AnalysisException(
         s"$tableName is not an indexable table")
@@ -472,7 +478,8 @@ class SnappyContext private(sc: SparkContext)
     try {
       val (url, _, _, connProps, _) =
         ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
-      conn = ExternalStoreUtils.getConnection(url, connProps)
+      conn = ExternalStoreUtils.getConnection(url, connProps,
+        JdbcDialects.get(url), Utils.isLoner(sc))
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
@@ -510,7 +517,7 @@ class SnappyContext private(sc: SparkContext)
   def insert(tableName: String, rows: Row*): Int = {
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(r: RowInsertableRelation) => r.insert(rows)
+      case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
@@ -520,7 +527,7 @@ class SnappyContext private(sc: SparkContext)
       updateColumns: String*): Int = {
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(u: UpdatableRelation) =>
+      case LogicalRelation(u: UpdatableRelation, _) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
@@ -530,7 +537,7 @@ class SnappyContext private(sc: SparkContext)
   def delete(tableName: String, filterExpr: String): Int = {
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {
-      case LogicalRelation(d: DeletableRelation) => d.delete(filterExpr)
+      case LogicalRelation(d: DeletableRelation, _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }
@@ -552,27 +559,23 @@ class SnappyContext private(sc: SparkContext)
     }
 
   @transient
-  override protected[sql] val planner = new execution.SparkPlanner(this) {
+  override protected[sql] val planner = new org.apache.spark.sql.execution.SparkPlanner(this)
+      with SnappyStrategies {
+
     val snappyContext = self
 
-    override def strategies: Seq[Strategy] = Seq(
-      SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+    // TODO temporary flag till we determine every thing works fine with the optimizations
+    val storeOptimization = snappyContext.sparkContext.getConf.get(
+      "snappy.store.optimization", "false").toBoolean
 
-    object SnappyStrategies extends Strategy {
-      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-        case s@StratifiedSample(options, child, _) =>
-          s.getExecution(planLater(child)) :: Nil
-        case PhysicalOperation(projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-          pruneFilterProject(
-            projectList,
-            filters,
-            identity[Seq[Expression]], // All filters still need to be evaluated
-            InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
-        case _ => Nil
-      }
-    }
+    val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
+      Seq(StoreDataSourceStrategy , LocalJoinStrategies)
+    else Nil
 
+    override def strategies: Seq[Strategy] =
+      Seq(SnappyStrategies, StreamDDLStrategy, StoreStrategy, StreamQueryStrategy) ++
+          storeOptimizedRules ++
+          super.strategies
   }
 
   /**
@@ -688,19 +691,7 @@ class SnappyContext private(sc: SparkContext)
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k)
   }
-
-  private var storeConfig: Map[String, String] = _
-
-  def setExternalStoreConfig(conf: Map[String, String]): Unit = {
-    self.storeConfig = conf
-  }
-
-  def getExternalStoreConfig: Map[String, String] = {
-    storeConfig
-  }
 }
-
-
 
 object GlobalSnappyInit {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
@@ -717,7 +708,8 @@ object GlobalSnappyInit {
     }
   }
 
-  private[sql] def  resetGlobalSNContext:Unit = _globalSNContextInitialized=false
+  private[sql] def resetGlobalSNContext(): Unit =
+    _globalSNContextInitialized = false
 
   private def invokeServices(sc: SparkContext): Unit = {
     SnappyContext.getClusterMode(sc) match {
@@ -741,7 +733,6 @@ object GlobalSnappyInit {
       case _ => // ignore
     }
   }
-
 }
 
 object SnappyContext extends Logging {
@@ -753,8 +744,13 @@ object SnappyContext extends Logging {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
+    "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName
+    "socket_stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
+    "file_stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
+    "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName,
+    "directkafka_stream" -> classOf[streaming.DirectKafkaStreamSource].getCanonicalName,
+    "twitter_stream" -> classOf[streaming.TwitterStreamSource].getCanonicalName
   )
 
   def globalSparkContext: SparkContext = SparkContext.activeContext.get()
@@ -880,7 +876,7 @@ object SnappyContext extends Logging {
     }
     _clusterMode = null
     _anySNContext = null
-    GlobalSnappyInit.resetGlobalSNContext
+    GlobalSnappyInit.resetGlobalSNContext()
   }
 
   def getProvider(providerName: String): String =

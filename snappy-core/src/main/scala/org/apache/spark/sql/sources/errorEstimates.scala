@@ -4,7 +4,7 @@
 package org.apache.spark.sql.sources
 
 import org.apache.commons.math3.distribution.{NormalDistribution, TDistribution}
-import org.apache.spark.sql.Row
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.types._
@@ -47,8 +47,18 @@ object ErrorAggregate extends Enumeration {
   val Sum = Value("SUM")
 }
 
-final class StatCounterWithFullCount(var weightedCount: Double = 0)
-    extends StatVarianceCounter with Serializable {
+/**
+ * A class for tracking the statistics of a set of numbers (count, mean,
+ * variance and weightedCount) in a numerically robust way.
+ * Includes support for merging two counters.
+ *
+ * Taken from Spark's StatCounter implementation removing max and min.
+ */
+final class StatCounterWithFullCount(var weightedCount: Double)
+    extends BaseGenericInternalRow with StatVarianceCounter with Serializable {
+
+  /** No-arg constructor for serialization. */
+  def this() = this(0)
 
   override protected def mergeDistinctCounter(other: StatVarianceCounter) {
     super.mergeDistinctCounter(other)
@@ -58,7 +68,7 @@ final class StatCounterWithFullCount(var weightedCount: Double = 0)
   }
 
   def merge(other: StatCounterWithFullCount) {
-    if (other != this) {
+    if (other ne this) {
       super.mergeDistinctCounter(other)
       weightedCount += other.weightedCount
     } else {
@@ -73,6 +83,34 @@ final class StatCounterWithFullCount(var weightedCount: Double = 0)
     other.nvariance = nvariance
     other.weightedCount = weightedCount
     other
+  }
+
+  override def numFields: Int = 4
+
+  protected override def genericGet(ordinal: Int): Any = {
+    ordinal match {
+      case 0 => count
+      case 1 => mean
+      case 2 => nvariance
+      case 3 => weightedCount
+    }
+  }
+
+  override def getLong(ordinal: Int): Long = {
+    if (ordinal == 0) {
+      count
+    } else {
+      throw new ClassCastException("cannot cast double to long")
+    }
+  }
+
+  override def getDouble(ordinal: Int): Double = {
+    ordinal match {
+      case 1 => mean
+      case 2 => nvariance
+      case 3 => weightedCount
+      case 0 => count
+    }
   }
 
   override def toString: String = {
@@ -93,35 +131,29 @@ private[spark] case object StatCounterUDT
       StructField("weightedCount", DoubleType, nullable = false)))
   }
 
-  override def serialize(obj: Any): Row = {
+  override def serialize(obj: Any): InternalRow = {
     obj match {
-      case s: StatCounterWithFullCount =>
-        val row = new Array[Any](4)
-        row(0) = s.count
-        row(1) = s.mean
-        row(2) = s.nvariance
-        row(3) = s.weightedCount
-        new GenericRow(row)
-      // due to bugs in UDT serialization (SPARK-7186)
-      case row: Row => row
+      case s: StatCounterWithFullCount => s
     }
   }
 
   override def deserialize(datum: Any): StatCounterWithFullCount = {
     datum match {
-      case row: Row =>
-        require(row.length == 4, "StatCounterUDT.deserialize given row " +
-            s"with length ${row.length} but requires length == 4")
+      case s: StatCounterWithFullCount => s
+      case row: InternalRow =>
+        require(row.numFields == 4, "StatCounterUDT.deserialize given row " +
+            s"with length ${row.numFields} but requires length == 4")
         val s = new StatCounterWithFullCount(row.getDouble(3))
         s.initStats(count = row.getLong(0), mean = row.getDouble(1),
           nvariance = row.getDouble(2))
         s
-      // due to bugs in UDT serialization (SPARK-7186)
-      case s: StatCounterWithFullCount => s
     }
   }
 
-  override def userClass: Class[StatCounterWithFullCount] = classOf[StatCounterWithFullCount]
+  override def typeName: String = "StatCounter"
+
+  override def userClass: Class[StatCounterWithFullCount] =
+    classOf[StatCounterWithFullCount]
 
   private[spark] override def asNullable = this
 
@@ -139,7 +171,7 @@ private[spark] case object StatCounterUDT
       // TODO: somehow cache this at the whole evaluation level
       // (wrapper LogicalPlan with StudentTCacher?)
       // the expensive t-distribution
-      else stdev * new TDistribution(errorStats.count - 1)
+      else stdev * new TDistribution(math.max(1.0, errorStats.count - 1))
           .inverseCumulativeProbability(0.5 + confidence / 2.0)
 
     aggType match {
@@ -236,11 +268,18 @@ case class ErrorStatsMergeFunction(expr: Expression,
   // Required for serialization
   def this() = this(null, null, 0, 0, null)
 
-  private val errorStats = new StatCounterWithFullCount()
+  private[this] final val errorStats = new StatCounterWithFullCount()
+  private[this] final val statsTmp = new StatCounterWithFullCount()
 
   override def update(input: InternalRow): Unit = {
-    val result = expr.eval(input)
-    errorStats.merge(result.asInstanceOf[StatCounterWithFullCount])
+    expr.eval(input) match {
+      case stats: StatCounterWithFullCount => errorStats.merge(stats)
+      case r =>
+        val row = r.asInstanceOf[InternalRow]
+        statsTmp.initStats(row.getLong(0), row.getDouble(1), row.getDouble(2))
+        statsTmp.weightedCount = row.getDouble(3)
+        errorStats.merge(statsTmp)
+    }
   }
 
   override def eval(input: InternalRow) = StatCounterUDT.finalizeEvaluation(

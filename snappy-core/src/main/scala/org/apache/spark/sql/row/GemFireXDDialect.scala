@@ -7,6 +7,7 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
@@ -137,15 +138,24 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     }
   }
 
-  override def initializeTable(tableName: String, conn: Connection): Unit = {
-      val stmt = conn.createStatement()
-      val rs = stmt.executeQuery(s"select datapolicy from sys.systables where tablename='${tableName.toUpperCase}'")
-      val result = if (rs.next()) rs.getString(1) else null
-      if(result.equalsIgnoreCase("PARTITION") || result.equalsIgnoreCase("PERSISTENT_PARTITION")){
-        JdbcExtendedUtils.executeUpdate(
-          s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
-      }
-      rs.close()
-      stmt.close()
+  override def initializeTable(tableName: String, caseSensitive: Boolean,
+      conn: Connection): Unit = {
+    val stmt = conn.createStatement()
+    // TODO: need to use quoted names with caseSensitive=true in create & query
+    /*
+    val table = if (caseSensitive) tableName
+    else Utils.normalizeIdUpperCase(tableName)
+    */
+    val table = Utils.normalizeIdUpperCase(tableName)
+    val rs = stmt.executeQuery("select datapolicy from sys.systables where " +
+        s"tablename='$table'")
+    val result = if (rs.next()) rs.getString(1) else null
+    rs.close()
+    stmt.close()
+    if ("PARTITION".equalsIgnoreCase(result) ||
+        "PERSISTENT_PARTITION".equalsIgnoreCase(result)) {
+      JdbcExtendedUtils.executeUpdate(
+        s"call sys.CREATE_ALL_BUCKETS('$table')", conn)
+    }
   }
 }
