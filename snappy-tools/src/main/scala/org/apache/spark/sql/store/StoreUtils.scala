@@ -222,7 +222,7 @@ object StoreUtils extends Logging {
   }
 
   def getPartitioningColumn(parameters: mutable.Map[String, String]) : Seq[String] = {
-    parameters.remove(PARTITION_BY).map(v => {
+    parameters.get(PARTITION_BY).map(v => {
       v.split(",").toSeq.map(a => a.trim)
     }).getOrElse(Seq.empty[String])
   }

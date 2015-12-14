@@ -100,13 +100,13 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-    val colRDD = super.scanTable(table + shadowTableNamePrefix, requiredColumns, filters)
+    val colRdd = super.scanTable(table + shadowTableNamePrefix, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
-    val union = colRDD.union(connectionType match {
-      case ConnectionType.Embedded =>
-        new RowFormatScanRDD(
+    val union = connectionType match {
+      case ConnectionType.Embedded => {
+        val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
           connFunctor,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -117,9 +117,14 @@ class ColumnFormatRelation(
           blockMap,
           connProperties
         ).asInstanceOf[RDD[Row]]
+
+        rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
+          leftIter ++ rightIter
+        }
+      }
       //TODO: This needs to be changed for non-embedded mode, inefficient
       case _ =>
-        new JDBCRDD(
+        colRdd.union(new JDBCRDD(
           sqlContext.sparkContext,
           connFunctor,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -128,8 +133,8 @@ class ColumnFormatRelation(
           filters,
           Array[Partition](JDBCPartition(null, 0)),
           connProperties
-        ).asInstanceOf[RDD[Row]]
-    })
+        ).asInstanceOf[RDD[Row]])
+    }
     union
   }
 
