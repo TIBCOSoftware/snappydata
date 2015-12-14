@@ -42,6 +42,10 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private lazy val totalRows = rows.length
 
+  // creating one shared object for clob columns in order to call
+  // toDataForOptimizedResultHolder on clob object while sending data in
+  // writeColDataInOptimizedWay(). The data will be read back on gemfirexd node
+  // using the corresponding fromDataForOptimizedResultHolder on the clob object
   private lazy val clobColData = new SQLClob
 
   // using the gemfirexd way of sending results where in the number of
