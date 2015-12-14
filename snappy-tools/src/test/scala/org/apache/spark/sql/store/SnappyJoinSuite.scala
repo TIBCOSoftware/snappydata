@@ -17,7 +17,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val props = Map.empty[String, String]
 
-  ignore("Replicated table join with PR Table") {
+  test("Replicated table join with PR Table") {
 
     val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
     val refDf = snc.createDataFrame(rdd)
@@ -65,7 +65,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("Replicated table join with Replicated Table") {
+  test("Replicated table join with Replicated Table") {
 
     val rdd = sc.parallelize((1 to 5).map(i => RefData(i, s"$i")))
     val refDf = snc.createDataFrame(rdd)
@@ -131,7 +131,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     }
   }
 
-  ignore("Row PR table join with PR Table") {
+  test("Row PR table join with PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
@@ -165,7 +165,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("Column PR table join with PR Table") {
+  test("Column PR table join with PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
@@ -203,7 +203,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("Column PR table join with Non user mentioned PR Table") {
+  test("Column PR table join with Non user mentioned PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
@@ -240,7 +240,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("Column PR table join with Row PR Table") {
+  test("Column PR table join with Row PR Table") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
@@ -282,7 +282,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("Row PR table join with PR Table with unequal partitions") {
+  test("Row PR table join with PR Table with unequal partitions") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
@@ -319,7 +319,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  ignore("More than two table joins") {
+  test("More than two table joins") {
 
     val dimension1 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
