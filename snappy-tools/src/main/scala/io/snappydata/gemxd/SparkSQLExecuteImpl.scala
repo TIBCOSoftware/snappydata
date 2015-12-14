@@ -8,6 +8,7 @@ import com.gemstone.gemfire.internal.{HeapDataOutputStream, InternalDataSerializ
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, GfxdHeapDataOutputStream}
+import com.pivotal.gemfirexd.internal.iapi.types.SQLClob
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
@@ -40,6 +41,8 @@ class SparkSQLExecuteImpl(val sql: String,
   private var rowsSent = 0
 
   private lazy val totalRows = rows.length
+
+  private lazy val clobColData = new SQLClob
 
   // using the gemfirexd way of sending results where in the number of
   // columns in each row is divided into sets of 8 columns. Per eight column group a
@@ -184,7 +187,11 @@ class SparkSQLExecuteImpl(val sql: String,
       case t: DecimalType => DataSerializer.writeObject(row.getDecimal(colIndex), hdos)
       case FloatType => hdos.writeFloat(row.getFloat(colIndex))
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
-      case StringType => DataSerializer.writeString(row.getString(colIndex), hdos)
+      case StringType => {
+        clobColData.setValue(row.getString(colIndex))
+        clobColData.toDataForOptimizedResultHolder(hdos)
+        clobColData.restoreToNull
+      }
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
