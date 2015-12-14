@@ -1,5 +1,6 @@
 package io.snappydata
 
+
 import java.util.Properties
 
 import scala.collection.JavaConversions._
@@ -60,9 +61,10 @@ object ToolsCallbackImpl extends ToolsCallback {
           org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
         }).mkString(",")
 
-    "jdbc:" + Constant.JDBC_URL_PREFIX + (if (locatorUrl.contains(",")) {
+    "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           ";secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl)
   }
+
 }

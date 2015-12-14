@@ -12,6 +12,8 @@ object Constant {
 
   val DEFAULT_EMBEDDED_URL = "jdbc:snappydata:"
 
+  val SNAPPY_URL_PREFIX = "snappydata://"
+
   val JDBC_URL_PREFIX = "snappydata://"
 
   val JDBC_EMBEDDED_DRIVER = "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"

@@ -3,16 +3,16 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Command, LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming._
+import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 /**
  * Snappy SQL extensions. Includes:
@@ -27,6 +27,13 @@ object SnappyParser extends SqlParserBase {
   protected val ESTIMATE = Keyword("ESTIMATE")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
+  // Added for streaming window CQs
+  protected val WINDOW = Keyword("WINDOW")
+  protected val DURATION = Keyword("DURATION")
+  protected val SLIDE = Keyword("SLIDE")
+  protected val MILLISECONDS = Keyword("MILLISECONDS")
+  protected val SECONDS = Keyword("SECONDS")
+  protected val MINUTES = Keyword("MINUTES")
 
   protected val defaultConfidence = 0.75
 
@@ -50,9 +57,41 @@ object SnappyParser extends SqlParserBase {
       }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
-      case r ~ s => DMLExternalTable(r, UnresolvedRelation(Seq(r)), s)
+    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~ wholeInput ^^ {
+      case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
     }
+
+  protected lazy val unit: Parser[Duration] =
+    (
+        stringLit <~ MILLISECONDS ^^ { case str => Milliseconds(str.toInt) }
+      | stringLit <~ SECONDS ^^ { case str => Seconds(str.toInt) }
+      | stringLit <~ MINUTES ^^ { case str => Minutes(str.toInt) }
+    )
+
+  protected lazy val windowOptions: Parser[(Duration, Option[Duration])] =
+    WINDOW ~ "(" ~> (DURATION ~> unit) ~
+      ("," ~ SLIDE ~> unit).? <~ ")" ^^ {
+      case duration ~ slide => (duration, slide)
+    }
+
+  protected override lazy val relationFactor: Parser[LogicalPlan] =
+    (tableIdentifier ~ windowOptions.? ~ (opt(AS) ~> opt(ident)) ^^ {
+      case tableIdent ~ window ~ alias => window.map { win =>
+        WindowLogicalPlan(
+          win._1,
+          win._2,
+          UnresolvedRelation(tableIdent, alias))
+      }.getOrElse(UnresolvedRelation(tableIdent, alias))
+    }
+      |
+      ("(" ~> start <~ ")") ~ windowOptions.? ~ (AS.? ~> ident) ^^ {
+      case child ~ window ~ alias => window.map { win =>
+        WindowLogicalPlan(
+          win._1,
+          win._2,
+          Subquery(alias, child))
+      }.getOrElse(Subquery(alias, child))
+    })
 
   override def parseExpression(input: String): Expression = synchronized {
     // Initialize the Keywords.
@@ -85,8 +124,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   protected val STREAM = Keyword("STREAM")
   protected val SAMPLED = Keyword("SAMPLED")
-  protected val STRM = Keyword("STREAMING")
-  protected val CTXT = Keyword("CONTEXT")
+  protected val STREAMING = Keyword("STREAMING")
+  protected val CONTEXT = Keyword("CONTEXT")
   protected val START = Keyword("START")
   protected val STOP = Keyword("STOP")
   protected val INIT = Keyword("INIT")
@@ -183,10 +222,12 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   protected lazy val createStream: Parser[LogicalPlan] =
     (CREATE ~> STREAM ~> TABLE ~> ident) ~
-        tableCols.? ~ (OPTIONS ~> options) ^^ {
-      case streamName ~ cols ~ opts =>
+        tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
+      case streamname ~ cols ~ providerName ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-        CreateStream(streamName, userColumns, opts)
+        val provider = SnappyContext.getProvider(providerName)
+        val userOpts  = opts.updated(USING.str, provider)
+        CreateStreamTable(streamname, userColumns, new CaseInsensitiveMap(userOpts))
     }
 
   protected lazy val createSampled: Parser[LogicalPlan] =
@@ -196,13 +237,13 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
-    (STRM ~> CTXT ~>
+    (STREAMING ~> CONTEXT ~>
         (INIT ^^^ 0 | START ^^^ 1 | STOP ^^^ 2) ~ numericLit.?) ^^ {
       case action ~ batchInterval =>
         if (batchInterval.isDefined)
-          StreamingCtxtActions(action, Some(batchInterval.get.toInt))
+          StreamOperationsLogicalPlan(action, Some(batchInterval.get.toInt))
         else
-          StreamingCtxtActions(action, None)
+          StreamOperationsLogicalPlan(action, None)
 
     }
 
@@ -240,7 +281,7 @@ private[sql] case class CreateExternalTableUsing(
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options)
@@ -257,7 +298,7 @@ private[sql] case class CreateExternalTableUsingSelect(
     query: LogicalPlan) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
       partitionColumns, mode, options, query)
@@ -273,7 +314,7 @@ private[sql] case class DropTable(
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
     else snc.dropExternalTable(tableName, ifExists)
     Seq.empty
@@ -285,7 +326,7 @@ private[sql] case class TruncateTable(
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.truncateTable(tableName)
     else snc.truncateExternalTable(tableName)
     Seq.empty
@@ -297,7 +338,7 @@ private[sql] case class CreateIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc =sqlContext.asInstanceOf[SnappyContext]
     snc.createIndexOnExternalTable(tableName, sql)
     Seq.empty
   }
@@ -307,14 +348,14 @@ private[sql] case class DropIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = SnappyContext(sqlContext.sparkContext)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     snc.dropIndexOnExternalTable(sql)
     Seq.empty
   }
 }
 
 case class DMLExternalTable(
-    tableName: String,
+    tableName: TableIdentifier,
     child: LogicalPlan,
     command: String)
     extends LogicalPlan with Command {
@@ -324,22 +365,7 @@ case class DMLExternalTable(
   override def output: Seq[Attribute] = child.output
 }
 
-object StreamStrategy extends Strategy {
-  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-    case CreateStream(streamName, userColumns, options) =>
-      ExecutedCommand(
-        CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
-    case CreateSampledTable(streamName, options) =>
-      ExecutedCommand(
-        CreateSampledTableCmd(streamName, options)) :: Nil
-    case StreamingCtxtActions(action, batchInterval) =>
-      ExecutedCommand(
-        StreamingCtxtActionsCmd(action, batchInterval)) :: Nil
-    case _ => Nil
-  }
-}
-
-private[sql] case class CreateStream(streamName: String,
+private[sql] case class CreateStreamTable(streamName: String,
     userColumns: Option[StructType],
     options: Map[String, String])
     extends LogicalPlan with Command {
@@ -360,7 +386,7 @@ private[sql] case class CreateSampledTable(streamName: String,
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
-private[sql] case class StreamingCtxtActions(action: Int,
+private[sql] case class StreamOperationsLogicalPlan(action: Int,
     batchInterval: Option[Int])
     extends LogicalPlan with Command {
 
@@ -376,18 +402,19 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     extends RunnableCommand {
 
   def run(sqlContext: SQLContext): Seq[Row] = {
-
+    val provider = SnappyContext.getProvider(options("using"))
     val resolved = ResolvedDataSource(sqlContext, userColumns,
-      Array.empty[String], classOf[StreamSource].getCanonicalName, options)
+      Array.empty[String], provider, options)
     val plan = LogicalRelation(resolved.relation)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    val catalog = snc.catalog
+    val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
 
-    val catalog = SnappyContext(sqlContext.sparkContext).catalog
-    val streamTable = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
     catalog.tables.get(streamTable) match {
       case None => catalog.tables.put(streamTable, plan)
       case Some(x) => throw new IllegalStateException(
-        s"Stream name $streamTable already defined")
+        s"Stream table name $streamTable already defined")
     }
     Seq.empty
   }
@@ -408,13 +435,22 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
       case 1 =>
         // Register sampling of all the streams
-        val snappyCtxt = SnappyContext(sqlContext.sparkContext)
+        val snappyCtxt = sqlContext.asInstanceOf[SnappyContext]
         val catalog = snappyCtxt.catalog
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
           // around in StreamRelation so as to give the proper runtime type
-          case (streamTableName, LogicalRelation(sr: StreamRelation[_])) =>
-            (streamTableName, sr.asInstanceOf[StreamRelation[Any]])
+          //TODO Yogesh, need to see if this needs to be extended for other stream relations
+          case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[SocketStreamRelation])
+          case (streamTableName, LogicalRelation(sr: FileStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[FileStreamRelation])
+          case (streamTableName, LogicalRelation(sr: KafkaStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[KafkaStreamRelation])
+          case (streamTableName, LogicalRelation(sr: TwitterStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[TwitterStreamRelation])
+          case (streamTableName, LogicalRelation(sr: DirectKafkaStreamRelation, _)) =>
+            (streamTableName, sr.asInstanceOf[DirectKafkaStreamRelation])
         }
         streamTables.foreach {
           case (streamTableName, sr) =>
@@ -427,8 +463,9 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
                 if topK.streamTable == streamTable => topKIdent.table
             }
             if (aqpTables.nonEmpty) {
-              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
-                sr.schema)(sr.ct)
+              //TODO Yogesh, check with Sumedh and fix. We need to remove the formatter
+//              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
+//                sr.schema)(sr.ct)
             }
         }
         // start the streaming
@@ -445,70 +482,19 @@ private[sql] case class CreateSampledTableCmd(sampledTableName: String,
     extends RunnableCommand {
 
   def run(sqlContext: SQLContext): Seq[Row] = {
+    val BASETABLE = "basetable"
+    val table = options(BASETABLE)
 
-    val table = OptsUtil.getOption(OptsUtil.BASETABLE, options)
-
-    val snappyCtxt = SnappyContext(sqlContext.sparkContext)
-    val catalog = snappyCtxt.catalog
-
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    val catalog = snc.catalog
     val tableIdent = catalog.newQualifiedTableName(table)
-    val sr = catalog.getStreamTableRelation(tableIdent)
+    val schema = catalog.getStreamTableSchema(tableIdent)
 
     // Add the sample table to the catalog as well.
     // StratifiedSampler is not expecting base table, remove it.
-    snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
-      options - OptsUtil.BASETABLE, Some(tableIdent.table))
+    snc.registerSampleTable(sampledTableName, schema,
+      options - BASETABLE, Some(tableIdent.table))
 
     Seq.empty
-  }
-}
-
-object OptsUtil {
-
-  // Options while creating sample/stream table
-  val BASETABLE = "basetable"
-  val SERVER_ADDRESS = "serveraddress"
-  //val PORT = "port"
-  val FORMAT = "format"
-  val SLIDEDURATION = "slideduration"
-  val WINDOWDURATION = "windowduration"
-  val STORAGE_LEVEL = "storagelevel"
-
-  def newAnalysisException(msg: String) = new AnalysisException(msg)
-
-  def getOption(optionName: String, options: Map[String, String]): String =
-    options.getOrElse(optionName, options.collectFirst {
-      case (k, v) if (k.equalsIgnoreCase(optionName)) => v
-    }.getOrElse(throw newAnalysisException(
-      s"Option $optionName not defined")))
-
-  def getOptionally(optionName: String,
-      options: Map[String, String]): Option[String] = options.get(optionName)
-}
-
-private[spark] object StreamingCtxtHolder {
-
-  @volatile private[this] var globalContext: StreamingContext = _
-  private[this] val contextLock = new AnyRef
-
-  def streamingContext = globalContext
-
-  def apply(sparkCtxt: SparkContext,
-      duration: Int): StreamingContext = {
-    val context = globalContext
-    if (context != null &&
-        context.getState() != StreamingContextState.STOPPED) {
-      context
-    } else contextLock.synchronized {
-      val context = globalContext
-      if (context != null &&
-          context.getState() != StreamingContextState.STOPPED) {
-        context
-      } else {
-        val context = new StreamingContext(sparkCtxt, Seconds(duration))
-        globalContext = context
-        context
-      }
-    }
   }
 }

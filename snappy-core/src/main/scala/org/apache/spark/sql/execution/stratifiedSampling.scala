@@ -8,6 +8,7 @@ import scala.collection.mutable
 import scala.language.reflectiveCalls
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical
@@ -26,31 +27,35 @@ case class StratifiedSample(var options: Map[String, Any],
     // pre-compute QCS because it is required by
     // other API invoked from driver
     (val qcs: Array[Int] = resolveQCS(options, child.schema.fieldNames,
-      "StratifiedSample")) extends logical.UnaryNode {
+      "StratifiedSample"), weightedColumn: AttributeReference = AttributeReference(
+      WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)())
+    extends logical.UnaryNode {
 
   /**
    * StratifiedSample will add one additional column for the ratio of total
    * rows seen for a stratum to the number of samples picked.
    */
-  override val output = child.output :+ AttributeReference(
-    WEIGHTAGE_COLUMN_NAME, LongType, nullable = false)()
+  override val output = child.output :+ weightedColumn
 
-  override protected final def otherCopyArgs: Seq[AnyRef] = Seq(qcs)
+  override protected final def otherCopyArgs: Seq[AnyRef] =
+    Seq(qcs, weightedColumn)
 
-  /**
-   * Perform stratified sampling given a Query-Column-Set (QCS). This variant
-   * can also use a fixed fraction to be sampled instead of fixed number of
-   * total samples since it is also designed to be used with streaming data.
-   */
-  case class Execute(override val child: SparkPlan,
-      override val output: Seq[Attribute]) extends UnaryNode {
+  def getExecution(plan: SparkPlan) = StratifiedSampleExecute(plan, output,
+    options, qcs)
+}
 
-    protected override def doExecute(): RDD[InternalRow] =
-      new StratifiedSampledRDD(child.execute(), qcs,
-        sqlContext.conf.columnBatchSize, options, schema)
-  }
+/**
+ * Perform stratified sampling given a Query-Column-Set (QCS). This variant
+ * can also use a fixed fraction to be sampled instead of fixed number of
+ * total samples since it is also designed to be used with streaming data.
+ */
+case class StratifiedSampleExecute(override val child: SparkPlan,
+    override val output: Seq[Attribute], options: Map[String, Any],
+    qcs: Array[Int]) extends UnaryNode {
 
-  def getExecution(plan: SparkPlan) = Execute(plan, output)
+  protected override def doExecute(): RDD[InternalRow] =
+    new StratifiedSampledRDD(child.execute(), qcs,
+      sqlContext.conf.columnBatchSize, options, schema)
 }
 
 private final class ExecutorPartitionInfo(val blockId: BlockManagerId,
@@ -74,7 +79,7 @@ private final class ExecutorPartitionInfo(val blockId: BlockManagerId,
 
 final class SamplePartition(val parent: Partition, override val index: Int,
     @transient private[this] val _partInfo: ExecutorPartitionInfo,
-    var isLastHostPartition: Boolean) extends Partition with Serializable {
+    var isLastHostPartition: Boolean) extends Partition with Serializable with Logging {
 
   val blockId = _partInfo.blockId
 
@@ -82,6 +87,7 @@ final class SamplePartition(val parent: Partition, override val index: Int,
 
   override def toString =
     s"SamplePartition($index, $blockId, isLast=$isLastHostPartition)"
+
 }
 
 final class StratifiedSampledRDD(@transient parent: RDD[InternalRow],
@@ -141,11 +147,12 @@ final class StratifiedSampledRDD(@transient parent: RDD[InternalRow],
 
         // first find all executors for preferred hosts of parent partition
         plocs.flatMap { loc =>
-          val underscoreIndex = loc.indexOf('_')
+          val underscoreIndex = loc.lastIndexOf('_')
           if (underscoreIndex >= 0) {
             // if the preferred location is already an executorId then search
             // in available executors for its host
-            val host = loc.substring(0, underscoreIndex)
+            val host = loc.substring(TaskLocation.executorLocationTag.length,
+              underscoreIndex)
             val executorId = loc.substring(underscoreIndex + 1)
             val executors = peerExecutorMap.getOrElse(host, Iterator.empty)
             executors.find(_.blockId.executorId == executorId) match {
