@@ -138,12 +138,12 @@ final case class MapColumnToWeight(child: Expression) extends UnaryExpression {
     s"""
       ${eval.code}
       boolean ${ev.isNull} = false;
-      double ${ev.primitive} = 1.0;
-      final long value;
-      if (!${eval.isNull} && (value = ${eval.primitive}) != 0L) {
+      double ${ev.value} = 1.0;
+      final long val;
+      if (!${eval.isNull} && (val = ${eval.value}) != 0L) {
         final long left = (value >> 32) & 0xffffffffL;
         final long right = value & 0xffffffffL;
-        ${ev.primitive} = (left != 0) ? ((double)right / (double)left) : 1.0;
+        ${ev.value} = (left != 0) ? ((double)right / (double)left) : 1.0;
       }
     """
   }

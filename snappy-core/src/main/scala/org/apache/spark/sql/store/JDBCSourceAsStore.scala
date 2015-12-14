@@ -2,13 +2,8 @@ package org.apache.spark.sql.store
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.Properties
+import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
-
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
-import scala.util.Random
 
 import org.apache.spark.rdd.{RDD, UnionRDD}
 import org.apache.spark.sql.catalyst.InternalRow
@@ -18,6 +13,12 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.snappy._
 import org.apache.spark.{SparkContext, SparkEnv}
+
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
+import scala.language.implicitConversions
+import scala.util.Random
+
 
 /*
 Generic class to query column table from Snappy.
@@ -53,10 +54,32 @@ class JDBCSourceAsStore(override val url: String,
   }
 
   override def storeCachedBatch(batch: CachedBatch,
-      tableName: String): UUIDRegionKey = {
+      tableName: String , maxPartitions:Int ): UUIDRegionKey = {
+
     tryExecute(tableName, {
       case connection =>
         val uuid = genUUIDRegionKey()
+        val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
+        val stmt = connection.prepareStatement(rowInsertStr)
+        stmt.setString(1, uuid.getUUID.toString)
+        stmt.setInt(2, uuid.getBucketId)
+        stmt.setInt(3, batch.numRows)
+        stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
+        var columnIndex = 5
+        batch.buffers.foreach(buffer => {
+          stmt.setBytes(columnIndex, buffer)
+          columnIndex += 1
+        })
+        stmt.executeUpdate()
+        stmt.close()
+        uuid
+    })
+  }
+
+  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId: Int, tableName: String): UUIDRegionKey = {
+    tryExecute(tableName, {
+      case connection =>
+        val uuid = genUUIDRegionKey(bucketId, batchID)
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, uuid.getUUID.toString)
@@ -113,6 +136,8 @@ class JDBCSourceAsStore(override val url: String,
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
 
+  protected def genUUIDRegionKey(bucketID: Int, batchID: UUID) = new UUIDRegionKey(bucketID, batchID)
+
   protected val insertStrings: mutable.HashMap[String, String] =
     new mutable.HashMap[String, String]()
 
@@ -126,7 +151,7 @@ class JDBCSourceAsStore(override val url: String,
   protected def makeInsertStmnt(tableName: String, numOfColumns: Int) = {
     if (!insertStrings.contains(tableName)) {
       val s = insertStrings.getOrElse(tableName,
-        s"insert into $tableName values(?, ? , ? " + ",?" * numOfColumns + ")")
+        s"insert into $tableName values(?,?,?,?${",?" * numOfColumns})")
       insertStrings.put(tableName, s)
     }
     insertStrings.get(tableName).get
@@ -176,13 +201,15 @@ final class CachedBatchIteratorOnRS(conn: Connection,
       rs: ResultSet): CachedBatch = {
     // it will be having the information of the columns to fetch
     val numCols = requiredColumns.length
-    val colBuffers = new ArrayBuffer[Array[Byte]]()
-    for (i <- 0 until numCols) {
-      colBuffers += rs.getBytes(requiredColumns(i)).array
+    val colBuffers = new Array[Array[Byte]](numCols)
+    var i = 0
+    while (i < numCols) {
+      colBuffers(i) = rs.getBytes(i + 1)
+      i += 1
     }
     val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.
         wrap(rs.getBytes("stats")))
 
-    CachedBatch(colBuffers.toArray, stats)
+    CachedBatch(rs.getInt("numRows"), colBuffers, stats)
   }
 }

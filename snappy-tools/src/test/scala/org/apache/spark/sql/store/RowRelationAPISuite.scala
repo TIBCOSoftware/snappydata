@@ -30,17 +30,17 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
       (1 to 1000).map(i => TestData(i, i.toString)))
 
     val dataDF = snc.createDataFrame(rdd)
-    snc.sql("DROP TABLE IF EXISTS row_table2")
+    snc.sql("DROP TABLE IF EXISTS row_table22")
 
-    snc.sql("CREATE TABLE row_table2(OrderId INT NOT NULL,ItemId INT)" +
+    snc.sql("CREATE TABLE row_table22(OrderId INT NOT NULL,ItemId INT)" +
         "USING row " +
         "options " +
         "(" +
         "PARTITION_BY 'OrderId')")
 
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table22")
 
-    val count = snc.sql("select * from row_table2").count()
+    val count = snc.sql("select * from row_table22").count()
     assert(count === 1000)
   }
 

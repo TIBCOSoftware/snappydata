@@ -22,8 +22,6 @@ allprojects {
   gradle.startParameter.continueOnFailure = true
 
   repositories {
-    maven { url "file://" + rootDir.getAbsolutePath() + "/local-repo" }
-    mavenLocal()
     //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
     maven { url "https://repository.apache.org/content/repositories/releases" }
@@ -300,7 +298,7 @@ task generateSources {
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
   dependsOn ':snappy-examples:jar'
-  
+
   doFirst {
     delete snappyProductDir
     file("${snappyProductDir}/lib").mkdirs()
@@ -372,7 +370,7 @@ task product {
       into "${snappyProductDir}/sbin"
     }
     copy {
-      from("${toolsProject.projectDir}/conf") 
+      from("${toolsProject.projectDir}/conf")
       into "${snappyProductDir}/conf"
     }
 

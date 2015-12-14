@@ -1,14 +1,12 @@
 package org.apache.spark.scheduler.cluster
 
 import io.snappydata.impl.LeadImpl
-import io.snappydata.{Constant, Property}
+import io.snappydata.{Constant, Property, Utils}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
-import org.apache.spark.scheduler.{SnappyTaskSchedulerImpl,
-  ExternalClusterManager, SchedulerBackend, TaskScheduler, TaskSchedulerImpl}
-import org.apache.spark.sql.SnappyContext
-import io.snappydata.Utils
+import org.apache.spark.scheduler._
+
 /**
   * Snappy's cluster manager that is responsible for creating
   * scheduler and scheduler backend.
@@ -32,8 +30,8 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     // as lead in embedded mode, we need the locator to connect
     // to the snappy distributed system and hence the locator is
     // passed in masterurl itself.
-    if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
-      val locator = sc.master.replaceFirst(Constant.JDBC_URL_PREFIX, "").trim
+    if (sc.master.startsWith(Constant.SNAPPY_URL_PREFIX)) {
+      val locator = sc.master.replaceFirst(Constant.SNAPPY_URL_PREFIX, "").trim
 
       val (prop, value) = {
         if (locator.indexOf("mcast-port") >= 0) {
@@ -43,14 +41,14 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         else if (locator.isEmpty ||
             locator == "" ||
             locator == "null" ||
-            !(Utils.LocatorURLPattern.matcher(locator).matches())
+            !Utils.LocatorURLPattern.matcher(locator).matches()
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }
         (Property.locators, locator)
       }
 
-      logger.info(s"setting from url ${prop} with ${value}")
+      logger.info(s"setting from url $prop with $value")
       sc.conf.set(prop, value)
       sc.conf.set(Property.embedded, "true")
     }

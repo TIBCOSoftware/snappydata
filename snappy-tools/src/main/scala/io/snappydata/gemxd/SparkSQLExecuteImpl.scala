@@ -11,6 +11,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, GfxdHeapDataOutputStream, SnappyResultHolder}
+import com.pivotal.gemfirexd.internal.iapi.types.SQLClob
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
@@ -38,6 +39,12 @@ class SparkSQLExecuteImpl(val sql: String,
     sql, true, senderVersion)
 
   private lazy val schema = df.schema
+
+  // creating one shared object for clob columns in order to call
+  // toDataForOptimizedResultHolder on clob object while sending data in
+  // writeColDataInOptimizedWay(). The data will be read back on gemfirexd node
+  // using the corresponding fromDataForOptimizedResultHolder on the clob object
+  private lazy val clobColData = new SQLClob
 
   private val resultsRdd = df.queryExecution.executedPlan.execute()
 
@@ -243,7 +250,11 @@ class SparkSQLExecuteImpl(val sql: String,
         t.scale), hdos)
       case FloatType => hdos.writeFloat(row.getFloat(colIndex))
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
-      case StringType => DataSerializer.writeString(row.getString(colIndex), hdos)
+      case StringType => {
+        clobColData.setValue(row.getString(colIndex))
+        clobColData.toDataForOptimizedResultHolder(hdos)
+        clobColData.restoreToNull
+      }
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
