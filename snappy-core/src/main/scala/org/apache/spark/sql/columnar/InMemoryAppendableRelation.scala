@@ -37,7 +37,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{ConvertToUnsafe, SparkPlan}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
@@ -163,7 +163,8 @@ private[sql] object InMemoryAppendableRelation {
       tableName: Option[String],
       isSampledTable: Boolean): InMemoryAppendableRelation =
     new InMemoryAppendableRelation(child.output, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable)()
+      storageLevel, if (child.outputsUnsafeRows) child else ConvertToUnsafe(child),
+      tableName, isSampledTable)()
 }
 
 private[sql] class InMemoryAppendableColumnarTableScan(
@@ -175,6 +176,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
   protected override def doExecute(): RDD[InternalRow] = {
 
     val rdd = relation.reservoirRDD
+    val rel = relation.output
     if (rdd.isEmpty) {
       return super.doExecute()
     }
@@ -185,7 +187,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
       // minimum default element size).
       val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
         val (narrowestOrdinal, narrowestDataType) =
-          relation.output.zipWithIndex.map { case (a, ordinal) =>
+          rel.zipWithIndex.map { case (a, ordinal) =>
             ordinal -> a.dataType
           } minBy { case (_, dataType) =>
             ColumnType(dataType).defaultSize
@@ -193,7 +195,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
         Seq(narrowestOrdinal) -> Seq(narrowestDataType)
       } else {
         attributes.map { a =>
-          relation.output.indexWhere(_.exprId == a.exprId) -> a.dataType
+          rel.indexWhere(_.exprId == a.exprId) -> a.dataType
         }.unzip
       }
 

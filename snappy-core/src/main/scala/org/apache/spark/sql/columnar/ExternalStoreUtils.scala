@@ -3,6 +3,7 @@ package org.apache.spark.sql.columnar
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
+import scala.StringBuilder
 import scala.collection.mutable
 
 import io.snappydata.Constant
@@ -12,11 +13,10 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
 import org.apache.spark.{Logging, SparkContext}
-
 /**
  * Utility methods used by external storage layers.
  */
@@ -156,16 +156,31 @@ private[sql] object ExternalStoreUtils extends Logging {
     (url, driver, allPoolProps, connProps, hikariCP)
   }
 
-  def getConnector(url: String, connProps: Properties): () => Connection = {
+   def getConnection(url: String, connProperties: Properties,
+      driverDialect: JdbcDialect, isLoner: Boolean) = {
+
+    connProperties.remove("poolProperties")
+    if (driverDialect != null) {
+      // add driver specific properties
+      driverDialect match {
+        // The driver if not a loner should be an accesor only
+        case d: JdbcExtendedDialect =>
+          connProperties.putAll(d.extraDriverProperties(isLoner))
+        case _ =>
+      }
+    }
+    JdbcUtils.createConnection(url, connProperties)
+  }
+
+  def getConnector(id: String, driver: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): () => Connection = {
     () => {
-      getConnection(url, connProps)
+      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
+        poolProps, connProps, hikariCP)
     }
   }
 
-  def getConnection(url: String, connProperties: Properties) = {
-    connProperties.remove("poolProperties")
-    JdbcUtils.createConnection(url, connProperties)
-  }
 
   def getConnectionType(url: String) = {
     JdbcDialects.get(url) match {
@@ -197,14 +212,7 @@ private[sql] object ExternalStoreUtils extends Logging {
       })
   }
 
-  def getConnector(id: String, driver: String, dialect: JdbcDialect,
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): () => Connection = {
-    () => {
-      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
-        poolProps, connProps, hikariCP)
-    }
-  }
+
 
   /**
    * Prune all but the specified columns from the specified Catalyst schema.

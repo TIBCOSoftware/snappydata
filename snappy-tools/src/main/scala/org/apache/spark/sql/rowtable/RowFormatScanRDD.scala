@@ -21,7 +21,6 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
-
 /**
  * A scanner RDD which is very specific to Snappy store row tables. This scans row tables in parallel unlike Spark's
  * inbuilt JDBCRDD.

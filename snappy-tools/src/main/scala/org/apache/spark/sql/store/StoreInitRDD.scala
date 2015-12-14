@@ -25,6 +25,8 @@ import org.apache.spark.{Accumulator, Partition, SparkEnv, TaskContext}
   * standalone cluster.
   * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
   */
+
+
 class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     val connProperties: Properties,
     poolProps: Map[String, String],
@@ -32,8 +34,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     table: String,
     userSchema: Option[StructType]
     )
-    (implicit param: Accumulator[Map[InternalDistributedMember, BlockManagerId]])
-    extends RDD[InternalRow](sqlContext.sparkContext, Nil) {
+    extends RDD[(InternalDistributedMember, BlockManagerId)](sqlContext.sparkContext, Nil) {
+
 
   val driver = DriverRegistry.getDriverClassName(url)
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
@@ -41,7 +43,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
   val columnBatchSize = sqlContext.conf.columnBatchSize
   GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[InternalRow] = {
+  override def compute(split: Partition, context: TaskContext): Iterator[(InternalDistributedMember, BlockManagerId)] = {
     GemFireXDDialect.init()
     DriverRegistry.register(driver)
 
@@ -70,8 +72,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     val conn = JdbcUtils.createConnection(url, connProperties)
     conn.close()
     GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
-    param += Map(Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)
-    Iterator.empty
+    Seq((Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)).iterator
+
   }
 
   override def getPartitions: Array[Partition] = {

@@ -31,6 +31,7 @@ object SparkCallbacks {
       SparkHadoopUtil.get.runAsSparkUser { () =>
         env.stop()
         SparkEnv.set(null)
+        SparkHadoopUtil.get.stopExecutorDelegationTokenRenewer()
       }
     }
   }
@@ -42,7 +43,7 @@ object SparkCallbacks {
       host,
       port,
       executorConf,
-      new spark.SecurityManager(executorConf))
+      new spark.SecurityManager(executorConf), clientMode = true)
     val driver = fetcher.setupEndpointRefByURI(url)
     val props = driver.askWithRetry[Seq[(String, String)]](RetrieveSparkProps)
     fetcher.shutdown()

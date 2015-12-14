@@ -14,6 +14,7 @@ import scala.util.Sorting
 import org.apache.commons.math3.distribution.NormalDistribution
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
@@ -76,7 +77,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   }
 
   def getHostExecutorId(blockId: BlockManagerId) =
-    blockId.host + '_' + blockId.executorId
+    TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
   def ERROR_NO_QCS(module: String) = s"$module: QCS is empty"
 
@@ -357,7 +358,8 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   }
 }
 
-class ExecutorLocalRDD[T: ClassTag](@transient _sc: SparkContext,
+class ExecutorLocalRDD[T: ClassTag](
+    @transient private[this] val _sc: SparkContext,
     f: (TaskContext, ExecutorLocalPartition) => Iterator[T])
     extends RDD[T](_sc, Nil) {
 
