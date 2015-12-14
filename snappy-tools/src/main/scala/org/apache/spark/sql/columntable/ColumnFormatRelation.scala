@@ -112,7 +112,7 @@ class ColumnFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          filters,
+          Array.empty[Filter],
           Array.empty[Partition],
           blockMap,
           connProperties
@@ -125,7 +125,7 @@ class ColumnFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          filters,
+          Array.empty[Filter],
           Array[Partition](JDBCPartition(null, 0)),
           connProperties
         ).asInstanceOf[RDD[Row]]
