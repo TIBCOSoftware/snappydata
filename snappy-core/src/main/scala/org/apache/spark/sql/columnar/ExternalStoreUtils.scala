@@ -22,6 +22,9 @@ import org.apache.spark.{Logging, SparkContext}
  */
 private[sql] object ExternalStoreUtils extends Logging {
 
+  final val DEFAULT_COLUMN_TABLE_BUCKETS = "199"
+  final val DEFAULT_ROW_TABLE_BUCKETS = "113"
+
   def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean) = {
     val urlProp = if (hikariCP) "jdbcUrl" else "url"
@@ -298,6 +301,11 @@ private[sql] object ExternalStoreUtils extends Logging {
       }
       col += 1
     }
+  }
+
+  def getTotalPartitions(parameters: mutable.Map[String, String], rowTable: Boolean): Int = {
+    (parameters.get("BUCKETS").getOrElse(
+      if (rowTable) DEFAULT_ROW_TABLE_BUCKETS else DEFAULT_COLUMN_TABLE_BUCKETS)).toInt
   }
 }
 

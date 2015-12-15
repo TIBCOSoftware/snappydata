@@ -35,7 +35,6 @@ class JDBCAppendableRelation(
     val provider: String,
     val mode: SaveMode,
     userSchema: StructType,
-    numPartitions:Int,
     _poolProps: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
@@ -52,6 +51,7 @@ class JDBCAppendableRelation(
     with Serializable {
 
   self =>
+
 
   final val shadowTableNamePrefix = "_shadow_"
   override val needConversion: Boolean = false
@@ -115,7 +115,7 @@ class JDBCAppendableRelation(
 
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
       externalStore.getCachedBatchRDD(tableName,
-        requestedColumns.map(column => columnPrefix + column), uuidList,
+        requestedColumns.map(column => columnPrefix + column),
         sqlContext.sparkContext)
     }
 
@@ -179,7 +179,7 @@ class JDBCAppendableRelation(
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
         //TODO - currently using the length from the part Object but it needs to be handled more generically
         //in order to replace UUID
-        val uuid = externalStore.storeCachedBatch(batch, table , numPartitions)
+        val uuid = externalStore.storeCachedBatch(table , batch)
         accumulated += uuid
       }
 
@@ -316,7 +316,7 @@ object JDBCAppendableRelation extends Logging {
       sqlContext: SQLContext): JDBCAppendableRelation =
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, numPartitions,
+      getClass.getCanonicalName, mode, schema,
       poolProps, connProps, hikariCP, options, null, sqlContext)()
 
   private def removePool(table: String): () => Iterator[Unit] = () => {
@@ -342,20 +342,17 @@ class ColumnarRelationProvider
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
+    val partitions = ExternalStoreUtils.getTotalPartitions(parameters, true)
+
     val externalStore = getExternalSource(sqlContext, url, driver, poolProps,
-      connProps, hikariCP)
+      connProps, hikariCP,partitions)
 
     new JDBCAppendableRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, getPartitions(parameters),
+      getClass.getCanonicalName, mode, schema,
       poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
   }
 
-  protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
-    //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
-    val DEFAULT_BUCKETS_FOR_COLUMN = "113"
-    parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
-  }
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType) = {
@@ -393,7 +390,8 @@ class ColumnarRelationProvider
       driver: String,
       poolProps: Map[String, String],
       connProps: Properties,
-      hikariCP: Boolean): ExternalStore = {
-    new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP)
+      hikariCP: Boolean,
+      numPartitions:Int): ExternalStore = {
+    new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP,numPartitions)
   }
 }

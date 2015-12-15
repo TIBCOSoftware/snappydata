@@ -32,7 +32,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     poolProps: Map[String, String],
     hikariCP: Boolean,
     table: String,
-    userSchema: Option[StructType]
+    userSchema: Option[StructType],
+    partitions:Int
     )
     extends RDD[(InternalDistributedMember, BlockManagerId)](sqlContext.sparkContext, Nil) {
 
@@ -52,7 +53,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     // doesn't require blockMap
     userSchema match {
       case Some(schema) =>
-        val store = new JDBCSourceAsColumnarStore(url, driver, poolProps, connProperties, hikariCP)
+        val store = new JDBCSourceAsColumnarStore(url, driver, poolProps, connProperties, hikariCP,partitions)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
           schema, store, columnBatchSize, userCompression)
       case None =>

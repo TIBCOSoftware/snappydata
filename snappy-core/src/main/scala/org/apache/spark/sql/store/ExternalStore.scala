@@ -17,20 +17,15 @@ import org.apache.spark.sql.columnar.CachedBatch
 trait ExternalStore extends Serializable {
 
 
-  def storeCachedBatch(batch: CachedBatch, tableName: String, maxPartitions: Int = -1): UUIDRegionKey
-
-  def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId : Int, tableName: String): UUIDRegionKey
-
-  def getCachedBatchIterator(tableName: String,
-      requiredColumns: Array[String],
-      itr: Iterator[UUIDRegionKey],
-      getAll: Boolean = false): Iterator[CachedBatch]
+  def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
+      batchId: Option[UUID] = None): UUIDRegionKey
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String): java.sql.Connection
+
+  def getUUIDRegionKey(tableName: String, bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey
 
   def url: String
 

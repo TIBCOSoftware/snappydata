@@ -5,19 +5,19 @@ import java.util.{Properties, UUID}
 
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import org.apache.spark.sql.AnalysisException
 
 import scala.collection.JavaConverters._
 import scala.language.implicitConversions
 import com.gemstone.gemfire.internal.SocketCreator
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, DistributedRegion, NoDataStoreAvailableException, PartitionedRegion}
-import com.gemstone.gemfire.internal.i18n.LocalizedStrings
+import com.gemstone.gemfire.internal.cache.{AbstractRegion, DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
-import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.sql.collection.{ExecutorLocalShellPartition, MultiExecutorLocalPartition, UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.rdd.{RDD}
+import org.apache.spark.sql.collection._
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
@@ -29,6 +29,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
+
+
 /**
  * Column Store implementation for GemFireXD.
  */
@@ -37,115 +39,46 @@ final class JDBCSourceAsColumnarStore(_url: String,
     _poolProps: Map[String, String],
     _connProps: Properties,
     _hikariCP: Boolean,
+    _numPartitions: Int,
     val blockMap: Map[InternalDistributedMember, BlockManagerId] = null)
-    extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP) {
+    extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch] = {
     connectionType match {
       case ConnectionType.Embedded =>
         new ColumnarStorePartitionedRDD[CachedBatch](sparkContext,
           tableName, requiredColumns, this)
       case _ =>
-        if (ExternalStoreUtils.isExternalShellMode(sparkContext)) {
-          // remove the url property from poolProps since that will be
-          // partition-specific
-          val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
+        // remove the url property from poolProps since that will be
+        // partition-specific
+        val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
+        new ShellPartitionedRDD[CachedBatch](sparkContext,
+          getConnection(tableName).getSchema, tableName, requiredColumns,
+          poolProps, connProps, hikariCP, url)
+    }
+  }
 
-          new ShellPartitionedRDD[CachedBatch](sparkContext,
-            getConnection(tableName).getSchema, tableName, requiredColumns,
-            poolProps, connProps, hikariCP , url)
-          }
-         else {
-          var rddList = new ArrayBuffer[RDD[CachedBatch]]()
-          uuidList.foreach(x => {
-            val y = x.mapPartitions { uuidItr =>
-              getCachedBatchIterator(tableName, requiredColumns, uuidItr)
-            }
-            rddList += y
-          })
-          new UnionRDD[CachedBatch](sparkContext, rddList)
+  override def getUUIDRegionKey(tableName: String, bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey = {
+    val connection: java.sql.Connection = getConnection(tableName)
+    val uuid = connectionType match {
+      case ConnectionType.Embedded =>
+        val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+        region.asInstanceOf[AbstractRegion] match {
+          case pr: PartitionedRegion =>
+            genUUIDRegionKey(bucketId, batchId.getOrElse(throw new IllegalArgumentException(
+              "JDBCSourceAsColumnarStore.getUUIDRegionKey: batchID not provided")))
+          case _ =>
+            genUUIDRegionKey()
         }
+
+      case _ => genUUIDRegionKey(rand.nextInt(_numPartitions))
     }
+    connection.close()
+    uuid
   }
 
-  override def storeCachedBatch(batch: CachedBatch,
-                                tableName: String, maxPartitions: Int): UUIDRegionKey = {
-    val connection: java.sql.Connection = getConnection(tableName)
-    try {
-      val uuid = connectionType match {
-        case ConnectionType.Embedded =>
-          val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
-          val region = Misc.getRegionForTable(resolvedName, true)
-          region.asInstanceOf[Region[_, _]] match {
-            case pr: PartitionedRegion =>
-              val primaryBucketIds = pr.getDataStore.
-                  getAllLocalPrimaryBucketIdArray
-              genUUIDRegionKey(primaryBucketIds.getQuick(
-                rand.nextInt(primaryBucketIds.size())))
-            case _ =>
-              genUUIDRegionKey()
-          }
-
-        case _ =>
-          genUUIDRegionKey(rand.nextInt(maxPartitions))
-      }
-
-      val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
-      val stmt = connection.prepareStatement(rowInsertStr)
-      stmt.setString(1, uuid.getUUID.toString)
-      stmt.setInt(2, uuid.getBucketId)
-      stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
-      var columnIndex = 4
-      batch.buffers.foreach(buffer => {
-        stmt.setBytes(columnIndex, buffer)
-        columnIndex += 1
-      })
-      stmt.executeUpdate()
-      stmt.close()
-      uuid
-    } finally {
-      connection.close()
-    }
-  }
-
-  override def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketID: Int,
-      tableName: String): UUIDRegionKey = {
-    val connection: java.sql.Connection = getConnection(tableName)
-    try {
-      val uuid = connectionType match {
-        case ConnectionType.Embedded =>
-          val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
-          val region = Misc.getRegionForTable(resolvedName, true)
-          region.asInstanceOf[AbstractRegion] match {
-            case pr: PartitionedRegion =>
-              genUUIDRegionKey(bucketID, batchID)
-            case _ =>
-              genUUIDRegionKey()
-          }
-
-        case _ => genUUIDRegionKey()
-      }
-
-      val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
-      val stmt = connection.prepareStatement(rowInsertStr)
-      stmt.setString(1, uuid.getUUID.toString)
-      stmt.setInt(2, uuid.getBucketId)
-      stmt.setInt(3, batch.numRows)
-      stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
-      var columnIndex = 5
-      batch.buffers.foreach(buffer => {
-        stmt.setBytes(columnIndex, buffer)
-        columnIndex += 1
-      })
-      stmt.executeUpdate()
-      stmt.close()
-      uuid
-    } finally {
-      connection.close()
-    }
-  }
 }
 
 class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
@@ -188,11 +121,11 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
 class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     schema: String, tableName: String, requiredColumns: Array[String],
-    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean , locatorUrl:String)
+    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean, locatorUrl: String)
     extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
-                       context: TaskContext): Iterator[CachedBatch] = {
+      context: TaskContext): Iterator[CachedBatch] = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val par = split.index
     val resolvedName = StoreUtils.lookupName(tableName, schema)
@@ -212,7 +145,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
 
-  def getConnection(hostList: ArrayBuffer[(String, String)] , connectToLocator:Boolean): Connection = {
+  def getConnection(hostList: ArrayBuffer[(String, String)], connectToLocator: Boolean): Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
 
@@ -242,7 +175,7 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
           throw sqlException
         else {
           hostList.remove(index)
-          getConnection(hostList , connectToLocator)
+          getConnection(hostList, connectToLocator)
         }
     }
   }
@@ -250,7 +183,6 @@ class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean = {
     hostList.size == 0
   }
-
 
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

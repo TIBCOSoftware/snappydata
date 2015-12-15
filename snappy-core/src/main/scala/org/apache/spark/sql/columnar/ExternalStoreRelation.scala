@@ -76,7 +76,7 @@ private[sql] final class ExternalStoreRelation(
         batchStats, uuidList).asInstanceOf[this.type]
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
-    externalStore.getCachedBatchRDD(tableName.get, null, uuidList,
+    externalStore.getCachedBatchRDD(tableName.get, null,
       this.child.sqlContext.sparkContext)
   }
 
@@ -94,8 +94,8 @@ private[sql] final class ExternalStoreRelation(
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
       batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-    val uuid = externalStore.storeCachedBatch(batch,
-      tableName.getOrElse(throw new IllegalStateException("missing tableName")))
+    val uuid = externalStore.storeCachedBatch(tableName.getOrElse(throw new IllegalStateException("missing tableName"))
+      , batch)
     accumulated += uuid
   }
 }
