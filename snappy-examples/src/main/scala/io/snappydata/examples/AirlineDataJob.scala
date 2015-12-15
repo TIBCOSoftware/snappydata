@@ -1,8 +1,9 @@
 package io.snappydata.examples
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{DataFrame, SnappySQLJob}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
+
+import org.apache.spark.sql.{DataFrame, SnappySQLJob}
 
 
 /**

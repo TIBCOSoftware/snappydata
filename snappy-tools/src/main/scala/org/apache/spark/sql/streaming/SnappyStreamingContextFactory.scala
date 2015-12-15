@@ -12,8 +12,8 @@ import org.apache.spark.streaming.{Milliseconds, StreamingContext}
 /**
   * Created by soubhikc on 14/12/15.
   */
-trait SnappyStreamingJob {
-  type C = StreamingSnappyContext with ContextLike
+trait SnappyStreamingJob extends SparkJobBase {
+  type C = StreamingSnappyContext
 }
 
 
