@@ -1,3 +1,5 @@
+import groovy.json.JsonSlurper
+
 apply plugin: 'wrapper'
 
 if(JavaVersion.current() != JavaVersion.VERSION_1_7){
@@ -398,6 +400,99 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
+def runScript(def execName, def param) {
+def stdout = new ByteArrayOutputStream()
+    exec{
+      executable "${execName}"
+      args  (param)
+      standardOutput = stdout;
+    }
+  return "$stdout"
+}
+
+task runQuickstart {
+  mustRunAfter product
+  def exampleArchiveName = "quickstart-${version}.jar"
+  doLast {
+    try {
+      def startoutput = runScript("${snappyProductDir}/sbin/snappy-start-all.sh", []);
+      println "${startoutput}"
+      if (!startoutput.contains("Distributed system now has 4 members")) {
+        throw new GradleException("Failed to start Snappy cluster")
+      }
+
+      def createColTable = runScript("${snappyProductDir}/bin/snappy-shell",
+              ["run", "-file=${snappyProductDir}/quickstart/scripts/create_and_load_column_table.sql"]);
+      println "${createColTable}"
+      if (createColTable.contains("ERROR") || createColTable.contains("Failed")) {
+        throw new GradleException("Failed to start create column table")
+      }
+
+      def createRowTable = runScript("${snappyProductDir}/bin/snappy-shell",
+              ["run", "-file=${snappyProductDir}/quickstart/scripts/create_and_load_row_table.sql"]);
+      println "${createRowTable}"
+      if (createRowTable.contains("ERROR") || createRowTable.contains("Failed")) {
+        throw new GradleException("Failed to start create row table")
+      }
+
+      def statusqueries = runScript("${snappyProductDir}/bin/snappy-shell",
+              ["run", "-file=${snappyProductDir}/quickstart/scripts/status_queries.sql"]);
+      println "${statusqueries}"
+      if (statusqueries.contains("ERROR") || statusqueries.contains("Failed")) {
+        throw new GradleException("Failed to run status queries")
+      }
+
+      def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
+              ["submit", "--lead", "localhost:8090", "--app-name", "myjob",
+               "--class", "io.snappydata.examples.AirlineDataJob", "--app-jar",
+               "${snappyProductDir}/lib/${exampleArchiveName}"]);
+
+      println "${submitjobairline}"
+
+      def json = new JsonSlurper().parseText("${submitjobairline}".substring(2))
+      def jobid = ""
+      json.each {
+        k, v ->
+          if (k == "result") {
+            if (v instanceof groovy.json.internal.LazyMap) {
+              jobid = v.get("jobId")
+            }
+          }
+      }
+
+      def status = "RUNNING"
+      while (status == "RUNNING") {
+        Thread.sleep(3000)
+        def statusjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
+                ["status", "--lead", "localhost:8090", "--job-id", "${jobid}"]);
+        println "${statusjobairline}"
+
+        def statusjson = new JsonSlurper().parseText("${statusjobairline}")
+        statusjson.each {
+          k, v ->
+            if (k == "status") {
+              println("Current status of job: " + v)
+              status = v
+            }
+        }
+      }
+      if (status == "ERROR") {
+        throw new GradleException("Failed to submit queries")
+      }
+
+      def oltpqueries = runScript("${snappyProductDir}/bin/snappy-shell",
+              ["run", "-file=${snappyProductDir}/quickstart/scripts/oltp_queries.sql"]);
+      println "${oltpqueries}"
+      if (oltpqueries.contains("ERROR") || oltpqueries.contains("Failed")) {
+        throw new GradleException("Failed to run oltp queries")
+      }
+
+    } finally {
+      println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", []);
+    }
+  }
+}
+
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-tools_${scalaBinaryVersion}").buildDir)
@@ -421,5 +516,5 @@ task checkAll {
   mustRunAfter product
 }
 task precheckin {
-  dependsOn cleanAll, buildAll, product, checkAll
+  dependsOn cleanAll, buildAll, product, checkAll, runQuickstart
 }

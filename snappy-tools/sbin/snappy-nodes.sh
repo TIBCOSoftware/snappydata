@@ -178,6 +178,8 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
   fi
 
   index=$[index +1]
+  # Until SNAP-266 is fixed, the servers are started in foreground. 
+  SPARK_SSH_FOREGROUND="true"
   if [ -n "${SPARK_SSH_FOREGROUND}" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
