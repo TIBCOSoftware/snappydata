@@ -566,7 +566,7 @@ class SnappyContext protected (@transient sc: SparkContext)
 
     // TODO temporary flag till we determine every thing works fine with the optimizations
     val storeOptimization = snappyContext.sparkContext.getConf.get(
-      "snappy.store.optimization", "false").toBoolean
+      "snappy.store.optimization", "true").toBoolean
 
     val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
       Seq(StoreDataSourceStrategy , LocalJoinStrategies)
