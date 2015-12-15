@@ -40,6 +40,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     startSparkJob6()
   }
 
+  def testCreateAndInsertCLOB(): Unit = {
+    startSparkJob7()
+  }
+
   // changing the test to such that batches are created
   // and looking for column table stats
   def testSNAP205_InsertLocalBuckets(): Unit = {
@@ -325,6 +329,61 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         .options(props).saveAsTable("COLUMNTABLE4")
 
     val result = snc.sql("SELECT Value FROM COLUMNTABLE4")
+    val r = result.collect()
+    println("total region.size() " + r.length)
+
+
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+
+    println("region.size() " + region.size())
+    println("shadowRegion.size()" + shadowRegion.size())
+
+    assert(r.length == 10012)
+
+    println("startSparkJob6 " + region.size())
+    println("startSparkJob6 " + shadowRegion.size())
+
+    //assert(0 == region.size())
+    assert(shadowRegion.size() > 0)
+
+    snc.dropExternalTable("COLUMNTABLE4", ifExists = true)
+    logger.info("Successful")
+  }
+
+  def startSparkJob7(): Unit = {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+
+    snc.sql(s"CREATE TABLE COLUMNTABLE4(Key1 INT ,Value INT, other1 VARCHAR(20), other2 STRING)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY '(Key1 other1)'," +
+        "BUCKETS '1'," +
+        "REDUNDANCY '2')")
+
+    snc.sql("insert into COLUMNTABLE4 VALUES(1,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(2,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(3,11)")
+
+    snc.sql("insert into COLUMNTABLE4 VALUES(4,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(5,11)")
+    snc.sql("insert into COLUMNTABLE4 VALUES(6,11)")
+
+    snc.sql("insert into COLUMNTABLE4 VALUES(7,11)")
+
+    var data = Seq(Seq(1, 2,3,4), Seq(7, 8,9,10), Seq(9, 2,3,4), Seq(4, 2,5,7), Seq(5, 6,2,3))
+    1 to 10000 foreach { _ =>
+      data = data :+ Seq.fill(4)(Random.nextInt)
+    }
+    val rdd = sc.parallelize(data, 50).map(s => new PartitionData(s(0),
+      s(1).toString, s(2).toString, s(3).toString))
+
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.format("column").mode(SaveMode.Append)
+        .options(props).saveAsTable("COLUMNTABLE4")
+
+    val result = snc.sql("SELECT Value,other1 FROM COLUMNTABLE4")
     val r = result.collect()
     println("total region.size() " + r.length)
 
