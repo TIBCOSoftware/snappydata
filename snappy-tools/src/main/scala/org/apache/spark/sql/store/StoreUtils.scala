@@ -2,6 +2,8 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
+import org.apache.spark.sql.columnar.ExternalStoreUtils
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -113,11 +115,12 @@ object StoreUtils extends Logging {
       poolProps: Map[String, String],
       hikariCP: Boolean,
       table: String,
-      schema: Option[StructType]): Map[InternalDistributedMember, BlockManagerId] = {
+      schema: Option[StructType],
+      partitions:Integer):
+      Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-
     val blockMap = new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table,
-      schema).collect()
+      schema , partitions).collect()
     blockMap.toMap
   }
 

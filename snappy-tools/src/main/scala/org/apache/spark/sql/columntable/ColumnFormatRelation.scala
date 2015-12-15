@@ -55,7 +55,6 @@ class ColumnFormatRelation(
     schemaExtensions: String,
     ddlExtensionForShadowTable: String,
     poolProps: Map[String, String],
-    partitions: Integer,
     override val connProperties: Properties,
     override val hikariCP: Boolean,
     override val origOptions: Map[String, String],
@@ -66,7 +65,7 @@ class ColumnFormatRelation(
     )
     (private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends JDBCAppendableRelation(url, table, provider, mode, userSchema,
-      partitions, poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
+       poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
     with PartitionedDataSourceScan with RowInsertableRelation {
 
 
@@ -92,7 +91,7 @@ class ColumnFormatRelation(
   override def partitionColumns: Seq[String] = {
     connectionType match {
       case ConnectionType.Embedded => partitioningColumns
-      case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededd join
+      case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
     }
   }
 
@@ -346,13 +345,17 @@ final class DefaultSource extends ColumnarRelationProvider {
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
+    val partitions =ExternalStoreUtils.getTotalPartitions(parametersForShadowTable , false)
+
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
+
+
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sqlContext, url,
-          connProps, poolProps, hikariCP, table, Some(schema))
+          connProps, poolProps, hikariCP, table, Some(schema) , partitions)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
@@ -365,7 +368,8 @@ final class DefaultSource extends ColumnarRelationProvider {
     }
 
     val externalStore = new JDBCSourceAsColumnarStore(url, driver, poolProps,
-      connProps, hikariCP, blockMap)
+      connProps, hikariCP, partitions, blockMap)
+
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table, schema, externalStore)
 
     new ColumnFormatRelation(url,
@@ -376,7 +380,6 @@ final class DefaultSource extends ColumnarRelationProvider {
       schemaExtension,
       ddlExtensionForShadowTable,
       poolProps,
-      getPartitions(parameters),
       connProps,
       hikariCP,
       options,
