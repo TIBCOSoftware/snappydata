@@ -442,9 +442,7 @@ class SnappyContext protected (@transient sc: SparkContext)
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
-          case p: ParquetRelation => // Do nothing
-          case _ => throw new AnalysisException(
-            s"dropExternalTable: Table $tableName not a destroyable table")
+          case _ => // Do nothing
         }
       case _ => throw new AnalysisException(
         s"dropExternalTable: Table $tableName not an external table")
