@@ -84,10 +84,18 @@ object AQPDefault extends AQPContext{
   = throw new UnsupportedOperationException("missing aqp jar")
 
   def getPlanner(context: SnappyContext) : SparkPlanner = new DefaultPlanner(context)
+
+  def getSnappyCacheManager(context: SnappyContext): SnappyCacheManager = new SnappyCacheManager(context)
+
+  def getSQLDialectClassName: String = classOf[SnappyParserDialect].getCanonicalName
+  def getSampleTablePopulator : Option[(SQLContext) => Unit] = None
+
 }
 
 class DefaultPlanner(context: SnappyContext) extends execution.SparkPlanner(context) {
- override def strategies: Seq[Strategy] = Seq( SnappyStrategies, StreamStrategy, StoreStrategy) ++ super.strategies
+ override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
+   StreamStrategy(context.aqpContext.getSampleTablePopulator),
+   StoreStrategy) ++ super.strategies
 
   object SnappyStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {

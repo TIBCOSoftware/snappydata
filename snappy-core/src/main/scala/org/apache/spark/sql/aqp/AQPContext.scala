@@ -65,4 +65,10 @@ trait AQPContext {
   def convertToStratifiedSample(options: Map[String, Any], logicalPlan: LogicalPlan): LogicalPlan
 
   def getPlanner(context: SnappyContext) : SparkPlanner
+
+  def getSnappyCacheManager(context: SnappyContext): SnappyCacheManager
+
+  def getSQLDialectClassName: String
+
+  def getSampleTablePopulator : Option[(SQLContext) => Unit]
 }

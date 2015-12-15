@@ -24,15 +24,15 @@ import org.apache.spark.streaming._
  */
 object SnappyParser extends SqlParserBase {
 
-  protected val ERROR = Keyword("ERROR")
-  protected val ESTIMATE = Keyword("ESTIMATE")
+  //protected val ERROR = Keyword("ERROR")
+  //protected val ESTIMATE = Keyword("ESTIMATE")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
 
-  protected val ERRORPERCENT = Keyword("ERRORPERCENT")
-  protected val CONFIDENCE =Keyword("CONFIDENCE")
+//  protected val ERRORPERCENT = Keyword("ERRORPERCENT")
+ // protected val CONFIDENCE =Keyword("CONFIDENCE")
 
-  protected val defaultConfidence = 0.75
+//  protected val defaultConfidence = 0.75
 
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
       cte | dmlForExternalTable
@@ -45,10 +45,12 @@ object SnappyParser extends SqlParserBase {
         (GROUP ~ BY ~> rep1sep(expression, ",")).? ~
         (HAVING ~> expression).? ~
         sortType.? ~
-        (LIMIT ~> expression).? ~
-        (ERRORPERCENT ~> expression).? ~
-        (CONFIDENCE ~> expression).? ^^ {
-      case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c =>
+        (LIMIT ~> expression).? ^^
+        //(ERRORPERCENT ~> expression).? ~
+       // (CONFIDENCE ~> expression).? ^^
+     {
+     // case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c =>
+       case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l  =>
         val base = r.getOrElse(OneRowRelation)
         val withFilter = f.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, base)).getOrElse(base)
         val withProjection = g
@@ -58,14 +60,14 @@ object SnappyParser extends SqlParserBase {
         val withHaving = h.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, withDistinct)).getOrElse(withDistinct)
         val withOrder = o.map(_ (withHaving)).getOrElse(withHaving)
         val withLimit = l.map(org.apache.spark.sql.catalyst.plans.logical.Limit(_, withOrder)).getOrElse(withOrder)
-        //      withLimit
-        val withErrorPercent = e.map(ErrorPercent(_, withLimit)).getOrElse(withLimit)
-        val withConfidence = c.map(Confidence(_, withErrorPercent)).getOrElse(withErrorPercent)
-        withConfidence
+        withLimit
+       // val withErrorPercent = e.map(ErrorPercent(_, withLimit)).getOrElse(withLimit)
+       // val withConfidence = c.map(Confidence(_, withErrorPercent)).getOrElse(withErrorPercent)
+       // withConfidence
     }
 
-  override protected lazy val function = functionDef |
-      ERROR ~> ESTIMATE ~> ("(" ~> unsignedFloat <~ ")").? ~
+  override protected lazy val function = functionDef //|
+    /*  ERROR ~> ESTIMATE ~> ("(" ~> unsignedFloat <~ ")").? ~
           ident ~ ("(" ~> expression <~ ")") ^^ {
         case c ~ op ~ exp =>
           try {
@@ -78,7 +80,7 @@ object SnappyParser extends SqlParserBase {
               throw new AnalysisException(
                 s"No error estimate implemented for $op")
           }
-      }
+      }*/
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
@@ -356,8 +358,10 @@ case class DMLExternalTable(
   override def output: Seq[Attribute] = child.output
 }
 
-object StreamStrategy extends Strategy {
-  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+
+
+case class StreamStrategy(sampleTablePopulation : Option[(SQLContext)=> Unit] ) extends Strategy {
+  override def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case CreateStream(streamName, userColumns, options) =>
       ExecutedCommand(
         CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
@@ -366,7 +370,7 @@ object StreamStrategy extends Strategy {
         CreateSampledTableCmd(streamName, options)) :: Nil
     case StreamingCtxtActions(action, batchInterval) =>
       ExecutedCommand(
-        StreamingCtxtActionsCmd(action, batchInterval)) :: Nil
+        StreamingCtxtActionsCmd(action, batchInterval, sampleTablePopulation)) :: Nil
     case _ => Nil
   }
 }
@@ -426,7 +430,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
 }
 
 private[sql] case class StreamingCtxtActionsCmd(action: Int,
-    batchInterval: Option[Int])
+    batchInterval: Option[Int], sampleTablePopulation : Option[(SQLContext)=> Unit])
     extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
@@ -440,28 +444,9 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
       case 1 =>
         // Register sampling of all the streams
-        val snappyCtxt = SnappyContext(sqlContext.sparkContext)
-        val catalog = snappyCtxt.catalog
-        val streamTables = catalog.tables.collect {
-          // runtime type is erased to Any, but we keep the actual ClassTag
-          // around in StreamRelation so as to give the proper runtime type
-          case (streamTableName, LogicalRelation(sr: StreamRelation[_])) =>
-            (streamTableName, sr.asInstanceOf[StreamRelation[Any]])
-        }
-        streamTables.foreach {
-          case (streamTableName, sr) =>
-            val streamTable = Some(streamTableName)
-            val aqpTables = catalog.tables.collect {
-              case (sampleTableIdent, sr: StratifiedSample)
-                if sr.streamTable == streamTable => sampleTableIdent.table
-            } ++ catalog.topKStructures.collect {
-              case (topKIdent, (topK, _))
-                if topK.streamTable == streamTable => topKIdent.table
-            }
-            if (aqpTables.nonEmpty) {
-              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
-                sr.schema)(sr.ct)
-            }
+        sampleTablePopulation match {
+          case Some(func) => func(sqlContext)
+          case None => //do nothing
         }
         // start the streaming
         StreamingCtxtHolder.streamingContext.start()

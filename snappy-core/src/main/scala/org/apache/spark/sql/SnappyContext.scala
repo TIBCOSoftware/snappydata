@@ -76,7 +76,7 @@ class SnappyContext private(sc: SparkContext)
 
 
   override protected[sql] def dialectClassName = if (conf.dialect == "sql") {
-    classOf[SnappyParserDialect].getCanonicalName
+    this.aqpContext.getSQLDialectClassName
   } else {
     conf.dialect
   }
@@ -89,7 +89,7 @@ class SnappyContext private(sc: SparkContext)
   override lazy val catalog = new SnappyStoreHiveCatalog(self)
 
   @transient
-  override protected[sql] val cacheManager = new SnappyCacheManager(self)
+  override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager(self)
 
 
 

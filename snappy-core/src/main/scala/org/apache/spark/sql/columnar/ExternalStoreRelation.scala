@@ -21,7 +21,6 @@ private[sql] final class ExternalStoreRelation(
     override val storageLevel: StorageLevel,
     override val child: SparkPlan,
     override val tableName: Option[String],
-    val isSampledTable: Boolean,
     val externalStore: ExternalStore)(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
@@ -29,8 +28,7 @@ private[sql] final class ExternalStoreRelation(
     private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
      = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends InMemoryAppendableRelation(
-     output, useCompression, batchSize, storageLevel, child, tableName,
-     isSampledTable)(_ccb: RDD[CachedBatch],
+     output, useCompression, batchSize, storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
         _stats: Statistics,
         _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow]) {
 
@@ -57,7 +55,7 @@ private[sql] final class ExternalStoreRelation(
 
   override def withOutput(newOutput: Seq[Attribute]) = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable, externalStore)(
+      storageLevel, child, tableName, externalStore)(
           cachedColumnBuffers, super.statisticsToBePropagated,
           batchStats, uuidList)
   }
@@ -71,7 +69,6 @@ private[sql] final class ExternalStoreRelation(
     storageLevel,
     child,
     tableName,
-    isSampledTable,
     externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
         batchStats, uuidList).asInstanceOf[this.type]
 
@@ -107,10 +104,9 @@ private[sql] object ExternalStoreRelation {
       storageLevel: StorageLevel,
       child: SparkPlan,
       tableName: Option[String],
-      isSampledTable: Boolean,
       jdbcSource: ExternalStore): ExternalStoreRelation =
     new ExternalStoreRelation(child.output, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable, jdbcSource)()
+      storageLevel, child, tableName, jdbcSource)()
 
   def apply(useCompression: Boolean,
       batchSize: Int,
