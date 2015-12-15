@@ -73,6 +73,10 @@ class ColumnFormatRelation(
   override def toString: String = s"ColumnFormatRelation[$table]"
 
 
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
+
+  val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
+
   override def numPartitions: Int = {
     executeWithConnection(connector, {
       case conn => val tableSchema = conn.getSchema
@@ -82,12 +86,6 @@ class ColumnFormatRelation(
     })
   }
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
-
-  lazy val connFunctor = ExternalStoreUtils.getConnector(table, driver, dialect, poolProps,
-    connProperties, hikariCP)
-
-  val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
 
   override def partitionColumns: Seq[String] = {
     connectionType match {
@@ -108,7 +106,7 @@ class ColumnFormatRelation(
       case ConnectionType.Embedded => {
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
-          connFunctor,
+          connector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
@@ -126,7 +124,7 @@ class ColumnFormatRelation(
       case _ =>
         colRdd.union(new JDBCRDD(
           sqlContext.sparkContext,
-          connFunctor,
+          connector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
