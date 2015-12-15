@@ -1,11 +1,11 @@
 package org.apache.spark.sql.streaming
 
 import com.typesafe.config.Config
+import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
 
 
@@ -28,7 +28,7 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
     val interval = config.getInt("streaming.batch_interval")
 
     new StreamingSnappyContext(
-      new StreamingContext(SnappyContext.globalSparkContext, Milliseconds(interval))
+      new StreamingContext(LeadImpl.getInitializingSparkContext(), Milliseconds(interval))
     ) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappyStreamingJob]
