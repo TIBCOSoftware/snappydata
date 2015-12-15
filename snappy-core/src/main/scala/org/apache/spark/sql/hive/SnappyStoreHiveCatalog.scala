@@ -21,7 +21,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect, BaseRelation}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.streaming.StreamRelation
@@ -37,15 +37,14 @@ import scala.language.implicitConversions
  *
  * Created by Sumedh on 7/27/15.
  */
-final class SnappyStoreHiveCatalog(context: SnappyContext)
+class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
 
   override val conf = context.conf
 
   val tables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
 
-  val topKStructures =
-    new mutable.HashMap[QualifiedTableName, (TopKWrapper, RDD[(Int, TopK)])]()
+
 
   /**
    * The version of the hive client that will be used to communicate
@@ -354,7 +353,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override def unregisterAllTables(): Unit = {
     tables.clear()
-    topKStructures.clear()
   }
 
   override def unregisterTable(tableIdentifier: Seq[String]): Unit = {
@@ -365,8 +363,6 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
     if (tables.contains(tableIdent)) {
       context.truncateTable(tableIdent.table)
       tables -= tableIdent
-    } else if (topKStructures.contains(tableIdent)) {
-      topKStructures -= tableIdent
     }
   }
 
@@ -534,61 +530,12 @@ final class SnappyStoreHiveCatalog(context: SnappyContext)
       samplingOptions: Map[String, Any], df: Option[SampleDataFrame] = None,
       streamTable: Option[QualifiedTableName] = None,
       jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
-    require(table != null && table.length > 0,
-      "registerSampleTable: expected non-empty table name")
-
-    val tableIdent = newQualifiedTableName(table)
-
-    if (tables.contains(tableIdent)) {
-      throw new IllegalStateException(
-        s"A structure with name $tableIdent is already defined")
-    }
-
-    val tableName = tableIdent.table
-    // add or overwrite existing name attribute
-    val opts = Utils.normalizeOptions(samplingOptions)
-        .filterKeys(_ != "name") + ("name" -> tableName)
-
-    // update the options in any provided StratifiedSample LogicalPlan
-    df foreach (_.logicalPlan.options = opts)
-    // create new StratifiedSample LogicalPlan if none was passed
-    // (currently for streaming case)
-    val sampleDF = df.getOrElse {
-      val plan: LogicalRDD = streamTable match {
-        case Some(baseTable) => LogicalRDD(lookupRelation(baseTable,
-          None).output, new DummyRDD(context))(context)
-        case None => LogicalRDD(schema.toAttributes,
-          new DummyRDD(context))(context)
-      }
-      val newDF = new SampleDataFrame(context,
-        StratifiedSample(opts, plan, streamTable)())
-      val tableOpt = Some(tableName)
-      jdbcSource match {
-        case None => context.cacheManager.cacheQuery(newDF, tableOpt)
-
-        case Some(jdbcOptions) =>
-          val externalStore = getExternalTable(jdbcOptions)
-          createExternalTableForCachedBatches(tableName, externalStore)
-          context.cacheManager.cacheQuery_ext(newDF, tableOpt, externalStore)
-      }
-      newDF
-    }
-    tables.put(tableIdent, sampleDF.logicalPlan)
-    sampleDF
+    throw new UnsupportedOperationException("missing AQP jar")
   }
 
   def registerTopK(tableIdent: String, streamTableIdent: String,
       schema: StructType, topkOptions: Map[String, Any], rdd: RDD[(Int, TopK)]): Unit = {
-    val qualifiedTable = newQualifiedTableName(tableIdent)
-    val streamTable = newQualifiedTableName(streamTableIdent)
-
-    if (topKStructures.contains(qualifiedTable)) {
-      throw new IllegalStateException(
-        s"A structure with name $qualifiedTable is already defined")
-    }
-
-    topKStructures.put(qualifiedTable, TopKWrapper(qualifiedTable, topkOptions,
-      schema, Some(streamTable)) -> rdd)
+    throw new UnsupportedOperationException("missing AQP jar")
   }
 
   // TODO: The JDBC source is currently reading a property jdbcStore

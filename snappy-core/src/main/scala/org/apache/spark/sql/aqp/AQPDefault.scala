@@ -49,15 +49,6 @@ object AQPDefault extends AQPContext{
                              startTime: Long, endTime: Long, k: Int): DataFrame
   = throw new UnsupportedOperationException("missing aqp jar")
 
-  def queryTopkStreamSummary[T: ClassTag]( context: SnappyContext, topKName: String,
-                                           startTime: Long, endTime: Long,
-                                           topkWrapper: TopKWrapper, k: Int, topkRDD: RDD[(Int, TopK)]): DataFrame
-  = throw new UnsupportedOperationException("missing aqp jar")
-
-  def queryTopkHokusai[T: ClassTag](context: SnappyContext, topKName: String,
-                                    startTime: Long, endTime: Long,
-                                    topkWrapper: TopKWrapper, topkRDD: RDD[(Int, TopK)], k: Int): DataFrame
-  = throw new UnsupportedOperationException("missing aqp jar")
 
   def createTopK(df: DataFrame, context: SnappyContext, ident: String, options: Map[String, Any]): Unit
   = throw new UnsupportedOperationException("missing aqp jar")
@@ -88,8 +79,10 @@ object AQPDefault extends AQPContext{
   def getSnappyCacheManager(context: SnappyContext): SnappyCacheManager = new SnappyCacheManager(context)
 
   def getSQLDialectClassName: String = classOf[SnappyParserDialect].getCanonicalName
+
   def getSampleTablePopulator : Option[(SQLContext) => Unit] = None
 
+  def getSnappyCatalogue(context: SnappyContext) : SnappyStoreHiveCatalog = new SnappyStoreHiveCatalog(context)
 }
 
 class DefaultPlanner(context: SnappyContext) extends execution.SparkPlanner(context) {

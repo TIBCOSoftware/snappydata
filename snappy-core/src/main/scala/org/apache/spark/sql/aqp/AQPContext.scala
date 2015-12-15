@@ -37,13 +37,8 @@ trait AQPContext {
   def queryTopK[T: ClassTag](context: SnappyContext, topK: String,
                              startTime: Long, endTime: Long, k: Int): DataFrame
 
-  def queryTopkStreamSummary[T: ClassTag]( context: SnappyContext, topKName: String,
-                                          startTime: Long, endTime: Long,
-                                          topkWrapper: TopKWrapper, k: Int, topkRDD: RDD[(Int, TopK)]): DataFrame
 
-  def queryTopkHokusai[T: ClassTag](context: SnappyContext, topKName: String,
-                                    startTime: Long, endTime: Long,
-                                    topkWrapper: TopKWrapper, topkRDD: RDD[(Int, TopK)], k: Int): DataFrame
+
 
   def createTopK(df: DataFrame, context: SnappyContext, ident: String, options: Map[String, Any]): Unit
 
@@ -71,4 +66,6 @@ trait AQPContext {
   def getSQLDialectClassName: String
 
   def getSampleTablePopulator : Option[(SQLContext) => Unit]
+
+  def getSnappyCatalogue(context: SnappyContext) : SnappyStoreHiveCatalog
 }

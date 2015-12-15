@@ -4,7 +4,7 @@ import java.lang.management.ManagementFactory
 import java.sql.Date
 import java.text.SimpleDateFormat
 
-import org.apache.spark.sql.execution.Approximate
+
 import org.apache.spark.sql.types.{DateType, StringType, FloatType, IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SQLContext, DataFrame}
 import org.apache.spark.sql.hive.HiveContext

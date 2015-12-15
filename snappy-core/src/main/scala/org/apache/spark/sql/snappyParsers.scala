@@ -61,26 +61,10 @@ object SnappyParser extends SqlParserBase {
         val withOrder = o.map(_ (withHaving)).getOrElse(withHaving)
         val withLimit = l.map(org.apache.spark.sql.catalyst.plans.logical.Limit(_, withOrder)).getOrElse(withOrder)
         withLimit
-       // val withErrorPercent = e.map(ErrorPercent(_, withLimit)).getOrElse(withLimit)
-       // val withConfidence = c.map(Confidence(_, withErrorPercent)).getOrElse(withErrorPercent)
-       // withConfidence
+
     }
 
-  override protected lazy val function = functionDef //|
-    /*  ERROR ~> ESTIMATE ~> ("(" ~> unsignedFloat <~ ")").? ~
-          ident ~ ("(" ~> expression <~ ")") ^^ {
-        case c ~ op ~ exp =>
-          try {
-            val aggType = ErrorAggregate.withName(
-              op.toUpperCase(java.util.Locale.ENGLISH))
-            val confidence = c.map(_.toDouble).getOrElse(defaultConfidence)
-            ErrorEstimateAggregate(exp, confidence, null, c.isEmpty, aggType)
-          } catch {
-            case _: java.util.NoSuchElementException =>
-              throw new AnalysisException(
-                s"No error estimate implemented for $op")
-          }
-      }*/
+  override protected lazy val function = functionDef
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {

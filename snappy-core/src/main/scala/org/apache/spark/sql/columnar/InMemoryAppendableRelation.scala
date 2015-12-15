@@ -51,7 +51,7 @@ private[sql] class InMemoryAppendableRelation(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null,
-    private[self] var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
+    private[columnar] var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
     new ArrayBuffer[RDD[CachedBatch]]())
     extends InMemoryRelation(output, useCompression, batchSize,
       storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
@@ -109,7 +109,7 @@ private[sql] class InMemoryAppendableRelation(
       s"InMemoryAppendableRelation: unexpected call to recache for $tableName")
   }
 
-  override def withOutput(newOutput: Seq[Attribute]) = {
+  override def withOutput(newOutput: Seq[Attribute]): InMemoryRelation = {
     new InMemoryAppendableRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName)(super.cachedColumnBuffers,
           statisticsToBePropagated, batchStats, _cachedBufferList)

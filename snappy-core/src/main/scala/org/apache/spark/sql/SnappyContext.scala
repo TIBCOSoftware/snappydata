@@ -2,9 +2,16 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
-import org.apache.spark.sql.SnappyContext._
+
 import org.apache.spark.sql.aqp.{AQPDefault, AQPContext}
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, InMemoryAppendableRelation, ExternalStoreRelation}
+import org.apache.spark.sql.execution.{LogicalRDD, TopK, SparkPlan, ConnectionPool, ExtractPythonUDFs}
+
 import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.sources.{JdbcExtendedUtils, IndexableRelation, DestroyRelation, UpdatableRelation,
+RowInsertableRelation, DeletableRelation}
+
+
 import org.apache.spark.util.ShutdownHookManager
 
 import scala.collection.mutable
@@ -24,8 +31,8 @@ import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution._
+
+
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 
 
@@ -33,7 +40,7 @@ import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyS
 
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
-import org.apache.spark.sql.sources._
+//import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
@@ -41,6 +48,7 @@ import org.apache.spark.streaming.{StreamingContext, Time}
 import org.apache.spark.{Logging, SparkContext, SparkException, TaskContext}
 
 import org.apache.spark.sql.{execution => sparkexecution}
+
 
 import scala.util.{Failure, Success, Try}
 
@@ -58,7 +66,7 @@ class SnappyContext private(sc: SparkContext)
   val aqpContext = Try {
 
     val mirror = u.runtimeMirror(getClass.getClassLoader)
-    val cls = mirror.classSymbol(Class.forName(aqpContextImplClass))
+    val cls = mirror.classSymbol(Class.forName(SnappyContext.aqpContextImplClass))
     val module = cls.companionSymbol.asModule
     mirror.reflectModule(module).instance.asInstanceOf[AQPContext]
   }  match {
@@ -86,7 +94,7 @@ class SnappyContext private(sc: SparkContext)
 
 
   @transient
-  override lazy val catalog = new SnappyStoreHiveCatalog(self)
+  override lazy val catalog = this.aqpContext.getSnappyCatalogue(this)
 
   @transient
   override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager(self)
@@ -485,14 +493,14 @@ class SnappyContext private(sc: SparkContext)
     new Analyzer(catalog, functionRegistry, conf) {
       override val extendedResolutionRules =
         ExtractPythonUDFs ::
-            datasources.PreInsertCastAndRename ::
+            sparkexecution.datasources.PreInsertCastAndRename ::
          //   ReplaceWithSampleTable ::
           //  WeightageRule ::
             //TestRule::
             Nil
 
       override val extendedCheckRules = Seq(
-        datasources.PreWriteCheck(catalog))
+        sparkexecution.datasources.PreWriteCheck(catalog))
     }
 
   @transient
@@ -528,25 +536,6 @@ class SnappyContext private(sc: SparkContext)
   def queryTopK[T: ClassTag](topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
     aqpContext.queryTopK[T](this, topK, startTime, endTime, k)
-
-
-
-  def queryTopkStreamSummary[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long,
-      topkWrapper: TopKWrapper, k: Int, topkRDD: RDD[(Int, TopK)]): DataFrame =
-      aqpContext.queryTopkStreamSummary[T](this, topKName, startTime, endTime,
-        topkWrapper, k, topkRDD)
-
-
-
-
-  def queryTopkHokusai[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long,
-      topkWrapper: TopKWrapper, topkRDD: RDD[(Int, TopK)], k: Int): DataFrame =
-      aqpContext.queryTopkHokusai[T](this, topKName,
-        startTime, endTime,
-        topkWrapper, topkRDD, k)
-
 
   private var storeConfig: Map[String, String] = _
 

@@ -31,15 +31,8 @@ class SampleDataFrame(@transient override val sqlContext: SnappyContext,
                            groupByColumns: Set[String] = Set.empty): mutable.Map[Row, ErrorRow] =
   implementor.errorEstimateAverage(columnName, confidence, groupByColumns)
 
-  private def createSampleDataFrameContract = if(sqlContext.aqpContext != null) {
-    sqlContext.aqpContext.createSampleDataFrameContract(super.sqlContext.asInstanceOf[SnappyContext], this, super.logicalPlan)
-  }else {
-    throw new UnsupportedOperationException("aqp jar missing")
-  }
+  private def createSampleDataFrameContract =  sqlContext.aqpContext.createSampleDataFrameContract(sqlContext,
+    this, logicalPlan)
 
 
-  /*private def readObject(in: java.io.ObjectInputStream ): Unit = {
-    in.defaultReadObject
-    this.implementor = createSampleDataFrameContract
-  }*/
 }

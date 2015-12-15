@@ -14,7 +14,7 @@ import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 
-private[sql] final class ExternalStoreRelation(
+private[sql]  class ExternalStoreRelation(
     override val output: Seq[Attribute],
     override val useCompression: Boolean,
     override val batchSize: Int,
@@ -25,7 +25,7 @@ private[sql] final class ExternalStoreRelation(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null,
-    private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
+    private[columnar] var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
      = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends InMemoryAppendableRelation(
      output, useCompression, batchSize, storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
@@ -53,7 +53,7 @@ private[sql] final class ExternalStoreRelation(
       s"ExternalStoreRelation: unexpected call to recache for $tableName")
   }
 
-  override def withOutput(newOutput: Seq[Attribute]) = {
+  override def withOutput(newOutput: Seq[Attribute]): InMemoryRelation = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, externalStore)(
           cachedColumnBuffers, super.statisticsToBePropagated,

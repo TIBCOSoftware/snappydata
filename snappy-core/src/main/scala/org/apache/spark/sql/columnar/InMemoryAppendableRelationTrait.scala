@@ -10,7 +10,7 @@ import org.apache.spark.sql.catalyst.expressions.Attribute
 private[sql] trait InMemoryAppendableRelationTrait {
 
   private[sql] val reservoirRDD: Option[RDD[InternalRow]]
-  def withOutput(newOutput: Seq[Attribute]): InMemoryAppendableRelation
+  def withOutput(newOutput: Seq[Attribute]): InMemoryRelation
 
   def newInstance(): this.type
 }
