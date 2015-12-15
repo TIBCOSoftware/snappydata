@@ -40,6 +40,30 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     }
   }
 
+  test("SNAP-249 aqp/topk tables with stramingSnappy") {
+
+    streamingSnappy.sql("create stream table tweetstreamtable " +
+      "(id long, text string, fullName string, " +
+      "country string, retweets int, hashtag string) " +
+      "using twitter_stream options (" +
+      "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+      "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+      "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+      "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+      "streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter')")
+
+    val topKOption = Map(
+      "key" -> "hashtag",
+      "frequencyCol" -> "retweets" )
+
+    streamingSnappy.registerTopK("topktable", "tweetstreamtable", topKOption, false)
+
+//    streamingSnappy.sql( """STREAMING CONTEXT START """)
+
+    StreamingSnappyContext.start()
+    ssc.awaitTerminationOrTimeout(5 * 1000)
+  }
+
   test("SNAP-240 NotSerializableException with checkpoint") {
 
     def getQueueOfRDDs: Queue[RDD[Tweet]] = {
@@ -48,9 +72,6 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
       Queue(distData1, distData2, distData3)
     }
-
-    import org.apache.spark.sql.snappy._
-
     val dStream = ssc.queueStream[Tweet](getQueueOfRDDs)
 
     val schemaDStream = streamingSnappy.createSchemaDStream(dStream)
@@ -218,9 +239,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "strataReservoirSize" -> "300",
       "timeInterval" -> "3m"), Some("tweetstreamtable"))
 
-    streamingSnappy.saveStream(tableStream, Seq("tweetstreamtable_sampled"), {
-      (rdd: RDD[Row], _) => rdd
-    }, tableStream.schema)
+    streamingSnappy.saveStream(tableStream, Seq("tweetstreamtable_sampled"), tableStream.schema)
 
     streamingSnappy.sql("create table rawStreamColumnTable(id long, " +
       "text string, " +

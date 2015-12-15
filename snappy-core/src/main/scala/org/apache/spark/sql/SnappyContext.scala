@@ -2,13 +2,14 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import org.apache.spark.sql.catalyst.expressions.InterpretedProjection
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.LockUtils.ReadWriteLock
 import org.apache.spark.sql.approximate.TopKUtil
@@ -25,7 +26,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.types.{StructType, LongType, StructField}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -70,8 +71,16 @@ class SnappyContext protected (@transient sc: SparkContext)
   @transient
   override protected[sql] val cacheManager = new SnappyCacheManager()
 
-
-  def saveStream[T: ClassTag](stream: DStream[T],
+  def saveStream[T](stream: DStream[T],
+                    aqpTables: Seq[String],
+                    schema: StructType) {
+    stream.foreachRDD((rdd: RDD[T], time: Time) => {
+      val converter = CatalystTypeConverters.createToScalaConverter(schema)
+      val rddRows = rdd.map(converter(_).asInstanceOf[Row])
+      collectSamples(rddRows, aqpTables, time.milliseconds)
+    })
+  }
+/*  def saveStream[T: ClassTag](stream: DStream[T],
       aqpTables: Seq[String],
       formatter: (RDD[T], StructType) => RDD[Row],
       schema: StructType,
@@ -86,7 +95,7 @@ class SnappyContext protected (@transient sc: SparkContext)
 
       collectSamples(rows, aqpTables, time.milliseconds)
     })
-  }
+  } */
 
   protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
       time: Long,
@@ -610,7 +619,7 @@ class SnappyContext protected (@transient sc: SparkContext)
   def queryTopK[T: ClassTag](topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame = {
     val topKIdent = catalog.newQualifiedTableName(topK)
-    topKLocks(topKIdent.toString()).executeInReadLock {
+    // topKLocks(topKIdent.toString()).executeInReadLock {
       val (topkWrapper, rdd) = catalog.topKStructures(topKIdent)
       // requery the catalog to obtain the TopKRDD
 
@@ -623,7 +632,7 @@ class SnappyContext protected (@transient sc: SparkContext)
         queryTopkHokusai(topKName, startTime, endTime, topkWrapper, rdd, size)
 
       }
-    }
+   // }
   }
 
   def queryTopkStreamSummary[T: ClassTag](topKName: String,
