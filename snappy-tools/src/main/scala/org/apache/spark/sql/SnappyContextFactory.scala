@@ -10,7 +10,7 @@ import org.apache.spark.SparkConf
 /**
   * Created by soubhikc on 22/10/15.
   */
-trait SnappySQLJob  extends SparkJobBase {
+trait SnappySQLJob extends SparkJobBase {
   type C = SnappyContext
 }
 
