@@ -34,15 +34,10 @@ object AirlineDataJob extends SnappySQLJob {
     // Row table entry count
     val result4 = airlineCodeDF.count
 
-    // Find Flights to SAN that has been delayed(Arrival/Dep)  5 or more times in a row
-    val result5 = airlineDF.select("FlightNum", "ArrDelay").where(airlineDF("Dest")==="SAN").
-      groupBy("ArrDelay").count
-
     Map("Airline table schema" -> result1,
       "Airline table count" -> result2,
       "AirlineRef table schema" -> result3,
-      "AirlineRef count" -> result4,
-      "Flights to SAN that got delayed 5 or more times in a row" -> result5)
+      "AirlineRef count" -> result4)
 
   }
 
