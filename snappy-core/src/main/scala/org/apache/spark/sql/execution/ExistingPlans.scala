@@ -2,7 +2,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{Expression, Attribute}
 import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
 
@@ -16,7 +16,7 @@ private[sql] case class PartitionedPhysicalRDD(
     output: Seq[Attribute],
     rdd: RDD[InternalRow],
     numPartition: Int,
-    partitionColumns: Seq[Attribute],
+    partitionColumns: Seq[Expression],
     extraInformation: String) extends LeafNode {
 
   protected override def doExecute(): RDD[InternalRow] = rdd
@@ -36,7 +36,7 @@ private[sql] object PartitionedPhysicalRDD {
   def createFromDataSource(
       output: Seq[Attribute],
       numPartition: Int,
-      partitionColumns: Seq[Attribute],
+      partitionColumns: Seq[Expression],
       rdd: RDD[InternalRow],
       relation: BaseRelation): PartitionedPhysicalRDD = {
     PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns,
