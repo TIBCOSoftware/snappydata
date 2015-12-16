@@ -1,6 +1,6 @@
 package io.snappydata.benchmark.cluster
 
-import io.snappydata.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCHRowPartitionedTable, TPCH_Snappy_Query}
+import io.snappydata.benchmark.{TPCH_Snappy_Query, TPCHReplicatedTable, TPCHRowPartitionedTable, TPCHColumnPartitionedTable}
 
 import org.apache.spark.{SparkConf, SparkContext}
 
