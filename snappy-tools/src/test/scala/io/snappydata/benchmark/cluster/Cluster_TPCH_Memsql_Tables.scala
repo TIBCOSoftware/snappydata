@@ -3,7 +3,6 @@ package io.snappydata.benchmark.cluster
 import java.sql.DriverManager
 
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHRowPartitionedTable, TPCHReplicatedTable}
-import io.snappydata.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCHRowPartitionedTable}
 
 object Cluster_TPCH_Memsql_Tables {
   def main(args: Array[String]) {
