@@ -79,7 +79,7 @@ class RowFormatRelation(
           table,
           requiredColumns,
           filters,
-          Array[Partition](JDBCPartition(null, 0)),
+          parts,
           connProperties).asInstanceOf[RDD[Row]]
     }
   }
@@ -150,7 +150,7 @@ final class DefaultSource extends MutableRelationProvider {
       preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
-      Seq.empty.toArray,
+      Array[Partition](JDBCPartition(null, 0)),
       poolProps,
       connProps,
       hikariCP,
