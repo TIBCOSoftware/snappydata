@@ -358,7 +358,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
         "USING column " +
         "options " +
         "(" +
-        "PARTITION_BY '(Key1 other1)'," +
+        "PARTITION_BY 'Key1, Value '," +
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
