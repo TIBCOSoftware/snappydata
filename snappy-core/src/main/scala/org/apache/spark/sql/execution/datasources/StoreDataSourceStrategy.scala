@@ -2,6 +2,7 @@ package org.apache.spark.sql.execution.datasources
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -9,7 +10,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.datasources.DataSourceStrategy._
 import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.{Row, Strategy, execution}
+import org.apache.spark.sql.{AnalysisException, Row, Strategy, execution}
 
 /**
  * This strategy makes a PartitionedPhysicalRDD out of a PrunedFilterScan based datasource.
@@ -85,13 +86,13 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
     }
 
     // Get the partition column attribute INFO from relation schema
-    val partitionColumnsRef = partitionColumns.map(b =>
-      {
-        relation.output.filter(a => {
-          val c = a.withName(b)
-          c.equals(a)
-        }).head
-      })
+    val sqlContext = relation.relation.sqlContext
+
+    val joinedCols = partitionColumns.map(colName =>
+      relation.resolveQuoted(colName, sqlContext.analyzer.resolver).getOrElse {
+      throw new AnalysisException(
+        s"""Cannot resolve column name "$colName" among (${relation.output})""")
+    })
 
     if (projects.map(_.toAttribute) == projects &&
         projectSet.size == projects.size &&
@@ -106,7 +107,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
         projects.map(_.toAttribute),
         numPartition,
-        partitionColumnsRef,
+        joinedCols,
         scanBuilder(requestedColumns, pushedFilters),
         relation.relation)
       filterCondition.map(execution.Filter(_, scan)).getOrElse(scan)
@@ -116,7 +117,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
         requestedColumns,
         numPartition,
-        partitionColumnsRef,
+        joinedCols,
         scanBuilder(requestedColumns, pushedFilters),
         relation.relation)
       execution.Project(projects, filterCondition.map(execution.Filter(_, scan)).getOrElse(scan))
