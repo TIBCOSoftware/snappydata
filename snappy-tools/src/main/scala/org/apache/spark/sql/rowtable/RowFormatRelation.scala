@@ -72,15 +72,7 @@ class RowFormatRelation(
         ).asInstanceOf[RDD[Row]]
 
       case _ =>
-        new JDBCRDD(
-          sqlContext.sparkContext,
-          connector,
-          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
-          table,
-          requiredColumns,
-          filters,
-          parts,
-          connProperties).asInstanceOf[RDD[Row]]
+        super.buildScan(requiredColumns, filters)
     }
   }
 
