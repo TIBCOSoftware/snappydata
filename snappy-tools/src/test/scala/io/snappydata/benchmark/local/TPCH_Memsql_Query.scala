@@ -2,7 +2,7 @@ package io.snappydata.benchmark.local
 
 import java.sql.DriverManager
 
-import io.snappydata.TPCH_Memsql
+import io.snappydata.benchmark.TPCH_Memsql
 
 /**
  * Created by kishor on 9/12/15.
