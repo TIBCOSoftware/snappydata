@@ -11,7 +11,7 @@ import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentif
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{Decimal, DecimalType, StructType}
 import org.apache.spark.streaming._
 
 
@@ -32,7 +32,11 @@ object SnappyParser extends SqlParserBase {
   protected val ERRORPERCENT = Keyword("ERRORPERCENT")
   protected val CONFIDENCE =Keyword("CONFIDENCE")
 
-  protected val defaultConfidence = 0.75
+  protected val LOWER = Keyword("LOWER")
+  protected val UPPER = Keyword("UPPER")
+  protected val BOUND = Keyword("BOUND")
+
+  protected val defaultConfidence = 0.95
 
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
       cte | dmlForExternalTable
@@ -47,8 +51,8 @@ object SnappyParser extends SqlParserBase {
         sortType.? ~
         (LIMIT ~> expression).? ~
         (ERRORPERCENT ~> expression).? ~
-        (CONFIDENCE ~> expression).? ~ (ERRORPERCENT ~> expression).? ^^ {
-      case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c ~ err =>
+        (CONFIDENCE ~> expression).? ^^ {
+      case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c =>
         val base = r.getOrElse(OneRowRelation)
         val withFilter = f.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, base)).getOrElse(base)
         val withProjection = g
@@ -58,14 +62,13 @@ object SnappyParser extends SqlParserBase {
         val withHaving = h.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, withDistinct)).getOrElse(withDistinct)
         val withOrder = o.map(_ (withHaving)).getOrElse(withHaving)
         val withLimit = l.map(org.apache.spark.sql.catalyst.plans.logical.Limit(_, withOrder)).getOrElse(withOrder)
-        //      withLimit
         val withErrorPercent = e.map(ErrorPercent(_, withLimit)).getOrElse(withLimit)
         val withConfidence = c.map(Confidence(_, withErrorPercent)).getOrElse(withErrorPercent)
-        val withErrorPercent1 = err.map(ErrorPercent(_, withConfidence)).getOrElse(withConfidence)
-        withErrorPercent1
+        withConfidence
     }
 
-  override protected lazy val function = functionDef |
+
+  override protected lazy val function = (functionDef |
       ERROR ~> ESTIMATE ~> ("(" ~> unsignedFloat <~ ")").? ~
           ident ~ ("(" ~> expression <~ ")") ^^ {
         case c ~ op ~ exp =>
@@ -80,6 +83,21 @@ object SnappyParser extends SqlParserBase {
                 s"No error estimate implemented for $op")
           }
       }
+      |
+      LOWER ~> BOUND ~> ident ~ ("(" ~> expression <~ ")") ^^ {
+        case op ~ exp =>
+          val aggType = ErrorAggregate.withName(
+            op.toUpperCase(java.util.Locale.ENGLISH) + " LOWER")
+          ErrorEstimateAggregate(exp, defaultConfidence, null, true, aggType)
+      }
+      |
+      UPPER ~> BOUND ~> ident ~ ("(" ~> expression <~ ")") ^^ {
+        case op ~ exp =>
+          val aggType = ErrorAggregate.withName(
+            op.toUpperCase(java.util.Locale.ENGLISH) + " UPPER")
+          ErrorEstimateAggregate(exp, defaultConfidence, null, true, aggType)
+      }
+      )
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> ident ~ wholeInput ^^ {
@@ -102,7 +120,7 @@ object SnappyParser extends SqlParserBase {
 private[sql] class SnappyParserDialect extends ParserDialect {
 
   override def parse(sqlText: String): LogicalPlan = {
-    SnappyParser.parse(sqlText)
+     SnappyParser.parse(sqlText)
   }
 }
 

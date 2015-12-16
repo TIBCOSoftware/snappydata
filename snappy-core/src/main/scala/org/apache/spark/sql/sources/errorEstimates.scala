@@ -45,6 +45,12 @@ object ErrorAggregate extends Enumeration {
 
   val Avg = Value("AVG")
   val Sum = Value("SUM")
+
+  val Sum_Lower = Value("SUM LOWER")
+  val Avg_Lower = Value("AVG LOWER")
+
+  val Sum_Upper = Value("SUM UPPER")
+  val Avg_Upper = Value("AVG UPPER")
 }
 
 final class StatCounterWithFullCount(var weightedCount: Double = 0)
@@ -142,9 +148,17 @@ private[spark] case object StatCounterUDT
       else stdev * new TDistribution(errorStats.count - 1)
           .inverseCumulativeProbability(0.5 + confidence / 2.0)
 
+
     aggType match {
       case ErrorAggregate.Avg => errorMean
       case ErrorAggregate.Sum => errorMean * populationCount
+
+      case ErrorAggregate.Avg_Lower => errorStats.mean - errorMean
+      case ErrorAggregate.Sum_Lower => (errorStats.mean - errorMean)* populationCount
+
+      case ErrorAggregate.Avg_Upper => errorStats.mean + errorMean
+      case ErrorAggregate.Sum_Upper => (errorStats.mean + errorMean)* populationCount
+
     }
   }
 }

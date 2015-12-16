@@ -154,18 +154,22 @@ private[spark] case object StatCounterUDTCF
 
     aggType match {
       case ErrorAggregate.Avg =>
-        val act_err = math.abs(errorMean/errorStats.mean)*100
-        if (act_err > error){
-          throw new SpecificationNotMeetException("Error percent " + act_err +" is greater than error percent "+ error + " specified ")
+        val rel_err = math.abs(errorMean/errorStats.mean)*100
+        //println(s"RelErr $rel_err")
+        if (rel_err > error){
+          println(s"Error percent $rel_err is greater than error percent $error specified ")
+          //throw new SpecificationNotMeetException(s"Error percent $act_err is greater than error percent $error specified ")
         }
-        errorStats.mean //Return the actual
+        errorStats.mean //Return sample mean
 
       case ErrorAggregate.Sum =>
-        val act_err = math.abs(errorMean/errorStats.mean)*100
-        if (act_err > error){
-          throw new SpecificationNotMeetException("Error percent " + act_err +" is greater than error percent "+ error + " specified ")
+        val rel_err = math.abs(errorMean/errorStats.mean)*100
+        //println(s"RelErr $rel_err")
+        if (rel_err > error){
+          println(s"Error percent $rel_err is greater than error percent $error specified ")
+          //throw new SpecificationNotMeetException(s"Error percent $act_err is greater than error percent $error specified ")
         }
-        errorStats.mean * populationCount //Return the actual
+        errorStats.mean * populationCount
     }
   }
 }

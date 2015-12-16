@@ -1,8 +1,9 @@
 package org.apache.spark.sql.sources
 
 
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedAttribute, UnresolvedAlias, UnresolvedFunction}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.types.{FloatType, DoubleType, IntegralType}
+import org.apache.spark.sql.types.{DataType, DecimalType, Decimal, FloatType, DoubleType, IntegralType}
 
 import scala.collection.mutable
 import scala.util.control.Breaks._
@@ -18,7 +19,7 @@ import org.apache.spark.sql.execution.{StratifiedSample}
  */
 object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 
-  val DEFAULT_CONFIDENCE: Double = 95
+  val DEFAULT_CONFIDENCE: Double = 0.95
   val DEFAULT_ERROR: Double = 10
 
   def apply(plan: LogicalPlan): LogicalPlan = {
@@ -31,6 +32,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
       case _: IntegralType => expr.eval().asInstanceOf[Int]
       case _: DoubleType => expr.eval().asInstanceOf[Double]
       case _: FloatType => expr.eval().asInstanceOf[Float]
+      case _: DecimalType => expr.eval().asInstanceOf[Decimal].toDouble
 
     }
 
@@ -45,20 +47,20 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
       }
     }
 
-     plan transformDown  {
+     plan transformDown {
 
-      case ErrorPercent(expr, child) => {
-        errorPercent = convertToDouble(expr)
-        child
-      } //TODO:Store confidence level some where for post-query triage
+       case ErrorPercent(expr, child) => {
+         errorPercent = convertToDouble(expr)
+         child
+       } //TODO:Store confidence level some where for post-query triage
 
-      case Confidence(expr, child) => {
-        confidence = convertToDouble(expr)
-        child
-      } //TODO:Store confidence level some where for post-query triage
+       case Confidence(expr, child) => {
+         confidence = convertToDouble(expr)
+         child
+       } //TODO:Store confidence level some where for post-query triage
 
       case p@Subquery(name, child) if (!child.isInstanceOf[StratifiedSample] && (errorPercent != -1
-        || confidence != -1 || SnappyContext.SnappySC.catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
+        || confidence != -1 || SnappyContext.getOrCreate(SnappyContext.globalSparkContext).catalog.tables.exists{ case (nameX,planX) => (nameX.toString == name
         && (planX match {
           case StratifiedSample(_,_,_) => true
           case _ => false
@@ -77,6 +79,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
         plan transformUp {
           case a: org.apache.spark.sql.catalyst.plans.logical.Aggregate => {
             for (ar <- a.groupingExpressions.seq) {
+              if(!ar.isInstanceOf[UnresolvedAttribute])
               query_qcs += ar.asInstanceOf[AttributeReference].name
               //println("GroupBy..." + query_qcs)
             }
@@ -88,7 +91,7 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
           }
         }
 
-        val aqpTables = SnappyContext.SnappySC.catalog.tables.collect {
+        val aqpTables = SnappyContext.getOrCreate(SnappyContext.globalSparkContext).catalog.tables.collect {
           case (sampleTableIdent, ss: StratifiedSample)
             if sampleTableIdent.table.contains(p.alias + "_") => {
             //if ss.table.equals(p.alias) => {
@@ -143,10 +146,45 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
 }
 
 @transient
+object ClosedFormErrorBounds extends Rule[LogicalPlan] {
+
+  var conf: Double = 0.95
+  var applyClosedForm = false
+
+  def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
+
+    case e: ErrorAndConfidence => {
+      conf = e.confidence
+      applyClosedForm = e.applyClosedForm
+      e
+    }
+
+    case a: Aggregate => {
+      var est: ErrorEstimateAggregate = null
+      a transformExpressions {
+        case al: Alias => {
+          val check = al find {
+            case e: ErrorEstimateAggregate if (e.confidence != conf) =>
+              est = e
+              true
+            case _ => false
+          }
+          val newAlias = check match {
+            case Some(ex) => new Alias(new ErrorEstimateAggregate(est.child, conf, est.ratioExpr, est.isDefault, est.aggregateType), al.name)(al.exprId, al.qualifiers, al.explicitMetadata)
+            case _ => al
+          }
+          newAlias
+        }
+      }
+    }
+  }
+}
+
+@transient
 object ClosedFormErrorEstimateRule extends Rule[LogicalPlan] {
 
   var error: Double = 10.0
-  var conf: Double = 95
+  var conf: Double = 0.95
   var applyClosedForm = false
 
   def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
@@ -180,7 +218,7 @@ object ClosedFormErrorEstimateRule extends Rule[LogicalPlan] {
             var aggType = ErrorAggregate.Sum
             if (al.child.isInstanceOf[WeightedAverage]) aggType = ErrorAggregate.Avg
 
-            new Alias(ClosedFormErrorEstimate(al.child, conf / 100, ratioExpr, true, aggType, error.toInt), al.name)(al.exprId,
+            new Alias(ClosedFormErrorEstimate(al.child, conf, ratioExpr, true, aggType, error.toInt), al.name)(al.exprId,
               al.qualifiers, al.explicitMetadata)
           }
           else
