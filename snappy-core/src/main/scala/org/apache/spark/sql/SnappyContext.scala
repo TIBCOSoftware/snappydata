@@ -64,11 +64,13 @@ class SnappyContext private(sc: SparkContext)
   self =>
 
   val aqpContext = Try {
-
     val mirror = u.runtimeMirror(getClass.getClassLoader)
     val cls = mirror.classSymbol(Class.forName(SnappyContext.aqpContextImplClass))
-    val module = cls.companionSymbol.asModule
-    mirror.reflectModule(module).instance.asInstanceOf[AQPContext]
+    val clsType = cls.toType
+    val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
+    val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
+    val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
+    runtimeCtr().asInstanceOf[AQPContext]
   }  match {
     case Success(v) => v
     case Failure(_) => AQPDefault
