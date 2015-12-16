@@ -54,6 +54,9 @@ testClasses.doLast {
 
 test.dependsOn ':cleanJUnit'
 scalaTest {
+  // This property is a temporary fix for scala tests to not use default-persistent
+  // connection property in SnappyHiveCatalog
+  systemProperty "scalaTest", "true"
   dependsOn ':cleanScalaTest'
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
