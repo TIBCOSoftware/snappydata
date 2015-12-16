@@ -226,6 +226,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       newConn = getANetConnection(netPort1)
       doQueries(newConn.createStatement(), newConn.getMetaData())
 
+      // Ensure parquet table can be dropped (SNAP-215)
+      val tableName = "PARQUETTABLE";
+      s.execute(s"CREATE TABLE $tableName " +
+          s"(Col1 INT, Col2 INT, Col3 INT) USING parquet OPTIONS (path '/tmp/parquetdata')")
+      s.execute(s"DROP TABLE $tableName")
+
     } finally {
       conn.close()
       if (newConn != null) {
