@@ -18,6 +18,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Scala
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar._
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.datasources.parquet.ParquetRelation
 import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -441,6 +442,7 @@ class SnappyContext protected (@transient sc: SparkContext)
         catalog.unregisterExternalTable(qualifiedTable)
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
+          case _ => // Do nothing
         }
       case _ => throw new AnalysisException(
         s"dropExternalTable: Table $tableName not an external table")
