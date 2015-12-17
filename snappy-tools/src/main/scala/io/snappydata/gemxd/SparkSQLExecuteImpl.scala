@@ -46,7 +46,7 @@ class SparkSQLExecuteImpl(val sql: String,
   // using the corresponding fromDataForOptimizedResultHolder on the clob object
   private lazy val clobColData = new SQLClob
 
-  private val resultsRdd = df.queryExecution.executedPlan.execute()
+  private val resultsRdd = df.queryExecution.executedPlan.execute().map(_.copy())
 
   override def serializeRows(out: DataOutput) = {
     var numBytes = 0
@@ -78,40 +78,42 @@ class SparkSQLExecuteImpl(val sql: String,
     hdos.clearForReuse()
     var metaDataSent = false
     partitionIdList.sorted.foreach(p => {
-//      logTrace("Sending data for partition id = " + p)
+      logTrace("Sending data for partition id = " + p)
       val partitionData: Array[InternalRow] = bm.getLocal(RDDBlockId(resultsRdd.id, p)) match {
         case Some(block) => block.data.next().asInstanceOf[Array[InternalRow]]
-     // case None => throw new Exception(s"SparkSQLExecuteImpl: packRows() block $RDDBlockId not found")
+        // case None => throw new Exception(s"SparkSQLExecuteImpl: packRows() block $RDDBlockId not found")
       }
 
-      var numRowsSentInBatch = 0
-      var totalRowsSentForPartition = 0
-      while (totalRowsSentForPartition < partitionData.length) {
-        partitionData.takeWhile(_ => hdos.size <= GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(row =>
-        {
-          //send metadata once per result set
-          if (!metaDataSent) {
-            sendMetaData()
-            metaDataSent = true
-          } else {
-            //indicates no metadata being sent
-            hdos.writeByte(0x0);
-          }
+      var numRowsSent = 0
+      val totalRowsForPartition = partitionData.length
+
+      while (numRowsSent < totalRowsForPartition) {
+        //send metadata once per result set
+        if ((numRowsSent == 0) && !metaDataSent) {
+          sendMetaData()
+          metaDataSent = true
+        } else {
+          //indicates no metadata being sent
+          hdos.writeByte(0x0);
+        }
+        (numRowsSent until totalRowsForPartition).takeWhile(_ => hdos.size <=
+            GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
+          val row = partitionData(i)
           writeRow(row)
 
-          numRowsSentInBatch += 1
+          numRowsSent += 1
         })
+
         msg.sendResult(snappyResultHolder)
-        logTrace(s"Sent one batch for partition $p. No of rows sent in batch = $numRowsSentInBatch" )
-        totalRowsSentForPartition += numRowsSentInBatch
-        numRowsSentInBatch = 0;
+        logTrace(s"Sent one batch for partition $p. No of rows sent in batch = $numRowsSent")
         hdos.clearForReuse()
       }
-
       logTrace(s"Finished sending data for partition $p")
     })
 
-    hdos.clearForReuse();
+    if (!metaDataSent) {
+      sendMetaData()
+    }
     msg.lastResult(snappyResultHolder)
 
     // remove cached results from block manager
