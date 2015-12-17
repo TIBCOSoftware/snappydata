@@ -73,11 +73,39 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     dropTableXD(conn, tableName)
   }
 
+  def testRowTableByDefaultRouting(): Unit = {
+    val tableName: String = "DefaultRowTableQR"
+
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+
+    createTableByDefaultXD(conn, tableName)
+    tableMetadataAssertRowTable(tableName)
+
+    // Drop Table and Recreate
+    dropTableXD(conn, tableName)
+    createTableByDefaultXD(conn, tableName)
+
+    insertDataXD(conn, tableName)
+    queryData(tableName)
+
+    createTempTableXD(conn)
+
+    queryDataXD(conn, tableName)
+    dropTableXD(conn, tableName)
+  }
+
   def createTableXD(conn: Connection, tableName: String, usingStr: String): Unit = {
     val s = conn.createStatement()
     val options = ""
     s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING " + usingStr +
         " " + options)
+  }
+
+  def createTableByDefaultXD(conn: Connection, tableName: String): Unit = {
+    val s = conn.createStatement()
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) ")
   }
 
   def failCreateTableXD(conn : Connection, tableName : String, doFail : Boolean, usingStr : String): Unit = {
