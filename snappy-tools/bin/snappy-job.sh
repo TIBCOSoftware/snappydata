@@ -49,10 +49,6 @@ while (( "$#" )); do
       shift
       jobID="${1:-$TOK_EMPTY}"
     ;;
-    --factory)
-      shift
-      contextFactory="${1:-$TOK_EMPTY}"
-    ;;
     --context)
       shift
       contextName="${1:-$TOK_EMPTY}"
@@ -89,7 +85,7 @@ validateArg() {
 cmdLine=
 case $cmd in 
   status)
-     if [[ $jobID != "" ]]; then
+     if validateArg $jobID ; then
        showUsage "--job-id"
      fi
      cmdLine="jobs/${jobID}"
@@ -122,16 +118,19 @@ fi
 
 
 # invoke command
+
+jobServerURL="$hostnamePort/${cmdLine}"
 case $cmd in 
   jobs | context)
-    jobServerURL="$hostnamePort/${cmdLine}"
     if [[ $appjar != "" ]]; then
       curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
     fi
+
     curl -d "" ${jobServerURL} $CURL_OPTS
   ;;
 
   status)
-    curl ${hostnamePort}\/jobs\/${jobID} $CURL_OPTS
+    curl ${jobServerURL} $CURL_OPTS
+  ;;
 esac
 
