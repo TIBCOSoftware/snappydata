@@ -1,13 +1,13 @@
 package org.apache.spark.sql.aqp
 
 import org.apache.spark.rdd.RDD
+
+
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
+
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.DDLParser
+import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, DDLParser}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.StoreStrategy
 import org.apache.spark.sql.types.StructType
@@ -15,7 +15,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 
 import scala.reflect.ClassTag
-import scala.reflect.runtime._
+
 import scala.reflect.runtime.{universe => u}
 import org.apache.spark.sql.{execution => sparkexecution}
 /**
@@ -77,7 +77,7 @@ object AQPDefault extends AQPContext{
 
   def getPlanner(context: SnappyContext) : SparkPlanner = new DefaultPlanner(context)
 
-  def getSnappyCacheManager(context: SnappyContext): SnappyCacheManager = new SnappyCacheManager(context)
+  def getSnappyCacheManager: SnappyCacheManager = new SnappyCacheManager()
 
   def getSQLDialectClassName: String = classOf[SnappyParserDialect].getCanonicalName
 
@@ -89,14 +89,33 @@ object AQPDefault extends AQPContext{
   def getSnappyDDLParser (planGenerator: String => LogicalPlan): DDLParser = new SnappyDDLParser(planGenerator)
 }
 
-class DefaultPlanner(context: SnappyContext) extends execution.SparkPlanner(context) {
+class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanner(snappyContext)  with SnappyStrategies{
   val sampleSnappyCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
   val sampleStreamCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
 
-  override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
-   StreamStrategy(context.aqpContext.getSampleTablePopulator, sampleStreamCase ),
-   StoreStrategy) ++ super.strategies
 
+
+
+  // TODO temporary flag till we determine every thing works fine with the optimizations
+  val storeOptimization = snappyContext.sparkContext.getConf.get(
+    "snappy.store.optimization", "true").toBoolean
+
+  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
+    Seq(StoreDataSourceStrategy , LocalJoinStrategies)
+  else Nil
+
+  override def strategies: Seq[Strategy] =
+    Seq(SnappyStrategies, StreamDDLStrategy(snappyContext.aqpContext.getSampleTablePopulator, sampleStreamCase),
+      StoreStrategy, StreamQueryStrategy) ++
+      storeOptimizedRules ++
+      super.strategies
+
+
+
+  /*override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
+   StreamStrategy(context.aqpContext.getSampleTablePopulator, sampleStreamCase ),
+   StoreStrategy) ++ super.strategies*/
+  /*
   object SnappyStrategies extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
       val x: PartialFunction[LogicalPlan, Seq[SparkPlan]]  = {
@@ -115,5 +134,5 @@ class DefaultPlanner(context: SnappyContext) extends execution.SparkPlanner(cont
 
 
 
-  }
+  }*/
 }

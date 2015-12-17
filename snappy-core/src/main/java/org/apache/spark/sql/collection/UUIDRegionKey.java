@@ -14,6 +14,11 @@ public final class UUIDRegionKey implements java.io.Serializable, Comparable<UUI
     this.bucketId = bucketId;
   }
 
+  public UUIDRegionKey(int bucketId, UUID batchID) {
+    this.uuid = batchID;
+    this.bucketId = bucketId;
+  }
+
   public static Object parseAndGetBucketId(String uuidStr) {
     final int colonIdx = uuidStr.lastIndexOf(":");
     if (colonIdx < 0 || uuidStr.split("-").length != 5) {

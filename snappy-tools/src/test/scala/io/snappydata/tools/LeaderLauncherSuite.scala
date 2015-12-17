@@ -8,7 +8,7 @@ import com.gemstone.gemfire.internal.AvailablePort
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
 import com.pivotal.gemfirexd.{TestUtil, FabricService, Attribute}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
-import io.snappydata.{Property, ServiceManager, Lead, Constant, SnappyFunSuite}
+import io.snappydata._
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.{SparkConf, SparkContext}
@@ -189,7 +189,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val conf = new SparkConf()
         .setAppName(testName)
-        .setMaster(Constant.JDBC_URL_PREFIX + s"localhost[${availablePort}]")
+        .setMaster(Constant.SNAPPY_URL_PREFIX + s"localhost[${availablePort}]")
         // .set(Prop.Store.locators, s"localhost[${availablePort}]")
         .set(Constant.STORE_PROPERTY_PREFIX + Attribute.SYS_PERSISTENT_DIR, dirname)
 

@@ -8,7 +8,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{ConvertToUnsafe, SparkPlan}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.StructType
@@ -106,7 +106,9 @@ private[sql] object ExternalStoreRelation {
       tableName: Option[String],
       jdbcSource: ExternalStore): ExternalStoreRelation =
     new ExternalStoreRelation(child.output, useCompression, batchSize,
-      storageLevel, child, tableName, jdbcSource)()
+      storageLevel, if (child.outputsUnsafeRows) child else ConvertToUnsafe(child),
+      tableName,  jdbcSource)()
+
 
   def apply(useCompression: Boolean,
       batchSize: Int,

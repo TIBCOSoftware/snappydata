@@ -11,8 +11,7 @@ import org.apache.spark.storage.StorageLevel
 /**
  * Snappy CacheManager extension to allow for appending data to cache.
  */
-private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
-    extends execution.CacheManager(sqlContext) {
+private[sql] class SnappyCacheManager extends execution.CacheManager {
 
   /**
    * Caches the data produced by the logical representation of the given
@@ -29,6 +28,8 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
       logWarning("SnappyCacheManager: asked to cache already cached data.")
     } else {
 
+      val sqlContext = query.sqlContext
+
       cachedData += execution.CachedData(query.logicalPlan,
         getRelation(sqlContext, storageLevel, query.queryExecution.executedPlan, tableName, query)
         )
@@ -41,6 +42,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")
     } else {
+      val sqlContext = query.sqlContext
 
       cachedData += execution.CachedData(query.logicalPlan,
         columnar.ExternalStoreRelation(
@@ -64,7 +66,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
   }
 
 
-  def getRelation(sqlContext: SnappyContext, storageLevel: StorageLevel,
+  def getRelation(sqlContext: SQLContext, storageLevel: StorageLevel,
                   executedPlan : SparkPlan, tableName: Option[String], query: DataFrame): InMemoryAppendableRelation =
     columnar.InMemoryAppendableRelation(
       sqlContext.conf.useCompression,
