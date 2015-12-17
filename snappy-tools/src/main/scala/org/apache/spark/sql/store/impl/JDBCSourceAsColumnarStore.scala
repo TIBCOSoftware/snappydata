@@ -153,6 +153,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
     extends RDD[CachedBatch](_sc, Nil) with Logging {
 
+  private var firstCall = true
+
   override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName, {
       case conn =>
@@ -181,7 +183,9 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     store.tryExecute(tableName, {
       case conn =>
         val tableSchema = conn.getSchema
-        StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap)
+        val partitions = StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap, firstCall)
+        firstCall = false
+        partitions
     })
   }
 }

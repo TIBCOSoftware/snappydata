@@ -49,6 +49,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     } else ""
   }
 
+  private var firstCallofGetPartitonForPRRowType = true
   private def compileFilter(f: Filter): String = f match {
     case EqualTo(attr, value) => s"$attr = ${compileValue(value)}"
     case LessThan(attr, value) => s"$attr < ${compileValue(value)}"
@@ -243,7 +244,10 @@ class RowFormatScanRDD(@transient sc: SparkContext,
         val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
         val region = Misc.getRegionForTable(resolvedName, true)
         if (region.isInstanceOf[PartitionedRegion]) {
-          StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
+          val partitions = StoreUtils.getPartitionsPartitionedTable(sc, tableName,
+            tableSchema, blockMap, firstCallofGetPartitonForPRRowType)
+          firstCallofGetPartitonForPRRowType = false
+          partitions
         } else {
           StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
         }

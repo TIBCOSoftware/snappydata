@@ -1,10 +1,12 @@
 package org.apache.spark.sql.store
 
+import java.sql.Connection
 import java.util.Properties
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
+import com.gemstone.gemfire.cache.partition.PartitionRegionHelper
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -63,13 +65,24 @@ object StoreUtils extends Logging {
 
   def getPartitionsPartitionedTable(sc: SparkContext,
       tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      blockMap: Map[InternalDistributedMember, BlockManagerId], firstCall: Boolean): Array[Partition] = {
 
     val resolvedName = lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
     val numPartitions = region.getTotalNumberOfBuckets
     val partitions = new Array[Partition](numPartitions)
-
+    if (firstCall) {
+      var bucketsToBeCreated = true
+      (0 until numPartitions).takeWhile( _ => bucketsToBeCreated ).foreach( bid => {
+        val bucket = region.getNodeForBucketRead(bid)
+        if (bucket != null) {
+          bucketsToBeCreated = false
+        }
+      })
+      if (bucketsToBeCreated) {
+        PartitionRegionHelper.assignBucketsToPartitions(region)
+      }
+    }
     for (p <- 0 until numPartitions) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
