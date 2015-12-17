@@ -1,7 +1,7 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.{ExplainCommand, QueryExecution, SparkPlan}
@@ -94,5 +94,29 @@ final class SchemaDStream(
     // scalastyle:off println
     println(schema.treeString)
     // scalastyle:on println
+  }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: (DataFrame) => Unit): Unit = {
+    val func = (rdd: RDD[Row], time: Time) =>  {
+      val df = streamingSnappy.createDataFrame(rdd, schema)
+      foreachFunc(df)
+    }
+    this.foreachRDD(func)
+  }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
+    val func = (rdd: RDD[Row], time: Time) =>  {
+      val df = streamingSnappy.createDataFrame(rdd, schema)
+      foreachFunc(df,time)
+    }
+    this.foreachRDD(func)
   }
 }
