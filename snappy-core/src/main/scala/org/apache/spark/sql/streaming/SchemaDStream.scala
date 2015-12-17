@@ -100,8 +100,8 @@ final class SchemaDStream(
    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
    */
-  def foreachDataFrame(foreachFunc: (DataFrame) => Unit): Unit = {
-    val func = (rdd: RDD[Row], time: Time) =>  {
+  def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
+    val func = (rdd: RDD[Row]) =>  {
       val df = streamingSnappy.createDataFrame(rdd, schema)
       foreachFunc(df)
     }

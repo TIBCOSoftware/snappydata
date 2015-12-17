@@ -51,17 +51,26 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream1 = ssc.queueStream[Tweet](getQueueOfRDDs1)
     val map = Map.empty[String,String]
     val schemaStream1 = streamingSnappy.createSchemaDStream(dStream1)
-    streamingSnappy.dropExternalTable("gemxdColumnTable", true)
+    streamingSnappy.dropExternalTable("gemxdColumnTable1", true)
     schemaStream1.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable")
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
+    })
+
+    streamingSnappy.dropExternalTable("gemxdColumnTable2", true)
+    schemaStream1.foreachDataFrame((df,time) => {
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
     })
 
     ssc.start
     ssc.awaitTerminationOrTimeout(20 * 1000)
 
-    val result = streamingSnappy.sql("select * from gemxdColumnTable")
-    val r = result.collect
-    assert(r.length == 30)
+    val result1 = streamingSnappy.sql("select * from gemxdColumnTable1")
+    val r1 = result1.collect
+    assert(r1.length == 30)
+
+    val result2 = streamingSnappy.sql("select * from gemxdColumnTable2")
+    val r2 = result2.collect
+    assert(r2.length == 30)
   }
 
   test("SNAP-240 NotSerializableException with checkpoint") {
