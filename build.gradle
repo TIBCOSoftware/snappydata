@@ -411,7 +411,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test' //, ":snappy-aqp:check"
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
