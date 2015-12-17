@@ -43,8 +43,9 @@ private[sql] case class ExternalTableDMLCmd(
   def run(sqlContext: SQLContext): Seq[Row] = {
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
+      case relation: SingleRowInsertableRelation => relation.executeUpdate(command)
       case other => throw new AnalysisException("DML support requires " +
-          "UpdatableRelation but found " + other)
+          "UpdatableRelation/SingleRowInsertableRelation but found " + other)
     }
     Seq.empty
   }

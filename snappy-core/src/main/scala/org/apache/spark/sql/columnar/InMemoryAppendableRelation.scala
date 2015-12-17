@@ -37,7 +37,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{ConvertToUnsafe, SparkPlan}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.storage.StorageLevel
 
@@ -157,7 +157,9 @@ private[sql] object InMemoryAppendableRelation {
       child: SparkPlan,
       tableName: Option[String]): InMemoryAppendableRelation =
     new InMemoryAppendableRelation(child.output, useCompression, batchSize,
-      storageLevel, child, tableName)()
+      storageLevel, if (child.outputsUnsafeRows) child else ConvertToUnsafe(child),
+      tableName)()
+
 }
 
 private[sql] class InMemoryAppendableColumnarTableScan(
@@ -169,6 +171,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
   protected override def doExecute(): RDD[InternalRow] = {
 
     val rdd = relation.reservoirRDD
+    val rel = relation.output
     if (rdd.isEmpty) {
       return super.doExecute()
     }
@@ -180,7 +183,9 @@ private[sql] class InMemoryAppendableColumnarTableScan(
       // minimum default element size).
       val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
         val (narrowestOrdinal, narrowestDataType) =
-          rel_out.zipWithIndex.map { case (a, ordinal) =>
+
+          rel.zipWithIndex.map { case (a, ordinal) =>
+
             ordinal -> a.dataType
           } minBy { case (_, dataType) =>
             ColumnType(dataType).defaultSize
@@ -188,7 +193,9 @@ private[sql] class InMemoryAppendableColumnarTableScan(
         Seq(narrowestOrdinal) -> Seq(narrowestDataType)
       } else {
         attributes.map { a =>
-          rel_out.indexWhere(_.exprId == a.exprId) -> a.dataType
+
+          rel.indexWhere(_.exprId == a.exprId) -> a.dataType
+
         }.unzip
       }
 

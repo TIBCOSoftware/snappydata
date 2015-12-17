@@ -62,7 +62,7 @@ trait AQPContext {
 
   def getPlanner(context: SnappyContext) : SparkPlanner
 
-  def getSnappyCacheManager(context: SnappyContext): SnappyCacheManager
+  def getSnappyCacheManager: SnappyCacheManager
 
   def getSQLDialectClassName: String
 
