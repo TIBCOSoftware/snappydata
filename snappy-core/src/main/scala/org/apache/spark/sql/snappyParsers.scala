@@ -99,10 +99,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream | createSampled | strmctxt | truncateTable | createIndex | dropIndex
+        createStream  | strmctxt | truncateTable | createIndex | dropIndex
 
   protected val STREAM = Keyword("STREAM")
-  protected val SAMPLED = Keyword("SAMPLED")
+
   protected val STRM = Keyword("STREAMING")
   protected val CTXT = Keyword("CONTEXT")
   protected val START = Keyword("START")
@@ -207,11 +207,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
         CreateStream(streamName, userColumns, opts)
     }
 
-  protected lazy val createSampled: Parser[LogicalPlan] =
-    (CREATE ~> SAMPLED ~> TABLE ~> ident) ~
-        (OPTIONS ~> options) ^^ {
-      case sampleName ~ opts => CreateSampledTable(sampleName, opts)
-    }
+
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
     (STRM ~> CTXT ~>
@@ -344,8 +340,26 @@ case class DMLExternalTable(
 
 
 
-case class StreamStrategy(sampleTablePopulation : Option[(SQLContext)=> Unit] ) extends Strategy {
-  override def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+case class StreamStrategy(sampleTablePopulation : Option[(SQLContext)=> Unit],
+                          sampleStreamCase : PartialFunction[LogicalPlan, Seq[SparkPlan]]) extends Strategy {
+
+  override def apply(plan: LogicalPlan): Seq[SparkPlan] =
+    {
+      val x1: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+        case CreateStream(streamName, userColumns, options) =>
+          ExecutedCommand(
+            CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
+      }
+
+      val x2 : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+        case StreamingCtxtActions(action, batchInterval) =>
+          ExecutedCommand(
+            StreamingCtxtActionsCmd(action, batchInterval, sampleTablePopulation)) :: Nil
+
+    }
+
+    x1.orElse(x2).orElse(sampleStreamCase)(plan)
+    /*plan match {
     case CreateStream(streamName, userColumns, options) =>
       ExecutedCommand(
         CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
@@ -355,7 +369,7 @@ case class StreamStrategy(sampleTablePopulation : Option[(SQLContext)=> Unit] ) 
     case StreamingCtxtActions(action, batchInterval) =>
       ExecutedCommand(
         StreamingCtxtActionsCmd(action, batchInterval, sampleTablePopulation)) :: Nil
-    case _ => Nil
+    case _ => Nil*/
   }
 }
 
@@ -370,15 +384,7 @@ private[sql] case class CreateStream(streamName: String,
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
-private[sql] case class CreateSampledTable(streamName: String,
-    options: Map[String, String])
-    extends LogicalPlan with Command {
 
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
-}
 
 private[sql] case class StreamingCtxtActions(action: Int,
     batchInterval: Option[Int])
@@ -441,28 +447,6 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
   }
 }
 
-private[sql] case class CreateSampledTableCmd(sampledTableName: String,
-    options: Map[String, String])
-    extends RunnableCommand {
-
-  def run(sqlContext: SQLContext): Seq[Row] = {
-
-    val table = OptsUtil.getOption(OptsUtil.BASETABLE, options)
-
-    val snappyCtxt = SnappyContext(sqlContext.sparkContext)
-    val catalog = snappyCtxt.catalog
-
-    val tableIdent = catalog.newQualifiedTableName(table)
-    val sr = catalog.getStreamTableRelation(tableIdent)
-
-    // Add the sample table to the catalog as well.
-    // StratifiedSampler is not expecting base table, remove it.
-    snappyCtxt.registerSampleTable(sampledTableName, sr.schema,
-      options - OptsUtil.BASETABLE, Some(tableIdent.table))
-
-    Seq.empty
-  }
-}
 
 object OptsUtil {
 

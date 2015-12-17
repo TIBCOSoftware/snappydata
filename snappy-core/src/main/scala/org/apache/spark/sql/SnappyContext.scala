@@ -5,7 +5,7 @@ import java.sql.Connection
 
 import org.apache.spark.sql.aqp.{AQPDefault, AQPContext}
 import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, InMemoryAppendableRelation, ExternalStoreRelation}
-import org.apache.spark.sql.execution.{LogicalRDD, TopK, SparkPlan, ConnectionPool, ExtractPythonUDFs}
+import org.apache.spark.sql.execution.{LogicalRDD, SparkPlan, ConnectionPool, ExtractPythonUDFs}
 
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources.{JdbcExtendedUtils, IndexableRelation, DestroyRelation, UpdatableRelation,
@@ -21,13 +21,9 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.{Constant, Property}
-import org.apache.spark.sql.{execution => sparkexecution}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.LockUtils.ReadWriteLock
 
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
-import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
@@ -40,8 +36,7 @@ import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyS
 
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
-//import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.types.{StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{StreamingContext, Time}
@@ -82,7 +77,7 @@ class SnappyContext private(sc: SparkContext)
   GlobalSnappyInit.initGlobalSnappyContext(sc)
 
   @transient
-  override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
+  override protected[sql] val ddlParser = this.aqpContext.getSnappyDDLParser(sqlParser.parse)
 
 
   override protected[sql] def dialectClassName = if (conf.dialect == "sql") {

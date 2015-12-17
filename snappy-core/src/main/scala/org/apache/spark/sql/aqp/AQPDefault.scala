@@ -7,6 +7,7 @@ import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.datasources.DDLParser
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.StoreStrategy
 import org.apache.spark.sql.types.StructType
@@ -82,27 +83,37 @@ object AQPDefault extends AQPContext{
 
   def getSampleTablePopulator : Option[(SQLContext) => Unit] = None
 
-  def getSnappyCatalogue(context: SnappyContext) : SnappyStoreHiveCatalog = new SnappyStoreHiveCatalog(context)
+  def getSnappyCatalogue(context: SnappyContext) : SnappyStoreHiveCatalog
+  = new SnappyStoreHiveCatalog(context)
+
+  def getSnappyDDLParser (planGenerator: String => LogicalPlan): DDLParser = new SnappyDDLParser(planGenerator)
 }
 
 class DefaultPlanner(context: SnappyContext) extends execution.SparkPlanner(context) {
- override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
-   StreamStrategy(context.aqpContext.getSampleTablePopulator),
+  val sampleSnappyCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
+  val sampleStreamCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
+
+  override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
+   StreamStrategy(context.aqpContext.getSampleTablePopulator, sampleStreamCase ),
    StoreStrategy) ++ super.strategies
 
   object SnappyStrategies extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = {
+      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]]  = {
+        case PhysicalOperation (projectList, filters,
+        mem: columnar.InMemoryAppendableRelation) =>
+        pruneFilterProject (
+        projectList,
+        filters,
+        identity[Seq[Expression]], // All filters still need to be evaluated
+        InMemoryAppendableColumnarTableScan (_, filters, mem) ) :: Nil
+      }
 
-      case PhysicalOperation(projectList, filters,
-      mem: columnar.InMemoryAppendableRelation) =>
-        pruneFilterProject(
-          projectList,
-          filters,
-          identity[Seq[Expression]], // All filters still need to be evaluated
-          InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
+      x.orElse(sampleSnappyCase)(plan)
 
-      case _ => Nil
     }
+
+
 
   }
 }
