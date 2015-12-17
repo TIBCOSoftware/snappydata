@@ -15,11 +15,11 @@ object TPCHRowPartitionedTable {
     stmt.execute("CREATE TABLE PART  ( " +
         "P_PARTKEY     INTEGER NOT NULL PRIMARY KEY,"+
         "P_NAME        VARCHAR(55) NOT NULL,"+
-        "P_MFGR        CHAR(25) NOT NULL,"+
-        "P_BRAND       CHAR(10) NOT NULL,"+
+        "P_MFGR        VARCHAR(25) NOT NULL,"+
+        "P_BRAND       VARCHAR(10) NOT NULL,"+
         "P_TYPE        VARCHAR(25) NOT NULL,"+
         "P_SIZE        INTEGER NOT NULL,"+
-        "P_CONTAINER   CHAR(10) NOT NULL,"+
+        "P_CONTAINER   VARCHAR(10) NOT NULL,"+
         "P_RETAILPRICE DECIMAL(15,2) NOT NULL,"+
         "P_COMMENT     VARCHAR(23) NOT NULL)"
     )
@@ -80,9 +80,9 @@ object TPCHRowPartitionedTable {
         "C_NAME        VARCHAR(25) NOT NULL," +
         "C_ADDRESS     VARCHAR(40) NOT NULL," +
         "C_NATIONKEY   INTEGER NOT NULL," +
-        "C_PHONE       CHAR(15) NOT NULL," +
+        "C_PHONE       VARCHAR(15) NOT NULL," +
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
-        "C_MKTSEGMENT  CHAR(10) NOT NULL," +
+        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)"
     )
     println("Created Table CUSTOMER")
@@ -117,11 +117,11 @@ object TPCHRowPartitionedTable {
         """CREATE TABLE PART (
                 P_PARTKEY INTEGER NOT NULL PRIMARY KEY,
                 P_NAME VARCHAR(55) NOT NULL,
-                P_MFGR CHAR(25) NOT NULL,
-                P_BRAND CHAR(10) NOT NULL,
+                P_MFGR VARCHAR(25) NOT NULL,
+                P_BRAND VARCHAR(10) NOT NULL,
                 P_TYPE VARCHAR(25) NOT NULL,
                 P_SIZE INTEGER NOT NULL,
-                P_CONTAINER CHAR(10) NOT NULL,
+                P_CONTAINER VARCHAR(10) NOT NULL,
                 P_RETAILPRICE DECIMAL(15,2) NOT NULL,
                 P_COMMENT VARCHAR(23) NOT NULL
              ) PARTITION BY COLUMN (P_PARTKEY)
@@ -200,9 +200,9 @@ object TPCHRowPartitionedTable {
                 C_NAME VARCHAR(25) NOT NULL,
                 C_ADDRESS VARCHAR(40) NOT NULL,
                 C_NATIONKEY INTEGER NOT NULL ,
-                C_PHONE CHAR(15) NOT NULL,
+                C_PHONE VARCHAR(15) NOT NULL,
                 C_ACCTBAL DECIMAL(15,2) NOT NULL,
-                C_MKTSEGMENT CHAR(10) NOT NULL,
+                C_MKTSEGMENT VARCHAR(10) NOT NULL,
                 C_COMMENT VARCHAR(117) NOT NULL
              ) PARTITION BY COLUMN (C_CUSTKEY)
         """ + usingOptionString
