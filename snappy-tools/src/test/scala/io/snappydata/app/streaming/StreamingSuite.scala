@@ -40,6 +40,39 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     }
   }
 
+  test("save stream to external table using forEachDataFrame") {
+    def getQueueOfRDDs1: Queue[RDD[Tweet]] = {
+      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
+      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
+      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
+      Queue(distData1, distData2, distData3)
+    }
+
+    val dStream1 = ssc.queueStream[Tweet](getQueueOfRDDs1)
+    val map = Map.empty[String,String]
+    val schemaStream1 = streamingSnappy.createSchemaDStream(dStream1)
+    streamingSnappy.dropExternalTable("gemxdColumnTable1", true)
+    schemaStream1.foreachDataFrame(df => {
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
+    })
+
+    streamingSnappy.dropExternalTable("gemxdColumnTable2", true)
+    schemaStream1.foreachDataFrame((df,time) => {
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
+    })
+
+    ssc.start
+    ssc.awaitTerminationOrTimeout(20 * 1000)
+
+    val result1 = streamingSnappy.sql("select * from gemxdColumnTable1")
+    val r1 = result1.collect
+    assert(r1.length == 30)
+
+    val result2 = streamingSnappy.sql("select * from gemxdColumnTable2")
+    val r2 = result2.collect
+    assert(r2.length == 30)
+  }
+
   test("SNAP-240 NotSerializableException with checkpoint") {
 
     def getQueueOfRDDs: Queue[RDD[Tweet]] = {
