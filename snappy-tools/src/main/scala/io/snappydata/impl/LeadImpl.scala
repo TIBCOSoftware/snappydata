@@ -3,6 +3,7 @@ package io.snappydata.impl
 import java.sql.SQLException
 import java.util.Properties
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
 
@@ -109,7 +110,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     SnappyEmbeddedModeClusterManager.register()
 
     sparkContext = new SparkContext(conf)
-
   }
 
   private[snappydata] def internalStart(sc: SparkContext): Unit = {
@@ -263,6 +263,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   @throws(classOf[Exception])
   private[snappydata] def startAddOnServices(sc: SparkContext): Unit = this.synchronized {
+    LeadImpl.setInitializingSparkContext(sc)
 
     if (status() == State.UNINITIALIZED || status() == State.STOPPED) {
       // for SparkContext.setMaster("local[xx]"), ds.connect won't happen
@@ -293,6 +294,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     // the correct URL given SparkContext is fully initialized.
     logInfo("About to send profile update after initialization completed.")
     ServerGroupUtils.sendUpdateProfile()
+
+    LeadImpl.clearInitializingSparkContext()
   }
 
   def getConfig(args: Array[String]): Config = {
@@ -348,6 +351,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
 object LeadImpl {
 
+  private[this] val startingContext: AtomicReference[SparkContext] =
+    new AtomicReference[SparkContext](null)
+
   def invokeLeadStart(sc: SparkContext): Unit = {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     lead.internalStart(sc)
@@ -362,4 +368,27 @@ object LeadImpl {
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     lead.internalStop(shutdownCredentials)
   }
+
+  def setInitializingSparkContext(sc: SparkContext): Unit = {
+    assert(sc != null)
+    startingContext.set(sc)
+  }
+
+  def getInitializingSparkContext(): SparkContext = {
+    val sc = SnappyContext.globalSparkContext
+    if (sc != null) {
+      return sc
+    }
+
+    val initSC = startingContext.get()
+    assert(initSC != null)
+
+    initSC
+  }
+
+  def clearInitializingSparkContext(): Unit = {
+    startingContext.set(null)
+  }
+
+
 }

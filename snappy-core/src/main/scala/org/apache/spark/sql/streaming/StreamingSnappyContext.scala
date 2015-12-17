@@ -22,7 +22,7 @@ import scala.reflect.runtime.{universe => u}
   * Created by ymahajan on 25/09/15.
   */
 
-final class StreamingSnappyContext private(@transient val streamingContext:
+class StreamingSnappyContext private[streaming](@transient val streamingContext:
                                            StreamingContext)
   extends SnappyContext(streamingContext.sparkContext)
   with Serializable {
