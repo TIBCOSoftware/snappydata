@@ -28,15 +28,15 @@ object AirlineDataJob extends SnappySQLJob {
 
     //Todo :Run query with ERROR ESTIMATE once the bug SNAP-274 is fixed.
     val start = System.currentTimeMillis
-    val result2=snJobContext.snc.sql("select AVG(ArrDelay),UniqueCarrier from "+sampleTableName+" group by UniqueCarrier")
+    val result2=snJobContext.snc.sql("select AVG(ArrDelay),UniqueCarrier,YearI,MonthI from "+sampleTableName+" group by UniqueCarrier,YearI,MonthI")
     val end = System.currentTimeMillis
     val totalTime=(end-start)
 
     val start1 = System.currentTimeMillis
-    val result3=snJobContext.snc.sql("select AVG(ArrDelay) as AVGDELAY, UniqueCarrier from "+colTableName+" group by UniqueCarrier")
+    val result3=snJobContext.snc.sql("select AVG(ArrDelay) as AVGDELAY, UniqueCarrier,YearI,MonthI from "+colTableName+" group by UniqueCarrier,YearI,MonthI")
     val end1 = System.currentTimeMillis
-    val totalTime1=(end1-start1)
 
+    val totalTime1=(end1-start1)
     Map("Result of Average ARR_DELAY" -> result1.collect(),
         "Duration in ms on SAMPLED table "->totalTime1,"SampleTable Result: "->result2.collect(),
         "Duration in ms on AIRLINE table"->totalTime,"AirlineTable Result: "->result3.collect()
