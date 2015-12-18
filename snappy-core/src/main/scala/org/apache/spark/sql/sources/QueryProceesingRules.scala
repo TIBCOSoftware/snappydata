@@ -145,6 +145,104 @@ object ReplaceWithSampleTable extends Rule[LogicalPlan] {
   }
 }
 
+
+@transient
+object GetErrorBounds extends Rule[LogicalPlan] {
+
+  var conf: Double = 0.95
+  var applyClosedForm = false
+
+  def apply(plan: LogicalPlan): LogicalPlan = plan transformUp {
+
+    case e: ErrorAndConfidence => {
+      conf = e.confidence
+      applyClosedForm = e.applyClosedForm
+      e
+    }
+
+    case a: Aggregate => {
+      val agg = a.aggregateExpressions.seq
+      a transformExpressions {
+
+        case ual: UnresolvedAlias => {
+          var new_al: Alias = null
+          val check = ual find {
+
+            case uf: UnresolvedFunction => {
+              if (uf.name.equalsIgnoreCase("LOWER_BOUND") || uf.name.equalsIgnoreCase("UPPER_BOUND")) {
+                uf find {
+                  case ua: UnresolvedAttribute => {
+                    breakable {
+                      for (aa <- agg) {
+                        //resolve unresolved function attribute
+                        if (aa.name.equalsIgnoreCase(ua.name) && aa.isInstanceOf[Alias]) {
+                          var aggType = aa.asInstanceOf[Alias].child.asInstanceOf[ClosedFormErrorEstimate].aggregateType
+                          val attrib = aa.asInstanceOf[Alias].child.asInstanceOf[ClosedFormErrorEstimate].attr
+
+                          aggType = ErrorAggregate.withName(aggType.toString + " " + uf.name.toUpperCase().split("_").head)
+                          new_al = new Alias(new ErrorEstimateAggregate(attrib, conf, null, true, aggType), "Alias")()
+                          break
+                        }
+                      }
+                    }
+                    true
+                  }
+                  case _ => false
+                }
+              }
+              true
+            }
+            case _ => false
+          }
+          val newAlias = check match {
+            case Some(found) => new_al
+            case _ => ual
+          }
+          newAlias
+        }
+
+        case al: Alias if !al.child.isInstanceOf[ErrorEstimateAggregate] => {
+          var new_al = al
+          val check = al find {
+            case uf: UnresolvedFunction => {
+              if (uf.name.equalsIgnoreCase("LOWER_BOUND") || uf.name.equalsIgnoreCase("UPPER_BOUND")) {
+                uf find {
+                  case ua: UnresolvedAttribute => {
+                    breakable {
+                      for (aa <- agg) {
+                        //resolve unresolved function attribute
+                        if (aa.name.equalsIgnoreCase(ua.name) && aa.isInstanceOf[Alias]) {
+                          var aggType = aa.asInstanceOf[Alias].child.asInstanceOf[ClosedFormErrorEstimate].aggregateType
+                          val attrib = aa.asInstanceOf[Alias].child.asInstanceOf[ClosedFormErrorEstimate].attr
+
+                          aggType = ErrorAggregate.withName(aggType.toString + " " + uf.name.toUpperCase().split("_").head)
+                          new_al = new Alias(new ErrorEstimateAggregate(attrib, conf, null, true, aggType), al.name)(al.exprId,
+                            al.qualifiers, al.explicitMetadata)
+                          break
+                        }
+                      }
+                    }
+                    true
+                  }
+                  case _ => false
+                }
+              }
+              true
+            }
+            case _ => false
+          }
+          val newAlias = check match {
+            case Some(found) => new_al
+            case _ => al
+          }
+          newAlias
+        }
+      }
+    }
+  }
+}
+
+
 @transient
 object ClosedFormErrorBounds extends Rule[LogicalPlan] {
 

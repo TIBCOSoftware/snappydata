@@ -3,7 +3,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.sql.catalyst.analysis._
 
-import org.apache.spark.sql.sources.{ClosedFormErrorBounds, WeightageRule, ReplaceWithSampleTable, ClosedFormErrorEstimateRule, ErrorAndConfidence, SampleTableQuery}
+import org.apache.spark.sql.sources._
 
 import org.apache.spark.sql.{SnappyContext}
 import org.apache.spark.sql.catalyst.plans.logical.{Subquery}
@@ -133,9 +133,10 @@ private class AQPQueryAnalyzer ( sqlContext: SnappyContext, queryExecutor: Snapp
     ExtractPythonUDFs ::
       datasources.PreInsertCastAndRename ::
       ReplaceWithSampleTable ::
-      ClosedFormErrorBounds ::
+      //ClosedFormErrorBounds ::
       WeightageRule ::
       ClosedFormErrorEstimateRule::
+      GetErrorBounds::
       Nil
 
   override val extendedCheckRules = Seq(

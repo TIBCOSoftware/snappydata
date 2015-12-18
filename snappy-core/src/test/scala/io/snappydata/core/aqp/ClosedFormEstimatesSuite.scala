@@ -143,18 +143,24 @@ class ClosedFormEstimatesSuite extends FunSuite with BeforeAndAfter {
 
   test("lower bound and upper bound with closed form") {
     val results_sampled_table = snContext.sql(
-      """SELECT SUM(ArrDelay), LOWER BOUND SUM(ArrDelay), UPPER BOUND SUM(ArrDelay),
+      """SELECT avg(ArrDelay) as T , lower_bound(T) , upper_bound(T),
         UniqueCarrier FROM airline GROUP BY
         UniqueCarrier ERRORPERCENT 12""")
     println()
     println("=============== APPROX RESULTS WITH ERROR PERCENT ===============")
     try {
       //try/catch to proceed test in case of error exception
-      val results_sampledC_table = results_sampled_table.collect()
-      results_sampledC_table.foreach(println)
+      results_sampled_table.collect.foreach(verifyResult)
+      //results.foreach(println)
+      println("Success")
     }
     catch {
       case rte: RuntimeException => println(rte)
     }
+  }
+
+  def verifyResult(r: Row): Unit = {
+    println(r)
+    //assert (math.abs(r.getDouble(0) * 2 ) == math.abs(r.getDouble(1) + r.getDouble(2)))
   }
 }
