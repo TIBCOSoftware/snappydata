@@ -693,17 +693,7 @@ class SnappyContext protected (@transient sc: SparkContext)
     val df = createDataFrame(topKRDD, topKSchema)
     df.sort(df.col(aggColumn).desc).limit(k)
   }
-
-  private var storeConfig: Map[String, String] = _
-
-  def setExternalStoreConfig(conf: Map[String, String]): Unit = {
-    self.storeConfig = conf
-  }
-
-  def getExternalStoreConfig: Map[String, String] = {
-    storeConfig
-  }
-
+  
   def runJob[T, U: ClassTag](
       rdd: RDD[T],
       processPartition: Iterator[T] => U,
