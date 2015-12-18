@@ -102,6 +102,24 @@ class SnappyContext protected (@transient sc: SparkContext)
   override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
 
 
+  def saveStream[T: ClassTag](stream: DStream[T],
+                              aqpTables: Seq[String],
+                              formatter: (RDD[T], StructType) => RDD[Row],
+                              schema: StructType,
+                              transform: RDD[Row] => RDD[Row] = null) {
+    stream.foreachRDD((rdd: RDD[T], time: Time) => {
+
+      val rddRows = formatter(rdd, schema)
+
+      val rows = if (transform != null) {
+        transform(rddRows)
+      } else rddRows
+
+      aqpContext.collectSamples(this, rows, aqpTables, time.milliseconds)
+    })
+  }
+
+
 
 
   /**
