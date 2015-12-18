@@ -149,7 +149,7 @@ case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
                  formatter: (RDD[T], StructType) => RDD[Row],
                  schema: StructType,
                  transform: RDD[Row] => RDD[Row] = null): Unit =
-    context.saveStream(ds, sampleTab, formatter, schema, transform)
+  context.aqpContext.saveStream(context, ds, sampleTab, formatter, schema, transform)
 
   def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
                                                   jdbcSource: Map[String, String]): Unit = {

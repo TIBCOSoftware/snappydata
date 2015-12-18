@@ -2,35 +2,52 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import org.apache.spark.sql.aqp.{AQPDefault, AQPContext}
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, InMemoryAppendableRelation, ExternalStoreRelation}
+import org.apache.spark.sql.execution.{LogicalRDD, SparkPlan, ConnectionPool, ExtractPythonUDFs}
+import org.apache.spark.sql.jdbc.JdbcDialects
+
+import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.sources.{JdbcExtendedUtils, IndexableRelation, DestroyRelation, UpdatableRelation,
+RowInsertableRelation, DeletableRelation}
+
+
+import org.apache.spark.util.ShutdownHookManager
+
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.LockUtils.ReadWriteLock
-import org.apache.spark.sql.approximate.TopKUtil
+
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar._
-import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.parquet.ParquetRelation
-import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, LogicalRelation, ResolvedDataSource}
-import org.apache.spark.sql.execution.streamsummary.StreamSummaryAggregation
+
+
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+
+
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.JdbcDialects
+
+
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.apache.spark.sql.types.{StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkContext, SparkException}
+
+import org.apache.spark.sql.{execution => sparkexecution}
+
+
+import scala.util.{Failure, Success, Try}
 
 /**
  * An instance of the Spark SQL execution engine that delegates to supplied
@@ -44,7 +61,21 @@ class SnappyContext protected (@transient sc: SparkContext)
 
   self =>
 
+  val aqpContext = Try {
+    val mirror = u.runtimeMirror(getClass.getClassLoader)
+    val cls = mirror.classSymbol(Class.forName(SnappyContext.aqpContextImplClass))
+    val clsType = cls.toType
+    val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
+    val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
+    val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
+    runtimeCtr().asInstanceOf[AQPContext]
+  }  match {
+    case Success(v) => v
+    case Failure(_) => AQPDefault
+  }
+
   // initialize GemFireXDDialect so that it gets registered
+
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sc)
 
@@ -54,29 +85,28 @@ class SnappyContext protected (@transient sc: SparkContext)
   }
 
   @transient
-  override protected[sql] val ddlParser = new SnappyDDLParser(sqlParser.parse)
+  override protected[sql] val ddlParser = this.aqpContext.getSnappyDDLParser(sqlParser.parse)
 
-  @transient
-  val topKLocks = scala.collection.mutable.Map[String, ReadWriteLock]()
 
   override protected[sql] def dialectClassName = if (conf.dialect == "sql") {
-    classOf[SnappyParserDialect].getCanonicalName
+    this.aqpContext.getSQLDialectClassName
   } else {
     conf.dialect
   }
+  override protected[sql] def executePlan(plan: LogicalPlan) =   aqpContext.executePlan(this, plan)
 
   @transient
-  override lazy val catalog = new SnappyStoreHiveCatalog(self)
+  override lazy val catalog = this.aqpContext.getSnappyCatalogue(this)
 
   @transient
-  override protected[sql] val cacheManager = new SnappyCacheManager()
+  override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
 
 
   def saveStream[T: ClassTag](stream: DStream[T],
-      aqpTables: Seq[String],
-      formatter: (RDD[T], StructType) => RDD[Row],
-      schema: StructType,
-      transform: RDD[Row] => RDD[Row] = null) {
+                              aqpTables: Seq[String],
+                              formatter: (RDD[T], StructType) => RDD[Row],
+                              schema: StructType,
+                              transform: RDD[Row] => RDD[Row] = null) {
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
       val rddRows = formatter(rdd, schema)
@@ -85,79 +115,19 @@ class SnappyContext protected (@transient sc: SparkContext)
         transform(rddRows)
       } else rddRows
 
-      collectSamples(rows, aqpTables, time.milliseconds)
+      aqpContext.collectSamples(this, rows, aqpTables, time.milliseconds)
     })
   }
 
-  protected[sql] def collectSamples(rows: RDD[Row], aqpTables: Seq[String],
-      time: Long,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
-    val useCompression = conf.useCompression
-    val columnBatchSize = conf.columnBatchSize
-    val aqpTableNames = mutable.Set(aqpTables.map(
-      catalog.newQualifiedTableName): _*)
 
-    val sampleTables = catalog.tables.collect {
-      case (name, sample: StratifiedSample) if aqpTableNames.contains(name) =>
-        aqpTableNames.remove(name)
-        (name, sample.options, sample.schema, sample.output,
-            cacheManager.lookupCachedData(sample).getOrElse(sys.error(
-              s"SnappyContext.saveStream: failed to lookup cached plan for " +
-                  s"sampling table $name")).cachedRepresentation)
-    }
 
-    val topKWrappers = catalog.topKStructures.filter {
-      case (name, topkstruct) => aqpTableNames.remove(name)
-    }
 
-    if (aqpTableNames.nonEmpty) {
-      throw new IllegalArgumentException("collectSamples: no sampling or " +
-          s"topK structures for ${aqpTableNames.mkString(", ")}")
-    }
-
-    // TODO: this iterates rows multiple times
-    val rdds = sampleTables.map {
-      case (name, samplingOptions, schema, output, relation) =>
-        (relation, rows.mapPartitionsPreserve(rowIterator => {
-          val sampler = StratifiedSampler(samplingOptions, Array.emptyIntArray,
-            nameSuffix = "", columnBatchSize, schema, cached = true)
-          // create a new holder for set of CachedBatches
-          val batches = ExternalStoreRelation(useCompression,
-            columnBatchSize, name, schema, relation, output)
-          sampler.append(rowIterator, (), batches.appendRow, batches.endRows)
-          batches.forceEndOfBatch().iterator
-        }))
-    }
-    // TODO: A different set of job is created for topK structure
-
-    topKWrappers.foreach {
-      case (name, (topKWrapper, topkRDD)) =>
-        val clazz = Utils.getInternalType(
-          topKWrapper.schema(topKWrapper.key.name).dataType)
-        val ct = ClassTag(clazz)
-        TopKUtil.populateTopK(rows, topKWrapper, self,
-          name, topkRDD, time)(ct)
-    }
-
-    // add to list in relation
-    // TODO: avoid a separate job for each RDD and instead try to do it
-    // TODO: using a single UnionRDD or something
-    rdds.foreach {
-      case (relation, rdd) =>
-        val cached = rdd.persist(storageLevel)
-        if (cached.count() > 0) {
-          relation match {
-            case externalStore: ExternalStoreRelation =>
-              externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
-            case appendable: InMemoryAppendableRelation =>
-              appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-          }
-        }
-    }
-  }
-
+  /**
+   * Append to an existing cache table.
+   * Automatically uses #cacheQuery if not done already.
+   */
   def appendToCache(df: DataFrame, table: String,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
+                    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
@@ -182,7 +152,7 @@ class SnappyContext protected (@transient sc: SparkContext)
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
 
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(batches.appendRow((), _))
+        .foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
     }.persist(storageLevel)
 
@@ -196,6 +166,8 @@ class SnappyContext protected (@transient sc: SparkContext)
       }
     }
   }
+
+
 
   def appendToCacheRDD(rdd: RDD[_], table: String, schema: StructType,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
@@ -273,32 +245,26 @@ class SnappyContext protected (@transient sc: SparkContext)
 
   def registerSampleTable(tableName: String, schema: StructType,
       samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
-    catalog.registerSampleTable(tableName, schema, samplingOptions,
-      None, streamTable.map(catalog.newQualifiedTableName), jdbcSource)
-  }
+      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame =
+       aqpContext.registerSampleTable(self,  tableName, schema,
+         samplingOptions, streamTable,
+       jdbcSource)
+
+
 
   def registerSampleTableOn[A <: Product : u.TypeTag](tableName: String,
       samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): DataFrame = {
-    if (u.typeOf[A] =:= u.typeOf[Nothing]) {
-      sys.error("Type of case class object not mentioned. " +
-          "Mention type information for e.g. registerSampleTableOn[<class>]")
-    }
-    SparkPlan.currentContext.set(self)
-    val schemaExtract = ScalaReflection.schemaFor[A].dataType
-        .asInstanceOf[StructType]
-    registerSampleTable(tableName, schemaExtract, samplingOptions,
-      streamTable, jdbcSource)
-  }
+      jdbcSource: Option[Map[String, String]] = None): DataFrame =
+      aqpContext.registerSampleTableOn(self, tableName,
+        samplingOptions, streamTable,
+      jdbcSource)
+
 
   def registerTopK(tableName: String, streamTableName: String,
-      topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit = {
-    //TODO Yogesh, this needs to handle all types of StreamRelations
-    val topKRDD = TopKUtil.createTopKRDD(tableName, self.sc, isStreamSummary)
-    catalog.registerTopK(tableName, streamTableName,
-      catalog.getStreamTableSchema(streamTableName), topkOptions, topKRDD)
-  }
+      topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit =
+      aqpContext.registerTopK(self, tableName, streamTableName,
+        topkOptions, isStreamSummary)
+
 
   override def createExternalTable(
       tableName: String,
@@ -547,38 +513,34 @@ class SnappyContext protected (@transient sc: SparkContext)
 
   // end of insert/update/delete operations
 
+  def runJob[T, U: ClassTag](
+      rdd: RDD[T],
+      processPartition: Iterator[T] => U,
+      resultHandler: (Int, U) => Unit): Unit = {
+    self.sc.runJob(rdd, processPartition, resultHandler)
+  }
+
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
     new Analyzer(catalog, functionRegistry, conf) {
       override val extendedResolutionRules =
         ExtractPythonUDFs ::
-            datasources.PreInsertCastAndRename ::
-            WeightageRule ::
+            sparkexecution.datasources.PreInsertCastAndRename ::
+         //   ReplaceWithSampleTable ::
+          //  WeightageRule ::
+            //TestRule::
             Nil
 
       override val extendedCheckRules = Seq(
-        datasources.PreWriteCheck(catalog))
+        sparkexecution.datasources.PreWriteCheck(catalog))
     }
 
   @transient
-  override protected[sql] val planner = new org.apache.spark.sql.execution.SparkPlanner(this)
-      with SnappyStrategies {
+  override protected[sql] val planner = this.aqpContext.getPlanner(this)
 
-    val snappyContext = self
 
-    // TODO temporary flag till we determine every thing works fine with the optimizations
-    val storeOptimization = snappyContext.sparkContext.getConf.get(
-      "snappy.store.optimization", "true").toBoolean
 
-    val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
-      Seq(StoreDataSourceStrategy , LocalJoinStrategies)
-    else Nil
 
-    override def strategies: Seq[Strategy] =
-      Seq(SnappyStrategies, StreamDDLStrategy, StoreStrategy, StreamQueryStrategy) ++
-          storeOptimizedRules ++
-          super.strategies
-  }
 
   /**
     * Queries the topK structure between two points in time. If the specified
@@ -595,111 +557,20 @@ class SnappyContext protected (@transient sc: SparkContext)
     */
   def queryTopK[T: ClassTag](topKName: String,
       startTime: String = null, endTime: String = null,
-      k: Int = -1): DataFrame = {
-    val stime = if (startTime == null) 0L
-    else CastLongTime.getMillis(java.sql.Timestamp.valueOf(startTime))
+      k: Int = -1): DataFrame =
+      aqpContext.queryTopK[T](this, topKName,
+        startTime, endTime, k)
 
-    val etime = if (endTime == null) Long.MaxValue
-    else CastLongTime.getMillis(java.sql.Timestamp.valueOf(endTime))
-
-    queryTopK[T](topKName, stime, etime, k)
-  }
 
   def queryTopK[T: ClassTag](topKName: String,
       startTime: Long, endTime: Long): DataFrame =
     queryTopK[T](topKName, startTime, endTime, -1)
 
   def queryTopK[T: ClassTag](topK: String,
-      startTime: Long, endTime: Long, k: Int): DataFrame = {
-    val topKIdent = catalog.newQualifiedTableName(topK)
-    topKLocks(topKIdent.toString()).executeInReadLock {
-      val (topkWrapper, rdd) = catalog.topKStructures(topKIdent)
-      // requery the catalog to obtain the TopKRDD
+                             startTime: Long, endTime: Long, k: Int): DataFrame =
+    aqpContext.queryTopK[T](this, topK, startTime, endTime, k)
 
-      val size = if (k > 0) k else topkWrapper.size
 
-      val topKName = topKIdent.table
-      if (topkWrapper.stsummary) {
-        queryTopkStreamSummary(topKName, startTime, endTime, topkWrapper, size, rdd)
-      } else {
-        queryTopkHokusai(topKName, startTime, endTime, topkWrapper, rdd, size)
-
-      }
-    }
-  }
-
-  def queryTopkStreamSummary[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long,
-      topkWrapper: TopKWrapper, k: Int, topkRDD: RDD[(Int, TopK)]): DataFrame = {
-    val rdd = topkRDD.mapPartitionsPreserve[(T, Approximate)] { iter => {
-      iter.next()._2 match {
-        case x: StreamSummaryAggregation[_] =>
-          val arrayTopK = x.asInstanceOf[StreamSummaryAggregation[T]]
-              .getTopKBetweenTime(startTime, endTime, x.capacity)
-          arrayTopK.map(_.toIterator).getOrElse(Iterator.empty)
-        case _ => Iterator.empty
-      }
-    }
-    }
-    val topKRDD = rdd.reduceByKey(_ + _).mapPreserve {
-      case (key, approx) =>
-        Row(key, approx.estimate, approx.lowerBound)
-    }
-
-    val aggColumn = "EstimatedValue"
-    val errorBounds = "DeltaError"
-    val topKSchema = StructType(Array(topkWrapper.key,
-      StructField(aggColumn, LongType),
-      StructField(errorBounds, LongType)))
-
-    val df = createDataFrame(topKRDD, topKSchema)
-    df.sort(df.col(aggColumn).desc).limit(k)
-  }
-
-  def queryTopkHokusai[T: ClassTag](topKName: String,
-      startTime: Long, endTime: Long,
-      topkWrapper: TopKWrapper, topkRDD: RDD[(Int, TopK)], k: Int): DataFrame = {
-
-    // TODO: perhaps this can be done more efficiently via a shuffle but
-    // using the straightforward approach for now
-
-    // first collect keys from across the cluster
-    val rdd = topkRDD.mapPartitionsPreserve[(T, Approximate)] { iter =>
-      iter.next()._2 match {
-        case x: TopKHokusai[_] =>
-          val arrayTopK = if (x.windowSize == Long.MaxValue) {
-            Some(x.asInstanceOf[TopKHokusai[T]].getTopKInCurrentInterval)
-          }
-          else {
-            x.asInstanceOf[TopKHokusai[T]].getTopKBetweenTime(startTime,
-              endTime)
-          }
-
-          arrayTopK.map(_.toIterator).getOrElse(Iterator.empty)
-        case _ => Iterator.empty
-      }
-    }
-    val topKRDD = rdd.reduceByKey(_ + _).mapPreserve {
-      case (key, approx) =>
-        Row(key, approx.estimate, approx)
-    }
-
-    val aggColumn = "EstimatedValue"
-    val errorBounds = "ErrorBoundsInfo"
-    val topKSchema = StructType(Array(topkWrapper.key,
-      StructField(aggColumn, LongType),
-      StructField(errorBounds, ApproximateType)))
-
-    val df = createDataFrame(topKRDD, topKSchema)
-    df.sort(df.col(aggColumn).desc).limit(k)
-  }
-  
-  def runJob[T, U: ClassTag](
-      rdd: RDD[T],
-      processPartition: Iterator[T] => U,
-      resultHandler: (Int, U) => Unit): Unit = {
-    self.sc.runJob(rdd, processPartition, resultHandler)
-  }
 }
 
 object GlobalSnappyInit {
@@ -749,7 +620,14 @@ object SnappyContext extends Logging {
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
 
+  private val aqpContextImplClass = "org.apache.spark.sql.execution.AQPContextImpl"
+
+  var SnappySC:SnappyContext = null
+
   private[this] val contextLock = new AnyRef
+
+
+
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
@@ -913,4 +791,88 @@ case class LocalMode(override val sc: SparkContext,
 
 case class ExternalClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
+
+/*
+private[sql] case class SnappyOperations(context: SnappyContext,
+    df: DataFrame) {
+
+  /**
+    * Creates stratified sampled data from given DataFrame
+    * {{{
+    *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
+    * }}}
+    */
+  def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
+    new SampleDataFrame(context,
+      context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
+
+  def createTopK(ident: String, options: Map[String, Any]): Unit =
+    context.aqpContext.createTopK(df, context, ident, options)
+
+
+  /**
+    * Table must be registered using #registerSampleTable.
+    */
+  def insertIntoSampleTables(sampleTableName: String*): Unit =
+    context.aqpContext.collectSamples(context, df.rdd, sampleTableName, System.currentTimeMillis())
+
+
+
+
+  /**
+    * Append to an existing cache table.
+    * Automatically uses #cacheQuery if not done already.
+    */
+  def appendToCache(tableName: String): Unit =  context.appendToCache(df, tableName)
+
+}
+
+private[sql] case class SnappyDStreamOperations[T: ClassTag](
+    context: SnappyContext, ds: DStream[T]) {
+
+  def saveStream(sampleTab: Seq[String],
+      formatter: (RDD[T], StructType) => RDD[Row],
+      schema: StructType,
+      transform: RDD[Row] => RDD[Row] = null): Unit =
+      context.aqpContext.saveStream(context, ds, sampleTab, formatter, schema, transform)
+
+
+
+  def saveToExternalTable[A <: Product : Ty1peTag](externalTable: String,
+      jdbcSource: Map[String, String]): Unit = {
+    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
+    saveStreamToExternalTable(externalTable, schema, jdbcSource)
+  }
+
+  def saveToExternalTable(externalTable: String, schema: StructType,
+      jdbcSource: Map[String, String]): Unit = {
+    saveStreamToExternalTable(externalTable, schema, jdbcSource)
+  }
+
+  private def saveStreamToExternalTable(externalTable: String,
+      schema: StructType, jdbcSource: Map[String, String]): Unit = {
+    require(externalTable != null && externalTable.length > 0,
+      "saveToExternalTable: expected non-empty table name")
+
+    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
+    val externalStore = context.catalog.getExternalTable(jdbcSource)
+    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
+      externalStore)
+    val attributeSeq = schema.toAttributes
+
+    val dummyDF = {
+      val plan: LogicalRDD = LogicalRDD(attributeSeq,
+        new DummyRDD(context))(context)
+      DataFrame(context, plan)
+    }
+
+    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
+    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
+      externalStore)
+
+    ds.foreachRDD((rdd: RDD[T], time: Time) => {
+      context.appendToCacheRDD(rdd, tableIdent.table, schema)
+    })
+  }
+}*/
 
