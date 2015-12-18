@@ -109,7 +109,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
               com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
-          assert(hdProp == l.LEADER_SERVERGROUP)
+          assert(hdProp == LeadImpl.LEADER_SERVERGROUP)
         }
 
         {
@@ -123,7 +123,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
               com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
-          assert(hdProp.endsWith("," + l.LEADER_SERVERGROUP))
+          assert(hdProp.endsWith("," + LeadImpl.LEADER_SERVERGROUP))
         }
       }
 
