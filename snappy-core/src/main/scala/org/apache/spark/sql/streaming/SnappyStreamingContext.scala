@@ -4,7 +4,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{RDDConversions, SparkPlan, StratifiedSample}
+import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Seconds, StreamingContext, StreamingContextState}
@@ -19,7 +19,7 @@ import scala.reflect.runtime.{universe => u}
   * Created by ymahajan on 25/09/15.
   */
 
-final class SnappyStreamingContext(@transient val snappy: SnappyContext,
+class SnappyStreamingContext protected[spark](@transient val snappy: SnappyContext,
                                    val batchDur: Duration)
   extends StreamingContext(snappy.sparkContext, batchDur) with Serializable {
 
@@ -125,35 +125,9 @@ final class SnappyStreamingContext(@transient val snappy: SnappyContext,
 
   def start(): Unit = {
     val snc = globalContext
-    val streamTables = snc.snappy.catalog.tables.collect {
-       case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
-         (streamTableName, sr.asInstanceOf[SocketStreamRelation])
-       case (streamTableName, LogicalRelation(sr: FileStreamRelation, _)) =>
-         (streamTableName, sr.asInstanceOf[FileStreamRelation])
-       case (streamTableName, LogicalRelation(sr: KafkaStreamRelation, _)) =>
-         (streamTableName, sr.asInstanceOf[KafkaStreamRelation])
-       case (streamTableName, LogicalRelation(sr: TwitterStreamRelation, _)) =>
-         (streamTableName, sr.asInstanceOf[TwitterStreamRelation])
-       case (streamTableName, LogicalRelation(sr: DirectKafkaStreamRelation, _)) =>
-         (streamTableName, sr.asInstanceOf[DirectKafkaStreamRelation])
-     }
-     streamTables.foreach {
-       case (streamTableName, sr) =>
-         val streamTable = Some(streamTableName)
-         val aqpTables = snc.snappy.catalog.tables.collect {
-           case (sampleTableIdent, sr: StratifiedSample)
-             if sr.streamTable == streamTable => sampleTableIdent.table
-         } ++ snc.snappy.catalog.topKStructures.collect {
-           case (topKIdent, (topK, _))
-             if topK.streamTable == streamTable => topKIdent.table
-         }
-         if (aqpTables.nonEmpty) {
-           //          snappy.saveStream(sr.stream,
-           //            aqpTables.toSeq, sr.schema)
-         }
-     }
-     // start the streaming context
-     snc.start()
+    // TODO Register sampling of all the streams
+    // start the streaming context
+    snc.start()
    }
 
   def stop(stopSparkContext: Boolean = false,
@@ -166,54 +140,6 @@ final class SnappyStreamingContext(@transient val snappy: SnappyContext,
     }
   }
 }
-
-/* case class SnappyStreamOperations[T: ClassTag](context: SnappyContext,
-                                               ds: DStream[T]) {
-
-  def saveStream(sampleTab: Seq[String],
-                 formatter: (RDD[T], StructType) => RDD[Row],
-                 schema: StructType,
-                 transform: RDD[Row] => RDD[Row] = null): Unit =
-    context.saveStream(ds, sampleTab, formatter, schema, transform)
-
-  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
-                                                  jdbcSource: Map[String, String]): Unit = {
-    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  def saveToExternalTable(externalTable: String, schema: StructType,
-                          jdbcSource: Map[String, String]): Unit = {
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  private def saveStreamToExternalTable(externalTable: String,
-                                        schema: StructType,
-                                        jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = context.catalog.getExternalTable(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-    ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
-  }
-} */
 
 object StreamingCtxtHolder {
 

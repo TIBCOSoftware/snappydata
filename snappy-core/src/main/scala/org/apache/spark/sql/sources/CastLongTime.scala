@@ -1,9 +1,9 @@
 package org.apache.spark.sql.sources
 
-import scala.util.control.NonFatal
-
-import org.apache.spark.sql.{Row, AnalysisException}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{AnalysisException, Row}
+
+import scala.util.control.NonFatal
 
 /**
  * Cast a given column in a schema to epoch time in long milliseconds.
