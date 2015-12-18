@@ -153,4 +153,26 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   def printSchema(): Unit = {
     println(schema.treeString) // scalastyle:ignore
   }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
+    val func = (rdd: RDD[Row]) => {
+      foreachFunc(createDataFrame(rdd))
+    }
+    this.foreachRDD(func)
+  }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
+    val func = (rdd: RDD[Row], time: Time) => {
+      foreachFunc(createDataFrame(rdd), time)
+    }
+    this.foreachRDD(func)
+  }
 }
