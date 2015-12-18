@@ -1,20 +1,17 @@
 package org.apache.spark.sql.streaming
 
-
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.{LogicalRDD, RDDConversions, SparkPlan}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.{RDDConversions, SparkPlan, StratifiedSample}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState, Time}
+import org.apache.spark.streaming.{Duration, Seconds, StreamingContext, StreamingContextState}
 
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
-
 
 /**
   * Provides an ability to manipulate SQL like query on DStream
@@ -22,16 +19,15 @@ import scala.reflect.runtime.{universe => u}
   * Created by ymahajan on 25/09/15.
   */
 
-final class StreamingSnappyContext private(@transient val streamingContext:
-                                           StreamingContext)
-  extends SnappyContext(streamingContext.sparkContext)
-  with Serializable {
+final class SnappyStreamingContext(@transient val snappy: SnappyContext,
+                                   val batchDur: Duration)
+  extends StreamingContext(snappy.sparkContext, batchDur) with Serializable {
 
   self =>
 
-  override def sql(sqlText: String): DataFrame = {
-    StreamPlan.currentContext.set(self) // StreamingSnappyContext
-    super.sql(sqlText)
+  def sql(sqlText: String): DataFrame = {
+    StreamPlan.currentContext.set(self)
+    snappy.sql(sqlText)
   }
 
   /**
@@ -41,7 +37,7 @@ final class StreamingSnappyContext private(@transient val streamingContext:
     * @return
     */
   def registerCQ(queryStr: String): SchemaDStream = {
-    SparkPlan.currentContext.set(self) // SQLContext
+    SparkPlan.currentContext.set(snappy) // SQLContext
     StreamPlan.currentContext.set(self) // StreamingSnappyContext
     val plan = sql(queryStr).queryExecution.logical
     // TODO Yogesh, This needs to get registered with catalog
@@ -61,19 +57,15 @@ final class StreamingSnappyContext private(@transient val streamingContext:
     dStream
   }
 
-  /**
-    * Registers the given [[SchemaDStream]] as a temporary table in the catalog.
-    * Temporary tables exist only during the lifetime of this instance of SQLContext.
-    * @param tName
-    * @param stream
-    */
-  def registerStreamAsTable(tName: String, stream: SchemaDStream): Unit = {
-    catalog.registerTable(catalog.newQualifiedTableName(tName),
-      stream.logicalPlan)
-  }
 
-  def getSchemaDStream(tableName: String): SchemaDStream = {
-    new SchemaDStream(self, catalog.lookupRelation(tableName))
+
+//  override def stop(stopSparkContext: Boolean, stopGracefully: Boolean): Unit = {
+//    super.stop(stopSparkContext, stopGracefully)
+//    StreamPlan.currentContext.remove()
+//  }
+
+    def getSchemaDStream(tableName: String): SchemaDStream = {
+    new SchemaDStream(self, snappy.catalog.lookupRelation(tableName))
   }
 
   /**
@@ -81,10 +73,10 @@ final class StreamingSnappyContext private(@transient val streamingContext:
     * the given schema. It is important to make sure that the structure of
     * every [[Row]] of the provided DStream matches the provided schema.
     */
-  implicit def createSchemaDStream(dStream: DStream[InternalRow],
+  def createSchemaDStream(dStream: DStream[InternalRow],
                                    schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
-    SparkPlan.currentContext.set(self)
+    SparkPlan.currentContext.set(self.snappy)
     StreamPlan.currentContext.set(self)
     val logicalPlan = LogicalDStreamPlan(attributes, dStream)(self)
     new SchemaDStream(self, logicalPlan)
@@ -93,11 +85,11 @@ final class StreamingSnappyContext private(@transient val streamingContext:
   /**
     * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
     */
-  implicit def createSchemaDStream[A <: Product : TypeTag]
+  def createSchemaDStream[A <: Product : TypeTag]
   (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
-    SparkPlan.currentContext.set(self)
+    SparkPlan.currentContext.set(self.snappy)
     StreamPlan.currentContext.set(self)
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
     (rdd, schema.map(_.dataType)))
@@ -106,13 +98,13 @@ final class StreamingSnappyContext private(@transient val streamingContext:
   }
 }
 
-object StreamingSnappyContext {
+ object SnappyStreamingContext {
 
-  @volatile private[this] var globalContext: StreamingSnappyContext = _
+  @volatile private[this] var globalContext: SnappyStreamingContext = _
 
   private[this] val contextLock = new AnyRef
 
-  def apply(sc: StreamingContext): StreamingSnappyContext = {
+  def apply(sc: SnappyContext, batchDur: Duration): SnappyStreamingContext = {
     val snc = globalContext
     if (snc != null) {
       snc
@@ -123,26 +115,59 @@ object StreamingSnappyContext {
       } else {
         // global initialization of SnappyContext
         SnappyContext.getOrCreate(sc.sparkContext)
-        val snc = new StreamingSnappyContext(sc)
-        StreamingCtxtHolder.apply(sc)
+        val snc = new SnappyStreamingContext(sc, batchDur)
+        StreamingCtxtHolder.apply(snc)
         globalContext = snc
         snc
       }
     }
   }
 
+  def start(): Unit = {
+    val snc = globalContext
+    val streamTables = snc.snappy.catalog.tables.collect {
+       case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
+         (streamTableName, sr.asInstanceOf[SocketStreamRelation])
+       case (streamTableName, LogicalRelation(sr: FileStreamRelation, _)) =>
+         (streamTableName, sr.asInstanceOf[FileStreamRelation])
+       case (streamTableName, LogicalRelation(sr: KafkaStreamRelation, _)) =>
+         (streamTableName, sr.asInstanceOf[KafkaStreamRelation])
+       case (streamTableName, LogicalRelation(sr: TwitterStreamRelation, _)) =>
+         (streamTableName, sr.asInstanceOf[TwitterStreamRelation])
+       case (streamTableName, LogicalRelation(sr: DirectKafkaStreamRelation, _)) =>
+         (streamTableName, sr.asInstanceOf[DirectKafkaStreamRelation])
+     }
+     streamTables.foreach {
+       case (streamTableName, sr) =>
+         val streamTable = Some(streamTableName)
+         val aqpTables = snc.snappy.catalog.tables.collect {
+           case (sampleTableIdent, sr: StratifiedSample)
+             if sr.streamTable == streamTable => sampleTableIdent.table
+         } ++ snc.snappy.catalog.topKStructures.collect {
+           case (topKIdent, (topK, _))
+             if topK.streamTable == streamTable => topKIdent.table
+         }
+         if (aqpTables.nonEmpty) {
+           //          snappy.saveStream(sr.stream,
+           //            aqpTables.toSeq, sr.schema)
+         }
+     }
+     // start the streaming context
+     snc.start()
+   }
+
   def stop(stopSparkContext: Boolean = false,
            stopGracefully: Boolean = true): Unit = {
     val snc = globalContext
     if (snc != null) {
-      snc.streamingContext.stop(stopSparkContext, stopGracefully)
+      snc.stop(stopSparkContext, stopGracefully)
       StreamPlan.currentContext.remove()
       globalContext = null
     }
   }
 }
 
-case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
+/* case class SnappyStreamOperations[T: ClassTag](context: SnappyContext,
                                                ds: DStream[T]) {
 
   def saveStream(sampleTab: Seq[String],
@@ -188,7 +213,7 @@ case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
       context.appendToCacheRDD(rdd, tableIdent.table, schema)
     })
   }
-}
+} */
 
 object StreamingCtxtHolder {
 
@@ -226,12 +251,12 @@ object StreamingCtxtHolder {
 }
 
 trait StreamPlan {
-  def streamingSnappy: StreamingSnappyContext = StreamPlan.currentContext.get()
+  def streamingSnappy: SnappyStreamingContext = StreamPlan.currentContext.get()
 
   def stream: DStream[InternalRow]
 }
 
 object StreamPlan {
-  val currentContext = new ThreadLocal[StreamingSnappyContext]()
+  val currentContext = new ThreadLocal[SnappyStreamingContext]()
 }
 

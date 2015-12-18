@@ -33,7 +33,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  /**Stream related strategies to map stream specific logical plan to physical plan*/
+  /** Stream related strategies to map stream specific logical plan to physical plan */
   object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, stream) =>
@@ -46,7 +46,7 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-  /**Stream related strategies DDL stratgies*/
+  /** Stream related strategies DDL stratgies */
   object StreamDDLStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case CreateStreamTable(streamName, userColumns, options) =>

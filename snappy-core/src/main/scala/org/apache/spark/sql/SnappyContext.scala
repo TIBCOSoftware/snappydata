@@ -2,6 +2,9 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import org.apache.spark.sql.streaming.{TwitterStreamSource, SocketStreamSource, FileStreamSource, DirectKafkaStreamSource}
+import org.apache.spark.sql.streaming._
+
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -748,11 +751,11 @@ object SnappyContext extends Logging {
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "socket_stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
-    "file_stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
-    "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName,
-    "directkafka_stream" -> classOf[streaming.DirectKafkaStreamSource].getCanonicalName,
-    "twitter_stream" -> classOf[streaming.TwitterStreamSource].getCanonicalName
+    "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
+    "file_stream" -> classOf[FileStreamSource].getCanonicalName,
+    "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
+    "directkafka_stream" -> classOf[DirectKafkaStreamSource].getCanonicalName,
+    "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName
   )
 
   def globalSparkContext: SparkContext = SparkContext.activeContext.get()

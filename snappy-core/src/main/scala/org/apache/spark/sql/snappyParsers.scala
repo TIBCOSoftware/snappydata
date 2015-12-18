@@ -440,7 +440,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
         val streamTables = catalog.tables.collect {
           // runtime type is erased to Any, but we keep the actual ClassTag
           // around in StreamRelation so as to give the proper runtime type
-          //TODO Yogesh, need to see if this needs to be extended for other stream relations
+          // TODO Yogesh, need to see if this needs to be extended for other stream relations
           case (streamTableName, LogicalRelation(sr: SocketStreamRelation, _)) =>
             (streamTableName, sr.asInstanceOf[SocketStreamRelation])
           case (streamTableName, LogicalRelation(sr: FileStreamRelation, _)) =>
@@ -463,7 +463,7 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
                 if topK.streamTable == streamTable => topKIdent.table
             }
             if (aqpTables.nonEmpty) {
-              //TODO Yogesh, check with Sumedh and fix. We need to remove the formatter
+              // TODO Yogesh, check with Sumedh and fix. We need to remove the formatter
 //              snappyCtxt.saveStream(sr.dStream, aqpTables.toSeq, sr.formatter,
 //                sr.schema)(sr.ct)
             }
