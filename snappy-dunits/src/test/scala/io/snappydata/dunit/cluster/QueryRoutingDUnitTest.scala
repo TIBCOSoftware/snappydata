@@ -3,6 +3,7 @@ package io.snappydata.dunit.cluster
 import java.sql.{DatabaseMetaData, Statement, SQLException, Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.{SnappyContext, SaveMode}
@@ -14,6 +15,13 @@ import org.apache.spark.sql.{SnappyContext, SaveMode}
  */
 class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
+  private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
+
+  override def tearDown2(): Unit = {
+    //reset the chunk size on lead node
+    setDMLMaxChunkSize(default_chunk_size)
+    super.tearDown2()
+  }
   private def getANetConnection(netPort: Int): Connection = {
     val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
     Class.forName(driver).newInstance //scalastyle:ignore
@@ -113,6 +121,25 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       }
     }
     assert(cnt == 5)
+
+    // reducing DML chunk size size to force lead node to send
+    // results in multiple batches
+    setDMLMaxChunkSize(50L)
+    val expectedResult : Array[Int] = Array(1, 7, 9, 4, 5)
+    val actualResult : Array[Int] = new Array[Int](5)
+    s.execute("select col1 from ColumnTableQR order by col1")
+    rs = s.getResultSet
+    cnt = 0
+    while(rs.next()) {
+      actualResult(cnt) = rs.getInt(1)
+      println("----" + rs.getInt(1))
+      cnt += 1
+    }
+    assert(cnt == 5)
+    // actualResult.foreach(println)
+    assert(expectedResult.sorted.sameElements(actualResult))
+    setDMLMaxChunkSize(default_chunk_size)
+
     conn.close()
   }
 
@@ -165,10 +192,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     var newConn: Connection = null
     try {
       val s = conn.createStatement()
+      val colTable = "COLUMNTABLE"
+      val rowTable = "ROWTABLE"
 
       // SYSTABLES queries
-      s.execute("CREATE TABLE COLUMNTABLE (Col1 INT, Col2 INT, Col3 INT) USING column OPTIONS ()")
-      s.execute("select * from sys.systables where tablename='COLUMNTABLE'")
+      s.execute(s"CREATE TABLE $colTable (Col1 INT, Col2 INT, Col3 INT) USING column OPTIONS ()")
+      s.execute(s"select * from sys.systables where tablename='$colTable'")
       var rs = s.getResultSet
       assert(rs.next())
       var tableType = rs.getString("tabletype")
@@ -176,8 +205,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       var schemaname = rs.getString("tableschemaname")
       assert("APP".equals(schemaname))
 
-      s.execute("CREATE TABLE ROWTABLE (Col1 INT, Col2 INT, Col3 INT) USING row")
-      s.execute("select * from sys.systables where tablename='ROWTABLE'")
+      s.execute(s"CREATE TABLE $rowTable (Col1 INT, Col2 INT, Col3 INT) USING row")
+      s.execute(s"select * from sys.systables where tablename='$rowTable'")
       rs = s.getResultSet
       assert(rs.next())
       tableType = rs.getString("tabletype")
@@ -190,14 +219,14 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
       assert(rSet.next())
 
-      s.execute("drop table ROWTABLE")
+      s.execute(s"drop table $rowTable")
 
       // Ensure systables, members can be queried (SNAP-215)
-      doQueries(s, dbmd)
+      doQueries(s, dbmd, colTable)
 
       // Ensure systables, members can be queried (SNAP-215) on a new connection too.
       newConn = getANetConnection(netPort1)
-      doQueries(newConn.createStatement(), newConn.getMetaData())
+      doQueries(newConn.createStatement(), newConn.getMetaData(), colTable)
 
       // Ensure parquet table can be dropped (SNAP-215)
       val tableName = "PARQUETTABLE";
@@ -256,7 +285,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
   }
 
-  private def doQueries(s : Statement, dbmd : DatabaseMetaData): Unit = {
+  private def doQueries(s : Statement, dbmd : DatabaseMetaData, t : String): Unit = {
     s.execute("select * from sys.members")
     assert(s.getResultSet.next())
     s.execute("select * from sys.systables")
@@ -267,7 +296,14 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     // Simulates 'SHOW TABLES' of ij
     val rSet = dbmd.getTables(null, "APP", null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
-    assert(rSet.next())
+    var foundTable = false
+    while (rSet.next()) {
+      if (t.equalsIgnoreCase(rSet.getString("TABLE_NAME"))) {
+        foundTable = true
+        assert(rSet.getString("TABLE_TYPE").equalsIgnoreCase("COLUMN TABLE"))
+      }
+    }
+    assert(foundTable)
   }
 
   def createTableAndInsertData(): Unit = {
@@ -295,6 +331,10 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       Map.empty[String, String])
     dataDF.write.format("column").mode(SaveMode.Append)
         .saveAsTable(tableName)
+  }
+
+  def setDMLMaxChunkSize(size: Long): Unit = {
+    GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
   }
 }
 

@@ -22,7 +22,7 @@ import scala.reflect.runtime.{universe => u}
   * Created by ymahajan on 25/09/15.
   */
 
-final class StreamingSnappyContext private(@transient val streamingContext:
+class StreamingSnappyContext private[streaming](@transient val streamingContext:
                                            StreamingContext)
   extends SnappyContext(streamingContext.sparkContext)
   with Serializable {
@@ -149,7 +149,7 @@ case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
                  formatter: (RDD[T], StructType) => RDD[Row],
                  schema: StructType,
                  transform: RDD[Row] => RDD[Row] = null): Unit =
-    context.saveStream(ds, sampleTab, formatter, schema, transform)
+  context.aqpContext.saveStream(context, ds, sampleTab, formatter, schema, transform)
 
   def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
                                                   jdbcSource: Map[String, String]): Unit = {

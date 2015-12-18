@@ -40,6 +40,39 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     }
   }
 
+  test("save stream to external table using forEachDataFrame") {
+    def getQueueOfRDDs1: Queue[RDD[Tweet]] = {
+      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
+      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
+      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
+      Queue(distData1, distData2, distData3)
+    }
+
+    val dStream1 = ssc.queueStream[Tweet](getQueueOfRDDs1)
+    val map = Map.empty[String,String]
+    val schemaStream1 = streamingSnappy.createSchemaDStream(dStream1)
+    streamingSnappy.dropExternalTable("gemxdColumnTable1", true)
+    schemaStream1.foreachDataFrame(df => {
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
+    })
+
+    streamingSnappy.dropExternalTable("gemxdColumnTable2", true)
+    schemaStream1.foreachDataFrame((df,time) => {
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
+    })
+
+    ssc.start
+    ssc.awaitTerminationOrTimeout(20 * 1000)
+
+    val result1 = streamingSnappy.sql("select * from gemxdColumnTable1")
+    val r1 = result1.collect
+    assert(r1.length == 30)
+
+    val result2 = streamingSnappy.sql("select * from gemxdColumnTable2")
+    val r2 = result2.collect
+    assert(r2.length == 30)
+  }
+
   test("SNAP-240 NotSerializableException with checkpoint") {
 
     def getQueueOfRDDs: Queue[RDD[Tweet]] = {
@@ -196,67 +229,6 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val result = streamingSnappy.sql("select * from gemxdColumnTable")
     val r = result.collect
     assert(r.length > 0)
-  }
-
-  test("sql stream sampling") {
-
-    streamingSnappy.sql("create stream table tweetstreamtable " +
-      "(id long, text string, fullName string, " +
-      "country string, retweets int, hashtag string) " +
-      "using twitter_stream options (" +
-      "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-      "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-      "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-      "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-      "streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter')")
-
-    val tableStream = streamingSnappy.getSchemaDStream("tweetstreamtable")
-
-    streamingSnappy.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
-      "qcs" -> "hashtag",
-      "fraction" -> "0.05",
-      "strataReservoirSize" -> "300",
-      "timeInterval" -> "3m"), Some("tweetstreamtable"))
-
-    streamingSnappy.saveStream(tableStream, Seq("tweetstreamtable_sampled"), {
-      (rdd: RDD[Row], _) => rdd
-    }, tableStream.schema)
-
-    streamingSnappy.sql("create table rawStreamColumnTable(id long, " +
-      "text string, " +
-      "fullName string, " +
-      "country string, " +
-      "retweets int, " +
-      "hashtag string) " +
-      "using column " +
-      "options('PARTITION_BY','id')")
-
-    var numTimes = 0
-    tableStream.foreachRDD { rdd =>
-      val df = streamingSnappy.createDataFrame(rdd, tableStream.schema)
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-        .saveAsTable("rawStreamColumnTable")
-
-      // println("Top 10 hash tags from exact table") // scalastyle:ignore
-    val top10Tags = streamingSnappy.sql("select count(*) as cnt, hashtag from " +
-        "rawStreamColumnTable where length(hashtag) > 0 group by hashtag " +
-        "order by cnt desc limit 10").collect()
-      top10Tags.foreach(println) // scalastyle:ignore
-
-      numTimes += 1
-      if ((numTimes % 18) == 1) {
-        streamingSnappy.sql("SELECT count(*) FROM rawStreamColumnTable").show()
-      }
-
-      // println("Top 10 hash tags from sample table") // scalastyle:ignore
-    val stop10Tags = streamingSnappy.sql("select count(*) as cnt, " +
-        "hashtag from tweetstreamtable_sampled where length(hashtag) > 0 " +
-        "group by hashtag order by cnt desc limit 10").collect()
-      stop10Tags.foreach(println) // scalastyle:ignore
-    }
-
-    streamingSnappy.sql( """STREAMING CONTEXT START """)
-    ssc.awaitTerminationOrTimeout(10 * 1000)
   }
 
   test("sql on socket streams") {
