@@ -480,6 +480,21 @@ class SnappyContext protected (@transient sc: SparkContext)
     catalog.unregisterTable(qualifiedTable)
   }
 
+  def dropSampleTable(tableName: String, ifExists: Boolean = false): Unit = {
+
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    val plan = try {
+      catalog.lookupRelation(qualifiedTable, None)
+    } catch {
+      case ae: AnalysisException =>
+        if (ifExists) return else throw ae
+    }
+    cacheManager.tryUncacheQuery(DataFrame(self, plan))
+    catalog.unregisterTable(qualifiedTable)
+    this.aqpContext.dropSampleTable(tableName, ifExists)
+
+  }
+
   // insert/update/delete operations on an external table
 
   def insert(tableName: String, rows: Row*): Int = {
