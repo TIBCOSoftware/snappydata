@@ -3,6 +3,7 @@ package io.snappydata.dunit.cluster
 import java.sql.{DatabaseMetaData, Statement, SQLException, Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import dunit.{SerializableRunnable, AvailablePortHelper}
 
 import org.apache.spark.sql.{SnappyContext, SaveMode}
@@ -14,6 +15,13 @@ import org.apache.spark.sql.{SnappyContext, SaveMode}
  */
 class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
+  private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
+
+  override def tearDown2(): Unit = {
+    //reset the chunk size on lead node
+    setDMLMaxChunkSize(default_chunk_size)
+    super.tearDown2()
+  }
   private def getANetConnection(netPort: Int): Connection = {
     val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
     Class.forName(driver).newInstance //scalastyle:ignore
@@ -113,6 +121,25 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       }
     }
     assert(cnt == 5)
+
+    // reducing DML chunk size size to force lead node to send
+    // results in multiple batches
+    setDMLMaxChunkSize(50L)
+    val expectedResult : Array[Int] = Array(1, 7, 9, 4, 5)
+    val actualResult : Array[Int] = new Array[Int](5)
+    s.execute("select col1 from ColumnTableQR order by col1")
+    rs = s.getResultSet
+    cnt = 0
+    while(rs.next()) {
+      actualResult(cnt) = rs.getInt(1)
+      println("----" + rs.getInt(1))
+      cnt += 1
+    }
+    assert(cnt == 5)
+    // actualResult.foreach(println)
+    assert(expectedResult.sorted.sameElements(actualResult))
+    setDMLMaxChunkSize(default_chunk_size)
+
     conn.close()
   }
 
@@ -304,6 +331,10 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       Map.empty[String, String])
     dataDF.write.format("column").mode(SaveMode.Append)
         .saveAsTable(tableName)
+  }
+
+  def setDMLMaxChunkSize(size: Long): Unit = {
+    GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
   }
 }
 

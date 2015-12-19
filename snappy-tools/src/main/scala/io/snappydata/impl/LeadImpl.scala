@@ -203,7 +203,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
 
     changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
-        com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LEADER_SERVERGROUP)
+        com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LeadImpl.LEADER_SERVERGROUP)
 
     assert(conf.getOption(Property.locators).isDefined ||
         conf.getOption(Property.mcastPort).isDefined,
@@ -351,6 +351,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
 object LeadImpl {
 
+  val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
   private[this] val startingContext: AtomicReference[SparkContext] =
     new AtomicReference[SparkContext](null)
 
