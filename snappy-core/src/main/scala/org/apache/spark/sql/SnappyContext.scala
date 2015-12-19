@@ -528,6 +528,12 @@ class SnappyContext protected (@transient sc: SparkContext)
 
   // end of insert/update/delete operations
 
+  def runJob[T, U: ClassTag](
+      rdd: RDD[T],
+      processPartition: Iterator[T] => U,
+      resultHandler: (Int, U) => Unit): Unit = {
+    self.sc.runJob(rdd, processPartition, resultHandler)
+  }
 
   @transient
   override protected[sql] lazy val analyzer: Analyzer =

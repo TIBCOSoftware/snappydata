@@ -12,7 +12,6 @@ trait Server extends FabricServer with ClusterCallback with StoreCallback {
 
 // TODO: Documentation
 trait Lead extends Server {
-  val LEADER_SERVERGROUP = "IMPLICIT_LEADER_SERVERGROUP"
 
   def waitUntilPrimary()
 }

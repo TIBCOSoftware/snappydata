@@ -5,6 +5,9 @@ import java.net.URL
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.gemxd.ClusterCallbacksImpl
+
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
@@ -239,6 +242,11 @@ object ExecutorInitiator extends Logging {
     if (SparkCallbacks.isDriver()) {
       logInfo("Executor cannot be instantiated in this " +
           "VM as a Spark driver is already running. ")
+      return
+    }
+
+    if (ServerGroupUtils.isGroupMember(ClusterCallbacksImpl.getLeaderGroup())) {
+      logInfo("Executor cannot be instantiated in a lead vm.")
       return
     }
 
