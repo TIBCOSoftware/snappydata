@@ -71,4 +71,6 @@ trait AQPContext {
   def getSnappyCatalogue(context: SnappyContext) : SnappyStoreHiveCatalog
 
   def getSnappyDDLParser (planGenerator: String => LogicalPlan): DDLParser
+
+  def dropSampleTable(tableName: String, ifExists: Boolean = false)
 }
