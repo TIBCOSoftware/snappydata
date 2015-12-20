@@ -226,6 +226,14 @@ class ColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
+        dialect match {
+          case GemFireXDDialect => {
+            GemFireXDDialect.initializeTable(table,
+              sqlContext.conf.caseSensitiveAnalysis, conn)
+            GemFireXDDialect.initializeTable(table + shadowTableNamePrefix, sqlContext.conf.caseSensitiveAnalysis, conn)
+          }
+          case _ => // Do nothing
+        }
         return
       }
 
