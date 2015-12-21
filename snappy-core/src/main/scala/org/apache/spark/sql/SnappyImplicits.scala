@@ -1,19 +1,14 @@
 package org.apache.spark.sql
 
-import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.rdd.RDD
+
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.streaming.{SnappyStreamingContext, StreamingCtxtHolder}
+import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.{SparkContext, TaskContext}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.LockUtils.ReadWriteLock
-
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.Utils
-
-import org.apache.spark.sql.streaming.{StreamingSnappyContext, SnappyStreamOperations, StreamingCtxtHolder}
-import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.{SparkContext, TaskContext}
 
 /**
  * Implicit conversions used by Snappy.
@@ -38,12 +33,6 @@ object snappy extends Serializable {
       case _ => plan
     }
   }
-
-  implicit def snappyOperationsOnDStream[T: ClassTag]
-  (ds: DStream[T]): SnappyStreamOperations[T] =
-    SnappyStreamOperations(StreamingSnappyContext(ds.context), ds)
-
-
 
   implicit class SparkContextOperations(val s: SparkContext) {
     def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
