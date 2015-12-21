@@ -87,6 +87,9 @@ object AQPDefault extends AQPContext{
   = new SnappyStoreHiveCatalog(context)
 
   def getSnappyDDLParser (planGenerator: String => LogicalPlan): DDLParser = new SnappyDDLParser(planGenerator)
+
+  def dropSampleTable(tableName: String, ifExists: Boolean = false) =
+    throw new UnsupportedOperationException("missing aqp jar")
 }
 
 class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanner(snappyContext)  with SnappyStrategies{
