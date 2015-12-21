@@ -2,18 +2,15 @@ package org.apache.spark.sql
 
 import java.sql.Connection
 
+import org.apache.spark.sql.streaming._
+
 import org.apache.spark.sql.aqp.{AQPDefault, AQPContext}
 import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, InMemoryAppendableRelation, ExternalStoreRelation}
 import org.apache.spark.sql.execution.{LogicalRDD, SparkPlan, ConnectionPool, ExtractPythonUDFs}
 import org.apache.spark.sql.jdbc.JdbcDialects
 
-import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources.{JdbcExtendedUtils, IndexableRelation, DestroyRelation, UpdatableRelation,
 RowInsertableRelation, DeletableRelation}
-
-
-import org.apache.spark.util.ShutdownHookManager
-
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -56,7 +53,7 @@ import scala.util.{Failure, Success, Try}
  * Created by Soubhik on 5/13/15.
  */
 
-class SnappyContext protected (@transient sc: SparkContext)
+class SnappyContext protected[spark] (@transient sc: SparkContext)
     extends SQLContext(sc) with Serializable with Logging {
 
   self =>
@@ -633,11 +630,11 @@ object SnappyContext extends Logging {
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "socket_stream" -> classOf[streaming.SocketStreamSource].getCanonicalName,
-    "file_stream" -> classOf[streaming.FileStreamSource].getCanonicalName,
-    "kafka_stream" -> classOf[streaming.KafkaStreamSource].getCanonicalName,
-    "directkafka_stream" -> classOf[streaming.DirectKafkaStreamSource].getCanonicalName,
-    "twitter_stream" -> classOf[streaming.TwitterStreamSource].getCanonicalName
+    "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
+    "file_stream" -> classOf[FileStreamSource].getCanonicalName,
+    "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
+    "directkafka_stream" -> classOf[DirectKafkaStreamSource].getCanonicalName,
+    "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName
   )
 
   def globalSparkContext: SparkContext = SparkContext.activeContext.get()

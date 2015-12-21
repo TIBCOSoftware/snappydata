@@ -23,9 +23,8 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect, BaseRelation}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.streaming.{FileStreamRelation, KafkaStreamRelation,
-SocketStreamRelation, TwitterStreamRelation, DirectKafkaStreamRelation}
 import org.apache.spark.sql.types.{DataType, StructType}
+import org.apache.spark.sql.streaming._
 import org.apache.spark.{Logging, Partition, TaskContext}
 
 import scala.collection.JavaConverters._
