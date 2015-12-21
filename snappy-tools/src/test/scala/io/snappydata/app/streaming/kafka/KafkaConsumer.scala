@@ -22,7 +22,7 @@ object KafkaConsumer {
     // .set("snappydata.embedded", "true")
 
     val sc = new SparkContext(sparkConf)
-    val ssnc = new SnappyStreamingContext(SnappyContext.getOrCreate(sc), Milliseconds(30000))
+    val ssnc = SnappyStreamingContext(SnappyContext.getOrCreate(sc), Milliseconds(30000))
 
 
     val urlString = "jdbc:snappydata:;locators=localhost:10101;persist-dd=false;" +
