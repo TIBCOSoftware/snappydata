@@ -48,13 +48,13 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
     val map = Map.empty[String,String]
     val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    ssnc.snappy.dropExternalTable("gemxdColumnTable1", true)
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable1", true)
     schemaStream1.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append)
         .options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
     })
 
-    ssnc.snappy.dropExternalTable("gemxdColumnTable2", true)
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable2", true)
     schemaStream1.foreachDataFrame((df,time) => {
       df.write.format("column").mode(SaveMode.Append)
         .options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
@@ -128,8 +128,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "tweetStream1 window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
       "tweetStream2 t2 ON t1.id = t2.id ")
 
-    ssnc.snappy.dropExternalTable("gemxdColumnTable", true)
-    ssnc.snappy.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable", true)
+    ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
     resultStream.foreachRDD(rdd => {
@@ -138,7 +138,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
         .saveAsTable("gemxdColumnTable")
     })
 
-    val df = ssnc.snappy.createDataFrame(
+    val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.registerTempTable("tweetTable")
 
@@ -194,8 +194,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       " FROM tweetStream1 window (duration '2' seconds, slide '2' seconds)" +
       "t1 JOIN tweetStream2 t2 ON t1.id = t2.id ")
 
-    ssnc.snappy.dropExternalTable("gemxdColumnTable", true)
-    ssnc.snappy.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable", true)
+    ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
     resultStream.foreachRDD(rdd => {
@@ -204,7 +204,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
         .saveAsTable("gemxdColumnTable")
     })
 
-    val df = ssnc.snappy.createDataFrame(
+    val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.registerTempTable("tweetTable")
 
@@ -241,7 +241,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
 
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
 
-    ssnc.snappy.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
+    ssnc.snappyContext.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
       "qcs" -> "hashtag",
       "fraction" -> "0.05",
       "strataReservoirSize" -> "300",
