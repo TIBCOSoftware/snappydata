@@ -3,8 +3,8 @@ package io.snappydata.app.streaming
 import io.snappydata.SnappyFunSuite
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter, StreamingSnappyContext}
-import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.streaming.{SnappyStreamingContext, SchemaDStream, StreamToRowsConverter}
+import org.apache.spark.sql.{SaveMode}
 import org.apache.spark.streaming._
 import org.apache.spark.unsafe.types.UTF8String
 import org.scalatest.BeforeAndAfter
@@ -18,9 +18,7 @@ import scala.collection.mutable.Queue
   */
 class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter {
 
-  private var ssc: StreamingContext = _
-
-  private var streamingSnappy: StreamingSnappyContext = _
+  private var ssnc: SnappyStreamingContext = _
 
   def framework: String = this.getClass.getSimpleName
 
@@ -29,14 +27,13 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
   def batchDuration: Duration = Seconds(1)
 
   before {
-    ssc = new StreamingContext(sc, batchDuration)
-    streamingSnappy = StreamingSnappyContext(ssc);
+    ssnc = SnappyStreamingContext(snc, batchDuration);
     // ssc.checkpoint("/tmp")
   }
 
   after {
-    if (streamingSnappy != null) {
-      StreamingSnappyContext.stop()
+    if (ssnc != null) {
+      SnappyStreamingContext.stop()
     }
   }
 
@@ -48,27 +45,29 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       Queue(distData1, distData2, distData3)
     }
 
-    val dStream1 = ssc.queueStream[Tweet](getQueueOfRDDs1)
+    val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
     val map = Map.empty[String,String]
-    val schemaStream1 = streamingSnappy.createSchemaDStream(dStream1)
-    streamingSnappy.dropExternalTable("gemxdColumnTable1", true)
+    val schemaStream1 = ssnc.createSchemaDStream(dStream1)
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable1", true)
     schemaStream1.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
+      df.write.format("column").mode(SaveMode.Append)
+        .options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
     })
 
-    streamingSnappy.dropExternalTable("gemxdColumnTable2", true)
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable2", true)
     schemaStream1.foreachDataFrame((df,time) => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
+      df.write.format("column").mode(SaveMode.Append)
+        .options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
     })
 
-    ssc.start
-    ssc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.start
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
 
-    val result1 = streamingSnappy.sql("select * from gemxdColumnTable1")
+    val result1 = ssnc.sql("select * from gemxdColumnTable1")
     val r1 = result1.collect
     assert(r1.length == 30)
 
-    val result2 = streamingSnappy.sql("select * from gemxdColumnTable2")
+    val result2 = ssnc.sql("select * from gemxdColumnTable2")
     val r2 = result2.collect
     assert(r2.length == 30)
   }
@@ -82,19 +81,16 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       Queue(distData1, distData2, distData3)
     }
 
-    import org.apache.spark.sql.snappy._
+    val dStream = ssnc.queueStream[Tweet](getQueueOfRDDs)
 
-    val dStream = ssc.queueStream[Tweet](getQueueOfRDDs)
-
-    val schemaDStream = streamingSnappy.createSchemaDStream(dStream)
+    val schemaDStream = ssnc.createSchemaDStream(dStream)
     schemaDStream.foreachRDD(rdd => {
-      // streamingSnappy.createDataFrame
-      // (rdd, schemaDStream.schema).show() //NotSerializableException
+      // schemaDStream.createDataFrame (rdd).show() //NotSerializableException
       // println(rdd) // scalastyle:ignore
     })
 
-    ssc.start
-    ssc.awaitTerminationOrTimeout(5 * 1000)
+    SnappyStreamingContext.start
+    ssnc.awaitTerminationOrTimeout(5 * 1000)
   }
 
   test("api stream to stream and stream to table join") {
@@ -105,13 +101,13 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       Queue(distData1, distData2, distData3)
     }
 
-    val dStream1 = ssc.queueStream[Tweet](getQueueOfRDDs1)
+    val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
 
-    val schemaStream1 = streamingSnappy.createSchemaDStream(dStream1)
+    val schemaStream1 = ssnc.createSchemaDStream(dStream1)
     schemaStream1.foreachRDD(rdd => {
-      streamingSnappy.createDataFrame(rdd, schemaStream1.schema)
+      schemaStream1.createDataFrame(rdd)
     })
-    streamingSnappy.registerStreamAsTable("tweetStream1", schemaStream1)
+    schemaStream1.registerAsTable("tweetStream1")
 
     def getQueueOfRDDs2: Queue[RDD[Tweet]] = {
       val distData1: RDD[Tweet] = sc.parallelize(9 to 10).map(i => Tweet(i, s"Text$i"))
@@ -120,45 +116,45 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       Queue(distData1, distData2, distData3)
     }
 
-    val dStream2 = ssc.queueStream[Tweet](getQueueOfRDDs2)
+    val dStream2 = ssnc.queueStream[Tweet](getQueueOfRDDs2)
 
-    val schemaStream2 = streamingSnappy.createSchemaDStream(dStream2)
+    val schemaStream2 = ssnc.createSchemaDStream(dStream2)
     schemaStream2.foreachRDD(rdd => {
-      streamingSnappy.createDataFrame(rdd, schemaStream2.schema)
+      schemaStream2.createDataFrame(rdd)
     })
-    streamingSnappy.registerStreamAsTable("tweetStream2", schemaStream2)
+    schemaStream2.registerAsTable("tweetStream2")
 
-    val resultStream: SchemaDStream = streamingSnappy.registerCQ("SELECT t1.id, t1.text FROM " +
+    val resultStream: SchemaDStream = ssnc.registerCQ("SELECT t1.id, t1.text FROM " +
       "tweetStream1 window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
       "tweetStream2 t2 ON t1.id = t2.id ")
 
-    streamingSnappy.dropExternalTable("gemxdColumnTable", true)
-    streamingSnappy.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable", true)
+    ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
     resultStream.foreachRDD(rdd => {
-      val df = streamingSnappy.createDataFrame(rdd, schemaStream1.schema)
+      val df = resultStream.createDataFrame(rdd)
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
 
-    val df = streamingSnappy.createDataFrame(
+    val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.registerTempTable("tweetTable")
 
-    val resultSet = streamingSnappy.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
+    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
       "(duration '4' seconds, slide '4' seconds) " +
       "t1 JOIN tweetTable t2 ON t1.id = t2.id")
     resultSet.foreachRDD(rdd => {
-      val df = streamingSnappy.createDataFrame(rdd, schemaStream1.schema)
+      val df = resultSet.createDataFrame(rdd)
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
 
-    ssc.start
-    ssc.awaitTerminationOrTimeout(20 * 1000)
+    SnappyStreamingContext.start
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
 
-    val result = streamingSnappy.sql("select * from gemxdColumnTable")
+    val result = ssnc.sql("select * from gemxdColumnTable")
     val r = result.collect
     assert(r.length > 0)
   }
@@ -171,13 +167,13 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
       Queue(distData1, distData2, distData3)
     }
-    val dStream1 = ssc.queueStream[Tweet](getQueueOfRDDs1)
+    val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
 
-    val schemaStream1 = streamingSnappy.createSchemaDStream(dStream1)
+    val schemaStream1 = ssnc.createSchemaDStream(dStream1)
     schemaStream1.foreachRDD(rdd => {
-      streamingSnappy.createDataFrame(rdd, schemaStream1.schema)
+      schemaStream1.createDataFrame(rdd)
     })
-    streamingSnappy.registerStreamAsTable("tweetStream1", schemaStream1)
+    schemaStream1.registerAsTable("tweetStream1")
 
     def getQueueOfRDDs2: Queue[RDD[Tweet]] = {
       val distData1: RDD[Tweet] = sc.parallelize(9 to 10).map(i => Tweet(i, s"Text$i"))
@@ -186,74 +182,133 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       Queue(distData1, distData2, distData3)
     }
 
-    val dStream2 = ssc.queueStream[Tweet](getQueueOfRDDs2)
+    val dStream2 = ssnc.queueStream[Tweet](getQueueOfRDDs2)
 
-    val schemaStream2 = streamingSnappy.createSchemaDStream(dStream2)
+    val schemaStream2 = ssnc.createSchemaDStream(dStream2)
     schemaStream2.foreachRDD(rdd => {
-      streamingSnappy.createDataFrame(rdd, schemaStream2.schema)
+      schemaStream2.createDataFrame(rdd)
     })
-    streamingSnappy.registerStreamAsTable("tweetStream2", schemaStream2)
+    schemaStream2.registerAsTable("tweetStream2")
 
-    val resultStream: SchemaDStream = streamingSnappy.registerCQ("SELECT t1.id, t1.text" +
+    val resultStream: SchemaDStream = ssnc.registerCQ("SELECT t1.id, t1.text" +
       " FROM tweetStream1 window (duration '2' seconds, slide '2' seconds)" +
       "t1 JOIN tweetStream2 t2 ON t1.id = t2.id ")
 
-    streamingSnappy.dropExternalTable("gemxdColumnTable", true)
-    streamingSnappy.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+    ssnc.snappyContext.dropExternalTable("gemxdColumnTable", true)
+    ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
     resultStream.foreachRDD(rdd => {
-      val df = streamingSnappy.createDataFrame(rdd, schemaStream1.schema)
+      val df = resultStream.createDataFrame(rdd)
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
 
-    val df = streamingSnappy.createDataFrame(
+    val df = ssnc.snappyContext.createDataFrame(
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.registerTempTable("tweetTable")
 
-    ssc.start
+    SnappyStreamingContext.start
 
-    val resultSet = streamingSnappy.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window" +
+    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window" +
       " (duration '4' seconds, slide '4' seconds) " +
       "t1 JOIN tweetTable t2 ON t1.id = t2.id")
 
     resultSet.foreachRDD(rdd => {
-      val df = streamingSnappy.createDataFrame(rdd, schemaStream1.schema)
+      val df = resultSet.createDataFrame(rdd)
       df.show
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
-    ssc.awaitTerminationOrTimeout(20 * 1000)
+    ssnc.awaitTerminationOrTimeout(20 * 1000)
 
-    val result = streamingSnappy.sql("select * from gemxdColumnTable")
+    val result = ssnc.sql("select * from gemxdColumnTable")
     val r = result.collect
     assert(r.length > 0)
   }
 
+  ignore("sql stream sampling") {
+
+    ssnc.sql("create stream table tweetstreamtable " +
+      "(id long, text string, fullName string, " +
+      "country string, retweets int, hashtag string) " +
+      "using twitter_stream options (" +
+      "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+      "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+      "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+      "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+      "streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter')")
+
+    val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
+
+    ssnc.snappyContext.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
+      "qcs" -> "hashtag",
+      "fraction" -> "0.05",
+      "strataReservoirSize" -> "300",
+      "timeInterval" -> "3m"), Some("tweetstreamtable"))
+
+    tableStream.saveStream(Seq("tweetstreamtable_sampled"))
+
+    ssnc.sql("create table rawStreamColumnTable(id long, " +
+      "text string, " +
+      "fullName string, " +
+      "country string, " +
+      "retweets int, " +
+      "hashtag string) " +
+      "using column " +
+      "options('PARTITION_BY','id')")
+
+    var numTimes = 0
+    tableStream.foreachRDD { rdd =>
+      val df = tableStream.createDataFrame(rdd)
+      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
+        .saveAsTable("rawStreamColumnTable")
+
+      // println("Top 10 hash tags from exact table") // scalastyle:ignore
+    val top10Tags = ssnc.sql("select count(*) as cnt, hashtag from " +
+        "rawStreamColumnTable where length(hashtag) > 0 group by hashtag " +
+        "order by cnt desc limit 10").collect()
+      top10Tags.foreach(println) // scalastyle:ignore
+
+      numTimes += 1
+      if ((numTimes % 18) == 1) {
+        ssnc.sql("SELECT count(*) FROM rawStreamColumnTable").show()
+      }
+
+      // println("Top 10 hash tags from sample table") // scalastyle:ignore
+    val stop10Tags = ssnc.sql("select count(*) as cnt, " +
+        "hashtag from tweetstreamtable_sampled where length(hashtag) > 0 " +
+        "group by hashtag order by cnt desc limit 10").collect()
+      stop10Tags.foreach(println) // scalastyle:ignore
+    }
+
+    ssnc.sql( """STREAMING CONTEXT START """)
+    ssnc.awaitTerminationOrTimeout(10 * 1000)
+  }
+
   test("sql on socket streams") {
 
-    streamingSnappy.sql("create stream table socketStreamTable (name string) " +
+    ssnc.sql("create stream table socketStreamTable (name string) " +
       "using socket_stream options (" +
       "hostname 'localhost', " +
       "port '9998', " +
       "storagelevel 'MEMORY_AND_DISK_SER_2', " +
       "streamToRows 'io.snappydata.app.streaming.LineToRowsConverter') ")
 
-    streamingSnappy.registerCQ("SELECT * FROM socketStreamTable window " +
+    ssnc.registerCQ("SELECT * FROM socketStreamTable window " +
       "(duration '10' seconds, slide '10' seconds) ")
 
     val thrown = intercept[Exception] {
-      streamingSnappy.sql( """STREAMING CONTEXT START """)
+      ssnc.sql( """STREAMING CONTEXT START """)
     }
     assert(thrown.getMessage === "requirement failed: No output operations" +
       " registered, so nothing to execute")
-    ssc.awaitTerminationOrTimeout(10000)
+    ssnc.awaitTerminationOrTimeout(10000)
   }
 
   test("sql on kafka streams") {
 
-    streamingSnappy.sql("create stream table directKafkaStreamTable (name string, age int)" +
+    ssnc.sql("create stream table directKafkaStreamTable (name string, age int)" +
       " using kafka_stream options " +
       "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
       "streamToRows 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
@@ -261,17 +316,17 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "groupId 'streamSQLConsumer', " +
       "topics 'tweets:01')")
 
-    /* val tableDStream: SchemaDStream = streamingSnappy.getSchemaDStream("directKafkaStreamTable")
+    /* val tableDStream: SchemaDStream = ssnc.getSchemaDStream("directKafkaStreamTable")
     import org.apache.spark.sql.streaming.snappy._
     tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema,
    Map.empty[String, String]) */
 
     val thrown = intercept[Exception] {
-      streamingSnappy.sql( """STREAMING CONTEXT START """)
+      ssnc.sql( """STREAMING CONTEXT START """)
     }
     assert(thrown.getMessage === "requirement failed: No output operations " +
       "registered, so nothing to execute")
-    ssc.awaitTerminationOrTimeout(10000)
+    ssnc.awaitTerminationOrTimeout(10000)
   }
 
 
@@ -279,7 +334,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
 
     intercept[Exception] {
       // java.nio.channels.ClosedChannelException since no kafka cluster
-      streamingSnappy.sql("create stream table directKafkaStreamTable (name string, age int) " +
+      ssnc.sql("create stream table directKafkaStreamTable (name string, age int) " +
         "using directkafka_stream options " +
         "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
         "streamToRows 'io.snappydata.app.streaming.KafkastreamToRowsConverter', " +
@@ -288,7 +343,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     }
 
     val ex = intercept[Exception] {
-      streamingSnappy.sql( """STREAMING CONTEXT START """)
+      ssnc.sql( """STREAMING CONTEXT START """)
     }
     assert(ex.getMessage === "requirement failed: No output operations" +
       " registered, so nothing to execute")
@@ -297,19 +352,19 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
   test("sql on file streams") {
 
     // var hfile: String = getClass.getResource("/2015.parquet").getPath
-    streamingSnappy.sql("create stream table fileStreamTable (name string, age int)" +
+    ssnc.sql("create stream table fileStreamTable (name string, age int)" +
       " using file_stream options " +
       "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
       "streamToRows 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
       " directory '/tmp')")
-    streamingSnappy.registerCQ("SELECT name FROM fileStreamTable window " +
+    ssnc.registerCQ("SELECT name FROM fileStreamTable window " +
       "(duration '10' seconds, slide '10' seconds) WHERE age >= 18")
     val thrown = intercept[Exception] {
-      streamingSnappy.sql( """STREAMING CONTEXT START """)
+      ssnc.sql( """STREAMING CONTEXT START """)
     }
     assert(thrown.getMessage === "requirement failed: No output operations" +
       " registered, so nothing to execute")
-    ssc.awaitTerminationOrTimeout(5000)
+    ssnc.awaitTerminationOrTimeout(5000)
   }
 }
 
