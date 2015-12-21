@@ -198,8 +198,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           }
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
-            phrase(tableCols)(new lexical.Scanner(schemaString)) match {
-              case Success(columns, _) => Some(StructType(columns))
+            phrase(tableCols.?)(new lexical.Scanner(schemaString)) match {
+              case Success(columns, _) => columns.flatMap(fields => Some(StructType(fields)))
               case failure => throw new DDLException(failure.toString)
             }
           }
