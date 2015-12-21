@@ -3,11 +3,9 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
-
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
@@ -15,7 +13,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
-import org.apache.spark.sql.SnappyStrategies
 
 
 /**
@@ -431,8 +428,9 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
 }
 
 private[sql] case class StreamingCtxtActionsCmd(action: Int,
-    batchInterval: Option[Int], sampleTablePopulation : Option[(SQLContext)=> Unit])
-    extends RunnableCommand {
+                                                batchInterval: Option[Int],
+                                                sampleTablePopulation: Option[(SQLContext) => Unit])
+  extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
 
@@ -445,9 +443,10 @@ private[sql] case class StreamingCtxtActionsCmd(action: Int,
 
       case 1 =>
         // Register sampling of all the streams
+        // Register sampling of all the streams
         sampleTablePopulation match {
           case Some(func) => func(sqlContext)
-          case None => //do nothing
+          case None => // do nothing
         }
         // start the streaming
         StreamingCtxtHolder.streamingContext.start()

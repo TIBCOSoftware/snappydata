@@ -1,20 +1,17 @@
 package org.apache.spark.sql.streaming
 
-
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.{LogicalRDD, RDDConversions, SparkPlan}
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds, StreamingContext, StreamingContextState, Time}
+import org.apache.spark.streaming.{Duration, Seconds, StreamingContext, StreamingContextState}
 
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
-
 
 /**
   * Provides an ability to manipulate SQL like query on DStream
@@ -22,16 +19,15 @@ import scala.reflect.runtime.{universe => u}
   * Created by ymahajan on 25/09/15.
   */
 
-class StreamingSnappyContext private[streaming](@transient val streamingContext:
-                                           StreamingContext)
-  extends SnappyContext(streamingContext.sparkContext)
-  with Serializable {
+class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
+                                              val batchDur: Duration)
+  extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
 
   self =>
 
-  override def sql(sqlText: String): DataFrame = {
-    StreamPlan.currentContext.set(self) // StreamingSnappyContext
-    super.sql(sqlText)
+  def sql(sqlText: String): DataFrame = {
+    StreamPlan.currentContext.set(self)
+    snappyContext.sql(sqlText)
   }
 
   /**
@@ -41,7 +37,7 @@ class StreamingSnappyContext private[streaming](@transient val streamingContext:
     * @return
     */
   def registerCQ(queryStr: String): SchemaDStream = {
-    SparkPlan.currentContext.set(self) // SQLContext
+    SparkPlan.currentContext.set(snappyContext) // SQLContext
     StreamPlan.currentContext.set(self) // StreamingSnappyContext
     val plan = sql(queryStr).queryExecution.logical
     // TODO Yogesh, This needs to get registered with catalog
@@ -61,19 +57,15 @@ class StreamingSnappyContext private[streaming](@transient val streamingContext:
     dStream
   }
 
-  /**
-    * Registers the given [[SchemaDStream]] as a temporary table in the catalog.
-    * Temporary tables exist only during the lifetime of this instance of SQLContext.
-    * @param tName
-    * @param stream
-    */
-  def registerStreamAsTable(tName: String, stream: SchemaDStream): Unit = {
-    catalog.registerTable(catalog.newQualifiedTableName(tName),
-      stream.logicalPlan)
-  }
 
-  def getSchemaDStream(tableName: String): SchemaDStream = {
-    new SchemaDStream(self, catalog.lookupRelation(tableName))
+
+//  override def stop(stopSparkContext: Boolean, stopGracefully: Boolean): Unit = {
+//    super.stop(stopSparkContext, stopGracefully)
+//    StreamPlan.currentContext.remove()
+//  }
+
+    def getSchemaDStream(tableName: String): SchemaDStream = {
+    new SchemaDStream(self, snappyContext.catalog.lookupRelation(tableName))
   }
 
   /**
@@ -81,10 +73,10 @@ class StreamingSnappyContext private[streaming](@transient val streamingContext:
     * the given schema. It is important to make sure that the structure of
     * every [[Row]] of the provided DStream matches the provided schema.
     */
-  implicit def createSchemaDStream(dStream: DStream[InternalRow],
+  def createSchemaDStream(dStream: DStream[InternalRow],
                                    schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
-    SparkPlan.currentContext.set(self)
+    SparkPlan.currentContext.set(self.snappyContext)
     StreamPlan.currentContext.set(self)
     val logicalPlan = LogicalDStreamPlan(attributes, dStream)(self)
     new SchemaDStream(self, logicalPlan)
@@ -93,11 +85,11 @@ class StreamingSnappyContext private[streaming](@transient val streamingContext:
   /**
     * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
     */
-  implicit def createSchemaDStream[A <: Product : TypeTag]
+  def createSchemaDStream[A <: Product : TypeTag]
   (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
-    SparkPlan.currentContext.set(self)
+    SparkPlan.currentContext.set(self.snappyContext)
     StreamPlan.currentContext.set(self)
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
     (rdd, schema.map(_.dataType)))
@@ -106,13 +98,13 @@ class StreamingSnappyContext private[streaming](@transient val streamingContext:
   }
 }
 
-object StreamingSnappyContext {
+ object SnappyStreamingContext {
 
-  @volatile private[this] var globalContext: StreamingSnappyContext = _
+  @volatile private[this] var globalContext: SnappyStreamingContext = _
 
   private[this] val contextLock = new AnyRef
 
-  def apply(sc: StreamingContext): StreamingSnappyContext = {
+  def apply(sc: SnappyContext, batchDur: Duration): SnappyStreamingContext = {
     val snc = globalContext
     if (snc != null) {
       snc
@@ -123,70 +115,29 @@ object StreamingSnappyContext {
       } else {
         // global initialization of SnappyContext
         SnappyContext.getOrCreate(sc.sparkContext)
-        val snc = new StreamingSnappyContext(sc)
-        StreamingCtxtHolder.apply(sc)
+        val snc = new SnappyStreamingContext(sc, batchDur)
+        StreamingCtxtHolder.apply(snc)
         globalContext = snc
         snc
       }
     }
   }
 
+  def start(): Unit = {
+    val snc = globalContext
+    // TODO Register sampling of all the streams
+    // start the streaming context
+    snc.start()
+   }
+
   def stop(stopSparkContext: Boolean = false,
            stopGracefully: Boolean = true): Unit = {
     val snc = globalContext
     if (snc != null) {
-      snc.streamingContext.stop(stopSparkContext, stopGracefully)
+      snc.stop(stopSparkContext, stopGracefully)
       StreamPlan.currentContext.remove()
       globalContext = null
     }
-  }
-}
-
-case class SnappyStreamOperations[T: ClassTag](context: StreamingSnappyContext,
-                                               ds: DStream[T]) {
-
-  def saveStream(sampleTab: Seq[String],
-                 formatter: (RDD[T], StructType) => RDD[Row],
-                 schema: StructType,
-                 transform: RDD[Row] => RDD[Row] = null): Unit =
-  context.aqpContext.saveStream(context, ds, sampleTab, formatter, schema, transform)
-
-  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
-                                                  jdbcSource: Map[String, String]): Unit = {
-    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  def saveToExternalTable(externalTable: String, schema: StructType,
-                          jdbcSource: Map[String, String]): Unit = {
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  private def saveStreamToExternalTable(externalTable: String,
-                                        schema: StructType,
-                                        jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = context.catalog.getExternalTable(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-    ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
   }
 }
 
@@ -226,12 +177,12 @@ object StreamingCtxtHolder {
 }
 
 trait StreamPlan {
-  def streamingSnappy: StreamingSnappyContext = StreamPlan.currentContext.get()
+  def streamingSnappy: SnappyStreamingContext = StreamPlan.currentContext.get()
 
   def stream: DStream[InternalRow]
 }
 
 object StreamPlan {
-  val currentContext = new ThreadLocal[StreamingSnappyContext]()
+  val currentContext = new ThreadLocal[SnappyStreamingContext]()
 }
 
