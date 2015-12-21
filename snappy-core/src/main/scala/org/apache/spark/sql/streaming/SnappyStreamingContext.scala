@@ -19,15 +19,15 @@ import scala.reflect.runtime.{universe => u}
   * Created by ymahajan on 25/09/15.
   */
 
-class SnappyStreamingContext protected[spark](@transient val snappy: SnappyContext,
-                                   val batchDur: Duration)
-  extends StreamingContext(snappy.sparkContext, batchDur) with Serializable {
+class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
+                                              val batchDur: Duration)
+  extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
 
   self =>
 
   def sql(sqlText: String): DataFrame = {
     StreamPlan.currentContext.set(self)
-    snappy.sql(sqlText)
+    snappyContext.sql(sqlText)
   }
 
   /**
@@ -37,7 +37,7 @@ class SnappyStreamingContext protected[spark](@transient val snappy: SnappyConte
     * @return
     */
   def registerCQ(queryStr: String): SchemaDStream = {
-    SparkPlan.currentContext.set(snappy) // SQLContext
+    SparkPlan.currentContext.set(snappyContext) // SQLContext
     StreamPlan.currentContext.set(self) // StreamingSnappyContext
     val plan = sql(queryStr).queryExecution.logical
     // TODO Yogesh, This needs to get registered with catalog
@@ -65,7 +65,7 @@ class SnappyStreamingContext protected[spark](@transient val snappy: SnappyConte
 //  }
 
     def getSchemaDStream(tableName: String): SchemaDStream = {
-    new SchemaDStream(self, snappy.catalog.lookupRelation(tableName))
+    new SchemaDStream(self, snappyContext.catalog.lookupRelation(tableName))
   }
 
   /**
@@ -76,7 +76,7 @@ class SnappyStreamingContext protected[spark](@transient val snappy: SnappyConte
   def createSchemaDStream(dStream: DStream[InternalRow],
                                    schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
-    SparkPlan.currentContext.set(self.snappy)
+    SparkPlan.currentContext.set(self.snappyContext)
     StreamPlan.currentContext.set(self)
     val logicalPlan = LogicalDStreamPlan(attributes, dStream)(self)
     new SchemaDStream(self, logicalPlan)
@@ -89,7 +89,7 @@ class SnappyStreamingContext protected[spark](@transient val snappy: SnappyConte
   (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val attributeSeq = schema.toAttributes
-    SparkPlan.currentContext.set(self.snappy)
+    SparkPlan.currentContext.set(self.snappyContext)
     StreamPlan.currentContext.set(self)
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
     (rdd, schema.map(_.dataType)))

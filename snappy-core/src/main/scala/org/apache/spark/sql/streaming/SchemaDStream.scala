@@ -26,15 +26,15 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
                           @transient val queryExecution: QueryExecution)
   extends DStream[Row](snsc){
 
-  @transient private val snappy : SnappyContext = snsc.snappy
+  @transient private val snappyContext : SnappyContext = snsc.snappyContext
 
-  @transient private val catalog = snsc.snappy.catalog
+  @transient private val catalog = snsc.snappyContext.catalog
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
-    this(ssc, ssc.snappy.executePlan(logicalPlan))
+    this(ssc, ssc.snappyContext.executePlan(logicalPlan))
 
   def saveStream(sampleTab: Seq[String]): Unit = {
-    snappy.saveStream(this, sampleTab, {
+    snappyContext.saveStream(this, sampleTab, {
       (rdd: RDD[Row], _) => rdd
     }, this.schema)
   }
@@ -44,11 +44,11 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   def createDataFrame(rowRDD: RDD[Row]): DataFrame = {
-    snappy.createDataFrame(rowRDD, this.schema, needsConversion = true)
+    snappyContext.createDataFrame(rowRDD, this.schema, needsConversion = true)
   }
 
   def createDataFrame[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
-    snappy.createDataFrame(rdd)
+    snappyContext.createDataFrame(rdd)
   }
 
 //  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
@@ -75,14 +75,14 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     val attributeSeq = schema.toAttributes
     val dummyDF = {
       val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(snappy))(snappy)
-      DataFrame(snappy, plan)
+        new DummyRDD(snappyContext))(snappyContext)
+      DataFrame(snappyContext, plan)
     }
     catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    snappy.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
+    snappyContext.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
       externalStore)
     foreachRDD(rdd => {
-      snappy.appendToCacheRDD(rdd, tableIdent.table, schema)
+      snappyContext.appendToCacheRDD(rdd, tableIdent.table, schema)
     })
   }
 
@@ -96,8 +96,8 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   /** Registers this SchemaDStream as a temporary table in the catalog.
     * Temporary tables exist only during the lifetime of this instance of SQLContext. */
   def registerAsTable(tableName: String): Unit = {
-    snsc.snappy.catalog.registerTable(
-      snsc.snappy.catalog.newQualifiedTableName(tableName),
+    snsc.snappyContext.catalog.registerTable(
+      snsc.snappyContext.catalog.newQualifiedTableName(tableName),
       logicalPlan)
   }
 

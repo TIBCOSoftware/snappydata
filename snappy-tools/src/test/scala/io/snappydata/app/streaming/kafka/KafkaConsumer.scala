@@ -52,7 +52,7 @@ object KafkaConsumer {
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
 
 
-    ssnc.snappy.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
+    ssnc.snappyContext.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
       "qcs" -> "hashtag",
       "fraction" -> "0.05",
       "strataReservoirSize" -> "300",
