@@ -639,8 +639,7 @@ object SnappyContext extends Logging {
 
   private[this] val contextLock = new AnyRef
 
-
-
+  val DEFAULT_SOURCE = "row"
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
