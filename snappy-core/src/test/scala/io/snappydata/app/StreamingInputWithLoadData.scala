@@ -92,8 +92,8 @@ object StreamingInputWithLoadData extends Serializable {
 
     snc.sql("SELECT count(*) FROM arSample1").show
 
-    ingestionStream.saveStream(Seq("arSample1", "arSample2"),
-      userInterpreter.userDefinedRowInterpreter, schema)
+//    ingestionStream.saveStream(Seq("arSample1", "arSample2"),
+//      userInterpreter.userDefinedRowInterpreter, schema)
 
     ssc.start()
     Thread.sleep(5000)
