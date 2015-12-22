@@ -81,13 +81,8 @@ private[sql] trait SnappyStrategies {
             StreamingCtxtActionsCmd(action, batchInterval, sampleTablePopulation)) :: Nil
 
       }
-
       x1.orElse(x2).orElse(sampleStreamCase)(plan)
-
-
     }
-
-
   }
 
     object LocalJoinStrategies extends Strategy {
