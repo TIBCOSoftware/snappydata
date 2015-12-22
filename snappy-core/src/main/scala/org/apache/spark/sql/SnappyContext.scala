@@ -350,6 +350,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
           throw new AnalysisException(s"Table $tableIdent already exists. " +
               "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
+        case SaveMode.Ignore => return catalog.lookupRelation(tableIdent, None)
         case _ =>
           // existing table schema could have nullable columns
           val schema = data.schema
@@ -475,6 +476,21 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     }
     cacheManager.tryUncacheQuery(DataFrame(self, plan))
     catalog.unregisterTable(qualifiedTable)
+  }
+
+  def dropSampleTable(tableName: String, ifExists: Boolean = false): Unit = {
+
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    val plan = try {
+      catalog.lookupRelation(qualifiedTable, None)
+    } catch {
+      case ae: AnalysisException =>
+        if (ifExists) return else throw ae
+    }
+    cacheManager.tryUncacheQuery(DataFrame(self, plan))
+    catalog.unregisterTable(qualifiedTable)
+    this.aqpContext.dropSampleTable(tableName, ifExists)
+
   }
 
   // insert/update/delete operations on an external table
@@ -623,8 +639,7 @@ object SnappyContext extends Logging {
 
   private[this] val contextLock = new AnyRef
 
-
-
+  val DEFAULT_SOURCE = "row"
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
