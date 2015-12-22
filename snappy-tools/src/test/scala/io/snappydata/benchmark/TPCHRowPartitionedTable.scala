@@ -3,7 +3,7 @@ package io.snappydata.benchmark
 import java.sql.Statement
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SnappyContext, SaveMode}
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 
 /**
@@ -15,11 +15,11 @@ object TPCHRowPartitionedTable {
     stmt.execute("CREATE TABLE PART  ( " +
         "P_PARTKEY     INTEGER NOT NULL PRIMARY KEY,"+
         "P_NAME        VARCHAR(55) NOT NULL,"+
-        "P_MFGR        CHAR(25) NOT NULL,"+
-        "P_BRAND       CHAR(10) NOT NULL,"+
+        "P_MFGR        VARCHAR(25) NOT NULL,"+
+        "P_BRAND       VARCHAR(10) NOT NULL,"+
         "P_TYPE        VARCHAR(25) NOT NULL,"+
         "P_SIZE        INTEGER NOT NULL,"+
-        "P_CONTAINER   CHAR(10) NOT NULL,"+
+        "P_CONTAINER   VARCHAR(10) NOT NULL,"+
         "P_RETAILPRICE DECIMAL(15,2) NOT NULL,"+
         "P_COMMENT     VARCHAR(23) NOT NULL)"
     )
@@ -27,24 +27,24 @@ object TPCHRowPartitionedTable {
   }
 
 
-  def createPartTable(usingOptionString: String, sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    snappyContext.sql(
-      """CREATE TABLE PART (
-                P_PARTKEY INTEGER NOT NULL PRIMARY KEY,
-                P_NAME VARCHAR(55) NOT NULL,
-                P_MFGR CHAR(25) NOT NULL,
-                P_BRAND CHAR(10) NOT NULL,
-                P_TYPE VARCHAR(25) NOT NULL,
-                P_SIZE INTEGER NOT NULL,
-                P_CONTAINER CHAR(10) NOT NULL,
-                P_RETAILPRICE DECIMAL(15,2) NOT NULL,
-                P_COMMENT VARCHAR(23) NOT NULL
-             ) PARTITION BY COLUMN (P_PARTKEY)
-      """ + usingOptionString
-    )
-    println("Created Table PART")
-  }
+//  def createPartTable(usingOptionString: String, sc: SparkContext): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    snappyContext.sql(
+//      """CREATE TABLE PART (
+//                P_PARTKEY INTEGER NOT NULL PRIMARY KEY,
+//                P_NAME VARCHAR(55) NOT NULL,
+//                P_MFGR CHAR(25) NOT NULL,
+//                P_BRAND CHAR(10) NOT NULL,
+//                P_TYPE VARCHAR(25) NOT NULL,
+//                P_SIZE INTEGER NOT NULL,
+//                P_CONTAINER CHAR(10) NOT NULL,
+//                P_RETAILPRICE DECIMAL(15,2) NOT NULL,
+//                P_COMMENT VARCHAR(23) NOT NULL
+//             ) PARTITION BY COLUMN (P_PARTKEY)
+//      """ + usingOptionString
+//    )
+//    println("Created Table PART")
+//  }
 
   def createPartSuppTable_Memsql(stmt:Statement): Unit = {
     stmt.execute("CREATE TABLE PARTSUPP ( " +
@@ -58,21 +58,21 @@ object TPCHRowPartitionedTable {
     println("Created Table PARTSUPP")
   }
 
-  def createPartSuppTable(usingOptionString: String, sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    snappyContext.sql(
-      """CREATE TABLE PARTSUPP (
-                PS_PARTKEY INTEGER NOT NULL,
-                PS_SUPPKEY INTEGER NOT NULL,
-                PS_AVAILQTY INTEGER NOT NULL,
-                PS_SUPPLYCOST DECIMAL(15,2) NOT NULL,
-                PS_COMMENT VARCHAR(199) NOT NULL,
-                PRIMARY KEY (PS_PARTKEY, PS_SUPPKEY)
-             ) PARTITION BY COLUMN (PS_PARTKEY)
-      """ + usingOptionString
-    )
-    println("Created Table PARTSUPP")
-  }
+//  def createPartSuppTable(usingOptionString: String, sc: SparkContext): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    snappyContext.sql(
+//      """CREATE TABLE PARTSUPP (
+//                PS_PARTKEY INTEGER NOT NULL,
+//                PS_SUPPKEY INTEGER NOT NULL,
+//                PS_AVAILQTY INTEGER NOT NULL,
+//                PS_SUPPLYCOST DECIMAL(15,2) NOT NULL,
+//                PS_COMMENT VARCHAR(199) NOT NULL,
+//                PRIMARY KEY (PS_PARTKEY, PS_SUPPKEY)
+//             ) PARTITION BY COLUMN (PS_PARTKEY)
+//      """ + usingOptionString
+//    )
+//    println("Created Table PARTSUPP")
+//  }
 
   def createCustomerTable_Memsql(stmt:Statement): Unit = {
     stmt.execute("CREATE TABLE CUSTOMER ( " +
@@ -80,56 +80,154 @@ object TPCHRowPartitionedTable {
         "C_NAME        VARCHAR(25) NOT NULL," +
         "C_ADDRESS     VARCHAR(40) NOT NULL," +
         "C_NATIONKEY   INTEGER NOT NULL," +
-        "C_PHONE       CHAR(15) NOT NULL," +
+        "C_PHONE       VARCHAR(15) NOT NULL," +
         "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
-        "C_MKTSEGMENT  CHAR(10) NOT NULL," +
+        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
         "C_COMMENT     VARCHAR(117) NOT NULL)"
     )
     println("Created Table CUSTOMER")
   }
 
-  def createCustomerTable(usingOptionString: String, sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    snappyContext.sql(
-      """CREATE TABLE CUSTOMER (
+//  def createCustomerTable(usingOptionString: String, sc: SparkContext): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    snappyContext.sql(
+//      """CREATE TABLE CUSTOMER (
+//                C_CUSTKEY INTEGER NOT NULL PRIMARY KEY,
+//                C_NAME VARCHAR(25) NOT NULL,
+//                C_ADDRESS VARCHAR(40) NOT NULL,
+//                C_NATIONKEY INTEGER NOT NULL ,
+//                C_PHONE CHAR(15) NOT NULL,
+//                C_ACCTBAL DECIMAL(15,2) NOT NULL,
+//                C_MKTSEGMENT CHAR(10) NOT NULL,
+//                C_COMMENT VARCHAR(117) NOT NULL
+//             ) PARTITION BY COLUMN (C_CUSTKEY)
+//      """ + usingOptionString
+//    )
+//    println("Created Table CUSTOMER")
+//  }
+
+  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val partData = sc.textFile(s"$path/part.tbl")
+    val partReadings = partData.map(s => s.split('|')).map(s => parsePartRow(s))
+    val partDF = snappyContext.createDataFrame(partReadings)
+
+    if (isSnappy) {
+      snappyContext.sql(
+        """CREATE TABLE PART (
+                P_PARTKEY INTEGER NOT NULL PRIMARY KEY,
+                P_NAME VARCHAR(55) NOT NULL,
+                P_MFGR VARCHAR(25) NOT NULL,
+                P_BRAND VARCHAR(10) NOT NULL,
+                P_TYPE VARCHAR(25) NOT NULL,
+                P_SIZE INTEGER NOT NULL,
+                P_CONTAINER VARCHAR(10) NOT NULL,
+                P_RETAILPRICE DECIMAL(15,2) NOT NULL,
+                P_COMMENT VARCHAR(23) NOT NULL
+             ) PARTITION BY COLUMN (P_PARTKEY)
+        """ + usingOptionString
+      )
+      println("Created Table PART")
+      partDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PART")
+    } else {
+      partDF.registerTempTable("PART")
+      snappyContext.cacheTable("PART")
+      val cnts = snappyContext.sql("select count(*) from PART").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+
+//  def populatePartTable(props: Map[String, String], sc: SparkContext, path:String): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    val partData = sc.textFile(s"$path/part.tbl")
+//    val partReadings = partData.map(s => s.split('|')).map(s => parsePartRow(s))
+//    val partDF = snappyContext.createDataFrame(partReadings)
+//    partDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PART")
+//  }
+
+  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val partSuppData = sc.textFile(s"$path/partsupp.tbl")
+    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => parsePartSuppRow(s))
+    val partSuppDF = snappyContext.createDataFrame(partSuppReadings)
+
+    if (isSnappy) {
+      snappyContext.sql(
+        """CREATE TABLE PARTSUPP (
+                PS_PARTKEY INTEGER NOT NULL,
+                PS_SUPPKEY INTEGER NOT NULL,
+                PS_AVAILQTY INTEGER NOT NULL,
+                PS_SUPPLYCOST DECIMAL(15,2) NOT NULL,
+                PS_COMMENT VARCHAR(199) NOT NULL,
+                PRIMARY KEY (PS_PARTKEY, PS_SUPPKEY)
+             ) PARTITION BY COLUMN (PS_PARTKEY) COLOCATE WITH (PART)
+        """ + usingOptionString
+      )
+      println("Created Table PARTSUPP")
+      partSuppDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PARTSUPP")
+    } else {
+      partSuppDF.registerTempTable("PARTSUPP")
+      snappyContext.cacheTable("PARTSUPP")
+      val cnts = snappyContext.sql("select count(*) from PARTSUPP").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+
+//  def populatePartSuppTable(props: Map[String, String], sc: SparkContext, path:String): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    val partSuppData = sc.textFile(s"$path/partsupp.tbl")
+//    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => parsePartSuppRow(s))
+//    val partSuppDF = snappyContext.createDataFrame(partSuppReadings)
+//    partSuppDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PARTSUPP")
+//  }
+
+  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val customerData = sc.textFile(s"$path/customer.tbl")
+    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
+    val customerDF = snappyContext.createDataFrame(customerReadings)
+
+    if (isSnappy) {
+      snappyContext.sql(
+        """CREATE TABLE CUSTOMER (
                 C_CUSTKEY INTEGER NOT NULL PRIMARY KEY,
                 C_NAME VARCHAR(25) NOT NULL,
                 C_ADDRESS VARCHAR(40) NOT NULL,
                 C_NATIONKEY INTEGER NOT NULL ,
-                C_PHONE CHAR(15) NOT NULL,
+                C_PHONE VARCHAR(15) NOT NULL,
                 C_ACCTBAL DECIMAL(15,2) NOT NULL,
-                C_MKTSEGMENT CHAR(10) NOT NULL,
+                C_MKTSEGMENT VARCHAR(10) NOT NULL,
                 C_COMMENT VARCHAR(117) NOT NULL
              ) PARTITION BY COLUMN (C_CUSTKEY)
-      """ + usingOptionString
-    )
-    println("Created Table CUSTOMER")
+        """ + usingOptionString
+      )
+      println("Created Table CUSTOMER")
+      customerDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("CUSTOMER")
+    } else {
+      customerDF.registerTempTable("CUSTOMER")
+      snappyContext.cacheTable("CUSTOMER")
+      val cnts = snappyContext.sql("select count(*) from CUSTOMER").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
   }
 
-  def populatePartTable(props: Map[String, String], sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    val partData = sc.textFile("/home/kishor/snappy/TPCH_Data/GB1/part.tbl")
-    val partReadings = partData.map(s => s.split('|')).map(s => parsePartRow(s))
-    val partDF = snappyContext.createDataFrame(partReadings)
-    partDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("PART")
-  }
-
-  def populatePartSuppTable(props: Map[String, String], sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    val partSuppData = sc.textFile("/home/kishor/snappy/TPCH_Data/GB1/partsupp.tbl")
-    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => parsePartSuppRow(s))
-    val partSuppDF = snappyContext.createDataFrame(partSuppReadings)
-    partSuppDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("PARTSUPP")
-  }
-
-  def populateCustomerTable(props: Map[String, String], sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    val customerData = sc.textFile("/home/kishor/snappy/TPCH_Data/GB1/customer.tbl")
-    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
-    val customerDF = snappyContext.createDataFrame(customerReadings)
-    customerDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable("CUSTOMER")
-  }
-
+//  def populateCustomerTable(props: Map[String, String], sc: SparkContext, path:String): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    val customerData = sc.textFile(s"$path/customer.tbl")
+//    val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
+//    val customerDF = snappyContext.createDataFrame(customerReadings)
+//    customerDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("CUSTOMER")
+//  }
+//
 
   case class StreamMessagePartObject(
       p_partkey: Int,

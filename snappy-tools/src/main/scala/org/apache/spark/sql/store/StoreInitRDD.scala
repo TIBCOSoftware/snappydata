@@ -81,6 +81,9 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     getPeerPartitions
   }
 
+  override def getPreferredLocations(split: Partition): Seq[String] =
+    Seq(split.asInstanceOf[ExecutorLocalPartition].hostExecutorId)
+
   def getPeerPartitions: Array[Partition] = {
     val numberedPeers = org.apache.spark.sql.collection.Utils.
         getAllExecutorsMemoryStatus(sqlContext.sparkContext).keySet.zipWithIndex

@@ -67,6 +67,11 @@ class JDBCMutableRelation(
         dialect, sqlContext)
       val tableSchema = JdbcExtendedUtils.getCurrentSchema(conn, dialect)
       if (mode == SaveMode.Ignore && tableExists) {
+        dialect match {
+          case d: JdbcExtendedDialect => d.initializeTable(table,
+            sqlContext.conf.caseSensitiveAnalysis, conn)
+          case _ => // Do Nothing
+        }
         return tableSchema
       }
 

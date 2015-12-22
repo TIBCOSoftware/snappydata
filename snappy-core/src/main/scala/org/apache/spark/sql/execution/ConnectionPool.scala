@@ -4,15 +4,14 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import scala.collection.{JavaConversions, mutable}
-
 import com.zaxxer.hikari.util.PropertyBeanSetter
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
-
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{GemFireXDDialect, GemFireXDClientDialect}
+import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
+import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
+
+import scala.collection.{JavaConversions, mutable}
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
