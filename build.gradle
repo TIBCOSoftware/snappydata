@@ -144,8 +144,8 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
-    maxHeapSize '1g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
+    maxHeapSize '8g'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSPermGenSweepingEnabled',  '-XX:MaxPermSize=4G', '-ea'
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -496,6 +496,7 @@ task runQuickstart {
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-tools_${scalaBinaryVersion}").buildDir)
+  copyTestsCommonResources(project(":snappy-aqp").buildDir)
   copyTestsCommonResources(project(':snappy-dunits').buildDir)
 }
 
@@ -508,7 +509,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test' //, ":snappy-aqp:check"
+  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test' , ":snappy-aqp:check"
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
