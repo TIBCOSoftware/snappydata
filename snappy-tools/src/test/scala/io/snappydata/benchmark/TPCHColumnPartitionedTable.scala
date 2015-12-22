@@ -4,6 +4,8 @@ import java.sql.{Date, Statement}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.snappy._
+
 
 
 /**
@@ -22,22 +24,33 @@ object TPCHColumnPartitionedTable  {
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL," +
-        "KEY (O_ORDERDATE) USING CLUSTERED COLUMNSTORE," +
+        //"KEY (O_ORDERDATE) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY(O_ORDERKEY))"
     )
     println("Created Table ORDERS")
   }
 
-  def createAndPopulateOrderTable(props: Map[String, String], sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    val orderData = sc.textFile(s"/home/kishor/snappy/TPCH_Data/GB1/orders.tbl")
+  def createAndPopulateOrderTable(props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val orderData = sc.textFile(s"$path/orders.tbl")
     val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
     val orderDF = snappyContext.createDataFrame(orderReadings)
-    snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, props)
-    orderDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("ORDERS")
-    //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
-    println("Created Table ORDERS")
-
+    if (isSnappy) {
+      val p1 = props + (("PARTITION_BY"-> "o_orderkey"))
+      snappyContext.dropExternalTable("ORDERS", ifExists = true)
+      snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
+      orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS")
+      //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
+      println("Created Table ORDERS")
+    } else {
+      orderDF.registerTempTable("ORDERS")
+      snappyContext.cacheTable("ORDERS")
+      val cnts = snappyContext.sql("select count(*) from ORDERS").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
   }
 
   def createLineItemTable_Memsql(stmt: Statement): Unit = {
@@ -57,25 +70,65 @@ object TPCHColumnPartitionedTable  {
         "L_SHIPINSTRUCT CHAR(25) NOT NULL,"+
         "L_SHIPMODE     CHAR(10) NOT NULL,"+
         "L_COMMENT      VARCHAR(44) NOT NULL,"+
-        "KEY (L_SHIPDATE) USING CLUSTERED COLUMNSTORE,"+
+        //"KEY (L_SHIPDATE) USING CLUSTERED COLUMNSTORE,"+
         "SHARD KEY (L_ORDERKEY)) "
     )
 
     println("Created Table LINEITEM")
   }
 
-  def createAndPopulateLineItemTable(props: Map[String, String], sc: SparkContext): Unit = {
-    val snappyContext = SnappyContext(sc)
-    val lineItemData = sc.textFile(s"/home/kishor/snappy/TPCH_Data/GB1/lineitem.tbl")
+  def createAndPopulateLineItemTable(props: Map[String, String], sc: SparkContext, path:String, isSnappy:Boolean): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
     val lineOrderDF = snappyContext.createDataFrame(lineItemReadings)
-    snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, props)
-    lineOrderDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("LINEITEM")
-//    lineOrderDF.registerAndInsertIntoExternalStore("LINEITEM", props)
-    println("Created Table LINEITEM")
+    if (isSnappy) {
+      val p1 = props + (("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
 
+      snappyContext.dropExternalTable("LINEITEM", ifExists = true)
+      snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
+      lineOrderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("LINEITEM")
+      //    lineOrderDF.registerAndInsertIntoExternalStore("LINEITEM", props)
+      println("Created Table LINEITEM")
+    } else {
+      lineOrderDF.registerTempTable("LINEITEM")
+      snappyContext.cacheTable("LINEITEM")
+      var cnts = snappyContext.sql("select count(*) from LINEITEM").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
   }
 
+  def createAndPopulateOrderSampledTable(props: Map[String, String],
+      sc: SparkContext, path: String): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val orderDF = snappyContext.table("ORDERS")
+    val orderSampled = orderDF.stratifiedSample(Map(
+      "qcs" -> "O_ORDERDATE", // O_SHIPPRIORITY
+      "fraction" -> 0.03,
+      "strataReservoirSize" -> 50))
+    orderSampled.registerTempTable("ORDERS_SAMPLED")
+    snappyContext.cacheTable("orders_sampled")
+    println("Created Sampled Table ORDERS_SAMPLED " + snappyContext.sql(
+      "select count(*) as sample_count from orders_sampled").collectAsList())
+  }
+
+  def createAndPopulateLineItemSampledTable(props: Map[String, String],
+      sc: SparkContext, path: String): Unit = {
+    val snappyContext = SnappyContext.getOrCreate(sc)
+    val lineOrderDF = snappyContext.table("LINEITEM")
+    val lineOrderSampled = lineOrderDF.stratifiedSample(Map(
+      "qcs" -> "L_SHIPDATE", // L_RETURNFLAG
+      "fraction" -> 0.03,
+      "strataReservoirSize" -> 50))
+    println(" Logic relation while creation " + lineOrderSampled.logicalPlan.output)
+    lineOrderSampled.registerTempTable("LINEITEM_SAMPLED")
+    snappyContext.cacheTable("lineitem_sampled")
+    println("Created Sampled Table LINEITEM_SAMPLED " + snappyContext.sql(
+      "select count(*) as sample_count from lineitem_sampled").collectAsList())
+  }
 
   case class StreamMessageOrderObject(
       o_orderkey:Int,
@@ -89,7 +142,7 @@ object TPCHColumnPartitionedTable  {
       o_comment:String
       )
 
-  def parseOrderRow(s: Array[String]): StreamMessageOrderObject = {
+  def  parseOrderRow(s: Array[String]): StreamMessageOrderObject = {
     StreamMessageOrderObject(
       s(0).toInt,
       s(1).toInt,

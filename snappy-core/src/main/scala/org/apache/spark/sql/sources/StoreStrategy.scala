@@ -2,7 +2,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, CreateTableUsing, CreateTableUsingAsSelect}
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
 
 /**
