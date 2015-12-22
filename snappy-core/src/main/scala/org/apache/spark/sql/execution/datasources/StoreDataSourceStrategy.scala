@@ -28,6 +28,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         filters,
         t.numPartitions,
         t.partitionColumns,
+        t.partitionLocality,
         (a, f) => toCatalystRDD(l, a, t.buildScan(a.map(_.name).toArray, f))) :: Nil
 
     case _ => Nil
@@ -54,6 +55,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       filterPredicates: Seq[Expression],
       numPartition: Int,
       partitionColumns: Seq[String],
+      partitionLocality : String,
       scanBuilder: (Seq[Attribute], Array[Filter]) => RDD[InternalRow]) = {
     pruneFilterProjectRaw(
       relation,
@@ -61,6 +63,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       filterPredicates,
       numPartition,
       partitionColumns,
+      partitionLocality,
       (requestedColumns, pushedFilters) => {
         scanBuilder(requestedColumns, selectFilters(pushedFilters).toArray)
       })
@@ -73,6 +76,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       filterPredicates: Seq[Expression],
       numPartition: Int,
       partitionColumns: Seq[String],
+      partitionLocality : String,
       scanBuilder: (Seq[Attribute], Seq[Expression]) => RDD[InternalRow]) = {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
@@ -104,10 +108,12 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         projects.asInstanceOf[Seq[Attribute]] // Safe due to if above.
           .map(relation.attributeMap) // Match original case of attributes.
 
+      //println(partitionLocality)
       val scan = execution.PartitionedPhysicalRDD.createFromDataSource(
         projects.map(_.toAttribute),
         numPartition,
         joinedCols,
+        partitionLocality,
         scanBuilder(requestedColumns, pushedFilters),
         relation.relation)
       filterCondition.map(execution.Filter(_, scan)).getOrElse(scan)
@@ -118,6 +124,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         requestedColumns,
         numPartition,
         joinedCols,
+        partitionLocality,
         scanBuilder(requestedColumns, pushedFilters),
         relation.relation)
       execution.Project(projects, filterCondition.map(execution.Filter(_, scan)).getOrElse(scan))

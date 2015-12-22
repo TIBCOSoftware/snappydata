@@ -17,6 +17,7 @@ private[sql] case class PartitionedPhysicalRDD(
     rdd: RDD[InternalRow],
     numPartition: Int,
     partitionColumns: Seq[Expression],
+    partitionLocality : String,
     extraInformation: String) extends LeafNode {
 
   protected override def doExecute(): RDD[InternalRow] = rdd
@@ -24,7 +25,7 @@ private[sql] case class PartitionedPhysicalRDD(
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override def outputPartitioning: Partitioning = {
     if (numPartition == 1) SinglePartition
-    else OrderlessHashPartitioning(partitionColumns, numPartition)
+    else OrderlessHashPartitioning(partitionColumns, numPartition, partitionLocality)
   }
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +
@@ -37,9 +38,10 @@ private[sql] object PartitionedPhysicalRDD {
       output: Seq[Attribute],
       numPartition: Int,
       partitionColumns: Seq[Expression],
+      partitionLocality : String,
       rdd: RDD[InternalRow],
       relation: BaseRelation): PartitionedPhysicalRDD = {
-    PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns,
+    PartitionedPhysicalRDD(output, rdd, numPartition, partitionColumns, partitionLocality,
       relation.toString)
   }
 }
@@ -47,6 +49,8 @@ private[sql] object PartitionedPhysicalRDD {
 trait PartitionedDataSourceScan extends PrunedFilteredScan {
 
   def numPartitions: Int
+
+  def partitionLocality: String
 
   def partitionColumns: Seq[String]
 }

@@ -153,7 +153,9 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "USING row " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId,OrderRef')")
+        "PARTITION_BY 'OrderId,OrderRef',"+
+        "COLOCATE_WITH 'PR_TABLE1')")
+
 
     val dimension2 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
@@ -162,6 +164,46 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     dimensionDf.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE2")
 
     partitionToPartitionJoinAssertions(snc, "PR_TABLE1", "PR_TABLE2")
+
+  }
+
+  test("Row PR table join with PR Table without colocation") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE22")
+
+    snc.sql("CREATE TABLE PR_TABLE22(OrderId INT, description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+
+
+    refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE22")
+
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE23")
+
+    snc.sql("CREATE TABLE PR_TABLE23(OrderId INT ,description String, OrderRef INT)" +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+    dimensionDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE23")
+
+    val excatJoinKeys = snc.sql(s"select P.OrderRef, P.description from " +
+        s"PR_TABLE22 P JOIN PR_TABLE23 R ON P.OrderId = R.OrderId AND P.OrderRef = R.OrderRef")
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+
+    assert(excatJoinKeys.count() === 500)
+
 
   }
 
@@ -190,7 +232,8 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "USING column " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId,OrderRef')")
+        "PARTITION_BY 'OrderId,OrderRef'," +
+        "COLOCATE_WITH 'PR_TABLE3')")
 
     val dimension2 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
@@ -200,6 +243,46 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val countdf1 = snc.sql("select * from PR_TABLE4")
     assert(countdf1.count() == 1000)
     partitionToPartitionJoinAssertions(snc, "PR_TABLE3", "PR_TABLE4")
+
+  }
+
+  test("Column PR table join with PR Table without colocation") {
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%10 + 1))))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE20")
+
+    snc.sql("CREATE TABLE PR_TABLE20(OrderId INT, description String, OrderRef INT)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+
+
+    refDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE20")
+
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE21")
+
+    snc.sql("CREATE TABLE PR_TABLE21(OrderId INT ,description String, OrderRef INT)" +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId,OrderRef')")
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+    dimensionDf.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("PR_TABLE21")
+
+    val excatJoinKeys = snc.sql(s"select P.OrderRef, P.description from " +
+        s"PR_TABLE20 P JOIN PR_TABLE21 R ON P.OrderId = R.OrderId AND P.OrderRef = R.OrderRef")
+    checkForShuffle(excatJoinKeys.logicalPlan, snc, true)
+
+    assert(excatJoinKeys.count() === 500)
+
 
   }
 
@@ -265,8 +348,8 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "USING column " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId, OrderRef')")
-
+        "PARTITION_BY 'OrderId, OrderRef'," +
+         "COLOCATE_WITH 'PR_TABLE7')")
 
     val dimension2 = sc.parallelize(
       (1 to 1000).map(i => TestData2(i, i.toString, (i%5 + 1))))
