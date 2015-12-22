@@ -228,6 +228,13 @@ class JDBCAppendableRelation(
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
+        dialect match {
+          case d: JdbcExtendedDialect => {
+            d.initializeTable(table,
+              sqlContext.conf.caseSensitiveAnalysis, conn)
+          }
+          case _ => // do nothing
+        }
         return
       }
 
