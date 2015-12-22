@@ -157,9 +157,9 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected override lazy val createTable: Parser[LogicalPlan] =
     (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
         tableIdentifier ~ externalTableInput ~ (USING ~> className).? ~
-        (OPTIONS ~> options).? ~ (AS ~> restInput).? ~ wholeInput ^^ {
+        (OPTIONS ~> options).? ~ (AS ~> restInput).? ^^ {
       case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
-          providerName ~ opts ~ query ~ sql =>
+          providerName ~ opts ~ query =>
 
         val options = opts.getOrElse(Map.empty[String, String])
         val provider = SnappyContext.getProvider(providerName.getOrElse(SnappyContext.DEFAULT_SOURCE))
@@ -279,8 +279,9 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
         val reader = new PackratReader(new lexical.Scanner(others))
         Success(externalTableDefinition, reader)
       } else {
-        val reader = new PackratReader(new lexical.Scanner(remaining))
-        Success(remaining, reader)
+        Success(
+          in.source.subSequence(in.offset, in.source.length()).toString,
+          in.drop(in.source.length()))
       }
     }
   }
