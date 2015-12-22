@@ -93,6 +93,8 @@ class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanne
   val sampleSnappyCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
   val sampleStreamCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
 
+  val sampleStoreStrategy : Seq[Strategy] = Nil
+
 
 
 
@@ -108,31 +110,7 @@ class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanne
     Seq(SnappyStrategies, StreamDDLStrategy(snappyContext.aqpContext.getSampleTablePopulator, sampleStreamCase),
       StoreStrategy, StreamQueryStrategy) ++
       storeOptimizedRules ++
+      sampleStoreStrategy ++
       super.strategies
 
-
-
-  /*override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
-   StreamStrategy(context.aqpContext.getSampleTablePopulator, sampleStreamCase ),
-   StoreStrategy) ++ super.strategies*/
-  /*
-  object SnappyStrategies extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]]  = {
-        case PhysicalOperation (projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-        pruneFilterProject (
-        projectList,
-        filters,
-        identity[Seq[Expression]], // All filters still need to be evaluated
-        InMemoryAppendableColumnarTableScan (_, filters, mem) ) :: Nil
-      }
-
-      x.orElse(sampleSnappyCase)(plan)
-
-    }
-
-
-
-  }*/
 }

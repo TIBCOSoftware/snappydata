@@ -19,6 +19,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
+import org.apache.spark.sql.sampling.StratifiedSamplingColumnRelation
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
@@ -374,21 +375,41 @@ final class DefaultSource extends ColumnarRelationProvider {
       connProps, hikariCP, blockMap)
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table, schema, externalStore)
 
-    new ColumnFormatRelation(url,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName,
-      mode,
-      schema,
-      schemaExtension,
-      ddlExtensionForShadowTable,
-      poolProps,
-      getPartitions(parameters),
-      connProps,
-      hikariCP,
-      options,
-      externalStore,
-      blockMap,
-      partitioningColumn,
-      sqlContext)()
+    if(options.get("sampling").isDefined) {
+      new ColumnFormatRelation(url,
+        SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+        getClass.getCanonicalName,
+        mode,
+        schema,
+        schemaExtension,
+        ddlExtensionForShadowTable,
+        poolProps,
+        getPartitions(parameters),
+        connProps,
+        hikariCP,
+        options,
+        externalStore,
+        blockMap,
+        partitioningColumn,
+        sqlContext)() with StratifiedSamplingColumnRelation
+    }else{
+      new ColumnFormatRelation(url,
+        SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+        getClass.getCanonicalName,
+        mode,
+        schema,
+        schemaExtension,
+        ddlExtensionForShadowTable,
+        poolProps,
+        getPartitions(parameters),
+        connProps,
+        hikariCP,
+        options,
+        externalStore,
+        blockMap,
+        partitioningColumn,
+        sqlContext)()
+    }
+
   }
 }
