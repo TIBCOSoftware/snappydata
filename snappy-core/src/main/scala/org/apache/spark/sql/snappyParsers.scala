@@ -162,7 +162,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           providerName ~ opts ~ query ~ sql =>
 
         val options = opts.getOrElse(Map.empty[String, String])
-        val provider = SnappyContext.getProvider(providerName.getOrElse("row"))
+        val provider = SnappyContext.getProvider(providerName.getOrElse(SnappyContext.DEFAULT_SOURCE))
         if (query.isDefined) {
           if (schemaString.length > 0) {
             throw new DDLException("CREATE TABLE AS SELECT statement " +
