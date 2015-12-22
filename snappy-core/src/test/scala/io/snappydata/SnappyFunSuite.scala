@@ -39,6 +39,11 @@ abstract class SnappyFunSuite
     else new SparkContext(newSparkConf(addOn))
   }
 
+  protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
+    new SparkContext(newSparkConf(addOn))
+  }
+
+
 
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 

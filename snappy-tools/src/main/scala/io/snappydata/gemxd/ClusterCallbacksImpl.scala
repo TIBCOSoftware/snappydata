@@ -1,9 +1,13 @@
 package io.snappydata.gemxd
 
+import java.util
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.shared.Version
-import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
+import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks,
+  LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
@@ -14,6 +18,12 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
   * Created by hemantb on 10/12/15.
   */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
+
+  override def getLeaderGroup : util.HashSet[String] = {
+    val leaderServerGroup = new util.HashSet[String]
+    leaderServerGroup.add(LeadImpl.LEADER_SERVERGROUP)
+    return leaderServerGroup;
+  }
 
   override def launchExecutor(driverUrl: String, driverDM: InternalDistributedMember): Unit = {
     val url = if (driverUrl == null || driverUrl == "") {
