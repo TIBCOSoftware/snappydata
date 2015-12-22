@@ -6,10 +6,10 @@ SELECT FlightNum,COUNT(ArrDelay) as ARR_DEL
   HAVING COUNT(ArrDelay) >= 5;
 
 ---- Query to get Averag ARR_DELAY with Description from AIRLINE and AIRLINE_REF table.----
-SELECT AVG(ArrDelay) as AVGDELAY, count(*) as TOTALCNT, UniqueCarrier, airlineref.DESCRIPTION, YearI, MonthI
+SELECT AVG(ArrDelay) as AVGDELAY, count(*) as TOTALCNT, UniqueCarrier, airlineref.DESCRIPTION, Year_, Month_
   FROM airline, airlineref 
   WHERE airline.UniqueCarrier = airlineref.CODE 
-  GROUP BY UniqueCarrier, DESCRIPTION, YearI,MonthI;
+  GROUP BY UniqueCarrier, DESCRIPTION, Year_,Month_;
 
 ---- List the flights and its details ,that are affected due to delays caused by weather in a particular state ----
 SELECT FlightNum, airlineref.DESCRIPTION 
