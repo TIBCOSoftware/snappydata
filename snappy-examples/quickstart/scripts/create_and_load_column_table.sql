@@ -15,4 +15,4 @@ CREATE TABLE AIRLINE USING column OPTIONS() AS (
     Dest, Distance, TaxiIn, TaxiOut, Cancelled, CancellationCode,
     Diverted, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay,
     LateAircraftDelay, ArrDelaySlot
-    FROM AIRLINE_PARQUET_SOURCE);
+    FROM STAGING_AIRLINE);

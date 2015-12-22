@@ -5,6 +5,10 @@ import org.apache.spark.sql.{SaveMode, DataFrame, SnappySQLJob}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
 import org.apache.spark.sql.snappy._
 
+/**
+ * Fetches already created tables, sample them and run a aggregate query and returns
+ * the results in a Map. This Map will be sent over REST.
+ */
 object AirlineDataJob extends SnappySQLJob {
 
   override def runJob(snc: C, jobConfig: Config): Any = {
@@ -17,35 +21,32 @@ object AirlineDataJob extends SnappySQLJob {
     val airlineDF: DataFrame = snc.table(colTableName)
     val airlineCodeDF: DataFrame = snc.table(rowTableName)
 
-    // Data Frame query to get Averag ARR_DELAY with Description from column and row table.
-    val result1 = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
-      equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("Year_"), airlineDF("Month_"), airlineCodeDF("DESCRIPTION")).
-      agg("ArrDelay" -> "avg", "FlightNum" -> "count")
+    // Sample the airline table to get a sampled table
+    // TODO: This code will change after DataSource API is provided for sampling.
+    val sampleDF = airlineDF.stratifiedSample(Map("qcs" -> "UniqueCarrier", "fraction" -> 0.01))
+    sampleDF.write.mode(SaveMode.Append).format("column").
+        options(Map[String, String]()).saveAsTable(sampleTableName)
 
-    // Create a sample table
-    val samples = airlineDF.stratifiedSample(Map("qcs" -> "UniqueCarrier", "fraction" -> 0.01))
-    samples.write.mode(SaveMode.Append).format("column").
-      options(Map[String, String]()).saveAsTable(sampleTableName)
-
-    // Todo :Run query with ERROR ESTIMATE once the bug SNAP-274 is fixed.
+    // Data Frame query to get number of times FlightNum 2626 has been delayed
     val start = System.currentTimeMillis
-    val result2 = snc.sql(s"SELECT AVG(ArrDelay), UniqueCarrier, Year_, Month_ " +
-      s"from ${sampleTableName} group by UniqueCarrier, Year_, Month_ ")
+    val actualResult = airlineDF.select("FlightNum", "ArrDelay").
+        filter("FlightNum = 2626").groupBy(airlineDF("FlightNum")).agg("ArrDelay" -> "count")
+    val totalTime = (System.currentTimeMillis - start)
 
-    val end = System.currentTimeMillis
-    val totalTime = (end - start)
+    // Data Frame query to get number of times FlightNum 2626 has been delayed
+    // TODO: Fix it after the SNAP-304 is fixed
+    /*
+    val startSample = System.currentTimeMillis
+    val sampleResult = sampleDF.select("FlightNum", "ArrDelay").
+        filter("FlightNum = 2626").groupBy(sampleDF("FlightNum")).agg("ArrDelay" -> "count")
+    val totalTimeSample = (System.currentTimeMillis - startSample)
+    */
 
-    val start1 = System.currentTimeMillis
-    val result3 = snc.sql(s"select AVG(ArrDelay) as avgDelay, UniqueCarrier, Year_, " +
-      s"MonthI from ${colTableName} GROUP BY UniqueCarrier, Year_, Month_")
-    val end1 = System.currentTimeMillis
-
-    val totalTime1 = (end1 - start1)
-    Map("Result of Average ARR_DELAY" -> result1.collect(),
-        "Duration in ms on SAMPLED table "->totalTime1,"SampleTable Result: "->result2.collect(),
-        "Duration in ms on AIRLINE table"->totalTime,"AirlineTable Result: "->result3.collect()
-      )
+    Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> actualResult.collect()
+    )
+    /*Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> actualResult.collect(),
+      s"Sample table: ARR_DELAY :(${totalTimeSample}ms)" -> sampleResult.collect()
+    )*/
   }
 
   override def validate(sc: C, config: Config): SparkJobValidation = {

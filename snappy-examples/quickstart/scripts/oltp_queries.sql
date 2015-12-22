@@ -1,7 +1,9 @@
+elapsedtime on;
+
 ---- Find Flights to SAN that has been delayed(Arrival/Dep)  5 or more times in a row ----
-SELECT FlightNum,COUNT(ArrDelay) as ARR_DEL
-  FROM airline 
+SELECT FlightNum, COUNT(ArrDelay) as ARR_DEL
   WHERE CAST(Dest AS VARCHAR(24)) = 'SAN'
+  FROM airline
   GROUP BY FlightNum
   HAVING COUNT(ArrDelay) >= 5;
 
