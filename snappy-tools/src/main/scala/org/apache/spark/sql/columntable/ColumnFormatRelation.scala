@@ -103,7 +103,7 @@ class ColumnFormatRelation(
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
     val union = connectionType match {
-      case ConnectionType.Embedded => {
+      case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
           connector,
@@ -119,7 +119,7 @@ class ColumnFormatRelation(
         rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
           leftIter ++ rightIter
         }
-      }
+
       //TODO: This needs to be changed for non-embedded mode, inefficient
       case _ =>
         colRdd.union(new JDBCRDD(
@@ -136,8 +136,28 @@ class ColumnFormatRelation(
     union
   }
 
+  override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
+      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+    //TODO - currently using the length from the part Object but it needs to be handled more generically
+    //in order to replace UUID
+    // if number of rows are greater than columnBatchSize then store otherwise store locally
+    if (batch.numRows >= sqlContext.conf.columnBatchSize) {
+      val uuid = externalStore.storeCachedBatch(batch, table + shadowTableNamePrefix, numPartitions)
+      accumulated += uuid
+    } else {
+      //TODO: can we do it before compressing. Might save a bit
+      unCachedRows = cachedBatchToRows(batch)
+    }
+    accumulated
+  }
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    partitionColumns match {
+      case Seq.empty => new CachedBatchCreator(table + shadowTableNamePrefix, schema, externalStore,
+        sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression
+      ).createAndStoreBatchh(data, numPartitions)
+      case _ => insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    }
   }
 
   def insert(data: DataFrame, mode: SaveMode): Unit = {

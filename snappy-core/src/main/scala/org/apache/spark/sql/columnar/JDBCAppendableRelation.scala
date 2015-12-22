@@ -14,12 +14,13 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.columntable.CachedBatchCreator
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.{GemFireXDBaseDialect, JDBCMutableRelation}
+import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
@@ -162,6 +163,14 @@ class JDBCAppendableRelation(
     insert(df.rdd, df, overwrite)
   }
 
+  def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
+      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+    //TODO - currently using the length from the part Object but it needs to be handled more generically
+    //in order to replace UUID
+    val uuid = externalStore.storeCachedBatch(batch, table , numPartitions)
+    accumulated += uuid
+  }
+
   protected def insert(rdd : RDD[Row], df: DataFrame, overwrite: Boolean) : Unit = {
 
     assert(df.schema.equals(schema))
@@ -175,13 +184,6 @@ class JDBCAppendableRelation(
 
     val output = df.logicalPlan.output
     val cached = rdd.mapPartitionsPreserveWithIndex({case (split, rowIterator) =>
-      def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-          batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        //TODO - currently using the length from the part Object but it needs to be handled more generically
-        //in order to replace UUID
-        val uuid = externalStore.storeCachedBatch(batch, table , numPartitions)
-        accumulated += uuid
-      }
 
       def columnBuilders = output.map { attribute =>
         val columnType = ColumnType(attribute.dataType)
