@@ -20,7 +20,7 @@ object AirlineDataJob extends SnappySQLJob {
     // Data Frame query to get Averag ARR_DELAY with Description from column and row table.
     val result1 = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
       equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("YearI"), airlineDF("MonthI"), airlineCodeDF("DESCRIPTION")).
+      airlineDF("Year_"), airlineDF("Month_"), airlineCodeDF("DESCRIPTION")).
       agg("ArrDelay" -> "avg", "FlightNum" -> "count")
 
     // Create a sample table
@@ -30,15 +30,15 @@ object AirlineDataJob extends SnappySQLJob {
 
     // Todo :Run query with ERROR ESTIMATE once the bug SNAP-274 is fixed.
     val start = System.currentTimeMillis
-    val result2 = snc.sql(s"select AVG(ArrDelay),UniqueCarrier,YearI,MonthI " +
-      s"from ${sampleTableName} group by UniqueCarrier,YearI,MonthI ")
+    val result2 = snc.sql(s"SELECT AVG(ArrDelay), UniqueCarrier, Year_, Month_ " +
+      s"from ${sampleTableName} group by UniqueCarrier, Year_, Month_ ")
 
     val end = System.currentTimeMillis
     val totalTime = (end - start)
 
     val start1 = System.currentTimeMillis
-    val result3 = snc.sql(s"select AVG(ArrDelay) as AVGDELAY, UniqueCarrier, YearI, " +
-      s"MonthI from ${colTableName} group by UniqueCarrier,YearI,MonthI")
+    val result3 = snc.sql(s"select AVG(ArrDelay) as avgDelay, UniqueCarrier, Year_, " +
+      s"MonthI from ${colTableName} GROUP BY UniqueCarrier, Year_, Month_")
     val end1 = System.currentTimeMillis
 
     val totalTime1 = (end1 - start1)
