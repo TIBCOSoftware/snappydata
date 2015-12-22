@@ -11,7 +11,7 @@ import scala.collection.immutable
 
 case class LogicalDStreamPlan(output: Seq[Attribute],
                               stream: DStream[InternalRow])
-                             (val streamingSnappy: StreamingSnappyContext)
+                             (val streamingSnappy: SnappyStreamingContext)
   extends LogicalPlan with MultiInstanceRelation {
 
   def newInstance() : LogicalDStreamPlan =
@@ -19,7 +19,7 @@ case class LogicalDStreamPlan(output: Seq[Attribute],
       stream)(streamingSnappy).asInstanceOf[this.type]
 
   @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(streamingSnappy.conf.defaultSizeInBytes)
+    sizeInBytes = BigInt(streamingSnappy.snappyContext.conf.defaultSizeInBytes)
   )
 
   def children: immutable.Nil.type = Nil

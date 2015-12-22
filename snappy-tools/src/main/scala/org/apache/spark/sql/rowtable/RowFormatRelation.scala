@@ -10,10 +10,10 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartition, JDBCRDD}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -71,7 +71,8 @@ class RowFormatRelation(
           connProperties
         ).asInstanceOf[RDD[Row]]
 
-      case _ => super.buildScan(requiredColumns, filters)
+      case _ =>
+        super.buildScan(requiredColumns, filters)
     }
   }
 
@@ -141,7 +142,7 @@ final class DefaultSource extends MutableRelationProvider {
       preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
-      Seq.empty.toArray,
+      Array[Partition](JDBCPartition(null, 0)),
       poolProps,
       connProps,
       hikariCP,

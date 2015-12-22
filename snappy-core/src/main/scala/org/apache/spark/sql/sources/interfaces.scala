@@ -3,19 +3,19 @@ package org.apache.spark.sql.sources
 import java.sql.Connection
 import java.util.Properties
 
-import scala.collection.mutable
-import scala.util.control.NonFatal
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc.{JdbcType, JdbcDialect, JdbcDialects}
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext, SaveMode}
+
+import scala.collection.mutable
+import scala.util.control.NonFatal
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
