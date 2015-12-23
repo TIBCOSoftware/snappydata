@@ -28,11 +28,12 @@ object AirlineDataJob extends SnappySQLJob {
         options(Map[String, String]()).saveAsTable(sampleTableName)
 
     // Data Frame query to get number of times FlightNum 2626 has been delayed
-    val start = System.currentTimeMillis
     val actualResult = airlineDF.select("FlightNum", "ArrDelay").
         filter("FlightNum = 2626").groupBy(airlineDF("FlightNum")).agg("ArrDelay" -> "count")
+    val start = System.currentTimeMillis
+    val result = actualResult.collect()
     val totalTime = (System.currentTimeMillis - start)
-
+    Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> result)
     // Data Frame query to get number of times FlightNum 2626 has been delayed
     // TODO: Fix it after the SNAP-304 is fixed
     /*
@@ -42,12 +43,10 @@ object AirlineDataJob extends SnappySQLJob {
     val totalTimeSample = (System.currentTimeMillis - startSample)
     */
 
-    Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> actualResult.collect()
-    )
+
     /*Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> actualResult.collect(),
       s"Sample table: ARR_DELAY :(${totalTimeSample}ms)" -> sampleResult.collect()
     )*/
-    // Change the time calculation.
   }
 
   override def validate(sc: C, config: Config): SparkJobValidation = {
