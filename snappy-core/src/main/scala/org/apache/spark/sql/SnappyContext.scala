@@ -257,9 +257,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
       jdbcSource)
 
 
-  def registerTopK(tableName: String, streamTableName: String,
+  def registerTopK(tableName: String, schema: StructType,
       topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit =
-      aqpContext.registerTopK(self, tableName, streamTableName,
+      aqpContext.registerTopK(self, tableName, schema,
         topkOptions, isStreamSummary)
 
 

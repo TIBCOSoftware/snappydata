@@ -37,7 +37,7 @@ object AQPDefault extends AQPContext{
                                          (implicit ev: u.TypeTag[A]): DataFrame
   = throw new UnsupportedOperationException("missing aqp jar")
 
-  def registerTopK(context: SnappyContext, tableName: String, streamTableName: String,
+  def registerTopK(context: SnappyContext, tableName: String, schema: StructType,
                    topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit=
     throw new UnsupportedOperationException("missing aqp jar")
 
@@ -60,12 +60,12 @@ object AQPDefault extends AQPContext{
   = throw new UnsupportedOperationException("missing aqp jar")
 
 
-  def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
+ /* def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
                               aqpTables: Seq[String],
                               formatter: (RDD[T], StructType) => RDD[Row],
                               schema: StructType,
                               transform: RDD[Row] => RDD[Row] = null)
-  = throw new UnsupportedOperationException("missing aqp jar")
+  = throw new UnsupportedOperationException("missing aqp jar")*/
 
 
 
