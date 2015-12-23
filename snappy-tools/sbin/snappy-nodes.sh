@@ -158,7 +158,7 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
 
   # Set directory folder if not already set.
   if [ -z "${dirparam}" ]; then
-    dirfolder="$SPARK_HOME"/logs/"$host"-$componentType-$index
+    dirfolder="$SPARK_HOME"/work/"$host"-$componentType-$index
     dirparam="-dir=${dirfolder}"
     args="${args} ${dirparam}"
   fi
