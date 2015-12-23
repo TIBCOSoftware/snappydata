@@ -294,7 +294,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     assert(s.getResultSet.next())
 
     // Simulates 'SHOW TABLES' of ij
-    val rSet = dbmd.getTables(null, "APP", null,
+    var rSet = dbmd.getTables(null, "APP", null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
     var foundTable = false
     while (rSet.next()) {
@@ -304,6 +304,10 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       }
     }
     assert(foundTable)
+
+    // Simulates 'SHOW MEMBERS' of ij
+    rSet = s.executeQuery("SELECT * FROM SYS.MEMBERS ORDER BY ID ASC")
+    assert(rSet.next())
   }
 
   def createTableAndInsertData(): Unit = {

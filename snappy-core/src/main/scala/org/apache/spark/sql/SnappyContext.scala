@@ -350,6 +350,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
           throw new AnalysisException(s"Table $tableIdent already exists. " +
               "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
+        case SaveMode.Ignore => return catalog.lookupRelation(tableIdent, None)
         case _ =>
           // existing table schema could have nullable columns
           val schema = data.schema
@@ -638,8 +639,7 @@ object SnappyContext extends Logging {
 
   private[this] val contextLock = new AnyRef
 
-
-
+  val DEFAULT_SOURCE = "row"
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
