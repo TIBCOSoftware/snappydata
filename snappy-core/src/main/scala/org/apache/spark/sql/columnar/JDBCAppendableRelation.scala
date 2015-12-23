@@ -30,14 +30,10 @@ import org.apache.spark.sql.types.StructType
  */
 
 class JDBCAppendableRelation(
-    val url: String,
     val table: String,
     val provider: String,
     val mode: SaveMode,
     userSchema: StructType,
-    _poolProps: Map[String, String],
-    val connProperties: Properties,
-    val hikariCP: Boolean,
     val origOptions: Map[String, String],
     val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)(
@@ -58,9 +54,9 @@ class JDBCAppendableRelation(
 
   final val columnPrefix = "Col_"
 
-  val driver = DriverRegistry.getDriverClassName(url)
+  val driver = DriverRegistry.getDriverClassName(externalStore.connProperties.url)
 
-  final val dialect = JdbcDialects.get(url)
+  final val dialect = JdbcDialects.get(externalStore.connProperties.url)
 
   val schemaFields = Map(userSchema.fields.flatMap { f =>
     val name = if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
@@ -68,7 +64,7 @@ class JDBCAppendableRelation(
   }: _*)
 
   final lazy val connector = ExternalStoreUtils.getConnector(table, driver,
-    dialect, _poolProps, connProperties, hikariCP)
+    dialect, externalStore.connProperties.poolProps, externalStore.connProperties.connProps, externalStore.connProperties.hikariCP)
 
   createTable(mode)
   private val bufferLock = new ReentrantReadWriteLock()
@@ -211,7 +207,7 @@ class JDBCAppendableRelation(
 
   // truncate both actual and shadow table
   def truncate() = writeLock {
-    val dialect = JdbcDialects.get(externalStore.url)
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
     externalStore.tryExecute(table, {
       case conn =>
         JdbcExtendedUtils.truncateTable(conn, table, dialect)
@@ -221,9 +217,9 @@ class JDBCAppendableRelation(
 
   def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
-    val dialect = JdbcDialects.get(url)
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
     try {
-      conn = ExternalStoreUtils.getConnection(url, connProperties,
+      conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url, externalStore.connProperties.connProps,
         dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
@@ -299,7 +295,7 @@ class JDBCAppendableRelation(
     // then on the driver
     JDBCAppendableRelation.removePool(table)
     // drop the external table using a non-pool connection
-    val conn = ExternalStoreUtils.getConnection(url, connProperties,
+    val conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url, externalStore.connProperties.connProps,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
@@ -310,21 +306,18 @@ class JDBCAppendableRelation(
 }
 
 object JDBCAppendableRelation extends Logging {
-  def apply(url: String,
+  def apply(
       table: String,
       provider: String,
       mode: SaveMode,
       schema: StructType,
       numPartitions:Integer ,
-      poolProps: Map[String, String],
-      connProps: Properties,
-      hikariCP: Boolean,
       options: Map[String, String],
       sqlContext: SQLContext): JDBCAppendableRelation =
-    new JDBCAppendableRelation(url,
+    new JDBCAppendableRelation(
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema,
-      poolProps, connProps, hikariCP, options, null, sqlContext)()
+      options, null, sqlContext)()
 
   private def removePool(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
@@ -346,18 +339,16 @@ class ColumnarRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
 
-    val (url, driver, poolProps, connProps, hikariCP) =
+    val connectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val partitions = ExternalStoreUtils.getTotalPartitions(parameters, true)
 
-    val externalStore = getExternalSource(sqlContext, url, driver, poolProps,
-      connProps, hikariCP,partitions)
+    val externalStore = getExternalSource(sqlContext, connectionProperties, partitions)
 
-    new JDBCAppendableRelation(url,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+    new JDBCAppendableRelation(SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema,
-      poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
+      options, externalStore, sqlContext)()
   }
 
 
@@ -393,12 +384,10 @@ class ColumnarRelationProvider
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }
 
-  def getExternalSource(sqlContext: SQLContext, url: String,
-      driver: String,
-      poolProps: Map[String, String],
-      connProps: Properties,
-      hikariCP: Boolean,
-      numPartitions:Int): ExternalStore = {
-    new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP,numPartitions)
+  def getExternalSource(sqlContext: SQLContext,
+      connectionProperties:ConnectionProperties,
+      numPartitions:Int
+      ): ExternalStore = {
+    new JDBCSourceAsStore(connectionProperties,numPartitions)
   }
 }

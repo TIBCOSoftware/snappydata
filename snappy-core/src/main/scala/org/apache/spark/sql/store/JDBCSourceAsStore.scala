@@ -5,17 +5,14 @@ import java.sql.{Connection, ResultSet, Statement}
 import java.util.{Properties, UUID}
 import java.util.concurrent.locks.ReentrantLock
 
-import org.apache.spark.rdd.{RDD, UnionRDD}
+import org.apache.spark.rdd.{RDD}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{ConnectionType, CachedBatch, ExternalStoreUtils}
+import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.snappy._
 import org.apache.spark.{TaskContext, Partition, SparkContext, SparkEnv}
-
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -24,11 +21,7 @@ import scala.util.Random
 /*
 Generic class to query column table from Snappy.
  */
-class JDBCSourceAsStore(override val url: String,
-    override val driver: String,
-    override val poolProps: Map[String, String],
-    override val connProps: Properties,
-    val hikariCP: Boolean,
+class JDBCSourceAsStore(override val connProperties:ConnectionProperties,
     numPartitions:Int) extends ExternalStore {
 
   @transient
@@ -37,9 +30,9 @@ class JDBCSourceAsStore(override val url: String,
   @transient
   protected lazy val rand = new Random
 
-  protected val dialect = JdbcDialects.get(url)
+  protected val dialect = JdbcDialects.get(connProperties.url)
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(connProperties.url)
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
@@ -80,8 +73,8 @@ class JDBCSourceAsStore(override val url: String,
   }
 
   override def getConnection(id: String): Connection = {
-    ConnectionPool.getPoolConnection(id, None, dialect, poolProps,
-      connProps, hikariCP)
+    ConnectionPool.getPoolConnection(id, None, dialect, connProperties.poolProps,
+      connProperties.connProps, connProperties.hikariCP)
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)

@@ -1,17 +1,16 @@
 package org.apache.spark.sql.rowtable
 
-import java.sql.{Connection, ResultSet}
+import java.sql.{Statement, Connection, ResultSet}
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.commons.lang3.StringUtils
-
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiExecutorLocalPartition
+import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
@@ -20,6 +19,7 @@ import org.apache.spark.sql.types.{Decimal, StructType}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.sql.catalyst.InternalRow
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables. This scans row tables in parallel unlike Spark's
@@ -31,10 +31,11 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     schema: StructType,
     tableName: String,
     columns: Array[String],
-    filters: Array[Filter],
-    partitions: Array[Partition],
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
-    properties: Properties)
+    connectionProperties: ConnectionProperties,
+    filters: Array[Filter] =  Array.empty[Filter],
+    partitions: Array[Partition] =  Array.empty[Partition],
+    blockMap: Map[InternalDistributedMember, BlockManagerId] =  Map.empty[InternalDistributedMember, BlockManagerId],
+    properties: Properties = new Properties())
     extends JDBCRDD(sc, getConnection, schema, tableName, columns, filters, partitions, properties) {
 
   /**
@@ -79,43 +80,72 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     if (sb.isEmpty) "1" else sb.substring(1)
   }
 
+
+  def computeResultSet(thePart: Partition): (Connection, Statement, ResultSet) = {
+    val part = thePart.asInstanceOf[MultiExecutorLocalPartition]
+    val conn = getConnection()
+
+    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+
+    if (region.isInstanceOf[PartitionedRegion]) {
+      val par = part.index
+      val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+      val rs1 = ps1.execute()
+    }
+
+
+    // H2's JDBC driver does not support the setSchema() method.  We pass a
+    // fully-qualified table name in the SELECT statement.  I don't know how to
+    // talk about a table in a completely portable way.
+
+    val myWhereClause = filterWhereClause
+
+    val sqlText = s"SELECT $columnList FROM $tableName $myWhereClause"
+    val stmt = conn.prepareStatement(sqlText,
+      ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
+    val fetchSize = properties.getProperty("fetchSize", "0").toInt
+    stmt.setFetchSize(fetchSize)
+    val rs = stmt.executeQuery()
+    (conn, stmt, rs)
+  }
+
+
   /**
    * Runs the SQL query against the JDBC driver.
    */
-  override def compute(thePart: Partition, context: TaskContext): Iterator[InternalRow] =
+  override def compute(thePart: Partition, context: TaskContext): Iterator[InternalRow] = {
+    val (conn, stmt, rs) = computeResultSet(thePart)
+    new InternalRowIteratorOnRS(conn,stmt, rs, context).asInstanceOf[Iterator[InternalRow]]
+  }
 
-    new Iterator[InternalRow] {
-      var closed = false
-      var finished = false
-      var gotNext = false
-      var nextValue: InternalRow = null
+
+  override def getPreferredLocations(split: Partition): Seq[String] = {
+    split.asInstanceOf[MultiExecutorLocalPartition].hostExecutorIds
+  }
+
+  override def getPartitions: Array[Partition] = {
+    executeWithConnection(getConnection, {
+      case conn =>
+        val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true)
+        if (region.isInstanceOf[PartitionedRegion]) {
+          StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
+        } else {
+          StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
+        }
+    })
+  }
+
+  class InternalRowIteratorOnRS (conn: Connection,
+      stmt: Statement, rs: ResultSet , context: TaskContext) extends Iterator[ org.apache.spark.sql.catalyst.InternalRow] {
+      private val closed = false
+      private var finished = false
+      private var gotNext = false
+      private var nextValue: InternalRow = null.asInstanceOf[InternalRow]
 
       context.addTaskCompletionListener { context => close() }
-      val part = thePart.asInstanceOf[MultiExecutorLocalPartition]
-      val conn = getConnection()
-
-      val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-      val region = Misc.getRegionForTable(resolvedName, true)
-
-      if (region.isInstanceOf[PartitionedRegion]) {
-        val par = part.index
-        val ps1 = conn.prepareStatement(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
-        ps1.execute()
-      }
-
-
-      // H2's JDBC driver does not support the setSchema() method.  We pass a
-      // fully-qualified table name in the SELECT statement.  I don't know how to
-      // talk about a table in a completely portable way.
-
-      val myWhereClause = filterWhereClause
-
-      val sqlText = s"SELECT $columnList FROM $tableName $myWhereClause"
-      val stmt = conn.prepareStatement(sqlText,
-        ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)
-      val fetchSize = properties.getProperty("fetchSize", "0").toInt
-      stmt.setFetchSize(fetchSize)
-      val rs = stmt.executeQuery()
 
       val conversions = getConversions(schema)
       val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
@@ -177,7 +207,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
             if (rs.wasNull) mutableRow.setNullAt(i)
             i = i + 1
           }
-          mutableRow
+          mutableRow.asInstanceOf[InternalRow]
         } else {
           finished = true
           null.asInstanceOf[InternalRow]
@@ -232,21 +262,6 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       }
     }
 
-  override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[MultiExecutorLocalPartition].hostExecutorIds
-  }
-
-  override def getPartitions: Array[Partition] = {
-    executeWithConnection(getConnection, {
-      case conn =>
-        val tableSchema = conn.getSchema
-        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-        if (region.isInstanceOf[PartitionedRegion]) {
-          StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
-        } else {
-          StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
-        }
-    })
-  }
 }
+
+

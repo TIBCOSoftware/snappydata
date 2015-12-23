@@ -442,10 +442,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
     var conn: Connection = null
     try {
-      val (url, _, _, connProps, _) =
+      val connProperties =
         ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
-      conn = ExternalStoreUtils.getConnection(url, connProps,
-        JdbcDialects.get(url), Utils.isLoner(sc))
+      conn = ExternalStoreUtils.getConnection(connProperties.url, connProperties.connProps,
+        JdbcDialects.get(connProperties.url), Utils.isLoner(sc))
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>

@@ -1,47 +1,33 @@
 package org.apache.spark.sql.store.impl
 
-import java.sql.{Connection, SQLException}
+import java.sql.{ResultSet, Statement, Connection}
 import java.util.{Properties, UUID}
-
-import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import org.apache.spark.sql.AnalysisException
-
-import scala.collection.JavaConverters._
 import scala.language.implicitConversions
-import com.gemstone.gemfire.internal.SocketCreator
-import com.gemstone.gemfire.internal.cache.{AbstractRegion, DistributedRegion, PartitionedRegion}
+import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.jdbc.ClientAttribute
-import io.snappydata.Constant
+import io.snappydata.{SparkShellRDDHelper}
 import org.apache.spark.rdd.{RDD}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionType}
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.row.GemFireXDClientDialect
-import org.apache.spark.sql.store.{JDBCSourceAsStore, CachedBatchIteratorOnRS, StoreUtils}
+import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch, ConnectionType}
+import org.apache.spark.sql.rowtable.RowFormatScanRDD
+import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore, CachedBatchIteratorOnRS, StoreUtils}
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
-
-import scala.collection.mutable.ArrayBuffer
-import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.util.Random
+
 
 
 /**
  * Column Store implementation for GemFireXD.
  */
-final class JDBCSourceAsColumnarStore(_url: String,
-    _driver: String,
-    _poolProps: Map[String, String],
-    _connProps: Properties,
-    _hikariCP: Boolean,
+final class JDBCSourceAsColumnarStore( _connProperties:ConnectionProperties,
     _numPartitions: Int,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId] = null)
-    extends JDBCSourceAsStore(_url, _driver, _poolProps, _connProps, _hikariCP, _numPartitions) {
+    val blockMap: Map[InternalDistributedMember, BlockManagerId] = Map.empty[InternalDistributedMember,BlockManagerId])
+    extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch] = {
@@ -52,10 +38,11 @@ final class JDBCSourceAsColumnarStore(_url: String,
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
-        val poolProps = this.poolProps - (if (hikariCP) "jdbcUrl" else "url")
-        new ShellPartitionedRDD[CachedBatch](sparkContext,
-          getConnection(tableName).getSchema, tableName, requiredColumns,
-          poolProps, connProps, hikariCP, url)
+        val poolProps = _connProperties.poolProps - (if (_connProperties.hikariCP) "jdbcUrl" else "url")
+        val driver = ""
+        new SparkShellCachedBatchRDD[CachedBatch](sparkContext,
+             tableName, requiredColumns,
+          ConnectionProperties(_connProperties.url, _connProperties.driver , poolProps, _connProperties.connProps, _connProperties.hikariCP) , this)
     }
   }
 
@@ -119,142 +106,56 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 }
 
-class ShellPartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
-    schema: String, tableName: String, requiredColumns: Array[String],
-    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean, locatorUrl: String)
-    extends RDD[CachedBatch](_sc, Nil) {
+class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
+     tableName: String, requiredColumns: Array[String],
+    connectionProperties: ConnectionProperties ,
+    store: JDBCSourceAsColumnarStore)
+    extends RDD[CachedBatch](_sc, Nil)  with SparkShellRDDHelper {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
-    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-    val par = split.index
-    val resolvedName = StoreUtils.lookupName(tableName, schema)
-    val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
-    val useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
-
-    val conn = getConnection(urlsOfNetServerHost, useLocatorURL)
-    val query = "select " + requiredColumns.mkString(", ") +
-        ", numRows, stats from " + resolvedName + (if (useLocatorURL) s" where bucketId = $par"
-    else " ")
-
-    val statement = conn.createStatement()
-    if (!useLocatorURL)
-      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
-    val rs = statement.executeQuery(query)
-
+   val (conn , statement , rs) = executeQuery(connectionProperties,
+     tableName , split , requiredColumns  )
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
-
-  def getConnection(hostList: ArrayBuffer[(String, String)], connectToLocator: Boolean): Connection = {
-    val localhost = SocketCreator.getLocalHost
-    var index = -1
-
-    // setup pool properties
-    val maxPoolSize = String.valueOf(math.max(
-      32, Runtime.getRuntime.availableProcessors() * 2))
-
-    val jdbcUrl = if (connectToLocator) {
-      locatorUrl
-    } else {
-      if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
-      if (index < 0) index = Random.nextInt(hostList.size)
-      hostList(index)._2
-    }
-    val props = if (hikariCP) {
-      poolProps + ("jdbcUrl" -> jdbcUrl) + ("maximumPoolSize" -> maxPoolSize)
-    } else {
-      poolProps + ("url" -> jdbcUrl) + ("maxActive" -> maxPoolSize)
-    }
-    try {
-      // use jdbcUrl as the key since a unique pool is required for each server
-      ConnectionPool.getPoolConnection(jdbcUrl, None,
-        GemFireXDClientDialect, props, connProps, hikariCP)
-    } catch {
-      case sqlException: SQLException =>
-        if (hostList.size == 1 || connectToLocator)
-          throw sqlException
-        else {
-          hostList.remove(index)
-          getConnection(hostList, connectToLocator)
-        }
-    }
-  }
-
-  def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean = {
-    hostList.size == 0
-  }
-
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
     split.asInstanceOf[ExecutorLocalShellPartition]
         .hostList.map(_._1.asInstanceOf[String]).toSeq
   }
 
-  override protected def getPartitions: Array[Partition] = {
-    val resolvedName = StoreUtils.lookupName(tableName, schema)
-    val bucketToServerList = getBucketToServerMapping(resolvedName)
-    val numPartitions = bucketToServerList.length
-    val partitions = new Array[Partition](numPartitions)
-    for (p <- 0 until numPartitions) {
-      partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
-    }
-    partitions
+  override def getPartitions: Array[Partition] = {
+    getPartitions(tableName , store )
+  }
+}
+
+
+class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
+    getConnection: () => Connection,
+    schema: StructType,
+    tableName: String,
+    columns: Array[String],
+    connectionProperties: ConnectionProperties,
+    store: ExternalStore,
+    filters: Array[Filter] =  Array.empty[Filter],
+    partitions: Array[Partition] =  Array.empty[Partition],
+    blockMap: Map[InternalDistributedMember, BlockManagerId] =  Map.empty[InternalDistributedMember, BlockManagerId],
+    properties: Properties = new Properties())
+    extends RowFormatScanRDD(sc, getConnection ,schema, tableName, columns, connectionProperties, filters, partitions, blockMap, properties)
+    with SparkShellRDDHelper {
+
+  override def computeResultSet (thePart: Partition): (Connection , Statement , ResultSet )={
+    executeQuery(connectionProperties,tableName , thePart , columns  )
   }
 
-  private def fillNetUrlsForServer(node: InternalDistributedMember,
-      membersToNetServers: java.util.Map[InternalDistributedMember, String],
-      urlPrefix: String, urlSuffix: String,
-      netUrls: ArrayBuffer[(String, String)]): Unit = {
-    val netServers: String = membersToNetServers.get(node)
-    if (netServers != null && !netServers.isEmpty) {
-      // check the rare case of multiple network servers
-      if (netServers.indexOf(',') > 0) {
-        for (netServer <- netServers.split(",")) {
-          netUrls += node.getIpAddress.getHostAddress ->
-              (urlPrefix + Utils.getClientHostPort(netServer) + urlSuffix)
-        }
-      } else {
-        netUrls += node.getIpAddress.getHostAddress ->
-            (urlPrefix + Utils.getClientHostPort(netServers) + urlSuffix)
-      }
-    }
+  override def getPreferredLocations(split: Partition): Seq[String] = {
+    split.asInstanceOf[ExecutorLocalShellPartition]
+        .hostList.map(_._1.asInstanceOf[String]).toSeq
   }
 
-  private def getBucketToServerMapping(
-      resolvedName: String): Array[ArrayBuffer[(String, String)]] = {
-    val urlPrefix = "jdbc:" + Constant.JDBC_URL_PREFIX
-    // no query routing or load-balancing
-    val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-        ClientAttribute.LOAD_BALANCE + "=false"
-    val membersToNetServers = GemFireXDUtils.getGfxdAdvisor.
-        getAllDRDAServersAndCorrespondingMemberMapping
-    Misc.getRegionForTable(resolvedName, true).asInstanceOf[Region[_, _]] match {
-      case pr: PartitionedRegion =>
-        val bidToAdvisorMap = pr.getRegionAdvisor.
-            getAllBucketAdvisorsHostedAndProxies
-        val numBuckets = bidToAdvisorMap.size()
-        val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
-        for (bid <- 0 until numBuckets) {
-          val pbr = bidToAdvisorMap.get(bid).getProxyBucketRegion
-          // throws PartitionOfflineException if appropriate
-          pbr.checkBucketRedundancyBeforeGrab(null, false)
-          val bOwners = pbr.getBucketOwners
-          val netUrls = ArrayBuffer.empty[(String, String)]
-          bOwners.asScala.foreach(fillNetUrlsForServer(_,
-            membersToNetServers, urlPrefix, urlSuffix, netUrls))
-          allNetUrls(bid) = netUrls
-        }
-        allNetUrls
-
-      case dr: DistributedRegion =>
-        val owners = dr.getDistributionAdvisor.adviseInitializedReplicates()
-        val netUrls = ArrayBuffer.empty[(String, String)]
-        owners.asScala.foreach(fillNetUrlsForServer(_, membersToNetServers,
-          urlPrefix, urlSuffix, netUrls))
-        Array(netUrls)
-
-      case r => sys.error("unexpected region with dataPolicy=" +
-          s"${r.getAttributes.getDataPolicy} attributes: ${r.getAttributes}")
-    }
+  override def getPartitions: Array[Partition] = {
+    getPartitions(tableName  , store)
   }
+
+
 }
