@@ -156,13 +156,13 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
 
   protected override lazy val createTable: Parser[LogicalPlan] =
     (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
-        tableIdentifier ~ externalTableInput ~ (USING ~> className) ~
+        tableIdentifier ~ externalTableInput ~ (USING ~> className).? ~
         (OPTIONS ~> options).? ~ (AS ~> restInput).? ^^ {
       case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
         val options = opts.getOrElse(Map.empty[String, String])
-        val provider = SnappyContext.getProvider(providerName)
+        val provider = SnappyContext.getProvider(providerName.getOrElse(SnappyContext.DEFAULT_SOURCE))
         if (query.isDefined) {
           if (schemaString.length > 0) {
             throw new DDLException("CREATE TABLE AS SELECT statement " +
@@ -195,8 +195,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           }
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
-            phrase(tableCols)(new lexical.Scanner(schemaString)) match {
-              case Success(columns, _) => Some(StructType(columns))
+            phrase(tableCols.?)(new lexical.Scanner(schemaString)) match {
+              case Success(columns, _) => columns.flatMap(fields => Some(StructType(fields)))
               case failure => throw new DDLException(failure.toString)
             }
           }
@@ -279,7 +279,9 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
         val reader = new PackratReader(new lexical.Scanner(others))
         Success(externalTableDefinition, reader)
       } else {
-        Failure("USING missing", in)
+        Success(
+          in.source.subSequence(in.offset, in.source.length()).toString,
+          in.drop(in.source.length()))
       }
     }
   }
