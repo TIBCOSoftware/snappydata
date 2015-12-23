@@ -19,7 +19,7 @@ import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.{GemFireXDBaseDialect, JDBCMutableRelation}
+import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
@@ -53,7 +53,6 @@ class JDBCAppendableRelation(
 
   self =>
 
-  final val shadowTableNamePrefix = "_shadow_"
   override val needConversion: Boolean = false
 
   final val columnPrefix = "Col_"
@@ -225,6 +224,7 @@ class JDBCAppendableRelation(
     try {
       conn = ExternalStoreUtils.getConnection(url, connProperties,
         dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
+
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {

@@ -296,11 +296,24 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     // Simulates 'SHOW TABLES' of ij
     val rSet = dbmd.getTables(null, "APP", null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+
     var foundTable = false
     while (rSet.next()) {
       if (t.equalsIgnoreCase(rSet.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet.getString("TABLE_TYPE").equalsIgnoreCase("COLUMN TABLE"))
+      }
+    }
+    assert(!foundTable)
+
+    val rSet2 = dbmd.getTables(null, "INTERNAL", null,
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+
+    foundTable = false
+    while (rSet2.next()) {
+      if (t.equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
+        foundTable = true
+        assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("COLUMN TABLE"))
       }
     }
     assert(foundTable)

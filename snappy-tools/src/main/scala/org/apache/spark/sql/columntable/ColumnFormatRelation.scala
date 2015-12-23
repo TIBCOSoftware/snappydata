@@ -69,9 +69,7 @@ class ColumnFormatRelation(
       partitions, poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
     with PartitionedDataSourceScan with RowInsertableRelation {
 
-
   override def toString: String = s"ColumnFormatRelation[$table]"
-
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
@@ -98,7 +96,7 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-    val colRdd = super.scanTable(table + shadowTableNamePrefix, requiredColumns, filters)
+    val colRdd = super.scanTable(ColumnFormatRelation.cachedBatchTableName(table), requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
@@ -159,7 +157,7 @@ class ColumnFormatRelation(
     val numRows = rows.length
     if (numRows == 0) {
       throw new IllegalArgumentException(
-        "JDBCAppendableRelation.insert: no rows provided")
+        "ColumnFormatRelation.insert: no rows provided")
     }
     val connection = ConnectionPool.getPoolConnection(table, None, dialect,
       poolProps, connProperties, hikariCP)
@@ -186,9 +184,9 @@ class ColumnFormatRelation(
   // truncate both actual and shadow table
   override def truncate() = writeLock {
     val dialect = JdbcDialects.get(externalStore.url)
-    externalStore.tryExecute(table + shadowTableNamePrefix, {
+    externalStore.tryExecute(ColumnFormatRelation.cachedBatchTableName(table), {
       case conn =>
-        JdbcExtendedUtils.truncateTable(conn, table + shadowTableNamePrefix, dialect)
+        JdbcExtendedUtils.truncateTable(conn, ColumnFormatRelation.cachedBatchTableName(table), dialect)
     })
     externalStore.tryExecute(table, {
       case conn =>
@@ -210,7 +208,7 @@ class ColumnFormatRelation(
     // drop the external table using a non-pool connection
     val conn = JdbcUtils.createConnection(url, connProperties)
     try {
-      JdbcExtendedUtils.dropTable(conn, table + shadowTableNamePrefix, dialect, sqlContext,
+      JdbcExtendedUtils.dropTable(conn, ColumnFormatRelation.cachedBatchTableName(table), dialect, sqlContext,
         ifExists)
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
     } finally {
@@ -223,6 +221,9 @@ class ColumnFormatRelation(
     val dialect = JdbcDialects.get(url)
     try {
       conn = JdbcUtils.createConnection(url, connProperties)
+
+      JdbcExtendedUtils.createSchema(ColumnFormatRelation.INTERNAL_SCHEMA_NAME, conn, dialect)
+
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
@@ -230,7 +231,7 @@ class ColumnFormatRelation(
           case GemFireXDDialect => {
             GemFireXDDialect.initializeTable(table,
               sqlContext.conf.caseSensitiveAnalysis, conn)
-            GemFireXDDialect.initializeTable(table + shadowTableNamePrefix, sqlContext.conf.caseSensitiveAnalysis, conn)
+            GemFireXDDialect.initializeTable(ColumnFormatRelation.cachedBatchTableName(table), sqlContext.conf.caseSensitiveAnalysis, conn)
           }
           case _ => // Do nothing
         }
@@ -248,6 +249,7 @@ class ColumnFormatRelation(
       externalStore: ExternalStore): Unit = {
     require(tableName != null && tableName.length > 0,
       "createExternalTableForCachedBatches: expected non-empty table name")
+
 
     val (primarykey, partitionStrategy) = dialect match {
       // The driver if not a loner should be an accessor only
@@ -282,7 +284,7 @@ class ColumnFormatRelation(
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName, sqlContext.conf.caseSensitiveAnalysis, conn)
         }
-        createExternalTableForCachedBatches(tableName + shadowTableNamePrefix, externalStore)
+        createExternalTableForCachedBatches(ColumnFormatRelation.cachedBatchTableName(table), externalStore)
       }
     }
     catch {
@@ -323,6 +325,8 @@ class ColumnFormatRelation(
 object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
+  final val INTERNAL_SCHEMA_NAME = "INTERNAL"
+  final val SHADOW_TABLE_SUFFIX = "_shadow_"
 
   def registerStoreCallbacks(sqlContext: SQLContext,table: String,
       userSchema: StructType, externalStore: ExternalStore) = {
@@ -334,6 +338,9 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     ConnectionPool.removePoolReference(table)
     Iterator.empty
   }
+
+  final def cachedBatchTableName(table: String) = INTERNAL_SCHEMA_NAME + "." + table +
+      SHADOW_TABLE_SUFFIX
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
