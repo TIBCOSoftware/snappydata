@@ -410,6 +410,16 @@ def stdout = new ByteArrayOutputStream()
   return "$stdout"
 }
 
+def runSQLScript(def fileName) {
+  println("Executing ${fileName}")
+  def queryoutput = runScript("${snappyProductDir}/bin/snappy-shell",
+          ["run", "-file=${snappyProductDir}/quickstart/scripts/${fileName}"]);
+  println "${queryoutput}"
+  if (queryoutput.contains("ERROR") || queryoutput.contains("Failed")) {
+    throw new GradleException("Failed to run ${fileName}")
+  }
+}
+
 task runQuickstart {
   mustRunAfter product
   def exampleArchiveName = "quickstart-${version}.jar"
@@ -420,26 +430,29 @@ task runQuickstart {
       if (!startoutput.contains("Distributed system now has 4 members")) {
         throw new GradleException("Failed to start Snappy cluster")
       }
+      runSQLScript("create_and_load_column_table.sql")
 
-      def createColTable = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/create_and_load_column_table.sql"]);
-      println "${createColTable}"
-      if (createColTable.contains("ERROR") || createColTable.contains("Failed")) {
-        throw new GradleException("Failed to start create column table")
-      }
+      runSQLScript("create_and_load_row_table.sql")
 
-      def createRowTable = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/create_and_load_row_table.sql"]);
-      println "${createRowTable}"
-      if (createRowTable.contains("ERROR") || createRowTable.contains("Failed")) {
-        throw new GradleException("Failed to start create row table")
-      }
+      runSQLScript("status_queries.sql")
 
-      def statusqueries = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/status_queries.sql"]);
-      println "${statusqueries}"
-      if (statusqueries.contains("ERROR") || statusqueries.contains("Failed")) {
-        throw new GradleException("Failed to run status queries")
+      runSQLScript("olap_queries.sql")
+
+      runSQLScript("oltp_queries.sql")
+
+      runSQLScript("olap_queries.sql")
+
+      def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
+      println "${startSparkResult}"
+
+      def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit",
+              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://localhost:7077",
+               "--conf", "snappydata.store.locators=localhost:10334", "--conf", "spark.ui.port=4041",
+               "${snappyProductDir}/lib/${exampleArchiveName}"]);
+
+      println "${airlineappresult}"
+      if (airlineappresult.toLowerCase().contains("exception")) {
+        throw new GradleException("Failed to submit AirlineDataSparkApp")
       }
 
       def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
@@ -480,15 +493,10 @@ task runQuickstart {
         throw new GradleException("Failed to submit queries")
       }
 
-      def oltpqueries = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/oltp_queries.sql"]);
-      println "${oltpqueries}"
-      if (oltpqueries.contains("ERROR") || oltpqueries.contains("Failed")) {
-        throw new GradleException("Failed to run oltp queries")
-      }
 
     } finally {
       println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", []);
+      println runScript("${snappyProductDir}/sbin/stop-all.sh", []);
     }
   }
 }
