@@ -9,7 +9,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.CachedBatch
+import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
 
 /**
  * Created by neeraj on 16/7/15.
@@ -27,13 +27,7 @@ trait ExternalStore extends Serializable {
 
   def getUUIDRegionKey(tableName: String, bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey
 
-  def url: String
-
-  def driver: String
-
-  def poolProps: Map[String, String]
-
-  def connProps: java.util.Properties
+  def connProperties:ConnectionProperties
 
   def tryExecute[T: ClassTag](tableName: String,
       f: PartialFunction[(Connection), T],

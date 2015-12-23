@@ -115,7 +115,7 @@ private[sql] object ExternalStoreUtils extends Logging {
   }
 
   def validateAndGetAllProps(sc : SparkContext,
-      parameters: mutable.Map[String, String]) = {
+      parameters: mutable.Map[String, String]) :ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
@@ -156,7 +156,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP)
-    (url, driver, allPoolProps, connProps, hikariCP)
+    new ConnectionProperties(url, driver, allPoolProps, connProps, hikariCP)
   }
 
    def getConnection(url: String, connProperties: Properties,
@@ -313,3 +313,5 @@ object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
 }
+
+case class ConnectionProperties(url:String , driver:String, poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
