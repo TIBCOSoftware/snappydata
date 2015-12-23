@@ -8,7 +8,6 @@ sourceSets.main.java.srcDirs = []
 
 dependencies {
   compile project(':snappy-tools_' + scalaBinaryVersion)
-  compile project(':snappy-aqp')
 }
 
 task productExamples(dependsOn: 'jar') << {

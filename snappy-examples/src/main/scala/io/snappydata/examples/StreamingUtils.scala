@@ -3,7 +3,6 @@ package io.snappydata.examples
 import com.typesafe.config.Config
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.execution.cms.TopKCMS
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.unsafe.types.UTF8String
 import org.json.{JSONArray, JSONObject}
@@ -11,9 +10,6 @@ import twitter4j.Status
 import twitter4j.auth.OAuthAuthorization
 import twitter4j.conf.{ConfigurationBuilder}
 
-/**
- * Created by rajesh on 22/12/15.
- */
 object StreamingUtils {
 
   def convertTweetToRow(message: Any, schema: StructType): Seq[Row] = {
@@ -65,9 +61,5 @@ object StreamingUtils {
         .build())
 
   }
-}
-
-object temporarytopkcms {
-  val cms = new TopKCMS[String](10, 20, 0.01, 0.99, 123)
 }
 
