@@ -47,6 +47,7 @@ object AirlineDataJob extends SnappySQLJob {
     /*Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> actualResult.collect(),
       s"Sample table: ARR_DELAY :(${totalTimeSample}ms)" -> sampleResult.collect()
     )*/
+    // Change the time calculation.
   }
 
   override def validate(sc: C, config: Config): SparkJobValidation = {
