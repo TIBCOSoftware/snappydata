@@ -58,7 +58,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // just run a task to initialize the HMC for the thread. Assumption is that this should be outside
     // any lock
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.INIT, null, null, false);
+    q.resetValues(HMSQuery.INIT, null, null, true);
     Future<Boolean> ret = hmsQueriesExecutorService.submit(q);
     try {
       ret.get();
