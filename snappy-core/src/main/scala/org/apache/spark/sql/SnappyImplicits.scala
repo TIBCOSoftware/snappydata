@@ -1,19 +1,14 @@
 package org.apache.spark.sql
 
-import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.rdd.RDD
+
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.streaming.{SnappyStreamingContext, StreamingCtxtHolder}
+import org.apache.spark.streaming.StreamingContext
+import org.apache.spark.{SparkContext, TaskContext}
 
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
-
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.LockUtils.ReadWriteLock
-import org.apache.spark.sql.approximate.TopKUtil
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{StratifiedSample, TopKWrapper}
-import org.apache.spark.sql.streaming.{StreamingSnappyContext, SnappyStreamOperations, StreamingCtxtHolder}
-import org.apache.spark.streaming.StreamingContext
-import org.apache.spark.{SparkContext, TaskContext}
 
 /**
  * Implicit conversions used by Snappy.
@@ -36,25 +31,6 @@ object snappy extends Serializable {
     plan match {
       case Subquery(_, child) => unwrapSubquery(child)
       case _ => plan
-    }
-  }
-
-  implicit def snappyOperationsOnDStream[T: ClassTag]
-  (ds: DStream[T]): SnappyStreamOperations[T] =
-    SnappyStreamOperations(StreamingSnappyContext(ds.context), ds)
-
-  implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
-    df.sqlContext match {
-      case sc: SnappyContext =>
-        unwrapSubquery(df.logicalPlan) match {
-          case ss: StratifiedSample =>
-            new SampleDataFrame(sc, ss)
-          case s => throw new AnalysisException("Stratified sampling " +
-              "operations require stratifiedSample plan and not " +
-              s"${s.getClass.getSimpleName}")
-        }
-      case sc => throw new AnalysisException("Extended snappy operations " +
-          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
     }
   }
 
@@ -114,7 +90,7 @@ object snappy extends Serializable {
 }
 
 private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
-    df: DataFrame) {
+                                                  df: DataFrame) {
 
   /**
    * Creates stratified sampled data from given DataFrame
@@ -122,35 +98,20 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
    * }}}
    */
-  def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context, StratifiedSample(options, df.logicalPlan)())
+  def stratifiedSample(options: Map[String, Any]): SampleDataFrame = new SampleDataFrame(context,
+    context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
 
-  def createTopK(ident: String, options: Map[String, Any]): Unit = {
-    val name = context.catalog.newQualifiedTableName(ident)
-    val schema = df.logicalPlan.schema
 
-    // Create a very long timeInterval when the topK is being created
-    // on a DataFrame.
+  def createTopK(ident: String, options: Map[String, Any]): Unit =
+    context.aqpContext.createTopK(df, context, ident, options)
 
-    val topKWrapper = TopKWrapper(name, options, schema)
-
-    val clazz = Utils.getInternalType(
-      topKWrapper.schema(topKWrapper.key.name).dataType)
-    val ct = ClassTag(clazz)
-    context.topKLocks += name.toString() -> new ReadWriteLock()
-    val topKRDD = TopKUtil.createTopKRDD(name.toString,
-      context.sparkContext, topKWrapper.stsummary)
-    context.catalog.topKStructures.put(name, topKWrapper -> topKRDD)
-    TopKUtil.populateTopK(df.rdd, topKWrapper, context,
-      name, topKRDD, System.currentTimeMillis())(ct)
-
-  }
 
   /**
    * Table must be registered using #registerSampleTable.
    */
   def insertIntoSampleTables(sampleTableName: String*): Unit =
-    context.collectSamples(df.rdd, sampleTableName, System.currentTimeMillis())
+    context.aqpContext.collectSamples(context, df.rdd, sampleTableName, System.currentTimeMillis())
+
 
   /**
    * Append to an existing cache table.
