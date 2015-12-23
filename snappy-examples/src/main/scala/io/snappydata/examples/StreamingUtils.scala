@@ -11,9 +11,6 @@ import twitter4j.Status
 import twitter4j.auth.OAuthAuthorization
 import twitter4j.conf.{ConfigurationBuilder}
 
-/**
- * Created by rajesh on 22/12/15.
- */
 object StreamingUtils {
 
   def convertTweetToRow(message: Any, schema: StructType): Seq[Row] = {
