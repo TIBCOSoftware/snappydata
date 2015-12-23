@@ -3,7 +3,6 @@ package io.snappydata.examples
 import com.typesafe.config.Config
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.execution.cms.TopKCMS
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.unsafe.types.UTF8String
 import org.json.{JSONArray, JSONObject}
@@ -62,9 +61,5 @@ object StreamingUtils {
         .build())
 
   }
-}
-
-object temporarytopkcms {
-  val cms = new TopKCMS[String](10, 20, 0.01, 0.99, 123)
 }
 
