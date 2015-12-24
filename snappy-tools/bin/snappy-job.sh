@@ -3,6 +3,7 @@
 
 usage=$'Usage: 
        snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name>]
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--app-jar <jar-path> --app-name <app-name>]
        snappy-job.sh status --lead <hostname:port> --job-id <job-id>'
 
 function showUsage {
@@ -29,6 +30,11 @@ while (( "$#" )); do
     status)
       cmd="status"
     ;;
+    newcontext)
+      cmd="context"
+      shift
+      contextName="${1:-$TOK_EMPTY}"
+    ;;
     --lead)
       shift
       hostnamePort="${1:-$TOK_EMPTY}"
@@ -48,6 +54,10 @@ while (( "$#" )); do
     --job-id)
       shift
       jobID="${1:-$TOK_EMPTY}"
+    ;;
+    --factory)
+      shift
+      contextFactory="${1:-$TOK_EMPTY}"
     ;;
     --context)
       shift
@@ -106,6 +116,19 @@ case $cmd in
     if [[ -n $contextName ]]; then
       cmdLine="${cmdLine}&context=${contextName}"
     fi
+  ;;
+
+  context)
+    if validateArg $contextName ; then
+      showUsage "newcontext <context-name>"
+    elif validateArg $contextFactory ; then
+      showUsage "--factory"
+    elif validateOptionalArg $appjar ; then
+      showUsage "--app-jar"
+    elif [[ $appjar != "" ]] && validateArg $appName ; then
+      showUsage "--app-name"
+    fi
+    cmdLine="contexts/${contextName}?context-factory=${contextFactory}"
   ;;
 
   *)
