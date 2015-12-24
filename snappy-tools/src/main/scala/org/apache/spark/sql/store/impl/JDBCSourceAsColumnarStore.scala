@@ -96,8 +96,9 @@ final class JDBCSourceAsColumnarStore(_url: String,
       val stmt = connection.prepareStatement(rowInsertStr)
       stmt.setString(1, uuid.getUUID.toString)
       stmt.setInt(2, uuid.getBucketId)
-      stmt.setBytes(3, serializer.newInstance().serialize(batch.stats).array())
-      var columnIndex = 4
+      stmt.setInt(3, batch.numRows)
+      stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
+      var columnIndex = 5
       batch.buffers.foreach(buffer => {
         stmt.setBytes(columnIndex, buffer)
         columnIndex += 1

@@ -224,17 +224,21 @@ class ColumnFormatRelation(
       poolProps, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
+      var result = 0
       if (numRows > 1) {
         for (row <- rows) {
           ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
             row, dialect)
           stmt.addBatch()
         }
+        val insertCounts = stmt.executeBatch()
+        result = insertCounts.length
       } else {
         ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
           rows.head, dialect)
+        result = stmt.executeUpdate()
       }
-      val result = stmt.executeUpdate()
+
       stmt.close()
       result
     } finally {
