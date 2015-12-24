@@ -260,7 +260,7 @@ class InternalRowIteratorOnRS (conn: Connection,
   }
 
   override def next(): InternalRow = {
-    if (!hasNext) {
+    if (!gotNext) {
       throw new NoSuchElementException("End of stream")
     }
     gotNext = false

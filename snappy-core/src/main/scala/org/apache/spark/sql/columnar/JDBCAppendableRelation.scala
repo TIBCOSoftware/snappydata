@@ -48,11 +48,7 @@ class JDBCAppendableRelation(
 
   self =>
 
-
-  final val shadowTableNamePrefix = "_shadow_"
   override val needConversion: Boolean = false
-
-  final val columnPrefix = "Col_"
 
   val driver = DriverRegistry.getDriverClassName(externalStore.connProperties.url)
 
@@ -111,7 +107,7 @@ class JDBCAppendableRelation(
 
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
       externalStore.getCachedBatchRDD(tableName,
-        requestedColumns.map(column => columnPrefix + column),
+        requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkContext)
     }
 
@@ -119,38 +115,8 @@ class JDBCAppendableRelation(
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
       // minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
-        schema.getFieldIndex(a).get -> schema(a).dataType
-      }.unzip
-      val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-      def cachedBatchesToRows(
-          cacheBatches: Iterator[CachedBatch]): Iterator[InternalRow] = {
-        val rows = cacheBatches.flatMap { cachedBatch =>
-          // Build column accessors
-          val columnAccessors = requestedColumnIndices.zipWithIndex.map {
-            case (schemaIndex, bufferIndex) =>
-              ColumnAccessor(schema.fields(schemaIndex).dataType,
-                ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
-          }
-          // Extract rows via column accessors
-          new Iterator[InternalRow] {
-            private[this] val rowLen = nextRow.numFields
 
-            override def next(): InternalRow = {
-              var i = 0
-              while (i < rowLen) {
-                columnAccessors(i).extractTo(nextRow, i)
-                i += 1
-              }
-              if (requiredColumns.isEmpty) InternalRow.empty else nextRow
-            }
-
-            override def hasNext: Boolean = columnAccessors.head.hasNext
-          }
-        }
-        rows
-      }
-      cachedBatchesToRows(cachedBatchIterator)
+      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator , requestedColumns , schema)
     }.asInstanceOf[RDD[Row]]
   }
 
@@ -256,7 +222,7 @@ class JDBCAppendableRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer not null, numRows integer not null, " +
-        "stats blob, " + userSchema.fields.map(structField => columnPrefix +
+        "stats blob, " + userSchema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false

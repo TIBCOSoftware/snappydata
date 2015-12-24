@@ -47,37 +47,38 @@ object Utils {
 
 trait SparkShellRDDHelper {
 
-  var useLocatorURL:Boolean = false
-  def getSQLStatement (resolvedTableName:String , requiredColumns: Array[String] , partitionId:Int ): String = {
-    val whereClause = if (useLocatorURL) s" where bucketId = $partitionId" else ""
+  var useLocatorURL: Boolean = false
 
-     "select " + requiredColumns.mkString(", ") +
+  def getSQLStatement(resolvedTableName: String, requiredColumns: Array[String], partitionId: Int)
+  : String = {
+    val whereClause = if (useLocatorURL) s" where bucketId = $partitionId" else ""
+    "select " + requiredColumns.mkString(", ") +
         ", numRows, stats from " + resolvedTableName + whereClause
   }
 
-  def executeQuery ( conn:Connection, tableName:String ,
-      split:Partition , query:String ):( Statement , ResultSet)  = {
+  def executeQuery(conn: Connection, tableName: String,
+      split: Partition, query: String): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
     val par = split.index
     val statement = conn.createStatement()
 
-    if (! useLocatorURL)
+    if (!useLocatorURL)
       statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
 
     val rs = statement.executeQuery(query)
-    ( statement , rs )
+    (statement, rs)
   }
 
 
-  def getConnection(connectionProperties: ConnectionProperties , split:Partition ): Connection = {
+  def getConnection(connectionProperties: ConnectionProperties, split: Partition): Connection = {
     val par = split.index
     val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
     useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
-    createConnection(connectionProperties, urlsOfNetServerHost ,useLocatorURL)
+    createConnection(connectionProperties, urlsOfNetServerHost, useLocatorURL)
   }
 
-  def getPartitions (tableName:String , store:ExternalStore):Array[Partition] = {
+  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
     store.tryExecute(tableName, {
       case conn =>
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
@@ -91,8 +92,8 @@ trait SparkShellRDDHelper {
     })
   }
 
-  def createConnection(connProps :ConnectionProperties , hostList: ArrayBuffer[(String, String)] ,
-      connectToLocator:Boolean ): Connection = {
+  def createConnection(connProps: ConnectionProperties, hostList: ArrayBuffer[(String, String)],
+      connectToLocator: Boolean): Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
     // setup pool properties
@@ -108,7 +109,6 @@ trait SparkShellRDDHelper {
       hostList(index)._2
     }
 
-    println("jdbcurl is " + jdbcUrl)
     val props = if (connProps.hikariCP) {
       connProps.poolProps + ("jdbcUrl" -> jdbcUrl) + ("maximumPoolSize" -> maxPoolSize)
     } else {
@@ -124,7 +124,7 @@ trait SparkShellRDDHelper {
           throw sqlException
         else {
           hostList.remove(index)
-          createConnection(connProps,hostList, connectToLocator)
+          createConnection(connProps, hostList, connectToLocator)
         }
     }
   }
