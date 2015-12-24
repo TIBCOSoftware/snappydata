@@ -1,5 +1,6 @@
 package org.apache.spark.sql.columntable
 
+import java.nio.ByteBuffer
 import java.sql.Connection
 import java.util.Properties
 
@@ -10,11 +11,13 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
-import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartition, JDBCRDD, JdbcUtils}
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -26,7 +29,7 @@ import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.{Logging, Partition}
 /**
  * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -72,6 +75,7 @@ class ColumnFormatRelation(
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
+  val columnBatchSize = sqlContext.conf.columnBatchSize
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
@@ -141,21 +145,56 @@ class ColumnFormatRelation(
     //TODO - currently using the length from the part Object but it needs to be handled more generically
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
-    if (batch.numRows >= sqlContext.conf.columnBatchSize) {
+    if (batch.numRows >= columnBatchSize) {
       val uuid = externalStore.storeCachedBatch(batch, table + shadowTableNamePrefix, numPartitions)
       accumulated += uuid
     } else {
       //TODO: can we do it before compressing. Might save a bit
-      unCachedRows = cachedBatchToRows(batch)
+      val unCachedRows = cachedBatchToRows(batch)
+      insert(unCachedRows.toSeq)
     }
     accumulated
   }
 
+  private def cachedBatchToRows(cachedBatch: CachedBatch): Iterator[Row] = {
+
+    val requestedColumns = schema.map(_.name).toArray
+    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+
+    val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+      schema.getFieldIndex(a).get -> schema(a).dataType
+    }.unzip
+
+    val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
+    val rows = {
+      // Build column accessors
+      val columnAccessors = requestedColumnIndices.zipWithIndex.map {
+        case (schemaIndex, bufferIndex) =>
+          ColumnAccessor(schema.fields(schemaIndex).dataType,
+            ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
+      }
+      // Extract rows via column accessors
+      new Iterator[Row] {
+        private[this] val rowLen = nextRow.numFields
+
+        override def next(): Row = {
+          var i = 0
+          while (i < rowLen) {
+            columnAccessors(i).extractTo(nextRow, i)
+            i += 1
+          }
+          val row = converter(nextRow).asInstanceOf[Row]
+          row
+        }
+        override def hasNext: Boolean = columnAccessors.head.hasNext
+      }
+    }
+    rows
+  }
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     partitionColumns match {
-      case Seq.empty => new CachedBatchCreator(table + shadowTableNamePrefix, schema, externalStore,
-        sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression
-      ).createAndStoreBatchh(data, numPartitions)
+      case Nil => super.insert(data, overwrite)
       case _ => insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
     }
   }
