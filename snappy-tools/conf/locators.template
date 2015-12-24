@@ -23,3 +23,7 @@
 #
 # localhost    -dir=/tmp/data/locator (config args)
 localhost
+
+#When a machine is not on any network, specify peer-discovery-address too along with hostname
+# localhost -peer-discovery-address=localhost
+
