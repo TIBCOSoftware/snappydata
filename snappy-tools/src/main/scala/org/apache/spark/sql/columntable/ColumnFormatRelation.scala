@@ -95,10 +95,11 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-    val colRdd = super.scanTable(table + shadowTableNamePrefix, requiredColumns, filters)
+
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
+    val colRdd = super.scanTable(table + externalStore.shadowTableNamePrefix, requiredColumns, filters)
     val union = connectionType match {
       case ConnectionType.Embedded => {
         val rowRdd = new RowFormatScanRDD(
@@ -118,8 +119,8 @@ class ColumnFormatRelation(
         }
       }
       //TODO: This needs to be changed for non-embedded mode, inefficient
-      case _ =>
-        colRdd.union(new SparkShellRowRDD(
+      case _ => {
+        val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           connector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
@@ -127,7 +128,15 @@ class ColumnFormatRelation(
           requiredColumns,
           externalStore.connProperties,
           externalStore
-        ).asInstanceOf[RDD[Row]])
+        ).asInstanceOf[RDD[Row]]
+
+        //Computing both the rdd's before doing union as reduces the  query time significantly
+        colRdd.count
+        rowRdd.count
+
+        colRdd.union(rowRdd)
+      }
+
     }
     union
   }
@@ -183,9 +192,9 @@ class ColumnFormatRelation(
   // truncate both actual and shadow table
   override def truncate() = writeLock {
     val dialect = JdbcDialects.get(externalStore.connProperties.url)
-    externalStore.tryExecute(table + shadowTableNamePrefix, {
+    externalStore.tryExecute(table + externalStore.shadowTableNamePrefix, {
       case conn =>
-        JdbcExtendedUtils.truncateTable(conn, table + shadowTableNamePrefix, dialect)
+        JdbcExtendedUtils.truncateTable(conn, table + externalStore.shadowTableNamePrefix, dialect)
     })
     externalStore.tryExecute(table, {
       case conn =>
@@ -207,7 +216,7 @@ class ColumnFormatRelation(
     // drop the external table using a non-pool connection
     val conn = JdbcUtils.createConnection(externalStore.connProperties.url, externalStore.connProperties.connProps)
     try {
-      JdbcExtendedUtils.dropTable(conn, table + shadowTableNamePrefix, dialect, sqlContext,
+      JdbcExtendedUtils.dropTable(conn, table + externalStore.shadowTableNamePrefix, dialect, sqlContext,
         ifExists)
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
     } finally {
@@ -227,7 +236,8 @@ class ColumnFormatRelation(
           case GemFireXDDialect => {
             GemFireXDDialect.initializeTable(table,
               sqlContext.conf.caseSensitiveAnalysis, conn)
-            GemFireXDDialect.initializeTable(table + shadowTableNamePrefix, sqlContext.conf.caseSensitiveAnalysis, conn)
+            GemFireXDDialect.initializeTable(table + externalStore.shadowTableNamePrefix,
+              sqlContext.conf.caseSensitiveAnalysis, conn)
           }
           case _ => // Do nothing
         }
@@ -257,9 +267,10 @@ class ColumnFormatRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, numRows integer not null, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
+        userSchema.fields.map(structField => externalStore.columnPrefix +
+        structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
-      tableName, dropIfExists = false)
+        tableName, dropIfExists = false)
   }
 
 
@@ -279,7 +290,7 @@ class ColumnFormatRelation(
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName, sqlContext.conf.caseSensitiveAnalysis, conn)
         }
-        createExternalTableForCachedBatches(tableName + shadowTableNamePrefix, externalStore)
+        createExternalTableForCachedBatches(tableName + externalStore.shadowTableNamePrefix, externalStore)
       }
     }
     catch {

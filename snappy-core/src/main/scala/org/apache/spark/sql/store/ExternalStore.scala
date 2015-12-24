@@ -16,6 +16,8 @@ import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
  */
 trait ExternalStore extends Serializable {
 
+  final val shadowTableNamePrefix = "_shadow_"
+  final val columnPrefix = "Col_"
 
   def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
       batchId: Option[UUID] = None): UUIDRegionKey
