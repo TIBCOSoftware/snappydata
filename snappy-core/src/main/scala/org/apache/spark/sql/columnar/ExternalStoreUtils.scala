@@ -1,5 +1,6 @@
 package org.apache.spark.sql.columnar
 
+import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
@@ -8,6 +9,8 @@ import scala.collection.mutable
 
 import io.snappydata.Constant
 
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -307,11 +310,45 @@ private[sql] object ExternalStoreUtils extends Logging {
     (parameters.get("BUCKETS").getOrElse(
       if (rowTable) DEFAULT_ROW_TABLE_BUCKETS else DEFAULT_COLUMN_TABLE_BUCKETS)).toInt
   }
+
+
+  def cachedBatchesToRows(
+      cacheBatches: Iterator[CachedBatch] ,  requestedColumns:Array[String], schema:StructType): Iterator[InternalRow] = {
+    val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+      schema.getFieldIndex(a).get -> schema(a).dataType
+    }.unzip
+    val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
+    val rows = cacheBatches.flatMap { cachedBatch =>
+      // Build column accessors
+      val columnAccessors = requestedColumnIndices.zipWithIndex.map {
+        case (schemaIndex, bufferIndex) =>
+          ColumnAccessor(schema.fields(schemaIndex).dataType,
+            ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
+      }
+      // Extract rows via column accessors
+      new Iterator[InternalRow] {
+        private[this] val rowLen = nextRow.numFields
+
+        override def next(): InternalRow = {
+          var i = 0
+          while (i < rowLen) {
+            columnAccessors(i).extractTo(nextRow, i)
+            i += 1
+          }
+          if (requestedColumns.isEmpty) InternalRow.empty else nextRow
+        }
+
+        override def hasNext: Boolean = columnAccessors.head.hasNext
+      }
+    }
+    rows
+  }
 }
 
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
 }
+
 
 case class ConnectionProperties(url:String , driver:String, poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
