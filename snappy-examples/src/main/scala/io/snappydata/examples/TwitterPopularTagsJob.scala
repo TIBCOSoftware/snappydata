@@ -63,17 +63,15 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
 
     val topKOption = Map(
-        "key" -> "hashtag",
         "epoch" -> System.currentTimeMillis(),
         "timeInterval" -> 2000,
         "size" -> 10
       )
-    snsc.snappyContext.registerTopK("topktable", schema, topKOption, false)
+    snsc.snappyContext.createTopK("topktable", "hashtag",schema, topKOption, false)
 
     snsc.snappyContext.saveStream(rowStream,
       Seq("topktable"),
-      (rdd: RDD[Row], struct: StructType) => rdd,
-      schema
+      None
     )
 
 
