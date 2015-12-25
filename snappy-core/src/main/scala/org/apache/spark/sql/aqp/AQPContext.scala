@@ -28,8 +28,8 @@ trait AQPContext {
                                                        samplingOptions: Map[String, Any], streamTable: Option[String] ,
                                                        jdbcSource: Option[Map[String, String]])( implicit ev: TypeTag[A]): DataFrame
 
-   def registerTopK(context: SnappyContext, tableName: String, streamTableName: String,
-                    topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit
+  /* def registerTopK(context: SnappyContext, tableName: String, schema: StructType,
+                    topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit*/
 
   def queryTopK[T: ClassTag](context: SnappyContext, topKName: String,
                              startTime: String = null, endTime: String = null,
@@ -41,18 +41,20 @@ trait AQPContext {
 
 
 
-  def createTopK(df: DataFrame, context: SnappyContext, ident: String, options: Map[String, Any]): Unit
+  def createTopK(context: SnappyContext, topKName: String, keyColumnName: String,
+                 inputDataSchema: StructType,
+                 topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit
 
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row], aqpTables: Seq[String],
                                     time: Long,
                                     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK)
 
 
-  def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
+  /*def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
                               aqpTables: Seq[String],
                               formatter: (RDD[T], StructType) => RDD[Row],
                               schema: StructType,
-                              transform: RDD[Row] => RDD[Row] = null)
+                              transform: RDD[Row] => RDD[Row] = null)*/
 
 
 
