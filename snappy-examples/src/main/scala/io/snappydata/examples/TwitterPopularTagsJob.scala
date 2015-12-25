@@ -67,11 +67,13 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         "timeInterval" -> 2000,
         "size" -> 10
       )
-    snsc.snappyContext.createTopK("topktable", "hashtag", schema, topKOption, false)
+
+    snsc.snappyContext.createTopK("topktable", "hashtag",schema, topKOption, false)
 
     snsc.snappyContext.saveStream(rowStream,
       Seq("topktable"),
-      Some((rdd: RDD[Row]) => rdd)
+      None
+
     )
 
 
