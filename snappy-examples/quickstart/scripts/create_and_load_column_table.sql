@@ -1,38 +1,18 @@
------ CREATE TEMP TABLE -----
-  CREATE TABLE IF NOT EXISTS AIRLINE_PARQUET_SOURCE
- (
-  YearI INTEGER,
-  MonthI INTEGER,
-  DayOfMonth INTEGER,
-  DayOfWeek INTEGER,
-  DepTime INTEGER,
-  CRSDepTime INTEGER,
-  ArrTime INTEGER,
-  CRSArrTime INTEGER,
-  UniqueCarrier VARCHAR(24),
-  FlightNum INTEGER,
-  TailNum VARCHAR(25),
-  ActualElapsedTime INTEGER,
-  CRSElapsedTime INTEGER,
-  AirTime INTEGER,
-  ArrDelay INTEGER,
-  DepDelay INTEGER,
-  Origin VARCHAR(24),
-  Dest VARCHAR(24),
-  Distance INTEGER,
-  TaxiIn INTEGER,
-  TaxiOut INTEGER,
-  Cancelled INTEGER,
-  CancellationCode VARCHAR(24),
-  Diverted INTEGER,
-  CarrierDelay INTEGER,
-  WeatherDelay INTEGER,
-  NASDelay INTEGER,
-  SecurityDelay INTEGER,
-  LateAircraftDelay INTEGER,
-  ArrDelaySlot INTEGER) 
+-- DROP TABLE IF ALREADY EXISTS --
+DROP TABLE IF EXISTS STAGING_AIRLINE ;
+DROP TABLE IF EXISTS AIRLINE ;
+
+----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
+CREATE TABLE STAGING_AIRLINE
   USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');
 
 ----- CREATE COLUMN TABLE -----  
-
-CREATE TABLE IF NOT EXISTS AIRLINE USING column OPTIONS() AS (SELECT * FROM AIRLINE_PARQUET_SOURCE);
+CREATE TABLE AIRLINE USING column OPTIONS() AS (
+  SELECT Year AS Year_, Month AS Month_ , DayOfMonth,
+    DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
+    UniqueCarrier, FlightNum, TailNum, ActualElapsedTime,
+    CRSElapsedTime, AirTime, ArrDelay, DepDelay, Origin,
+    Dest, Distance, TaxiIn, TaxiOut, Cancelled, CancellationCode,
+    Diverted, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay,
+    LateAircraftDelay, ArrDelaySlot
+    FROM STAGING_AIRLINE);

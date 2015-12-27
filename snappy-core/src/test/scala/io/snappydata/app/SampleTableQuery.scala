@@ -82,7 +82,7 @@ object SampleTableQuery  extends Serializable {
           "fraction" -> 0.01,
           "strataReservoirSize" -> 50), Some("mainTable"))
 
-      mainTable.insertIntoSampleTables("mainTable_sampled")
+      mainTable.insertIntoAQPStructures("mainTable_sampled")
 
       //Run query on actual table
       val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
