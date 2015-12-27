@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+#set -vx
+
+# This script helps to simulate twitter stream as a file stream. It copies 
+# tweet files from one folder to another folder on which a file stream can be
+# created. The script sleeps for 1 second after copying a file. 
+
+# Removing directories from tmp if exists and creating new ones. 
+rm -rf /tmp/twitterdata
+rm -rf /tmp/copiedtwitterdata
+mkdir -p /tmp/twitterdata
+mkdir -p /tmp/copiedtwitterdata 
+
+# Extract preloaded tweets
+tar -zxf ./quickstart/data/tweetdata.tgz -C /tmp/twitterdata
+FILES=/tmp/twitterdata/tweets_*/part-*
+
+# Copy tweets to a folder to simulate a file stream. 
+for file in $FILES
+do
+echo "Copying tweet file $file"
+cp $file /tmp/copiedtwitterdata
+sleep 1
+done
+echo "Data copying done"

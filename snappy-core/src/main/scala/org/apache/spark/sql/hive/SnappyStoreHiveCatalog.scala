@@ -516,10 +516,10 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     throw new UnsupportedOperationException("missing AQP jar")
   }
 
-  def registerTopK(tableIdent: String, streamTableIdent: String,
+  /*def registerTopK(tableIdent: String,
       schema: StructType, topkOptions: Map[String, Any], rdd: RDD[(Int, TopK)]): Unit = {
     throw new UnsupportedOperationException("missing AQP jar")
-  }
+  }*/
 
   // TODO: The JDBC source is currently reading a property jdbcStore
   // to find out the type of the jdbc store. This is a
