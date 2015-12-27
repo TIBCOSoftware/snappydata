@@ -6,19 +6,22 @@ You can download the latest version of SnappyData from [here][2]. SnappyData has
 
 ## Link with SnappyData distribution
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
-> groupId: io.snappydata
-> artifactId: snappydata_2.10
-> version: 0.1_preview
-
+```
+groupId: io.snappydata
+artifactId: snappydata_2.10
+version: 0.1_preview
+```
 
 ## Working with SnappyData Source Code
 (Info for our download page?)
 If you are interested in working with the newest under-development code or contributing to SnapyData development, you can also check out the master branch from Git:
-> Master development branch
-> git clone https://github.com/SnappyDataInc/snappydata.git
->
-> ###### 0.1 preview release branch with stability fixes
-> git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview (??)
+```
+Master development branch
+git clone https://github.com/SnappyDataInc/snappydata.git
+
+###### 0.1 preview release branch with stability fixes ######
+git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview (??)
+```
 
 #### Building SnappyData from source
 You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc, [here](docs/build-instructions.md)
