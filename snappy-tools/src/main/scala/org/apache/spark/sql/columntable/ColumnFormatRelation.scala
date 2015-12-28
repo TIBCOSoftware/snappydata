@@ -8,6 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
@@ -92,6 +93,16 @@ class ColumnFormatRelation(
       case ConnectionType.Embedded => partitioningColumns
       case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededd join
     }
+  }
+
+  override def partitionLocality: String = {
+    executeWithConnection(connector, {
+      case conn => val tableSchema = conn.getSchema
+        val resolvedName = StoreUtils.lookupName(table, tableSchema)
+        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+        val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+        resolver.getMasterTable(true)
+    })
   }
 
   // TODO: Suranjan currently doesn't apply any filters.
@@ -317,6 +328,8 @@ class ColumnFormatRelation(
       connection.close()
     }
   }
+
+
 }
 
 

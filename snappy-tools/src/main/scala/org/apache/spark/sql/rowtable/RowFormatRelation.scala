@@ -110,6 +110,18 @@ class RowFormatRelation(
     partitionColumn
   }
 
+  override def partitionLocality: String = {
+    val resolvedName = StoreUtils.lookupName(table, tableSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+    val masterTable = if (region.isInstanceOf[PartitionedRegion]) {
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+      val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+      resolver.getMasterTable(true)
+    } else {
+      ""
+    }
+    masterTable
+  }
 }
 
 final class DefaultSource extends MutableRelationProvider {
