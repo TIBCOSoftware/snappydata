@@ -58,7 +58,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     // just run a task to initialize the HMC for the thread. Assumption is that this should be outside
     // any lock
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.INIT, null, null, false);
+    q.resetValues(HMSQuery.INIT, null, null, true);
     Future<Boolean> ret = hmsQueriesExecutorService.submit(q);
     try {
       ret.get();
@@ -171,12 +171,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       // with same test name is causing problems with Hive metastore configured with gemfirexd.
       // Need to see proper cleanup of the metastore entries between tests. Will put a proper
       // cleanup soon.
-      boolean snappyFunSuite = Boolean.parseBoolean(System.getProperty("scalaTest", "false"));
-      String snappyDataUrl = snappyFunSuite ? "jdbc:snappydata:;user=HIVE_METASTORE" :
-      "jdbc:snappydata:;user=HIVE_METASTORE;default-persistent=true";
+      boolean snappyFunSuite = Boolean.getBoolean("scalaTest");
+      String url = "jdbc:snappydata:;user=HIVE_METASTORE;disable-streaming=true"
+          + (snappyFunSuite ? "" : ";default-persistent=true");
       HiveConf metadataConf = new HiveConf();
-      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY,
-          snappyDataUrl);
+      metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
           "com.pivotal.gemfirexd.jdbc.EmbeddedDriver");
 

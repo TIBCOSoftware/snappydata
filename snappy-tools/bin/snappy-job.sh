@@ -126,7 +126,7 @@ case $cmd in
       curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
     fi
 
-    curl -d "" ${jobServerURL} $CURL_OPTS
+    curl -d "${APP_PROPS}" ${jobServerURL} $CURL_OPTS
   ;;
 
   status)

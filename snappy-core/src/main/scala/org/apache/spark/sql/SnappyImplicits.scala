@@ -102,15 +102,15 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
     context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
 
 
-  def createTopK(ident: String, options: Map[String, Any]): Unit =
-    context.aqpContext.createTopK(df, context, ident, options)
+  def createTopK(ident: String, keyColumnName: String, options: Map[String, Any]): Unit =
+    context.createTopK(ident, keyColumnName, df.schema,  options, false)
 
 
   /**
    * Table must be registered using #registerSampleTable.
    */
-  def insertIntoSampleTables(sampleTableName: String*): Unit =
-    context.aqpContext.collectSamples(context, df.rdd, sampleTableName, System.currentTimeMillis())
+  def insertIntoAQPStructures(aqpStructureNamea: String*): Unit =
+    context.saveTable( df, aqpStructureNamea)
 
 
   /**
