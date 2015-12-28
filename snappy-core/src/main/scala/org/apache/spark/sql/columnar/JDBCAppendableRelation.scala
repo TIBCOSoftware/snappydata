@@ -167,8 +167,9 @@ class JDBCAppendableRelation(
     assert(df.schema.equals(schema))
 
     // We need to truncate the table
-    if (overwrite)
-      sqlContext.asInstanceOf[SnappyContext].truncateExternalTable(table)
+    if (overwrite) {
+      truncate
+    }
 
     val useCompression = sqlContext.conf.useCompression
     val columnBatchSize = sqlContext.conf.columnBatchSize

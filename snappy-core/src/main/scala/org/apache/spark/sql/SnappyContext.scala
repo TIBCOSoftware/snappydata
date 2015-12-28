@@ -99,24 +99,31 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
 
 
-  def saveStream[T: ClassTag](stream: DStream[T],
+  def saveStream[T](stream: DStream[T],
                               aqpTables: Seq[String],
-                              formatter: (RDD[T], StructType) => RDD[Row],
-                              schema: StructType,
-                              transform: RDD[Row] => RDD[Row] = null) {
+                              transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
+    val transfrmr = transformer match {
+      case Some(x) => x
+      case None =>  if ( !(v.tpe =:= u.typeOf[Row])) {
+        //check if the stream type is already a Row
+        throw new IllegalStateException(" Transformation to Row type needs to be supplied")
+      }else {
+        null
+      }
+    }
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
-      val rddRows = formatter(rdd, schema)
-
-      val rows = if (transform != null) {
-        transform(rddRows)
-      } else rddRows
-
-      aqpContext.collectSamples(this, rows, aqpTables, time.milliseconds)
+      val rddRows = if( transfrmr != null) {
+        transfrmr(rdd)
+      }else {
+        rdd.asInstanceOf[RDD[Row]]
+      }
+      aqpContext.collectSamples(this, rddRows, aqpTables, time.milliseconds)
     })
   }
 
-
+  def saveTable(df: DataFrame,  aqpTables: Seq[String]): Unit= this.aqpContext.collectSamples(this, df.rdd,
+    aqpTables, System.currentTimeMillis())
 
 
   /**
@@ -257,9 +264,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
       jdbcSource)
 
 
-  def registerTopK(tableName: String, streamTableName: String,
+  def createTopK(topKName: String, keyColumnName: String,
+                 inputDataSchema: StructType,
       topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit =
-      aqpContext.registerTopK(self, tableName, streamTableName,
+      aqpContext.createTopK(self, topKName, keyColumnName, inputDataSchema,
         topkOptions, isStreamSummary)
 
 
@@ -350,6 +358,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
           throw new AnalysisException(s"Table $tableIdent already exists. " +
               "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
+        case SaveMode.Ignore => return catalog.lookupRelation(tableIdent, None)
         case _ =>
           // existing table schema could have nullable columns
           val schema = data.schema
@@ -638,8 +647,7 @@ object SnappyContext extends Logging {
 
   private[this] val contextLock = new AnyRef
 
-
-
+  val DEFAULT_SOURCE = "row"
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
@@ -726,8 +734,8 @@ object SnappyContext extends Logging {
   private def evalClusterMode(sc: SparkContext): ClusterMode = {
     if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
-        throw new SparkException(
-          "Missing 'io.snappydata.ToolsCallbackImpl$' from SnappyData tools package")
+        throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
+            " from SnappyData tools package")
       }
       SnappyEmbeddedMode(sc,
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))

@@ -39,7 +39,7 @@ dependencies {
   if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
     compile project(':spark-jobserver')
   } else {
-    compile files("${rootDir.getAbsolutePath()}/local-repo/spark-jobserver-1.5.0-SNAPSHOT-1.jar")
+    compile files("${rootDir.getAbsolutePath()}/local-repo/spark-jobserver-1.6.0-SNAPSHOT.jar")
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')

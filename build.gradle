@@ -57,7 +57,7 @@ allprojects {
   ext {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
-    sparkVersion = '1.5.0-SNAPSHOT.1'
+    sparkVersion = '1.6.0-SNAPSHOT'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
@@ -144,8 +144,8 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
-    maxHeapSize '1g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
+    maxHeapSize '8g'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSPermGenSweepingEnabled',  '-XX:MaxPermSize=4G', '-ea'
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -299,6 +299,7 @@ task generateSources {
 
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
+  dependsOn ':snappy-aqp:jar'
   dependsOn ':snappy-examples:jar'
 
   doFirst {
@@ -327,6 +328,7 @@ task product {
     release << "Build flags: ${buildFlags}\n"
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
+    def aqpProject = project(':snappy-aqp')
     def examplesProject = project(':snappy-examples')
     def baseName = 'snappy-spark-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
@@ -336,6 +338,11 @@ task product {
       into "${snappyProductDir}/lib"
       include "${toolsProject.shadowJar.archiveName}"
       rename { filename -> archiveName }
+    }
+    copy {
+      from("${aqpProject.buildDir}/libs")
+      into "${snappyProductDir}/lib"
+      include "${aqpProject.jar.archiveName}"
     }
     copy {
       from "${examplesProject.buildDir}/libs"
@@ -410,6 +417,16 @@ def stdout = new ByteArrayOutputStream()
   return "$stdout"
 }
 
+def runSQLScript(def fileName) {
+  println("Executing ${fileName}")
+  def queryoutput = runScript("${snappyProductDir}/bin/snappy-shell",
+          ["run", "-file=${snappyProductDir}/quickstart/scripts/${fileName}"]);
+  println "${queryoutput}"
+  if (queryoutput.contains("ERROR") || queryoutput.contains("Failed")) {
+    throw new GradleException("Failed to run ${fileName}")
+  }
+}
+
 task runQuickstart {
   mustRunAfter product
   def exampleArchiveName = "quickstart-${version}.jar"
@@ -420,26 +437,29 @@ task runQuickstart {
       if (!startoutput.contains("Distributed system now has 4 members")) {
         throw new GradleException("Failed to start Snappy cluster")
       }
+      runSQLScript("create_and_load_column_table.sql")
 
-      def createColTable = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/create_and_load_column_table.sql"]);
-      println "${createColTable}"
-      if (createColTable.contains("ERROR") || createColTable.contains("Failed")) {
-        throw new GradleException("Failed to start create column table")
-      }
+      runSQLScript("create_and_load_row_table.sql")
 
-      def createRowTable = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/create_and_load_row_table.sql"]);
-      println "${createRowTable}"
-      if (createRowTable.contains("ERROR") || createRowTable.contains("Failed")) {
-        throw new GradleException("Failed to start create row table")
-      }
+      runSQLScript("status_queries.sql")
 
-      def statusqueries = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/status_queries.sql"]);
-      println "${statusqueries}"
-      if (statusqueries.contains("ERROR") || statusqueries.contains("Failed")) {
-        throw new GradleException("Failed to run status queries")
+      runSQLScript("olap_queries.sql")
+
+      runSQLScript("oltp_queries.sql")
+
+      runSQLScript("olap_queries.sql")
+
+      def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
+      println "${startSparkResult}"
+
+      def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit",
+              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://localhost:7077",
+               "--conf", "snappydata.store.locators=localhost:10334", "--conf", "spark.ui.port=4041",
+               "${snappyProductDir}/lib/${exampleArchiveName}"]);
+
+      println "${airlineappresult}"
+      if (airlineappresult.toLowerCase().contains("exception")) {
+        throw new GradleException("Failed to submit AirlineDataSparkApp")
       }
 
       def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
@@ -480,15 +500,10 @@ task runQuickstart {
         throw new GradleException("Failed to submit queries")
       }
 
-      def oltpqueries = runScript("${snappyProductDir}/bin/snappy-shell",
-              ["run", "-file=${snappyProductDir}/quickstart/scripts/oltp_queries.sql"]);
-      println "${oltpqueries}"
-      if (oltpqueries.contains("ERROR") || oltpqueries.contains("Failed")) {
-        throw new GradleException("Failed to run oltp queries")
-      }
 
     } finally {
       println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", []);
+      println runScript("${snappyProductDir}/sbin/stop-all.sh", []);
     }
   }
 }
@@ -496,6 +511,7 @@ task runQuickstart {
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-tools_${scalaBinaryVersion}").buildDir)
+  copyTestsCommonResources(project(":snappy-aqp").buildDir)
   copyTestsCommonResources(project(':snappy-dunits').buildDir)
 }
 
@@ -508,7 +524,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test' //, ":snappy-aqp:check"
+  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-aqp:check', ':snappy-dunits:test'
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
