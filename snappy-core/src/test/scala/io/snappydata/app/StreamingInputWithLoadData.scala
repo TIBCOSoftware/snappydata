@@ -81,14 +81,14 @@ object StreamingInputWithLoadData extends Serializable {
 
     // initial load of data.
     val baseDF1 = snc.read.parquet("/soubhikc1/wrk/w/s/data/2007-p5")
-    baseDF1.insertIntoSampleTables("arSample1", "arSample2")
+    baseDF1.insertIntoAQPStructures("arSample1", "arSample2")
 
     snc.sql("SELECT count(*) FROM arSample1").show
 
     val basedata = snc.sparkContext.textFile("/soubhikc1/wrk/w/s/data/2007-p4.csv")
     val baseDF2 = snc.createDataFrame(userInterpreter.userDefinedRowInterpreter(basedata, schema), schema)
 
-    baseDF2.insertIntoSampleTables("arSample1", "arSample2")
+    baseDF2.insertIntoAQPStructures("arSample1", "arSample2")
 
     snc.sql("SELECT count(*) FROM arSample1").show
 
