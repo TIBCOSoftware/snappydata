@@ -235,11 +235,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
            LocalMode(_, _) =>
         (true, ExternalStoreUtils.defaultStoreURL(sc) +
-            ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
+            ";disable-streaming=true;default-persistent=true",
+            Constant.JDBC_EMBEDDED_DRIVER)
       case SnappyShellMode(_, props) =>
         (true, Constant.DEFAULT_EMBEDDED_URL +
-            ";host-data=false;default-persistent=true;" + props,
-            Constant.JDBC_EMBEDDED_DRIVER)
+            ";host-data=false;disable-streaming=true;default-persistent=true;" +
+            props, Constant.JDBC_EMBEDDED_DRIVER)
       case ExternalClusterMode(_, _) =>
         (false, null, null)
     }
