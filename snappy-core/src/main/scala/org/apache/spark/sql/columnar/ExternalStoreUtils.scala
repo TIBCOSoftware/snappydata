@@ -99,8 +99,9 @@ private[sql] object ExternalStoreUtils extends Logging {
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ';' + url
-      case ExternalClusterMode(_, _) =>
-        throw new AnalysisException("Option 'url' not specified")
+      case ExternalClusterMode(_, url) =>
+        throw new AnalysisException("Option 'url' not specified for cluster " +
+            url)
     }
   }
 
