@@ -776,7 +776,7 @@ object SnappyContext extends Logging {
       ConnectionPool.clear()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isExternalShellMode(sc)) {
+      if (ExternalStoreUtils.isNotEmbeddedMode(sc)) {
         ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
       }
       sc.stop()
