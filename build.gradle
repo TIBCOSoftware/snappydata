@@ -57,7 +57,7 @@ allprojects {
   ext {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
-    sparkVersion = '1.5.0-SNAPSHOT.1'
+    sparkVersion = '1.6.0-SNAPSHOT'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
@@ -299,6 +299,7 @@ task generateSources {
 
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
+  dependsOn ':snappy-aqp:jar'
   dependsOn ':snappy-examples:jar'
 
   doFirst {
@@ -327,6 +328,7 @@ task product {
     release << "Build flags: ${buildFlags}\n"
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
+    def aqpProject = project(':snappy-aqp')
     def examplesProject = project(':snappy-examples')
     def baseName = 'snappy-spark-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
@@ -336,6 +338,11 @@ task product {
       into "${snappyProductDir}/lib"
       include "${toolsProject.shadowJar.archiveName}"
       rename { filename -> archiveName }
+    }
+    copy {
+      from("${aqpProject.buildDir}/libs")
+      into "${snappyProductDir}/lib"
+      include "${aqpProject.jar.archiveName}"
     }
     copy {
       from "${examplesProject.buildDir}/libs"
@@ -517,7 +524,7 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test' , ":snappy-aqp:check"
+  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-aqp:check', ':snappy-dunits:test'
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
