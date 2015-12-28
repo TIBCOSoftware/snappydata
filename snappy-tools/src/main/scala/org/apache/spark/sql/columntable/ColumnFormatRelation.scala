@@ -142,7 +142,7 @@ class ColumnFormatRelation(
 
   def insert(data: DataFrame, mode: SaveMode): Unit = {
     if (mode == SaveMode.Overwrite) {
-      sqlContext.asInstanceOf[SnappyContext].truncateExternalTable(table)
+      truncate
     }
     JdbcUtils.saveTable(data, url, table, connProperties)
   }
