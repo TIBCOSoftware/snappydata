@@ -734,8 +734,8 @@ object SnappyContext extends Logging {
   private def evalClusterMode(sc: SparkContext): ClusterMode = {
     if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
-        throw new SparkException(
-          "Missing 'io.snappydata.ToolsCallbackImpl$' from SnappyData tools package")
+        throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
+            " from SnappyData tools package")
       }
       SnappyEmbeddedMode(sc,
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
