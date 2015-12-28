@@ -1,6 +1,7 @@
 package io.snappydata
 
 import java.io.File
+import java.sql.SQLException
 
 import scala.util.control.NonFatal
 
@@ -120,6 +121,7 @@ abstract class SnappyFunSuite
       try {
         toolsCallback.invokeStopFabricServer(sc)
       } catch {
+        case se:SQLException  if(se.getCause.getMessage.indexOf("No connection to the distributed system") != -1) =>
         case NonFatal(_) => // ignore
       }
     }

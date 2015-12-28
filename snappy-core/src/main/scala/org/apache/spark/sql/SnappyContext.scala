@@ -1,6 +1,6 @@
 package org.apache.spark.sql
 
-import java.sql.Connection
+import java.sql.{SQLException, Connection}
 
 import org.apache.spark.sql.streaming._
 
@@ -777,7 +777,12 @@ object SnappyContext extends Logging {
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isNotEmbeddedMode(sc)) {
-        ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+        try {
+          ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+        }catch {
+          case se:SQLException  if(se.getCause.getMessage.indexOf("No connection to the distributed system") != -1) =>
+          //ignore
+        }
       }
       sc.stop()
     }
