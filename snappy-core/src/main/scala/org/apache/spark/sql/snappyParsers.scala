@@ -3,7 +3,7 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
@@ -15,17 +15,8 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 
-/**
- * Snappy SQL extensions. Includes:
- *
- * Stratified sampled tables:
- * 1) ERROR ESTIMATE AVG: error estimate for mean of a column/expression
- * 2) ERROR ESTIMATE SUM: error estimate for sum of a column/expression
- */
-object SnappyParser extends SqlParserBase {
+class SnappyParserBase extends SqlParserBase {
 
-  //protected val ERROR = Keyword("ERROR")
-  //protected val ESTIMATE = Keyword("ESTIMATE")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
   // Added for streaming window CQs
@@ -36,42 +27,8 @@ object SnappyParser extends SqlParserBase {
   protected val SECONDS = Keyword("SECONDS")
   protected val MINUTES = Keyword("MINUTES")
 
-//  protected val ERRORPERCENT = Keyword("ERRORPERCENT")
- // protected val CONFIDENCE =Keyword("CONFIDENCE")
-
-//  protected val defaultConfidence = 0.75
-
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
       cte | dmlForExternalTable
-
-  override protected lazy val select: Parser[LogicalPlan] =
-    SELECT ~> DISTINCT.? ~
-        repsep(projection, ",") ~
-        (FROM ~> relations).? ~
-        (WHERE ~> expression).? ~
-        (GROUP ~ BY ~> rep1sep(expression, ",")).? ~
-        (HAVING ~> expression).? ~
-        sortType.? ~
-        (LIMIT ~> expression).? ^^
-        //(ERRORPERCENT ~> expression).? ~
-       // (CONFIDENCE ~> expression).? ^^
-     {
-     // case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l ~ e ~ c =>
-       case d ~ p ~ r ~ f ~ g ~ h ~ o ~ l  =>
-        val base = r.getOrElse(OneRowRelation)
-        val withFilter = f.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, base)).getOrElse(base)
-        val withProjection = g
-            .map(org.apache.spark.sql.catalyst.plans.logical.Aggregate(_, p.map(UnresolvedAlias(_)), withFilter))
-            .getOrElse(org.apache.spark.sql.catalyst.plans.logical.Project(p.map(UnresolvedAlias(_)), withFilter))
-        val withDistinct = d.map(_ => Distinct(withProjection)).getOrElse(withProjection)
-        val withHaving = h.map(org.apache.spark.sql.catalyst.plans.logical.Filter(_, withDistinct)).getOrElse(withDistinct)
-        val withOrder = o.map(_ (withHaving)).getOrElse(withHaving)
-        val withLimit = l.map(org.apache.spark.sql.catalyst.plans.logical.Limit(_, withOrder)).getOrElse(withOrder)
-        withLimit
-
-    }
-
-  override protected lazy val function = functionDef
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
     (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~ wholeInput ^^ {
@@ -119,6 +76,10 @@ object SnappyParser extends SqlParserBase {
       case failureOrError => throw new SQLException(failureOrError.toString, "42X01")
     }
   }
+
+}
+
+object SnappyParser extends SnappyParserBase{
 
 }
 
