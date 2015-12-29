@@ -276,7 +276,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       stop10Tags.foreach(println) // scalastyle:ignore
     }
 
-    ssnc.sql( """STREAMING CONTEXT START """)
+    ssnc.sql("STREAMING START")
     ssnc.awaitTerminationOrTimeout(10 * 1000)
   }
 
@@ -293,7 +293,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "(duration '10' seconds, slide '10' seconds) ")
 
     val thrown = intercept[Exception] {
-      ssnc.sql( """STREAMING CONTEXT START """)
+      ssnc.sql("STREAMING START")
     }
     assert(thrown.getMessage === "requirement failed: No output operations" +
       " registered, so nothing to execute")
@@ -316,7 +316,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
    Map.empty[String, String]) */
 
     val thrown = intercept[Exception] {
-      ssnc.sql( """STREAMING CONTEXT START """)
+      ssnc.sql("STREAMING START")
     }
     assert(thrown.getMessage === "requirement failed: No output operations " +
       "registered, so nothing to execute")
@@ -337,7 +337,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     }
 
     val ex = intercept[Exception] {
-      ssnc.sql( """STREAMING CONTEXT START """)
+      ssnc.sql("STREAMING START")
     }
     assert(ex.getMessage === "requirement failed: No output operations" +
       " registered, so nothing to execute")
@@ -354,7 +354,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     ssnc.registerCQ("SELECT name FROM fileStreamTable window " +
       "(duration '10' seconds, slide '10' seconds) WHERE age >= 18")
     val thrown = intercept[Exception] {
-      ssnc.sql( """STREAMING CONTEXT START """)
+      ssnc.sql("STREAMING START")
     }
     assert(thrown.getMessage === "requirement failed: No output operations" +
       " registered, so nothing to execute")

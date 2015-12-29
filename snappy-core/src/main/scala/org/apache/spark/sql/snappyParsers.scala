@@ -210,7 +210,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
-    (STREAMING ~> CONTEXT ~>
+    (STREAMING ~>
         (INIT ^^^ 0 | START ^^^ 1 | STOP ^^^ 2) ~ numericLit.?) ^^ {
       case action ~ batchInterval =>
         if (batchInterval.isDefined) {
