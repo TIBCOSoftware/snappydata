@@ -16,12 +16,9 @@ import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore, CachedBatchIteratorOnRS, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partitioner, HashPartitioner, Partition, Logging, SparkContext, TaskContext}
 import scala.reflect.ClassTag
 import scala.collection.JavaConverters._
-
-
-
 
 /**
  * Column Store implementation for GemFireXD.
@@ -111,15 +108,16 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
     tableName: String, requiredColumns: Array[String],
     connectionProperties: ConnectionProperties,
-    store: JDBCSourceAsColumnarStore)
-    extends RDD[CachedBatch](_sc, Nil) with SparkShellRDDHelper {
+    store: ExternalStore)
+    extends RDD[CachedBatch](_sc, Nil)  {
+
+  override  val partitioner = store.getPartitioner
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
-
-    val conn: Connection = getConnection(connectionProperties, split)
-    val query: String = getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema), requiredColumns, split.index)
-    val (statement, rs) = executeQuery(conn, tableName, split, query)
+    val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, split)
+    val query: String = SparkShellRDDHelper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema), requiredColumns, split.index)
+    val (statement, rs) = SparkShellRDDHelper.executeQuery(conn, tableName, split, query)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
 
@@ -129,7 +127,7 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
-    getPartitions(tableName, store)
+    SparkShellRDDHelper.getPartitions(tableName, store)
   }
 }
 
@@ -145,14 +143,15 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     partitions: Array[Partition] = Array.empty[Partition],
     blockMap: Map[InternalDistributedMember, BlockManagerId] = Map.empty[InternalDistributedMember, BlockManagerId],
     properties: Properties = new Properties())
-    extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns, connectionProperties, filters, partitions, blockMap, properties)
-    with SparkShellRDDHelper {
+    extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns, connectionProperties,
+      filters, partitions, blockMap, properties) {
 
+  override val partitioner: Option[Partitioner] = store.getPartitioner
 
   override def computeResultSet(thePart: Partition): (Connection, Statement, ResultSet) = {
-    val conn: Connection = getConnection(connectionProperties, thePart)
+    val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, thePart)
     val query: String = getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema), columns, thePart.index)
-    val (statement, rs) = executeQuery(conn, tableName, thePart, query)
+    val (statement, rs) = SparkShellRDDHelper.executeQuery(conn, tableName, thePart, query)
     (conn, statement, rs)
   }
 
@@ -162,10 +161,10 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
-    getPartitions(tableName, store)
+    SparkShellRDDHelper.getPartitions(tableName, store)
   }
 
-  override def getSQLStatement(resolvedTableName: String, requiredColumns: Array[String], partitionId: Int): String = {
+  def getSQLStatement(resolvedTableName: String, requiredColumns: Array[String], partitionId: Int): String = {
     "select " + requiredColumns.mkString(", ") + " from " + resolvedTableName
   }
 }

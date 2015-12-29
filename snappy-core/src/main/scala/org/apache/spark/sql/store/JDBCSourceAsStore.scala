@@ -11,7 +11,7 @@ import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.{TaskContext, Partition, SparkContext, SparkEnv}
+import org.apache.spark.{Partitioner, HashPartitioner, TaskContext, Partition, SparkContext, SparkEnv}
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
@@ -33,6 +33,10 @@ class JDBCSourceAsStore(override val connProperties:ConnectionProperties,
   protected val dialect = JdbcDialects.get(connProperties.url)
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(connProperties.url)
+
+  lazy private val hashPartitioner = new HashPartitioner(numPartitions)
+
+  override  def getPartitioner:Option[Partitioner] = Option(hashPartitioner)
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],

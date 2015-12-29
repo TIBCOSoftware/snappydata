@@ -6,7 +6,7 @@ import java.util.UUID
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import org.apache.spark.SparkContext
+import org.apache.spark.{Partitioner, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
@@ -19,6 +19,7 @@ trait ExternalStore extends Serializable {
   final val shadowTableNamePrefix = "_shadow_"
   final val columnPrefix = "Col_"
 
+  def getPartitioner :Option[Partitioner] = None
   def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
       batchId: Option[UUID] = None): UUIDRegionKey
 

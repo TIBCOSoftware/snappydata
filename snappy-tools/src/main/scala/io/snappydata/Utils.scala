@@ -45,7 +45,7 @@ object Utils {
   }
 }
 
-trait SparkShellRDDHelper {
+object SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -75,10 +75,11 @@ trait SparkShellRDDHelper {
     val par = split.index
     val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
     useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
-    createConnection(connectionProperties, urlsOfNetServerHost, useLocatorURL)
+    createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
   def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
+    useLocatorURL=false;
     store.tryExecute(tableName, {
       case conn =>
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
@@ -92,16 +93,15 @@ trait SparkShellRDDHelper {
     })
   }
 
-  def createConnection(connProps: ConnectionProperties, hostList: ArrayBuffer[(String, String)],
-      connectToLocator: Boolean): Connection = {
+  def createConnection(connProps: ConnectionProperties, hostList: ArrayBuffer[(String, String)])
+  : Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
     // setup pool properties
     val maxPoolSize = String.valueOf(math.max(
       32, Runtime.getRuntime.availableProcessors() * 2))
 
-
-    val jdbcUrl = if (connectToLocator) {
+    val jdbcUrl = if (useLocatorURL) {
       connProps.url
     } else {
       if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
@@ -120,11 +120,11 @@ trait SparkShellRDDHelper {
         GemFireXDClientDialect, props, connProps.connProps, connProps.hikariCP)
     } catch {
       case sqlException: SQLException =>
-        if (hostList.size == 1 || connectToLocator)
+        if (hostList.size == 1 || useLocatorURL)
           throw sqlException
         else {
           hostList.remove(index)
-          createConnection(connProps, hostList, connectToLocator)
+          createConnection(connProps, hostList)
         }
     }
   }
