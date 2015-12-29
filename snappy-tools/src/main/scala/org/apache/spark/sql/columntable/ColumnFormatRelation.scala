@@ -9,9 +9,11 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SparkShellRDDHelper
+import org.scalatest.path
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
@@ -28,7 +30,7 @@ import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.{HashPartitioner, Logging, Partition, SparkContext}
 /**
  * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -130,11 +132,10 @@ class ColumnFormatRelation(
           externalStore
         ).asInstanceOf[RDD[Row]]
 
-        //Computing both the rdd's before doing union as reduces the  query time significantly
-        colRdd.count
-        rowRdd.count
+        rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
+          leftIter ++ rightIter
+        }
 
-        colRdd.union(rowRdd)
       }
 
     }
