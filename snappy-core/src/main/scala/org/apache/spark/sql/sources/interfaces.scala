@@ -3,22 +3,22 @@ package org.apache.spark.sql.sources
 import java.sql.Connection
 import java.util.Properties
 
-import scala.collection.mutable
-import scala.util.control.NonFatal
-
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc.{JdbcType, JdbcDialect, JdbcDialects}
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext, SaveMode}
 
+import scala.collection.mutable
+import scala.util.control.NonFatal
+
 @DeveloperApi
-trait RowInsertableRelation {
+trait RowInsertableRelation extends SingleRowInsertableRelation {
 
   /**
    * Insert a sequence of rows into the table represented by this relation.
@@ -30,13 +30,18 @@ trait RowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
-@DeveloperApi
-trait UpdatableRelation {
 
+@DeveloperApi
+trait SingleRowInsertableRelation {
   /**
    * Execute a DML SQL and return the number of rows affected.
    */
   def executeUpdate(sql: String): Int
+
+}
+
+@DeveloperApi
+trait UpdatableRelation extends SingleRowInsertableRelation {
 
   /**
    * Update a set of rows matching given criteria.
@@ -148,7 +153,9 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   def dropTable(tableName: String, conn: Connection, context: SQLContext,
       ifExists: Boolean): Unit
 
-  def initializeTable(tableName: String, conn: Connection): Unit = {}
+  def initializeTable(tableName: String, caseSensitive: Boolean,
+      conn: Connection): Unit = {
+  }
 
   def extraDriverProperties(isLoner: Boolean): Properties =
     new Properties()
@@ -212,10 +219,7 @@ object JdbcExtendedUtils {
       Utils.normalizeIdUpperCase(table.substring(0, dotIndex))
     } else {
       // get the current schema
-      dialect match {
-        case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
-        case _ => conn.getSchema
-      }
+      getCurrentSchema(conn, dialect)
     }
     val tableName = Utils.normalizeIdUpperCase(if (dotIndex > 0)
       table.substring(dotIndex + 1)
@@ -225,6 +229,14 @@ object JdbcExtendedUtils {
       rs.next()
     } catch {
       case t: java.sql.SQLException => false
+    }
+  }
+
+  def getCurrentSchema(conn: Connection,
+      dialect: JdbcDialect): String = {
+    dialect match {
+      case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
+      case _ => conn.getSchema
     }
   }
 

@@ -3,13 +3,17 @@ package org.apache.spark.sql.rowtable
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.PartitionedDataSourceScan
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartition, JDBCRDD}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -45,7 +49,9 @@ class RowFormatRelation(
       connProperties,
       hikariCP,
       origOptions,
-      sqlContext) {
+      sqlContext) with PartitionedDataSourceScan {
+
+  override def toString: String = s"RowFormatRelation[$table]"
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
@@ -56,7 +62,7 @@ class RowFormatRelation(
         new RowFormatScanRDD(
           sqlContext.sparkContext,
           connector,
-          JDBCMutableRelation.pruneSchema(schemaFields, requiredColumns),
+          ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
           filters,
@@ -65,19 +71,56 @@ class RowFormatRelation(
           connProperties
         ).asInstanceOf[RDD[Row]]
 
-      case _ => super.buildScan(requiredColumns, filters)
+      case _ =>
+        super.buildScan(requiredColumns, filters)
     }
   }
+
+  /**
+   * We need to set num partitions just to cheat Exchange of Spark.
+   * This partition is not used for actual scan operator which depends on the
+   * actual RDD.
+   * Spark ClusteredDistribution is pretty simplistic to consider numShufflePartitions for
+   * its partitioning scheme as Spark always uses shuffle.
+   * Ideally it should consider child Spark plans partitioner.
+   *
+   */
+  override def numPartitions: Int = {
+    val resolvedName = StoreUtils.lookupName(table, tableSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+    if (region.isInstanceOf[PartitionedRegion]) {
+      val par = region.asInstanceOf[PartitionedRegion]
+      par.getTotalNumberOfBuckets
+    } else {
+      1
+    }
+  }
+
+  override def partitionColumns: Seq[String] = {
+    val resolvedName = StoreUtils.lookupName(table, tableSchema)
+    val region = Misc.getRegionForTable(resolvedName, true)
+    val partitionColumn = if (region.isInstanceOf[PartitionedRegion]) {
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+      val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
+      val parColumn = resolver.getColumnNames
+      parColumn.toSeq
+    } else {
+      Seq.empty[String]
+    }
+    partitionColumn
+  }
+
 }
 
 final class DefaultSource extends MutableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], schema: String) = {
+
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
 
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters)
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters, true, false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
@@ -88,16 +131,10 @@ final class DefaultSource extends MutableRelationProvider {
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sc, url, connProps)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url, connProps,
+          poolProps, hikariCP, table, None)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
-
-    dialect match {
-      // The driver if not a loner should be an accesor only
-      case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraDriverProperties(Utils.isLoner(sc)))
-      case _ =>
-    }
 
     new RowFormatRelation(url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
@@ -105,7 +142,7 @@ final class DefaultSource extends MutableRelationProvider {
       preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
-      Seq.empty.toArray,
+      Array[Partition](JDBCPartition(null, 0)),
       poolProps,
       connProps,
       hikariCP,

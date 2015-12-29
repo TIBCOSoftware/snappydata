@@ -5,6 +5,9 @@ import java.net.URL
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.gemxd.ClusterCallbacksImpl
+
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
@@ -27,8 +30,7 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
-  private val SNAPPY_BLOCK_MANAGER = "org.apache.spark.storage.SnappyBlockManager"
-  private val SNAPPY_SHUFFLE_MEMORY_MANAGER = "org.apache.spark.shuffle.SnappyShuffleMemoryManager"
+  val SNAPPY_MEMORY_MANAGER = "org.apache.spark.memory.SnappyStaticMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
@@ -37,7 +39,8 @@ object ExecutorInitiator extends Logging {
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = null
-    var stopTask = false
+    @volatile var stopTask = false
+    private var retryTask : Boolean = false
     private val lock = new ReentrantLock
 
     val membershipListener = new MembershipListener {
@@ -60,6 +63,16 @@ object ExecutorInitiator extends Logging {
       }
     }
 
+    def setRetryFlag(retry : Boolean = true) : Unit = lock.synchronized {
+      retryTask = retry
+      lock.notify()
+    }
+    def getRetryFlag() : Boolean = lock.synchronized {
+      retryTask
+    }
+
+    def getDriverURL: Option[String] = lock.synchronized { driverURL }
+
     def setDriverDetails(url: Option[String],
         dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
@@ -70,24 +83,39 @@ object ExecutorInitiator extends Logging {
     override def run(): Unit = {
       var prevDriverURL = ""
       var env: SparkEnv = null
+      var numTries = 0
       try {
         GemFireXDUtils.getGfxdAdvisor.getDistributionManager
             .addMembershipListener(membershipListener)
         while (!stopTask) {
           try {
+
             Misc.checkIfCacheClosing(null)
-            if (prevDriverURL == getDriverURL) {
+            if (prevDriverURL == getDriverURLString && !getRetryFlag) {
               lock.synchronized {
-                lock.wait()
+                if (prevDriverURL == getDriverURLString && !getRetryFlag) {
+                  lock.wait()
+                }
               }
             }
             else {
+              if (getRetryFlag ) {
+                if (numTries >= 50) {
+                  logError("Exhausted number of retries to connect to the driver. Exiting.")
+                  return
+                }
+                // if it's a retry, wait for sometime before we retry.
+                // This is a measure to ensure that some unforeseen circumstance
+                // does not lead to continous retries and the thread hogs the CPU.
+                numTries = numTries + 1
+                Thread.sleep(3000)
+                setRetryFlag(false)
+              }
               // kill if an executor is already running.
               SparkCallbacks.stopExecutor(env)
               env = null
-              prevDriverURL = getDriverURL
 
-              driverURL match {
+              getDriverURL match {
                 case Some(url) =>
 
                   /**
@@ -95,8 +123,8 @@ object ExecutorInitiator extends Logging {
                    * CoarseGrainedExecutorBackend.
                    * We need to track the changes there and merge them here on a regular basis.
                    */
-                  val executorHost = GemFireCacheImpl.getInstance().getMyId.getHost
-                  val memberId = GemFireCacheImpl.getInstance().getMyId.toString
+                  val executorHost = GemFireCacheImpl.getExisting().getMyId.getHost
+                  val memberId = GemFireCacheImpl.getExisting().getMyId.toString
                   SparkHadoopUtil.get.runAsSparkUser { () =>
 
                     // Fetch the driver's Spark properties.
@@ -105,7 +133,6 @@ object ExecutorInitiator extends Logging {
                     val port = executorConf.getInt("spark.executor.port", 0)
                     val props = SparkCallbacks.fetchDriverProperty(executorHost,
                       executorConf, port, url)
-
 
                     val driverConf = new SparkConf()
                     // Specify a default directory for executor, if the local directory for executor
@@ -124,20 +151,23 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-                    // TODO: Hemant: add executor specific properties from local conf to
-                    // TODO: this conf that was received from driver.
-                    driverConf.set("spark.blockManager", SNAPPY_BLOCK_MANAGER)
-                    driverConf.set("spark.shuffleMemoryManager", SNAPPY_SHUFFLE_MEMORY_MANAGER)
+                  //TODO: Hemant: add executor specific properties from local conf to
+                  //TODO: this conf that was received from driver.
+                    //use Snappy static memory manager
+                    driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
-                      Runtime.getRuntime().availableProcessors())
+                      Runtime.getRuntime().availableProcessors() * 2)
 
                     env = SparkCallbacks.createExecutorEnv(
                       driverConf, memberId, executorHost, port, cores, false)
 
-                    // SparkEnv sets spark.executor.port so it shouldn't be 0 anymore.
-                    val boundport = env.conf.getInt("spark.executor.port", 0)
-                    assert(boundport != 0)
+                    // SparkEnv will set spark.executor.port if the rpc env is listening for incoming
+                    // connections (e.g., if it's using akka). Otherwise, the executor is running in
+                    // client mode only, and does not accept incoming connections.
+                    val sparkHostPort = env.conf.getOption("spark.executor.port").map { port =>
+                      executorHost + ":" + port
+                    }.orNull
 
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
@@ -145,14 +175,16 @@ object ExecutorInitiator extends Logging {
                     val rpcenv = SparkCallbacks.getRpcEnv(env)
 
                     val executor = new SnappyCoarseGrainedExecutorBackend(
-                      rpcenv, url, memberId, executorHost + ":" + boundport,
+                      rpcenv, url, memberId, sparkHostPort,
                       cores, userClassPath, env)
 
-                    val endPoint = rpcenv.setupEndpoint("Executor", executor)
+                    rpcenv.setupEndpoint("Executor", executor)
                   }
                 case None =>
                 // If driver url is none, already running executor is stopped.
               }
+              prevDriverURL = getDriverURLString
+
             }
           } catch {
             case e@(NonFatal(_) | _: InterruptedException) =>
@@ -176,7 +208,7 @@ object ExecutorInitiator extends Logging {
       }
     }
 
-    def getDriverURL: String = driverURL match {
+    def getDriverURLString: String = getDriverURL match {
       case Some(x) => x
       case None => ""
     }
@@ -194,6 +226,10 @@ object ExecutorInitiator extends Logging {
     executorRunnable.setDriverDetails(None, null)
   }
 
+  def restartExecutor() : Unit = {
+    executorRunnable.setRetryFlag()
+  }
+
   /**
    * Set the new driver url and start the thread if not already started
    * @param driverURL
@@ -206,6 +242,11 @@ object ExecutorInitiator extends Logging {
     if (SparkCallbacks.isDriver()) {
       logInfo("Executor cannot be instantiated in this " +
           "VM as a Spark driver is already running. ")
+      return
+    }
+
+    if (ServerGroupUtils.isGroupMember(ClusterCallbacksImpl.getLeaderGroup())) {
+      logInfo("Executor cannot be instantiated in a lead vm.")
       return
     }
 

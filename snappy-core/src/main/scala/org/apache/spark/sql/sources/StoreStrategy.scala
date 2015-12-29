@@ -2,7 +2,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, CreateTableUsing, CreateTableUsingAsSelect}
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
 
 /**
@@ -43,8 +43,9 @@ private[sql] case class ExternalTableDMLCmd(
   def run(sqlContext: SQLContext): Seq[Row] = {
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
+      case relation: SingleRowInsertableRelation => relation.executeUpdate(command)
       case other => throw new AnalysisException("DML support requires " +
-          "UpdatableRelation but found " + other)
+          "UpdatableRelation/SingleRowInsertableRelation but found " + other)
     }
     Seq.empty
   }

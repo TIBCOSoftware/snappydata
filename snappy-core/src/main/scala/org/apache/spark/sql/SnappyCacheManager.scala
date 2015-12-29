@@ -1,16 +1,17 @@
 package org.apache.spark.sql
 
+import org.apache.spark.sql.columnar.InMemoryAppendableRelation
+import org.apache.spark.sql.execution.SparkPlan
+
 import scala.collection.mutable
 
-import org.apache.spark.sql.execution.StratifiedSample
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.storage.StorageLevel
 
 /**
  * Snappy CacheManager extension to allow for appending data to cache.
  */
-private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
-    extends execution.CacheManager(sqlContext) {
+private[sql] class SnappyCacheManager extends execution.CacheManager {
 
   /**
    * Caches the data produced by the logical representation of the given
@@ -26,17 +27,12 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")
     } else {
-      val isSampledTable = query.logicalPlan match {
-        case s: StratifiedSample => true
-        case _ => false
-      }
+
+      val sqlContext = query.sqlContext
+
       cachedData += execution.CachedData(query.logicalPlan,
-        columnar.InMemoryAppendableRelation(
-          sqlContext.conf.useCompression,
-          sqlContext.conf.columnBatchSize,
-          storageLevel,
-          query.queryExecution.executedPlan,
-          tableName, isSampledTable))
+        getRelation(sqlContext, storageLevel, query.queryExecution.executedPlan, tableName, query)
+        )
     }
   }
 
@@ -46,10 +42,8 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")
     } else {
-      val isSampledTable = query.logicalPlan match {
-        case s: StratifiedSample => true
-        case _ => false
-      }
+      val sqlContext = query.sqlContext
+
       cachedData += execution.CachedData(query.logicalPlan,
         columnar.ExternalStoreRelation(
           sqlContext.conf.useCompression,
@@ -58,7 +52,7 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
           // StorageLevel.NONE, // storage level is meaningless in external store. set anything
           query.queryExecution.executedPlan,
           // all the properties including url should be in props
-          tableName, isSampledTable, jdbcSource))
+          tableName, jdbcSource))
     }
   }
 
@@ -70,4 +64,16 @@ private[sql] class SnappyCacheManager(sqlContext: SnappyContext)
     }
     stores.put(name, connProps)
   }
+
+
+  def getRelation(sqlContext: SQLContext, storageLevel: StorageLevel,
+                  executedPlan : SparkPlan, tableName: Option[String], query: DataFrame): InMemoryAppendableRelation =
+    columnar.InMemoryAppendableRelation(
+      sqlContext.conf.useCompression,
+      sqlContext.conf.columnBatchSize,
+      storageLevel,
+      executedPlan,
+      tableName)
+
+
 }

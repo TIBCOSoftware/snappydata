@@ -4,7 +4,7 @@ import java.lang.management.ManagementFactory
 import java.sql.Date
 import java.text.SimpleDateFormat
 
-import org.apache.spark.sql.execution.Approximate
+
 import org.apache.spark.sql.types.{DateType, StringType, FloatType, IntegerType, StructField, StructType}
 import org.apache.spark.sql.{Row, SnappyContext, SQLContext, DataFrame}
 import org.apache.spark.sql.hive.HiveContext
@@ -82,7 +82,7 @@ object SampleTableQuery  extends Serializable {
           "fraction" -> 0.01,
           "strataReservoirSize" -> 50), Some("mainTable"))
 
-      mainTable.insertIntoSampleTables("mainTable_sampled")
+      mainTable.insertIntoAQPStructures("mainTable_sampled")
 
       //Run query on actual table
       val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")

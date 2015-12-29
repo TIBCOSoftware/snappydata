@@ -2,14 +2,15 @@ package io.snappydata.tools
 
 import java.util.Properties
 
-import io.snappydata.impl.LeadImpl
-
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.{Constant, Property, LocalizedMessages}
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
+import io.snappydata.impl.LeadImpl
+import io.snappydata.{Constant, LocalizedMessages, Property}
 import org.scalatest.{Matchers, WordSpec}
 
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
   * BDD style tests
@@ -74,12 +75,15 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 //        }
 
         {
+          // Stop if already any present
+          SnappyContext.stop()
+          FabricServiceImpl.getInstance.stop(new Properties())
+
           val l = new LeadImpl
           val conf = (new SparkConf).
               setMaster("local[3]").setAppName("with local master")
           conf.set(Property.mcastPort, "0")
           conf.set(Constant.STORE_PROPERTY_PREFIX + "host-data", "false")
-
           val sc = new SparkContext(conf)
           try {
             val opts = l.initStartupArgs(conf, sc)
@@ -105,7 +109,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
               com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
-          assert(hdProp == l.LEADER_SERVERGROUP)
+          assert(hdProp == LeadImpl.LEADER_SERVERGROUP)
         }
 
         {
@@ -119,7 +123,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
               com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
 
           assert(hdProp != null)
-          assert(hdProp.endsWith("," + l.LEADER_SERVERGROUP))
+          assert(hdProp.endsWith("," + LeadImpl.LEADER_SERVERGROUP))
         }
       }
 

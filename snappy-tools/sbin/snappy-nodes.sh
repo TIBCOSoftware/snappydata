@@ -115,7 +115,8 @@ if [ "$HOSTLIST" = "" ]; then
       if [ -f "${SPARK_CONF_DIR}/servers" ]; then
         HOSTLIST=`cat "${SPARK_CONF_DIR}/servers"`
       else
-        HOSTLIST=localhost
+        # Start two servers by default.
+        HOSTLIST=$'localhost\nlocalhost'
       fi
     else
       HOSTLIST=`cat "${SNAPPY_SERVERS}"`
@@ -157,7 +158,7 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
 
   # Set directory folder if not already set.
   if [ -z "${dirparam}" ]; then
-    dirfolder="$SPARK_HOME"/snappy/"$host"-$componentType-$index
+    dirfolder="$SPARK_HOME"/work/"$host"-$componentType-$index
     dirparam="-dir=${dirfolder}"
     args="${args} ${dirparam}"
   fi
@@ -168,6 +169,10 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
     if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" -a "${componentType}" != "locator"  ]; then
       args="${args} -locators="$(hostname)"[10334]"
     fi
+    # Set MaxPermSize if not already set.
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'XX:MaxPermSize=')" -a "${componentType}" != "locator"  ]; then
+      args="${args} -J-XX:MaxPermSize=350m"
+    fi
   else
     args="${dirparam}"
   fi
@@ -176,21 +181,23 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
   if [ -n "${SPARK_SSH_FOREGROUND}" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
-      ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" \
+      ssh $SPARK_SSH_OPTS "$host" \
+        "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" \
+        2>&1 | sed "s/^/$host: /"
+    else
+      ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
         2>&1 | sed "s/^/$host: /"
     fi
-
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
-      2>&1 | sed "s/^/$host: /"
   else
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
-      ssh $SPARK_SSH_OPTS "$host" "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" \
+      ssh $SPARK_SSH_OPTS "$host" \
+        "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" \
         2>&1 | sed "s/^/$host: /"
+    else
+      ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
+        2>&1 | sed "s/^/$host: /" &
     fi
-
-    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
-      2>&1 | sed "s/^/$host: /" &
   fi
 
   if [ "$SPARK_SLAVE_SLEEP" != "" ]; then

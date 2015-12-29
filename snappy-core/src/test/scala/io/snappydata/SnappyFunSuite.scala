@@ -1,14 +1,23 @@
 package io.snappydata
 
 import java.io.File
+import java.sql.SQLException
 
-import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+
+import org.apache.spark.sql.collection.ToolsCallbackInit
+
+//scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+//scalastyle:on
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
@@ -28,6 +37,17 @@ abstract class SnappyFunSuite
     if (ctx != null && !ctx.isStopped) ctx
     else new SparkContext(newSparkConf())
   }
+
+  protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
+    val ctx = SnappyContext.globalSparkContext
+    if (ctx != null && !ctx.isStopped) ctx
+    else new SparkContext(newSparkConf(addOn))
+  }
+
+  protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
+    new SparkContext(newSparkConf(addOn))
+  }
+
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 
   /**
@@ -56,7 +76,8 @@ abstract class SnappyFunSuite
     FileCleaner.deletePath(dir)
   }
 
-  protected def newSparkConf(): SparkConf = LocalSparkConf.newConf()
+  protected def newSparkConf(addOn: (SparkConf) => SparkConf = null): SparkConf
+       = LocalSparkConf.newConf(addOn)
 
   protected def dirCleanup(): Unit = {
     if (dirList.nonEmpty) {
@@ -67,12 +88,18 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val sc = this.sc
-      if (sc != null && !sc.isStopped) {
+      val scL = this.sc
+      if (scL != null && !scL.isStopped) {
+        val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
             snc.dropExternalTable(tableName, ifExists = true)
-          case _ =>
+          case (tableName, true) =>
+            if (tableName.indexOf("_sampled") != -1) {
+              snc.dropSampleTable(tableName, ifExists = true)
+            } else {
+              snc.dropTempTable(tableName, ifExists = true)
+            }
         }
       }
     } finally {
@@ -86,6 +113,20 @@ abstract class SnappyFunSuite
 
   override def afterAll(): Unit = {
     baseCleanup()
+  }
+
+  def stopAll(): Unit = {
+    val toolsCallback = ToolsCallbackInit.toolsCallback
+    if (toolsCallback != null) {
+      try {
+        toolsCallback.invokeStopFabricServer(sc)
+      } catch {
+        case se:SQLException  if(se.getCause.getMessage.indexOf("No connection to the distributed system") != -1) =>
+        case NonFatal(_) => // ignore
+      }
+    }
+    println(" Stopping spark context = " + SnappyContext.globalSparkContext)
+    SnappyContext.stop()
   }
 
   def createDir(fileName: String): String = {

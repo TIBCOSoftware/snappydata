@@ -32,14 +32,13 @@ import scala.collection.mutable.ArrayBuffer
 
 import org.apache.spark._
 import org.apache.spark.rdd.{RDD, UnionRDD}
-import org.apache.spark.sql.CachedRDD
+
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.{ConvertToUnsafe, SparkPlan}
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 
 private[sql] class InMemoryAppendableRelation(
@@ -48,23 +47,20 @@ private[sql] class InMemoryAppendableRelation(
     override val batchSize: Int,
     override val storageLevel: StorageLevel,
     override val child: SparkPlan,
-    override val tableName: Option[String],
-    private val isSampledTable: Boolean)(
+    override val tableName: Option[String])(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
     private var _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null,
-    private var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
+    private[columnar] var _cachedBufferList: ArrayBuffer[RDD[CachedBatch]] =
     new ArrayBuffer[RDD[CachedBatch]]())
     extends InMemoryRelation(output, useCompression, batchSize,
       storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
           _stats: Statistics,
           _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow])
-    with MultiInstanceRelation {
+    with MultiInstanceRelation with InMemoryAppendableRelationTrait{
 
-  private[sql] val reservoirRDD =
-    if (isSampledTable) Some(CachedRDD.samplerCache(tableName.get,
-      child.sqlContext))
-    else None
+  override private[sql] val reservoirRDD: Option[RDD[InternalRow]] = None
+
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -113,10 +109,10 @@ private[sql] class InMemoryAppendableRelation(
       s"InMemoryAppendableRelation: unexpected call to recache for $tableName")
   }
 
-  override def withOutput(newOutput: Seq[Attribute]) = {
+  override def withOutput(newOutput: Seq[Attribute]): InMemoryRelation = {
     new InMemoryAppendableRelation(newOutput, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable)(super.cachedColumnBuffers,
-          super.statisticsToBePropagated, batchStats, _cachedBufferList)
+      storageLevel, child, tableName)(super.cachedColumnBuffers,
+          statisticsToBePropagated, batchStats, _cachedBufferList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -128,9 +124,8 @@ private[sql] class InMemoryAppendableRelation(
       batchSize,
       storageLevel,
       child,
-      tableName,
-      isSampledTable)(super.cachedColumnBuffers,
-          super.statisticsToBePropagated,
+      tableName)(super.cachedColumnBuffers,
+          statisticsToBePropagated,
           batchStats, _cachedBufferList).asInstanceOf[this.type]
   }
 
@@ -143,7 +138,7 @@ private[sql] class InMemoryAppendableRelation(
   }
 
   override protected def otherCopyArgs: Seq[AnyRef] =
-    Seq(super.cachedColumnBuffers, super.statisticsToBePropagated,
+    Seq(super.cachedColumnBuffers, statisticsToBePropagated,
       batchStats, _cachedBufferList)
 
   override private[sql] def uncache(blocking: Boolean): Unit = {
@@ -160,10 +155,11 @@ private[sql] object InMemoryAppendableRelation {
       batchSize: Int,
       storageLevel: StorageLevel,
       child: SparkPlan,
-      tableName: Option[String],
-      isSampledTable: Boolean): InMemoryAppendableRelation =
+      tableName: Option[String]): InMemoryAppendableRelation =
     new InMemoryAppendableRelation(child.output, useCompression, batchSize,
-      storageLevel, child, tableName, isSampledTable)()
+      storageLevel, if (child.outputsUnsafeRows) child else ConvertToUnsafe(child),
+      tableName)()
+
 }
 
 private[sql] class InMemoryAppendableColumnarTableScan(
@@ -175,6 +171,7 @@ private[sql] class InMemoryAppendableColumnarTableScan(
   protected override def doExecute(): RDD[InternalRow] = {
 
     val rdd = relation.reservoirRDD
+    val rel = relation.output
     if (rdd.isEmpty) {
       return super.doExecute()
     }
@@ -186,7 +183,9 @@ private[sql] class InMemoryAppendableColumnarTableScan(
       // minimum default element size).
       val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
         val (narrowestOrdinal, narrowestDataType) =
-          rel_out.zipWithIndex.map { case (a, ordinal) =>
+
+          rel.zipWithIndex.map { case (a, ordinal) =>
+
             ordinal -> a.dataType
           } minBy { case (_, dataType) =>
             ColumnType(dataType).defaultSize
@@ -194,7 +193,9 @@ private[sql] class InMemoryAppendableColumnarTableScan(
         Seq(narrowestOrdinal) -> Seq(narrowestDataType)
       } else {
         attributes.map { a =>
-          rel_out.indexWhere(_.exprId == a.exprId) -> a.dataType
+
+          rel.indexWhere(_.exprId == a.exprId) -> a.dataType
+
         }.unzip
       }
 
