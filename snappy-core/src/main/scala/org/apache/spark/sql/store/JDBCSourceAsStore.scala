@@ -34,10 +34,6 @@ class JDBCSourceAsStore(override val connProperties:ConnectionProperties,
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(connProperties.url)
 
-  lazy private val hashPartitioner = new HashPartitioner(numPartitions)
-
-  override  def getPartitioner:Option[Partitioner] = Option(hashPartitioner)
-
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch] = {
