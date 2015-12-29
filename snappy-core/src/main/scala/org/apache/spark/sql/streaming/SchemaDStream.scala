@@ -34,9 +34,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     this(ssc, ssc.snappyContext.executePlan(logicalPlan))
 
   def saveStream(sampleTab: Seq[String]): Unit = {
-    snappyContext.saveStream(this, sampleTab, {
-      (rdd: RDD[Row], _) => rdd
-    }, this.schema)
+    snappyContext.saveStream(this, sampleTab, None)
   }
 
   override def filter(filterFunc: Row => Boolean): DStream[Row] = {

@@ -99,8 +99,9 @@ private[sql] object ExternalStoreUtils extends Logging {
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ';' + url
-      case ExternalClusterMode(_, _) =>
-        throw new AnalysisException("Option 'url' not specified")
+      case ExternalClusterMode(_, url) =>
+        throw new AnalysisException("Option 'url' not specified for cluster " +
+            url)
     }
   }
 
@@ -110,6 +111,14 @@ private[sql] object ExternalStoreUtils extends Logging {
       case _ => false
     }
   }
+
+  def isNotEmbeddedMode(sparkContext: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case SnappyShellMode(_, _) | LocalMode(_, _) => true
+      case _ => false
+    }
+  }
+
 
   def validateAndGetAllProps(sc : SparkContext,
       parameters: mutable.Map[String, String]) = {
