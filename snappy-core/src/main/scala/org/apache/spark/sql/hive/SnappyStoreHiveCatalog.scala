@@ -235,11 +235,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
            LocalMode(_, _) =>
         (true, ExternalStoreUtils.defaultStoreURL(sc) +
-            ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
+            ";disable-streaming=true;default-persistent=true",
+            Constant.JDBC_EMBEDDED_DRIVER)
       case SnappyShellMode(_, props) =>
         (true, Constant.DEFAULT_EMBEDDED_URL +
-            ";host-data=false;default-persistent=true;" + props,
-            Constant.JDBC_EMBEDDED_DRIVER)
+            ";host-data=false;disable-streaming=true;default-persistent=true;" +
+            props, Constant.JDBC_EMBEDDED_DRIVER)
       case ExternalClusterMode(_, _) =>
         (false, null, null)
     }
@@ -516,10 +517,10 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     throw new UnsupportedOperationException("missing AQP jar")
   }
 
-  def registerTopK(tableIdent: String, streamTableIdent: String,
+  /*def registerTopK(tableIdent: String,
       schema: StructType, topkOptions: Map[String, Any], rdd: RDD[(Int, TopK)]): Unit = {
     throw new UnsupportedOperationException("missing AQP jar")
-  }
+  }*/
 
   // TODO: The JDBC source is currently reading a property jdbcStore
   // to find out the type of the jdbc store. This is a

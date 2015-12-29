@@ -104,11 +104,11 @@ object StreamingInputV2 extends Serializable {
       df.appendToCache("baseMessages")
 
       if (time > before1999) {
-        df.insertIntoSampleTables("messageObjectSampling_1")
-        df.filter("Year > 1999").insertIntoSampleTables("messageObjectSampling_2")
+        df.insertIntoAQPStructures("messageObjectSampling_1")
+        df.filter("Year > 1999").insertIntoAQPStructures("messageObjectSampling_2")
       }
       else {
-        df.insertIntoSampleTables("messageObjectSampling_1",
+        df.insertIntoAQPStructures("messageObjectSampling_1",
           "messageObjectSampling_2")
       }
 

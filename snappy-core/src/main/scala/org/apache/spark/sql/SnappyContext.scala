@@ -99,24 +99,31 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
 
 
-  def saveStream[T: ClassTag](stream: DStream[T],
+  def saveStream[T](stream: DStream[T],
                               aqpTables: Seq[String],
-                              formatter: (RDD[T], StructType) => RDD[Row],
-                              schema: StructType,
-                              transform: RDD[Row] => RDD[Row] = null) {
+                              transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
+    val transfrmr = transformer match {
+      case Some(x) => x
+      case None =>  if ( !(v.tpe =:= u.typeOf[Row])) {
+        //check if the stream type is already a Row
+        throw new IllegalStateException(" Transformation to Row type needs to be supplied")
+      }else {
+        null
+      }
+    }
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
-      val rddRows = formatter(rdd, schema)
-
-      val rows = if (transform != null) {
-        transform(rddRows)
-      } else rddRows
-
-      aqpContext.collectSamples(this, rows, aqpTables, time.milliseconds)
+      val rddRows = if( transfrmr != null) {
+        transfrmr(rdd)
+      }else {
+        rdd.asInstanceOf[RDD[Row]]
+      }
+      aqpContext.collectSamples(this, rddRows, aqpTables, time.milliseconds)
     })
   }
 
-
+  def saveTable(df: DataFrame,  aqpTables: Seq[String]): Unit= this.aqpContext.collectSamples(this, df.rdd,
+    aqpTables, System.currentTimeMillis())
 
 
   /**
@@ -257,9 +264,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
       jdbcSource)
 
 
-  def registerTopK(tableName: String, streamTableName: String,
+  def createTopK(topKName: String, keyColumnName: String,
+                 inputDataSchema: StructType,
       topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit =
-      aqpContext.registerTopK(self, tableName, streamTableName,
+      aqpContext.createTopK(self, topKName, keyColumnName, inputDataSchema,
         topkOptions, isStreamSummary)
 
 
@@ -726,8 +734,8 @@ object SnappyContext extends Logging {
   private def evalClusterMode(sc: SparkContext): ClusterMode = {
     if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
-        throw new SparkException(
-          "Missing 'io.snappydata.ToolsCallbackImpl$' from SnappyData tools package")
+        throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
+            " from SnappyData tools package")
       }
       SnappyEmbeddedMode(sc,
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
@@ -768,7 +776,7 @@ object SnappyContext extends Logging {
       ConnectionPool.clear()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isExternalShellMode(sc)) {
+      if (ExternalStoreUtils.isNotEmbeddedMode(sc)) {
         ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
       }
       sc.stop()
