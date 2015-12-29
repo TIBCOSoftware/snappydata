@@ -128,6 +128,10 @@ final class DefaultSource extends MutableRelationProvider {
     val (url, _, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
+    if(parameters.size > 0 ){
+      throw new AnalysisException(s"Unknown options ${parameters.keys} specified for row table ")
+    }
+
     val dialect = JdbcDialects.get(url)
     val blockMap =
       dialect match {

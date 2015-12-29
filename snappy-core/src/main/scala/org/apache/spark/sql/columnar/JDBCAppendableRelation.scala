@@ -22,7 +22,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDBaseDialect, JDBCMutableRelation}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
+import org.apache.spark.sql.store.{ ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
 /**
  * A LogicalPlan implementation for an external column table whose contents
@@ -362,7 +362,7 @@ class ColumnarRelationProvider
   protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
     //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
     val DEFAULT_BUCKETS_FOR_COLUMN = "113"
-    parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
+    parameters.get("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
   }
 
   override def createRelation(sqlContext: SQLContext,

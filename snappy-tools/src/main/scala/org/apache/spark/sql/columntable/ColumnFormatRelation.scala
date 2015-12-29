@@ -342,17 +342,28 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(options)
-    StoreUtils.removeInternalProps(parametersForShadowTable)
+    ExternalStoreUtils.removeInternalProps(parametersForShadowTable)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-    val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
-    val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
     val (url, driver, poolProps, connProps, hikariCP) =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
+
+    val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
+    val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
+
+    // At this time all the required properties have been extracted.
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
+
+    // Now check if anything else remaining.
+    if(parameters.size > 0 ){
+      throw new AnalysisException(s"Unknown options ${parameters.keys} specified for column table ")
+    }
+
+    val numPartitions = getPartitions(parametersForShadowTable)
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
+
 
     val dialect = JdbcDialects.get(url)
     val blockMap =
@@ -382,7 +393,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       schemaExtension,
       ddlExtensionForShadowTable,
       poolProps,
-      getPartitions(parameters),
+      numPartitions,
       connProps,
       hikariCP,
       options,
