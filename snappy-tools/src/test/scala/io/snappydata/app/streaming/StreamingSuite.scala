@@ -104,8 +104,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
 
     val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    schemaStream1.foreachRDD(rdd => {
-      schemaStream1.createDataFrame(rdd)
+    schemaStream1.foreachDataFrame(df => {
+      df.count()
     })
     schemaStream1.registerAsTable("tweetStream1")
 
@@ -119,8 +119,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream2 = ssnc.queueStream[Tweet](getQueueOfRDDs2)
 
     val schemaStream2 = ssnc.createSchemaDStream(dStream2)
-    schemaStream2.foreachRDD(rdd => {
-      schemaStream2.createDataFrame(rdd)
+    schemaStream2.foreachDataFrame(df => {
+      df.count()
     })
     schemaStream2.registerAsTable("tweetStream2")
 
@@ -132,8 +132,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
-    resultStream.foreachRDD(rdd => {
-      val df = resultStream.createDataFrame(rdd)
+    resultStream.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
@@ -145,8 +144,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
       "(duration '4' seconds, slide '4' seconds) " +
       "t1 JOIN tweetTable t2 ON t1.id = t2.id")
-    resultSet.foreachRDD(rdd => {
-      val df = resultSet.createDataFrame(rdd)
+    resultSet.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
@@ -170,8 +168,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
 
     val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    schemaStream1.foreachRDD(rdd => {
-      schemaStream1.createDataFrame(rdd)
+    schemaStream1.foreachDataFrame(df => {
+      df.count()
     })
     schemaStream1.registerAsTable("tweetStream1")
 
@@ -185,8 +183,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream2 = ssnc.queueStream[Tweet](getQueueOfRDDs2)
 
     val schemaStream2 = ssnc.createSchemaDStream(dStream2)
-    schemaStream2.foreachRDD(rdd => {
-      schemaStream2.createDataFrame(rdd)
+    schemaStream2.foreachDataFrame(df => {
+      df.show()
     })
     schemaStream2.registerAsTable("tweetStream2")
 
@@ -198,8 +196,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
-    resultStream.foreachRDD(rdd => {
-      val df = resultStream.createDataFrame(rdd)
+    resultStream.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
@@ -214,9 +211,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       " (duration '4' seconds, slide '4' seconds) " +
       "t1 JOIN tweetTable t2 ON t1.id = t2.id")
 
-    resultSet.foreachRDD(rdd => {
-      val df = resultSet.createDataFrame(rdd)
-      df.show
+    resultSet.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("gemxdColumnTable")
     })
@@ -237,7 +232,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
       "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
       "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-      "streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter')")
+      "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
 
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
 
@@ -259,8 +254,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "options('PARTITION_BY','id')")
 
     var numTimes = 0
-    tableStream.foreachRDD { rdd =>
-      val df = tableStream.createDataFrame(rdd)
+    tableStream.foreachDataFrame { df =>
       df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
         .saveAsTable("rawStreamColumnTable")
 
@@ -293,7 +287,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "hostname 'localhost', " +
       "port '9998', " +
       "storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "streamToRows 'io.snappydata.app.streaming.LineToRowsConverter') ")
+      "rowConverter 'io.snappydata.app.streaming.LineToRowsConverter') ")
 
     ssnc.registerCQ("SELECT * FROM socketStreamTable window " +
       "(duration '10' seconds, slide '10' seconds) ")
@@ -311,7 +305,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     ssnc.sql("create stream table directKafkaStreamTable (name string, age int)" +
       " using kafka_stream options " +
       "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "streamToRows 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
+      "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
       "zkQuorum 'localhost:2181', " +
       "groupId 'streamSQLConsumer', " +
       "topics 'tweets:01')")
@@ -337,7 +331,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       ssnc.sql("create stream table directKafkaStreamTable (name string, age int) " +
         "using directkafka_stream options " +
         "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-        "streamToRows 'io.snappydata.app.streaming.KafkastreamToRowsConverter', " +
+        "rowConverter 'io.snappydata.app.streaming.KafkastreamToRowsConverter', " +
         " kafkaParams 'metadata.broker.list->localhost:9092', " +
         "topics 'tweets')")
     }
@@ -355,7 +349,7 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     ssnc.sql("create stream table fileStreamTable (name string, age int)" +
       " using file_stream options " +
       "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-      "streamToRows 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
+      "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
       " directory '/tmp')")
     ssnc.registerCQ("SELECT name FROM fileStreamTable window " +
       "(duration '10' seconds, slide '10' seconds) WHERE age >= 18")

@@ -1,12 +1,12 @@
 package org.apache.spark.sql.streaming
 
+import scala.collection.immutable
+
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.streaming.dstream.DStream
-
-import scala.collection.immutable
 
 /**
   * A PhysicalPlan wrapper of SchemaDStream, inject the validTime and
@@ -18,8 +18,8 @@ import scala.collection.immutable
   *
   */
 case class PhysicalDStreamPlan(output: Seq[Attribute],
-                               @transient stream: DStream[InternalRow])
-  extends SparkPlan with StreamPlan {
+    @transient stream: DStream[InternalRow])
+    extends SparkPlan with StreamPlan {
 
   def children: immutable.Nil.type = Nil
 
@@ -30,6 +30,6 @@ case class PhysicalDStreamPlan(output: Seq[Attribute],
     // if(!stream.isInitialized) stream
     // .initializeAfterContextStart(validTime)
     stream.getOrCompute(validTime)
-      .getOrElse(new EmptyRDD[InternalRow](sparkContext))
+        .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 }
