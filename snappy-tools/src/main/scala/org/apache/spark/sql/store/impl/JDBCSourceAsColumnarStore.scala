@@ -111,12 +111,12 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
     store: ExternalStore)
     extends RDD[CachedBatch](_sc, Nil)  {
 
-  override  val partitioner = store.getPartitioner
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
     val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, split)
-    val query: String = SparkShellRDDHelper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema), requiredColumns, split.index)
+    val query: String = SparkShellRDDHelper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
+                        requiredColumns, split.index)
     val (statement, rs) = SparkShellRDDHelper.executeQuery(conn, tableName, split, query)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
@@ -145,8 +145,6 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     properties: Properties = new Properties())
     extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns, connectionProperties,
       filters, partitions, blockMap, properties) {
-
-  override val partitioner: Option[Partitioner] = store.getPartitioner
 
   override def computeResultSet(thePart: Partition): (Connection, Statement, ResultSet) = {
     val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, thePart)

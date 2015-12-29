@@ -132,9 +132,7 @@ class ColumnFormatRelation(
           externalStore
         ).asInstanceOf[RDD[Row]]
 
-        rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
-          leftIter ++ rightIter
-        }
+        colRdd.union(rowRdd)
 
       }
 
