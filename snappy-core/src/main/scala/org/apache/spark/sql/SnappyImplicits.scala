@@ -3,8 +3,6 @@ package org.apache.spark.sql
 import org.apache.spark.rdd.RDD
 
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.streaming.{SnappyStreamingContext, StreamingCtxtHolder}
-import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.{SparkContext, TaskContext}
 
 import scala.language.implicitConversions
@@ -33,6 +31,7 @@ object snappy extends Serializable {
       case _ => plan
     }
   }
+/*
 
   implicit class SparkContextOperations(val s: SparkContext) {
     def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
@@ -40,6 +39,7 @@ object snappy extends Serializable {
     }
   }
 
+*/
   implicit class RDDExtensions[T: ClassTag](rdd: RDD[T]) extends Serializable {
 
     /**

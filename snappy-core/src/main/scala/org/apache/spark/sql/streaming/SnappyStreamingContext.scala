@@ -1,17 +1,18 @@
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Duration, Seconds, StreamingContext, StreamingContextState}
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
+
+import org.apache.spark.Logging
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
+import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.{Milliseconds, Duration, StreamingContext}
 
 /**
   * Provides an ability to manipulate SQL like query on DStream
@@ -20,13 +21,13 @@ import scala.reflect.runtime.{universe => u}
   */
 
 class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
-                                              val batchDur: Duration)
-  extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
+    val batchDur: Duration)
+    extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
 
   self =>
 
   def sql(sqlText: String): DataFrame = {
-    StreamPlan.currentContext.set(self)
+    // StreamPlan.currentContext.set(self)
     snappyContext.sql(sqlText)
   }
 
@@ -43,28 +44,10 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
     // TODO Yogesh, This needs to get registered with catalog
     // catalog.registerCQ(queryStr, plan)
     val dStream = new SchemaDStream(self, plan)
-    // TODO Yogesh, Remove this hack
-    /* if (streamingContext.getState() == StreamingContextState.ACTIVE) {
-      val zeroTime = streamingContext.graph.zeroTime
-      var currentTime = Time(System.currentTimeMillis())
-      while (!(currentTime - zeroTime).isMultipleOf(dStream.slideDuration)) {
-        currentTime = Time(System.currentTimeMillis())
-      }
-      // For dynamic CQ
-      dStream.initializeAfterContextStart(currentTime)
-      //streamingContext.graph.addOutputStream(dStream)
-    } */
     dStream
   }
 
-
-
-//  override def stop(stopSparkContext: Boolean, stopGracefully: Boolean): Unit = {
-//    super.stop(stopSparkContext, stopGracefully)
-//    StreamPlan.currentContext.remove()
-//  }
-
-    def getSchemaDStream(tableName: String): SchemaDStream = {
+  def getSchemaDStream(tableName: String): SchemaDStream = {
     new SchemaDStream(self, snappyContext.catalog.lookupRelation(tableName))
   }
 
@@ -74,7 +57,7 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
     * every [[Row]] of the provided DStream matches the provided schema.
     */
   def createSchemaDStream(dStream: DStream[InternalRow],
-                                   schema: StructType): SchemaDStream = {
+      schema: StructType): SchemaDStream = {
     val attributes = schema.toAttributes
     SparkPlan.currentContext.set(self.snappyContext)
     StreamPlan.currentContext.set(self)
@@ -98,80 +81,53 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   }
 }
 
- object SnappyStreamingContext {
+object SnappyStreamingContext extends Logging {
 
-  @volatile private[this] var globalContext: SnappyStreamingContext = _
+  private val ACTIVATION_LOCK = new Object()
 
-  private[this] val contextLock = new AnyRef
+  private val activeContext = new AtomicReference[SnappyStreamingContext](null)
+
+  private def setActiveContext(snsc: SnappyStreamingContext): Unit = {
+    ACTIVATION_LOCK.synchronized {
+      activeContext.set(snsc)
+    }
+  }
+
+  def getActive(): Option[SnappyStreamingContext] = {
+    ACTIVATION_LOCK.synchronized {
+      Option(activeContext.get())
+    }
+  }
 
   def apply(sc: SnappyContext, batchDur: Duration): SnappyStreamingContext = {
-    val snc = globalContext
-    if (snc != null) {
-      snc
-    } else contextLock.synchronized {
-      val snc = globalContext
-      if (snc != null) {
-        snc
-      } else {
-        // global initialization of SnappyContext
-        SnappyContext.getOrCreate(sc.sparkContext)
-        val snc = new SnappyStreamingContext(sc, batchDur)
-        StreamingCtxtHolder.apply(snc)
-        globalContext = snc
-        snc
+    val snsc = activeContext.get()
+    if (snsc != null) snsc
+    else ACTIVATION_LOCK.synchronized {
+      val snsc = activeContext.get()
+      if (snsc != null) snsc
+      else {
+        val snsc = new SnappyStreamingContext(sc, batchDur)
+        snsc.remember(Milliseconds(120*1000))
+        setActiveContext(snsc)
+        snsc
       }
     }
   }
 
   def start(): Unit = {
-    val snc = globalContext
-    // TODO Register sampling of all the streams
+    val snsc = getActive().get
     // start the streaming context
-    snc.start()
-   }
+    snsc.start()
+  }
 
   def stop(stopSparkContext: Boolean = false,
-           stopGracefully: Boolean = true): Unit = {
-    val snc = globalContext
-    if (snc != null) {
-      snc.stop(stopSparkContext, stopGracefully)
+      stopGracefully: Boolean = true): Unit = {
+    val snsc = getActive().get
+    if (snsc != null) {
+      snsc.stop(stopSparkContext, stopGracefully)
       StreamPlan.currentContext.remove()
-      globalContext = null
-    }
-  }
-}
-
-object StreamingCtxtHolder {
-
-  @volatile private[this] var globalContext: StreamingContext = _
-  private[this] val contextLock = new AnyRef
-
-  def streamingContext: StreamingContext = globalContext
-
-  def apply(sparkCtxt: SparkContext,
-            duration: Int): StreamingContext = {
-    val context = globalContext
-    if (context != null &&
-      context.getState() != StreamingContextState.STOPPED) {
-      context
-    } else contextLock.synchronized {
-      val context = globalContext
-      if (context != null &&
-        context.getState() != StreamingContextState.STOPPED) {
-        context
-      } else {
-        val context = new StreamingContext(sparkCtxt, Seconds(duration))
-        globalContext = context
-        context
-      }
-    }
-  }
-
-  def apply(strCtxt: StreamingContext): StreamingContext = {
-    contextLock.synchronized {
-      val context = strCtxt
-      globalContext = context
-      context
+      SnappyContext.stop()
+      setActiveContext(null)
     }
   }
 }

@@ -9,6 +9,7 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
@@ -208,17 +209,15 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
         CreateStreamTable(streamname, userColumns, new CaseInsensitiveMap(userOpts))
     }
 
-
-
   protected lazy val strmctxt: Parser[LogicalPlan] =
     (STREAMING ~> CONTEXT ~>
         (INIT ^^^ 0 | START ^^^ 1 | STOP ^^^ 2) ~ numericLit.?) ^^ {
       case action ~ batchInterval =>
-        if (batchInterval.isDefined)
+        if (batchInterval.isDefined) {
           StreamOperationsLogicalPlan(action, Some(batchInterval.get.toInt))
-        else
+        } else {
           StreamOperationsLogicalPlan(action, None)
-
+        }
     }
 
   protected override lazy val tableIdentifier: Parser[TableIdentifier] =
@@ -314,7 +313,7 @@ private[sql] case class CreateIndex(
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc =sqlContext.asInstanceOf[SnappyContext]
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     snc.createIndexOnExternalTable(tableName, sql)
     Seq.empty
   }
@@ -385,35 +384,33 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
       case Some(x) => throw new IllegalStateException(
         s"Stream table name $streamTable already defined")
     }
+    catalog.registerExternalTable(streamTable, userColumns,
+      Array.empty[String], provider, options,
+      ExternalTableType.getTableType(resolved.relation))
+
     Seq.empty
   }
 }
 
-private[sql] case class StreamingCtxtActionsCmd(action: Int,
-                                                batchInterval: Option[Int],
-                                                sampleTablePopulation: Option[(SQLContext) => Unit])
-  extends RunnableCommand {
+private[sql] case class SnappyStreamingActionsCommand(action: Int,
+    batchInterval: Option[Int],
+    sampleTablePopulation: Option[(SQLContext) => Unit])
+    extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-
     action match {
       case 0 =>
-        import org.apache.spark.sql.snappy._
-
-        sqlContext.sparkContext.getOrCreateStreamingContext(
-          batchInterval.getOrElse(throw new IllegalStateException()))
-
+        SnappyStreamingContext(sqlContext.asInstanceOf[SnappyContext],
+          Seconds(batchInterval.get))
       case 1 =>
-        // Register sampling of all the streams
         // Register sampling of all the streams
         sampleTablePopulation match {
           case Some(func) => func(sqlContext)
           case None => // do nothing
         }
         // start the streaming
-        StreamingCtxtHolder.streamingContext.start()
-
-      case 2 => StreamingCtxtHolder.streamingContext.stop()
+        SnappyStreamingContext.getActive().get.start()
+      case 2 => SnappyStreamingContext.getActive().get.stop()
     }
     Seq.empty[Row]
   }

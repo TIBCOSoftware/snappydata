@@ -61,11 +61,10 @@ object KafkaConsumer {
     tableStream.saveStream(Seq("tweetstreamtable_sampled"))
 
     var numTimes = 0
-    tableStream.foreachRDD { rdd =>
+    tableStream.foreachDataFrame { df =>
       println("Evaluating new batch") // scalastyle:ignore
       var start: Long = 0
       var end: Long = 0
-      val df = tableStream.createDataFrame(rdd)
       df.write.format("column").mode(SaveMode.Append).options(props)
         .saveAsTable("rawStreamColumnTable")
 
