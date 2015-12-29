@@ -1,5 +1,5 @@
 def scalaBinaryVersion = "2.10"
-rootProject.name = 'snappy-commons_' + scalaBinaryVersion
+rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-tools_' + scalaBinaryVersion
