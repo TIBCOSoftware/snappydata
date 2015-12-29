@@ -108,13 +108,12 @@ object KafkaConsumer {
         )
 */
 
-    ssnc.sql( """STREAMING CONTEXT START """)
-
+    ssnc.sql("STREAMING START")
 
     ssnc.awaitTerminationOrTimeout(1800* 1000)
     ssnc.sql( "select count(*) from rawStreamColumnTable").show
 
-    ssnc.sql( """STREAMING CONTEXT STOP """)
+    ssnc.sql("STREAMING STOP")
   }
 
 }
