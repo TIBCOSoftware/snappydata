@@ -42,6 +42,7 @@ trait SingleRowInsertableRelation {
 
 trait SamplingRelation extends BaseRelation{
   def samplingOptions() : Map[String, Any]
+  def baseTable() : String
 }
 
 @DeveloperApi
