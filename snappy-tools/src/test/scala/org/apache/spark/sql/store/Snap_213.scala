@@ -1,39 +1,35 @@
 package org.apache.spark.sql.store
 
 import java.sql.{Connection, DriverManager}
-import java.util.Properties
 
-import scala.language.implicitConversions
-
-import com.gemstone.gemfire.internal.AvailablePortHelper
-import io.snappydata.{Constant, Server, ServiceManager}
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite}
+import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.{Constant, SnappyFunSuite}
+import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 
-
 class Snap_213
-  extends FunSuite
-  with BeforeAndAfter
-  with BeforeAndAfterAll {
+    extends SnappyFunSuite
+    with BeforeAndAfterAll {
+
+  override def afterAll(): Unit = {
+    TestUtil.stopNetServer()
+    super.afterAll()
+  }
 
   test("Test to verify long bytes as parameters works in insert") {
-    val props: Properties = new Properties()
-    props.put("host-data", "true")
-    val server: Server = ServiceManager.getServerInstance
-    server.start(props)
-    val netPort = AvailablePortHelper.getRandomAvailableTCPPort
-    server.startNetworkServer("localhost", netPort, null)
+    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
+    val hostPort = TestUtil.startNetServer()
 
     println("server  started ")
-    DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-    val conn: Connection = DriverManager.getConnection("jdbc:snappydata://localhost:" + netPort)
+    val conn: Connection = DriverManager.getConnection(
+      "jdbc:snappydata://" + hostPort)
 
     val tableName = "TEST_TABLE"
 
-    conn.createStatement().execute("create table " + tableName + " " +
-        "(fr varchar(23), id integer, b1 blob, b2 blob, b3 blob, b4 blob, " +
-        "b5 blob, b6 blob, b7 blob, secid integer)" + "partition by column(id)")
+    conn.createStatement().execute("create table " + tableName +
+        " (fr varchar(23), id integer, b1 blob, b2 blob, b3 blob, b4 blob, " +
+        "b5 blob, b6 blob, b7 blob, secid integer) partition by column(id)")
 
     val b1 = Array.fill[Byte](10000)(0)
     val b2 = Array.fill[Byte](10000)(0)
@@ -42,9 +38,10 @@ class Snap_213
     val b5 = Array.fill[Byte](14000)(0)
     val b6 = Array.fill[Byte](10000)(0)
     val b7 = Array.fill[Byte](20000)(0)
-    val stmt = conn.prepareStatement("insert into " + tableName + " values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-    stmt.setString(1, "firstRow");
-    stmt.setInt(2, 10);
+    val stmt = conn.prepareStatement("insert into " + tableName +
+        " values ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+    stmt.setString(1, "firstRow")
+    stmt.setInt(2, 10)
     stmt.setBytes(3, b1)
     stmt.setBytes(4, b2)
     stmt.setBytes(5, b3)
@@ -55,6 +52,5 @@ class Snap_213
     stmt.setInt(10, 20)
     stmt.execute()
     conn.close()
-    server.stop(null)
   }
 }
