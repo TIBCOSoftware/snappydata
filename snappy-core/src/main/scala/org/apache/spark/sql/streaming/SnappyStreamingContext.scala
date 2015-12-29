@@ -134,7 +134,9 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
            stopGracefully: Boolean = true): Unit = {
     val snc = globalContext
     if (snc != null) {
-      snc.stop(stopSparkContext, stopGracefully)
+      snc.stop(false, stopGracefully)
+      snc.snappyContext.clearCache()
+      SnappyContext.stop()
       StreamPlan.currentContext.remove()
       globalContext = null
     }
