@@ -3,8 +3,6 @@ package io.snappydata.dunit.cluster
 import java.io.File
 import java.util.Properties
 
-import com.gemstone.gemfire.internal.tools.gfsh.app.commands.value
-
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
