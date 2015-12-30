@@ -3,7 +3,7 @@
 
 usage=$'Usage: 
        snappy-job.sh newcontext <context-name> --factory <factory class name> [--app-jar <jar-path> --app-name <app-name>]
-       snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [(--context <context-name>)|--new-streaming-context]
+       snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name> | --stream]
        snappy-job.sh status --lead <hostname:port> --job-id <job-id>'
 
 function showUsage {
@@ -19,7 +19,7 @@ appjar=
 jobID=
 contextName=
 contextFactory=
-newStreamingContext=
+newContext=
 TOK_EMPTY="EMPTY"
 
 while (( "$#" )); do
@@ -64,11 +64,11 @@ while (( "$#" )); do
       shift
       contextName="${1:-$TOK_EMPTY}"
     ;;
-    --new-streaming-context)
+    --stream)
       if [[ $contextName != "" || $cmd != "jobs" ]]; then
-        showUsage "--context ${contextName} AND --new-streaming-context"
+        showUsage "--context ${contextName} AND --stream"
       fi
-      newStreamingContext="yes"
+      newContext="yes"
       contextName="snappyStreamingContext"$(date +%s%N)
       contextFactory="org.apache.spark.sql.streaming.SnappyStreamingContextFactory"
     ;;
@@ -147,14 +147,20 @@ case $cmd in
 esac
 }
 
+if [[ $cmd == "jobs" && -z $newContext && -z $contextName ]]; then
+  contextName="snappyContext"$(date +%s%N)
+  contextFactory="org.apache.spark.sql.SnappyContextFactory"
+  newContext="yes"
+fi
+
 buildCommand
 
 # build command for new context, if needed.
-if [[ -n $newStreamingContext ]]; then
+if [[ -n $newContext ]]; then
   cmd="context"
   jobsCommand=$cmdLine
   buildCommand
-  newStreamingContext=$cmdLine
+  newContext=$cmdLine
   cmdLine=$jobsCommand
 fi
 
@@ -173,8 +179,8 @@ case $cmd in
       curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
     fi
 
-    if [[ $newStreamingContext != "" ]]; then
-      curl -d "${APP_PROPS}" ${hostnamePort}/${newStreamingContext} $CURL_OPTS
+    if [[ $newContext != "" ]]; then
+      curl -d "${APP_PROPS}" ${hostnamePort}/${newContext} $CURL_OPTS
     fi
 
     curl -d "${APP_PROPS}" ${jobServerURL} $CURL_OPTS
