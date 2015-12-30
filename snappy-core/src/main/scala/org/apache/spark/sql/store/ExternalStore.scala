@@ -6,39 +6,30 @@ import java.util.UUID
 import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import org.apache.spark.SparkContext
+import org.apache.spark.{Partitioner, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.CachedBatch
+import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
 
 /**
  * Created by neeraj on 16/7/15.
  */
 trait ExternalStore extends Serializable {
 
+  final val shadowTableNamePrefix = "_shadow_"
+  final val columnPrefix = "Col_"
 
-  def storeCachedBatch(batch: CachedBatch, tableName: String, maxPartitions: Int = -1): UUIDRegionKey
-
-  def storeCachedBatch(batch: CachedBatch, batchID: UUID, bucketId : Int, tableName: String): UUIDRegionKey
-
-  def getCachedBatchIterator(tableName: String,
-      requiredColumns: Array[String],
-      itr: Iterator[UUIDRegionKey],
-      getAll: Boolean = false): Iterator[CachedBatch]
+  def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
+      batchId: Option[UUID] = None): UUIDRegionKey
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
-      uuidList: ArrayBuffer[RDD[UUIDRegionKey]],
       sparkContext: SparkContext): RDD[CachedBatch]
 
   def getConnection(id: String): java.sql.Connection
 
-  def url: String
+  def getUUIDRegionKey(tableName: String, bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey
 
-  def driver: String
-
-  def poolProps: Map[String, String]
-
-  def connProps: java.util.Properties
+  def connProperties:ConnectionProperties
 
   def tryExecute[T: ClassTag](tableName: String,
       f: PartialFunction[(Connection), T],

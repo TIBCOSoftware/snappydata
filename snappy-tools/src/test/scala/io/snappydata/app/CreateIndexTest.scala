@@ -15,9 +15,7 @@ class CreateIndexTest extends SnappyFunSuite {
 
     val props = Map(
       "url" -> "jdbc:snappydata:;mcast-port=33619;user=app;password=app;persist-dd=false",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "user" -> "app",
-      "password" -> "app"
+      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
     )
 
     snContext.sql("drop table if exists " + tableName)

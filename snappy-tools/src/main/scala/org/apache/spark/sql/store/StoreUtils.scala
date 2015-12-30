@@ -2,6 +2,10 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceUtils
+
+import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -9,7 +13,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.sources.JdbcExtendedUtils
@@ -20,6 +24,10 @@ import org.apache.spark.{Logging, Partition, SparkContext}
 /*/10/15.
   */
 object StoreUtils extends Logging {
+
+  val ddlOptions = Seq(PARTITION_BY, BUCKETS, COLOCATE_WITH, REDUNDANCY,
+    RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
+    PERSISTENT, SERVER_GROUPS, OFFHEAP)
 
   val PARTITION_BY = "PARTITION_BY"
   val BUCKETS = "BUCKETS"
@@ -108,16 +116,15 @@ object StoreUtils extends Logging {
     partitions
   }
 
-  def initStore(sqlContext: SQLContext, url: String,
-      connProps: Properties,
-      poolProps: Map[String, String],
-      hikariCP: Boolean,
+  def initStore(sqlContext: SQLContext,
       table: String,
-      schema: Option[StructType]): Map[InternalDistributedMember, BlockManagerId] = {
+      schema: Option[StructType],
+      partitions:Integer,
+      connProperties:ConnectionProperties):
+      Map[InternalDistributedMember, BlockManagerId] = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-
-    val blockMap = new StoreInitRDD(sqlContext, url, connProps, poolProps, hikariCP, table,
-      schema).collect()
+    val blockMap = new StoreInitRDD(sqlContext,table,
+      schema , partitions , connProperties).collect()
     blockMap.toMap
   }
 
@@ -217,5 +224,14 @@ object StoreUtils extends Logging {
     }).getOrElse(Seq.empty[String])
   }
 
+
+  def validateConnProps(parameters: mutable.Map[String, String]): Unit ={
+    parameters.keys.forall(v => {
+      if(!ddlOptions.contains(v.toString)){
+        throw new AnalysisException(s"Unknown options $v specified while creating table ")
+      }
+      true
+    })
+  }
 
 }
