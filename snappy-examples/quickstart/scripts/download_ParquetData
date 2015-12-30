@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+#set -vx
+
+# This script helps to download the uploaded parquet data
+# and save it in data folder.
+
+echo $PWD
+FILEID=0Bz26LQmzyZJHLTItWkp5THJZbHc
+source=https://googledrive.com/host/$FILEID
+destination=$PWD/../data/airlineParquetData2007-15.tar.gz
+
+# Download the parquet data from source to destination
+wget --no-check-certificate $source -O $destination
+
+#untar the downloaded file.
+tar -zxf $destination

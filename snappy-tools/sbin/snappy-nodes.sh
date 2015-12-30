@@ -21,10 +21,7 @@
 #
 # Environment Variables
 #
-#   SNAPPY_LOCATORS/SNAPPY_LEADS/SNAPPY_SERVERS File naming remote hosts.
-#     Default is ${SPARK_CONF_DIR}/nodes.
 #   SPARK_CONF_DIR  Alternate conf dir. Default is ${SPARK_HOME}/conf.
-#   SPARK_SLAVE_SLEEP Seconds to sleep between spawning remote commands.
 #   SPARK_SSH_OPTS Options passed to ssh when running remote commands.
 ##
 
@@ -42,37 +39,7 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
-# If the slaves file is specified in the command line,
-# then it takes precedence over the definition in
-# snappy-env.sh. Save it here.
 componentType=$1
-case $1 in
-  (locator)
-    if [ -f "$SNAPPY_LOCATORS" ]; then
-      HOSTLIST=`cat "$SNAPPY_LOCATORS"`
-    fi
-    nodeType=1
-    ;;
-
-  (server)
-    if [ -f "$SNAPPY_SERVERS" ]; then
-      HOSTLIST=`cat "$SNAPPY_SERVERS"`
-    fi
-    nodeType=2
-    ;;
-  (lead)
-    if [ -f "$SNAPPY_LEADS" ]; then
-      HOSTLIST=`cat "$SNAPPY_LEADS"`
-    fi
-    nodeType=3
-    ;;
-
-  (*)
-    echo $usage
-    exit 1
-    ;;
-
-esac
 shift
 
 # Check if --config is passed as an argument. It is an optional parameter.
@@ -95,65 +62,35 @@ fi
 . "$SPARK_PREFIX/bin/load-snappy-env.sh"
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
 
-if [ "$HOSTLIST" = "" ]; then
-  case $nodeType in
+case $componentType in
 
-    (1)
-    if [ "$SNAPPY_LOCATORS" = "" ]; then
-      if [ -f "${SPARK_CONF_DIR}/locators" ]; then
-        HOSTLIST=`cat "${SPARK_CONF_DIR}/locators"`
-      else
-        HOSTLIST=localhost
-      fi
-    else
-      HOSTLIST=`cat "${SNAPPY_LOCATORS}"`
+  (locator)
+    if [ -f "${SPARK_CONF_DIR}/locators" ]; then
+      HOSTLIST="${SPARK_CONF_DIR}/locators"
     fi
     ;;
 
-    (2)
-    if [ "$SNAPPY_SERVERS" = "" ]; then
-      if [ -f "${SPARK_CONF_DIR}/servers" ]; then
-        HOSTLIST=`cat "${SPARK_CONF_DIR}/servers"`
-      else
-        # Start two servers by default.
-        HOSTLIST=$'localhost\nlocalhost'
-      fi
-    else
-      HOSTLIST=`cat "${SNAPPY_SERVERS}"`
+  (server)
+    if [ -f "${SPARK_CONF_DIR}/servers" ]; then
+      HOSTLIST="${SPARK_CONF_DIR}/servers"
     fi
     ;;
-    (3)
-    if [ "$SNAPPY_LEADS" = "" ]; then
-      if [ -f "${SPARK_CONF_DIR}/leads" ]; then
-        HOSTLIST=`cat "${SPARK_CONF_DIR}/leads"`
-      else
-        HOSTLIST=localhost
-      fi
-    else
-      HOSTLIST=`cat "${SNAPPY_LEADS}"`
+  (lead)
+    if [ -f "${SPARK_CONF_DIR}/leads" ]; then
+      HOSTLIST="${SPARK_CONF_DIR}/leads"
     fi
     ;;
-
-    (*)
+  (*)
       echo $usage
       exit 1
       ;;
-
-  esac
-fi
-
-
+esac
 # By default disable strict host key checking
 if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
 fi
-IFS=$'\n'
-index=1
 
-for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
-
-  host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
-  args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+function startComponent() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
   # Set directory folder if not already set.
@@ -177,32 +114,32 @@ for slave in `echo "$HOSTLIST"|sed  "s/#.*$//;/^$/d"`; do
     args="${dirparam}"
   fi
 
-  index=$[index +1]
-  if [ -n "${SPARK_SSH_FOREGROUND}" ]; then
-    if [ "$dirfolder" != "" ]; then
-      # Create the directory for the snappy component if the folder is a default folder
-      ssh $SPARK_SSH_OPTS "$host" \
-        "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" \
-        2>&1 | sed "s/^/$host: /"
-    else
-      ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
-        2>&1 | sed "s/^/$host: /"
-    fi
+  if [ "$dirfolder" != "" ]; then
+    # Create the directory for the snappy component if the folder is a default folder
+    ssh $SPARK_SSH_OPTS "$host" \
+      "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" < /dev/null \
+      2>&1 | sed "s/^/$host: /"
   else
-    if [ "$dirfolder" != "" ]; then
-      # Create the directory for the snappy component if the folder is a default folder
-      ssh $SPARK_SSH_OPTS "$host" \
-        "if [ ! -d \"$dirfolder\" ]; then  mkdir -p \"$dirfolder\"; fi;" $"${@// /\\ } ${args};" \
-        2>&1 | sed "s/^/$host: /"
-    else
-      ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" \
-        2>&1 | sed "s/^/$host: /" &
-    fi
+    # ssh reads from standard input and eats all the remaining lines.Connect its standard input to nowhere:
+    ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
+      2>&1 | sed "s/^/$host: /"
   fi
+}
 
-  if [ "$SPARK_SLAVE_SLEEP" != "" ]; then
-    sleep $SPARK_SLAVE_SLEEP
-  fi
-done
+index=1
 
+if [ -n "${HOSTLIST}" ]; then
+  while read -r slave; do
+    [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
+    host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
+    args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
+    startComponent $@
+    index=$[index +1]
+  done < $HOSTLIST
+else
+    host="localhost"
+    args=""
+    startComponent $@
+fi
 wait
+
