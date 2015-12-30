@@ -104,7 +104,7 @@ with BeforeAndAfter {
         "USING column " +
         "options " +
         "(" +
-        "PERSISTENT" +
+        "PERSISTENT 'ASYNCHRONOUS'," +
         "BUCKETS '100')")
 
     val result = snc.sql("SELECT * FROM " + tableName)
