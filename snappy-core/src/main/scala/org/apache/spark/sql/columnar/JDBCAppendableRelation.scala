@@ -30,15 +30,10 @@ import org.apache.spark.sql.types.StructType
  */
 
 class JDBCAppendableRelation(
-    val url: String,
     val table: String,
     val provider: String,
     val mode: SaveMode,
     userSchema: StructType,
-    numPartitions:Int,
-    _poolProps: Map[String, String],
-    val connProperties: Properties,
-    val hikariCP: Boolean,
     val origOptions: Map[String, String],
     val externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)(
@@ -53,14 +48,11 @@ class JDBCAppendableRelation(
 
   self =>
 
-  final val shadowTableNamePrefix = "_shadow_"
   override val needConversion: Boolean = false
 
-  final val columnPrefix = "Col_"
+  val driver = DriverRegistry.getDriverClassName(externalStore.connProperties.url)
 
-  val driver = DriverRegistry.getDriverClassName(url)
-
-  final val dialect = JdbcDialects.get(url)
+  final val dialect = JdbcDialects.get(externalStore.connProperties.url)
 
   val schemaFields = Map(userSchema.fields.flatMap { f =>
     val name = if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
@@ -68,7 +60,7 @@ class JDBCAppendableRelation(
   }: _*)
 
   final lazy val connector = ExternalStoreUtils.getConnector(table, driver,
-    dialect, _poolProps, connProperties, hikariCP)
+    dialect, externalStore.connProperties.poolProps, externalStore.connProperties.connProps, externalStore.connProperties.hikariCP)
 
   createTable(mode)
   private val bufferLock = new ReentrantReadWriteLock()
@@ -115,7 +107,7 @@ class JDBCAppendableRelation(
 
     val cachedColumnBuffers: RDD[CachedBatch] = readLock {
       externalStore.getCachedBatchRDD(tableName,
-        requestedColumns.map(column => columnPrefix + column), uuidList,
+        requestedColumns.map(column => externalStore.columnPrefix + column),
         sqlContext.sparkContext)
     }
 
@@ -123,38 +115,8 @@ class JDBCAppendableRelation(
       // Find the ordinals and data types of the requested columns.
       // If none are requested, use the narrowest (the field with
       // minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
-        schema.getFieldIndex(a).get -> schema(a).dataType
-      }.unzip
-      val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-      def cachedBatchesToRows(
-          cacheBatches: Iterator[CachedBatch]): Iterator[InternalRow] = {
-        val rows = cacheBatches.flatMap { cachedBatch =>
-          // Build column accessors
-          val columnAccessors = requestedColumnIndices.zipWithIndex.map {
-            case (schemaIndex, bufferIndex) =>
-              ColumnAccessor(schema.fields(schemaIndex).dataType,
-                ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
-          }
-          // Extract rows via column accessors
-          new Iterator[InternalRow] {
-            private[this] val rowLen = nextRow.numFields
 
-            override def next(): InternalRow = {
-              var i = 0
-              while (i < rowLen) {
-                columnAccessors(i).extractTo(nextRow, i)
-                i += 1
-              }
-              if (requiredColumns.isEmpty) InternalRow.empty else nextRow
-            }
-
-            override def hasNext: Boolean = columnAccessors.head.hasNext
-          }
-        }
-        rows
-      }
-      cachedBatchesToRows(cachedBatchIterator)
+      ExternalStoreUtils.cachedBatchesToRows(cachedBatchIterator , requestedColumns , schema)
     }.asInstanceOf[RDD[Row]]
   }
 
@@ -180,7 +142,7 @@ class JDBCAppendableRelation(
           batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
         //TODO - currently using the length from the part Object but it needs to be handled more generically
         //in order to replace UUID
-        val uuid = externalStore.storeCachedBatch(batch, table , numPartitions)
+        val uuid = externalStore.storeCachedBatch(table , batch)
         accumulated += uuid
       }
 
@@ -212,7 +174,7 @@ class JDBCAppendableRelation(
 
   // truncate both actual and shadow table
   def truncate() = writeLock {
-    val dialect = JdbcDialects.get(externalStore.url)
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
     externalStore.tryExecute(table, {
       case conn =>
         JdbcExtendedUtils.truncateTable(conn, table, dialect)
@@ -222,9 +184,9 @@ class JDBCAppendableRelation(
 
   def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
-    val dialect = JdbcDialects.get(url)
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
     try {
-      conn = ExternalStoreUtils.getConnection(url, connProperties,
+      conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url, externalStore.connProperties.connProps,
         dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
@@ -261,7 +223,7 @@ class JDBCAppendableRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer not null, numRows integer not null, " +
-        "stats blob, " + userSchema.fields.map(structField => columnPrefix +
+        "stats blob, " + userSchema.fields.map(structField => externalStore.columnPrefix +
         structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy",
       tableName, dropIfExists = false) // for test make it false
@@ -300,7 +262,7 @@ class JDBCAppendableRelation(
     // then on the driver
     JDBCAppendableRelation.removePool(table)
     // drop the external table using a non-pool connection
-    val conn = ExternalStoreUtils.getConnection(url, connProperties,
+    val conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url, externalStore.connProperties.connProps,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
@@ -311,21 +273,18 @@ class JDBCAppendableRelation(
 }
 
 object JDBCAppendableRelation extends Logging {
-  def apply(url: String,
+  def apply(
       table: String,
       provider: String,
       mode: SaveMode,
       schema: StructType,
       numPartitions:Integer ,
-      poolProps: Map[String, String],
-      connProps: Properties,
-      hikariCP: Boolean,
       options: Map[String, String],
       sqlContext: SQLContext): JDBCAppendableRelation =
-    new JDBCAppendableRelation(url,
+    new JDBCAppendableRelation(
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, numPartitions,
-      poolProps, connProps, hikariCP, options, null, sqlContext)()
+      getClass.getCanonicalName, mode, schema,
+      options, null, sqlContext)()
 
   private def removePool(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
@@ -347,23 +306,18 @@ class ColumnarRelationProvider
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
 
-    val (url, driver, poolProps, connProps, hikariCP) =
+    val connectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val externalStore = getExternalSource(sqlContext, url, driver, poolProps,
-      connProps, hikariCP)
+    val partitions = ExternalStoreUtils.getTotalPartitions(parameters, true)
 
-    new JDBCAppendableRelation(url,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, getPartitions(parameters),
-      poolProps, connProps, hikariCP, options, externalStore, sqlContext)()
+    val externalStore = getExternalSource(sqlContext, connectionProperties, partitions)
+
+    new JDBCAppendableRelation(SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+      getClass.getCanonicalName, mode, schema,
+      options, externalStore, sqlContext)()
   }
 
-  protected def getPartitions(parameters: mutable.Map[String, String]): Int = {
-    //TODO - After TPCH checkin it will change. it should come from columnFormatRelation
-    val DEFAULT_BUCKETS_FOR_COLUMN = "113"
-    parameters.remove("BUCKETS").getOrElse(DEFAULT_BUCKETS_FOR_COLUMN).toInt
-  }
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String], schema: StructType) = {
@@ -397,11 +351,10 @@ class ColumnarRelationProvider
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }
 
-  def getExternalSource(sqlContext: SQLContext, url: String,
-      driver: String,
-      poolProps: Map[String, String],
-      connProps: Properties,
-      hikariCP: Boolean): ExternalStore = {
-    new JDBCSourceAsStore(url, driver, poolProps, connProps, hikariCP)
+  def getExternalSource(sqlContext: SQLContext,
+      connectionProperties:ConnectionProperties,
+      numPartitions:Int
+      ): ExternalStore = {
+    new JDBCSourceAsStore(connectionProperties,numPartitions)
   }
 }
