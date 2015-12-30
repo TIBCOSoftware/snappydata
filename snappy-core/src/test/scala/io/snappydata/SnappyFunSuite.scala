@@ -115,14 +115,6 @@ abstract class SnappyFunSuite
   }
 
   def stopAll(): Unit = {
-    val toolsCallback = ToolsCallbackInit.toolsCallback
-    if (toolsCallback != null) {
-      try {
-        toolsCallback.invokeStopFabricServer(sc)
-      } catch {
-        case NonFatal(_) => // ignore
-      }
-    }
     println(" Stopping spark context = " + SnappyContext.globalSparkContext)
     SnappyContext.stop()
   }
