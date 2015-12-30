@@ -2,15 +2,15 @@ package io.snappydata.tools
 
 import java.io.{File, IOException}
 
+import scala.reflect.api.{Universe, Universe$Liftable}
+
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
-import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
-import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
+import com.gemstone.gemfire.internal.{GemFireUtilLauncher, GemFireTerminateError}
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
-import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdDistributionLocator, GfxdUtilLauncher}
-import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
+import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdUtilLauncher}
+import com.pivotal.gemfirexd.tools.internal.{MiscTools, JarTools}
 import io.snappydata.LocalizedMessages
-
 /**
  * Launcher class encompassing snappy processes command lines.
  *
@@ -18,20 +18,34 @@ import io.snappydata.LocalizedMessages
  */
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
+
   import SnappyUtilLauncher._
 
   protected override def getTypes() : java.util.Map[String, GemFireUtilLauncher#CommandEntry] = {
     val types = super.getTypes()
-
     types.put("server", new CommandEntry(classOf[ServerLauncher], LocalizedMessages.res.getTextMessage("UTIL_Server_Usage"), false))
     types.put("locator", new CommandEntry(classOf[LocatorLauncher], LocalizedMessages.res.getTextMessage("UTIL_Locator_Usage"), false))
-
-
     types.put("leader", new CommandEntry(classOf[LeaderLauncher],
       LocalizedMessages.res.getTextMessage("UTIL_Lead_Usage"), false))
-
+    types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher], LocalizedStrings.SnappyUtilLauncher_Agent_Usage.toLocalizedString, false))
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij], LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
 
+
+    // MiscTools utilities
+    val miscToolsIterator =  MiscTools.getValidCommands.entrySet.iterator()
+     while  (miscToolsIterator.hasNext ) {
+       val entry = miscToolsIterator.next()
+       types.put(entry.getKey, new CommandEntry(classOf[MiscTools], LocalizedMessages.res.getTextMessage(entry.getValue), true))
+     }
+
+
+    // JarTools utilities
+    val jarToolsIterator =  JarTools.getValidCommands.entrySet.iterator()
+    while  (jarToolsIterator.hasNext ) {
+      val entry = jarToolsIterator.next()
+      types.put(entry.getKey, new CommandEntry(classOf[JarTools], LocalizedMessages.res.getTextMessage(entry.getValue), true))
+    }
+    
     types
   }
 
@@ -53,7 +67,6 @@ object SnappyUtilLauncher {
 
   private val SCRIPT_NAME: String = "snappy"
   private val GET_CANONICAL_PATH_ARG: String = "--get-canonical-path"
-
   /**
    * @see GemFireUtilLauncher#main(String[])
    **/
