@@ -77,7 +77,6 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         {
           // Stop if already any present
           SnappyContext.stop()
-          FabricServiceImpl.getInstance.stop(new Properties())
 
           val l = new LeadImpl
           val conf = (new SparkConf).

@@ -16,7 +16,6 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     SnappyContext.stop()
-    FabricServiceImpl.getInstance.stop(new Properties())
 
     Class.forName("org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager$") //scalastyle:ignore
     props = TestUtil.doCommonSetup(null)
