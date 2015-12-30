@@ -1,0 +1,1263 @@
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/storage/DiskBlockManager.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/storage/DiskBlockManager.scala
+index f7e84a2..356feb4 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/storage/DiskBlockManager.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/storage/DiskBlockManager.scala
+@@ -106,20 +106,48 @@ private[spark] class DiskBlockManager(blockManager: BlockManager, conf: SparkCon
+     getAllFiles().map(f => BlockId(f.getName))
+   }
+ 
++  /**
++   * Generate a random UUID for file names etc. Uses non-secure version
++   * of random number generator to be more efficient given that its not
++   * critical to have this unique.
++   */
++  private def newUnsecureRandomUUID(): UUID = {
++    val randomBytes = new Array[Byte](16)
++    DiskBlockManager.uuidRnd.nextBytes(randomBytes)
++    randomBytes(6) = 0x0f
++    randomBytes(6) = (randomBytes(6) & 0x0f).toByte // clear version
++    randomBytes(6) = (randomBytes(6) | 0x40).toByte // set to version 4
++    randomBytes(8) = (randomBytes(8) & 0x3f).toByte // clear variant
++    randomBytes(8) = (randomBytes(8) | 0x80).toByte // set to IETF variant
++
++    var msb: Long = 0
++    var lsb: Long = 0
++    var i = 0
++    while (i < 8) {
++      msb = (msb << 8) | (randomBytes(i) & 0xff)
++      i += 1
++    }
++    while (i < 16) {
++      lsb = (lsb << 8) | (randomBytes(i) & 0xff)
++      i += 1
++    }
++    new UUID(msb, lsb)
++  }
++
+   /** Produces a unique block id and File suitable for storing local intermediate results. */
+   def createTempLocalBlock(): (TempLocalBlockId, File) = {
+-    var blockId = new TempLocalBlockId(UUID.randomUUID())
++    var blockId = new TempLocalBlockId(newUnsecureRandomUUID())
+     while (getFile(blockId).exists()) {
+-      blockId = new TempLocalBlockId(UUID.randomUUID())
++      blockId = new TempLocalBlockId(newUnsecureRandomUUID())
+     }
+     (blockId, getFile(blockId))
+   }
+ 
+   /** Produces a unique block id and File suitable for storing shuffled intermediate results. */
+   def createTempShuffleBlock(): (TempShuffleBlockId, File) = {
+-    var blockId = new TempShuffleBlockId(UUID.randomUUID())
++    var blockId = new TempShuffleBlockId(newUnsecureRandomUUID())
+     while (getFile(blockId).exists()) {
+-      blockId = new TempShuffleBlockId(UUID.randomUUID())
++      blockId = new TempShuffleBlockId(newUnsecureRandomUUID())
+     }
+     (blockId, getFile(blockId))
+   }
+@@ -182,3 +210,8 @@ private[spark] class DiskBlockManager(blockManager: BlockManager, conf: SparkCon
+     }
+   }
+ }
++
++private[spark] object DiskBlockManager {
++  /** static random number generator for UUIDs */
++  private val uuidRnd = new java.util.Random
++}
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/deploy/SparkSubmitArguments.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/deploy/SparkSubmitArguments.scala
+index 18a1c52..8b3d6eb 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/deploy/SparkSubmitArguments.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/deploy/SparkSubmitArguments.scala
+@@ -128,7 +128,7 @@ private[deploy] class SparkSubmitArguments(args: Seq[String], env: Map[String, S
+    */
+   private def ignoreNonSparkProperties(): Unit = {
+     sparkProperties.foreach { case (k, v) =>
+-      if (!k.startsWith("spark.")) {
++      if (!k.startsWith("spark.") && !k.startsWith("snappydata.")) {
+         sparkProperties -= k
+         SparkSubmit.printWarning(s"Ignoring non-spark config property: $k=$v")
+       }
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/deploy/worker/ExecutorRunner.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/deploy/worker/ExecutorRunner.scala
+index 3aef051..b5feb62 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/deploy/worker/ExecutorRunner.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/deploy/worker/ExecutorRunner.scala
+@@ -127,7 +127,9 @@ private[deploy] class ExecutorRunner(
+     try {
+       // Launch the process
+       val builder = CommandUtils.buildProcessBuilder(appDesc.command, new SecurityManager(conf),
+-        memory, sparkHome.getAbsolutePath, substituteVariables)
++        memory, sparkHome.getAbsolutePath, substituteVariables,
++        conf.getExecutorEnv.filter(p => p._1.startsWith("extraClassPath"))
++          .map { case (a, b) => b })
+       val command = builder.command()
+       val formattedCommand = command.asScala.mkString("\"", "\" \"", "\"")
+       logInfo(s"Launch command: $formattedCommand")
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/executor/CoarseGrainedExecutorBackend.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/executor/CoarseGrainedExecutorBackend.scala
+index c2ebf30..93907d3 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/executor/CoarseGrainedExecutorBackend.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/executor/CoarseGrainedExecutorBackend.scala
+@@ -66,7 +66,7 @@ private[spark] class CoarseGrainedExecutorBackend(
+       }
+       case Failure(e) => {
+         logError(s"Cannot register with driver: $driverUrl", e)
+-        System.exit(1)
++        exitExecutor()
+       }
+     }(ThreadUtils.sameThread)
+   }
+@@ -84,12 +84,12 @@ private[spark] class CoarseGrainedExecutorBackend(
+ 
+     case RegisterExecutorFailed(message) =>
+       logError("Slave registration failed: " + message)
+-      System.exit(1)
++      exitExecutor()
+ 
+     case LaunchTask(data) =>
+       if (executor == null) {
+         logError("Received LaunchTask command but executor was null")
+-        System.exit(1)
++        exitExecutor()
+       } else {
+         val taskDesc = ser.deserialize[TaskDescription](data.value)
+         logInfo("Got assigned task " + taskDesc.taskId)
+@@ -100,7 +100,7 @@ private[spark] class CoarseGrainedExecutorBackend(
+     case KillTask(taskId, _, interruptThread) =>
+       if (executor == null) {
+         logError("Received KillTask command but executor was null")
+-        System.exit(1)
++        exitExecutor()
+       } else {
+         executor.killTask(taskId, interruptThread)
+       }
+@@ -120,7 +120,7 @@ private[spark] class CoarseGrainedExecutorBackend(
+   override def onDisconnected(remoteAddress: RpcAddress): Unit = {
+     if (driver.exists(_.address == remoteAddress)) {
+       logError(s"Driver $remoteAddress disassociated! Shutting down.")
+-      System.exit(1)
++      exitExecutor()
+     } else {
+       logWarning(s"An unknown ($remoteAddress) driver disconnected.")
+     }
+@@ -133,6 +133,8 @@ private[spark] class CoarseGrainedExecutorBackend(
+       case None => logWarning(s"Drop $msg because has not yet connected to driver")
+     }
+   }
++
++  def exitExecutor(): Unit = System.exit(1)
+ }
+ 
+ private[spark] object CoarseGrainedExecutorBackend extends Logging {
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/executor/Executor.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/executor/Executor.scala
+index 9e88d48..6b75ee6 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/executor/Executor.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/executor/Executor.scala
+@@ -133,7 +133,14 @@ private[spark] class Executor(
+       tr.kill(interruptThread)
+     }
+   }
+-
++  def killAllTasks (interruptThread: Boolean) : Unit = {
++    // kill all the running tasks
++    for (taskRunner <- runningTasks.values().asScala) {
++      if (taskRunner != null) {
++        taskRunner.kill(interruptThread)
++      }
++    }
++  }
+   def stop(): Unit = {
+     env.metricsSystem.report()
+     env.rpcEnv.stop(executorEndpoint)
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/SparkEnv.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/SparkEnv.scala
+index 23ae936..edc9036 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/SparkEnv.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/SparkEnv.scala
+@@ -338,10 +338,15 @@ object SparkEnv extends Logging {
+ 
+     val useLegacyMemoryManager = conf.getBoolean("spark.memory.useLegacyMode", false)
+     val memoryManager: MemoryManager =
+-      if (useLegacyMemoryManager) {
+-        new StaticMemoryManager(conf, numUsableCores)
+-      } else {
+-        new UnifiedMemoryManager(conf, numUsableCores)
++      conf.getOption("spark.memory.manager").map(Utils.classForName(_)
++          .getConstructor(classOf[SparkConf], classOf[Int])
++          .newInstance(conf, Int.box(numUsableCores))
++          .asInstanceOf[MemoryManager]).getOrElse {
++        if (useLegacyMemoryManager) {
++          new StaticMemoryManager(conf, numUsableCores)
++        } else {
++          new UnifiedMemoryManager(conf, numUsableCores)
++        }
+       }
+ 
+     val blockTransferService = new NettyBlockTransferService(conf, securityManager, numUsableCores)
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/SparkContext.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/SparkContext.scala
+index a6857b4..8b81df3 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/SparkContext.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/SparkContext.scala
+@@ -2203,7 +2203,7 @@ object SparkContext extends Logging {
+    *
+    * Access to this field is guarded by SPARK_CONTEXT_CONSTRUCTOR_LOCK.
+    */
+-  private val activeContext: AtomicReference[SparkContext] =
++  private[spark] val activeContext: AtomicReference[SparkContext] =
+     new AtomicReference[SparkContext](null)
+ 
+   /**
+@@ -2215,6 +2215,11 @@ object SparkContext extends Logging {
+   private var contextBeingConstructed: Option[SparkContext] = None
+ 
+   /**
++   * List of registered cluster managers. Based on the master URL, one
++   * of them is chosen and is asked to create backend scheduler.
++   */
++  private var registeredClusterManagers = List[ExternalClusterManager]()
++  /**
+    * Called to ensure that no other SparkContext is running in this JVM.
+    *
+    * Throws an exception if a running context is detected and logs a warning if another thread is
+@@ -2717,10 +2722,47 @@ object SparkContext extends Logging {
+         scheduler.initialize(backend)
+         (backend, scheduler)
+ 
+-      case _ =>
+-        throw new SparkException("Could not parse Master URL: '" + master + "'")
++      case masterUrl =>
++        val cm = getClusterManager(masterUrl) match {
++          case Some(clusterMgr) => clusterMgr
++          case None => throw new SparkException("Could not parse Master URL: '" + master + "'")
++        }
++        try {
++          val scheduler = cm.createTaskScheduler(sc)
++          val backend = cm.createSchedulerBackend(sc, scheduler)
++          cm.initialize(scheduler, backend)
++          (backend, scheduler)
++        } catch {
++          case e: Exception => {
++            throw new SparkException("External scheduler cannot be instantiated", e)
++          }
++        }
++    }
++  }
++
++  private def getClusterManager(url: String): Option[ExternalClusterManager] = {
++    val matchingCMs = registeredClusterManagers.filter(_.canCreate(url))
++    matchingCMs.length match {
++      case 0 => None
++      case _ => Some(matchingCMs.head)
+     }
+   }
++
++  /**
++   * Register a cluster manager that can be used to create [[TaskScheduler]] and [[SchedulerBackend]].
++   * @param ecm the new cluster manager
++   */
++  def registerClusterManager(ecm : ExternalClusterManager): Unit = {
++    registeredClusterManagers = ecm :: registeredClusterManagers.filterNot(_ == ecm)
++  }
++
++  /**
++   * Unregisters a cluster manager. This function is mainly added for completeness.
++   * @param ecm the cluster manager
++   */
++  def unregisterClusterManager(ecm : ExternalClusterManager) : Unit = {
++    registeredClusterManagers = registeredClusterManagers.filterNot(_ == ecm)
++  }
+ }
+ 
+ /**
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/SizeEstimator.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/SizeEstimator.scala
+index 23ee4ef..c43fe41 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/SizeEstimator.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/SizeEstimator.scala
+@@ -83,7 +83,7 @@ object SizeEstimator extends Logging {
+   // Size of an object reference
+   // Based on https://wikis.oracle.com/display/HotSpotInternals/CompressedOops
+   private var isCompressedOops = false
+-  private var pointerSize = 4
++  var pointerSize = 4
+ 
+   // Minimum size of a java.lang.Object
+   private var objectSize = 8
+@@ -354,7 +354,7 @@ object SizeEstimator extends Logging {
+     newInfo
+   }
+ 
+-  private def alignSize(size: Long): Long = alignSizeUp(size, ALIGN_SIZE)
++  def alignSize(size: Long): Long = alignSizeUp(size, ALIGN_SIZE)
+ 
+   /**
+    * Compute aligned size. The alignSize must be 2^n, otherwise the result will be wrong.
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/collection/BitSet.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/collection/BitSet.scala
+index 85c5bdb..6ec8e64 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/collection/BitSet.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/collection/BitSet.scala
+@@ -235,6 +235,12 @@ class BitSet(private[this] var numBits: Int) extends Externalizable {
+     -1
+   }
+ 
++  def copyTo(set: BitSet): BitSet = {
++    val other = if (numWords == set.numWords) set else new BitSet(capacity)
++    System.arraycopy(words, 0, other.words, 0, numWords)
++    other
++  }
++
+   /** Return the number of longs it would take to hold numBits. */
+   private def bit2words(numBits: Int) = ((numBits - 1) >> 6) + 1
+ 
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/collection/SizeTracker.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/collection/SizeTracker.scala
+index 3eb1010..4f381e1 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/collection/SizeTracker.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/collection/SizeTracker.scala
+@@ -75,7 +75,7 @@ private[spark] trait SizeTracker {
+    * Take a new sample of the current collection's size.
+    */
+   private def takeSample(): Unit = {
+-    samples.enqueue(Sample(SizeEstimator.estimate(this), numUpdates))
++    samples.enqueue(Sample(estimateOverhead(), numUpdates))
+     // Only use the last two samples to extrapolate
+     if (samples.size > 2) {
+       samples.dequeue()
+@@ -98,6 +98,10 @@ private[spark] trait SizeTracker {
+     val extrapolatedDelta = bytesPerUpdate * (numUpdates - samples.last.numUpdates)
+     (samples.last.size + extrapolatedDelta).toLong
+   }
++
++  protected def estimateOverhead(): Long = {
++    SizeEstimator.estimate(this)
++  }
+ }
+ 
+ private object SizeTracker {
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/collection/OpenHashSet.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/collection/OpenHashSet.scala
+index 60bf4dd..b6ae411 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/util/collection/OpenHashSet.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/util/collection/OpenHashSet.scala
+@@ -18,7 +18,7 @@
+ package org.apache.spark.util.collection
+ 
+ import scala.reflect._
+-import com.google.common.hash.Hashing
++import scala.util.hashing.MurmurHash3
+ 
+ import org.apache.spark.annotation.Private
+ 
+@@ -267,7 +267,8 @@ class OpenHashSet[@specialized(Long, Int) T: ClassTag](
+   /**
+    * Re-hash a value to deal better with hash functions that don't differ in the lower bits.
+    */
+-  private def hashcode(h: Int): Int = Hashing.murmur3_32().hashInt(h).asInt()
++  private def hashcode(h: Int): Int = MurmurHash3.finalizeHash(
++      MurmurHash3.mixLast(MurmurHash3.arraySeed, h), 0)
+ 
+   private def nextPowerOf2(n: Int): Int = {
+     val highBit = Integer.highestOneBit(n)
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/SparkConf.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/SparkConf.scala
+index f023e4b..53d0df9 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/SparkConf.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/SparkConf.scala
+@@ -56,7 +56,8 @@ class SparkConf(loadDefaults: Boolean) extends Cloneable with Logging {
+ 
+   if (loadDefaults) {
+     // Load any spark.* system properties
+-    for ((key, value) <- Utils.getSystemProperties if key.startsWith("spark.")) {
++    for ((key, value) <- Utils.getSystemProperties if key.startsWith("spark.")
++      || key.startsWith("snappydata.")) {
+       set(key, value)
+     }
+   }
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
+index 9b3fad9..7b9cefc 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/scheduler/TaskSetManager.scala
+@@ -316,7 +316,9 @@ private[spark] class TaskSetManager(
+ 
+       // Check for node-local tasks
+       if (TaskLocality.isAllowed(locality, TaskLocality.NODE_LOCAL)) {
+-        for (index <- speculatableTasks if canRunOnHost(index)) {
++        for (index <- speculatableTasks if canRunOnHost(index) &&
++            // don't return executor-local tasks that are still alive
++            canRunOnExecutor(execId, index)) {
+           val locations = tasks(index).preferredLocations.map(_.host)
+           if (locations.contains(host)) {
+             speculatableTasks -= index
+@@ -339,7 +341,9 @@ private[spark] class TaskSetManager(
+       // Check for rack-local tasks
+       if (TaskLocality.isAllowed(locality, TaskLocality.RACK_LOCAL)) {
+         for (rack <- sched.getRackForHost(host)) {
+-          for (index <- speculatableTasks if canRunOnHost(index)) {
++          for (index <- speculatableTasks if canRunOnHost(index)
++            // don't return executor-local tasks that are still alive
++            if canRunOnExecutor(execId, index)) {
+             val racks = tasks(index).preferredLocations.map(_.host).map(sched.getRackForHost)
+             if (racks.contains(rack)) {
+               speculatableTasks -= index
+@@ -351,7 +355,9 @@ private[spark] class TaskSetManager(
+ 
+       // Check for non-local tasks
+       if (TaskLocality.isAllowed(locality, TaskLocality.ANY)) {
+-        for (index <- speculatableTasks if canRunOnHost(index)) {
++        for (index <- speculatableTasks if canRunOnHost(index) &&
++            // don't return executor-local tasks that are still alive
++            canRunOnExecutor(execId, index)) {
+           speculatableTasks -= index
+           return Some((index, TaskLocality.ANY))
+         }
+@@ -361,6 +367,17 @@ private[spark] class TaskSetManager(
+     None
+   }
+ 
++  private def canRunOnExecutor(execId: String, taskId: Int): Boolean = {
++    val locations = tasks(taskId).preferredLocations
++    locations.isEmpty || locations.exists {
++      case e: ExecutorCacheTaskLocation => execId == e.executorId
++      case _ => false
++    } || locations.collectFirst {
++      case e: ExecutorCacheTaskLocation if sched.isExecutorAlive(e.executorId)
++          && !executorIsBlacklisted(e.executorId, taskId) => false
++    }.getOrElse(true)
++  }
++
+   /**
+    * Dequeue a pending task for a given node and return its index and locality level.
+    * Only search for tasks matching the given locality constraint.
+@@ -375,7 +392,9 @@ private[spark] class TaskSetManager(
+     }
+ 
+     if (TaskLocality.isAllowed(maxLocality, TaskLocality.NODE_LOCAL)) {
+-      for (index <- dequeueTaskFromList(execId, getPendingTasksForHost(host))) {
++      for (index <- dequeueTaskFromList(execId, getPendingTasksForHost(host))
++        // don't return executor-local tasks that are still alive
++        if canRunOnExecutor(execId, index)) {
+         return Some((index, TaskLocality.NODE_LOCAL, false))
+       }
+     }
+@@ -391,13 +410,17 @@ private[spark] class TaskSetManager(
+       for {
+         rack <- sched.getRackForHost(host)
+         index <- dequeueTaskFromList(execId, getPendingTasksForRack(rack))
++        // don't return executor-local tasks that are still alive
++        if canRunOnExecutor(execId, index)
+       } {
+         return Some((index, TaskLocality.RACK_LOCAL, false))
+       }
+     }
+ 
+     if (TaskLocality.isAllowed(maxLocality, TaskLocality.ANY)) {
+-      for (index <- dequeueTaskFromList(execId, allPendingTasks)) {
++      for (index <- dequeueTaskFromList(execId, allPendingTasks)
++        // don't return executor-local tasks that are still alive
++        if canRunOnExecutor(execId, index)) {
+         return Some((index, TaskLocality.ANY, false))
+       }
+     }
+diff --git a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/memory/StaticMemoryManager.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/memory/StaticMemoryManager.scala
+index 9c2c2e9..5131c17 100644
+--- a/home/kneeraj/apache/spark/core/src/main/scala/org/apache/spark/memory/StaticMemoryManager.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/main/scala/org/apache/spark/memory/StaticMemoryManager.scala
+@@ -31,7 +31,7 @@ import org.apache.spark.storage.{BlockId, BlockStatus}
+  * regions are cleanly separated such that neither usage can borrow memory from the other.
+  */
+ private[spark] class StaticMemoryManager(
+-    conf: SparkConf,
++    val conf: SparkConf,
+     override val maxExecutionMemory: Long,
+     override val maxStorageMemory: Long,
+     numCores: Int)
+@@ -104,7 +104,7 @@ private[spark] class StaticMemoryManager(
+    * @param evictedBlocks a holder for blocks evicted in the process
+    * @return whether all N bytes were successfully granted.
+    */
+-  private def acquireStorageMemory(
++  private[spark] def acquireStorageMemory(
+       blockId: BlockId,
+       numBytesToAcquire: Long,
+       numBytesToFree: Long,
+@@ -128,7 +128,7 @@ private[spark] object StaticMemoryManager {
+   /**
+    * Return the total amount of memory available for the storage region, in bytes.
+    */
+-  private def getMaxStorageMemory(conf: SparkConf): Long = {
++  private[spark] def getMaxStorageMemory(conf: SparkConf): Long = {
+     val systemMaxMemory = conf.getLong("spark.testing.memory", Runtime.getRuntime.maxMemory)
+     val memoryFraction = conf.getDouble("spark.storage.memoryFraction", 0.6)
+     val safetyFraction = conf.getDouble("spark.storage.safetyFraction", 0.9)
+@@ -139,7 +139,7 @@ private[spark] object StaticMemoryManager {
+   /**
+    * Return the total amount of memory available for the execution region, in bytes.
+    */
+-  private def getMaxExecutionMemory(conf: SparkConf): Long = {
++  private[spark] def getMaxExecutionMemory(conf: SparkConf): Long = {
+     val systemMaxMemory = conf.getLong("spark.testing.memory", Runtime.getRuntime.maxMemory)
+     val memoryFraction = conf.getDouble("spark.shuffle.memoryFraction", 0.2)
+     val safetyFraction = conf.getDouble("spark.shuffle.safetyFraction", 0.8)
+diff --git a/home/kneeraj/apache/spark/core/src/test/scala/org/apache/spark/rdd/SortingSuite.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/test/scala/org/apache/spark/rdd/SortingSuite.scala
+index a7de9ca..0fda08f 100644
+--- a/home/kneeraj/apache/spark/core/src/test/scala/org/apache/spark/rdd/SortingSuite.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//core/src/test/scala/org/apache/spark/rdd/SortingSuite.scala
+@@ -134,7 +134,7 @@ class SortingSuite extends SparkFunSuite with SharedSparkContext with Matchers w
+   }
+ 
+   test("get a range of elements in an array not partitioned by a range partitioner") {
+-    val pairArr = util.Random.shuffle((1 to 1000).toList).map(x => (x, x))
++    val pairArr = scala.util.Random.shuffle((1 to 1000).toList).map(x => (x, x))
+     val pairs = sc.parallelize(pairArr, 10)
+     val range = pairs.filterByRange(200, 800).collect()
+     assert((800 to 200 by -1).toArray.sorted === range.map(_._1).sorted)
+diff --git a/home/kneeraj/apache/spark/project/SparkBuild.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//project/SparkBuild.scala
+index 766edd9..1abba04 100644
+--- a/home/kneeraj/apache/spark/project/SparkBuild.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//project/SparkBuild.scala
+@@ -125,6 +125,19 @@ object SparkBuild extends PomBuild {
+   lazy val MavenCompile = config("m2r") extend(Compile)
+   lazy val publishLocalBoth = TaskKey[Unit]("publish-local", "publish local for m2 and ivy")
+ 
++  lazy val snappySnapshotResolver = Resolver.url("Internal Snapshots Repository",
++      url("http://blackbuck.mooo.com:2536/repository/snapshots/"))
++  lazy val snappySnapshotCreds = Credentials(
++      "Repository Archiva Managed snapshots Repository", "blackbuck.mooo.com",
++      sys.env.get("ARCHIVA_USER").orElse(Some("guest")).get,
++      sys.env.get("ARCHIVA_PASS").orElse(Some("guest")).get)
++  lazy val snappyReleaseResolver = Resolver.url("Internal Release Repository",
++      url("http://blackbuck.mooo.com:2536/repository/internal/"))
++  lazy val snappyReleaseCreds = Credentials(
++      "Repository Archiva Managed internal Repository", "blackbuck.mooo.com",
++      sys.env.get("ARCHIVA_USER").orElse(Some("guest")).get,
++      sys.env.get("ARCHIVA_PASS").orElse(Some("guest")).get)
++
+   lazy val sparkGenjavadocSettings: Seq[sbt.Def.Setting[_]] = Seq(
+     libraryDependencies += compilerPlugin(
+       "org.spark-project" %% "genjavadoc-plugin" % unidocGenjavadocVersion.value cross CrossVersion.full),
+@@ -149,6 +162,22 @@ object SparkBuild extends PomBuild {
+     publishLocal in MavenCompile <<= publishTask(publishLocalConfiguration in MavenCompile, deliverLocal),
+     publishLocalBoth <<= Seq(publishLocal in MavenCompile, publishLocal).dependOn,
+ 
++    /*
++    resolvers += snappySnapshotResolver,
++    resolvers += snappyReleaseResolver,
++    credentials += snappySnapshotCreds,
++    credentials += snappyReleaseCreds,
++    isSnapshot := version.value.contains("-SNAPSHOT"),
++    publishTo := {
++      if (isSnapshot.value) {
++        Some(snappySnapshotResolver)
++      }
++      else {
++        Some(snappyReleaseResolver)
++      }
++    },
++    */
++
+     javacOptions in (Compile, doc) ++= {
+       val Array(major, minor, _) = System.getProperty("java.version").split("\\.", 3)
+       if (major.toInt >= 1 && minor.toInt >= 8) Seq("-Xdoclint:all", "-Xdoclint:-missing") else Seq.empty
+diff --git a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/dstream/DStream.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/dstream/DStream.scala
+index 1da0b0a..af3bb99 100644
+--- a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/dstream/DStream.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/dstream/DStream.scala
+@@ -34,6 +34,7 @@ import org.apache.spark.streaming.scheduler.Job
+ import org.apache.spark.streaming.ui.UIUtils
+ import org.apache.spark.util.{CallSite, MetadataCleaner, Utils}
+ 
++
+ /**
+  * A Discretized Stream (DStream), the basic abstraction in Spark Streaming, is a continuous
+  * sequence of RDDs (of the same type) representing a continuous stream of data (see
+@@ -99,9 +100,9 @@ abstract class DStream[T: ClassTag] (
+   private[streaming] val checkpointData = new DStreamCheckpointData(this)
+ 
+   // Reference to whole DStream graph
+-  private[streaming] var graph: DStreamGraph = null
++  /*private[streaming]*/var graph: DStreamGraph = null
+ 
+-  private[streaming] def isInitialized = (zeroTime != null)
++  /*private[streaming]*/ def isInitialized = (zeroTime != null)
+ 
+   // Duration for which the DStream requires its parent DStream to remember each RDD created
+   private[streaming] def parentRememberDuration = rememberDuration
+@@ -212,14 +213,42 @@ abstract class DStream[T: ClassTag] (
+     dependencies.foreach(_.initialize(zeroTime))
+   }
+ 
++  /**
++   * Same as initialize method but not initializing dependencies
++   * @param time
++   */
++  def initializeAfterContextStart(time: Time) {
++    if (zeroTime != null && zeroTime != time) {
++      throw new SparkException("ZeroTime is already initialized to " + zeroTime
++        + ", cannot initialize it again to " + time)
++    }
++    zeroTime = time
++
++    // Set the checkpoint interval to be slideDuration or 10 seconds, which ever is larger
++    if (mustCheckpoint && checkpointDuration == null) {
++      checkpointDuration = slideDuration * math.ceil(Seconds(10) / slideDuration).toInt
++      logInfo("Checkpoint interval automatically set to " + checkpointDuration)
++    }
++
++    // Set the minimum value of the rememberDuration if not already set
++    var minRememberDuration = slideDuration
++    if (checkpointDuration != null && minRememberDuration <= checkpointDuration) {
++      // times 2 just to be sure that the latest checkpoint is not forgotten (#paranoia)
++      minRememberDuration = checkpointDuration * 2
++    }
++    if (rememberDuration == null || rememberDuration < minRememberDuration) {
++      rememberDuration = minRememberDuration
++    }
++  }
++
+   private def validateAtInit(): Unit = {
+     ssc.getState() match {
+       case StreamingContextState.INITIALIZED =>
+         // good to go
+       case StreamingContextState.ACTIVE =>
+-        throw new IllegalStateException(
++/*        throw new IllegalStateException(
+           "Adding new inputs, transformations, and output operations after " +
+-            "starting a context is not supported")
++            "starting a context is not supported")*/
+       case StreamingContextState.STOPPED =>
+         throw new IllegalStateException(
+           "Adding new inputs, transformations, and output operations after " +
+@@ -333,7 +362,7 @@ abstract class DStream[T: ClassTag] (
+    * Get the RDD corresponding to the given time; either retrieve it from cache
+    * or compute-and-cache it.
+    */
+-  private[streaming] final def getOrCompute(time: Time): Option[RDD[T]] = {
++  /*private[streaming]*/ final def getOrCompute(time: Time): Option[RDD[T]] = {
+     // If RDD was already generated, then retrieve it from HashMap,
+     // or else compute the RDD
+     generatedRDDs.get(time).orElse {
+@@ -451,6 +480,7 @@ abstract class DStream[T: ClassTag] (
+     }
+     logDebug("Cleared " + oldRDDs.size + " RDDs that were older than " +
+       (time - rememberDuration) + ": " + oldRDDs.keys.mkString(", "))
++
+     dependencies.foreach(_.clearMetadata(time))
+   }
+ 
+@@ -865,7 +895,6 @@ abstract class DStream[T: ClassTag] (
+     if (!isInitialized) {
+       throw new SparkException(this + " has not been initialized")
+     }
+-
+     val alignedToTime = if ((toTime - zeroTime).isMultipleOf(slideDuration)) {
+       toTime
+     } else {
+diff --git a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/StreamingContext.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/StreamingContext.scala
+index 051f53d..d706c8f 100644
+--- a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/StreamingContext.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/StreamingContext.scala
+@@ -57,7 +57,7 @@ import org.apache.spark.util.{CallSite, ShutdownHookManager, ThreadUtils, Utils}
+  * `context.awaitTermination()` allows the current thread to wait for the termination
+  * of the context by `stop()` or by an exception.
+  */
+-class StreamingContext private[streaming] (
++class StreamingContext /* private[streaming] */ (
+     sc_ : SparkContext,
+     cp_ : Checkpoint,
+     batchDur_ : Duration
+@@ -152,7 +152,7 @@ class StreamingContext private[streaming] (
+ 
+   private[streaming] val env = sc.env
+ 
+-  private[streaming] val graph: DStreamGraph = {
++  /*private[streaming]*/ val graph: DStreamGraph = {
+     if (isCheckpointPresent) {
+       cp_.graph.setContext(this)
+       cp_.graph.restoreCheckpointData()
+diff --git a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/DStreamGraph.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/DStreamGraph.scala
+index 1b0b789..b3f843f 100644
+--- a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/DStreamGraph.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/DStreamGraph.scala
+@@ -192,4 +192,3 @@ final private[streaming] class DStreamGraph extends Serializable with Logging {
+     }
+   }
+ }
+-
+diff --git a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala
+index b7de6dd..db0938b 100644
+--- a/home/kneeraj/apache/spark/streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/main/scala/org/apache/spark/streaming/Checkpoint.scala
+@@ -31,7 +31,7 @@ import org.apache.spark.util.{MetadataCleaner, Utils}
+ import org.apache.spark.streaming.scheduler.JobGenerator
+ 
+ 
+-private[streaming]
++/*private[streaming]*/
+ class Checkpoint(ssc: StreamingContext, val checkpointTime: Time)
+   extends Logging with Serializable {
+   val master = ssc.sc.master
+diff --git a/home/kneeraj/apache/spark/streaming/src/test/scala/org/apache/spark/streaming/StreamingContextSuite.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/test/scala/org/apache/spark/streaming/StreamingContextSuite.scala
+index c7a8771..de5a7b3 100644
+--- a/home/kneeraj/apache/spark/streaming/src/test/scala/org/apache/spark/streaming/StreamingContextSuite.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//streaming/src/test/scala/org/apache/spark/streaming/StreamingContextSuite.scala
+@@ -740,12 +740,13 @@ class StreamingContextSuite extends SparkFunSuite with BeforeAndAfter with Timeo
+ 
+     ssc.start()
+     require(ssc.getState() === StreamingContextState.ACTIVE)
+-    testForException("no error on adding input after start", "start") {
++
++    /*  testForException("no error on adding input after start", "start") {
+       addInputStream(ssc) }
+     testForException("no error on adding transformation after start", "start") {
+       input.map { x => x * 2 } }
+     testForException("no error on adding output operation after start", "start") {
+-      transformed.foreachRDD { rdd => rdd.collect() } }
++      transformed.foreachRDD { rdd => rdd.collect() } }*/
+ 
+     ssc.stop()
+     require(ssc.getState() === StreamingContextState.STOPPED)
+diff --git a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/CatalystTypeConverters.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/CatalystTypeConverters.scala
+index 2ec0ff5..f9f67b6 100644
+--- a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/CatalystTypeConverters.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/CatalystTypeConverters.scala
+@@ -416,6 +416,16 @@ object CatalystTypeConverters {
+   }
+ 
+   /**
++   * Creates a converter function that will convert Catalyst types to
++   * Scala type reading from a Row. Typical use case would be converting
++   * a collection of rows that have the same schema. You will call this
++   * function once to get a converter, and apply it to every row.
++   */
++  private[sql] def createRowToScalaConverter(
++      dataType: DataType): (InternalRow, Int) => Any =
++    getConverterForType(dataType).toScala
++
++  /**
+    *  Converts Scala objects to Catalyst rows / types.
+    *
+    *  Note: This should be called before do evaluation on Row
+diff --git a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/physical/partitioning.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/physical/partitioning.scala
+index 86b9417..d9b4a2e 100644
+--- a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/physical/partitioning.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/plans/physical/partitioning.scala
+@@ -223,6 +223,50 @@ case object SinglePartition extends Partitioning {
+ /**
+  * Represents a partitioning where rows are split up across partitions based on the hash
+  * of `expressions`.  All rows where `expressions` evaluate to the same values are guaranteed to be
++ * in the same partition. Moreover while evaluating expressions if they are given in different order
++ * than this partitioning then also it is considered equal.
++ */
++case class OrderlessHashPartitioning(expressions: Seq[Expression], numPartitions: Int)
++    extends Expression with Partitioning with Unevaluable {
++
++
++  override def children: Seq[Expression] = expressions
++  override def nullable: Boolean = false
++  override def dataType: DataType = IntegerType
++
++  private def matchExpressions(otherExpression: Seq[Expression]): Boolean = {
++    expressions.length == otherExpression.length && expressions.forall(a =>
++      otherExpression.exists(e => e.semanticEquals(a)))
++  }
++
++  override def satisfies(required: Distribution): Boolean = required match {
++    case UnspecifiedDistribution => true
++    case ClusteredDistribution(requiredClustering) => {
++      matchExpressions(requiredClustering)
++    }
++    case _ => false
++  }
++
++  private def anyOrderEquals(other: HashPartitioning) : Boolean = {
++    other.numPartitions == this.numPartitions &&
++        matchExpressions(other.expressions)
++  }
++
++  override def compatibleWith(other: Partitioning): Boolean = other match {
++    case p: HashPartitioning => anyOrderEquals(p)
++    case _ => false
++  }
++
++  override def guarantees(other: Partitioning): Boolean = other match {
++    case o: HashPartitioning => anyOrderEquals(o)
++    case _ => false
++  }
++
++}
++
++/**
++ * Represents a partitioning where rows are split up across partitions based on the hash
++ * of `expressions`.  All rows where `expressions` evaluate to the same values are guaranteed to be
+  * in the same partition.
+  */
+ case class HashPartitioning(expressions: Seq[Expression], numPartitions: Int)
+diff --git a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/SqlParser.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/SqlParser.scala
+index 0fef043..6edf31a 100644
+--- a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/SqlParser.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/catalyst/SqlParser.scala
+@@ -38,7 +38,10 @@ import org.apache.spark.unsafe.types.CalendarInterval
+  * This is currently included mostly for illustrative purposes.  Users wanting more complete support
+  * for a SQL like language should checkout the HiveQL support in the sql/hive sub-project.
+  */
+-object SqlParser extends AbstractSparkSQLParser with DataTypeParser {
++object SqlParser extends SqlParserBase {
++}
++
++class SqlParserBase extends AbstractSparkSQLParser with DataTypeParser {
+ 
+   def parseExpression(input: String): Expression = synchronized {
+     // Initialize the Keywords.
+@@ -74,6 +77,7 @@ object SqlParser extends AbstractSparkSQLParser with DataTypeParser {
+   protected val ELSE = Keyword("ELSE")
+   protected val END = Keyword("END")
+   protected val EXCEPT = Keyword("EXCEPT")
++  protected val EXISTS = Keyword("EXISTS")
+   protected val FALSE = Keyword("FALSE")
+   protected val FROM = Keyword("FROM")
+   protected val FULL = Keyword("FULL")
+@@ -250,6 +254,15 @@ object SqlParser extends AbstractSparkSQLParser with DataTypeParser {
+       }
+     | termExpression <~ IS ~ NULL ^^ { case e => IsNull(e) }
+     | termExpression <~ IS ~ NOT ~ NULL ^^ { case e => IsNotNull(e) }
++    | termExpression ~ (IN ~> start1) ^^ {
++        case e ~ subQuery => InSubquery(e, subQuery, positive = true)
++      }
++    | termExpression ~ (NOT ~ IN ~> start1) ^^ {
++        case e ~ subQuery => InSubquery(e, subQuery, positive = false)
++      }
++    | termExpression ~ ("=" ~> start1) ^^ {
++        case e ~ subQuery => InSubquery(e, subQuery, positive = true)
++      }
+     | termExpression
+     )
+ 
+@@ -269,7 +282,8 @@ object SqlParser extends AbstractSparkSQLParser with DataTypeParser {
+       | "^" ^^^ { (e1: Expression, e2: Expression) => BitwiseXor(e1, e2) }
+       )
+ 
+-  protected lazy val function: Parser[Expression] =
++  protected lazy val function: Parser[Expression] = functionDef
++  protected def functionDef: Parser[Expression] =
+     ( ident <~ ("(" ~ "*" ~ ")") ^^ { case udfName =>
+       if (lexical.normalizeKeyword(udfName) == "count") {
+         Count(Literal(1))
+@@ -485,6 +499,10 @@ object SqlParser extends AbstractSparkSQLParser with DataTypeParser {
+     | (expression <~ ".") ~ ident ^^
+       { case base ~ fieldName => UnresolvedExtractValue(base, Literal(fieldName)) }
+     | cast
++    | EXISTS ~> start1 ^^
++      { case subQuery => Exists(subQuery, positive = true) }
++    | NOT ~> EXISTS ~> start1 ^^
++      { case subQuery => Exists(subQuery, positive = false) }
+     | "(" ~> expression <~ ")"
+     | function
+     | dotExpressionHeader
+diff --git a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/types/StructField.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/types/StructField.scala
+index 83570a5..738ab14 100644
+--- a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/types/StructField.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/types/StructField.scala
+@@ -51,4 +51,8 @@ case class StructField(
+       ("nullable" -> nullable) ~
+       ("metadata" -> metadata.jsonValue)
+   }
++
++  private[sql] def fieldName: String = {
++    if (metadata.contains("name")) metadata.getString("name") else name
++  }
+ }
+diff --git a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/AnalysisException.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/AnalysisException.scala
+index f999218..7be3954 100644
+--- a/home/kneeraj/apache/spark/sql/catalyst/src/main/scala/org/apache/spark/sql/AnalysisException.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/catalyst/src/main/scala/org/apache/spark/sql/AnalysisException.scala
+@@ -30,6 +30,11 @@ class AnalysisException protected[sql] (
+     val startPosition: Option[Int] = None)
+   extends Exception with Serializable {
+ 
++  def this(message: String, cause: Throwable) = {
++    this(message)
++    initCause(cause)
++  }
++
+   def withPosition(line: Option[Int], startPosition: Option[Int]): AnalysisException = {
+     val newException = new AnalysisException(message, line, startPosition)
+     newException.setStackTrace(getStackTrace)
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/ResolvedDataSource.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/ResolvedDataSource.scala
+index 54beabb..089a9b8 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/ResolvedDataSource.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/ResolvedDataSource.scala
+@@ -15,6 +15,24 @@
+ * limitations under the License.
+ */
+ 
++/*
++ * Changes for SnappyData additions and modifications.
++ *
++ * Portions Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License"); you
++ * may not use this file except in compliance with the License. You
++ * may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
++ * implied. See the License for the specific language governing
++ * permissions and limitations under the License. See accompanying
++ * LICENSE file.
++ */
+ package org.apache.spark.sql.execution.datasources
+ 
+ import java.util.ServiceLoader
+@@ -194,7 +212,7 @@ object ResolvedDataSource extends Logging {
+     val clazz: Class[_] = lookupDataSource(provider)
+     val relation = clazz.newInstance() match {
+       case dataSource: CreatableRelationProvider =>
+-        dataSource.createRelation(sqlContext, mode, options, data)
++        dataSource.createRelation(sqlContext, mode, new CaseInsensitiveMap(options), data)
+       case dataSource: HadoopFsRelationProvider =>
+         // Don't glob path for the write path.  The contracts here are:
+         //  1. Only one output path can be specified on the write path;
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/jdbc/JdbcUtils.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/jdbc/JdbcUtils.scala
+index f89d55b..6180578 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/jdbc/JdbcUtils.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/datasources/jdbc/JdbcUtils.scala
+@@ -62,8 +62,15 @@ object JdbcUtils extends Logging {
+    * Returns a PreparedStatement that inserts a row into table via conn.
+    */
+   def insertStatement(conn: Connection, table: String, rddSchema: StructType): PreparedStatement = {
+-    val sql = new StringBuilder(s"INSERT INTO $table VALUES (")
++    val sql = new StringBuilder(s"INSERT INTO $table (")
+     var fieldsLeft = rddSchema.fields.length
++    rddSchema.fields map { field =>
++      sql.append(field.name)
++      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
++      fieldsLeft = fieldsLeft - 1
++    }
++    sql.append("VALUES (")
++    fieldsLeft = rddSchema.fields.length
+     while (fieldsLeft > 0) {
+       sql.append("?")
+       if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
+@@ -96,7 +103,6 @@ object JdbcUtils extends Logging {
+     val conn = getConnection()
+     var committed = false
+     try {
+-      conn.setAutoCommit(false) // Everything in the same db transaction.
+       val stmt = insertStatement(conn, table, rddSchema)
+       try {
+         var rowCount = 0
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/CacheManager.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/CacheManager.scala
+index f85aeb1..7a54c2b 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/CacheManager.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/CacheManager.scala
+@@ -40,7 +40,7 @@ private[sql] case class CachedData(plan: LogicalPlan, cachedRepresentation: InMe
+ private[sql] class CacheManager extends Logging {
+ 
+   @transient
+-  private val cachedData = new scala.collection.mutable.ArrayBuffer[CachedData]
++  private[sql] val cachedData = new scala.collection.mutable.ArrayBuffer[CachedData]
+ 
+   @transient
+   private val cacheLock = new ReentrantReadWriteLock
+@@ -55,7 +55,7 @@ private[sql] class CacheManager extends Logging {
+   }
+ 
+   /** Acquires a write lock on the cache for the duration of `f`. */
+-  private def writeLock[A](f: => A): A = {
++  private[sql] def writeLock[A](f: => A): A = {
+     val lock = cacheLock.writeLock()
+     lock.lock()
+     try f finally {
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/SparkSqlSerializer.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/SparkSqlSerializer.scala
+index b19ad4f..9800a1a 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/SparkSqlSerializer.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/SparkSqlSerializer.scala
+@@ -21,7 +21,6 @@ import java.nio.ByteBuffer
+ import java.util.{HashMap => JavaHashMap}
+ 
+ import scala.reflect.ClassTag
+-
+ import com.clearspring.analytics.stream.cardinality.HyperLogLog
+ import com.esotericsoftware.kryo.io.{Input, Output}
+ import com.esotericsoftware.kryo.{Kryo, Serializer}
+@@ -30,6 +29,8 @@ import com.twitter.chill.ResourcePool
+ import org.apache.spark.serializer.{KryoSerializer, SerializerInstance}
+ import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
+ import org.apache.spark.sql.catalyst.expressions.codegen.{IntegerHashSet, LongHashSet}
++import org.apache.spark.Accumulable
++import org.apache.spark.GrowableAccumulableParam
+ import org.apache.spark.sql.types.Decimal
+ import org.apache.spark.util.MutablePair
+ import org.apache.spark.util.collection.OpenHashSet
+@@ -55,6 +56,8 @@ private[sql] class SparkSqlSerializer(conf: SparkConf) extends KryoSerializer(co
+                   new OpenHashSetSerializer)
+     kryo.register(classOf[Decimal])
+     kryo.register(classOf[JavaHashMap[_, _]])
++    kryo.register(classOf[Accumulable[_, _]])
++    kryo.register(classOf[GrowableAccumulableParam[_, _]])
+ 
+     kryo.setReferences(false)
+     kryo
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/Exchange.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/Exchange.scala
+index 7f60c8f..beb8f9d 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/execution/Exchange.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/execution/Exchange.scala
+@@ -194,12 +194,13 @@ case class Exchange(newPartitioning: Partitioning, child: SparkPlan) extends Una
+  */
+ private[sql] case class EnsureRequirements(sqlContext: SQLContext) extends Rule[SparkPlan] {
+   // TODO: Determine the number of partitions.
+-  private def numPartitions: Int = sqlContext.conf.numShufflePartitions
++  private def defaultNumPartitions: Int = sqlContext.conf.numShufflePartitions
+ 
+   /**
+    * Given a required distribution, returns a partitioning that satisfies that distribution.
+    */
+-  private def canonicalPartitioning(requiredDistribution: Distribution): Partitioning = {
++  private def canonicalPartitioning(requiredDistribution: Distribution,
++      numPartitions : Int = defaultNumPartitions): Partitioning = {
+     requiredDistribution match {
+       case AllTuples => SinglePartition
+       case ClusteredDistribution(clustering) => HashPartitioning(clustering, numPartitions)
+@@ -229,8 +230,18 @@ private[sql] case class EnsureRequirements(sqlContext: SQLContext) extends Rule[
+     if (children.length > 1
+         && requiredChildDistributions.toSet != Set(UnspecifiedDistribution)
+         && !Partitioning.allCompatible(children.map(_.outputPartitioning))) {
++
++      // If all the child has same number of partitions then, target partition should
++      // be the partition number of childs rather than the shuffle partition number.
++      val childPartitioningNums = children.map(_.outputPartitioning.numPartitions).distinct
++      val numPartitions = if (childPartitioningNums.size == 1) {
++        childPartitioningNums.head
++      } else {
++        defaultNumPartitions
++      }
++
+       children = children.zip(requiredChildDistributions).map { case (child, distribution) =>
+-        val targetPartitioning = canonicalPartitioning(distribution)
++        val targetPartitioning = canonicalPartitioning(distribution, numPartitions)
+         if (child.outputPartitioning.guarantees(targetPartitioning)) {
+           child
+         } else {
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/jdbc/JdbcDialects.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/jdbc/JdbcDialects.scala
+index 88ae839..387c644 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/jdbc/JdbcDialects.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/jdbc/JdbcDialects.scala
+@@ -82,6 +82,14 @@ abstract class JdbcDialect {
+   def getJDBCType(dt: DataType): Option[JdbcType] = None
+ 
+   /**
++   * Retrieve the jdbc / sql type for a given datatype.
++   * @param dt The datatype (e.g. [[org.apache.spark.sql.types.StringType]])
++   * @param md The metadata
++   * @return The new JdbcType if there is an override for this DataType
++   */
++  def getJDBCType(dt: DataType, md: Metadata): Option[JdbcType] = getJDBCType(dt)
++
++  /**
+    * Quotes the identifier. This is used to put quotes around the identifier in case the column
+    * name is a reserved keyword, or in case it contains characters that require quotes (e.g. space).
+    */
+diff --git a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/columnar/InMemoryColumnarTableScan.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/columnar/InMemoryColumnarTableScan.scala
+index b4607b1..f679678 100644
+--- a/home/kneeraj/apache/spark/sql/core/src/main/scala/org/apache/spark/sql/columnar/InMemoryColumnarTableScan.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/core/src/main/scala/org/apache/spark/sql/columnar/InMemoryColumnarTableScan.scala
+@@ -63,7 +63,7 @@ private[sql] case class InMemoryRelation(
+     private var _batchStats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null)
+   extends LogicalPlan with MultiInstanceRelation {
+ 
+-  private val batchStats: Accumulable[ArrayBuffer[InternalRow], InternalRow] =
++  private[sql] val batchStats: Accumulable[ArrayBuffer[InternalRow], InternalRow] =
+     if (_batchStats == null) {
+       child.sqlContext.sparkContext.accumulableCollection(ArrayBuffer.empty[InternalRow])
+     } else {
+@@ -84,7 +84,7 @@ private[sql] case class InMemoryRelation(
+   // Statistics propagation contracts:
+   // 1. Non-null `_statistics` must reflect the actual statistics of the underlying data
+   // 2. Only propagate statistics when `_statistics` is non-null
+-  private def statisticsToBePropagated = if (_statistics == null) {
++  private[sql] def statisticsToBePropagated = if (_statistics == null) {
+     val updatedStats = statistics
+     if (_statistics == null) null else updatedStats
+   } else {
+diff --git a/home/kneeraj/apache/spark/sql/hive/src/main/scala/org/apache/spark/sql/hive/HiveQl.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/main/scala/org/apache/spark/sql/hive/HiveQl.scala
+index 98ecbba..583d5b5 100644
+--- a/home/kneeraj/apache/spark/sql/hive/src/main/scala/org/apache/spark/sql/hive/HiveQl.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/main/scala/org/apache/spark/sql/hive/HiveQl.scala
+@@ -316,11 +316,11 @@ private[hive] object HiveQl extends Logging {
+           case errorRegEx(line, start, message) =>
+             throw new AnalysisException(message, Some(line.toInt), Some(start.toInt))
+           case otherMessage =>
+-            throw new AnalysisException(otherMessage)
++            throw new AnalysisException(otherMessage, pe)
+         }
+       case e: MatchError => throw e
+       case e: Exception =>
+-        throw new AnalysisException(e.getMessage)
++        throw new AnalysisException(e.getMessage, e)
+       case e: NotImplementedError =>
+         throw new AnalysisException(
+           s"""
+diff --git a/home/kneeraj/apache/spark/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientInterface.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientInterface.scala
+index 9d9a55e..451eba1 100644
+--- a/home/kneeraj/apache/spark/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientInterface.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientInterface.scala
+@@ -137,6 +137,9 @@ private[hive] trait ClientInterface {
+   /** Updates the given table with new metadata. */
+   def alterTable(table: HiveTable): Unit
+ 
++  /** Drops the given table from metadata. */
++  def dropTable(dbName: String, tableName: String): Unit
++
+   /** Creates a new database with the given name. */
+   def createDatabase(database: HiveDatabase): Unit
+ 
+diff --git a/home/kneeraj/apache/spark/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientWrapper.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientWrapper.scala
+index 3dce86c..e043311 100644
+--- a/home/kneeraj/apache/spark/sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientWrapper.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/main/scala/org/apache/spark/sql/hive/client/ClientWrapper.scala
+@@ -173,6 +173,7 @@ private[hive] class ClientWrapper(
+       SessionState.start(state)
+       state.out = new PrintStream(outputBuffer, true, "UTF-8")
+       state.err = new PrintStream(outputBuffer, true, "UTF-8")
++      conf= state.getConf
+       state
+     } finally {
+       Thread.currentThread().setContextClassLoader(original)
+@@ -181,7 +182,8 @@ private[hive] class ClientWrapper(
+   }
+ 
+   /** Returns the configuration for the current session. */
+-  def conf: HiveConf = SessionState.get().getConf
++  //def conf: HiveConf = SessionState.get().getConf
++  var conf: HiveConf = _
+ 
+   override def getConf(key: String, defaultValue: String): String = {
+     conf.get(key, defaultValue)
+@@ -397,6 +399,11 @@ private[hive] class ClientWrapper(
+     client.alterTable(table.qualifiedName, qlTable)
+   }
+ 
++  override def dropTable(dbName: String,
++      tableName: String): Unit = withHiveState {
++    client.dropTable(dbName, tableName)
++  }
++
+   private def toHivePartition(partition: metadata.Partition): HivePartition = {
+     val apiPartition = partition.getTPartition
+     HivePartition(
+diff --git a/home/kneeraj/apache/spark/sql/hive/src/test/scala/org/apache/spark/sql/hive/HiveSparkSubmitSuite.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/test/scala/org/apache/spark/sql/hive/HiveSparkSubmitSuite.scala
+index 10e4ae2..9157b3d 100644
+--- a/home/kneeraj/apache/spark/sql/hive/src/test/scala/org/apache/spark/sql/hive/HiveSparkSubmitSuite.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/test/scala/org/apache/spark/sql/hive/HiveSparkSubmitSuite.scala
+@@ -90,11 +90,13 @@ class HiveSparkSubmitSuite
+     // the HiveContext code mistakenly overrides the class loader that contains user classes.
+     // For more detail, see sql/hive/src/test/resources/regression-test-SPARK-8489/*scala.
+     val testJar = "sql/hive/src/test/resources/regression-test-SPARK-8489/test.jar"
++    val testJarPath = sys.props.get("spark.project.home").map(
++      _ + '/' + testJar).getOrElse(testJar)
+     val args = Seq(
+       "--conf", "spark.ui.enabled=false",
+       "--conf", "spark.master.rest.enabled=false",
+       "--class", "Main",
+-      testJar)
++      testJarPath)
+     runSparkSubmit(args)
+   }
+ 
+diff --git a/home/kneeraj/apache/spark/sql/hive/src/test/scala/org/apache/spark/sql/hive/StatisticsSuite.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/test/scala/org/apache/spark/sql/hive/StatisticsSuite.scala
+index 9bb32f1..6b11826 100644
+--- a/home/kneeraj/apache/spark/sql/hive/src/test/scala/org/apache/spark/sql/hive/StatisticsSuite.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive/src/test/scala/org/apache/spark/sql/hive/StatisticsSuite.scala
+@@ -46,6 +46,7 @@ class StatisticsSuite extends QueryTest with TestHiveSingleton {
+       }
+     }
+ 
++    hiveContext.executionHive.runSqlHive("RESET") // force set the SessionState
+     assertAnalyzeCommand(
+       "ANALYZE TABLE Table1 COMPUTE STATISTICS",
+       classOf[HiveNativeCommand])
+diff --git a/home/kneeraj/apache/spark/sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/CliSuite.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/CliSuite.scala
+index 3fa5c85..1a315db 100644
+--- a/home/kneeraj/apache/spark/sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/CliSuite.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/CliSuite.scala
+@@ -40,6 +40,8 @@ class CliSuite extends SparkFunSuite with BeforeAndAfter with Logging {
+   val warehousePath = Utils.createTempDir()
+   val metastorePath = Utils.createTempDir()
+   val scratchDirPath = Utils.createTempDir()
++  val sparkHome = new File(sys.props.getOrElse("spark.test.home",
++    fail("spark.test.home is not set!")))
+ 
+   before {
+     warehousePath.delete()
+@@ -75,7 +77,7 @@ class CliSuite extends SparkFunSuite with BeforeAndAfter with Logging {
+     val queriesString = queries.map(_ + "\n").mkString
+ 
+     val command = {
+-      val cliScript = "../../bin/spark-sql".split("/").mkString(File.separator)
++      val cliScript = "./bin/spark-sql".split("/").mkString(File.separator)
+       val jdbcUrl = s"jdbc:derby:;databaseName=$metastorePath;create=true"
+       s"""$cliScript
+          |  --master local
+@@ -112,7 +114,7 @@ class CliSuite extends SparkFunSuite with BeforeAndAfter with Logging {
+       }
+     }
+ 
+-    val process = new ProcessBuilder(command: _*).start()
++    val process = new ProcessBuilder(command: _*).directory(sparkHome).start()
+ 
+     val stdinWriter = new OutputStreamWriter(process.getOutputStream)
+     stdinWriter.write(queriesString)
+@@ -192,8 +194,9 @@ class CliSuite extends SparkFunSuite with BeforeAndAfter with Logging {
+   }
+ 
+   test("Commands using SerDe provided in --jars") {
+-    val jarFile =
+-      "../hive/src/test/resources/hive-hcatalog-core-0.13.1.jar"
++    val jar = "hive/src/test/resources/hive-hcatalog-core-0.13.1.jar"
++    val jarFile = sys.props.get("spark.project.home").map(
++      _ + "/sql/" + jar).getOrElse("../" + jar)
+         .split("/")
+         .mkString(File.separator)
+ 
+diff --git a/home/kneeraj/apache/spark/sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/HiveThriftServer2Suites.scala b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/HiveThriftServer2Suites.scala
+index ff8ca01..88adbc5 100644
+--- a/home/kneeraj/apache/spark/sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/HiveThriftServer2Suites.scala
++++ b/home/kneeraj/snappy/snappy-commons/snappy-spark//sql/hive-thriftserver/src/test/scala/org/apache/spark/sql/hive/thriftserver/HiveThriftServer2Suites.scala
+@@ -387,8 +387,9 @@ class HiveThriftBinaryServerSuite extends HiveThriftJdbcTest {
+     withMultipleConnectionJdbcStatement(
+       {
+         statement =>
+-          val jarFile =
+-            "../hive/src/test/resources/hive-hcatalog-core-0.13.1.jar"
++          val jar = "hive/src/test/resources/hive-hcatalog-core-0.13.1.jar"
++          val jarFile = sys.props.get("spark.project.home").map(
++            _ + "/sql/" + jar).getOrElse("../" + jar)
+               .split("/")
+               .mkString(File.separator)
+ 
+@@ -537,8 +538,11 @@ abstract class HiveThriftServer2Test extends SparkFunSuite with BeforeAndAfterAl
+   private val CLASS_NAME = HiveThriftServer2.getClass.getCanonicalName.stripSuffix("$")
+   private val LOG_FILE_MARK = s"starting $CLASS_NAME, logging to "
+ 
+-  protected val startScript = "../../sbin/start-thriftserver.sh".split("/").mkString(File.separator)
+-  protected val stopScript = "../../sbin/stop-thriftserver.sh".split("/").mkString(File.separator)
++  protected val startScript = "./sbin/start-thriftserver.sh".split("/").mkString(File.separator)
++  protected val stopScript = "./sbin/stop-thriftserver.sh".split("/").mkString(File.separator)
++
++  protected val sparkHome = sys.props.getOrElse("spark.test.home",
++    fail("spark.test.home is not set!"))
+ 
+   private var listeningPort: Int = _
+   protected def serverPort: Int = listeningPort
+@@ -629,6 +633,7 @@ abstract class HiveThriftServer2Test extends SparkFunSuite with BeforeAndAfterAl
+     logPath = {
+       val lines = Utils.executeAndGetOutput(
+         command = command,
++        workingDir = new File(sparkHome),
+         extraEnvironment = Map(
+           // Disables SPARK_TESTING to exclude log4j.properties in test directories.
+           "SPARK_TESTING" -> "0",
+@@ -678,6 +683,7 @@ abstract class HiveThriftServer2Test extends SparkFunSuite with BeforeAndAfterAl
+     // The `spark-daemon.sh' script uses kill, which is not synchronous, have to wait for a while.
+     Utils.executeAndGetOutput(
+       command = Seq(stopScript),
++      workingDir = new File(sparkHome),
+       extraEnvironment = Map("SPARK_PID_DIR" -> pidDir.getCanonicalPath))
+     Thread.sleep(3.seconds.toMillis)
+ 
