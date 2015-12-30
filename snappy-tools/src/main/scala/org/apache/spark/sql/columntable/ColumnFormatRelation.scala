@@ -8,8 +8,12 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.SparkShellRDDHelper
+import org.scalatest.path
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
@@ -21,12 +25,12 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.StoreFunctions._
-import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
+import org.apache.spark.sql.store.impl.{SparkShellRowRDD, JDBCSourceAsColumnarStore}
 import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.{HashPartitioner, Logging, Partition, SparkContext}
 /**
  * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -47,17 +51,12 @@ import org.apache.spark.{Logging, Partition, SparkContext}
 
  */
 class ColumnFormatRelation(
-    override val url: String,
     override val table: String,
     override val provider: String,
     override val mode: SaveMode,
     userSchema: StructType,
     schemaExtensions: String,
     ddlExtensionForShadowTable: String,
-    poolProps: Map[String, String],
-    partitions: Integer,
-    override val connProperties: Properties,
-    override val hikariCP: Boolean,
     override val origOptions: Map[String, String],
     override val externalStore: ExternalStore,
     blockMap: Map[InternalDistributedMember, BlockManagerId],
@@ -65,15 +64,15 @@ class ColumnFormatRelation(
     @transient override val sqlContext: SQLContext
     )
     (private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] = new ArrayBuffer[RDD[UUIDRegionKey]]())
-    extends JDBCAppendableRelation(url, table, provider, mode, userSchema,
-      partitions, poolProps, connProperties, hikariCP, origOptions, externalStore, sqlContext)()
+    extends JDBCAppendableRelation(table, provider, mode, userSchema
+      , origOptions, externalStore, sqlContext)()
     with PartitionedDataSourceScan with RowInsertableRelation {
 
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(externalStore.connProperties.url)
 
   val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(table, userSchema)
 
@@ -90,7 +89,7 @@ class ColumnFormatRelation(
   override def partitionColumns: Seq[String] = {
     connectionType match {
       case ConnectionType.Embedded => partitioningColumns
-      case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededd join
+      case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
     }
   }
 
@@ -98,10 +97,11 @@ class ColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
-    val colRdd = super.scanTable(table + shadowTableNamePrefix, requiredColumns, filters)
+
     // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
     // we may miss some result though
     // TODO: can we optimize the union by providing partitioner
+    val colRdd = super.scanTable(table + externalStore.shadowTableNamePrefix, requiredColumns, filters)
     val union = connectionType match {
       case ConnectionType.Embedded => {
         val rowRdd = new RowFormatScanRDD(
@@ -110,10 +110,10 @@ class ColumnFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
+          externalStore.connProperties,
           Array.empty[Filter],
           Array.empty[Partition],
-          blockMap,
-          connProperties
+          blockMap
         ).asInstanceOf[RDD[Row]]
 
         rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
@@ -121,17 +121,21 @@ class ColumnFormatRelation(
         }
       }
       //TODO: This needs to be changed for non-embedded mode, inefficient
-      case _ =>
-        colRdd.union(new JDBCRDD(
+      case _ => {
+        val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           connector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          Array.empty[Filter],
-          Array[Partition](JDBCPartition(null, 0)),
-          connProperties
-        ).asInstanceOf[RDD[Row]])
+          externalStore.connProperties,
+          externalStore
+        ).asInstanceOf[RDD[Row]]
+
+        colRdd.union(rowRdd)
+
+      }
+
     }
     union
   }
@@ -144,7 +148,7 @@ class ColumnFormatRelation(
     if (mode == SaveMode.Overwrite) {
       truncate
     }
-    JdbcUtils.saveTable(data, url, table, connProperties)
+    JdbcUtils.saveTable(data, externalStore.connProperties.url, table, externalStore.connProperties.connProps)
   }
 
   /**
@@ -162,7 +166,8 @@ class ColumnFormatRelation(
         "JDBCAppendableRelation.insert: no rows provided")
     }
     val connection = ConnectionPool.getPoolConnection(table, None, dialect,
-      poolProps, connProperties, hikariCP)
+      externalStore.connProperties.poolProps, externalStore.connProperties.connProps,
+      externalStore.connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
       if (numRows > 1) {
@@ -185,10 +190,10 @@ class ColumnFormatRelation(
 
   // truncate both actual and shadow table
   override def truncate() = writeLock {
-    val dialect = JdbcDialects.get(externalStore.url)
-    externalStore.tryExecute(table + shadowTableNamePrefix, {
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
+    externalStore.tryExecute(table + externalStore.shadowTableNamePrefix, {
       case conn =>
-        JdbcExtendedUtils.truncateTable(conn, table + shadowTableNamePrefix, dialect)
+        JdbcExtendedUtils.truncateTable(conn, table + externalStore.shadowTableNamePrefix, dialect)
     })
     externalStore.tryExecute(table, {
       case conn =>
@@ -208,9 +213,9 @@ class ColumnFormatRelation(
     // then on the driver
     ColumnFormatRelation.removePool(table)
     // drop the external table using a non-pool connection
-    val conn = JdbcUtils.createConnection(url, connProperties)
+    val conn = JdbcUtils.createConnection(externalStore.connProperties.url, externalStore.connProperties.connProps)
     try {
-      JdbcExtendedUtils.dropTable(conn, table + shadowTableNamePrefix, dialect, sqlContext,
+      JdbcExtendedUtils.dropTable(conn, table + externalStore.shadowTableNamePrefix, dialect, sqlContext,
         ifExists)
       JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
     } finally {
@@ -220,9 +225,9 @@ class ColumnFormatRelation(
 
   override def createTable(mode: SaveMode): Unit = {
     var conn: Connection = null
-    val dialect = JdbcDialects.get(url)
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
     try {
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = JdbcUtils.createConnection(externalStore.connProperties.url, externalStore.connProperties.connProps)
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
@@ -230,7 +235,8 @@ class ColumnFormatRelation(
           case GemFireXDDialect => {
             GemFireXDDialect.initializeTable(table,
               sqlContext.conf.caseSensitiveAnalysis, conn)
-            GemFireXDDialect.initializeTable(table + shadowTableNamePrefix, sqlContext.conf.caseSensitiveAnalysis, conn)
+            GemFireXDDialect.initializeTable(table + externalStore.shadowTableNamePrefix,
+              sqlContext.conf.caseSensitiveAnalysis, conn)
           }
           case _ => // Do nothing
         }
@@ -260,9 +266,10 @@ class ColumnFormatRelation(
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, numRows integer not null, stats blob, " +
-        userSchema.fields.map(structField => columnPrefix + structField.name + " blob").mkString(" ", ",", " ") +
+        userSchema.fields.map(structField => externalStore.columnPrefix +
+        structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
-      tableName, dropIfExists = false)
+        tableName, dropIfExists = false)
   }
 
 
@@ -272,7 +279,7 @@ class ColumnFormatRelation(
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(url, connProperties)
+      conn = JdbcUtils.createConnection(externalStore.connProperties.url, externalStore.connProperties.connProps)
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
@@ -282,7 +289,7 @@ class ColumnFormatRelation(
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName, sqlContext.conf.caseSensitiveAnalysis, conn)
         }
-        createExternalTableForCachedBatches(tableName + shadowTableNamePrefix, externalStore)
+        createExternalTableForCachedBatches(tableName + externalStore.shadowTableNamePrefix, externalStore)
       }
     }
     catch {
@@ -306,7 +313,8 @@ class ColumnFormatRelation(
    */
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, None, dialect,
-      poolProps, connProperties, hikariCP)
+      externalStore.connProperties.poolProps, externalStore.connProperties.connProps,
+      externalStore.connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
       //stmt.setSt
@@ -349,16 +357,17 @@ final class DefaultSource extends ColumnarRelationProvider {
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
-    val (url, driver, poolProps, connProps, hikariCP) =
+    val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+
+    val partitions =ExternalStoreUtils.getTotalPartitions(parametersForShadowTable , false)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
 
-    val dialect = JdbcDialects.get(url)
+    val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, url,
-          connProps, poolProps, hikariCP, table, Some(schema))
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table, Some(schema) , partitions ,connProperties)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
@@ -370,21 +379,17 @@ final class DefaultSource extends ColumnarRelationProvider {
       s"$schemaString $ddlExtension"
     }
 
-    val externalStore = new JDBCSourceAsColumnarStore(url, driver, poolProps,
-      connProps, hikariCP, blockMap)
+    val externalStore = new JDBCSourceAsColumnarStore(connProperties,
+      partitions, blockMap)
+
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table, schema, externalStore)
 
-    new ColumnFormatRelation(url,
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
+    new ColumnFormatRelation(SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
       mode,
       schema,
       schemaExtension,
       ddlExtensionForShadowTable,
-      poolProps,
-      getPartitions(parameters),
-      connProps,
-      hikariCP,
       options,
       externalStore,
       blockMap,
