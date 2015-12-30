@@ -10,6 +10,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
+import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -27,17 +28,16 @@ import org.apache.spark.{Accumulator, Partition, SparkEnv, TaskContext}
   */
 
 
-class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
-    val connProperties: Properties,
-    poolProps: Map[String, String],
-    hikariCP: Boolean,
+class StoreInitRDD(@transient sqlContext: SQLContext,
     table: String,
-    userSchema: Option[StructType]
+    userSchema: Option[StructType],
+    partitions:Int,
+    connProperties:ConnectionProperties
     )
     extends RDD[(InternalDistributedMember, BlockManagerId)](sqlContext.sparkContext, Nil) {
 
 
-  val driver = DriverRegistry.getDriverClassName(url)
+  val driver = DriverRegistry.getDriverClassName(connProperties.url)
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -52,24 +52,24 @@ class StoreInitRDD(@transient sqlContext: SQLContext, url: String,
     // doesn't require blockMap
     userSchema match {
       case Some(schema) =>
-        val store = new JDBCSourceAsColumnarStore(url, driver, poolProps, connProperties, hikariCP)
+        val store = new JDBCSourceAsColumnarStore(connProperties,partitions)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
           schema, store, columnBatchSize, userCompression)
       case None =>
     }
 
-    JdbcDialects.get(url) match {
+    JdbcDialects.get(connProperties.url) match {
       case d: JdbcExtendedDialect =>
         val extraProps = d.extraDriverProperties(isLoner).propertyNames
         while (extraProps.hasMoreElements) {
           val p = extraProps.nextElement()
-          if (connProperties.get(p) != null) {
+          if (connProperties.connProps.get(p) != null) {
             sys.error(s"Master specific property $p " +
                 "shouldn't exist here in Executors")
           }
         }
     }
-    val conn = JdbcUtils.createConnection(url, connProperties)
+    val conn = JdbcUtils.createConnection(connProperties.url, connProperties.connProps)
     conn.close()
     GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
     Seq((Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)).iterator
