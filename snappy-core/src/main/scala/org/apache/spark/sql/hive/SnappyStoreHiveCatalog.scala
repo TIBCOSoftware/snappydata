@@ -235,11 +235,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
            LocalMode(_, _) =>
         (true, ExternalStoreUtils.defaultStoreURL(sc) +
-            ";default-persistent=true", Constant.JDBC_EMBEDDED_DRIVER)
+            ";disable-streaming=true;default-persistent=true",
+            Constant.JDBC_EMBEDDED_DRIVER)
       case SnappyShellMode(_, props) =>
         (true, Constant.DEFAULT_EMBEDDED_URL +
-            ";host-data=false;default-persistent=true;" + props,
-            Constant.JDBC_EMBEDDED_DRIVER)
+            ";host-data=false;disable-streaming=true;default-persistent=true;" +
+            props, Constant.JDBC_EMBEDDED_DRIVER)
       case ExternalClusterMode(_, _) =>
         (false, null, null)
     }
@@ -516,10 +517,10 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     throw new UnsupportedOperationException("missing AQP jar")
   }
 
-  def registerTopK(tableIdent: String, streamTableIdent: String,
+  /*def registerTopK(tableIdent: String,
       schema: StructType, topkOptions: Map[String, Any], rdd: RDD[(Int, TopK)]): Unit = {
     throw new UnsupportedOperationException("missing AQP jar")
-  }
+  }*/
 
   // TODO: The JDBC source is currently reading a property jdbcStore
   // to find out the type of the jdbc store. This is a
@@ -542,13 +543,13 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     val rdd = new DummyRDD(context) {
       override def compute(split: Partition,
           taskContext: TaskContext): Iterator[InternalRow] = {
-        DriverRegistry.register(externalStore.driver)
-        JdbcDialects.get(externalStore.url) match {
+        DriverRegistry.register(externalStore.connProperties.driver)
+        JdbcDialects.get(externalStore.connProperties.url) match {
           case d: JdbcExtendedDialect =>
             val extraProps = d.extraDriverProperties(isLoner).propertyNames
             while (extraProps.hasMoreElements) {
               val p = extraProps.nextElement()
-              if (externalStore.connProps.get(p) != null) {
+              if (externalStore.connProperties.connProps.get(p) != null) {
                 sys.error(s"Master specific property $p " +
                     "shouldn't exist here in Executors")
               }
@@ -556,8 +557,8 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
           case _ =>
         }
 
-        val conn = ExternalStoreUtils.getConnection(externalStore.url,
-          externalStore.connProps, driverDialect = null, isLoner = false)
+        val conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url,
+          externalStore.connProperties.connProps, driverDialect = null, isLoner = false)
         conn.close()
         Iterator.empty
       }
@@ -575,8 +576,8 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     rdd.collect()
 
     //val tableName = processTableIdentifier(tableIdent)
-    val connProps = externalStore.connProps
-    val dialect = JdbcDialects.get(externalStore.url)
+    val connProps = externalStore.connProperties.connProps
+    val dialect = JdbcDialects.get(externalStore.connProperties.url)
     dialect match {
       case d: JdbcExtendedDialect =>
         connProps.putAll(d.extraDriverProperties(isLoner))
@@ -603,7 +604,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
     //val tableName = processTableIdentifier(tableIdent)
     val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(
-      externalStore.url) match {
+      externalStore.connProperties.url) match {
       case ConnectionType.Embedded =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
             "primary key (uuid, bucketId)", "partition by column (bucketId)")

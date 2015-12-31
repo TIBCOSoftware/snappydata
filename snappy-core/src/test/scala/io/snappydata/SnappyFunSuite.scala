@@ -1,8 +1,13 @@
 package io.snappydata
 
 import java.io.File
+import java.sql.SQLException
+
+import scala.util.control.NonFatal
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+
+import org.apache.spark.sql.collection.ToolsCallbackInit
 
 //scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
@@ -42,8 +47,6 @@ abstract class SnappyFunSuite
   protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
     new SparkContext(newSparkConf(addOn))
   }
-
-
 
   protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
 
@@ -87,10 +90,16 @@ abstract class SnappyFunSuite
     try {
       val scL = this.sc
       if (scL != null && !scL.isStopped) {
+        val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
             snc.dropExternalTable(tableName, ifExists = true)
-          case _ =>
+          case (tableName, true) =>
+            if (tableName.indexOf("_sampled") != -1) {
+              snc.dropSampleTable(tableName, ifExists = true)
+            } else {
+              snc.dropTempTable(tableName, ifExists = true)
+            }
         }
       }
     } finally {
@@ -104,6 +113,20 @@ abstract class SnappyFunSuite
 
   override def afterAll(): Unit = {
     baseCleanup()
+  }
+
+  def stopAll(): Unit = {
+    val toolsCallback = ToolsCallbackInit.toolsCallback
+    if (toolsCallback != null) {
+      try {
+        toolsCallback.invokeStopFabricServer(sc)
+      } catch {
+        case se:SQLException  if(se.getCause.getMessage.indexOf("No connection to the distributed system") != -1) =>
+        case NonFatal(_) => // ignore
+      }
+    }
+    println(" Stopping spark context = " + SnappyContext.globalSparkContext)
+    SnappyContext.stop()
   }
 
   def createDir(fileName: String): String = {

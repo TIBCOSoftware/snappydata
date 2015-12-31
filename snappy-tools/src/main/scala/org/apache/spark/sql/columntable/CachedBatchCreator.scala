@@ -106,7 +106,7 @@ class CachedBatchCreator(
 
     def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-      val uuid = externalStore.storeCachedBatch(batch, batchID, bucketID, tableName)
+      val uuid = externalStore.storeCachedBatch(tableName , batch, bucketID, Option(batchID))
       accumulated += uuid
     }
 

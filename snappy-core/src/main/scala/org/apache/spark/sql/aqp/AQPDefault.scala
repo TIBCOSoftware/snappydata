@@ -37,7 +37,7 @@ object AQPDefault extends AQPContext{
                                          (implicit ev: u.TypeTag[A]): DataFrame
   = throw new UnsupportedOperationException("missing aqp jar")
 
-  def registerTopK(context: SnappyContext, tableName: String, streamTableName: String,
+  def createTopK(context: SnappyContext, tableName: String, keyColumnName: String, schema: StructType,
                    topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit=
     throw new UnsupportedOperationException("missing aqp jar")
 
@@ -51,8 +51,7 @@ object AQPDefault extends AQPContext{
   = throw new UnsupportedOperationException("missing aqp jar")
 
 
-  def createTopK(df: DataFrame, context: SnappyContext, ident: String, options: Map[String, Any]): Unit
-  = throw new UnsupportedOperationException("missing aqp jar")
+
 
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row], aqpTables: Seq[String],
                                     time: Long,
@@ -60,12 +59,12 @@ object AQPDefault extends AQPContext{
   = throw new UnsupportedOperationException("missing aqp jar")
 
 
-  def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
+ /* def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
                               aqpTables: Seq[String],
                               formatter: (RDD[T], StructType) => RDD[Row],
                               schema: StructType,
                               transform: RDD[Row] => RDD[Row] = null)
-  = throw new UnsupportedOperationException("missing aqp jar")
+  = throw new UnsupportedOperationException("missing aqp jar")*/
 
 
 
@@ -90,6 +89,8 @@ object AQPDefault extends AQPContext{
 
   def dropSampleTable(tableName: String, ifExists: Boolean = false) =
     throw new UnsupportedOperationException("missing aqp jar")
+
+  def isTungstenEnabled: Boolean = true
 }
 
 class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanner(snappyContext)  with SnappyStrategies{
@@ -115,27 +116,4 @@ class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanne
 
 
 
-  /*override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
-   StreamStrategy(context.aqpContext.getSampleTablePopulator, sampleStreamCase ),
-   StoreStrategy) ++ super.strategies*/
-  /*
-  object SnappyStrategies extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]]  = {
-        case PhysicalOperation (projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-        pruneFilterProject (
-        projectList,
-        filters,
-        identity[Seq[Expression]], // All filters still need to be evaluated
-        InMemoryAppendableColumnarTableScan (_, filters, mem) ) :: Nil
-      }
-
-      x.orElse(sampleSnappyCase)(plan)
-
-    }
-
-
-
-  }*/
 }
