@@ -118,13 +118,12 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isNotEmbeddedMode(sparkContext: SparkContext): Boolean = {
+  def isShellOrLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
       case SnappyShellMode(_, _) | LocalMode(_, _) => true
       case _ => false
     }
   }
-
 
   def validateAndGetAllProps(sc : SparkContext,
       parameters: mutable.Map[String, String]) :ConnectionProperties = {
