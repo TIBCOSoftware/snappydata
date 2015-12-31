@@ -205,8 +205,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
       case streamname ~ cols ~ providerName ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName)
-        val userOpts  = opts.updated(USING.str, provider)
-        CreateStreamTable(streamname, userColumns, new CaseInsensitiveMap(userOpts))
+        CreateStreamTable(streamname, userColumns, provider, opts)
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
@@ -343,6 +342,7 @@ case class DMLExternalTable(
 
 private[sql] case class CreateStreamTable(streamName: String,
     userColumns: Option[StructType],
+    provider: String,
     options: Map[String, String])
     extends LogicalPlan with Command {
 
@@ -366,11 +366,11 @@ private[sql] case class StreamOperationsLogicalPlan(action: Int,
 
 private[sql] case class CreateStreamTableCmd(streamIdent: String,
     userColumns: Option[StructType],
+    provider: String,
     options: Map[String, String])
     extends RunnableCommand {
 
   def run(sqlContext: SQLContext): Seq[Row] = {
-    val provider = SnappyContext.getProvider(options("using"))
     val resolved = ResolvedDataSource(sqlContext, userColumns,
       Array.empty[String], provider, options)
     val plan = LogicalRelation(resolved.relation)
