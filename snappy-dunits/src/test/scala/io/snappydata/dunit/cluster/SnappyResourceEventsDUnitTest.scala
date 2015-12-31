@@ -19,30 +19,27 @@ class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s
   import SnappyResourceEventsDUnitTest._
 
   override def tearDown2(): Unit = {
+    resetGFResourceManager()
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(this.getClass,
       "resetGFResourceManager"))
-    resetGFResourceManager()
     super.tearDown2()
   }
 
-  def testDummy(): Unit = {
-  }
-
-  // fails for some reason; check after 1.6 update
-  def _testCriticalUp(): Unit = {
+  def testCriticalUp(): Unit = {
     // Execute the job
     runSparkJob()
+    vm0.invoke(this.getClass, "raiseCriticalUpMemoryEvent")
     vm1.invoke(this.getClass, "raiseCriticalUpMemoryEvent")
+    vm2.invoke(this.getClass, "raiseCriticalUpMemoryEvent")
     runSparkJobAfterThresholdBreach()
-
-    vm1.invoke(this.getClass, "assertShuffleMemoryManagerBehavior")
   }
 
-  // fails for some reason; check after 1.6 update
-  def _testEvictionUp(): Unit = {
+  def testEvictionUp(): Unit = {
     // Execute the job
     runSparkJob()
+    vm0.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
     vm1.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
+    vm2.invoke(this.getClass, "raiseEvictionUpMemoryEvent")
     runSparkJobAfterThresholdBreach()
   }
 }
@@ -76,7 +73,7 @@ object SnappyResourceEventsDUnitTest {
     println("2. cached rdd mem size after caching first rdd when critical or eviction up = " + sum2)
     // make sure that after eviction up new rdd being cached does not result in
     // increased memory usage
-    assert(!(sum2 > sum1))
+    assert(!(sum2 > sum1), s"sum1 = $sum1, sum2 = $sum2")
 
     val rdd3 = sc.makeRDD(Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)).cache()
     println(rdd3.count())
@@ -84,7 +81,7 @@ object SnappyResourceEventsDUnitTest {
     println("3. cached rdd mem size after caching second rdd when critical or eviction up = " + sum3)
     // make sure that after eviction up new rdd being cached does not result in
     // increased memory usage
-    assert(!(sum3 > sum2))
+    assert(!(sum3 > sum2), s"sum2 = $sum2, sum3 = $sum3")
   }
 
   def raiseCriticalUpMemoryEvent(): Unit = {
