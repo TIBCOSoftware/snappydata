@@ -89,6 +89,8 @@ object AQPDefault extends AQPContext{
 
   def dropSampleTable(tableName: String, ifExists: Boolean = false) =
     throw new UnsupportedOperationException("missing aqp jar")
+
+  def isTungstenEnabled: Boolean = true
 }
 
 class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanner(snappyContext)  with SnappyStrategies{
@@ -114,27 +116,4 @@ class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanne
 
 
 
-  /*override def strategies: Seq[Strategy] = Seq( SnappyStrategies,
-   StreamStrategy(context.aqpContext.getSampleTablePopulator, sampleStreamCase ),
-   StoreStrategy) ++ super.strategies*/
-  /*
-  object SnappyStrategies extends Strategy {
-    def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]]  = {
-        case PhysicalOperation (projectList, filters,
-        mem: columnar.InMemoryAppendableRelation) =>
-        pruneFilterProject (
-        projectList,
-        filters,
-        identity[Seq[Expression]], // All filters still need to be evaluated
-        InMemoryAppendableColumnarTableScan (_, filters, mem) ) :: Nil
-      }
-
-      x.orElse(sampleSnappyCase)(plan)
-
-    }
-
-
-
-  }*/
 }
