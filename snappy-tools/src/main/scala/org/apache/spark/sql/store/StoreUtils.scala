@@ -227,7 +227,7 @@ object StoreUtils extends Logging {
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit ={
     parameters.keys.forall(v => {
-      if(!ddlOptions.contains(v.toString)){
+      if(!ddlOptions.contains(v.toString.toUpperCase())){
         throw new AnalysisException(s"Unknown options $v specified while creating table ")
       }
       true
