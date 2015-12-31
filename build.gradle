@@ -480,7 +480,9 @@ task runQuickstart {
 
       println "${submitjobairline}"
 
-      def json = new JsonSlurper().parseText("${submitjobairline}".substring(2))
+      def jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
+                    submitjobairline.substring(4)
+      def json = new JsonSlurper().parseText(jsonStr)
       def jobid = ""
       json.each {
         k, v ->
