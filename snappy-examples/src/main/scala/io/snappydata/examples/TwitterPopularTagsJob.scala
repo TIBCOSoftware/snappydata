@@ -67,11 +67,13 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         "timeInterval" -> 2000,
         "size" -> 10
       )
+
     snsc.snappyContext.createTopK("topktable", "hashtag",schema, topKOption, false)
 
     snsc.snappyContext.saveStream(rowStream,
       Seq("topktable"),
       None
+
     )
 
 
@@ -93,22 +95,24 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
       val end = System.currentTimeMillis + 90000
       while (end > System.currentTimeMillis()) {
         Thread.sleep(2000)
-        pw.println("********Top 10 hash tags for the last interval *******")
+        pw.println("********Top 10 hash tags for the last interval *******\n")
+
         snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 10000, System.currentTimeMillis).collect.foreach(result => {
           pw.println(result.toString)
         })
 
-        pw.println("******* Top 10 hash tags until now *******")
+        pw.println("\n******* Top 10 hash tags until now *******")
 
         snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 90000, System.currentTimeMillis).collect.foreach(result => {
           pw.println(result.toString)
         })
 
-        pw.println("******* Top 10 hash tags until now using gemxd query *******")
+        pw.println("\n******* Top 10 hash tags until now using gemxd query *******")
         snsc.snappyContext.sql(s"select hashtag, count(*) as tagcount from  ${tableName} group " +
           " by hashtag order by tagcount desc limit 10").collect.foreach(row => {
           pw.println(row.toString())
         })
+        pw.println("\n##############################################################")
       }
     } finally {
       pw.close()
