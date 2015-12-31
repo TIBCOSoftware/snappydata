@@ -144,7 +144,7 @@ class ColumnFormatRelation(
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      val uuid = externalStore.storeCachedBatch(batch, table + shadowTableNamePrefix, numPartitions)
+      val uuid = externalStore.storeCachedBatch(table + externalStore.shadowTableNamePrefix, batch)
       accumulated += uuid
     } else {
       //TODO: can we do it before compressing. Might save a bit

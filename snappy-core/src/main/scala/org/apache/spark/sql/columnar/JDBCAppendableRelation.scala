@@ -146,13 +146,6 @@ class JDBCAppendableRelation(
 
     val output = df.logicalPlan.output
     val cached = rdd.mapPartitionsPreserveWithIndex({case (split, rowIterator) =>
-      def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-          batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        //TODO - currently using the length from the part Object but it needs to be handled more generically
-        //in order to replace UUID
-        val uuid = externalStore.storeCachedBatch(table , batch)
-        accumulated += uuid
-      }
 
       def columnBuilders = output.map { attribute =>
         val columnType = ColumnType(attribute.dataType)

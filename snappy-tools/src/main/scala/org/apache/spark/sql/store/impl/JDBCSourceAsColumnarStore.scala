@@ -52,8 +52,8 @@ final class JDBCSourceAsColumnarStore( _connProperties:ConnectionProperties,
         val region = Misc.getRegionForTable(resolvedName, true)
         region.asInstanceOf[AbstractRegion] match {
           case pr: PartitionedRegion =>
-            genUUIDRegionKey(bucketId, batchId.getOrElse(throw new IllegalArgumentException(
-              "JDBCSourceAsColumnarStore.getUUIDRegionKey: batchID not provided")))
+            genUUIDRegionKey(bucketId, batchId.getOrElse(UUID.randomUUID))
+            // ;throw new IllegalArgumentException( "JDBCSourceAsColumnarStore.getUUIDRegionKey: batchID not provided"))
           case _ =>
             genUUIDRegionKey()
         }
