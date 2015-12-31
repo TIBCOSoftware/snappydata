@@ -26,6 +26,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
+    s.execute("streaming init 2")
     s.execute("create stream table tweetsTable " +
       "(id long, text string, fullName string, " +
       "country string, retweets int, hashtag string) " +
@@ -34,10 +35,15 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       "consumerSecret '***REMOVED***', " +
       "accessToken '***REMOVED***', " +
       "accessTokenSecret '***REMOVED***', " +
-      "streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter')")
-    s.getResultSet
+      "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
+    s.execute("streaming start")
+    Thread.sleep(10000)
     s.execute("select * from tweetsTable")
-    s.getResultSet
+    var rs = s.getResultSet
+    assert(rs.next())
+    Thread.sleep(2000)
+    s.execute("drop table tweetsTable")
+    // s.execute("streaming stop")
     conn.close()
   }
 }

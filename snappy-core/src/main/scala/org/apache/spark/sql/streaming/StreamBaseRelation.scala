@@ -4,17 +4,18 @@ import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD, UnionRDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.sources.{BaseRelation, DeletableRelation, DestroyRelation, TableScan}
+import org.apache.spark.sql.sources.{BaseRelation, TableScan}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Utils
 
 /**
   * Created by ymahajan on 25/09/15.
   */
 abstract class StreamBaseRelation(options: Map[String, String]) extends BaseRelation with StreamPlan
-with DeletableRelation with TableScan with DestroyRelation with Serializable with Logging {
+with TableScan with Serializable with Logging {
 
   @transient val context = SnappyStreamingContext.getActive().get
 
@@ -36,25 +37,25 @@ with DeletableRelation with TableScan with DestroyRelation with Serializable wit
   override def buildScan(): RDD[Row] = {
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
     if (stream.generatedRDDs.isEmpty) {
+      // println("YOGS buildScan Empty " + stream.generatedRDDs) //scalastyle:ignore
       new EmptyRDD[Row](sqlContext.sparkContext)
     } else {
+      // println("YOGS buildScan generatedRDDs " + stream.generatedRDDs) //scalastyle:ignore
       val rdds = Seq(stream.generatedRDDs.values.toArray: _*)
+      // println("YOGS buildScan rdds " + rdds) //scalastyle:ignore
       val urdds = new UnionRDD(sqlContext.sparkContext, rdds)
+      // println("YOGS buildScan map " + urdds.map(converter(_))) //scalastyle:ignore
       urdds.map(converter(_)).asInstanceOf[RDD[Row]]
     }
+    /*
+    context.sparkContext.parallelize((1 to 10).map(i => Row.fromSeq(Seq(i.toLong,
+      UTF8String.fromString("text"),
+      UTF8String.fromString("name"),
+      UTF8String.fromString("lang"),
+      i, UTF8String.fromString("hashtag")))))
+     */
   }
 
-  override def destroy(ifExists: Boolean): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
-  }
-
-  override def delete(filterExpr: String): Int = {
-    throw new IllegalAccessException("Stream table does not support deletes")
-  }
-
-  def truncate(): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be truncated")
-  }
 }
 
 private object StreamHelper {
