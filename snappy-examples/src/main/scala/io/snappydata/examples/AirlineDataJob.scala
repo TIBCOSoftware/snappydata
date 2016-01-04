@@ -17,6 +17,7 @@ object AirlineDataJob extends SnappySQLJob {
 
     val colTableName = "airline"
     val parquetTable = "STAGING_AIRLINE"
+    snc.sql("set spark.sql.shuffle.partitions=5")
 
     // Get the tables that were created using sql scripts via snappy-shell
     val airlineDF: DataFrame = snc.table(colTableName)
