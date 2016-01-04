@@ -31,8 +31,9 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
       LocalizedMessages.res.getTextMessage("UTIL_Lead_Usage"), false))
 
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij], LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
-
-    types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher], LocalizedStrings.SnappyUtilLauncher_Agent_Usage.toLocalizedString, false))
+    val product = LocalizedMessages.res.getTextMessage("FS_PRODUCT")
+    types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher],
+      LocalizedStrings.GemFireUtilLauncher_Agent_Usage.toString(Array[AnyRef](product)), false))
 
     // MiscTools utilities
     val miscToolsIterator = MiscTools.getValidCommands.entrySet.iterator()
