@@ -814,6 +814,7 @@ object SnappyContext extends Logging {
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
+    "column_sample" -> "org.apache.spark.sql.sampling.DefaultSource",
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
