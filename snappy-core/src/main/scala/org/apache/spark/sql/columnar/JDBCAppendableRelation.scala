@@ -19,7 +19,7 @@ import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.{GemFireXDBaseDialect, JDBCMutableRelation}
+import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
@@ -188,6 +188,7 @@ class JDBCAppendableRelation(
     try {
       conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url, externalStore.connProperties.connProps,
         dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
+
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {

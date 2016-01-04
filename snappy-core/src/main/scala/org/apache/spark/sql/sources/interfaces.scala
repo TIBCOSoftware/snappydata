@@ -147,6 +147,9 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   /** Get the current schema set on the given connection. */
   def getCurrentSchema(conn: Connection): String = conn.getSchema
 
+  /** Get the current schema set on the given connection. */
+  def createSchema(schemaName: String, conn: Connection): Unit
+
   /** DDL to truncate a table, or null/empty if truncate is not supported */
   def truncateTable(tableName: String): String = s"TRUNCATE TABLE $tableName"
 
@@ -237,6 +240,14 @@ object JdbcExtendedUtils {
     dialect match {
       case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
       case _ => conn.getSchema
+    }
+  }
+
+  def createSchema(schemaName: String, conn: Connection,
+      dialect: JdbcDialect): Unit = {
+    dialect match {
+      case d: JdbcExtendedDialect => d.createSchema(schemaName, conn)
+      case _ => //ignore
     }
   }
 

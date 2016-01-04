@@ -132,7 +132,7 @@ class CachedBatchCreator(
       batches.forceEndOfBatch
       keySet
     } finally {
-      sc.close();
+      sc.close()
     }
   }
 }
