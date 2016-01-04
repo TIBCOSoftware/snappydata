@@ -33,7 +33,7 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij], LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
 
     types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher], LocalizedStrings.SnappyUtilLauncher_Agent_Usage.toLocalizedString, false))
-    
+
     // MiscTools utilities
     val miscToolsIterator = MiscTools.getValidCommands.entrySet.iterator()
     while (miscToolsIterator.hasNext) {
