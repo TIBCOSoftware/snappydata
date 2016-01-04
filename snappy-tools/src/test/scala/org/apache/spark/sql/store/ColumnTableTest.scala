@@ -21,8 +21,6 @@ class ColumnTableTest
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
-
-
   after {
     snc.dropExternalTable(tableName, ifExists = true)
     snc.dropExternalTable("ColumnTable2", ifExists = true)
