@@ -120,7 +120,7 @@ final class DefaultSource extends MutableRelationProvider {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val partitions = ExternalStoreUtils.getTotalPartitions(parameters, true)
+    val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, true, false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
