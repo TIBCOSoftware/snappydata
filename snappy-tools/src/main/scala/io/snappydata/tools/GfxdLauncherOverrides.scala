@@ -27,6 +27,7 @@ class ServerLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
     val name: String = LocalizedMessages.res.getTextMessage("SD_SERVER_NAME")
     val extraHelp = LocalizedResource.getMessage("FS_EXTRA_HELP", LocalizedMessages.res.getTextMessage("FS_PRODUCT"))
     val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP", script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), extraHelp)
+
     printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
   }
 }
