@@ -1,5 +1,6 @@
 package org.apache.spark.sql.columntable
 
+import java.nio.ByteBuffer
 import java.util.UUID
 
 import scala.collection.mutable
@@ -10,11 +11,13 @@ import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
 
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnBuilder, ColumnType}
+import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnAccessor, ColumnBuilder, ColumnType}
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
@@ -71,7 +74,7 @@ class CachedBatchCreator(
             var j = 0
             while (j < bytes.size) {
               ans = 256 * ans + (255 & bytes(j))
-              j = j + 1;
+              j = j + 1
             }
             mutableRow.setLong(i, ans)
           } else {
@@ -132,7 +135,7 @@ class CachedBatchCreator(
       batches.forceEndOfBatch
       keySet
     } finally {
-      sc.close();
+      sc.close()
     }
   }
 }
