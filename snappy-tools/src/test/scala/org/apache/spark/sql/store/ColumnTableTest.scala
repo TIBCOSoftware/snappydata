@@ -24,8 +24,8 @@ class ColumnTableTest
 
 
   after {
-    snc.dropExternalTable(tableName, ifExists = true)
-    snc.dropExternalTable("ColumnTable2", ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
+    snc.dropTable("ColumnTable2", ifExists = true)
   }
 
   val tableName: String = "ColumnTable"
@@ -35,7 +35,7 @@ class ColumnTableTest
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "column", props)
+      snc.createTable(tableName, "column", props)
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -43,7 +43,7 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
 
 
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -71,7 +71,7 @@ class ColumnTableTest
     var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
 
     intercept[AnalysisException] {
       dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
@@ -171,7 +171,7 @@ class ColumnTableTest
     val dataDF = snc.createDataFrame(rdd)
 
     intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "column", dataDF.schema, props)
+      snc.createTable(tableName, "column", dataDF.schema, props)
     }
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -185,7 +185,7 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val tableName2 = "CoulmnTable2"
@@ -202,7 +202,7 @@ class ColumnTableTest
     r = result.collect
     assert(r.length == 10)
 
-    snc.dropExternalTable(tableName2)
+    snc.dropTable(tableName2)
     println("Successful")
   }
 
@@ -210,7 +210,7 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.truncateExternalTable(tableName)
@@ -233,13 +233,13 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropTable(tableName, true)
 
     intercept[AnalysisException] {
-      snc.dropExternalTable(tableName, false)
+      snc.dropTable(tableName, false)
     }
 
     intercept[AnalysisException] {
@@ -255,20 +255,20 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
     intercept[AnalysisException] {
-      snc.dropExternalTable(tableName, false)
+      snc.dropTable(tableName, false)
     }
 
     intercept[AnalysisException] {
       snc.sql("DROP TABLE " + tableName)
     }
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropTable(tableName, true)
 
     println("Successful")
   }
