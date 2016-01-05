@@ -39,6 +39,7 @@ object StoreUtils extends Logging {
   val PERSISTENT = "PERSISTENT"
   val SERVER_GROUPS = "SERVER_GROUPS"
   val OFFHEAP = "OFFHEAP"
+  val EXPIRE = "EXPIRE"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
@@ -50,6 +51,7 @@ object StoreUtils extends Logging {
   val GEM_PERSISTENT = "PERSISTENT"
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_OFFHEAP = "OFFHEAP"
+  val GEM_EXPIRE = "EXPIRE"
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
 
@@ -213,6 +215,14 @@ object StoreUtils extends Logging {
     sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
+        .getOrElse(EMPTY_STRING))
+
+    sb.append(parameters.remove(EXPIRE).map(v => {
+      if (!isRowTable) {
+        throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+      }
+      s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
+    })
         .getOrElse(EMPTY_STRING))
 
     sb.toString()

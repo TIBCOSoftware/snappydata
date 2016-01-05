@@ -458,5 +458,19 @@ class ColumnTableTest
   }
 
 
+  test("Test PR with EXPIRY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE27")
+    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE27(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EXPIRE '200')")) match {
+      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
+
+  }
 
 }
