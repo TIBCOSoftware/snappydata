@@ -16,7 +16,7 @@ version: 0.1_preview
 
 ## Working with SnappyData Source Code
 (Info for our download page?)
-If you are interested in working with the newest under-development code or contributing to SnapyData development, you can also check out the master branch from Git:
+If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
 Master development branch
 git clone https://github.com/SnappyDataInc/snappydata.git
@@ -28,18 +28,18 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview (??)
 #### Building SnappyData from source
 You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc, [here](docs/build-instructions.md)
 > #### NOTE:
-> SnappyData is built using Spark 1.6 (build xx) and packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Grade build tasks are packaged.  
+> SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
 
 
 ## Key Features
-- **100% compatible with Spark** - Use SnappyData as a database but also use any of the Spark APIs - ML, Graph, etc
-- **in-memory row and column stores**: run the store collocated in Spark executors or in its own process space (i.e. a computational cluster and a data cluster)
+- **100% compatible with Spark**: Use SnappyData as a database as well as use any of the Spark APIs - ML, Graph, etc. on the same data
+- **In-memory row and column store**: Run the store collocated in Spark executors (i.e. a single compute and data cluster) or in its own process space (i.e. separate compute and data cluster)
 - **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
 - **SQL based extensions for streaming processing**: Use native Spark streaming, Dataframe APIs or declaratively specify your streams and how you want it processed. No need to learn Spark APIs to get going with stream processing or its subtleties when processing in parallel.
 - **Interactive analytics using Approximate query processing(AQP)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce the in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background and can be completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions. 
-- **Mutate, transact on data in Spark**: You can use SQL to insert, update, delete data in tables as one would expect. We also provide extensions to Spark’s context so you can mutate data in your spark programs. Any tables in SnappyData is visible as DataFrames without having to maintain multiples copies of your data: cached RDDs in Spark and then separately in your data store. 
-- **Optimizations**: You can index your row store and the GemFire SQL optimizer will automatically use in-memory indexes when available. 
-- **High availability not just Fault tolerance**: Data can be instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications continuous HA.
+- **Mutate, transact on data in Spark**: Use SQL to insert, update, delete data in tables(something that you cannot do in Spark). We also provide extensions to Spark’s context so you can mutate data in your spark programs. Any tables in SnappyData is visible as DataFrames without having to maintain multiples copies of your data: cached RDDs in Spark and then separately in your data store. 
+- **Optimizations**: Use indexes to improve query performance in the row store (the GemFire SQL optimizer automatically uses in-memory indexes when available) 
+- **High availability not just Fault tolerance**: Data is instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications with continuous HA.
 - **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. 
 
 Read SnappyData [docs](complete docs) for a more detailed list of all features and semantics. 
