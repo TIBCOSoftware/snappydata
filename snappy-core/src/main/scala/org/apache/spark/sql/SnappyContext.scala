@@ -364,14 +364,14 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
 
   /**
-   * Create external tables like parquet or tables in external database like
-   * MySQL. For creating tables in SnappyData Store use createTable
-   * @param tableName
-   * @param provider
-   * @param options
+   * Creates SnappyData tables
+   *
+   * @param tableName Name of the table
+   * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param options Properties for table creation
    * @return
    */
-  override def createExternalTable(
+  def createTable(
       tableName: String,
       provider: String,
       options: Map[String, String]): DataFrame = {
@@ -381,7 +381,16 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     DataFrame(self, plan)
   }
 
-  override def createExternalTable(
+  /**
+   * Creates SnappyData tables
+   *
+   * @param tableName Name of the table
+   * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param schema   Table schema
+   * @param options  Properties for table creation
+   * @return
+   */
+  def createTable(
       tableName: String,
       provider: String,
       schema: StructType,
@@ -399,8 +408,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
 
   /**
-    * Create an external table with given options.
+    * Create a table with given options.
     */
+
   private[sql] def createTable(
       tableIdent: QualifiedTableName,
       provider: String,
@@ -504,12 +514,11 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * @todo should be renamed to dropTable
-   * Drop an external table created by a call to createExternalTable.
+   * Drop a SnappyData table created by a call to SnappyContext.createTable
    * @param tableName table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
-  def dropExternalTable(tableName: String, ifExists: Boolean = false): Unit = {
+  def dropTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -532,10 +541,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * Create Index on an external table (created by a call to createExternalTable).
+   * Create Index on a SnappyData table (created by a call to createTable).
    * @todo how can the user invoke this? sql?
    */
-  private[sql] def createIndexOnExternalTable(tableName: String, sql: String):
+  private[sql] def createIndexOnTable(tableName: String, sql: String):
     Unit = {
     //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
 
@@ -555,9 +564,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * Create Index on an external table (created by a call to createExternalTable).
+   * Drop Index on a SnappyData table (created by a call to createTable).
    */
-  private[sql] def dropIndexOnExternalTable(sql: String): Unit = {
+  private[sql] def dropIndexOnTable(sql: String): Unit = {
     //println("drop-index" + " sql=" + sql)
 
     var conn: Connection = null

@@ -19,8 +19,8 @@ with BeforeAndAfter {
   val props = Map.empty[String, String]
 
   after {
-    snc.dropExternalTable(tableName, true)
-    snc.dropExternalTable("ColumnTable2", true)
+    snc.dropTable(tableName, true)
+    snc.dropTable("ColumnTable2", true)
   }
 
   ignore("test the shadow table creation") {
