@@ -181,7 +181,6 @@ do
             if [ ! -z ${DIFFFILE} ]; then
               git --no-pager diff  ${f} ${snappyfile} >> ${DIFFFILE}
             fi
-            sed -i "${TO_INSERT_AT}r ${HEADER}" ${snappyfile}
           else
             echo -e "${blue}File {rp} is modified but has no license header${NC}"
           fi
