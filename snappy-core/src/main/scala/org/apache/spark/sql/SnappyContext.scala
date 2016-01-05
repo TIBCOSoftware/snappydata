@@ -364,12 +364,14 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
 
   /**
-   * Creates a SnappyData table
+   * Creates a SnappyData table. This differs from
+   * SnappyContext.createExternalTable in that this API creates a persistent
+   * catalog entry for the table which is recovered after restart.
    *
    * @param tableName Name of the table
    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
    * @param options Properties for table creation
-   * @return
+   * @return DataFrame for the table
    */
   def createTable(
       tableName: String,
@@ -382,13 +384,15 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * Creates a SnappyData table
+   * Creates a SnappyData table. This differs from
+   * SnappyContext.createExternalTable in that this API creates a persistent
+   * catalog entry for the table which is recovered after restart.
    *
    * @param tableName Name of the table
    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
    * @param schema   Table schema
    * @param options  Properties for table creation
-   * @return
+   * @return DataFrame for the table
    */
   def createTable(
       tableName: String,
