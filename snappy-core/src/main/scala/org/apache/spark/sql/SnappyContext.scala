@@ -364,7 +364,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
 
   /**
-   * Creates SnappyData tables
+   * Creates a SnappyData table
    *
    * @param tableName Name of the table
    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
@@ -382,7 +382,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * Creates SnappyData tables
+   * Creates a SnappyData table
    *
    * @param tableName Name of the table
    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
