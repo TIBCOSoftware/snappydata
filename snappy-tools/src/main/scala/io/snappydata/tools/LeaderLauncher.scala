@@ -73,9 +73,9 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   override protected def usage(): Unit = {
     val script: String = LocalizedMessages.res.getTextMessage("SD_LEAD_SCRIPT")
     val name: String = LocalizedMessages.res.getTextMessage("SD_LEAD_NAME")
+    val extraHelp = LocalizedResource.getMessage("FS_EXTRA_HELP", LocalizedMessages.res.getTextMessage("FS_PRODUCT"))
     val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP",
-      script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"),
-      LocalizedResource.getMessage("FS_EXTRA_HELP"))
+      script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), extraHelp)
     printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
   }
 
