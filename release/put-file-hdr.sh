@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-usage="Usage: hdrPrepender.sh < -d|--dir srcfolder > < -h|--header hdrfile > [ -e|--extension file_extension ]"
+usage="Usage: put-file-hdr.sh < -d|--dir srcfolder > < -h|--header hdrfile > [ -e|--extension file_extension ]"
 
 file_extensions=(.scala .java)
 
