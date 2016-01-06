@@ -110,6 +110,12 @@ function startComponent() {
     if [ -z "$(echo  $args $"${@// /\\ }" | grep 'XX:MaxPermSize=')" -a "${componentType}" != "locator"  ]; then
       args="${args} -J-XX:MaxPermSize=350m"
     fi
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'client-bind-address=')" -a "${componentType}" != "lead"  ]; then
+      args="${args} -client-bind-address=${host}"
+    fi
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep 'peer-discovery-address=')" -a "${componentType}" == "locator"  ]; then
+      args="${args} -peer-discovery-address=${host}"
+    fi
   else
     args="${dirparam}"
   fi

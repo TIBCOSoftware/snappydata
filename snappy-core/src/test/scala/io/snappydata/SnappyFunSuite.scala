@@ -93,7 +93,7 @@ abstract class SnappyFunSuite
         val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
-            snc.dropExternalTable(tableName, ifExists = true)
+            snc.dropTable(tableName, ifExists = true)
           case (tableName, true) =>
             if (tableName.indexOf("_sampled") != -1) {
               snc.dropSampleTable(tableName, ifExists = true)

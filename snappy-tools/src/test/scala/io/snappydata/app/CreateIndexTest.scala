@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.app
 
 import io.snappydata.SnappyFunSuite
@@ -23,7 +39,7 @@ class CreateIndexTest extends SnappyFunSuite {
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
     val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
-    snContext.createExternalTable(tableName, "column", dataDF.schema, props)
+    snContext.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val result = snContext.sql("select col1 from " +
@@ -67,7 +83,7 @@ class CreateIndexTest extends SnappyFunSuite {
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
     val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
-    snContext.createExternalTable(tableName, "jdbc", dataDF.schema, props)
+    snContext.createTable(tableName, "jdbc", dataDF.schema, props)
     dataDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     doPrint("Create Index - Start")
