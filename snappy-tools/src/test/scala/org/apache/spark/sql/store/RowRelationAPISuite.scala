@@ -35,7 +35,7 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
     val rdd = sc.parallelize((1 to 1000).map(i => TestData(i, s"$i")))
     val dataDF = snc.createDataFrame(rdd)
     snc.sql("DROP TABLE IF EXISTS row_table1")
-    snc.createExternalTable("row_table1", "row", dataDF.schema, props)
+    snc.createTable("row_table1", "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table1")
     val count = snc.sql("select * from row_table1").count()
     assert(count === 1000)
