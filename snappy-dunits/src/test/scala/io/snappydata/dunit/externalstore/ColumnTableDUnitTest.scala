@@ -64,7 +64,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //cached batches to inserted locally if no partitioning is given.
     //TDOD : Merge and validate test after SNAP-105
     val p = Map[String,String]("PARTITION_BY"-> "col1")
-    snc.createExternalTable(tableName, "column", dataDF.schema, p)
+    snc.createTable(tableName, "column", dataDF.schema, p)
 
     // we don't expect any increase in put distribution stats
     val getPRMessageCount = new SerializableCallable[AnyRef] {
@@ -84,7 +84,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val r = result.collect()
     assert(r.length == 1007)
 
-    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
     logger.info("Successful")
   }
 
@@ -100,12 +100,12 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
     assert(r.length == 0)
 
-    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
     logger.info("Successful")
   }
 
@@ -120,7 +120,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
 
     dataDF.write.format("column").mode(SaveMode.Append)
         .options(props).saveAsTable(tableName)
@@ -146,7 +146,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     assert(shadowRegion.size() > 0)
 
-    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
     logger.info("Successful")
   }
 
@@ -189,7 +189,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     assert(shadowRegion.size() > 0)
 
-    snc.dropExternalTable(tableNameWithPartition, ifExists = true)
+    snc.dropTable(tableNameWithPartition, ifExists = true)
     logger.info("Successful")
   }
 
@@ -238,7 +238,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     assert(shadowRegion.size() > 0)
 
-    snc.dropExternalTable(tableNameWithPartition, ifExists = true)
+    snc.dropTable(tableNameWithPartition, ifExists = true)
     logger.info("Successful")
   }
 
@@ -260,7 +260,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       s(1), s(2), s(3)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableNameWithPartition, "column", dataDF.schema, props)
+    snc.createTable(tableNameWithPartition, "column", dataDF.schema, props)
 
     data.map { r =>
       snc.insert(tableNameWithPartition, Row.fromSeq(r))
@@ -293,7 +293,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(1005 == (region.size() + GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()))
     assert(shadowRegion.size() > 0)
 
-    snc.dropExternalTable(tableNameWithPartition, ifExists = true)
+    snc.dropTable(tableNameWithPartition, ifExists = true)
     logger.info("Successful")
   }
 
@@ -347,7 +347,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //assert(0 == region.size())
     assert(shadowRegion.size() > 0)
 
-    snc.dropExternalTable("COLUMNTABLE4", ifExists = true)
+    snc.dropTable("COLUMNTABLE4", ifExists = true)
     logger.info("Successful")
   }
 
@@ -402,7 +402,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //assert(0 == region.size())
     assert(shadowRegion.size() > 0)
 
-    snc.dropExternalTable("COLUMNTABLE4", ifExists = true)
+    snc.dropTable("COLUMNTABLE4", ifExists = true)
     logger.info("Successful")
   }
 }

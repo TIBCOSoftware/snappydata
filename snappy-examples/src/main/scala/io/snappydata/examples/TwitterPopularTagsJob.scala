@@ -78,8 +78,8 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
 
     val tableName = "tweetStream"
-    snsc.snappyContext.dropExternalTable(tableName,true )
-    snsc.snappyContext.createExternalTable(tableName, "column", schema, Map.empty[String, String])
+    snsc.snappyContext.dropTable(tableName,true )
+    snsc.snappyContext.createTable(tableName, "column", schema, Map.empty[String, String])
 
 
     rowStream.foreachRDD(rdd => {
