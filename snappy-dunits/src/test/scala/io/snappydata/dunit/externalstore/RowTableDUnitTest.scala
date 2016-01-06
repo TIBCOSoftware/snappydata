@@ -28,12 +28,12 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s => new RowData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
     assert(r.length == 0)
 
-    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
     logger.info("Successful")
   }
 
@@ -44,7 +44,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s => new RowData(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
 
     dataDF.write.format("row").mode(SaveMode.Append)
         .options(props).saveAsTable(tableName)
@@ -53,7 +53,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val r = result.collect()
     assert(r.length == 5)
 
-    snc.dropExternalTable(tableName, ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
     logger.info("Successful")
   }
 }
