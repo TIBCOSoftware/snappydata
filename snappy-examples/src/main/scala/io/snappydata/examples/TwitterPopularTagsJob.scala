@@ -3,7 +3,6 @@ package io.snappydata.examples
 import java.io.PrintWriter
 
 import com.typesafe.config.Config
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.streaming.{SnappyStreamingJob}
 import org.apache.spark.sql.types._
@@ -37,11 +36,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     var stream: DStream[_] = null
     val pw = new PrintWriter(s"TwitterPopularTagsJob-${System.currentTimeMillis}.out")
 
-    val schema = StructType(List(StructField("id", LongType),
-      StructField("text", StringType),
-      StructField("hashtag", StringType),
-      StructField("retweetCnt", IntegerType),
-      StructField("retweetTxt", StringType)))
+    val schema = StructType(List(StructField("hashtag", StringType)))
 
     if (jobConfig.hasPath("consumerKey") && jobConfig.hasPath("consumerKey")
       && jobConfig.hasPath("accessToken")  && jobConfig.hasPath("accessTokenSecret") ) {
@@ -62,6 +57,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         StreamingUtils.convertTweetToRow(_, schema)
       )
 
+    val tweetStream = stream.window(Seconds(1), Seconds(1)).flatMap(StreamingUtils.convertPopularTweetsToRow(_))
 
     val topKOption = Map(
         "epoch" -> System.currentTimeMillis(),
@@ -69,24 +65,22 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         "size" -> 10
       )
 
-    snsc.snappyContext.createTopK("topktable", "hashtag",schema, topKOption, false)
+    snsc.snappyContext.createTopK("topktable", "hashtag", schema, topKOption, false)
 
     snsc.snappyContext.saveStream(rowStream,
       Seq("topktable"),
       None
-
     )
 
+    val schemaDStream = snsc.createSchemaDStream(tweetStream)
 
-    val tableName = "tweetStream"
+    val tableName = "retweetTable"
     snsc.snappyContext.dropExternalTable(tableName,true )
-    snsc.snappyContext.createExternalTable(tableName, "row", schema, Map.empty[String, String])
+    snsc.snappyContext.createExternalTable(tableName, "row", schemaDStream.schema , Map.empty[String, String])
 
 
-    rowStream.foreachRDD(rdd => {
-      snsc.snappyContext.createDataFrame(rdd, schema).
-        write.mode(SaveMode.Append).saveAsTable(tableName)
-
+    schemaDStream.foreachDataFrame(df => {
+      df.write.mode(SaveMode.Append).saveAsTable(tableName)
     })
 
     snsc.start()
