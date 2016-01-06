@@ -19,6 +19,7 @@ package io.snappydata
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
 import com.pivotal.gemfirexd.{FabricLocator, FabricServer}
 import io.snappydata.gemxd.ClusterCallback
+
 import org.apache.spark.sql.columntable.StoreCallback
 
 // TODO: Documentation
@@ -29,7 +30,6 @@ trait Server extends FabricServer with ClusterCallback with StoreCallback {
 // TODO: Documentation
 trait Lead extends Server {
 
-  def waitUntilPrimary()
 }
 
 // TODO: Documentation
