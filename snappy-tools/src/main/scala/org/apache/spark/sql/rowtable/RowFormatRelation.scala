@@ -145,6 +145,8 @@ final class DefaultSource extends MutableRelationProvider {
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
+    StoreUtils.validateConnProps(parameters)
+
     val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =
       dialect match {

@@ -216,4 +216,19 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
     val count = snc.sql("select * from ROW_TEST_TABLE9").count()
     assert(count === 1000)
   }
+
+  test("Test PR with EXPIRY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE10")
+    snc.sql("CREATE TABLE ROW_TEST_TABLE10(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EXPIRE '200')")
+
+    val region = Misc.getRegionForTable("APP.ROW_TEST_TABLE10", true).asInstanceOf[PartitionedRegion]
+    assert(region.getAttributes.getEntryTimeToLive.getTimeout == 200)
+
+    }
 }

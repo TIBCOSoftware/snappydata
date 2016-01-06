@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.store
 
+import scala.util.{Failure, Success, Try}
+
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -309,5 +311,21 @@ class RowTableTest
     snc.dropTable("RowTableUpdate")
     snc.dropTable("RowTableUpdate2")
     println("Successful")
+  }
+
+
+  test("Test row Incorrect option") {
+    snc.sql("DROP TABLE IF EXISTS ROW_TEST_TABLE27")
+
+    Try(snc.sql("CREATE TABLE ROW_TEST_TABLE27(OrderId INT ,ItemId INT) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITIONBY 'OrderId'," +
+        "PERSISTENT 'ASYNCHRONOUS')")) match {
+      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
+
   }
 }
