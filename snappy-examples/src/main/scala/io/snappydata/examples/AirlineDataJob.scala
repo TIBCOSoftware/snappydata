@@ -19,7 +19,7 @@ object AirlineDataJob extends SnappySQLJob {
     val parquetTable = "STAGING_AIRLINE"
     val rowTableName = "airlineref"
     def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
-    val pw = new PrintWriter("resultOutPut.out")
+    val pw = new PrintWriter("AirlineDataJob.out")
 
     // Get the tables that were created using sql scripts via snappy-shell
     val airlineDF: DataFrame = snc.table(colTableName)
@@ -66,7 +66,7 @@ object AirlineDataJob extends SnappySQLJob {
     */
 
     pw.close()
-    Map("The output of the queries is in the following file: " -> s"${getCurrentDirectory}/resultOutPut.out")
+    Map("The output of the queries is in the following file: " -> s"${getCurrentDirectory}/AirlineDataJob.out")
   }
 
   override def validate(sc: C, config: Config): SparkJobValidation = {
