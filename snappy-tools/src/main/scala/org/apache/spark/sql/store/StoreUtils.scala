@@ -16,10 +16,6 @@
  */
 package org.apache.spark.sql.store
 
-import java.util.Properties
-
-import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -27,17 +23,21 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 /*/10/15.
   */
 object StoreUtils extends Logging {
+
+  val ddlOptions = Seq(PARTITION_BY, BUCKETS, COLOCATE_WITH, REDUNDANCY,
+    RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
+    PERSISTENT, SERVER_GROUPS, OFFHEAP, GEM_EXPIRE)
 
   val PARTITION_BY = "PARTITION_BY"
   val BUCKETS = "BUCKETS"
@@ -49,6 +49,7 @@ object StoreUtils extends Logging {
   val PERSISTENT = "PERSISTENT"
   val SERVER_GROUPS = "SERVER_GROUPS"
   val OFFHEAP = "OFFHEAP"
+  val EXPIRE = "EXPIRE"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
@@ -60,6 +61,7 @@ object StoreUtils extends Logging {
   val GEM_PERSISTENT = "PERSISTENT"
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_OFFHEAP = "OFFHEAP"
+  val GEM_EXPIRE = "EXPIRE"
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
 
@@ -145,16 +147,6 @@ object StoreUtils extends Logging {
     }
   }
 
-  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
-    val dbtableProp = JdbcExtendedUtils.DBTABLE_PROPERTY
-    val table = parameters.remove(dbtableProp)
-        .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
-    parameters.remove(JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY)
-    parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
-    parameters.remove("serialization.format")
-    table
-  }
-
   def getPrimaryKeyClause(parameters: mutable.Map[String, String]): String = {
     val sb = new StringBuilder()
     sb.append(parameters.get(PARTITION_BY).map(v => {
@@ -235,6 +227,14 @@ object StoreUtils extends Logging {
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
         .getOrElse(EMPTY_STRING))
 
+    sb.append(parameters.remove(EXPIRE).map(v => {
+      if (!isRowTable) {
+        throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+      }
+      s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
+    })
+        .getOrElse(EMPTY_STRING))
+
     sb.toString()
   }
 
@@ -244,5 +244,14 @@ object StoreUtils extends Logging {
     }).getOrElse(Seq.empty[String])
   }
 
+
+  def validateConnProps(parameters: mutable.Map[String, String]): Unit ={
+    parameters.keys.forall(v => {
+      if(!ddlOptions.contains(v.toString.toUpperCase())){
+        throw new AnalysisException(s"Unknown options $v specified while creating table ")
+      }
+      true
+    })
+  }
 
 }

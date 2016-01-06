@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.store
 
+import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SnappyFunSuite
@@ -47,6 +49,12 @@ class ColumnTableTest
   val tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]
+
+
+  val options = "OPTIONS (PARTITION_BY 'col1')"
+
+  val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
+
 
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
@@ -128,9 +136,6 @@ class ColumnTableTest
     println("Successful")
   }
 
-  val options = "OPTIONS (PARTITION_BY 'col1')"
-
-  val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
   test("Test the creation/dropping of table using SQL") {
 
@@ -451,6 +456,37 @@ class ColumnTableTest
 
     val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
     assert(count === 1000)
+  }
+
+  test("Test PR Incorrect option") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE27")
+
+    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE7(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITIONBY 'OrderId'," +
+        "PERSISTENT 'ASYNCHRONOUS')")) match {
+      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
+
+  }
+
+
+  test("Test PR with EXPIRY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE27")
+    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE27(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EXPIRE '200')")) match {
+      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
+
   }
 
 }

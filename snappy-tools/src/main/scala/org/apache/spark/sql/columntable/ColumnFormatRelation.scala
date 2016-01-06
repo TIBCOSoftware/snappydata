@@ -24,6 +24,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceUtils
 import io.snappydata.SparkShellRDDHelper
 import org.scalatest.path
 
@@ -366,19 +367,22 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(options)
-    StoreUtils.removeInternalProps(parametersForShadowTable)
+    ExternalStoreUtils.removeInternalProps(parametersForShadowTable)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val partitions =ExternalStoreUtils.getTotalPartitions(parametersForShadowTable , false)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
+
+    val connProperties =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+
+    StoreUtils.validateConnProps(parameters)
 
     val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =
