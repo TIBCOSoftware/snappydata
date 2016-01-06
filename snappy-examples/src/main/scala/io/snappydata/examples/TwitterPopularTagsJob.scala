@@ -19,7 +19,7 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
  *
  * To run with live twitter streaming, export twitter credentials
  * `$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>, \
- * accessToken=<accessToken>,ccessTokenSecret=<accessTokenSecret>"`
+ * accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"`
  *
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob \
@@ -39,8 +39,9 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     val schema = StructType(List(StructField("id", LongType),
       StructField("text", StringType),
-      StructField("retweets", IntegerType),
-      StructField("hashtag", StringType)))
+      StructField("hashtag", StringType),
+      StructField("retweetCnt", IntegerType),
+      StructField("retweetTxt", StringType)))
 
     if (jobConfig.hasPath("consumerKey") && jobConfig.hasPath("consumerKey")
       && jobConfig.hasPath("accessToken")  && jobConfig.hasPath("accessTokenSecret") ) {
@@ -79,7 +80,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     val tableName = "tweetStream"
     snsc.snappyContext.dropExternalTable(tableName,true )
-    snsc.snappyContext.createExternalTable(tableName, "column", schema, Map.empty[String, String])
+    snsc.snappyContext.createExternalTable(tableName, "row", schema, Map.empty[String, String])
 
 
     rowStream.foreachRDD(rdd => {
@@ -95,25 +96,25 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
       val end = System.currentTimeMillis + 90000
       while (end > System.currentTimeMillis()) {
         Thread.sleep(2000)
-        pw.println("********Top 10 hash tags for the last interval *******\n")
+        pw.println("\n******** Top 10 hash tags for the last interval *******\n")
 
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 10000, System.currentTimeMillis).collect.foreach(result => {
+        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 2000, System.currentTimeMillis).collect.foreach(result => {
           pw.println(result.toString)
         })
 
-        pw.println("\n******* Top 10 hash tags until now *******")
+        pw.println("\n************ Top 10 hash tags until now ***************\n")
 
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 90000, System.currentTimeMillis).collect.foreach(result => {
+        snsc.snappyContext.queryTopK("topktable").collect.foreach(result => {
           pw.println(result.toString)
         })
 
-        pw.println("\n******* Top 10 hash tags until now using gemxd query *******")
-        snsc.snappyContext.sql(s"select hashtag, count(*) as tagcount from  ${tableName} group " +
-          " by hashtag order by tagcount desc limit 10").collect.foreach(row => {
-          pw.println(row.toString())
-        })
-        pw.println("\n##############################################################")
+
       }
+      pw.println("\n####### Top 10 popular tweets using gemxd query #######\n")
+      snsc.snappyContext.sql(s"select retweetCnt as RetweetsCount, retweetTxt as Text from ${tableName} order by RetweetsCount desc limit 10").collect.foreach(row => {
+        pw.println(row.toString())
+      })
+      pw.println("\n#######################################################")
     } finally {
       pw.close()
 
