@@ -17,5 +17,3 @@ CREATE TABLE AIRLINE USING column OPTIONS(buckets '5') AS (
     Diverted, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay,
     LateAircraftDelay, ArrDelaySlot
     FROM STAGING_AIRLINE);
-
- DROP TABLE IF EXISTS STAGING_AIRLINE;
