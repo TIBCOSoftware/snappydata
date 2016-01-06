@@ -13,7 +13,7 @@ mkdir -p /tmp/copiedtwitterdata
 
 # Extract preloaded tweets
 tar -zxf ./quickstart/data/tweetdata.tgz -C /tmp/twitterdata
-FILES=/tmp/twitterdata/tweets_*/part-*
+FILES=/tmp/twitterdata/tweets_*/tweets-*
 
 # Copy tweets to a folder to simulate a file stream. 
 for file in $FILES
