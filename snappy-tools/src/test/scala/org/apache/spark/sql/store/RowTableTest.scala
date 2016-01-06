@@ -37,8 +37,8 @@ class RowTableTest
   val props = Map.empty[String, String]
 
   after {
-    snc.dropExternalTable(tableName, ifExists = true)
-    snc.dropExternalTable("RowTable2", ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
+    snc.dropTable("RowTable2", ifExists = true)
   }
 
   test("Test the creation/dropping of row table using Snappy API") {
@@ -51,7 +51,7 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 0)
@@ -77,7 +77,7 @@ class RowTableTest
     var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
 
     intercept[AnalysisException] {
       dataDF.write.format("row").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
@@ -176,7 +176,7 @@ class RowTableTest
     val dataDF = snc.createDataFrame(rdd)
 
     intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "row", dataDF.schema, props)
+      snc.createTable(tableName, "row", dataDF.schema, props)
     }
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -190,7 +190,7 @@ class RowTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val tableName2 = "RowTable2"
@@ -207,7 +207,7 @@ class RowTableTest
     r = result.collect
     assert(r.length == 10)
 
-    snc.dropExternalTable(tableName2)
+    snc.dropTable(tableName2)
     println("Successful")
   }
 
@@ -215,7 +215,7 @@ class RowTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.truncateExternalTable(tableName)
@@ -238,13 +238,13 @@ class RowTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropTable(tableName, true)
 
     intercept[AnalysisException] {
-      snc.dropExternalTable(tableName, false)
+      snc.dropTable(tableName, false)
     }
 
     intercept[AnalysisException] {
@@ -260,20 +260,20 @@ class RowTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "row", dataDF.schema, props)
+    snc.createTable(tableName, "row", dataDF.schema, props)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
     intercept[AnalysisException] {
-      snc.dropExternalTable(tableName, false)
+      snc.dropTable(tableName, false)
     }
 
     intercept[AnalysisException] {
       snc.sql("DROP TABLE " + tableName)
     }
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropTable(tableName, true)
 
     println("Successful")
   }
@@ -306,8 +306,8 @@ class RowTableTest
     val df3 = snc.sql("select DESCRIPTION from RowTableUpdate2 where DESCRIPTION  in ('No#complaints', 'test1') ")
     assert(df3.count() == 2)
 
-    snc.dropExternalTable("RowTableUpdate")
-    snc.dropExternalTable("RowTableUpdate2")
+    snc.dropTable("RowTableUpdate")
+    snc.dropTable("RowTableUpdate2")
     println("Successful")
   }
 }

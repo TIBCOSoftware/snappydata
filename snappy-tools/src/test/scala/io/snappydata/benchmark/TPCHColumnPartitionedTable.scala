@@ -53,8 +53,8 @@ object TPCHColumnPartitionedTable  {
     val orderDF = snappyContext.createDataFrame(orderReadings)
     if (isSnappy) {
       val p1 = props + (("PARTITION_BY"-> "o_orderkey"))
-      snappyContext.dropExternalTable("ORDERS", ifExists = true)
-      snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
+      snappyContext.dropTable("ORDERS", ifExists = true)
+      snappyContext.createTable("ORDERS", "column", orderDF.schema, p1)
       orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS")
       //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
       println("Created Table ORDERS")
@@ -101,8 +101,8 @@ object TPCHColumnPartitionedTable  {
     if (isSnappy) {
       val p1 = props + (("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
 
-      snappyContext.dropExternalTable("LINEITEM", ifExists = true)
-      snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
+      snappyContext.dropTable("LINEITEM", ifExists = true)
+      snappyContext.createTable("LINEITEM", "column", lineOrderDF.schema, p1)
       lineOrderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("LINEITEM")
       //    lineOrderDF.registerAndInsertIntoExternalStore("LINEITEM", props)
       println("Created Table LINEITEM")

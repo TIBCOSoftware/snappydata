@@ -38,9 +38,9 @@ with BeforeAndAfter {
   val props = Map.empty[String, String]
 
   after {
-    snc.dropExternalTable(tableName, true)
-    snc.dropExternalTable("ColumnTable2", true)
-    snc.dropExternalTable("COLUMNTABLE7", true)
+    snc.dropTable(tableName, true)
+    snc.dropTable("ColumnTable2", true)
+    snc.dropTable("COLUMNTABLE7", true)
   }
 
   test("test the shadow table with eviction options LRUCOUNT on compressed table") {
@@ -188,7 +188,7 @@ with BeforeAndAfter {
 
   test("Test ShadowTable with 1 bucket, single insert") {
     snc.sql("DROP TABLE IF EXISTS COLUMNTABLE7")
-    snc.dropExternalTable("COLUMNTABLE7", true)
+    snc.dropTable("COLUMNTABLE7", true)
     snc.sql("CREATE TABLE COLUMNTABLE7(Key1 INT ,Value INT) " +
         "USING column " +
         "options " +

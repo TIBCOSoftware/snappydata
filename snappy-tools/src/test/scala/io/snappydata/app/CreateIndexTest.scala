@@ -41,7 +41,7 @@ class CreateIndexTest extends SnappyFunSuite {
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
     val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
-    snContext.createExternalTable(tableName, "column", dataDF.schema, props)
+    snContext.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val result = snContext.sql("select col1 from " +
@@ -85,7 +85,7 @@ class CreateIndexTest extends SnappyFunSuite {
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
     val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
-    snContext.createExternalTable(tableName, "jdbc", dataDF.schema, props)
+    snContext.createTable(tableName, "jdbc", dataDF.schema, props)
     dataDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     doPrint("Create Index - Start")
