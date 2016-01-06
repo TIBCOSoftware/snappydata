@@ -55,7 +55,7 @@ private[sql] trait SnappyStrategies {
   object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _)) =>
-        val child = PhysicalDStreamPlan(l.output, t.stream)
+        val child = PhysicalDStreamPlan(l.output, t.rowStream)
         WindowPhysicalPlan(d, s, child) :: Nil
       case _ => Nil
     }

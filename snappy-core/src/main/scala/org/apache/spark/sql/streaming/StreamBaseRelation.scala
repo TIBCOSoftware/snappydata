@@ -1,14 +1,13 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.Logging
-import org.apache.spark.rdd.{EmptyRDD, RDD, UnionRDD}
+import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.sources.{BaseRelation, TableScan}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Utils
 
 /**
@@ -19,7 +18,7 @@ with TableScan with Serializable with Logging {
 
   @transient val context = SnappyStreamingContext.getActive().get
 
-  @transient var stream: DStream[InternalRow] = _
+  @transient var rowStream: DStream[InternalRow] = _
 
   val storageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)
@@ -35,25 +34,19 @@ with TableScan with Serializable with Logging {
   }
 
   override def buildScan(): RDD[Row] = {
+
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
-    if (stream.generatedRDDs.isEmpty) {
-      // println("YOGS buildScan Empty " + stream.generatedRDDs) //scalastyle:ignore
+    if (rowStream.generatedRDDs.isEmpty) {
       new EmptyRDD[Row](sqlContext.sparkContext)
     } else {
-      // println("YOGS buildScan generatedRDDs " + stream.generatedRDDs) //scalastyle:ignore
-      val rdds = Seq(stream.generatedRDDs.values.toArray: _*)
-      // println("YOGS buildScan rdds " + rdds) //scalastyle:ignore
-      val urdds = new UnionRDD(sqlContext.sparkContext, rdds)
-      // println("YOGS buildScan map " + urdds.map(converter(_))) //scalastyle:ignore
-      urdds.map(converter(_)).asInstanceOf[RDD[Row]]
+      rowStream.generatedRDDs.maxBy(_._1)._2.map(converter(_)).asInstanceOf[RDD[Row]]
     }
-    /*
-    context.sparkContext.parallelize((1 to 10).map(i => Row.fromSeq(Seq(i.toLong,
-      UTF8String.fromString("text"),
-      UTF8String.fromString("name"),
-      UTF8String.fromString("lang"),
-      i, UTF8String.fromString("hashtag")))))
-     */
+
+    /* val currentRDD = rowStream.generatedRDDs.maxBy(_._1)._2
+      val rdds = Seq(rowStream.generatedRDDs.values.toArray: _*)
+      val urdds = new UnionRDD(sqlContext.sparkContext, rdds)
+      urdds.map(converter(_)).asInstanceOf[RDD[Row]]
+    } */
   }
 
 }

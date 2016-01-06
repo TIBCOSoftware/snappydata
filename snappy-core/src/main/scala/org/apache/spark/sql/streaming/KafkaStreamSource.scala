@@ -1,8 +1,11 @@
 package org.apache.spark.sql.streaming
 
+import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
 /**
@@ -39,9 +42,33 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     (a(0), a(1).toInt)
   }.toMap
 
+  if (KafkaStreamRelation.getRowStream() == null) {
+    rowStream = {
+      KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
+          .map(_._2).flatMap(rowConverter.toRows)
+    }
+    KafkaStreamRelation.setRowStream(rowStream)
+    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+    rowStream.foreachRDD { rdd => rdd }
+  } else {
+    rowStream = KafkaStreamRelation.getRowStream()
+  }
+}
 
-  @transient private val kafkaStream = KafkaUtils.
-      createStream(context, zkQuorum, groupId, topics, storageLevel)
+object KafkaStreamRelation extends Logging {
+  private var rowStream: DStream[InternalRow] = null
 
-  stream = kafkaStream.map(_._2).flatMap(rowConverter.toRows)
+  private val LOCK = new Object()
+
+  private def setRowStream(stream: DStream[InternalRow]): Unit = {
+    LOCK.synchronized {
+      rowStream = stream
+    }
+  }
+
+  private def getRowStream(): DStream[InternalRow] = {
+    LOCK.synchronized {
+      rowStream
+    }
+  }
 }

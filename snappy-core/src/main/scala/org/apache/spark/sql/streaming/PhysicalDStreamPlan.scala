@@ -13,12 +13,12 @@ import org.apache.spark.streaming.dstream.DStream
   * generate an effective RDD of current batchDuration.
   *
   * @param output
-  * @param stream
+  * @param rowStream
   *
   *
   */
 case class PhysicalDStreamPlan(output: Seq[Attribute],
-    @transient stream: DStream[InternalRow])
+    @transient rowStream: DStream[InternalRow])
     extends SparkPlan with StreamPlan {
 
   def children: immutable.Nil.type = Nil
@@ -26,10 +26,7 @@ case class PhysicalDStreamPlan(output: Seq[Attribute],
   override def doExecute(): RDD[InternalRow] = {
     import StreamHelper._
     assert(validTime != null)
-    // For dynamic CQ
-    // if(!stream.isInitialized) stream
-    // .initializeAfterContextStart(validTime)
-    stream.getOrCompute(validTime)
+    rowStream.getOrCompute(validTime)
         .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 }

@@ -3,9 +3,12 @@ package org.apache.spark.sql.streaming
 import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.twitter.TwitterUtils
 
 /**
@@ -48,14 +51,33 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     new OAuthAuthorization(getTwitterConf)
   }
 
-  @transient val twitterStream = {
-    TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-      filters, storageLevel)
+  if (TwitterStreamRelation.getRowStream() == null) {
+    rowStream = {
+      TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
+        filters, storageLevel).flatMap(rowConverter.toRows)
+    }
+    TwitterStreamRelation.setRowStream(rowStream)
+    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+    rowStream.foreachRDD { rdd => rdd }
+  } else {
+    rowStream = TwitterStreamRelation.getRowStream()
+  }
+}
+
+object TwitterStreamRelation extends Logging {
+  private var rowStream: DStream[InternalRow] = null
+
+  private val LOCK = new Object()
+
+  private def setRowStream(stream: DStream[InternalRow]): Unit = {
+    LOCK.synchronized {
+      rowStream = stream
+    }
   }
 
-  stream = twitterStream.flatMap(rowConverter.toRows)
-  // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-  stream.foreachRDD(rdd => {
-    rdd
-  })
+  private def getRowStream(): DStream[InternalRow] = {
+    LOCK.synchronized {
+      rowStream
+    }
+  }
 }
