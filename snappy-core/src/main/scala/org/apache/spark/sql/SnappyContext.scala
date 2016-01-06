@@ -1,59 +1,45 @@
 package org.apache.spark.sql
 
-import java.sql.Connection
-
-import org.apache.spark.annotation.DeveloperApi
-import org.apache.spark.sql.streaming._
-
-import org.apache.spark.sql.aqp.{AQPDefault, AQPContext}
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, InMemoryAppendableRelation, ExternalStoreRelation}
-import org.apache.spark.sql.execution.{LogicalRDD, SparkPlan, ConnectionPool, ExtractPythonUDFs}
-import org.apache.spark.sql.jdbc.JdbcDialects
-
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, IndexableRelation, DestroyRelation, UpdatableRelation,
-RowInsertableRelation, DeletableRelation}
+import java.sql.{Connection, SQLException}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
+import scala.util.{Failure, Success, Try}
 
 import io.snappydata.{Constant, Property}
+
+import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-
+import org.apache.spark.sql.aqp.{AQPContext, AQPDefault}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
-
-
+import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
-
-
+import org.apache.spark.sql.execution.{ConnectionPool, ExtractPythonUDFs, LogicalRDD, SparkPlan}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
-
-
+import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
-import org.apache.spark.sql.types.{StructType}
+import org.apache.spark.sql.sources.{DeletableRelation, DestroyRelation, IndexableRelation, JdbcExtendedUtils, RowInsertableRelation, UpdatableRelation}
+import org.apache.spark.sql.streaming._
+import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{execution => sparkexecution}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkContext, SparkException}
 
-import org.apache.spark.sql.{execution => sparkexecution}
-
-
-import scala.util.{Failure, Success, Try}
-
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
  * Column tables. Any DataFrame can be managed as SnappyData tables and any
- * table can be accessed as a DataFrame. This is similar to [[org.apache
- * .spark.sql.hive.HiveContext HiveContext]] - integrates the SQLContext
- * functionality with the Snappy store.
+ * table can be accessed as a DataFrame. This is similar to
+ * [[org.apache.spark.sql.hive.HiveContext HiveContext]] - integrates the
+ * SQLContext functionality with the Snappy store.
  *
  * When running in the '''embedded ''' mode (i.e. Spark executor collocated
  * with Snappy data store), Applications typically submit Jobs to the
@@ -95,6 +81,12 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
+
+    override def unsafeEnabled: Boolean = if(aqpContext.isTungstenEnabled) {
+      super.unsafeEnabled
+    }else {
+      false
+    }
   }
 
   @transient
@@ -372,14 +364,16 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
 
   /**
-   * Create external tables like parquet or tables in external database like
-   * MySQL. For creating tables in SnappyData Store use createTable
-   * @param tableName
-   * @param provider
-   * @param options
-   * @return
+   * Creates a SnappyData table. This differs from
+   * SnappyContext.createExternalTable in that this API creates a persistent
+   * catalog entry for the table which is recovered after restart.
+   *
+   * @param tableName Name of the table
+   * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param options Properties for table creation
+   * @return DataFrame for the table
    */
-  override def createExternalTable(
+  def createTable(
       tableName: String,
       provider: String,
       options: Map[String, String]): DataFrame = {
@@ -389,7 +383,18 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     DataFrame(self, plan)
   }
 
-  override def createExternalTable(
+  /**
+   * Creates a SnappyData table. This differs from
+   * SnappyContext.createExternalTable in that this API creates a persistent
+   * catalog entry for the table which is recovered after restart.
+   *
+   * @param tableName Name of the table
+   * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param schema   Table schema
+   * @param options  Properties for table creation
+   * @return DataFrame for the table
+   */
+  def createTable(
       tableName: String,
       provider: String,
       schema: StructType,
@@ -407,8 +412,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
 
   /**
-    * Create an external table with given options.
+    * Create a table with given options.
     */
+
   private[sql] def createTable(
       tableIdent: QualifiedTableName,
       provider: String,
@@ -512,12 +518,11 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * @todo should be renamed to dropTable
-   * Drop an external table created by a call to createExternalTable.
+   * Drop a SnappyData table created by a call to SnappyContext.createTable
    * @param tableName table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
-  def dropExternalTable(tableName: String, ifExists: Boolean = false): Unit = {
+  def dropTable(tableName: String, ifExists: Boolean = false): Unit = {
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
@@ -540,10 +545,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * Create Index on an external table (created by a call to createExternalTable).
+   * Create Index on a SnappyData table (created by a call to createTable).
    * @todo how can the user invoke this? sql?
    */
-  private[sql] def createIndexOnExternalTable(tableName: String, sql: String):
+  private[sql] def createIndexOnTable(tableName: String, sql: String):
     Unit = {
     //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
 
@@ -563,9 +568,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   /**
-   * Create Index on an external table (created by a call to createExternalTable).
+   * Drop Index on a SnappyData table (created by a call to createTable).
    */
-  private[sql] def dropIndexOnExternalTable(sql: String): Unit = {
+  private[sql] def dropIndexOnTable(sql: String): Unit = {
     //println("drop-index" + " sql=" + sql)
 
     var conn: Connection = null
@@ -822,6 +827,7 @@ object SnappyContext extends Logging {
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
+    "column_sample" -> "org.apache.spark.sql.sampling.DefaultSource",
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
@@ -973,8 +979,13 @@ object SnappyContext extends Logging {
       ConnectionPool.clear()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isNotEmbeddedMode(sc)) {
-        ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+      if (ExternalStoreUtils.isShellOrLocalMode(sc)) {
+        try {
+          ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+        } catch {
+          case se: SQLException if se.getCause.getMessage.indexOf(
+            "No connection to the distributed system") != -1 => // ignore
+        }
       }
       sc.stop()
     }

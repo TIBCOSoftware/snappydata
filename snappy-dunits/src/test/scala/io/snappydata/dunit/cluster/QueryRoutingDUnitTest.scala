@@ -319,7 +319,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val rdd = sc.parallelize(data, data.length).map(s =>
       new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema,
+    snc.createTable(tableName, "column", dataDF.schema,
       Map.empty[String, String])
     dataDF.write.format("column").mode(SaveMode.Append)
         .saveAsTable(tableName)
@@ -331,7 +331,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     val hfile = getClass.getResource("/2015-trimmed.parquet").getPath
     val dataDF = snc.read.load(hfile)
-    snc.createExternalTable(tableName, "column", dataDF.schema,
+    snc.createTable(tableName, "column", dataDF.schema,
       Map.empty[String, String])
     dataDF.write.format("column").mode(SaveMode.Append)
         .saveAsTable(tableName)

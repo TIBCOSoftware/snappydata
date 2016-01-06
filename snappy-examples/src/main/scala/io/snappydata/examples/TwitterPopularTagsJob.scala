@@ -75,9 +75,8 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     val schemaDStream = snsc.createSchemaDStream(tweetStream)
 
     val tableName = "retweetTable"
-    snsc.snappyContext.dropExternalTable(tableName,true )
-    snsc.snappyContext.createExternalTable(tableName, "row", schemaDStream.schema , Map.empty[String, String])
-
+    snsc.snappyContext.dropTable(tableName,true )
+    snsc.snappyContext.createTable(tableName, "row", schemaDStream.schema , Map.empty[String, String])
 
     schemaDStream.foreachDataFrame(df => {
       df.write.mode(SaveMode.Append).saveAsTable(tableName)

@@ -1,6 +1,7 @@
 package io.snappydata
 
 import java.io.File
+import java.sql.SQLException
 
 import scala.util.control.NonFatal
 
@@ -92,7 +93,7 @@ abstract class SnappyFunSuite
         val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
-            snc.dropExternalTable(tableName, ifExists = true)
+            snc.dropTable(tableName, ifExists = true)
           case (tableName, true) =>
             if (tableName.indexOf("_sampled") != -1) {
               snc.dropSampleTable(tableName, ifExists = true)
@@ -115,6 +116,7 @@ abstract class SnappyFunSuite
   }
 
   def stopAll(): Unit = {
+    // GemFireXD stop for local mode is now done by SnappyContext.stop()
     println(" Stopping spark context = " + SnappyContext.globalSparkContext)
     SnappyContext.stop()
   }

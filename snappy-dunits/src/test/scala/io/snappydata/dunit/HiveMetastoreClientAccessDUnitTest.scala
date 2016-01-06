@@ -206,7 +206,7 @@ object HiveMetastoreClientAccessDUnitTest {
       (1 to 1000).map(i => TestData(i, s"$i")))
     val dataDF = snContext.createDataFrame(rdd)
 
-    snContext.createExternalTable("row_table", "row", dataDF.schema,
+    snContext.createTable("row_table", "row", dataDF.schema,
       Map.empty[String, String])
   }
 }
