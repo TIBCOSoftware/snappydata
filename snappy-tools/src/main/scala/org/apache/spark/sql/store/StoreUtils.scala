@@ -16,12 +16,6 @@
  */
 package org.apache.spark.sql.store
 
-import java.util.Properties
-
-import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceUtils
-
-import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
-
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -29,11 +23,11 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
@@ -43,7 +37,7 @@ object StoreUtils extends Logging {
 
   val ddlOptions = Seq(PARTITION_BY, BUCKETS, COLOCATE_WITH, REDUNDANCY,
     RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENT, SERVER_GROUPS, OFFHEAP)
+    PERSISTENT, SERVER_GROUPS, OFFHEAP, GEM_EXPIRE)
 
   val PARTITION_BY = "PARTITION_BY"
   val BUCKETS = "BUCKETS"
