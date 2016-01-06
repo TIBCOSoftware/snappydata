@@ -4,8 +4,10 @@ import kafka.serializer.StringDecoder
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
 /**
@@ -33,11 +35,34 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     }.toMap
   }.getOrElse(Map())
 
-  // Currently works with Strings only
-  @transient private val kafkaStream = KafkaUtils
-      .createDirectStream[String, String, StringDecoder, StringDecoder](
-    context, kafkaParams, topicsSet)
-  // TODO Yogesh, need to provide typed decoders to createDirectStream
+  if (DirectKafkaStreamRelation.getRowStream() == null) {
+    rowStream = {
+      KafkaUtils
+          .createDirectStream[String, String, StringDecoder, StringDecoder](
+        context, kafkaParams, topicsSet).map(_._2).flatMap(rowConverter.toRows)
+    }
+    DirectKafkaStreamRelation.setRowStream(rowStream)
+    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+    rowStream.foreachRDD { rdd => rdd }
+  } else {
+    rowStream = DirectKafkaStreamRelation.getRowStream()
+  }
+}
 
-  stream = kafkaStream.map(_._2).flatMap(rowConverter.toRows)
+object DirectKafkaStreamRelation extends Logging {
+  private var rowStream: DStream[InternalRow] = null
+
+  private val LOCK = new Object()
+
+  private def setRowStream(stream: DStream[InternalRow]): Unit = {
+    LOCK.synchronized {
+      rowStream = stream
+    }
+  }
+
+  private def getRowStream(): DStream[InternalRow] = {
+    LOCK.synchronized {
+      rowStream
+    }
+  }
 }

@@ -23,28 +23,34 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   def testStreamingSQL(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
     s.execute("streaming init 2")
     s.execute("create stream table tweetsTable " +
-      "(id long, text string, fullName string, " +
-      "country string, retweets int, hashtag string) " +
-      "using twitter_stream options (" +
-      "consumerKey '***REMOVED***', " +
-      "consumerSecret '***REMOVED***', " +
-      "accessToken '***REMOVED***', " +
-      "accessTokenSecret '***REMOVED***', " +
-      "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
+        "(id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) " +
+        "using twitter_stream options (" +
+        "consumerKey '***REMOVED***', " +
+        "consumerSecret '***REMOVED***', " +
+        "accessToken '***REMOVED***', " +
+        "accessTokenSecret '***REMOVED***', " +
+        "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
     s.execute("streaming start")
-    Thread.sleep(10000)
-    s.execute("select * from tweetsTable")
-    var rs = s.getResultSet
-    assert(rs.next())
-    Thread.sleep(2000)
+    for (a <- 1 to 5) {
+      Thread.sleep(2000)
+      s.execute("select text, fullName from tweetsTable where text like '%e%'")
+      val rs = s.getResultSet
+      while (rs.next()) {
+        println("YOGS RESULTSET: " + rs.getString(1) + ", " + rs.getString(2))
+      }
+    }
+
+    // assert(rs.next())
     s.execute("drop table tweetsTable")
     // s.execute("streaming stop")
     conn.close()
   }
+
 }
 

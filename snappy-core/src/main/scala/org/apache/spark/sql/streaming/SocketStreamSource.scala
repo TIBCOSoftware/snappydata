@@ -1,8 +1,11 @@
 package org.apache.spark.sql.streaming
 
+import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
 /**
@@ -20,7 +23,7 @@ final class SocketStreamSource extends SchemaRelationProvider {
 case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options){
+    extends StreamBaseRelation(options) {
 
   val hostname: String = options.get("hostname").get // .getOrElse("localhost")
 
@@ -31,30 +34,52 @@ case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
 
   val CONVERTER = "converter"
 
-  @transient private val socketStream =
-    if (options.exists(_._1 == CONVERTER)) {
-      val converter = Utils.getContextOrSparkClassLoader.loadClass(
-        options(CONVERTER)).newInstance().asInstanceOf[StreamConverter]
-      val clazz: Class[_] = converter.getTargetType
-      val mirror = ru.runtimeMirror(clazz.getClassLoader)
-      val sym = mirror.staticClass(clazz.getName) // obtain class symbol for `c`
-      val tpe = sym.selfType // obtain type object for `c`
-      val tt = ru.TypeTag[Product](mirror, new reflect.api.TypeCreator {
-          def apply[U <: reflect.api.Universe with Singleton](m:
-          reflect.api.Mirror[U]) = {
-            assert(m eq mirror, s"TypeTag[$tpe] defined in $mirror " +
-                s"cannot be migrated to $m.")
-            tpe.asInstanceOf[U#Type]
-          }
-        })
-      context.socketStream(hostname, port, converter.convert,
-        storageLevel)
-    }
-    else {
-      context.socketTextStream(hostname, port,
-        storageLevel)
-    }
+  if (SocketStreamRelation.getRowStream() == null) {
+    rowStream =
+        if (options.exists(_._1 == CONVERTER)) {
+          val converter = Utils.getContextOrSparkClassLoader.loadClass(
+            options(CONVERTER)).newInstance().asInstanceOf[StreamConverter]
+          val clazz: Class[_] = converter.getTargetType
+          val mirror = ru.runtimeMirror(clazz.getClassLoader)
+          val sym = mirror.staticClass(clazz.getName) // obtain class symbol for `c`
+          val tpe = sym.selfType // obtain type object for `c`
+          val tt = ru.TypeTag[Product](mirror, new reflect.api.TypeCreator {
+              def apply[U <: reflect.api.Universe with Singleton](m:
+              reflect.api.Mirror[U]) = {
+                assert(m eq mirror, s"TypeTag[$tpe] defined in $mirror " +
+                    s"cannot be migrated to $m.")
+                tpe.asInstanceOf[U#Type]
+              }
+            })
+          context.socketStream(hostname, port, converter.convert,
+            storageLevel).flatMap(rowConverter.toRows)
+        }
+        else {
+          context.socketTextStream(hostname, port,
+            storageLevel).flatMap(rowConverter.toRows)
+        }
+    SocketStreamRelation.setRowStream(rowStream)
+    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+    rowStream.foreachRDD { rdd => rdd }
+  } else {
+    rowStream = SocketStreamRelation.getRowStream()
+  }
+}
 
-  stream = socketStream.flatMap(rowConverter.toRows)
+object SocketStreamRelation extends Logging {
+  private var rowStream: DStream[InternalRow] = null
 
+  private val LOCK = new Object()
+
+  private def setRowStream(stream: DStream[InternalRow]): Unit = {
+    LOCK.synchronized {
+      rowStream = stream
+    }
+  }
+
+  private def getRowStream(): DStream[InternalRow] = {
+    LOCK.synchronized {
+      rowStream
+    }
+  }
 }

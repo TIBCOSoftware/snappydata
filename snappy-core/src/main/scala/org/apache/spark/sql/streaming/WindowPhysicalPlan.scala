@@ -25,7 +25,7 @@ case class WindowPhysicalPlan(
       stream.initializeAfterContextStart(ssc.graph.zeroTime)
       stream.register()
     } */
-    stream.getOrCompute(validTime)
+    rowStream.getOrCompute(validTime)
       .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 
@@ -41,7 +41,7 @@ case class WindowPhysicalPlan(
 
       private lazy val parentStreams = {
         def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
-          case x: StreamPlan => x.stream :: Nil
+          case x: StreamPlan => x.rowStream :: Nil
           // case LogicalRelation(x: StreamPlan, _) => x.stream :: Nil
           case _ => plan.children.flatMap(traverse)
         }
@@ -50,7 +50,7 @@ case class WindowPhysicalPlan(
       }
     }
 
-  @transient val stream = slideDuration.map(
+  @transient val rowStream = slideDuration.map(
     wrappedStream.window(windowDuration, _))
     .getOrElse(wrappedStream.window(windowDuration))
 

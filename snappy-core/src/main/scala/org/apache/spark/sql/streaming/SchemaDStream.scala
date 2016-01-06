@@ -35,6 +35,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     snappyContext.saveStream(this, sampleTab, None)
   }
 
+  /** Return a new DStream containing only the elements that satisfy a predicate. */
   override def filter(filterFunc: Row => Boolean): DStream[Row] = {
     super.filter(filterFunc)
   }
@@ -68,35 +69,6 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
       logicalPlan)
   }
 
-  def saveToTable(tableName: String,
-      jdbcSource: Map[String, String]): Unit = {
-    saveToTable(tableName, this.schema, jdbcSource)
-  }
-
-  private def saveToTable(externalTable: String,
-      schema: StructType,
-      jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = catalog.newQualifiedTableName(externalTable)
-    val externalStore = catalog.getExternalTable(jdbcSource)
-    catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(snappyContext))(snappyContext)
-      DataFrame(snappyContext, plan)
-    }
-    catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    snappyContext.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-    foreachRDD(rdd => {
-      snappyContext.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
-  }
-
   /** Returns the schema of this SchemaDStream (represented by
     * a [[StructType]]). */
   def schema: StructType = queryExecution.analyzed.schema
@@ -117,18 +89,14 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Method that generates a RDD for the given time */
   override def compute(validTime: Time): Option[RDD[Row]] = {
-    // Set the valid batch duration for this rule to get
-    // correct RDD in DStream of this batch duration
     StreamHelper.setValidTime(validTime)
-    // Scan the streaming logic plan to convert streaming plan
-    // to specific RDD logic plan.
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
     Some(queryExecution.executedPlan.execute().map(converter(_).asInstanceOf[Row]))
   }
 
   @transient private lazy val parentStreams = {
     def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
-      case x: StreamPlan => x.stream :: Nil
+      case x: StreamPlan => x.rowStream :: Nil
       case _ => plan.children.flatMap(traverse(_))
     }
     val streams = traverse(queryExecution.executedPlan)

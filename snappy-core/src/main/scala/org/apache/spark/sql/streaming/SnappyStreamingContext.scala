@@ -125,6 +125,6 @@ object SnappyStreamingContext extends Logging {
 }
 
 trait StreamPlan {
-  def stream: DStream[InternalRow]
+  def rowStream: DStream[InternalRow]
 }
 
