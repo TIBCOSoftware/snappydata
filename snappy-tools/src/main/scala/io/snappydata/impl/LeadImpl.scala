@@ -61,7 +61,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private var sparkContext: SparkContext = _
 
-  private val latch = new CountDownLatch(1)
   private var notifyStatusChange: ((FabricService.State) => Unit) = _
 
   private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
@@ -169,15 +168,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
 
-        val startStatus = if (directApiInvoked) {
-          primaryLeaderLock.tryLock()
-        }
-        else {
-          logInfo("About to wait for member lock indefinitely" +
-              " and blocking the user thread")
-          primaryLeaderLock.lockInterruptibly()
-          true
-        }
+        val startStatus = primaryLeaderLock.tryLock()
 
         startStatus match {
           case true =>
@@ -191,8 +182,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
               callback(serverstatus)
             }
 
-            logInfo("About to wait for member lock indefinitely" +
-                " and blocking the AsyncServerLauncher thread")
+            logInfo("Primary Lead node (Spark Driver) is already running in the system." +
+                "Standing by as secondary.")
             primaryLeaderLock.lockInterruptibly()
 
             logInfo("Resuming startup sequence from STANDBY ...")
