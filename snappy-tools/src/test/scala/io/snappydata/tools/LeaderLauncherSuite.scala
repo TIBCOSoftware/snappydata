@@ -69,9 +69,14 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
     props.setProperty(Attribute.SYS_PERSISTENT_DIR, dirname)
     fs.start(props)
 
+    logInfo("Leader started successfully")
+
     assert(ServiceManager.getLeadInstance.status == FabricService.State.RUNNING)
 
+    logInfo("Stopping leader now")
     fs.stop(null)
+
+    logInfo("Leader stopped successfully")
   }
 
   test("simple leader launch") {
@@ -97,6 +102,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
             "-dir=" + dirname))
         } map { _ =>
           val outputLines = stream.toString
+          logInfo("Leader launched.. checking output")
           assert(outputLines.replaceAll("\n", "").matches(
             "SnappyData Leader pid: [0-9]+ status: running" +
                 "  Distributed system now has [0-9]+ members." +
@@ -111,6 +117,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       }
 
     } finally {
+      logInfo("Stopping Leader")
       System.setOut(currentOut)
       LeaderLauncher.main(Array(
         "stop",
@@ -135,6 +142,21 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
 
+    def waitTill(workingDir: String, status: String): Unit = {
+
+      var output = ""
+      do {
+        Thread.sleep(500)
+        val stream = new ByteArrayOutputStream()
+        System.setOut(new PrintStream(stream))
+        LeaderLauncher.main(Array(
+          "status",
+          "-dir=" + workingDir))
+        output = stream.toString.replaceAll("\n", "")
+      } while (output.contains(status))
+
+    }
+
     val leader1 = createDir("tests-snappy-leader-1")
     val leader2 = createDir("tests-snappy-leader-2")
     val currentOut = System.out
@@ -147,6 +169,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
       ))
     } transform(_ => Try {
 
+      logInfo("Leader 1 launched.. checking output")
       verifyStatus(leader1, "SnappyData Leader pid: [0-9]+ status: running.*").get
 
       LeaderLauncher.main(Array(
@@ -154,6 +177,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
         "-dir=" + leader2,
         s"-locators=localhost[${availablePort}]"
       ))
+      logInfo("Leader 2 launched..")
     }, {
       throw _
     })
@@ -167,12 +191,19 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
       val leader2TakeOver = checkStandby match {
         case Success(v) =>
+          logInfo("Stopping Leader 1 ..")
           Try {
             LeaderLauncher.main(Array(
               "stop",
               "-dir=" + leader1))
+            logInfo("Leader 1 stopped ..")
             isLeader1NotStopped = false
           } transform(_ => {
+
+            logInfo("Waiting till Leader 2 is in starting status")
+            waitTill(leader2, "starting")
+
+            logInfo("Checking Leader 2 running status")
             verifyStatus(leader2, "SnappyData Leader pid: [0-9]+ status: running.*")
           }, throw _)
 
