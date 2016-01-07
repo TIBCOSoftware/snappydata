@@ -9,7 +9,7 @@ import scala.reflect.runtime.{universe => u}
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.{RDDConversions, SparkPlan}
+import org.apache.spark.sql.execution.{RDDConversions}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Milliseconds, Duration, StreamingContext}
@@ -45,21 +45,7 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   def getSchemaDStream(tableName: String): SchemaDStream = {
     new SchemaDStream(self, snappyContext.catalog.lookupRelation(tableName))
   }
-/*
 
-  /**
-    * Creates a [[SchemaDStream]] from [[DStream]] containing [[Row]]s using
-    * the given schema. It is important to make sure that the structure of
-    * every [[Row]] of the provided DStream matches the provided schema.
-    */
-  def createSchemaDStream(dStream: DStream[InternalRow],
-      schema: StructType): SchemaDStream = {
-    val attributes = schema.toAttributes
-    val logicalPlan = LogicalDStreamPlan(attributes, dStream)(self)
-    new SchemaDStream(self, logicalPlan)
-  }
-
-*/
   /**
     * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
     */
@@ -109,7 +95,6 @@ object SnappyStreamingContext extends Logging {
 
   def start(): Unit = {
     val snsc = getActive().get
-    // start the streaming context
     snsc.start()
   }
 
@@ -118,6 +103,7 @@ object SnappyStreamingContext extends Logging {
     val snsc = getActive().get
     if (snsc != null) {
       snsc.stop(stopSparkContext, stopGracefully)
+      snsc.snappyContext.clearCache()
       SnappyContext.stop()
       setActiveContext(null)
     }

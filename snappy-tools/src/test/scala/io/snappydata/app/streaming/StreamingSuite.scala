@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.app.streaming
 
 import io.snappydata.SnappyFunSuite
@@ -48,13 +64,13 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
     val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
     val map = Map.empty[String,String]
     val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    ssnc.snappyContext.dropExternalTable("gemxdColumnTable1", true)
+    ssnc.snappyContext.dropTable("gemxdColumnTable1", true)
     schemaStream1.foreachDataFrame(df => {
       df.write.format("column").mode(SaveMode.Append)
         .options(Map.empty[String,String]).saveAsTable("gemxdColumnTable1")
     })
 
-    ssnc.snappyContext.dropExternalTable("gemxdColumnTable2", true)
+    ssnc.snappyContext.dropTable("gemxdColumnTable2", true)
     schemaStream1.foreachDataFrame((df,time) => {
       df.write.format("column").mode(SaveMode.Append)
         .options(Map.empty[String,String]).saveAsTable("gemxdColumnTable2")
@@ -128,8 +144,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       "tweetStream1 window (duration '2' seconds, slide '2' seconds) t1 JOIN " +
       "tweetStream2 t2 ON t1.id = t2.id ")
 
-    ssnc.snappyContext.dropExternalTable("gemxdColumnTable", true)
-    ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+    ssnc.snappyContext.dropTable("gemxdColumnTable", true)
+    ssnc.snappyContext.createTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
     resultStream.foreachDataFrame(df => {
@@ -192,8 +208,8 @@ class StreamingSuite extends SnappyFunSuite with Eventually with BeforeAndAfter 
       " FROM tweetStream1 window (duration '2' seconds, slide '2' seconds)" +
       "t1 JOIN tweetStream2 t2 ON t1.id = t2.id ")
 
-    ssnc.snappyContext.dropExternalTable("gemxdColumnTable", true)
-    ssnc.snappyContext.createExternalTable("gemxdColumnTable", "column", schemaStream1.schema,
+    ssnc.snappyContext.dropTable("gemxdColumnTable", true)
+    ssnc.snappyContext.createTable("gemxdColumnTable", "column", schemaStream1.schema,
       Map.empty[String, String])
 
     resultStream.foreachDataFrame(df => {

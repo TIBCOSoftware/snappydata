@@ -299,8 +299,10 @@ task generateSources {
 
 task product {
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
-  dependsOn ':snappy-aqp:jar'
   dependsOn ':snappy-examples:jar'
+  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+    dependsOn ':snappy-aqp:jar'
+  }
 
   doFirst {
     delete snappyProductDir
@@ -328,7 +330,6 @@ task product {
     release << "Build flags: ${buildFlags}\n"
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
-    def aqpProject = project(':snappy-aqp')
     def examplesProject = project(':snappy-examples')
     def baseName = 'snappy-spark-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
@@ -339,10 +340,13 @@ task product {
       include "${toolsProject.shadowJar.archiveName}"
       rename { filename -> archiveName }
     }
-    copy {
-      from("${aqpProject.buildDir}/libs")
-      into "${snappyProductDir}/lib"
-      include "${aqpProject.jar.archiveName}"
+    if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+      def aqpProject = project(':snappy-aqp')
+      copy {
+        from("${aqpProject.buildDir}/libs")
+        into "${snappyProductDir}/lib"
+        include "${aqpProject.jar.archiveName}"
+      }
     }
     copy {
       from "${examplesProject.buildDir}/libs"
@@ -426,12 +430,19 @@ def runSQLScript(def fileName) {
     throw new GradleException("Failed to run ${fileName}")
   }
 }
+def writeToFile(def fileName) {
+  new File("$fileName").withWriter { out ->
+    out.println "localhost"
+    out.println "localhost"
+  }
+}
 
 task runQuickstart {
   mustRunAfter product
   def exampleArchiveName = "quickstart-${version}.jar"
   doLast {
     try {
+      writeToFile("${snappyProductDir}/conf/servers")
       def startoutput = runScript("${snappyProductDir}/sbin/snappy-start-all.sh", []);
       println "${startoutput}"
       if (!startoutput.contains("Distributed system now has 4 members")) {
@@ -469,7 +480,9 @@ task runQuickstart {
 
       println "${submitjobairline}"
 
-      def json = new JsonSlurper().parseText("${submitjobairline}".substring(2))
+      def jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
+                    submitjobairline.substring(4)
+      def json = new JsonSlurper().parseText(jsonStr)
       def jobid = ""
       json.each {
         k, v ->
@@ -504,6 +517,9 @@ task runQuickstart {
     } finally {
       println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", []);
       println runScript("${snappyProductDir}/sbin/stop-all.sh", []);
+      def conffile = new File("${snappyProductDir}/conf/servers")
+      if (conffile.exists())
+        conffile.delete()
     }
   }
 }
@@ -511,8 +527,10 @@ task runQuickstart {
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-tools_${scalaBinaryVersion}").buildDir)
-  copyTestsCommonResources(project(":snappy-aqp").buildDir)
   copyTestsCommonResources(project(':snappy-dunits').buildDir)
+  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+    copyTestsCommonResources(project(":snappy-aqp").buildDir)
+  }
 }
 
 task cleanAll {
@@ -524,7 +542,10 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-aqp:check', ':snappy-dunits:test'
+  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test'
+  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+    dependsOn ':snappy-aqp:check'
+  }
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }

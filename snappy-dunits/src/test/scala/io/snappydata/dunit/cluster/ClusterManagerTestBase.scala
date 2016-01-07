@@ -208,7 +208,7 @@ object ClusterManagerTestBase {
     if (snc != null) {
       snc.catalog.getTables(None).foreach {
         case (tableName, false) =>
-          snc.dropExternalTable(tableName, ifExists = true)
+          snc.dropTable(tableName, ifExists = true)
         case _ =>
       }
     }

@@ -1,13 +1,18 @@
 package org.apache.spark.sql.columnar
 
+import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
 import scala.StringBuilder
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
 
+import org.apache.spark.sql.catalyst.{expressions, CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -15,12 +20,16 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
 import org.apache.spark.{Logging, SparkContext}
 /**
  * Utility methods used by external storage layers.
  */
 private[sql] object ExternalStoreUtils extends Logging {
+
+  final val DEFAULT_COLUMN_TABLE_BUCKETS = "199"
+  final val DEFAULT_ROW_TABLE_BUCKETS = "113"
 
   def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean) = {
@@ -87,6 +96,47 @@ private[sql] object ExternalStoreUtils extends Logging {
     table
   }
 
+  def removeSamplingOption(parameters: mutable.Map[String, String]): Map[String, String] = {
+
+    val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", " timeInterval")
+
+    val optMap = new mutable.HashMap[String, String]
+
+    optSequence.map(key => {
+      val value = parameters.remove(key)
+      value match {
+        case Some(v) => optMap += ((key.normalize, v))
+        case None => // Do nothing
+      }
+    })
+    optMap.toMap
+  }
+
+  def getNullTypes(url: String, schema: StructType): Array[Int] = {
+    val dialect = JdbcDialects.get(url)
+    val nullTypes: Array[Int] = schema.fields.map { field =>
+      dialect.getJDBCType(field.dataType).map(_.jdbcNullType).getOrElse(
+        field.dataType match {
+          case IntegerType => java.sql.Types.INTEGER
+          case LongType => java.sql.Types.BIGINT
+          case DoubleType => java.sql.Types.DOUBLE
+          case FloatType => java.sql.Types.REAL
+          case ShortType => java.sql.Types.INTEGER
+          case ByteType => java.sql.Types.INTEGER
+          case BooleanType => java.sql.Types.BIT
+          case StringType => java.sql.Types.CLOB
+          case BinaryType => java.sql.Types.BLOB
+          case TimestampType => java.sql.Types.TIMESTAMP
+          case DateType => java.sql.Types.DATE
+          case t: DecimalType => java.sql.Types.DECIMAL
+          case _ => throw new IllegalArgumentException(
+            s"Can't translate null value for field $field")
+        })
+    }
+    nullTypes
+  }
+
   def defaultStoreURL(sc: SparkContext): String = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
@@ -112,16 +162,15 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isNotEmbeddedMode(sparkContext: SparkContext): Boolean = {
+  def isShellOrLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
       case SnappyShellMode(_, _) | LocalMode(_, _) => true
       case _ => false
     }
   }
 
-
   def validateAndGetAllProps(sc : SparkContext,
-      parameters: mutable.Map[String, String]) = {
+      parameters: mutable.Map[String, String]) :ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
@@ -162,7 +211,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP)
-    (url, driver, allPoolProps, connProps, hikariCP)
+    new ConnectionProperties(url, driver, allPoolProps, connProps, hikariCP)
   }
 
    def getConnection(url: String, connProperties: Properties,
@@ -308,9 +357,87 @@ private[sql] object ExternalStoreUtils extends Logging {
       col += 1
     }
   }
+
+  def getTotalPartitions(parameters: mutable.Map[String, String], rowTable: Boolean): Int = {
+    (parameters.get("BUCKETS").getOrElse(
+      if (rowTable) DEFAULT_ROW_TABLE_BUCKETS else DEFAULT_COLUMN_TABLE_BUCKETS)).toInt
+  }
+
+
+  def cachedBatchesToRows(
+      cacheBatches: Iterator[CachedBatch] ,  requestedColumns:Array[String], schema:StructType): Iterator[InternalRow] = {
+    val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+      schema.getFieldIndex(a).get -> schema(a).dataType
+    }.unzip
+    val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
+    val rows = cacheBatches.flatMap { cachedBatch =>
+      // Build column accessors
+      val columnAccessors = requestedColumnIndices.zipWithIndex.map {
+        case (schemaIndex, bufferIndex) =>
+          ColumnAccessor(schema.fields(schemaIndex).dataType,
+            ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
+      }
+      // Extract rows via column accessors
+      new Iterator[InternalRow] {
+        private[this] val rowLen = nextRow.numFields
+
+        override def next(): InternalRow = {
+          var i = 0
+          while (i < rowLen) {
+            columnAccessors(i).extractTo(nextRow, i)
+            i += 1
+          }
+          if (requestedColumns.isEmpty) InternalRow.empty else nextRow
+        }
+
+        override def hasNext: Boolean = columnAccessors.head.hasNext
+      }
+    }
+    rows
+  }
 }
 
 object ConnectionType extends Enumeration {
   type ConnectionType = Value
   val Embedded, Net, Unknown = Value
 }
+
+private[sql] class ArrayBufferForRows(getConnection: () => Connection,
+    table: String,
+    schema: StructType,
+    url: String,
+    batchSize: Int) {
+
+  var buff = new ArrayBuffer[InternalRow]()
+  val toScala = CatalystTypeConverters.createToScalaConverter(schema)
+  var rowCount = 0
+
+  val nullTypes = ExternalStoreUtils.getNullTypes(url, schema)
+
+  def appendRow_(row: InternalRow, flush: Boolean): Unit = {
+    if (row != expressions.EmptyRow) {
+      buff += row
+      rowCount += 1
+    }
+    if (rowCount % batchSize == 0 || flush) {
+      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(toScala(_).asInstanceOf[Row]),
+        schema, nullTypes, batchSize)
+      buff = new ArrayBuffer[InternalRow]()
+      rowCount = 0
+    }
+  }
+
+  // empty for now
+  def endRows(u: Unit): Unit = {}
+
+  def appendRow(u: Unit, row: InternalRow): Unit = {
+    appendRow_(row, flush = false)
+  }
+
+  def forceEndOfBatch(): Unit = {
+    if (rowCount > 0) {
+      appendRow_(expressions.EmptyRow, flush = true)
+    }
+  }
+}
+case class ConnectionProperties(url:String , driver:String, poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)

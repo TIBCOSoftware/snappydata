@@ -40,6 +40,11 @@ trait SingleRowInsertableRelation {
 
 }
 
+trait SamplingRelation extends BaseRelation{
+  def samplingOptions() : Map[String, Any]
+  def baseTable() : String
+}
+
 @DeveloperApi
 trait UpdatableRelation extends SingleRowInsertableRelation {
 
@@ -339,7 +344,7 @@ abstract class MutableRelationProvider
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
-    val (url, _, poolProps, connProps, hikariCP) =
+    val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val partitionInfo = if (partitionColumn.isEmpty) {
@@ -356,10 +361,10 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-    new JDBCMutableRelation(url,
+    new JDBCMutableRelation(connProperties.url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema, parts,
-      poolProps, connProps, hikariCP, options, sqlContext)
+      connProperties.poolProps, connProperties.connProps, connProperties.hikariCP, options, sqlContext)
   }
 
   override def createRelation(sqlContext: SQLContext,
