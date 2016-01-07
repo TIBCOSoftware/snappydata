@@ -28,7 +28,7 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.NetworkInterface
+import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
@@ -61,9 +61,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private var sparkContext: SparkContext = _
 
-  private val latch = new CountDownLatch(1)
-  private var notificationCallback: (() => Unit) = _
-  private lazy val primaryLeadNodeWaiter = scheduleWaitForPrimaryDeparture()
+  private var notifyStatusChange: ((FabricService.State) => Unit) = _
 
   private lazy val primaryLeaderLock = new DistributedMemberLock(dls,
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
@@ -91,41 +89,56 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
 
     _directApiInvoked = true
-    val locator = {
-      bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
-        case v if v != null => v
-        case _ =>
-          bootProperties.getProperty(Property.locators)
-      }
-    }
 
-    val conf = new SparkConf()
-    conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
-      setAppName("leaderLauncher").
-      set(Property.jobserverEnabled, "true")
+    try {
 
-    // inspect user input and add appropriate prefixes
-    // if property doesn't contain '.'
-    // if input prop key is found in io.snappydata.Property,
-    // its prefixed with 'snappydata.' otherwise its assumed
-    // to be snappydata.store.
-    bootProperties.asScala.foreach({ case (k, v) =>
-      val key = if (k.indexOf(".") < 0) {
-        if (snappyProperties(k)) {
-          Constant.PROPERTY_PREFIX + k
-        } else {
-          Constant.STORE_PROPERTY_PREFIX + k
+      logInfo("About to initialize SparkContext")
+
+      val locator = {
+        bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
+          case v if v != null => v
+          case _ =>
+            bootProperties.getProperty(Property.locators)
         }
       }
-      else {
-        k
-      }
-      conf.set(key, v)
-    })
 
-    SnappyEmbeddedModeClusterManager.register()
+      val conf = new SparkConf()
+      conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
+          setAppName("leaderLauncher").
+          set(Property.jobserverEnabled, "true")
 
-    sparkContext = new SparkContext(conf)
+      // inspect user input and add appropriate prefixes
+      // if property doesn't contain '.'
+      // if input prop key is found in io.snappydata.Property,
+      // its prefixed with 'snappydata.' otherwise its assumed
+      // to be snappydata.store.
+      bootProperties.asScala.foreach({ case (k, v) =>
+        val key = if (k.indexOf(".") < 0) {
+          if (snappyProperties(k)) {
+            Constant.PROPERTY_PREFIX + k
+          } else {
+            Constant.STORE_PROPERTY_PREFIX + k
+          }
+        }
+        else {
+          k
+        }
+        conf.set(key, v)
+      })
+
+      SnappyEmbeddedModeClusterManager.register()
+
+      sparkContext = new SparkContext(conf)
+
+    } catch {
+      case ie: InterruptedException =>
+        logInfo(s"Thread interrupted, aborting.")
+      case e: Throwable =>
+        logWarning("Exception while starting lead node", e)
+        throw e
+    }
+
+
   }
 
   private[snappydata] def internalStart(sc: SparkContext): Unit = {
@@ -134,11 +147,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     initStartupArgs(conf, sc)
 
     logInfo("cluster configuration after overriding certain properties \n"
-      + conf.toDebugString)
+        + conf.toDebugString)
 
     val confProps = conf.getAll
     val storeProps = new Properties()
-    
+
     val filteredProp = confProps.filter {
       case (k, _) => k.startsWith(Constant.STORE_PROPERTY_PREFIX)
     }.map {
@@ -154,13 +167,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         bootProperties.putAll(confProps.toMap.asJava)
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
-        val startStatus = directApiInvoked match {
-          case true =>
-            primaryLeaderLock.tryLock()
-          case _ =>
-            primaryLeaderLock.lockInterruptibly()
-            true
-        }
+
+        val startStatus = primaryLeaderLock.tryLock()
 
         startStatus match {
           case true =>
@@ -168,7 +176,21 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           // let go.
           case false =>
             serverstatus = State.STANDBY
-            primaryLeadNodeWaiter.start()
+            val callback = notifyStatusChange
+            if (callback != null) {
+              logInfo("Notifying standby status ...")
+              callback(serverstatus)
+            }
+
+            logInfo("Primary Lead node (Spark Driver) is already running in the system." +
+                "Standing by as secondary.")
+            primaryLeaderLock.lockInterruptibly()
+
+            logInfo("Resuming startup sequence from STANDBY ...")
+            serverstatus = State.STARTING
+            if (callback != null) {
+              callback(serverstatus)
+            }
         }
       case _ =>
         logWarning(LocalizedMessages.res.getTextMessage("SD_LEADER_NOT_READY", status()))
@@ -178,7 +200,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   @throws(classOf[SQLException])
   override def stop(shutdownCredentials: Properties): Unit = {
     assert(sparkContext != null, "Mix and match of LeadService api " +
-      "and SparkContext is unsupported.")
+        "and SparkContext is unsupported.")
     if (!sparkContext.isStopped) {
       sparkContext.stop()
       sparkContext = null
@@ -186,7 +208,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   }
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
-    primaryLeadNodeWaiter.interrupt()
     bootProperties.clear()
     SnappyContext.stop()
     // TODO: [soubhik] find a way to stop jobserver.
@@ -194,20 +215,11 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     super.stop(shutdownCredentials)
   }
 
-  override def waitUntilPrimary(): Unit = synchronized {
-    status() match {
-      case State.STANDBY => latch.await()
-      case State.RUNNING => ; // no-op
-      case _ => logWarning("not waiting because server not in standby mode. status is "
-        + status())
-    }
-  }
-
   private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {
 
     def changeOrAppend(attr: String, value: String,
-                       overwrite: Boolean = false,
-                       ignoreIfPresent: Boolean = false) = {
+        overwrite: Boolean = false,
+        ignoreIfPresent: Boolean = false) = {
       val x = conf.getOption(attr).orNull
       x match {
         case null =>
@@ -227,7 +239,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           s"must be defined for SnappyData cluster to start")
     import org.apache.spark.sql.collection.Utils
     // skip overriding host-data if loner VM.
-    if(sc != null && Utils.isLoner(sc)) {
+    if (sc != null && Utils.isLoner(sc)) {
       changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
           com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA,
         "true", overwrite = true)
@@ -244,38 +256,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     conf
   }
 
-  protected[snappydata] def notifyWhenPrimary(f: () => Unit): Unit =
-    this.notificationCallback = f
-
-  private[snappydata] def scheduleWaitForPrimaryDeparture() = {
-
-    val r = new Runnable() {
-      override def run(): Unit = {
-        try {
-          logInfo("About to wait for member lock")
-          primaryLeaderLock.lockInterruptibly()
-          latch.countDown()
-          logInfo("Notifying status ...")
-          val callback = notificationCallback
-          if (callback != null) {
-            callback()
-          }
-        } catch {
-          case ie: InterruptedException =>
-            logInfo("Thread interrupted. Shutting down primary lead node lock waiter.")
-            Thread.currentThread().interrupt()
-          case e: Throwable =>
-            logWarning("Exception while becoming primary lead node after standby mode", e)
-            throw e
-        }
-      }
-    }
-
-    val t = new Thread(Utils.SnappyDataThreadGroup, r, "Waiter To Become Primary Lead Node")
-    t.setDaemon(true)
-    t.setContextClassLoader(this.getClass.getClassLoader)
-    t
-  }
+  protected[snappydata] def notifyOnStatusChange(f: (FabricService.State) => Unit): Unit =
+    this.notifyStatusChange = f
 
   @throws(classOf[Exception])
   private[snappydata] def startAddOnServices(sc: SparkContext): Unit = this.synchronized {
@@ -341,22 +323,22 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   @throws(classOf[SQLException])
   override def startNetworkServer(bindAddress: String,
-                                  port: Int,
-                                  networkProperties: Properties): NetworkInterface = {
+      port: Int,
+      networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Network server cannot be started on lead node.")
   }
 
   @throws(classOf[SQLException])
   override def startThriftServer(bindAddress: String,
-                                 port: Int,
-                                 networkProperties: Properties): NetworkInterface = {
+      port: Int,
+      networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Thrift server cannot be started on lead node.")
   }
 
   @throws(classOf[SQLException])
   override def startDRDAServer(bindAddress: String,
-                               port: Int,
-                               networkProperties: Properties): NetworkInterface = {
+      port: Int,
+      networkProperties: Properties): NetworkInterface = {
     throw new SQLException("DRDA server cannot be started on lead node.")
   }
 

@@ -20,7 +20,7 @@ import java.util.Properties
 
 import com.gemstone.gemfire.cache.Cache
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
-import com.pivotal.gemfirexd.FabricService
+import com.pivotal.gemfirexd.{FabricServer, FabricService}
 import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.shared.common.sanity.SanityManager
@@ -73,7 +73,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   override protected def usage(): Unit = {
     val script: String = LocalizedMessages.res.getTextMessage("SD_LEAD_SCRIPT")
     val name: String = LocalizedMessages.res.getTextMessage("SD_LEAD_NAME")
-    val extraHelp = LocalizedResource.getMessage("FS_EXTRA_HELP", LocalizedMessages.res.getTextMessage("FS_PRODUCT"))
+    val extraHelp = LocalizedResource.getMessage("FS_EXTRA_HELP", LocalizedMessages.
+        res.getTextMessage("FS_PRODUCT"))
     val usageOutput: String = LocalizedResource.getMessage("SERVER_HELP",
       script, name, LocalizedResource.getMessage("FS_ADDRESS_ARG"), extraHelp)
     printUsage(usageOutput, SanityManager.DEFAULT_MAX_OUT_LINES)
@@ -84,6 +85,14 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   }
 
   @throws(classOf[Exception])
+  override protected def startServerVM(props: Properties) : Unit = {
+    val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
+    leadImpl.notifyOnStatusChange(writeStatusOnChange)
+    leadImpl.start(props)
+    this.bootProps = props
+  }
+
+  @throws(classOf[Exception])
   override protected def startAdditionalServices(cache: Cache,
       options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.
@@ -91,31 +100,43 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
     // disabling net server startup etc.
 
-    getFabricServiceInstance.status() match {
-      case State.STARTING =>
-        Thread.sleep(1000)
+  }
+
+  override protected def checkStatusForWait(status: CacheServerLauncher.Status): Boolean = {
+    (status.state == CacheServerLauncher.STARTING ||
+        status.state == CacheServerLauncher.WAITING)
+  }
+
+  def writeStatusOnChange(newState: State): Unit = {
+
+    newState match {
       case State.STANDBY =>
         status = CacheServerLauncher.createStatus(this.baseName,
           CacheServerLauncher.STANDBY, getProcessId)
-        genericLogger.info("Parking this lead node in standby mode")
+        writeStatus(status)
+        genericLogger.info("lead node standby status written.")
 
-        val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
-        leadImpl.notifyWhenPrimary(writeRunningStatus)
+      case State.STARTING =>
+        status = CacheServerLauncher.createStatus(this.baseName,
+              CacheServerLauncher.STARTING, getProcessId)
+        writeStatus(status)
+        genericLogger.info("Lead Node starting status written.")
+
+      case State.RUNNING =>
+        status = CacheServerLauncher.createStatus(this.baseName,
+              CacheServerLauncher.RUNNING, getProcessId)
+        writeStatus(status)
+        genericLogger.info("Lead Node running status written.")
       case _ =>
         return
+
     }
 
   }
 
-  def writeRunningStatus(): Unit = {
-    genericLogger.info("Becoming primary Lead Node in absence of existing primary.")
-    status = CacheServerLauncher.createStatus(this.baseName,
-      CacheServerLauncher.RUNNING, getProcessId)
-    writeStatus(status)
-  }
-
   override protected def getBaseName(name: String) = "snappyleader"
-}
+
+} // end of class
 
 object LeaderLauncher {
 
