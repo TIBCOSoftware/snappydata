@@ -10,9 +10,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
-/**
-  * Created by ymahajan on 25/09/15.
-  */
 class DirectKafkaStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,

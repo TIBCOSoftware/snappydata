@@ -9,17 +9,14 @@ import scala.reflect.runtime.{universe => u}
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
-import org.apache.spark.sql.execution.{RDDConversions}
+import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Milliseconds, Duration, StreamingContext}
+import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext}
 
 /**
   * Provides an ability to manipulate SQL like query on DStream
-  *
-  * Created by ymahajan on 25/09/15.
   */
-
 class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
     val batchDur: Duration)
     extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
@@ -86,7 +83,7 @@ object SnappyStreamingContext extends Logging {
       if (snsc != null) snsc
       else {
         val snsc = new SnappyStreamingContext(sc, batchDur)
-        snsc.remember(Milliseconds(300*1000))
+        snsc.remember(Milliseconds(300 * 1000))
         setActiveContext(snsc)
         snsc
       }

@@ -10,9 +10,6 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
-/**
-  * Created by ymahajan on 25/09/15.
-  */
 abstract class StreamBaseRelation(options: Map[String, String]) extends BaseRelation with StreamPlan
 with TableScan with Serializable with Logging {
 

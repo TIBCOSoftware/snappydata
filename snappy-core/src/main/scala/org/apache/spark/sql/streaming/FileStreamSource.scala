@@ -7,9 +7,6 @@ import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 
-/**
-  * Created by ymahajan on 25/09/15.
-  */
 final class FileStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,

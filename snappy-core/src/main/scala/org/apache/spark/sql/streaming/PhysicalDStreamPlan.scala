@@ -14,8 +14,6 @@ import org.apache.spark.streaming.dstream.DStream
   *
   * @param output
   * @param rowStream
-  *
-  *
   */
 case class PhysicalDStreamPlan(output: Seq[Attribute],
     @transient rowStream: DStream[InternalRow])

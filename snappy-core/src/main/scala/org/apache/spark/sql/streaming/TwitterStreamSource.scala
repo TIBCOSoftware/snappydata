@@ -11,9 +11,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.twitter.TwitterUtils
 
-/**
-  * Created by ymahajan on 4/12/15.
-  */
 final class TwitterStreamSource extends SchemaRelationProvider {
 
   override def createRelation(sqlContext: SQLContext,
