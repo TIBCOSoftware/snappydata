@@ -405,7 +405,7 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
   final val INTERNAL_SCHEMA_NAME = "INTERNAL"
-  final val SHADOW_TABLE_SUFFIX = "_shadow_"
+  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
 
   def registerStoreCallbacks(sqlContext: SQLContext,table: String,
       userSchema: StructType, externalStore: ExternalStore) = {
