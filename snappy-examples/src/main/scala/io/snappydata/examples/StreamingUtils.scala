@@ -18,18 +18,13 @@ object StreamingUtils {
     if (message.isInstanceOf[String]){
       //for file stream
       json = new JSONObject(message.asInstanceOf[String])
-      val id = json.get("id").asInstanceOf[Long]
-      val txt = json.get("text").asInstanceOf[String]
-      val reTweet = json.get("retweetCount").asInstanceOf[Int]
       val hashArray = json.get("hashtagEntities").asInstanceOf[JSONArray]
       arr = new Array[GenericRowWithSchema](hashArray.length())
       for (i <- 0 until hashArray.length()) {
         val a = hashArray.getJSONObject(i)
         val b = a.getString("text")
 
-        arr(i) = new GenericRowWithSchema(Array(id, UTF8String.fromString(txt),
-          reTweet, UTF8String.fromString(b)), schema)
-
+        arr(i) = new GenericRowWithSchema(Array(UTF8String.fromString(b)), schema)
       }
     }else {
       //for twitter stream
@@ -37,16 +32,39 @@ object StreamingUtils {
       val hashArray = status.getHashtagEntities
       arr = new Array[GenericRowWithSchema](hashArray.length)
       for (i <- 0 until hashArray.length) {
-        val a = hashArray(i).getText
+        val b = hashArray(i).getText
 
-        arr(i) = new GenericRowWithSchema(Array(status.getId, UTF8String.fromString(status.getText),
-          status.getRetweetCount, UTF8String.fromString(a)), schema)
-
+        arr(i) = new GenericRowWithSchema(Array(UTF8String.fromString(b)), schema)
       }
     }
 
     arr.toSeq
 
+  }
+
+  def convertPopularTweetsToRow(message: Any):  Array[twitterSchema] = {
+    var json: JSONObject = null
+    var retweetCnt : Int = 0
+    var retweetTxt : String = null
+    if (message.isInstanceOf[String]) {
+      //for file stream
+      json = new JSONObject(message.asInstanceOf[String])
+      if(json != null && json.has("retweetedStatus")) {
+        val retweetedSts = json.getJSONObject("retweetedStatus")
+        retweetTxt = retweetedSts.get("text").asInstanceOf[String]
+        retweetCnt = retweetedSts.get("retweetCount").asInstanceOf[Int]
+      }
+    } else {
+      //for twitter stream
+      val status = message.asInstanceOf[Status]
+      if(status.getRetweetedStatus != null) {
+        retweetTxt = status.getRetweetedStatus.getText
+        retweetCnt = status.getRetweetedStatus.getRetweetCount
+      }
+    }
+    val sampleRow = new Array[twitterSchema](1)
+    sampleRow(0) = new twitterSchema(retweetCnt, retweetTxt)
+    sampleRow
   }
 
   def getTwitterAuth(jobConfig: Config): OAuthAuthorization = {
@@ -63,3 +81,4 @@ object StreamingUtils {
   }
 }
 
+case class twitterSchema(retweetCnt : Int, retweetTxt: String)

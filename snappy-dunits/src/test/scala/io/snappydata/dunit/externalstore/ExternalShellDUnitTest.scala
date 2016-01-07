@@ -100,21 +100,21 @@ object ExternalShellDUnitTest {
     createTableUsingDataSourceAPI(snc, "embeddedModeTable1", tableType)
     selectFromTable(snc, "embeddedModeTable1", 1005)
 
-    snc.dropExternalTable("embeddedModeTable1", ifExists = true)
+    snc.dropTable("embeddedModeTable1", ifExists = true)
 
     // embeddedModeTable2 still exists drop it
-    snc.dropExternalTable("embeddedModeTable2", ifExists = true)
+    snc.dropTable("embeddedModeTable2", ifExists = true)
 
     // read data from shellModeTable1
     selectFromTable(snc, "shellModeTable1", 1005)
 
     // drop table created in shell mode
-    snc.dropExternalTable("shellModeTable1", ifExists = true)
+    snc.dropTable("shellModeTable1", ifExists = true)
 
     // recreate the dropped table
     createTableUsingDataSourceAPI(snc, "shellModeTable1", tableType)
     selectFromTable(snc, "shellModeTable1", 1005)
-    snc.dropExternalTable("shellModeTable1", ifExists = true)
+    snc.dropTable("shellModeTable1", ifExists = true)
     println("Successful")
   }
 
@@ -148,7 +148,7 @@ object ExternalShellDUnitTest {
     selectFromTable(snc, "embeddedModeTable1", 1005)
 
     // drop the table created in embedded mode
-    snc.dropExternalTable("embeddedModeTable1", ifExists = true)
+    snc.dropTable("embeddedModeTable1", ifExists = true)
 
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable2", 1005)
