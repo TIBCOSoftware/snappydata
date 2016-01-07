@@ -1,3 +1,6 @@
+---- Members in the Snappy Distributed System ----
+SHOW MEMBERS;
+
 ---- Tables in the DB are ----
 SHOW TABLES in APP;
 

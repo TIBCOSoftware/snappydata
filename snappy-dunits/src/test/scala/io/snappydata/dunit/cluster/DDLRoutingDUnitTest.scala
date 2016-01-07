@@ -105,6 +105,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   def createTableByDefaultXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
+    s.execute("set spark.sql.shuffle.partitions=5")
     s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) ")
   }
 

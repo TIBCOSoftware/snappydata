@@ -1,5 +1,22 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.columntable
 
+import java.nio.ByteBuffer
 import java.sql.Connection
 
 import scala.collection.mutable.ArrayBuffer
@@ -9,6 +26,8 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
@@ -66,6 +85,7 @@ class ColumnFormatRelation(
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
+  val columnBatchSize = sqlContext.conf.columnBatchSize
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(externalStore.connProperties.url)
 
@@ -98,7 +118,7 @@ class ColumnFormatRelation(
     // TODO: can we optimize the union by providing partitioner
     val colRdd = super.scanTable(table + externalStore.shadowTableNamePrefix, requiredColumns, filters)
     val union = connectionType match {
-      case ConnectionType.Embedded => {
+      case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
           connector,
@@ -114,7 +134,7 @@ class ColumnFormatRelation(
         rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
           leftIter ++ rightIter
         }
-      }
+
       //TODO: This needs to be changed for non-embedded mode, inefficient
       case _ => {
         val rowRdd = new SparkShellRowRDD(
@@ -135,8 +155,63 @@ class ColumnFormatRelation(
     union
   }
 
+  override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
+      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+    //TODO - currently using the length from the part Object but it needs to be handled more generically
+    //in order to replace UUID
+    // if number of rows are greater than columnBatchSize then store otherwise store locally
+    if (batch.numRows >= columnBatchSize) {
+      val uuid = externalStore.storeCachedBatch(table + externalStore.shadowTableNamePrefix, batch)
+      accumulated += uuid
+    } else {
+      //TODO: can we do it before compressing. Might save a bit
+      val unCachedRows = cachedBatchToRows(batch)
+      insert(unCachedRows.toSeq)
+    }
+    accumulated
+  }
+
+  private def cachedBatchToRows(cachedBatch: CachedBatch): Iterator[Row] = {
+
+    val requestedColumns = schema.map(_.name).toArray
+    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+
+    val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+      schema.getFieldIndex(a).get -> schema(a).dataType
+    }.unzip
+
+    val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
+    val rows = {
+      // Build column accessors
+      val columnAccessors = requestedColumnIndices.zipWithIndex.map {
+        case (schemaIndex, bufferIndex) =>
+          ColumnAccessor(schema.fields(schemaIndex).dataType,
+            ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
+      }
+      // Extract rows via column accessors
+      new Iterator[Row] {
+        private[this] val rowLen = nextRow.numFields
+
+        override def next(): Row = {
+          var i = 0
+          while (i < rowLen) {
+            columnAccessors(i).extractTo(nextRow, i)
+            i += 1
+          }
+          val row = converter(nextRow).asInstanceOf[Row]
+          row
+        }
+        override def hasNext: Boolean = columnAccessors.head.hasNext
+      }
+    }
+    rows
+  }
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    partitionColumns match {
+      case Nil => super.insert(data, overwrite)
+      case _ => insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    }
   }
 
   def insert(data: DataFrame, mode: SaveMode): Unit = {
@@ -165,17 +240,21 @@ class ColumnFormatRelation(
       externalStore.connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
+      var result = 0
       if (numRows > 1) {
         for (row <- rows) {
           ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
             row, dialect)
           stmt.addBatch()
         }
+        val insertCounts = stmt.executeBatch()
+        result = insertCounts.length
       } else {
         ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
           rows.head, dialect)
+        result = stmt.executeUpdate()
       }
-      val result = stmt.executeUpdate()
+
       stmt.close()
       result
     } finally {
@@ -345,19 +424,22 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(options)
-    StoreUtils.removeInternalProps(parametersForShadowTable)
+    ExternalStoreUtils.removeInternalProps(parametersForShadowTable)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parametersForShadowTable)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
+
+    val connProperties =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+
+    StoreUtils.validateConnProps(parameters)
 
     val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =

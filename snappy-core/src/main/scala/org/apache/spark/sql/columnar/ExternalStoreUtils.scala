@@ -6,9 +6,11 @@ import java.util.Properties
 
 import scala.StringBuilder
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
 
+import org.apache.spark.sql.catalyst.{expressions, CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -18,6 +20,7 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
 import org.apache.spark.{Logging, SparkContext}
 /**
@@ -91,6 +94,47 @@ private[sql] object ExternalStoreUtils extends Logging {
     parameters.remove(JdbcExtendedUtils.SCHEMA_PROPERTY)
     parameters.remove("serialization.format")
     table
+  }
+
+  def removeSamplingOption(parameters: mutable.Map[String, String]): Map[String, String] = {
+
+    val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", " timeInterval")
+
+    val optMap = new mutable.HashMap[String, String]
+
+    optSequence.map(key => {
+      val value = parameters.remove(key)
+      value match {
+        case Some(v) => optMap += ((key.normalize, v))
+        case None => // Do nothing
+      }
+    })
+    optMap.toMap
+  }
+
+  def getNullTypes(url: String, schema: StructType): Array[Int] = {
+    val dialect = JdbcDialects.get(url)
+    val nullTypes: Array[Int] = schema.fields.map { field =>
+      dialect.getJDBCType(field.dataType).map(_.jdbcNullType).getOrElse(
+        field.dataType match {
+          case IntegerType => java.sql.Types.INTEGER
+          case LongType => java.sql.Types.BIGINT
+          case DoubleType => java.sql.Types.DOUBLE
+          case FloatType => java.sql.Types.REAL
+          case ShortType => java.sql.Types.INTEGER
+          case ByteType => java.sql.Types.INTEGER
+          case BooleanType => java.sql.Types.BIT
+          case StringType => java.sql.Types.CLOB
+          case BinaryType => java.sql.Types.BLOB
+          case TimestampType => java.sql.Types.TIMESTAMP
+          case DateType => java.sql.Types.DATE
+          case t: DecimalType => java.sql.Types.DECIMAL
+          case _ => throw new IllegalArgumentException(
+            s"Can't translate null value for field $field")
+        })
+    }
+    nullTypes
   }
 
   def defaultStoreURL(sc: SparkContext): String = {
@@ -361,5 +405,42 @@ object ConnectionType extends Enumeration {
   val Embedded, Net, Unknown = Value
 }
 
+private[sql] class ArrayBufferForRows(getConnection: () => Connection,
+    table: String,
+    schema: StructType,
+    url: String,
+    batchSize: Int) {
 
+  var buff = new ArrayBuffer[InternalRow]()
+  val toScala = CatalystTypeConverters.createToScalaConverter(schema)
+  var rowCount = 0
+
+  val nullTypes = ExternalStoreUtils.getNullTypes(url, schema)
+
+  def appendRow_(row: InternalRow, flush: Boolean): Unit = {
+    if (row != expressions.EmptyRow) {
+      buff += row
+      rowCount += 1
+    }
+    if (rowCount % batchSize == 0 || flush) {
+      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(toScala(_).asInstanceOf[Row]),
+        schema, nullTypes, batchSize)
+      buff = new ArrayBuffer[InternalRow]()
+      rowCount = 0
+    }
+  }
+
+  // empty for now
+  def endRows(u: Unit): Unit = {}
+
+  def appendRow(u: Unit, row: InternalRow): Unit = {
+    appendRow_(row, flush = false)
+  }
+
+  def forceEndOfBatch(): Unit = {
+    if (rowCount > 0) {
+      appendRow_(expressions.EmptyRow, flush = true)
+    }
+  }
+}
 case class ConnectionProperties(url:String , driver:String, poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
