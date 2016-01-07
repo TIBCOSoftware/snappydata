@@ -292,7 +292,7 @@ private[sql] case class DropTable(
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     if (temporary) snc.dropTempTable(tableName, ifExists)
-    else snc.dropExternalTable(tableName, ifExists)
+    else snc.dropTable(tableName, ifExists)
     Seq.empty
   }
 }
@@ -315,7 +315,7 @@ private[sql] case class CreateIndex(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc =sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnExternalTable(tableName, sql)
+    snc.createIndexOnTable(tableName, sql)
     Seq.empty
   }
 }
@@ -325,7 +325,7 @@ private[sql] case class DropIndex(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndexOnExternalTable(sql)
+    snc.dropIndexOnTable(sql)
     Seq.empty
   }
 }
