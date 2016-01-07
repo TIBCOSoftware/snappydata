@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.tools
 
 import java.io.{File, IOException}
@@ -8,7 +24,7 @@ import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
 import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdDistributionLocator, GfxdUtilLauncher}
-import com.pivotal.gemfirexd.tools.internal.GfxdServerLauncher
+import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools, GfxdServerLauncher}
 import io.snappydata.LocalizedMessages
 
 /**
@@ -20,7 +36,7 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
 
   import SnappyUtilLauncher._
 
-  protected override def getTypes() : java.util.Map[String, GemFireUtilLauncher#CommandEntry] = {
+  protected override def getTypes(): java.util.Map[String, GemFireUtilLauncher#CommandEntry] = {
     val types = super.getTypes()
 
     types.put("server", new CommandEntry(classOf[ServerLauncher], LocalizedMessages.res.getTextMessage("UTIL_Server_Usage"), false))
@@ -31,6 +47,24 @@ class SnappyUtilLauncher extends GfxdUtilLauncher {
       LocalizedMessages.res.getTextMessage("UTIL_Lead_Usage"), false))
 
     types.put(SCRIPT_NAME, new CommandEntry(classOf[ij], LocalizedMessages.res.getTextMessage("UTIL_SnappyShell_Usage"), false))
+    val product = LocalizedMessages.res.getTextMessage("FS_PRODUCT")
+    types.put("agent", new CommandEntry(classOf[GfxdAgentLauncher],
+      LocalizedStrings.GemFireUtilLauncher_Agent_Usage.toString(Array[AnyRef](product)), false))
+
+    // MiscTools utilities
+    val miscToolsIterator = MiscTools.getValidCommands.entrySet.iterator()
+    while (miscToolsIterator.hasNext) {
+      val entry = miscToolsIterator.next()
+      types.put(entry.getKey, new CommandEntry(classOf[MiscTools], LocalizedMessages.res.getTextMessage(entry.getValue), true))
+    }
+
+
+    // JarTools utilities
+    val jarToolsIterator = JarTools.getValidCommands.entrySet.iterator()
+    while (jarToolsIterator.hasNext) {
+      val entry = jarToolsIterator.next()
+      types.put(entry.getKey, new CommandEntry(classOf[JarTools], LocalizedMessages.res.getTextMessage(entry.getValue), true))
+    }
 
     types
   }
