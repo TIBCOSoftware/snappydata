@@ -1,8 +1,6 @@
 package org.apache.spark.sql.columnar
 
-import java.nio.ByteBuffer
 import java.sql.Connection
-import java.util.Properties
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -11,7 +9,6 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
@@ -124,6 +121,14 @@ class JDBCAppendableRelation(
     insert(df.rdd, df, overwrite)
   }
 
+  def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
+      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+    //TODO - currently using the length from the part Object but it needs to be handled more generically
+    //in order to replace UUID
+    val uuid = externalStore.storeCachedBatch(table , batch)
+    accumulated += uuid
+  }
+
   protected def insert(rdd : RDD[Row], df: DataFrame, overwrite: Boolean) : Unit = {
 
     assert(df.schema.equals(schema))
@@ -138,13 +143,6 @@ class JDBCAppendableRelation(
 
     val output = df.logicalPlan.output
     val cached = rdd.mapPartitionsPreserveWithIndex({case (split, rowIterator) =>
-      def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-          batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-        //TODO - currently using the length from the part Object but it needs to be handled more generically
-        //in order to replace UUID
-        val uuid = externalStore.storeCachedBatch(table , batch)
-        accumulated += uuid
-      }
 
       def columnBuilders = output.map { attribute =>
         val columnType = ColumnType(attribute.dataType)
@@ -310,7 +308,7 @@ class ColumnarRelationProvider
     val connectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val partitions = ExternalStoreUtils.getTotalPartitions(parameters, true)
+    val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parameters)
 
     val externalStore = getExternalSource(sqlContext, connectionProperties, partitions)
 

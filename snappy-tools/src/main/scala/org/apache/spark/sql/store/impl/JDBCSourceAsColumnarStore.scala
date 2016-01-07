@@ -1,24 +1,39 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.store.impl
 
-import java.sql.{ResultSet, Statement, Connection}
-import java.util
+import java.sql.{Connection, ResultSet, Statement}
 import java.util.{Properties, UUID}
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.{SparkShellRDDHelper}
-import org.apache.spark.rdd.{RDD}
-import org.apache.spark.sql.catalyst.InternalRow
+import io.snappydata.SparkShellRDDHelper
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, ConnectionProperties, CachedBatch, ConnectionType}
-import org.apache.spark.sql.rowtable.{InternalRowIteratorOnRS, RowFormatScanRDD}
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ConnectionType}
+import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.Filter
-import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore, CachedBatchIteratorOnRS, StoreUtils}
+import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Partitioner, HashPartitioner, Partition, Logging, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
+
 import scala.reflect.ClassTag
-import scala.collection.JavaConverters._
 
 /**
  * Column Store implementation for GemFireXD.
@@ -53,12 +68,18 @@ final class JDBCSourceAsColumnarStore( _connProperties:ConnectionProperties,
         val region = Misc.getRegionForTable(resolvedName, true)
         region.asInstanceOf[AbstractRegion] match {
           case pr: PartitionedRegion =>
-            genUUIDRegionKey(bucketId, batchId.getOrElse(throw new IllegalArgumentException(
-              "JDBCSourceAsColumnarStore.getUUIDRegionKey: batchID not provided")))
+            if (bucketId == -1) {
+              val primaryBucketIds = pr.getDataStore.
+                getAllLocalPrimaryBucketIdArray
+              genUUIDRegionKey(primaryBucketIds.getQuick(
+                rand.nextInt(primaryBucketIds.size())), batchId.getOrElse(UUID.randomUUID))
+            }
+            else {
+              genUUIDRegionKey(bucketId, batchId.getOrElse(UUID.randomUUID))
+            }
           case _ =>
             genUUIDRegionKey()
         }
-
       case _ => genUUIDRegionKey(rand.nextInt(_numPartitions))
     }
     connection.close()
