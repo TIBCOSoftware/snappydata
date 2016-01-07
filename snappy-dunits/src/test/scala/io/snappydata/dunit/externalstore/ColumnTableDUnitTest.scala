@@ -88,6 +88,55 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     logger.info("Successful")
   }
 
+  // changing the test to such that batches are created
+  // and looking for column table stats
+  def testSNAP205_InsertLocalBucketsNonPartitioning(): Unit = {
+    val snc = SnappyContext(sc)
+
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt)
+    }
+    val rdd = sc.parallelize(data, 3).map(
+      s => new Data(s(0), s(1), s(2)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    // Now column table with partition only can expect
+    // local insertion. After Suranjan's change we can expect
+    // cached batches to inserted locally if no partitioning is given.
+
+    // For COLUMNTABLE, there will be distribution for the messages beyond
+    // cached batches.
+
+    //TDOD : Merge and validate test after SNAP-105
+    val p = Map.empty[String, String]
+    snc.createExternalTable(tableName, "column", dataDF.schema, p)
+
+    // we don't expect any increase in put distribution stats
+    val getPRMessageCount = new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        Int.box(Misc.getRegion("/APP/COLUMNTABLE_SHADOW_", true, false).
+            asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
+      }
+    }
+    val counts = Array(vm0, vm1, vm2).map(_.invoke(getPRMessageCount))
+    dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
+    val newCounts = Array(vm0, vm1, vm2).map(_.invoke(getPRMessageCount))
+    newCounts.zip(counts).foreach { case (c1, c2) =>
+      assert(c1 == c2, s"newCount=$c1 count=$c2")
+    }
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect()
+    assert(r.length == 1008)
+
+    snc.dropTable(tableName, ifExists = true)
+    logger.info("Successful")
+  }
+
+
   private val tableName: String = "ColumnTable"
   private val tableNameWithPartition: String = "ColumnTablePartition"
 
