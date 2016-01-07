@@ -1,4 +1,22 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.store
+
+import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -24,18 +42,24 @@ class ColumnTableTest
 
 
   after {
-    snc.dropExternalTable(tableName, ifExists = true)
-    snc.dropExternalTable("ColumnTable2", ifExists = true)
+    snc.dropTable(tableName, ifExists = true)
+    snc.dropTable("ColumnTable2", ifExists = true)
   }
 
   val tableName: String = "ColumnTable"
 
   val props = Map.empty[String, String]
 
+
+  val options = "OPTIONS (PARTITION_BY 'col1')"
+
+  val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
+
+
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "column", props)
+      snc.createTable(tableName, "column", props)
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -43,7 +67,7 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
 
 
     val result = snc.sql("SELECT * FROM " + tableName)
@@ -71,7 +95,7 @@ class ColumnTableTest
     var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
 
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
 
     intercept[AnalysisException] {
       dataDF.write.format("column").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
@@ -112,9 +136,6 @@ class ColumnTableTest
     println("Successful")
   }
 
-  val options = "OPTIONS (PARTITION_BY 'col1')"
-
-  val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
   test("Test the creation/dropping of table using SQL") {
 
@@ -171,7 +192,7 @@ class ColumnTableTest
     val dataDF = snc.createDataFrame(rdd)
 
     intercept[AnalysisException] {
-      snc.createExternalTable(tableName, "column", dataDF.schema, props)
+      snc.createTable(tableName, "column", dataDF.schema, props)
     }
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -185,7 +206,7 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     val tableName2 = "CoulmnTable2"
@@ -202,7 +223,7 @@ class ColumnTableTest
     r = result.collect
     assert(r.length == 10)
 
-    snc.dropExternalTable(tableName2)
+    snc.dropTable(tableName2)
     println("Successful")
   }
 
@@ -210,7 +231,7 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.truncateExternalTable(tableName)
@@ -233,13 +254,13 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropTable(tableName, true)
 
     intercept[AnalysisException] {
-      snc.dropExternalTable(tableName, false)
+      snc.dropTable(tableName, false)
     }
 
     intercept[AnalysisException] {
@@ -255,20 +276,20 @@ class ColumnTableTest
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
+    snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     snc.sql("DROP TABLE IF EXISTS " + tableName)
 
     intercept[AnalysisException] {
-      snc.dropExternalTable(tableName, false)
+      snc.dropTable(tableName, false)
     }
 
     intercept[AnalysisException] {
       snc.sql("DROP TABLE " + tableName)
     }
 
-    snc.dropExternalTable(tableName, true)
+    snc.dropTable(tableName, true)
 
     println("Successful")
   }
@@ -435,6 +456,37 @@ class ColumnTableTest
 
     val count = snc.sql("select * from COLUMN_TEST_TABLE10").count()
     assert(count === 1000)
+  }
+
+  test("Test PR Incorrect option") {
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE27")
+
+    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE7(OrderId INT ,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITIONBY 'OrderId'," +
+        "PERSISTENT 'ASYNCHRONOUS')")) match {
+      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
+
+  }
+
+
+  test("Test PR with EXPIRY") {
+    val snc = org.apache.spark.sql.SnappyContext(sc)
+    snc.sql("DROP TABLE IF EXISTS COLUMN_TEST_TABLE27")
+    Try(snc.sql("CREATE TABLE COLUMN_TEST_TABLE27(OrderId INT NOT NULL PRIMARY KEY,ItemId INT) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'OrderId'," +
+        "EXPIRE '200')")) match {
+      case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
+
   }
 
 }

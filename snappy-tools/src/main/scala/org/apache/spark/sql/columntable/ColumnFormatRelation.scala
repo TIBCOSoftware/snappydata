@@ -1,11 +1,30 @@
+/*
+ * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.columntable
 
 import java.nio.ByteBuffer
 import java.sql.Connection
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
@@ -26,8 +45,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
-
-import scala.collection.mutable.ArrayBuffer
 /**
  * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -407,19 +424,22 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(options)
-    StoreUtils.removeInternalProps(parametersForShadowTable)
+    ExternalStoreUtils.removeInternalProps(parametersForShadowTable)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
-    val connProperties =
-      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
     val partitions =ExternalStoreUtils.getTotalPartitions(parametersForShadowTable , false)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
+
+    val connProperties =
+      ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
+
+    StoreUtils.validateConnProps(parameters)
 
     val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =
