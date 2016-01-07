@@ -16,38 +16,35 @@
  */
 package org.apache.spark.sql.columntable
 
+import java.nio.ByteBuffer
 import java.sql.Connection
-import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceUtils
-import io.snappydata.SparkShellRDDHelper
-import org.scalatest.path
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartition, JDBCRDD, JdbcUtils}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.StoreFunctions._
-import org.apache.spark.sql.store.impl.{SparkShellRowRDD, JDBCSourceAsColumnarStore}
+import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
 import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{HashPartitioner, Logging, Partition, SparkContext}
+import org.apache.spark.{Logging, Partition}
 /**
  * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy.
@@ -88,6 +85,7 @@ class ColumnFormatRelation(
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
+  val columnBatchSize = sqlContext.conf.columnBatchSize
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(externalStore.connProperties.url)
 
@@ -120,7 +118,7 @@ class ColumnFormatRelation(
     // TODO: can we optimize the union by providing partitioner
     val colRdd = super.scanTable(table + externalStore.shadowTableNamePrefix, requiredColumns, filters)
     val union = connectionType match {
-      case ConnectionType.Embedded => {
+      case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
           connector,
@@ -136,7 +134,7 @@ class ColumnFormatRelation(
         rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
           leftIter ++ rightIter
         }
-      }
+
       //TODO: This needs to be changed for non-embedded mode, inefficient
       case _ => {
         val rowRdd = new SparkShellRowRDD(
@@ -157,8 +155,63 @@ class ColumnFormatRelation(
     union
   }
 
+  override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
+      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+    //TODO - currently using the length from the part Object but it needs to be handled more generically
+    //in order to replace UUID
+    // if number of rows are greater than columnBatchSize then store otherwise store locally
+    if (batch.numRows >= columnBatchSize) {
+      val uuid = externalStore.storeCachedBatch(table + externalStore.shadowTableNamePrefix, batch)
+      accumulated += uuid
+    } else {
+      //TODO: can we do it before compressing. Might save a bit
+      val unCachedRows = cachedBatchToRows(batch)
+      insert(unCachedRows.toSeq)
+    }
+    accumulated
+  }
+
+  private def cachedBatchToRows(cachedBatch: CachedBatch): Iterator[Row] = {
+
+    val requestedColumns = schema.map(_.name).toArray
+    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+
+    val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
+      schema.getFieldIndex(a).get -> schema(a).dataType
+    }.unzip
+
+    val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
+    val rows = {
+      // Build column accessors
+      val columnAccessors = requestedColumnIndices.zipWithIndex.map {
+        case (schemaIndex, bufferIndex) =>
+          ColumnAccessor(schema.fields(schemaIndex).dataType,
+            ByteBuffer.wrap(cachedBatch.buffers(bufferIndex)))
+      }
+      // Extract rows via column accessors
+      new Iterator[Row] {
+        private[this] val rowLen = nextRow.numFields
+
+        override def next(): Row = {
+          var i = 0
+          while (i < rowLen) {
+            columnAccessors(i).extractTo(nextRow, i)
+            i += 1
+          }
+          val row = converter(nextRow).asInstanceOf[Row]
+          row
+        }
+        override def hasNext: Boolean = columnAccessors.head.hasNext
+      }
+    }
+    rows
+  }
+
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
-    insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    partitionColumns match {
+      case Nil => super.insert(data, overwrite)
+      case _ => insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
+    }
   }
 
   def insert(data: DataFrame, mode: SaveMode): Unit = {
@@ -187,17 +240,21 @@ class ColumnFormatRelation(
       externalStore.connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
+      var result = 0
       if (numRows > 1) {
         for (row <- rows) {
           ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
             row, dialect)
           stmt.addBatch()
         }
+        val insertCounts = stmt.executeBatch()
+        result = insertCounts.length
       } else {
         ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
           rows.head, dialect)
+        result = stmt.executeUpdate()
       }
-      val result = stmt.executeUpdate()
+
       stmt.close()
       result
     } finally {
