@@ -75,4 +75,6 @@ trait AQPContext {
   def getSnappyDDLParser (planGenerator: String => LogicalPlan): DDLParser
 
   def dropSampleTable(tableName: String, ifExists: Boolean = false)
+
+  def isTungstenEnabled: Boolean
 }

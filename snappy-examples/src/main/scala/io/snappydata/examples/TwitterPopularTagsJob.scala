@@ -3,7 +3,6 @@ package io.snappydata.examples
 import java.io.PrintWriter
 
 import com.typesafe.config.Config
-import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.streaming.{SnappyStreamingJob}
 import org.apache.spark.sql.types._
@@ -19,7 +18,7 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
  *
  * To run with live twitter streaming, export twitter credentials
  * `$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>, \
- * accessToken=<accessToken>,ccessTokenSecret=<accessTokenSecret>"`
+ * accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"`
  *
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob \
@@ -37,10 +36,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     var stream: DStream[_] = null
     val pw = new PrintWriter(s"TwitterPopularTagsJob-${System.currentTimeMillis}.out")
 
-    val schema = StructType(List(StructField("id", LongType),
-      StructField("text", StringType),
-      StructField("retweets", IntegerType),
-      StructField("hashtag", StringType)))
+    val schema = StructType(List(StructField("hashtag", StringType)))
 
     if (jobConfig.hasPath("consumerKey") && jobConfig.hasPath("consumerKey")
       && jobConfig.hasPath("accessToken")  && jobConfig.hasPath("accessTokenSecret") ) {
@@ -61,29 +57,29 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         StreamingUtils.convertTweetToRow(_, schema)
       )
 
+    val tweetStream = stream.window(Seconds(1), Seconds(1)).flatMap(StreamingUtils.convertPopularTweetsToRow(_))
 
     val topKOption = Map(
         "epoch" -> System.currentTimeMillis(),
         "timeInterval" -> 2000,
         "size" -> 10
       )
-    snsc.snappyContext.createTopK("topktable", "hashtag",schema, topKOption, false)
+
+    snsc.snappyContext.createTopK("topktable", "hashtag", schema, topKOption, false)
 
     snsc.snappyContext.saveStream(rowStream,
       Seq("topktable"),
       None
     )
 
+    val schemaDStream = snsc.createSchemaDStream(tweetStream)
 
-    val tableName = "tweetStream"
-    snsc.snappyContext.dropExternalTable(tableName,true )
-    snsc.snappyContext.createExternalTable(tableName, "column", schema, Map.empty[String, String])
+    val tableName = "retweetTable"
+    snsc.snappyContext.dropTable(tableName,true )
+    snsc.snappyContext.createTable(tableName, "row", schemaDStream.schema , Map.empty[String, String])
 
-
-    rowStream.foreachRDD(rdd => {
-      snsc.snappyContext.createDataFrame(rdd, schema).
-        write.mode(SaveMode.Append).saveAsTable(tableName)
-
+    schemaDStream.foreachDataFrame(df => {
+      df.write.mode(SaveMode.Append).saveAsTable(tableName)
     })
 
     snsc.start()
@@ -93,23 +89,25 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
       val end = System.currentTimeMillis + 90000
       while (end > System.currentTimeMillis()) {
         Thread.sleep(2000)
-        pw.println("********Top 10 hash tags for the last interval *******")
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 10000, System.currentTimeMillis).collect.foreach(result => {
+        pw.println("\n******** Top 10 hash tags for the last interval *******\n")
+
+        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 2000, System.currentTimeMillis).collect.foreach(result => {
           pw.println(result.toString)
         })
 
-        pw.println("******* Top 10 hash tags until now *******")
+        pw.println("\n************ Top 10 hash tags until now ***************\n")
 
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 90000, System.currentTimeMillis).collect.foreach(result => {
+        snsc.snappyContext.queryTopK("topktable").collect.foreach(result => {
           pw.println(result.toString)
         })
 
-        pw.println("******* Top 10 hash tags until now using gemxd query *******")
-        snsc.snappyContext.sql(s"select hashtag, count(*) as tagcount from  ${tableName} group " +
-          " by hashtag order by tagcount desc limit 10").collect.foreach(row => {
-          pw.println(row.toString())
-        })
+
       }
+      pw.println("\n####### Top 10 popular tweets using gemxd query #######\n")
+      snsc.snappyContext.sql(s"select retweetCnt as RetweetsCount, retweetTxt as Text from ${tableName} order by RetweetsCount desc limit 10").collect.foreach(row => {
+        pw.println(row.toString())
+      })
+      pw.println("\n#######################################################")
     } finally {
       pw.close()
 

@@ -1,40 +1,62 @@
 package io.snappydata.examples
 
+import java.io.{PrintWriter}
 import com.typesafe.config.Config
-import org.apache.spark.sql.{SaveMode, DataFrame, SnappySQLJob}
+import org.apache.spark.sql.{DataFrame, SnappySQLJob}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
-import org.apache.spark.sql.snappy._
 
 /**
- * Fetches already created tables, sample them and run a aggregate query and returns
- * the results in a Map. This Map will be sent over REST.
+ * Fetches already created tables. Airline table is already persisted in
+ * Snappy store. Cache the airline table in Spark cache as well for
+ * comparison. Sample airline table and persist it in Snappy store.
+ * Run a aggregate query on all the three tables and return the results in
+ * a Map.This Map will be sent over REST.
  */
 object AirlineDataJob extends SnappySQLJob {
 
   override def runJob(snc: C, jobConfig: Config): Any = {
-
     val colTableName = "airline"
+    val parquetTable = "STAGING_AIRLINE"
     val rowTableName = "airlineref"
-    val sampleTableName = "airlineSampled"
+    def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
+    val pw = new PrintWriter("AirlineDataJob.out")
 
     // Get the tables that were created using sql scripts via snappy-shell
     val airlineDF: DataFrame = snc.table(colTableName)
     val airlineCodeDF: DataFrame = snc.table(rowTableName)
+    val airlineParquetDF: DataFrame = snc.table(parquetTable)
 
-    // Sample the airline table to get a sampled table
-    // TODO: This code will change after DataSource API is provided for sampling.
-    val sampleDF = airlineDF.stratifiedSample(Map("qcs" -> "UniqueCarrier", "fraction" -> 0.01))
-    sampleDF.write.mode(SaveMode.Append).format("column").
-        options(Map[String, String]()).saveAsTable(sampleTableName)
+    // Cache the airline data in a Spark table as well
+    airlineParquetDF.cache()
+    airlineParquetDF.count()
 
-    // Data Frame query to get number of times FlightNum 2626 has been delayed
-    val actualResult = airlineDF.select("FlightNum", "ArrDelay").
-        filter("FlightNum = 2626").groupBy(airlineDF("FlightNum")).agg("ArrDelay" -> "count")
+    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
+   val actualResult = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
+        equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
+      airlineDF("Year_"), airlineDF("Month_"), airlineCodeDF("DESCRIPTION")).
+        agg("ArrDelay" -> "avg", "FlightNum" -> "count")
     val start = System.currentTimeMillis
     val result = actualResult.collect()
     val totalTime = (System.currentTimeMillis - start)
-    Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> result)
-    // Data Frame query to get number of times FlightNum 2626 has been delayed
+    pw.println(s"****** Output of Airline Snappy table took ${totalTime}ms ******")
+    result.foreach(rs => {
+      pw.println(rs.toString)
+    })
+
+    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
+    val parquetResult = airlineParquetDF.join(airlineCodeDF, airlineParquetDF.col("UniqueCarrier").
+        equalTo(airlineCodeDF("CODE"))).groupBy(airlineParquetDF("UniqueCarrier"),
+      airlineParquetDF("Year"), airlineParquetDF("Month"), airlineCodeDF("DESCRIPTION")).
+        agg("ArrDelay" -> "avg", "FlightNum" -> "count")
+    val startP = System.currentTimeMillis
+    val resultP = parquetResult.collect()
+    val totalTimeP = (System.currentTimeMillis - startP)
+    pw.println(s"\n****** Output of Airline Spark table took ${totalTimeP}ms******")
+    resultP.foreach(rs => {
+      pw.println(rs.toString)
+    })
+
+    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
     // TODO: Fix it after the SNAP-304 is fixed
     /*
     val startSample = System.currentTimeMillis
@@ -43,10 +65,8 @@ object AirlineDataJob extends SnappySQLJob {
     val totalTimeSample = (System.currentTimeMillis - startSample)
     */
 
-
-    /*Map(s"Exact table: ARR_DELAY :(${totalTime}ms)" -> actualResult.collect(),
-      s"Sample table: ARR_DELAY :(${totalTimeSample}ms)" -> sampleResult.collect()
-    )*/
+    pw.close()
+    Map("The output of the queries is in the following file: " -> s"${getCurrentDirectory}/AirlineDataJob.out")
   }
 
   override def validate(sc: C, config: Config): SparkJobValidation = {

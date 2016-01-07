@@ -7,7 +7,8 @@ CREATE TABLE STAGING_AIRLINE
   USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');
 
 ----- CREATE COLUMN TABLE -----  
-CREATE TABLE AIRLINE USING column OPTIONS() AS (
+----- Airline row count is small so we use 5 buckets (i.e. 5 partitions) -----
+CREATE TABLE AIRLINE USING column OPTIONS(buckets '5') AS (
   SELECT Year AS Year_, Month AS Month_ , DayOfMonth,
     DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
     UniqueCarrier, FlightNum, TailNum, ActualElapsedTime,
