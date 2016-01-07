@@ -432,7 +432,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
 
-    val partitions =ExternalStoreUtils.getTotalPartitions(parametersForShadowTable , false)
+    val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parametersForShadowTable)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(parametersForShadowTable, false, true)
 

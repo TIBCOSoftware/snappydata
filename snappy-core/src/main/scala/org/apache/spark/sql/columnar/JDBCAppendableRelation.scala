@@ -310,7 +310,7 @@ class ColumnarRelationProvider
     val connectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val partitions = ExternalStoreUtils.getTotalPartitions(parameters, true)
+    val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parameters)
 
     val externalStore = getExternalSource(sqlContext, connectionProperties, partitions)
 
