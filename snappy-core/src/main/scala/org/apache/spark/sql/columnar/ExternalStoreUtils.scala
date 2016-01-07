@@ -28,8 +28,8 @@ import org.apache.spark.{Logging, SparkContext}
  */
 private[sql] object ExternalStoreUtils extends Logging {
 
-  final val DEFAULT_COLUMN_TABLE_BUCKETS = "199"
-  final val DEFAULT_ROW_TABLE_BUCKETS = "113"
+  final val DEFAULT_TABLE_BUCKETS = "113"
+  final val DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE = "7"
 
   def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean) = {
@@ -358,11 +358,14 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def getTotalPartitions(parameters: mutable.Map[String, String], rowTable: Boolean): Int = {
+  def getTotalPartitions(sc: SparkContext, parameters: mutable.Map[String, String]): Int = {
     (parameters.get("BUCKETS").getOrElse(
-      if (rowTable) DEFAULT_ROW_TABLE_BUCKETS else DEFAULT_COLUMN_TABLE_BUCKETS)).toInt
+      SnappyContext.getClusterMode(sc) match {
+        case LocalMode(_, _) => DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE
+        case _ => DEFAULT_TABLE_BUCKETS
+      }
+    )).toInt
   }
-
 
   def cachedBatchesToRows(
       cacheBatches: Iterator[CachedBatch] ,  requestedColumns:Array[String], schema:StructType): Iterator[InternalRow] = {
