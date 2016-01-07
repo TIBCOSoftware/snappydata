@@ -15,7 +15,8 @@ import org.apache.spark.streaming.{Duration, Time}
   * It is similar to SchemaRDD, which offers the similar functions
   * Internally, RDD of each batch duration is treated as a small
   * table and CQs are evaluated on those small tables
-  *
+  * Some of the code and idea is borrowed from the project:
+  * https://github.com/Intel-bigdata/spark-streamingsql
   * @param snsc
   * @param queryExecution
   *

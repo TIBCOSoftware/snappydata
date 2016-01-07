@@ -1,12 +1,10 @@
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.unsafe.types.UTF8String
 import twitter4j.Status
 
-/**
-  * Created by ymahajan on 22/12/15.
-  */
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.unsafe.types.UTF8String
+
 class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[InternalRow] = {

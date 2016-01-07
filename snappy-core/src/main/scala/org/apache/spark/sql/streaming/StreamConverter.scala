@@ -2,9 +2,6 @@ package org.apache.spark.sql.streaming
 
 import java.io.InputStream
 
-/**
-  * Created by ymahajan on 25/09/15.
-  */
 trait StreamConverter extends Serializable {
   def convert(inputStream: InputStream): Iterator[Any]
 
