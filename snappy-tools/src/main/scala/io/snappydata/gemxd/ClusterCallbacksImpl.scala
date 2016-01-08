@@ -26,7 +26,7 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+import org.apache.spark.scheduler.cluster.{SnappyClusterManager, SnappyEmbeddedModeClusterManager}
 
 /**
   * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -38,7 +38,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def getLeaderGroup : util.HashSet[String] = {
     val leaderServerGroup = new util.HashSet[String]
     leaderServerGroup.add(LeadImpl.LEADER_SERVERGROUP)
-    return leaderServerGroup;
+    leaderServerGroup
   }
 
   override def launchExecutor(driverUrl: String, driverDM: InternalDistributedMember): Unit = {
@@ -54,7 +54,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def getDriverURL: String = {
-    return SnappyEmbeddedModeClusterManager.schedulerBackend match {
+
+    return SnappyClusterManager.cm.map(_.schedulerBackend) match {
       case Some(x) =>
         logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
