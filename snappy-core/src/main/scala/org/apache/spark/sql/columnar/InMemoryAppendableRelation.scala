@@ -52,9 +52,9 @@ private[sql] class InMemoryAppendableRelation(
     new ArrayBuffer[RDD[CachedBatch]]())
     extends InMemoryRelation(output, useCompression, batchSize,
       storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
-          _stats: Statistics,
-          _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow])
-    with MultiInstanceRelation with InMemoryAppendableRelationTrait{
+      _stats: Statistics,
+      _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow])
+    with MultiInstanceRelation with InMemoryAppendableRelationTrait {
 
   override private[sql] val reservoirRDD: Option[RDD[InternalRow]] = None
 
@@ -109,7 +109,7 @@ private[sql] class InMemoryAppendableRelation(
   override def withOutput(newOutput: Seq[Attribute]): InMemoryRelation = {
     new InMemoryAppendableRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName)(super.cachedColumnBuffers,
-          statisticsToBePropagated, batchStats, _cachedBufferList)
+      statisticsToBePropagated, batchStats, _cachedBufferList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -122,8 +122,8 @@ private[sql] class InMemoryAppendableRelation(
       storageLevel,
       child,
       tableName)(super.cachedColumnBuffers,
-          statisticsToBePropagated,
-          batchStats, _cachedBufferList).asInstanceOf[this.type]
+      statisticsToBePropagated,
+      batchStats, _cachedBufferList).asInstanceOf[this.type]
   }
 
   def getInMemoryRelationCachedColumnBuffers: RDD[CachedBatch] = super.cachedColumnBuffers
