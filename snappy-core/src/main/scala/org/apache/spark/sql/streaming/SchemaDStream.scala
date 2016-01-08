@@ -77,7 +77,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
       DataFrame(snappyContext, plan)
     }
     catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    snappyContext.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
+    snappyContext.cacheManager.asInstanceOf[SnappyCacheManager].cacheQuery_ext(dummyDF, Some(tableIdent.table),
       externalStore)
     foreachRDD(rdd => {
       snappyContext.appendToCacheRDD(rdd, tableIdent.table, schema)

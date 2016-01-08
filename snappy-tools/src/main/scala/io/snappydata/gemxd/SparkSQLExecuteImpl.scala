@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.{SparkContext, Logging, SparkEnv}
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  *
@@ -303,14 +303,14 @@ object SparkSQLExecuteImpl {
 object SnappyContextPerConnection {
   private lazy val concurrentMap = new java.util.concurrent.ConcurrentHashMap[Long, SnappyContext]()
 
-  def  getSnappyContextForConnection(connectionID:Long ) :SnappyContext= {
-    if (concurrentMap.get(connectionID) == null ) {
-      concurrentMap.put(connectionID , SnappyContext(null))
+  def getSnappyContextForConnection(connectionID: Long): SnappyContext = {
+    if (concurrentMap.get(connectionID) == null) {
+      concurrentMap.put(connectionID, SnappyContext.getOrCreate(null).newSession())
     }
-      concurrentMap.get(connectionID)
+    concurrentMap.get(connectionID)
   }
 
-  def removeSnappyContext(connectionID:Long):Unit = {
+  def removeSnappyContext(connectionID: Long): Unit = {
     concurrentMap.remove(connectionID)
   }
 }
