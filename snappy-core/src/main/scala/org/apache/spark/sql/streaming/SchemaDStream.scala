@@ -82,9 +82,33 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
       catalog.newQualifiedTableName(tableName),
       logicalPlan)
 
-    catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
-      Array.empty[String], "stream", Map.empty[String, String],
-      ExternalTableType.Stream)
+  def saveToExternalTable(externalTable: String,
+                          jdbcSource: Map[String, String]): Unit = {
+    saveToExternalTable(externalTable, this.schema, jdbcSource)
+  }
+
+  private def saveToExternalTable(externalTable: String,
+                                  schema : StructType,
+   jdbcSource: Map[String, String]): Unit = {
+    require(externalTable != null && externalTable.length > 0,
+      "saveToExternalTable: expected non-empty table name")
+
+    val tableIdent = catalog.newQualifiedTableName(externalTable)
+    val externalStore = catalog.getExternalTable(jdbcSource)
+    catalog.createExternalTableForCachedBatches(tableIdent.table,
+      externalStore)
+    val attributeSeq = schema.toAttributes
+    val dummyDF = {
+      val plan: LogicalRDD = LogicalRDD(attributeSeq,
+        new DummyRDD(snappyContext))(snappyContext)
+      DataFrame(snappyContext, plan)
+    }
+    catalog.tables.put(tableIdent, dummyDF.logicalPlan)
+    snappyContext.cacheManager.asInstanceOf[SnappyCacheManager].cacheQuery_ext(dummyDF, Some(tableIdent.table),
+      externalStore)
+    foreachRDD(rdd => {
+      snappyContext.appendToCacheRDD(rdd, tableIdent.table, schema)
+    })
   }
 
   /** Returns the schema of this SchemaDStream (represented by

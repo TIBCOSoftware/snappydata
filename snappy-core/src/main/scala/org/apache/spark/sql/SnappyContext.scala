@@ -35,7 +35,8 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Scala
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
-import org.apache.spark.sql.execution.{ConnectionPool, LogicalRDD, SparkPlan}
+import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.{ConnectionPool, ExtractPythonUDFs, LogicalRDD, SparkPlan}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -69,29 +70,22 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  * @todo Provide links to above descriptions
  *
  */
-
-class SnappyContext protected[spark] (@transient sc: SparkContext)
-    extends SQLContext(sc) with Serializable with Logging {
+class SnappyContext protected[spark](@transient override val sparkContext: SparkContext,
+    override val listener: SQLListener,
+    override val isRootContext: Boolean ,
+    val aqpContext: AQPContext = GlobalSnappyInit.getAQPContext)
+    extends SQLContext(sparkContext, aqpContext.getSnappyCacheManager, listener, isRootContext)
+    with Serializable with Logging {
 
   self =>
-
-  val aqpContext = Try {
-    val mirror = u.runtimeMirror(getClass.getClassLoader)
-    val cls = mirror.classSymbol(Class.forName(SnappyContext.aqpContextImplClass))
-    val clsType = cls.toType
-    val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
-    val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
-    val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
-    runtimeCtr().asInstanceOf[AQPContext]
-  }  match {
-    case Success(v) => v
-    case Failure(_) => AQPDefault
+  protected[spark] def this(sc: SparkContext) {
+    this(sc, SQLContext.createListenerAndUI(sc), true)
   }
 
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  GlobalSnappyInit.initGlobalSnappyContext(sc)
+  GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -102,6 +96,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     }else {
       false
     }
+  }
+
+  override def newSession(): SnappyContext = {
+    new SnappyContext(this.sparkContext, this.listener, false, this.aqpContext)
   }
 
   @transient
@@ -118,8 +116,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   @transient
   override lazy val catalog = this.aqpContext.getSnappyCatalogue(this)
 
-  @transient
-  override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
+  //@transient
+  //override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
+
 
   /**
    * :: DeveloperApi ::
@@ -592,9 +591,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     var conn: Connection = null
     try {
       val connProperties =
-        ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
+        ExternalStoreUtils.validateAndGetAllProps(sparkContext, new mutable.HashMap[String, String])
       conn = ExternalStoreUtils.getConnection(connProperties.url, connProperties.connProps,
-        JdbcDialects.get(connProperties.url), Utils.isLoner(sc))
+        JdbcDialects.get(connProperties.url), Utils.isLoner(sparkContext))
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
@@ -716,7 +715,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
       rdd: RDD[T],
       processPartition: Iterator[T] => U,
       resultHandler: (Int, U) => Unit): Unit = {
-    self.sc.runJob(rdd, processPartition, resultHandler)
+    self.sparkContext.runJob(rdd, processPartition, resultHandler)
   }
 
   @transient
@@ -775,6 +774,23 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
  * @todo document me
  */
 object GlobalSnappyInit {
+
+  private val aqpContextImplClass = "org.apache.spark.sql.execution.AQPContextImpl"
+  private[spark] def getAQPContext : AQPContext = {
+     Try {
+      val mirror = u.runtimeMirror(getClass.getClassLoader)
+      val cls = mirror.classSymbol(Class.forName(aqpContextImplClass))
+      val clsType = cls.toType
+      val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
+      val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
+      val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
+      runtimeCtr().asInstanceOf[AQPContext]
+    }  match {
+      case Success(v) => v
+      case Failure(_) => AQPDefault
+    }
+  }
+
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
 
@@ -820,8 +836,6 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
-
-  private val aqpContextImplClass = "org.apache.spark.sql.execution.AQPContextImpl"
 
   var SnappySC:SnappyContext = null
 

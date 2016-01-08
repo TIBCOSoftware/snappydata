@@ -40,6 +40,8 @@ import org.apache.spark.sql.{execution => sparkexecution}
  * Created by ashahid on 12/11/15.
  */
 object AQPDefault extends AQPContext{
+  private lazy val cacheManager = new SnappyCacheManager()
+
   protected[sql] def executePlan(context: SnappyContext, plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(context, plan)
 
@@ -94,7 +96,7 @@ object AQPDefault extends AQPContext{
 
   def getPlanner(context: SnappyContext) : SparkPlanner = new DefaultPlanner(context)
 
-  def getSnappyCacheManager: SnappyCacheManager = new SnappyCacheManager()
+  def getSnappyCacheManager: SnappyCacheManager = cacheManager
 
   def getSQLDialectClassName: String = classOf[SnappyParserDialect].getCanonicalName
 
