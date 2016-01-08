@@ -1,7 +1,8 @@
 package org.apache.spark.sql.aqp
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.ScalaReflection
+import org.apache.spark.sql.catalyst.{CatalystConf, ScalaReflection}
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, Catalog, Analyzer}
 import org.apache.spark.sql.execution.datasources.DDLParser
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql._
@@ -77,4 +78,7 @@ trait AQPContext {
   def dropSampleTable(tableName: String, ifExists: Boolean = false)
 
   def isTungstenEnabled: Boolean
+
+  def createAnalyzer( catalog: SnappyStoreHiveCatalog, registry: FunctionRegistry,
+                     conf: SQLConf): Analyzer
 }

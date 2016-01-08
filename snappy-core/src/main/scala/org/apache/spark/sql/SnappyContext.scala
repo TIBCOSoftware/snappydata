@@ -704,19 +704,8 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   @transient
-  override protected[sql] lazy val analyzer: Analyzer =
-    new Analyzer(catalog, functionRegistry, conf) {
-      override val extendedResolutionRules =
-        ExtractPythonUDFs ::
-            sparkexecution.datasources.PreInsertCastAndRename ::
-         //   ReplaceWithSampleTable ::
-          //  WeightageRule ::
-            //TestRule::
-            Nil
-
-      override val extendedCheckRules = Seq(
-        sparkexecution.datasources.PreWriteCheck(catalog))
-    }
+  override protected[sql] lazy val analyzer: Analyzer = this.aqpContext.createAnalyzer(catalog, functionRegistry,
+    conf)
 
   @transient
   override protected[sql] val planner = this.aqpContext.getPlanner(this)
