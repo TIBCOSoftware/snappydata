@@ -48,4 +48,108 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 
 ## Getting started
 
+###Objectives
+
+- **In-memory Column and Row tables**: Illustrate both SQL syntax and Spark API to create and manage column tables for large data and how row tables can be used for reference data and can be replicated to each node in the cluster. 
+- **OLAP, OLTP operations**: We run analytic class SQL queries (full scan with aggregations) on column tables and fully distributed join queries and observe the space requirements as well as the performance of these queries. For OLTP, we run simple update queries - you can note the Spark API extensions to support mutations in Spark. 
+- **AQP**: We run the same analytic queries by creating adjunct stratified samples to note the performance difference - can we get close to interactive query performance speeds?
+- **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. The SnappyData value add demonstrated here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
+
+###Start the SnappyData Cluster
+Like Spark, SnappyData can also be run in “local” mode(link?).  Here we use a cluster to show how snappyData running as a database server cluster. 
+Start the cluster using sbin/snappy-start-all.sh. This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Details on the architecture is available [here]. Servers and lead are configured to use 1GB of memory by default. 
+![ClusterArchitecture](https://drive.google.com/file/d/0B6s-Dkb7LKolcHhPMDhtYjRuTkU/view?usp=sharing)
+
+
+```All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [docs_config]() discusses the custom configuration and startup options```
+
+> ####Note
+>The quick start scripts use ssh to start up various processes. By default, this requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please execute the following commands from your shell prompt.
+```
+$ ssh-keygen -t dsa -P '' -f ~/.ssh/id_dsa   
+$ cat ~/.ssh/id_dsa.pub >> ~/.ssh/authorized_keys 
+```
+Now start the cluster ...
+
+```
+$ sbin/snappy-start-all.sh 
+  (roughly can take upto a minute. Associated logs are in the ‘work’ sub-directory)
+This would output something like this ...
+localhost: Starting SnappyData Locator using peer discovery on: 0.0.0.0[10334]
+...
+localhost: SnappyData Locator pid: 56703 status: running
+
+localhost: Starting SnappyData Server using locators for peer discovery: jramnara-mbpro[10334]   (port used for members to form a p2p cluster)
+localhost: SnappyData Server pid: 56819 status: running
+localhost:   Distributed system now has 2 members.
+
+localhost: Starting SnappyData Leader using locators for peer discovery: jramnara-mbpro[10334]
+localhost: SnappyData Leader pid: 56932 status: running
+localhost:   Distributed system now has 3 members.
+
+localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mbpro(56819:datastore)<v1>:39737
+
+```
+You can check the state of the cluster using [Pulse](link) - a graphical dashboard for monitoring vital, real-time health and performance of SnappyData members. 
+
+At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and to SQL requests via JDBC/ODBC.
+
+> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL.
+
+### Getting stated using SQL
+
+The SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster)
+
+```sql
+// from the SnappyData base directory
+$ cd quickstart/scripts
+$ ../../bin/snappy-shell
+Version 2.0-SNAPSHOT.1
+snappy> 
+
+Connect to the cluster ..
+snappy> connect client 'localhost:1527';
+snappy> show connections; 
+
+Check the cluster status ..
+snappy> select id, kind, status, host, port from sys.members;
+this will list each cluster member and its status.
+```
+> #### Note
+> The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
+Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236)
+
+
+#### Create column, row tables and load data
+[Column tables](columnTables) organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). 
+```sql
+snappy> run 'create_and_load_column_table.sql';
+snappy> select count(*) from airline; //row count 
+
+This script must be in the current working directory (scripts).
+It first drops the tables if already available, then loads parquet formatted data into a temporary spark table then saves in column table called Airline.
+SQL used to create a column table follows the Spark Data source access model:
+
+CREATE TABLE AIRLINE (<column definitions>)
+ USING column OPTIONS(buckets '5') ;
+
+Use of standard SQL (i.e. no USING) will result in creation of a Row table.   
+```
+
+[Row tables](rowTables), unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.  
+_create table_ DDL allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](docs) for the details.
+
+```sql
+snappy> run 'create_and_load_row_table.sql';
+snappy> select count(*) from airlineref; //row count 
+
+This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
+```
+
+> ### lots more to come
+
+- Create column and row tables ... what is a column table and row table .. 
+- How to experiment with these tables
+-  ....
+
 
