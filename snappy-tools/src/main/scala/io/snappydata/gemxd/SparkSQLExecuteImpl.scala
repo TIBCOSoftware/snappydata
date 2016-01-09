@@ -54,7 +54,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private lazy val schema = df.schema
 
-  private val resultsRdd = df.queryExecution.executedPlan.execute()
+  private val resultsRdd = df.queryExecution.executedPlan.execute().map(_.copy())
 
   override def serializeRows(out: DataOutput) = {
     var numBytes = 0
