@@ -94,6 +94,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
     queryDataXD(conn, tableName)
     dropTableXD(conn, tableName)
+
+    Snap319(conn)
   }
 
   def createTableXD(conn: Connection, tableName: String, usingStr: String): Unit = {
@@ -107,6 +109,28 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val s = conn.createStatement()
     s.execute("set spark.sql.shuffle.partitions=5")
     s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) ")
+  }
+
+  def Snap319(conn: Connection): Unit = {
+    {
+      val snc = org.apache.spark.sql.SnappyContext(sc)
+      snc.sql("set spark.sql.shuffle.partitions=10")
+      val val1 = snc.getAllConfs.get("spark.sql.shuffle.partitions").getOrElse("0")
+      assert(val1.equals("10"), "Expect 10 but got " + val1)
+
+      { // Change by DRDA has no effects
+        val s = conn.createStatement()
+        s.execute("set spark.sql.shuffle.partitions=5")
+        val val2 = snc.getAllConfs.get("spark.sql.shuffle.partitions").getOrElse("0")
+        assert(val2.equals("10"), "Expect 10 but got " + val2)
+      }
+    }
+
+    { // This setting has no effect in other Snappy Context
+      val snc3 = org.apache.spark.sql.SnappyContext(sc)
+      val val3 = snc3.getAllConfs.get("spark.sql.shuffle.partitions").getOrElse("0")
+      assert(val3.equals("0"), "Expect 0 but got " + val3)
+    }
   }
 
   def failCreateTableXD(conn : Connection, tableName : String, doFail : Boolean, usingStr : String): Unit = {

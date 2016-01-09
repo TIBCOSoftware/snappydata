@@ -74,8 +74,8 @@ object StoreUtils extends Logging {
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
-      if (tableName.indexOf(".") <= 0) {
-        schema + "." + tableName
+      if (tableName.indexOf('.') <= 0) {
+        schema + '.' + tableName
       } else tableName
     }.toUpperCase
     lookupName
