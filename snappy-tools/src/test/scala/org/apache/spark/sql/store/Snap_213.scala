@@ -28,6 +28,12 @@ class Snap_213
     extends SnappyFunSuite
     with BeforeAndAfterAll {
 
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    // force boot GemFireXD if not booted; just getting SnappyContext should do
+    println(s"Using SnappyContext $snc")
+  }
+
   override def afterAll(): Unit = {
     TestUtil.stopNetServer()
     super.afterAll()

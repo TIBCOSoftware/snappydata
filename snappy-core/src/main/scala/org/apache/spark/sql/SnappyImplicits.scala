@@ -60,6 +60,8 @@ object snappy extends Serializable {
 
     /**
      * Return a new RDD by applying a function to all elements of this RDD.
+     *
+     * This variant also preserves the preferred locations of parent RDD.
      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
@@ -69,6 +71,7 @@ object snappy extends Serializable {
 
     /**
      * Return a new RDD by applying a function to each partition of given RDD.
+     *
      * This variant also preserves the preferred locations of parent RDD.
      *
      * `preservesPartitioning` indicates whether the input function preserves
@@ -87,6 +90,7 @@ object snappy extends Serializable {
     /**
      * Return a new RDD by applying a function to each partition of given RDD,
      * while tracking the index of the original partition.
+     *
      * This variant also preserves the preferred locations of parent RDD.
      *
      * `preservesPartitioning` indicates whether the input function preserves
@@ -125,8 +129,8 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
   /**
    * Table must be registered using #registerSampleTable.
    */
-  def insertIntoAQPStructures(aqpStructureNamea: String*): Unit =
-    context.saveTable( df, aqpStructureNamea)
+  def insertIntoAQPStructures(aqpStructureNames: String*): Unit =
+    context.saveTable( df, aqpStructureNames)
 
 
   /**
