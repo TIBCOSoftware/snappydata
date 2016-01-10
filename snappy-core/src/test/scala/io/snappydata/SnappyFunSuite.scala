@@ -98,8 +98,8 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val scL = this.sc
-      if (scL != null && !scL.isStopped) {
+      val sc = SnappyContext.globalSparkContext
+      if (sc != null && !sc.isStopped) {
         val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
