@@ -94,7 +94,8 @@ You can check the state of the cluster using [Pulse](link) - a graphical dashboa
 
 At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and to SQL requests via JDBC/ODBC.
 
-> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL.
+> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+### goto [Getting started using Spark++ APIs](linkToSparkGettingStarted)
 
 ### Getting stated using SQL
 
@@ -146,10 +147,76 @@ snappy> select count(*) from airlineref; //row count
 This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
 ```
 
-> ### lots more to come
 
-- Create column and row tables ... what is a column table and row table .. 
-- How to experiment with these tables
--  ....
+#### Run OLAP, OLTP queries
+SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __ Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
+For low latency OLTP queries, the engine won't route it to the lead and instead execute it immediately without any scheduling overhead. Quite often, this may mean simply fetching a row by hashing a key (in nanoseconds). 
+Let's try to run some of these queries. 
+```sql
+Simply run the script or copy/paste one query at a time if you want to explore the query execution on the Spark console. 
+
+snappy> run 'olap_queries.sql';
+OR
+snappy> elapsedtime on;
+----------------------------------------------------------------------
+---- Which Airlines Arrive On Schedule? JOIN with reference table ----
+----------------------------------------------------------------------
+select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier 
+  from airline_sample, airlineref
+  where airline_sample.UniqueCarrier = airlineref.Code 
+  group by UniqueCarrier, description 
+  order by arrivalDelay;
+
+This will print time to execute the query from the shell. 
+
+```
+
+You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution. (Todo: Add more details here .. image?).
+(Todo: If the storage tab will not work, suggest user to peek at the memory used using Jconsole?)
+
+Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to GemXD SQL reference](http://gemxd).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
+
+```sql
+Run a simple update SQL statement on the replicated row table.
+
+snappy> run 'oltp_queries.sql';
+```
+You can execute transactions using commands _autocommit off_ and _commit_.  
+> ####Note
+> In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
+
+#### Approximate query processing (AQP)
+OLAP queries tend to be very expensive as this require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
+Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs (and DDL) to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
+
+> #### Note
+> We recommend downloading the _onTime airline_ data for 2009-2015 which is about 50 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
+> ```
+> To download the larger data set run this command from the shell:
+> $ ./download_full_airlinedata.sh ../data   (Is this correct?)
+> Then, go back to the SQL shell and re-run the 'create_and_load_column_table.sql' script. You could re-run the OLAP queries to note the performance. 
+
+```sql
+Execute the following script to create a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
+
+snappy> run 'create_and_load_sample_table.sql';
+
+Here is the _Create DDL_ for the sample table
+CREATE TABLE AIRLINE_SAMPLE
+  USING column_sample  //All Sample tables are columnar
+  OPTIONS(
+    buckets '5',  // Number of partitions 
+    qcs 'UniqueCarrier, Year_, Month_', //QueryColumnSet: The strata - 3% of each combination of Carrier, Year and Month is stored as sample
+    fraction '0.03', //How big should the sample be
+    strataReservoirSize '50', //Reservoir sampling to support streaming inserts
+    basetable 'Airline') // The parent base table
+  ...
+```
+
+> Todo: Provide script file with SQL based on error and confidence .... Hemant?
+
+
+
+-----
 
 
