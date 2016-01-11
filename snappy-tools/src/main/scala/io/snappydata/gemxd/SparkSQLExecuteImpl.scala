@@ -17,6 +17,7 @@
 package io.snappydata.gemxd
 
 import java.io.DataOutput
+import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.InternalDataSerializer
@@ -49,87 +50,120 @@ class SparkSQLExecuteImpl(val sql: String,
   private lazy val snx = SnappyContext(null)
   private lazy val df: DataFrame = snx.sql(sql)
 
-  private lazy val hdos = new GfxdHeapDataOutputStream(Misc.getMemStore.thresholdListener(),
-    sql, true, senderVersion)
+  private lazy val hdos = new GfxdHeapDataOutputStream(
+    Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
   private lazy val schema = df.schema
 
-  private val resultsRdd = df.queryExecution.executedPlan.execute().map(_.copy())
+  private val resultsRdd = df.queryExecution.executedPlan.execute()
 
   override def serializeRows(out: DataOutput) = {
-    var numBytes = 0
-    if (hdos != null && hdos.size > 0) {
-      numBytes = hdos.size
+    val numBytes = hdos.size
+    if (numBytes > 0) {
       InternalDataSerializer.writeArrayLength(numBytes, out)
       hdos.sendTo(out)
-    }
-    else {
-      InternalDataSerializer.writeArrayLength(numBytes, out)
+    } else {
+      InternalDataSerializer.writeArrayLength(0, out)
     }
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
 
+    var srh = snappyResultHolder
+    val isLocalExecution = msg.isLocallyExecuted
     val bm = SparkEnv.get.blockManager
-    val numPartitions = resultsRdd.partitions.length
-    val partitionBlockIds = new Array[RDDBlockId](numPartitions)
-    //get the results and put those in block manager to avoid going OOM
-    snx.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
-      (partitionId, arr: Array[InternalRow]) => {
-        if (arr.length > 0) {
+    val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
+    val sql = this.sql
+    val schema = this.schema
+    var blockReadSuccess = false
+    try {
+      // get the results and put those in block manager to avoid going OOM
+      snx.runJob(resultsRdd, (itr: Iterator[InternalRow]) => {
+
+        var (numCols, numEightColGroups, numPartCols) = (-1, -1, -1)
+
+        def evalNumColumnGroups(row: InternalRow): Unit = {
+          if (row != null) {
+            numCols = row.numFields
+            numEightColGroups = (numCols + 7) / 8
+            numPartCols = ((numCols - 1) % 8) + 1
+          }
+        }
+        val dos = new GfxdHeapDataOutputStream(
+          Misc.getMemStore.thresholdListener(), sql, true, null)
+        itr.foreach { row =>
+          if (numCols == -1) {
+            evalNumColumnGroups(row)
+          }
+          SparkSQLExecuteImpl.writeRow(row, numCols, numEightColGroups,
+            numPartCols, schema, dos)
+        }
+        dos.toByteArray
+      }, (partitionId, block: Array[Byte]) => {
+        if (block.length > 0) {
           val blockId = RDDBlockId(resultsRdd.id, partitionId)
-          bm.putSingle(blockId, arr, StorageLevel.MEMORY_AND_DISK,
-            tellMaster = false)
+          bm.putBytes(blockId, ByteBuffer.wrap(block),
+            StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
           partitionBlockIds(partitionId) = blockId
         }
       })
 
-    hdos.clearForReuse()
-    var metaDataSent = false
-    for (p <- partitionBlockIds if p != null) {
-      logTrace("Sending data for partition id = " + p)
-      val partitionData: Array[InternalRow] = bm.getLocal(p) match {
-        case Some(block) => block.data.next().asInstanceOf[Array[InternalRow]]
-        case None => throw new GemFireXDRuntimeException(
-          s"SparkSQLExecuteImpl: packRows() block $p not found")
-      }
+      hdos.clearForReuse()
+      var metaDataSent = false
+      for (p <- partitionBlockIds if p != null) {
+        logTrace("Sending data for partition id = " + p)
+        val partitionData: ByteBuffer = bm.getLocalBytes(p) match {
+          case Some(block) => block
+          case None => throw new GemFireXDRuntimeException(
+            s"SparkSQLExecuteImpl: packRows() block $p not found")
+        }
 
-      var numRowsSent = 0
-      val totalRowsForPartition = partitionData.length
-
-      while (numRowsSent < totalRowsForPartition) {
-        //send metadata once per result set
-        if ((numRowsSent == 0) && !metaDataSent) {
+        if (!metaDataSent) {
           writeMetaData()
           metaDataSent = true
-        } else {
-          //indicates no metadata being sent
-          hdos.writeByte(0x0)
         }
-        (numRowsSent until totalRowsForPartition).takeWhile(_ => hdos.size <=
-            GemFireXDUtils.DML_MAX_CHUNK_SIZE).foreach(i => {
-          val row = partitionData(i)
-          writeRow(row)
+        hdos.write(partitionData.array())
+        val dosSize = hdos.size()
+        if (dosSize > GemFireXDUtils.DML_MAX_CHUNK_SIZE) {
+          if (isLocalExecution) {
+            // prepare SnappyResultHolder with all data and create new one
+            if (dosSize > 0) {
+              val rawData = hdos.toByteArrayCopy
+              srh.fromSerializedData(rawData, rawData.length, null)
+            }
+            msg.sendResult(srh)
+            srh = new SnappyResultHolder(this)
+          } else {
+            msg.sendResult(srh)
+          }
+          logTrace(s"Sent one batch for result, current partition $p.")
+          hdos.clearForReuse()
+        }
 
-          numRowsSent += 1
-        })
-
-        msg.sendResult(snappyResultHolder)
-        logTrace(s"Sent one batch for partition $p. " +
-            s"No of rows sent in batch = $numRowsSent")
-        hdos.clearForReuse()
+        // clear persisted block
+        bm.removeBlock(p, tellMaster = false)
       }
-      logTrace(s"Finished sending data for partition $p")
-    }
+      blockReadSuccess = true
 
-    if (!metaDataSent) {
-      writeMetaData()
-    }
-    msg.lastResult(snappyResultHolder)
+      if (!metaDataSent) {
+        writeMetaData()
+      }
+      if (isLocalExecution) {
+        // prepare SnappyResultHolder with all data and create new one
+        if (hdos.size > 0) {
+          val rawData = hdos.toByteArrayCopy
+          srh.fromSerializedData(rawData, rawData.length, null)
+        }
+      }
+      msg.lastResult(srh)
 
-    // remove cached results from block manager
-    bm.removeRdd(resultsRdd.id)
+    } finally {
+      if (!blockReadSuccess) {
+        // remove cached results from block manager
+        bm.removeRdd(resultsRdd.id)
+      }
+    }
   }
 
   private lazy val (tableNames, nullability) = getTableNamesAndNullability
@@ -201,42 +235,35 @@ class SparkSQLExecuteImpl(val sql: String,
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
   }
+}
 
-  var (numCols, numEightColGroups, numPartCols) = (-1, -1, -1)
+object SparkSQLExecuteImpl {
+  val LONG_UTF8_TERMINATION = Array((0xE0 & 0xFF).toByte, 0.toByte, 0.toByte)
 
-  private def evalNumColumnGroups(row: InternalRow): Unit = {
-    if (row != null) {
-      numCols = row.numFields
-      numEightColGroups = (numCols + 7) / 8
-      numPartCols = ((numCols - 1) % 8) + 1
-    }
-  }
-
-  private def writeRow(r: InternalRow) = {
+  private def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
+      numPartCols: Int, schema: StructType, hdos: GfxdHeapDataOutputStream) = {
     var groupNum: Int = 0
     // using the gemfirexd way of sending results where in the number of
     // columns in each row is divided into sets of 8 columns. Per eight column group a
     // byte will be sent to indicate which all column in that group has a
     // non-null value.
-    if (numCols == -1) {
-      evalNumColumnGroups(r)
-    }
     while (groupNum < numEightColGroups - 1) {
-      writeAGroup(groupNum, 8, r)
+      writeAGroup(groupNum, 8, row, schema, hdos)
       groupNum += 1
     }
-    writeAGroup(groupNum, numPartCols, r)
+    writeAGroup(groupNum, numPartCols, row, schema, hdos)
   }
 
-  private def writeAGroup(groupNum: Int, numColsInGrp: Int, row: InternalRow) = {
+  private def writeAGroup(groupNum: Int, numColsInGrp: Int, row: InternalRow,
+      schema: StructType, hdos: GfxdHeapDataOutputStream) = {
     var activeByteForGroup: Byte = 0x00
     var colIndex: Int = 0
     var index: Int = 0
     while (index < numColsInGrp) {
       colIndex = (groupNum << 3) + index
       if (!row.isNullAt(colIndex)) {
-        activeByteForGroup = ActiveColumnBits.setFlagForNormalizedColumnPosition(index,
-          activeByteForGroup)
+        activeByteForGroup = ActiveColumnBits
+            .setFlagForNormalizedColumnPosition(index, activeByteForGroup)
       }
       index += 1
     }
@@ -245,13 +272,14 @@ class SparkSQLExecuteImpl(val sql: String,
     while (index < numColsInGrp) {
       colIndex = (groupNum << 3) + index
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
-        writeColDataInOptimizedWay(row, colIndex)
+        writeColDataInOptimizedWay(row, colIndex, schema, hdos)
       }
       index += 1
     }
   }
 
-  private def writeColDataInOptimizedWay(row: InternalRow, colIndex: Int) = {
+  private def writeColDataInOptimizedWay(row: InternalRow, colIndex: Int,
+      schema: StructType, hdos: GfxdHeapDataOutputStream) = {
     schema(colIndex).dataType match {
       case TimestampType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
       case BooleanType => hdos.writeBoolean(row.getBoolean(colIndex))
@@ -268,7 +296,6 @@ class SparkSQLExecuteImpl(val sql: String,
         // keep this consistent with SQLChar.toDataForOptimizedResultHolder
         val utf8String = row.getUTF8String(colIndex)
 
-        val hdos = this.hdos
         if (utf8String ne null) {
           val utfLen = utf8String.numBytes()
           // for length greater than 64K, write a terminating sequence
@@ -276,7 +303,7 @@ class SparkSQLExecuteImpl(val sql: String,
             hdos.writeShort(0)
             hdos.copyMemory(utf8String.getBaseObject,
               utf8String.getBaseOffset, utfLen)
-            hdos.writeNoWrap(SparkSQLExecuteImpl.LONG_UTF8_TERMINATION, 0, 3)
+            hdos.writeNoWrap(LONG_UTF8_TERMINATION, 0, 3)
           } else if (utfLen > 0) {
             hdos.writeShort(utfLen)
             hdos.copyMemory(utf8String.getBaseObject,
@@ -293,8 +320,4 @@ class SparkSQLExecuteImpl(val sql: String,
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
   }
-}
-
-object SparkSQLExecuteImpl {
-  val LONG_UTF8_TERMINATION = Array((0xE0 & 0xFF).toByte, 0.toByte, 0.toByte)
 }
