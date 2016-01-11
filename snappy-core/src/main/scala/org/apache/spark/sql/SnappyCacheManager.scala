@@ -72,24 +72,13 @@ private[sql] class SnappyCacheManager extends execution.CacheManager {
     }
   }
 
-  private val stores = new mutable.HashMap[String, Map[String, Any]]()
-
-  def registerExternalStore(name: String, connProps: Map[String, Any]) = {
-    if (stores.contains(name)) {
-      throw new IllegalArgumentException(s"a store already registered with this name $name")
-    }
-    stores.put(name, connProps)
-  }
-
-
   def getRelation(sqlContext: SQLContext, storageLevel: StorageLevel,
-                  executedPlan : SparkPlan, tableName: Option[String], query: DataFrame): InMemoryAppendableRelation =
+      executedPlan: SparkPlan, tableName: Option[String],
+      query: DataFrame): InMemoryAppendableRelation =
     columnar.InMemoryAppendableRelation(
       sqlContext.conf.useCompression,
       sqlContext.conf.columnBatchSize,
       storageLevel,
       executedPlan,
       tableName)
-
-
 }

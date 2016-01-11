@@ -18,30 +18,31 @@ package org.apache.spark.sql.store
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.{Properties, UUID}
+import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
-import org.apache.spark.rdd.{RDD}
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch, ExternalStoreUtils}
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.{Partitioner, HashPartitioner, TaskContext, Partition, SparkContext, SparkEnv}
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
 
+import org.apache.spark.rdd.RDD
+import org.apache.spark.serializer.KryoSerializer
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
 /*
 Generic class to query column table from Snappy.
  */
-class JDBCSourceAsStore(override val connProperties:ConnectionProperties,
-    numPartitions:Int) extends ExternalStore {
+class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
+    numPartitions: Int) extends ExternalStore {
 
   @transient
-  protected lazy val serializer = SparkEnv.get.serializer
+  protected lazy val serializer = new KryoSerializer(SparkEnv.get.conf)
 
   @transient
   protected lazy val rand = new Random
@@ -132,7 +133,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     requiredColumns: Array[String],
     ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
 
-  private val serializer = SparkEnv.get.serializer
+  private val serializer = new KryoSerializer(SparkEnv.get.conf).newInstance()
   var _hasNext = moveNext()
 
   override def hasNext: Boolean = _hasNext
@@ -167,7 +168,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
       colBuffers(i) = rs.getBytes(i + 1)
       i += 1
     }
-    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.
+    val stats = serializer.deserialize[InternalRow](ByteBuffer.
         wrap(rs.getBytes("stats")))
 
     CachedBatch(rs.getInt("numRows"), colBuffers, stats)
