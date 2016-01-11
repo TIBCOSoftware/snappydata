@@ -70,10 +70,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       val sb = new StringBuilder().append(" WHERE ")
       val args = new ArrayBuffer[Any](numFilters)
       filters.foreach { s =>
-        if (sb.length > 7) {
-          sb.append(" AND ")
-        }
-        compileFilter(s, sb, args)
+        compileFilter(s, sb, args, sb.length > 7)
       }
       // if no filter added return empty
       if (args.nonEmpty) {
@@ -86,20 +83,35 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   // TODO: needs to be updated to use unhandledFilters of Spark 1.6.0
 
   private def compileFilter(f: Filter, sb: StringBuilder,
-      args: ArrayBuffer[Any]): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
     case EqualTo(attr, value) =>
+      if (addAnd) {
+        sb.append(" AND ")
+      }
       sb.append(attr).append(" = ?")
       args += value
     case LessThan(attr, value) =>
+      if (addAnd) {
+        sb.append(" AND ")
+      }
       sb.append(attr).append(" < ?")
       args += value
     case GreaterThan(attr, value) =>
+      if (addAnd) {
+        sb.append(" AND ")
+      }
       sb.append(attr).append(" > ?")
       args += value
     case LessThanOrEqual(attr, value) =>
+      if (addAnd) {
+        sb.append(" AND ")
+      }
       sb.append(attr).append(" <= ?")
       args += value
     case GreaterThanOrEqual(attr, value) =>
+      if (addAnd) {
+        sb.append(" AND ")
+      }
       sb.append(attr).append(" >= ?")
       args += value
     case _ => // no filter
