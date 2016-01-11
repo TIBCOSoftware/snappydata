@@ -126,7 +126,7 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           externalStore.connProperties,
-          Array.empty[Filter],
+          filters,
           Array.empty[Partition],
           blockMap
         ).asInstanceOf[RDD[Row]]
@@ -144,7 +144,8 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           externalStore.connProperties,
-          externalStore
+          externalStore,
+          filters
         ).asInstanceOf[RDD[Row]]
 
         colRdd.union(rowRdd)
