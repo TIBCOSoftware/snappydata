@@ -30,8 +30,9 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.execution.SQLExecution
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, SnappyContext}
+import org.apache.spark.sql.{UIUtils, DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.{Logging, SparkEnv}
 
@@ -54,6 +55,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private lazy val schema = df.schema
 
+
+
   private val resultsRdd = df.queryExecution.executedPlan.execute().map(_.copy())
 
   override def serializeRows(out: DataOutput) = {
@@ -75,7 +78,7 @@ class SparkSQLExecuteImpl(val sql: String,
     val numPartitions = resultsRdd.partitions.length
     val partitionBlockIds = new Array[RDDBlockId](numPartitions)
     //get the results and put those in block manager to avoid going OOM
-    snx.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
+    UIUtils.withNewExecutionId(snx, df.queryExecution) (snx.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
       (partitionId, arr: Array[InternalRow]) => {
         if (arr.length > 0) {
           val blockId = RDDBlockId(resultsRdd.id, partitionId)
@@ -83,7 +86,7 @@ class SparkSQLExecuteImpl(val sql: String,
             tellMaster = false)
           partitionBlockIds(partitionId) = blockId
         }
-      })
+      }))
 
     hdos.clearForReuse()
     var metaDataSent = false
