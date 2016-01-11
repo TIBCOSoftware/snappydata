@@ -731,6 +731,11 @@ object ExternalTableType extends Enumeration {
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
       case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case x: TwitterStreamRelation => ExternalTableType.Stream
+      case x: FileStreamRelation => ExternalTableType.Stream
+      case x: SocketStreamRelation => ExternalTableType.Stream
+      case x: KafkaStreamRelation => ExternalTableType.Stream
+      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
   }
