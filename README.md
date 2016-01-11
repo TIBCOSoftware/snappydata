@@ -268,6 +268,30 @@ snappy> create stream table tweetstreamtable
 ``` 
 > show sample dynamic SQL queries on this stream ....
 
+### Getting started with Spark API (with SnappyData extensions)
+> We assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/) 
+>  Or, is it better to explain just the few things they need to know right here?
+
+First, follow the [instructions](#Getting stated using SQL) to start the SnappyData cluster. Unlike Apache Spark, which is primarily a computational engine with caching, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark Jobs to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways:
+1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
+2. __Driver runs in HA configuration__: Assignment of jobs/tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
+Read [docs](docs) for details of the architecture.
+
+> NOTE: SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. 
+> But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. 
+> To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. 
+
+> ### Note: More TODOs for Hemant
+> - explain and walk thru code to run olap queries using the DF API ... 
+> - maybe, run the same using Spark cache ... highlight performance difference?
+> - explain and run OLTP code ... what are the additional APIs on top of spark. 
+>  - in All of this link to relevant sections in Spark guide.
+>  .- Explain the 'runJob' trait? What is a SnappySQLJob?
+>  - Mimic the sampling queries using API .... can we show them error related functions also using API
+>  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
+>  Finally, we go through Spark standalone cluster working with Snappy .... 
+
+
 -----
 
 
