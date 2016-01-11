@@ -70,9 +70,15 @@ private[sql] trait SnappyStrategies {
   /** Stream related strategies to map stream specific logical plan to physical plan */
   object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+      case LogicalDStreamPlan(output, rowStream) =>
+        PhysicalDStreamPlan(output, rowStream) :: Nil
       case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _)) =>
         val child = PhysicalDStreamPlan(l.output, t.rowStream)
         WindowPhysicalPlan(d, s, child) :: Nil
+      case WindowLogicalPlan(d, s, child) =>
+        WindowPhysicalPlan(d, s, planLater(child)) :: Nil
+      /* case l@LogicalRelation(t: StreamPlan, _) =>
+        PhysicalDStreamPlan(l.output, t.rowStream) :: Nil */
       case _ => Nil
     }
   }

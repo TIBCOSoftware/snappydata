@@ -48,34 +48,32 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     }.toMap
   }.getOrElse(Map())
 
-  if (DirectKafkaStreamRelation.getRowStream() == null) {
-    rowStream = {
-      KafkaUtils
-          .createDirectStream[String, String, StringDecoder, StringDecoder](
-        context, kafkaParams, topicsSet).map(_._2).flatMap(rowConverter.toRows)
+  DirectKafkaStreamRelation.LOCK.synchronized {
+    if (DirectKafkaStreamRelation.getRowStream() == null) {
+      rowStream = {
+        KafkaUtils
+            .createDirectStream[String, String, StringDecoder, StringDecoder](
+          context, kafkaParams, topicsSet).map(_._2).flatMap(rowConverter.toRows)
+      }
+      DirectKafkaStreamRelation.setRowStream(rowStream)
+      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+      rowStream.foreachRDD { rdd => rdd }
+    } else {
+      rowStream = DirectKafkaStreamRelation.getRowStream()
     }
-    DirectKafkaStreamRelation.setRowStream(rowStream)
-    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-    rowStream.foreachRDD { rdd => rdd }
-  } else {
-    rowStream = DirectKafkaStreamRelation.getRowStream()
   }
 }
 
 object DirectKafkaStreamRelation extends Logging {
-  private var rowStream: DStream[InternalRow] = null
+  private var rStream: DStream[InternalRow] = null
 
   private val LOCK = new Object()
 
   private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    LOCK.synchronized {
-      rowStream = stream
-    }
+    rStream = stream
   }
 
   private def getRowStream(): DStream[InternalRow] = {
-    LOCK.synchronized {
-      rowStream
-    }
+    rStream
   }
 }

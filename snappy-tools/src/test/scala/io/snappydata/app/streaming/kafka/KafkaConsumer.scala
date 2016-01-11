@@ -74,7 +74,7 @@ object KafkaConsumer {
       "strataReservoirSize" -> "300",
       "timeInterval" -> "3m"), Some("tweetstreamtable"))
 
-    tableStream.saveStream(Seq("tweetstreamtable_sampled"))
+    ssnc.snappyContext.saveStream(tableStream, Seq("tweetstreamtable_sampled"), None)
 
     var numTimes = 0
     tableStream.foreachDataFrame { df =>

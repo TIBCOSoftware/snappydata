@@ -61,33 +61,30 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
   val directory = options(DIRECTORY)
 
   // TODO: Yogesh, add support for other types of files streams
-
-  if (FileStreamRelation.getRowStream() == null) {
-    rowStream = {
-      context.textFileStream(directory).flatMap(rowConverter.toRows)
+  FileStreamRelation.LOCK.synchronized {
+    if (FileStreamRelation.getRowStream() == null) {
+      rowStream = {
+        context.textFileStream(directory).flatMap(rowConverter.toRows)
+      }
+      FileStreamRelation.setRowStream(rowStream)
+      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+      rowStream.foreachRDD { rdd => rdd }
+    } else {
+      rowStream = FileStreamRelation.getRowStream()
     }
-    FileStreamRelation.setRowStream(rowStream)
-    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-    rowStream.foreachRDD { rdd => rdd }
-  } else {
-    rowStream = FileStreamRelation.getRowStream()
   }
 }
 
 object FileStreamRelation extends Logging {
-  private var rowStream: DStream[InternalRow] = null
+  private var rStream: DStream[InternalRow] = null
 
   private val LOCK = new Object()
 
   private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    LOCK.synchronized {
-      rowStream = stream
-    }
+    rStream = stream
   }
 
   private def getRowStream(): DStream[InternalRow] = {
-    LOCK.synchronized {
-      rowStream
-    }
+    rStream
   }
 }

@@ -55,33 +55,31 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     (a(0), a(1).toInt)
   }.toMap
 
-  if (KafkaStreamRelation.getRowStream() == null) {
-    rowStream = {
-      KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
-          .map(_._2).flatMap(rowConverter.toRows)
+  KafkaStreamRelation.LOCK.synchronized {
+    if (KafkaStreamRelation.getRowStream() == null) {
+      rowStream = {
+        KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
+            .map(_._2).flatMap(rowConverter.toRows)
+      }
+      KafkaStreamRelation.setRowStream(rowStream)
+      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+      rowStream.foreachRDD { rdd => rdd }
+    } else {
+      rowStream = KafkaStreamRelation.getRowStream()
     }
-    KafkaStreamRelation.setRowStream(rowStream)
-    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-    rowStream.foreachRDD { rdd => rdd }
-  } else {
-    rowStream = KafkaStreamRelation.getRowStream()
   }
 }
 
 object KafkaStreamRelation extends Logging {
-  private var rowStream: DStream[InternalRow] = null
+  private var rStream: DStream[InternalRow] = null
 
   private val LOCK = new Object()
 
   private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    LOCK.synchronized {
-      rowStream = stream
-    }
+    rStream = stream
   }
 
   private def getRowStream(): DStream[InternalRow] = {
-    LOCK.synchronized {
-      rowStream
-    }
+    rStream
   }
 }
