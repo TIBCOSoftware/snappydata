@@ -47,6 +47,7 @@ trait ExternalStore extends Serializable {
 
   def connProperties:ConnectionProperties
 
+  // TODO: SW: why is this a PartialFunction??
   def tryExecute[T: ClassTag](tableName: String,
       f: PartialFunction[(Connection), T],
       closeOnSuccess: Boolean = true): T = {
