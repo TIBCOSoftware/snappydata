@@ -8,16 +8,22 @@ You can download the latest version of SnappyData from [here][2]. SnappyData has
 
 ## Community Support
 Get Community help on
+
 ![Slack](http://i.imgur.com/h3sc6GM.png)
 * [Slack](http://snappydata-slackin.herokuapp.com/)
+
 ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
 * Gitter
+
 ![IRC](http://i.imgur.com/vbH3Zdx.png)
 * [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4)
+
 ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
 * [Stackoverflow](http://stackoverflow.com/questions/tagged/)
+
 ![Reddit](http://i.imgur.com/AB3cVtj.png)
 * [Reddit](https://www.reddit.com/r/snappydata)
+
 ![JIRA](http://i.imgur.com/E92zntA.png)
 * JIRA
 
