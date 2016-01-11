@@ -38,9 +38,10 @@ import scala.reflect.ClassTag
 /**
  * Column Store implementation for GemFireXD.
  */
-final class JDBCSourceAsColumnarStore( _connProperties:ConnectionProperties,
+final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
     _numPartitions: Int,
-    val blockMap: Map[InternalDistributedMember, BlockManagerId] = Map.empty[InternalDistributedMember,BlockManagerId])
+    val blockMap: Map[InternalDistributedMember, BlockManagerId] =
+    Map.empty[InternalDistributedMember, BlockManagerId])
     extends JDBCSourceAsStore(_connProperties, _numPartitions) {
 
   override def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
@@ -52,15 +53,17 @@ final class JDBCSourceAsColumnarStore( _connProperties:ConnectionProperties,
       case _ =>
         // remove the url property from poolProps since that will be
         // partition-specific
-        val poolProps = _connProperties.poolProps - (if (_connProperties.hikariCP) "jdbcUrl" else "url")
-        val driver = ""
+        val poolProps = _connProperties.poolProps -
+            (if (_connProperties.hikariCP) "jdbcUrl" else "url")
         new SparkShellCachedBatchRDD[CachedBatch](sparkContext,
-             tableName, requiredColumns,
-          ConnectionProperties(_connProperties.url, _connProperties.driver , poolProps, _connProperties.connProps, _connProperties.hikariCP) , this)
+          tableName, requiredColumns, ConnectionProperties(_connProperties.url,
+            _connProperties.driver, poolProps, _connProperties.connProps,
+            _connProperties.hikariCP), this)
     }
   }
 
-  override def getUUIDRegionKey(tableName: String, bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey = {
+  override def getUUIDRegionKey(tableName: String, bucketId: Int = -1,
+      batchId: Option[UUID] = None): UUIDRegionKey = {
     val connection: java.sql.Connection = getConnection(tableName)
     val uuid = connectionType match {
       case ConnectionType.Embedded =>
@@ -85,7 +88,6 @@ final class JDBCSourceAsColumnarStore( _connProperties:ConnectionProperties,
     connection.close()
     uuid
   }
-
 }
 
 class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
@@ -93,7 +95,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
     extends RDD[CachedBatch](_sc, Nil) with Logging {
 
-  override def compute(split: Partition, context: TaskContext): Iterator[CachedBatch] = {
+  override def compute(split: Partition,
+      context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName, {
       case conn =>
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
@@ -130,14 +133,13 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
     tableName: String, requiredColumns: Array[String],
     connectionProperties: ConnectionProperties,
     store: ExternalStore)
-    extends RDD[CachedBatch](_sc, Nil)  {
-
+    extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
     val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, split)
     val query: String = SparkShellRDDHelper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
-                        requiredColumns, split.index)
+      requiredColumns, split.index)
     val (statement, rs) = SparkShellRDDHelper.executeQuery(conn, tableName, split, query)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
@@ -152,7 +154,6 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 }
 
-
 class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     getConnection: () => Connection,
     schema: StructType,
@@ -162,15 +163,20 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     store: ExternalStore,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition],
-    blockMap: Map[InternalDistributedMember, BlockManagerId] = Map.empty[InternalDistributedMember, BlockManagerId],
+    blockMap: Map[InternalDistributedMember, BlockManagerId] =
+    Map.empty[InternalDistributedMember, BlockManagerId],
     properties: Properties = new Properties())
-    extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns, connectionProperties,
-      filters, partitions, blockMap, properties) {
+    extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns,
+      connectionProperties, filters, partitions, blockMap, properties) {
 
-  override def computeResultSet(thePart: Partition): (Connection, Statement, ResultSet) = {
-    val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, thePart)
-    val query: String = getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema), columns, thePart.index)
-    val (statement, rs) = SparkShellRDDHelper.executeQuery(conn, tableName, thePart, query)
+  override def computeResultSet(
+      thePart: Partition): (Connection, Statement, ResultSet) = {
+    val conn: Connection = SparkShellRDDHelper.getConnection(
+      connectionProperties, thePart)
+    val query: String = getSQLStatement(StoreUtils.lookupName(
+      tableName, conn.getSchema), columns, thePart.index)
+    val (statement, rs) = SparkShellRDDHelper.executeQuery(
+      conn, tableName, thePart, query)
     (conn, statement, rs)
   }
 
@@ -183,7 +189,8 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     SparkShellRDDHelper.getPartitions(tableName, store)
   }
 
-  def getSQLStatement(resolvedTableName: String, requiredColumns: Array[String], partitionId: Int): String = {
+  def getSQLStatement(resolvedTableName: String,
+      requiredColumns: Array[String], partitionId: Int): String = {
     "select " + requiredColumns.mkString(", ") + " from " + resolvedTableName
   }
 }
