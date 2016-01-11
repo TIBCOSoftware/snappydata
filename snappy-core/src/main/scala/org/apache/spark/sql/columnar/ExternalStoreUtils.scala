@@ -20,15 +20,14 @@ import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
-import scala.StringBuilder
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
 
-import org.apache.spark.sql.catalyst.{expressions, CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
+import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
@@ -36,9 +35,9 @@ import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
 import org.apache.spark.{Logging, SparkContext}
+
 /**
  * Utility methods used by external storage layers.
  */
@@ -374,13 +373,43 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def getTotalPartitions(sc: SparkContext, parameters: mutable.Map[String, String]): Int = {
-    (parameters.get("BUCKETS").getOrElse(
-      SnappyContext.getClusterMode(sc) match {
-        case LocalMode(_, _) => DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE
-        case _ => DEFAULT_TABLE_BUCKETS
+  def setStatementParameters(stmt: PreparedStatement,
+      row: ArrayBuffer[Any]): Unit = {
+    var col = 1
+    val len = row.length
+    while (col <= len) {
+      val colVal = row(col - 1)
+      if (colVal != null) {
+        colVal match {
+          case s: String => stmt.setString(col, s)
+          case i: Int => stmt.setInt(col, i)
+          case l: Long => stmt.setLong(col, l)
+          case d: Double => stmt.setDouble(col, d)
+          case f: Float => stmt.setFloat(col, f)
+          case s: Short => stmt.setInt(col, s)
+          case b: Byte => stmt.setInt(col, b)
+          case b: Boolean => stmt.setBoolean(col, b)
+          case b: Array[Byte] => stmt.setBytes(col, b)
+          case ts: java.sql.Timestamp => stmt.setTimestamp(col, ts)
+          case d: java.sql.Date => stmt.setDate(col, d)
+          case t: java.sql.Time => stmt.setTime(col, t)
+          case d: Decimal => stmt.setBigDecimal(col, d.toJavaBigDecimal)
+          case bd: java.math.BigDecimal => stmt.setBigDecimal(col, bd)
+          case _ => stmt.setObject(col, colVal)
+        }
+      } else {
+        stmt.setNull(col, java.sql.Types.NULL)
       }
-    )).toInt
+      col += 1
+    }
+  }
+
+  def getTotalPartitions(sc: SparkContext,
+      parameters: mutable.Map[String, String]): Int = {
+    parameters.getOrElse("BUCKETS", SnappyContext.getClusterMode(sc) match {
+      case LocalMode(_, _) => DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE
+      case _ => DEFAULT_TABLE_BUCKETS
+    }).toInt
   }
 
   def cachedBatchesToRows(

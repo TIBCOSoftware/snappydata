@@ -145,7 +145,7 @@ subprojects {
     // spawn separate JVMs
     maxParallelForks = 1
     maxHeapSize '8g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSPermGenSweepingEnabled',  '-XX:MaxPermSize=4G', '-ea'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=4G', '-ea'
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
