@@ -8,12 +8,12 @@ You can download the latest version of SnappyData from [here][2]. SnappyData has
 
 ## Community Support
 Get Community help on
-*[Slack](http://i.imgur.com/iL0spYh.png) [Slack](http://snappydata-slackin.herokuapp.com/)
-*[Gitter](http://i.imgur.com/z16eSlC.jpg) Gitter
-*[IRC](http://i.imgur.com/MkB5chF.png) [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4)
-*[Stackoverflow](http://i.imgur.com/inyiXRv.png) [Stackoverflow](http://stackoverflow.com/questions/tagged/)
-*[Reddit](http://i.imgur.com/sCSUAxG.png) [Reddit](https://www.reddit.com/r/snappydata)
-*[JIRA](http://i.imgur.com/vEWH0wf.png) JIRA
+* ![Slack](http://i.imgur.com/iL0spYh.png) [Slack](http://snappydata-slackin.herokuapp.com/)
+* ![Gitter](http://i.imgur.com/z16eSlC.jpg) Gitter
+* ![IRC](http://i.imgur.com/MkB5chF.png) [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4)
+* ![Stackoverflow](http://i.imgur.com/inyiXRv.png) [Stackoverflow](http://stackoverflow.com/questions/tagged/)
+* ![Reddit](http://i.imgur.com/sCSUAxG.png) [Reddit](https://www.reddit.com/r/snappydata)
+* ![JIRA](http://i.imgur.com/vEWH0wf.png) JIRA
 
 ## Link with SnappyData distribution
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
