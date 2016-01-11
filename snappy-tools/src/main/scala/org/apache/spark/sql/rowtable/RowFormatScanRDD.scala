@@ -25,7 +25,6 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
@@ -170,8 +169,8 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[InternalRow] = {
     val (conn, stmt, rs) = computeResultSet(thePart)
-    new InternalRowIteratorOnRS(conn, stmt, rs.asInstanceOf[EmbedResultSet],
-      context, schema).asInstanceOf[Iterator[InternalRow]]
+    new InternalRowIteratorOnRS(conn, stmt, rs, context,
+      schema).asInstanceOf[Iterator[InternalRow]]
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -194,7 +193,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
 }
 
 final class InternalRowIteratorOnRS(conn: Connection,
-    stmt: Statement, rs: EmbedResultSet, context: TaskContext,
+    stmt: Statement, rs: ResultSet, context: TaskContext,
     schema: StructType) extends Iterator[InternalRow] with Logging {
 
   private[this] val types = schema.fields.map(_.dataType)
