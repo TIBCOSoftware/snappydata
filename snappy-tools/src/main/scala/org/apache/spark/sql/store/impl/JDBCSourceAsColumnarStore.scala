@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SparkShellRDDHelper
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ConnectionType}
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, ConnectionProperties, ConnectionType}
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore, StoreUtils}
@@ -137,10 +137,11 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
-    val conn: Connection = SparkShellRDDHelper.getConnection(connectionProperties, split)
-    val query: String = SparkShellRDDHelper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
+    val helper = new SparkShellRDDHelper
+    val conn: Connection = helper.getConnection(connectionProperties, split)
+    val query: String = helper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
       requiredColumns, split.index)
-    val (statement, rs) = SparkShellRDDHelper.executeQuery(conn, tableName, split, query)
+    val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
     new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
   }
 
@@ -171,13 +172,32 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
-    val conn: Connection = SparkShellRDDHelper.getConnection(
+    val helper = new SparkShellRDDHelper
+    val conn: Connection = helper.getConnection(
       connectionProperties, thePart)
-    val query: String = getSQLStatement(StoreUtils.lookupName(
-      tableName, conn.getSchema), columns, thePart.index)
-    val (statement, rs) = SparkShellRDDHelper.executeQuery(
-      conn, tableName, thePart, query)
-    (conn, statement, rs)
+    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+    // TODO: this will fail if no network server is available unless SNAP-365 is
+    // fixed with the approach of having an iterator that can fetch from remote
+    val ps = conn.prepareStatement(
+      "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
+    ps.setString(1, resolvedName)
+    ps.setInt(2, thePart.index)
+    ps.executeUpdate()
+    ps.close()
+
+    val sqlText = s"SELECT $columnList FROM $resolvedName$filterWhereClause"
+    val args = filterWhereArgs
+    val stmt = conn.prepareStatement(sqlText)
+    if (args ne null) {
+      ExternalStoreUtils.setStatementParameters(stmt, args)
+    }
+    val fetchSize = properties.getProperty("fetchSize")
+    if (fetchSize ne null) {
+      stmt.setFetchSize(fetchSize.toInt)
+    }
+
+    val rs = stmt.executeQuery()
+    (conn, stmt, rs)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
