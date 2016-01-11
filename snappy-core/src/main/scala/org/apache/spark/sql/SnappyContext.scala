@@ -471,10 +471,11 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
               (mode != SaveMode.ErrorIfExists).toString))
     }
 
+    val plan = LogicalRelation(resolved.relation)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params,
       ExternalTableType.getTableType(resolved.relation))
-    LogicalRelation(resolved.relation)
+    plan
   }
 
   /**
