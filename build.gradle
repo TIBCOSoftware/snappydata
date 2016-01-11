@@ -437,8 +437,7 @@ def writeToFile(def fileName) {
   }
 }
 
-task runQuickstart {
-  mustRunAfter product
+task runQuickstart(dependsOn: product) {
   def exampleArchiveName = "quickstart-${version}.jar"
   doLast {
     try {
