@@ -8,7 +8,8 @@ CREATE TABLE AIRLINE_SAMPLE
     buckets '5',
     qcs 'UniqueCarrier, Year_, Month_',
     fraction '0.03',
-    strataReservoirSize '50') 
+    strataReservoirSize '50',
+    basetable 'Airline') 
   AS (
     SELECT Year_, Month_ , DayOfMonth,
       DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
