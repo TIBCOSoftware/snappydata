@@ -4,6 +4,8 @@ import org.apache.spark.rdd.RDD
 
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.CatalystConf
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, Catalog, Analyzer}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 
 import org.apache.spark.sql.execution._
@@ -93,6 +95,21 @@ object AQPDefault extends AQPContext{
     throw new UnsupportedOperationException("missing aqp jar")
 
   def isTungstenEnabled: Boolean = true
+
+  def createAnalyzer( catalog: SnappyStoreHiveCatalog, functionRegistry: FunctionRegistry,
+                     conf: SQLConf): Analyzer =
+    new Analyzer(catalog, functionRegistry, conf) {
+    override val extendedResolutionRules =
+      ExtractPythonUDFs ::
+        sparkexecution.datasources.PreInsertCastAndRename ::
+        //   ReplaceWithSampleTable ::
+        //  WeightageRule ::
+        //TestRule::
+        Nil
+
+    override val extendedCheckRules = Seq(
+      sparkexecution.datasources.PreWriteCheck(catalog))
+  }
 }
 
 class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanner(snappyContext)  with SnappyStrategies{
