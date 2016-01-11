@@ -22,8 +22,8 @@ import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOper
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
-import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.streaming._
 
 /**
@@ -70,31 +70,35 @@ private[sql] trait SnappyStrategies {
   /** Stream related strategies to map stream specific logical plan to physical plan */
   object StreamQueryStrategy extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-      case LogicalDStreamPlan(output, stream) =>
-        PhysicalDStreamPlan(output, stream) :: Nil
+      case LogicalDStreamPlan(output, rowStream) =>
+        PhysicalDStreamPlan(output, rowStream) :: Nil
+      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _)) =>
+        val child = PhysicalDStreamPlan(l.output, t.rowStream)
+        WindowPhysicalPlan(d, s, child) :: Nil
       case WindowLogicalPlan(d, s, child) =>
         WindowPhysicalPlan(d, s, planLater(child)) :: Nil
-      case l@LogicalRelation(t: StreamPlan, _) =>
-        PhysicalDStreamPlan(l.output, t.stream) :: Nil
+      /* case l@LogicalRelation(t: StreamPlan, _) =>
+        PhysicalDStreamPlan(l.output, t.rowStream) :: Nil */
       case _ => Nil
     }
   }
 
   /** Stream related strategies DDL stratgies */
   case class StreamDDLStrategy(sampleTablePopulation: Option[(SQLContext) => Unit],
-                               sampleStreamCase: PartialFunction[LogicalPlan, Seq[SparkPlan]]) extends Strategy {
+      sampleStreamCase: PartialFunction[LogicalPlan,
+          Seq[SparkPlan]]) extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
 
       val x1: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-        case CreateStreamTable(streamName, userColumns, options) =>
+        case CreateStreamTable(streamName, userColumns, provider, options) =>
           ExecutedCommand(
-            CreateStreamTableCmd(streamName, userColumns, options)) :: Nil
+            CreateStreamTableCmd(streamName, userColumns, provider, options)) :: Nil
       }
 
       val x2: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
         case StreamOperationsLogicalPlan(action, batchInterval) =>
           ExecutedCommand(
-            StreamingCtxtActionsCmd(action, batchInterval, sampleTablePopulation)) :: Nil
+            SnappyStreamingActionsCommand(action, batchInterval, sampleTablePopulation)) :: Nil
 
       }
       x1.orElse(x2).orElse(sampleStreamCase)(plan)
