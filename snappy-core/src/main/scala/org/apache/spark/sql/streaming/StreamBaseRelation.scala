@@ -47,7 +47,6 @@ with TableScan with Serializable with Logging {
   }
 
   override def buildScan(): RDD[Row] = {
-
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
     if (rowStream.generatedRDDs.isEmpty) {
       new EmptyRDD[Row](sqlContext.sparkContext)

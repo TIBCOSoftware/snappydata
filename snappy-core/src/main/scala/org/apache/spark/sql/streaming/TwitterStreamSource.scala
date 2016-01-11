@@ -47,7 +47,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
   val accessTokenSecret = options("accessTokenSecret")
 
   //  TODO Yogesh, need to pass this through DDL
-  val filters = Seq("e")
+  val filters = Seq(" ")
 
   private val getTwitterConf: Configuration = {
     val twitterConf = new ConfigurationBuilder()
@@ -64,33 +64,31 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     new OAuthAuthorization(getTwitterConf)
   }
 
-  if (TwitterStreamRelation.getRowStream() == null) {
-    rowStream = {
-      TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-        filters, storageLevel).flatMap(rowConverter.toRows)
+  TwitterStreamRelation.LOCK.synchronized {
+    if (TwitterStreamRelation.getRowStream() == null) {
+      rowStream = {
+        TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
+          filters, storageLevel).filter(_.getLang == "en").flatMap(rowConverter.toRows)
+      }
+      TwitterStreamRelation.setRowStream(rowStream)
+      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+      rowStream.foreachRDD { rdd => rdd }
+    } else {
+      rowStream = TwitterStreamRelation.getRowStream()
     }
-    TwitterStreamRelation.setRowStream(rowStream)
-    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-    rowStream.foreachRDD { rdd => rdd }
-  } else {
-    rowStream = TwitterStreamRelation.getRowStream()
   }
 }
 
 object TwitterStreamRelation extends Logging {
-  private var rowStream: DStream[InternalRow] = null
+  private var rStream: DStream[InternalRow] = null
 
   private val LOCK = new Object()
 
   private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    LOCK.synchronized {
-      rowStream = stream
-    }
+    rStream = stream
   }
 
   private def getRowStream(): DStream[InternalRow] = {
-    LOCK.synchronized {
-      rowStream
-    }
+    rStream
   }
 }

@@ -21,6 +21,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
@@ -47,10 +48,6 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
     this(ssc, ssc.snappyContext.executePlan(logicalPlan))
-
-  def saveStream(sampleTab: Seq[String]): Unit = {
-    snappyContext.saveStream(this, sampleTab, None)
-  }
 
   /** Return a new DStream containing only the elements that satisfy a predicate. */
   override def filter(filterFunc: Row => Boolean): DStream[Row] = {
@@ -81,9 +78,13 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Registers this SchemaDStream as a table in the catalog. */
   def registerAsTable(tableName: String): Unit = {
-    snsc.snappyContext.catalog.registerTable(
-      snsc.snappyContext.catalog.newQualifiedTableName(tableName),
+    catalog.registerTable(
+      catalog.newQualifiedTableName(tableName),
       logicalPlan)
+
+    catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
+      Array.empty[String], "stream", Map.empty[String, String],
+      ExternalTableType.Stream)
   }
 
   /** Returns the schema of this SchemaDStream (represented by
