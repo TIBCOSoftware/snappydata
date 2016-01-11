@@ -126,16 +126,16 @@ Summary information on the number of on-time, delayed, canceled and diverted fli
 [Column tables](columnTables) organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). 
 ```sql
 snappy> run 'create_and_load_column_table.sql';
-snappy> select count(*) from airline; //row count 
+snappy> select count(*) from airline; 
 
-This script must be in the current working directory (scripts).
-It first drops the tables if already available, then loads parquet formatted data into a temporary spark table then saves in column table called Airline.
-SQL used to create a column table follows the Spark Data source access model:
+-- This script must be in the current working directory (scripts).
+-- It first drops the tables if already available, then loads parquet formatted data into a temporary spark table then saves in column table called Airline.
+-- SQL used to create a column table follows the Spark Data source access model:
 
 CREATE TABLE AIRLINE (<column definitions>)
  USING column OPTIONS(buckets '5') ;
 
-Use of standard SQL (i.e. no USING) will result in creation of a Row table.   
+-- Use of standard SQL (i.e. no USING) will result in creation of a Row table.   
 ```
 
 [Row tables](rowTables), unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.  
@@ -145,7 +145,7 @@ _create table_ DDL allows tables to be partitioned on primary keys, custom parti
 snappy> run 'create_and_load_row_table.sql';
 snappy> select count(*) from airlineref; //row count 
 
-This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
+-- This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
 ```
 
 
@@ -154,10 +154,10 @@ SQL client connections (via JDBC or ODBC) are routed to the appropriate data ser
 For low latency OLTP queries, the engine won't route it to the lead and instead execute it immediately without any scheduling overhead. Quite often, this may mean simply fetching a row by hashing a key (in nanoseconds). 
 Let's try to run some of these queries. 
 ```sql
-Simply run the script or copy/paste one query at a time if you want to explore the query execution on the Spark console. 
+-- Simply run the script or copy/paste one query at a time if you want to explore the query execution on the Spark console. 
 
 snappy> run 'olap_queries.sql';
-OR
+-- OR
 snappy> elapsedtime on;
 ----------------------------------------------------------------------
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
@@ -168,7 +168,7 @@ select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrie
   group by UniqueCarrier, description 
   order by arrivalDelay;
 
-This will print time to execute the query from the shell. 
+-- This will print time to execute the query from the shell. 
 
 ```
 
@@ -178,7 +178,7 @@ You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each qu
 Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to GemXD SQL reference](http://gemxd).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
 
 ```sql
-Run a simple update SQL statement on the replicated row table.
+-- Run a simple update SQL statement on the replicated row table.
 
 snappy> run 'oltp_queries.sql';
 ```
@@ -198,25 +198,75 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 > Then, go back to the SQL shell and re-run the 'create_and_load_column_table.sql' script. You could re-run the OLAP queries to note the performance. 
 
 ```sql
-Execute the following script to create a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
+-- Execute the following script to create a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). 
+-- Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
 snappy> run 'create_and_load_sample_table.sql';
 
-Here is the _Create DDL_ for the sample table
-CREATE TABLE AIRLINE_SAMPLE
-  USING column_sample  //All Sample tables are columnar
-  OPTIONS(
-    buckets '5',  // Number of partitions 
-    qcs 'UniqueCarrier, Year_, Month_', //QueryColumnSet: The strata - 3% of each combination of Carrier, Year and Month is stored as sample
-    fraction '0.03', //How big should the sample be
-    strataReservoirSize '50', //Reservoir sampling to support streaming inserts
-    basetable 'Airline') // The parent base table
+-- Here is the _Create DDL_ for the sample table
+-- CREATE TABLE AIRLINE_SAMPLE
+--   USING column_sample  //All Sample tables are columnar
+--   OPTIONS(
+--    buckets '5',  // Number of partitions 
+--    qcs 'UniqueCarrier, Year_, Month_', 
+--        //QueryColumnSet: The strata - 3% of each combination of Carrier, Year and Month is stored as sample
+--    fraction '0.03', //How big should the sample be
+--    strataReservoirSize '50', //Reservoir sampling to support streaming inserts
+--    basetable 'Airline') // The parent base table
   ...
 ```
 
 > Todo: Provide script file with SQL based on error and confidence .... Hemant?
 
 
+You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
+
+```sql
+snappy> 
+-- What is the average arrival delay for all airlines for each month?;
+snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0 
+    group by Month_
+    with error .05 ;
+-- The above query will consult the sample and return an answer if the estimated answer is at least 95% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
+
+-- You can also access the error using built-in functions. 
+snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay) error, Month_ 
+    from Airline where ArrDelay >0 
+    group by Month_
+    with error .05 ;
+-- The correct answer is within +/- 'error'
+-- Consult the docs for access to other related functions like relative_error(), lower and upper bounds for the error returned. 
+```
+
+you can now re-run the previous OLAP queries with an error constraint and compare the results.  You should notice a 10X or larger difference in query execution latency while the results remain nearly accurate. As a reminder,  we recommend downloading the larger data set for this exercise.
+
+```sql
+-- re-run olap queries with error constraint to automatically use sampling
+snappy> run 'olap_approx_queries.sql';
+-- THIS SCRIPT NEEDS TO BE ADDED .. HEMANT?
+```
+> where/how can we show memory utilization with sampling. 
+
+#### Stream analytics using SQL and Spark Streaming
+SnappyData extends Spark streaming so stream definitions can be declaratively done using SQL and you can analyze these streams using SQL.  You can also dynamically run SQL queries on these streams. There is no need to learn Spark streaming APIs or statically define all the rules to be executed on these streams. 
+
+The example below consumes tweets, models the stream as a table (so it can be queried) and we then run ad-hoc SQL from remote clients on the current state of the stream (here the window interval is set to 5 seconds). Later,  in the Spark code section we further enhance to showcase "continuous queries" (CQ). Dynamic registration of CQs (from remote clients) will be available in the next release.
+
+```sql
+snappy> create stream table tweetstreamtable
+       (id long, text string, fullName string, 
+      country string, retweets int, hashtag string)
+      using twitter_stream options (
+        consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi',
+        consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', 
+        accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', 
+        accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', 
+        streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter'
+      );
+-- Should we showing option that simulates the stream first? Show consuming actual stream only in packaged example?
+-- You can also just run script 'create_stream_table.sql'
+``` 
+> show sample dynamic SQL queries on this stream ....
 
 -----
 
