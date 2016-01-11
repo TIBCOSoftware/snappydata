@@ -60,11 +60,11 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     extends JDBCRDD(sc, getConnection, schema, tableName, columns,
       filters, partitions, properties) {
 
-  private var filterWhereArgs: ArrayBuffer[Any] = _
+  protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
    */
-  private val filterWhereClause: String = {
+  protected val filterWhereClause: String = {
     val numFilters = filters.length
     if (numFilters > 0) {
       val sb = new StringBuilder().append(" WHERE ")
@@ -108,7 +108,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   /**
    * `columns`, but as a String suitable for injection into a SQL query.
    */
-  private val columnList: String = {
+  protected val columnList: String = {
     if (columns.length > 0) {
       val sb = new StringBuilder()
       columns.foreach { s =>
@@ -121,26 +121,21 @@ class RowFormatScanRDD(@transient sc: SparkContext,
 
   def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
-    val part = thePart.asInstanceOf[MultiExecutorLocalPartition]
     val conn = getConnection()
 
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
     val region = Misc.getRegionForTable(resolvedName, true)
 
     if (region.isInstanceOf[PartitionedRegion]) {
-      val par = part.index
-      val ps1 = conn.prepareStatement(
+      val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
-      ps1.setString(1, resolvedName)
-      ps1.setInt(2, par)
-      ps1.executeUpdate()
+      ps.setString(1, resolvedName)
+      ps.setInt(2, thePart.index)
+      ps.executeUpdate()
+      ps.close()
     }
 
-    // H2's JDBC driver does not support the setSchema() method.  We pass a
-    // fully-qualified table name in the SELECT statement.  I don't know how to
-    // talk about a table in a completely portable way.
-
-    val sqlText = s"SELECT $columnList FROM $tableName$filterWhereClause"
+    val sqlText = s"SELECT $columnList FROM $resolvedName$filterWhereClause"
     val args = filterWhereArgs
     val stmt = conn.prepareStatement(sqlText)
     if (args ne null) {
