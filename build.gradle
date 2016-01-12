@@ -437,6 +437,50 @@ def writeToFile(def fileName) {
   }
 }
 
+def runSubmitQuery(def jobName, def appName) {
+  println "Running job $jobName"
+  def exampleArchiveName = "quickstart-${version}.jar"
+  def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
+      ["submit", "--lead", "localhost:8090", "--app-name", appName + System.currentTimeMillis(),
+       "--class", jobName, "--app-jar",
+       "${snappyProductDir}/lib/${exampleArchiveName}"]);
+
+  println "${submitjobairline}"
+
+  def jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
+      submitjobairline.substring(4)
+  def json = new JsonSlurper().parseText(jsonStr)
+  def jobid = ""
+  json.each {
+    k, v ->
+      if (k == "result") {
+        if (v instanceof groovy.json.internal.LazyMap) {
+          jobid = v.get("jobId")
+        }
+      }
+  }
+
+  def status = "RUNNING"
+  while (status == "RUNNING") {
+    Thread.sleep(3000)
+    def statusjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
+        ["status", "--lead", "localhost:8090", "--job-id", "${jobid}"]);
+    println "${statusjobairline}"
+
+    def statusjson = new JsonSlurper().parseText("${statusjobairline}")
+    statusjson.each {
+      k, v ->
+        if (k == "status") {
+          println("Current status of job: " + v)
+          status = v
+        }
+    }
+  }
+  if (status == "ERROR") {
+    throw new GradleException("Failed to submit queries")
+  }
+}
+
 task runQuickstart(dependsOn: product) {
   def exampleArchiveName = "quickstart-${version}.jar"
   doLast {
@@ -459,6 +503,10 @@ task runQuickstart(dependsOn: product) {
 
       runSQLScript("olap_queries.sql")
 
+      runSubmitQuery("io.snappydata.examples.CreateAndLoadAirlineDataJob", "createJob")
+
+      runSubmitQuery("io.snappydata.examples.AirlineDataJob", "processjob")
+
       def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
       println "${startSparkResult}"
 
@@ -471,47 +519,6 @@ task runQuickstart(dependsOn: product) {
       if (airlineappresult.toLowerCase().contains("exception")) {
         throw new GradleException("Failed to submit AirlineDataSparkApp")
       }
-
-      def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
-              ["submit", "--lead", "localhost:8090", "--app-name", "myjob",
-               "--class", "io.snappydata.examples.AirlineDataJob", "--app-jar",
-               "${snappyProductDir}/lib/${exampleArchiveName}"]);
-
-      println "${submitjobairline}"
-
-      def jsonStr = (submitjobairline.charAt(2) == '{') ? submitjobairline.substring(2) :
-                    submitjobairline.substring(4)
-      def json = new JsonSlurper().parseText(jsonStr)
-      def jobid = ""
-      json.each {
-        k, v ->
-          if (k == "result") {
-            if (v instanceof groovy.json.internal.LazyMap) {
-              jobid = v.get("jobId")
-            }
-          }
-      }
-
-      def status = "RUNNING"
-      while (status == "RUNNING") {
-        Thread.sleep(3000)
-        def statusjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
-                ["status", "--lead", "localhost:8090", "--job-id", "${jobid}"]);
-        println "${statusjobairline}"
-
-        def statusjson = new JsonSlurper().parseText("${statusjobairline}")
-        statusjson.each {
-          k, v ->
-            if (k == "status") {
-              println("Current status of job: " + v)
-              status = v
-            }
-        }
-      }
-      if (status == "ERROR") {
-        throw new GradleException("Failed to submit queries")
-      }
-
 
     } finally {
       println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", []);
