@@ -29,17 +29,13 @@ import org.apache.spark.scheduler._
   *
   * Created by hemant
   */
-object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
-
-  SparkContext.registerClusterManager(this)
-
-  def register(): Unit = {
-    // no op. static initialization above does the job.
-  }
+class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  var schedulerBackend: Option[SnappyCoarseGrainedSchedulerBackend] = None
+  SnappyClusterManager.init(this)
+
+  var schedulerBackend: SnappyCoarseGrainedSchedulerBackend = null
 
   def createTaskScheduler(sc: SparkContext): TaskScheduler = {
     // If there is an application that is trying to join snappy
@@ -76,11 +72,10 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   def createSchedulerBackend(sc: SparkContext,
       scheduler: TaskScheduler): SchedulerBackend = {
-    schedulerBackend = Some(
-      new SnappyCoarseGrainedSchedulerBackend(
-        scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv))
+    schedulerBackend = new SnappyCoarseGrainedSchedulerBackend(
+        scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv)
 
-    schedulerBackend.get
+    schedulerBackend
   }
 
   def initialize(scheduler: TaskScheduler,
@@ -97,4 +92,15 @@ object SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
     LeadImpl.invokeLeadStop(null)
   }
 
+}
+
+object SnappyClusterManager {
+
+  private[this] var _cm : SnappyEmbeddedModeClusterManager = null
+
+  def init(mgr: SnappyEmbeddedModeClusterManager): Unit = {
+    _cm = mgr
+  }
+
+  def cm : Option[SnappyEmbeddedModeClusterManager] = if (_cm != null) Some(_cm) else None
 }
