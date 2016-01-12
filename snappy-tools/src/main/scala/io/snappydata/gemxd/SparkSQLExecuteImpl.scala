@@ -32,7 +32,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.SQLExecution
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{UIUtils, DataFrame, SnappyContext}
+import org.apache.spark.sql.{SnappyUIUtils, DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.{Logging, SparkEnv}
 
@@ -78,7 +78,7 @@ class SparkSQLExecuteImpl(val sql: String,
     val numPartitions = resultsRdd.partitions.length
     val partitionBlockIds = new Array[RDDBlockId](numPartitions)
     //get the results and put those in block manager to avoid going OOM
-    UIUtils.withNewExecutionId(snx, df.queryExecution) (snx.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
+    SnappyUIUtils.withNewExecutionId(snx, df.queryExecution) (snx.runJob(resultsRdd, (iter: Iterator[InternalRow]) => iter.toArray,
       (partitionId, arr: Array[InternalRow]) => {
         if (arr.length > 0) {
           val blockId = RDDBlockId(resultsRdd.id, partitionId)
