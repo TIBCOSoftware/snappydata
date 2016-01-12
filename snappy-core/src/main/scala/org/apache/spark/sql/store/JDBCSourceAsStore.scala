@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,32 +16,28 @@
  */
 package org.apache.spark.sql.store
 
-import java.nio.ByteBuffer
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.{Properties, UUID}
+import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
-import org.apache.spark.rdd.{RDD}
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch, ExternalStoreUtils}
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.{Partitioner, HashPartitioner, TaskContext, Partition, SparkContext, SparkEnv}
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
 
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /*
 Generic class to query column table from Snappy.
  */
-class JDBCSourceAsStore(override val connProperties:ConnectionProperties,
-    numPartitions:Int) extends ExternalStore {
-
-  @transient
-  protected lazy val serializer = SparkEnv.get.serializer
+class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
+    numPartitions: Int) extends ExternalStore {
 
   @transient
   protected lazy val rand = new Random
@@ -77,7 +73,7 @@ class JDBCSourceAsStore(override val connProperties:ConnectionProperties,
         stmt.setString(1, uuid.getUUID.toString)
         stmt.setInt(2, uuid.getBucketId)
         stmt.setInt(3, batch.numRows)
-        stmt.setBytes(4, serializer.newInstance().serialize(batch.stats).array())
+        stmt.setBytes(4, SparkSqlSerializer.serialize(batch.stats))
         var columnIndex = 5
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
@@ -132,7 +128,6 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     requiredColumns: Array[String],
     ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
 
-  private val serializer = SparkEnv.get.serializer
   var _hasNext = moveNext()
 
   override def hasNext: Boolean = _hasNext
@@ -167,12 +162,9 @@ final class CachedBatchIteratorOnRS(conn: Connection,
       colBuffers(i) = rs.getBytes(i + 1)
       i += 1
     }
-    val stats = serializer.newInstance().deserialize[InternalRow](ByteBuffer.
-        wrap(rs.getBytes("stats")))
-
+    val stats = SparkSqlSerializer.deserialize[InternalRow](rs.getBytes("stats"))
     CachedBatch(rs.getInt("numRows"), colBuffers, stats)
   }
-
 }
 
 class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
