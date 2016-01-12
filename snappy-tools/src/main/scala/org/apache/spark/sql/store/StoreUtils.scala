@@ -113,7 +113,7 @@ object StoreUtils extends Logging {
     val regionMembers = if (Utils.isLoner(sc)) {
       Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
     } else {
-      region.getDistributionAdvisor().adviseReplicates().asScala
+      region.getDistributionAdvisor().adviseInitializedReplicates().asScala
     }
     val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
     partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
