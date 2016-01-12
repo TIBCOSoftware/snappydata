@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -731,6 +731,11 @@ object ExternalTableType extends Enumeration {
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
       case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case x: TwitterStreamRelation => ExternalTableType.Stream
+      case x: FileStreamRelation => ExternalTableType.Stream
+      case x: SocketStreamRelation => ExternalTableType.Stream
+      case x: KafkaStreamRelation => ExternalTableType.Stream
+      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
   }
