@@ -110,21 +110,13 @@ object StoreUtils extends Logging {
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
 
-    val distMembers = if (Utils.isLoner(sc)) {
+    val regionMembers = if (Utils.isLoner(sc)) {
       Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
     } else {
-      Misc.getGemFireCache.getMembers(region)
-          .asScala.asInstanceOf[scala.collection.Set[InternalDistributedMember]]
+      region.getDistributionAdvisor().adviseInitializedReplicates().asScala
     }
-
-    for (p <- 0 until numPartitions) {
-
-      val prefNodes = distMembers.map(
-        m => blockMap(m)
-      ).toSeq
-
-      partitions(p) = new MultiExecutorLocalPartition(p, prefNodes)
-    }
+    val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
+    partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
     partitions
   }
 
