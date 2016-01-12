@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,21 +19,15 @@ package io.snappydata
 import java.io.File
 import java.sql.SQLException
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
-
-import org.apache.spark.sql.collection.ToolsCallbackInit
-
-//scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
-//scalastyle:on
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.{Logging, SparkConf, SparkContext}
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
-
-import scala.collection.mutable.ArrayBuffer
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
@@ -92,8 +86,8 @@ abstract class SnappyFunSuite
     FileCleaner.deletePath(dir)
   }
 
-  protected def newSparkConf(addOn: (SparkConf) => SparkConf = null): SparkConf
-       = LocalSparkConf.newConf(addOn)
+  protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf =
+    LocalSparkConf.newConf(addOn)
 
   protected def dirCleanup(): Unit = {
     if (dirList.nonEmpty) {
@@ -104,8 +98,8 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val scL = this.sc
-      if (scL != null && !scL.isStopped) {
+      val sc = SnappyContext.globalSparkContext
+      if (sc != null && !sc.isStopped) {
         val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>

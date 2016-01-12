@@ -6,7 +6,14 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData from [here][2]. SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site)
 
-##Community Support
+## Community Support
+Get Community help on
+* [Slack](http://snappydata-slackin.herokuapp.com/) ![Slack](http://i.imgur.com/h3sc6GM.png)
+* Gitter ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
+* [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)
+* [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
+* [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)
+* JIRA ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData distribution
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
@@ -57,8 +64,9 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 
 ###Start the SnappyData Cluster
 Like Spark, SnappyData can also be run in “local” mode(link?).  Here we use a cluster to show how snappyData running as a database server cluster. 
-Start the cluster using sbin/snappy-start-all.sh. This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Details on the architecture is available [here]. Servers and lead are configured to use 1GB of memory by default. 
-![ClusterArchitecture](https://drive.google.com/file/d/0B6s-Dkb7LKolcHhPMDhtYjRuTkU/view?usp=sharing)
+Start the cluster using sbin/snappy-start-all.sh. This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
+
+![ClusterArchitecture](docs/GettingStarted_Architecture.png)
 
 
 ```All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [docs_config]() discusses the custom configuration and startup options```
@@ -94,7 +102,8 @@ You can check the state of the cluster using [Pulse](link) - a graphical dashboa
 
 At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and to SQL requests via JDBC/ODBC.
 
-> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL.
+> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+### goto [Getting started using Spark++ APIs](linkToSparkGettingStarted)
 
 ### Getting stated using SQL
 
@@ -124,16 +133,16 @@ Summary information on the number of on-time, delayed, canceled and diverted fli
 [Column tables](columnTables) organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). 
 ```sql
 snappy> run 'create_and_load_column_table.sql';
-snappy> select count(*) from airline; //row count 
+snappy> select count(*) from airline; 
 
-This script must be in the current working directory (scripts).
-It first drops the tables if already available, then loads parquet formatted data into a temporary spark table then saves in column table called Airline.
-SQL used to create a column table follows the Spark Data source access model:
+-- This script must be in the current working directory (scripts).
+-- It first drops the tables if already available, then loads parquet formatted data into a temporary spark table then saves in column table called Airline.
+-- SQL used to create a column table follows the Spark Data source access model:
 
 CREATE TABLE AIRLINE (<column definitions>)
  USING column OPTIONS(buckets '5') ;
 
-Use of standard SQL (i.e. no USING) will result in creation of a Row table.   
+-- Use of standard SQL (i.e. no USING) will result in creation of a Row table.   
 ```
 
 [Row tables](rowTables), unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.  
@@ -143,13 +152,153 @@ _create table_ DDL allows tables to be partitioned on primary keys, custom parti
 snappy> run 'create_and_load_row_table.sql';
 snappy> select count(*) from airlineref; //row count 
 
-This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
+-- This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
 ```
 
-> ### lots more to come
 
-- Create column and row tables ... what is a column table and row table .. 
-- How to experiment with these tables
--  ....
+#### Run OLAP, OLTP queries
+SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __ Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
+For low latency OLTP queries, the engine won't route it to the lead and instead execute it immediately without any scheduling overhead. Quite often, this may mean simply fetching a row by hashing a key (in nanoseconds). 
+Let's try to run some of these queries. 
+```sql
+-- Simply run the script or copy/paste one query at a time if you want to explore the query execution on the Spark console. 
+
+snappy> run 'olap_queries.sql';
+-- OR
+snappy> elapsedtime on;
+----------------------------------------------------------------------
+---- Which Airlines Arrive On Schedule? JOIN with reference table ----
+----------------------------------------------------------------------
+select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier 
+  from airline_sample, airlineref
+  where airline_sample.UniqueCarrier = airlineref.Code 
+  group by UniqueCarrier, description 
+  order by arrivalDelay;
+
+-- This will print time to execute the query from the shell. 
+
+```
+
+You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution. (Todo: Add more details here .. image?).
+(Todo: If the storage tab will not work, suggest user to peek at the memory used using Jconsole?)
+
+Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to GemXD SQL reference](http://gemxd).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
+
+```sql
+-- Run a simple update SQL statement on the replicated row table.
+
+snappy> run 'oltp_queries.sql';
+```
+You can execute transactions using commands _autocommit off_ and _commit_.  
+> ####Note
+> In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
+
+#### Approximate query processing (AQP)
+OLAP queries tend to be very expensive as this require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
+Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs (and DDL) to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
+
+> #### Note
+> We recommend downloading the _onTime airline_ data for 2009-2015 which is about 50 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
+> ```
+> To download the larger data set run this command from the shell:
+> $ ./download_full_airlinedata.sh ../data   (Is this correct?)
+> Then, go back to the SQL shell and re-run the 'create_and_load_column_table.sql' script. You could re-run the OLAP queries to note the performance. 
+
+```sql
+-- Execute the following script to create a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). 
+-- Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
+
+snappy> run 'create_and_load_sample_table.sql';
+
+-- Here is the _Create DDL_ for the sample table
+-- CREATE TABLE AIRLINE_SAMPLE
+--   USING column_sample  //All Sample tables are columnar
+--   OPTIONS(
+--    buckets '5',  // Number of partitions 
+--    qcs 'UniqueCarrier, Year_, Month_', 
+--        //QueryColumnSet: The strata - 3% of each combination of Carrier, Year and Month is stored as sample
+--    fraction '0.03', //How big should the sample be
+--    strataReservoirSize '50', //Reservoir sampling to support streaming inserts
+--    basetable 'Airline') // The parent base table
+  ...
+```
+
+> Todo: Provide script file with SQL based on error and confidence .... Hemant?
+
+
+You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
+
+```sql
+snappy> 
+-- What is the average arrival delay for all airlines for each month?;
+snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0 
+    group by Month_
+    with error .05 ;
+-- The above query will consult the sample and return an answer if the estimated answer is at least 95% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
+
+-- You can also access the error using built-in functions. 
+snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay) error, Month_ 
+    from Airline where ArrDelay >0 
+    group by Month_
+    with error .05 ;
+-- The correct answer is within +/- 'error'
+-- Consult the docs for access to other related functions like relative_error(), lower and upper bounds for the error returned. 
+```
+
+you can now re-run the previous OLAP queries with an error constraint and compare the results.  You should notice a 10X or larger difference in query execution latency while the results remain nearly accurate. As a reminder,  we recommend downloading the larger data set for this exercise.
+
+```sql
+-- re-run olap queries with error constraint to automatically use sampling
+snappy> run 'olap_approx_queries.sql';
+-- THIS SCRIPT NEEDS TO BE ADDED .. HEMANT?
+```
+> where/how can we show memory utilization with sampling. 
+
+#### Stream analytics using SQL and Spark Streaming
+SnappyData extends Spark streaming so stream definitions can be declaratively done using SQL and you can analyze these streams using SQL.  You can also dynamically run SQL queries on these streams. There is no need to learn Spark streaming APIs or statically define all the rules to be executed on these streams. 
+
+The example below consumes tweets, models the stream as a table (so it can be queried) and we then run ad-hoc SQL from remote clients on the current state of the stream (here the window interval is set to 5 seconds). Later,  in the Spark code section we further enhance to showcase "continuous queries" (CQ). Dynamic registration of CQs (from remote clients) will be available in the next release.
+
+```sql
+snappy> create stream table tweetstreamtable
+       (id long, text string, fullName string, 
+      country string, retweets int, hashtag string)
+      using twitter_stream options (
+        consumerKey '***REMOVED***',
+        consumerSecret '***REMOVED***', 
+        accessToken '***REMOVED***', 
+        accessTokenSecret '***REMOVED***', 
+        streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter'
+      );
+-- Should we showing option that simulates the stream first? Show consuming actual stream only in packaged example?
+-- You can also just run script 'create_stream_table.sql'
+``` 
+> show sample dynamic SQL queries on this stream ....
+
+### Getting started with Spark API (with SnappyData extensions)
+> We assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/) 
+>  Or, is it better to explain just the few things they need to know right here?
+
+First, follow the [instructions](#Getting stated using SQL) to start the SnappyData cluster. Unlike Apache Spark, which is primarily a computational engine with caching, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark Jobs to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways:
+1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
+2. __Driver runs in HA configuration__: Assignment of jobs/tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
+Read [docs](docs) for details of the architecture.
+
+> NOTE: SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. 
+> But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. 
+> To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. 
+
+> ### Note: More TODOs for Hemant
+> - explain and walk thru code to run olap queries using the DF API ... 
+> - maybe, run the same using Spark cache ... highlight performance difference?
+> - explain and run OLTP code ... what are the additional APIs on top of spark. 
+>  - in All of this link to relevant sections in Spark guide.
+>  .- Explain the 'runJob' trait? What is a SnappySQLJob?
+>  - Mimic the sampling queries using API .... can we show them error related functions also using API
+>  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
+>  Finally, we go through Spark standalone cluster working with Snappy .... 
+
+
+-----
 
 

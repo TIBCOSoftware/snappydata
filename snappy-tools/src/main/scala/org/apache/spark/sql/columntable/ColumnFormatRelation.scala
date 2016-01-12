@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -126,7 +126,7 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           externalStore.connProperties,
-          Array.empty[Filter],
+          filters,
           Array.empty[Partition],
           blockMap
         ).asInstanceOf[RDD[Row]]
@@ -144,7 +144,8 @@ class ColumnFormatRelation(
           table,
           requiredColumns,
           externalStore.connProperties,
-          externalStore
+          externalStore,
+          filters
         ).asInstanceOf[RDD[Row]]
 
         colRdd.union(rowRdd)
@@ -216,7 +217,7 @@ class ColumnFormatRelation(
 
   def insert(data: DataFrame, mode: SaveMode): Unit = {
     if (mode == SaveMode.Overwrite) {
-      truncate
+      truncate()
     }
     JdbcUtils.saveTable(data, externalStore.connProperties.url, table, externalStore.connProperties.connProps)
   }
