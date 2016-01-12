@@ -294,7 +294,7 @@ object SparkSQLExecuteImpl {
 }
 
 class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
-    partitionBlockIds: Array[RDDBlockId]) extends Logging {
+    partitionBlockIds: Array[RDDBlockId]) extends Logging with Serializable {
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
     SnappyUIUtils.withNewExecutionId(df.sqlContext, df.queryExecution) {
