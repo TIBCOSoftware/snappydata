@@ -20,18 +20,20 @@ import java.io.DataOutput
 import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.internal.InternalDataSerializer
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.distributed.{ActiveColumnBits, GfxdHeapDataOutputStream, SnappyResultHolder}
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyUIUtils, DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
@@ -57,16 +59,6 @@ class SparkSQLExecuteImpl(val sql: String,
   private lazy val schema = df.schema
 
   private val resultsRdd = df.queryExecution.executedPlan.execute()
-
-  override def serializeRows(out: DataOutput) = {
-    val numBytes = hdos.size
-    if (numBytes > 0) {
-      InternalDataSerializer.writeArrayLength(numBytes, out)
-      hdos.sendTo(out)
-    } else {
-      InternalDataSerializer.writeArrayLength(0, out)
-    }
-  }
 
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
@@ -136,6 +128,16 @@ class SparkSQLExecuteImpl(val sql: String,
         // remove cached results from block manager
         bm.removeRdd(resultsRdd.id)
       }
+    }
+  }
+
+  override def serializeRows(out: DataOutput): Unit = {
+    val numBytes = hdos.size
+    if (numBytes > 0) {
+      InternalDataSerializer.writeArrayLength(numBytes, out)
+      hdos.sendTo(out)
+    } else {
+      InternalDataSerializer.writeArrayLength(0, out)
     }
   }
 
@@ -254,43 +256,92 @@ object SparkSQLExecuteImpl {
   private def writeColDataInOptimizedWay(row: InternalRow, colIndex: Int,
       schema: StructType, hdos: GfxdHeapDataOutputStream) = {
     schema(colIndex).dataType match {
-      case TimestampType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case BooleanType => hdos.writeBoolean(row.getBoolean(colIndex))
-      case DateType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case LongType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case ShortType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
-      case ByteType => DataSerializer.writePrimitiveByte(row.getByte(colIndex), hdos)
-      case IntegerType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
-      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(colIndex, t.precision,
-        t.scale).toJavaBigDecimal, hdos)
-      case FloatType => hdos.writeFloat(row.getFloat(colIndex))
-      case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
       case StringType =>
-        // keep this consistent with SQLChar.toDataForOptimizedResultHolder
         val utf8String = row.getUTF8String(colIndex)
 
         if (utf8String ne null) {
           val utfLen = utf8String.numBytes()
-          // for length greater than 64K, write a terminating sequence
-          if (utfLen > 65535) {
-            hdos.writeShort(0)
-            hdos.copyMemory(utf8String.getBaseObject,
-              utf8String.getBaseOffset, utfLen)
-            hdos.writeNoWrap(LONG_UTF8_TERMINATION, 0, 3)
-          } else if (utfLen > 0) {
-            hdos.writeShort(utfLen)
-            hdos.copyMemory(utf8String.getBaseObject,
-              utf8String.getBaseOffset, utfLen)
-          } else {
-            hdos.writeShort(0)
-            hdos.writeByte(-1)
-          }
+          InternalDataSerializer.writeSignedVL(utfLen, hdos)
+          hdos.copyMemory(utf8String.getBaseObject,
+            utf8String.getBaseOffset, utfLen)
         } else {
-          hdos.writeShort(0)
-          hdos.writeByte(-1)
+          InternalDataSerializer.writeSignedVL(-1, hdos)
         }
-      // TODO: KN add varchar when that data type is identified
-      // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
+      case IntegerType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
+      case LongType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
+      case TimestampType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
+      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(colIndex, t.precision,
+        t.scale).toJavaBigDecimal, hdos)
+      case BooleanType => hdos.writeBoolean(row.getBoolean(colIndex))
+      case DateType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
+      case ShortType => InternalDataSerializer.writeSignedVL(row.getShort(colIndex), hdos)
+      case ByteType => hdos.writeByte(row.getByte(colIndex))
+      case FloatType => hdos.writeFloat(row.getFloat(colIndex))
+      case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
+    }
+  }
+
+  def readDVDArray(dvds: Array[DataValueDescriptor], in: ByteArrayDataInput,
+      numEightColGroups: Int, numPartialCols: Int): Unit = {
+    var groupNum: Int = 0
+    // using the gemfirexd way of sending results where in the number of
+    // columns in each row is divided into sets of 8 columns. Per eight column
+    // group a byte will be sent to indicate which all column in that group
+    // has a non-null value.
+    while (groupNum < numEightColGroups - 1) {
+      readAGroup(groupNum, 8, dvds, in)
+      groupNum += 1
+    }
+    readAGroup(groupNum, numPartialCols, dvds, in)
+  }
+
+  private def readAGroup(groupNum: Int, numColsInGroup: Int,
+      dvds: Array[DataValueDescriptor], in: ByteArrayDataInput): Unit = {
+    val activeByteForGroup: Byte = DataSerializer.readPrimitiveByte(in)
+    var index: Int = 0
+    while (index < numColsInGroup) {
+      val dvdIndex = (groupNum << 3) + index
+      val dvd = dvds(dvdIndex)
+      if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
+        dvd.getTypeFormatId match {
+          case StoredFormatIds.SQL_CLOB_ID =>
+            val utfLen = InternalDataSerializer.readSignedVL(in).toInt
+            if (utfLen >= 0) {
+              val pos = in.position()
+              dvd.readBytes(in.array(), pos, utfLen)
+              in.setPosition(pos + utfLen)
+            } else {
+              dvd.setToNull()
+            }
+
+          case StoredFormatIds.SQL_INTEGER_ID |
+               StoredFormatIds.SQL_LONGINT_ID |
+               StoredFormatIds.SQL_SMALLINT_ID =>
+            dvd.setValue(InternalDataSerializer.readSignedVL(in))
+          case StoredFormatIds.SQL_TIMESTAMP_ID =>
+            val ts = DateTimeUtils.toJavaTimestamp(
+              InternalDataSerializer.readSignedVL(in))
+            dvd.setValue(ts)
+          case StoredFormatIds.SQL_DECIMAL_ID =>
+            val bd = DataSerializer.readObject[java.math.BigDecimal](in)
+            dvd.setBigDecimal(bd)
+          case StoredFormatIds.SQL_DATE_ID =>
+            val dt = DateTimeUtils.toJavaDate(
+              InternalDataSerializer.readSignedVL(in).toInt)
+            dvd.setValue(dt)
+          case StoredFormatIds.SQL_BOOLEAN_ID =>
+            dvd.setValue(in.readBoolean())
+          case StoredFormatIds.SQL_TINYINT_ID =>
+            dvd.setValue(in.readByte())
+          case StoredFormatIds.SQL_REAL_ID =>
+            dvd.setValue(in.readFloat())
+          case StoredFormatIds.SQL_DOUBLE_ID =>
+            dvd.setValue(in.readDouble())
+        }
+      } else {
+        dvd.setToNull()
+      }
+      index += 1
     }
   }
 }

@@ -20,7 +20,9 @@ import java.lang.Long
 import java.util
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
+import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks,
   LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
@@ -74,6 +76,13 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def clearSnappyContextForConnection(connectionId: Long): Unit = {
     SnappyContextPerConnection.removeSnappyContext(connectionId)
+  }
+
+  override def readDVDArray(dvds: Array[DataValueDescriptor],
+      in: ByteArrayDataInput, numEightColGroups: Int,
+      numPartialCols: Int): Unit = {
+    SparkSQLExecuteImpl.readDVDArray(dvds, in, numEightColGroups,
+      numPartialCols)
   }
 }
 
