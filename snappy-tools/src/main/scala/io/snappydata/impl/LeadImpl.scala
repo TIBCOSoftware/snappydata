@@ -126,8 +126,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         conf.set(key, v)
       })
 
-      SnappyEmbeddedModeClusterManager.register()
-
       sparkContext = new SparkContext(conf)
 
     } catch {
