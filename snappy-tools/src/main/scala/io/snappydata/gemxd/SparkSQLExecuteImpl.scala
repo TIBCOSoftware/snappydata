@@ -30,8 +30,8 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.execution.SQLExecution
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyUIUtils, DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
@@ -39,8 +39,6 @@ import org.apache.spark.{Logging, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
- *
- * Created by kneeraj on 20/10/15.
  */
 class SparkSQLExecuteImpl(val sql: String,
     val ctx: LeadNodeExecutionContext,
@@ -55,8 +53,6 @@ class SparkSQLExecuteImpl(val sql: String,
     Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
   private lazy val schema = df.schema
-
-
 
   private val resultsRdd = df.queryExecution.executedPlan.execute()
 
@@ -76,42 +72,13 @@ class SparkSQLExecuteImpl(val sql: String,
     var srh = snappyResultHolder
     val isLocalExecution = msg.isLocallyExecuted
     val bm = SparkEnv.get.blockManager
-    val numPartitions = resultsRdd.partitions.length
     val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
-    val sql = this.sql
-    val schema = this.schema
+    val handler = new ExecutionHandler(sql, schema, resultsRdd.id,
+      partitionBlockIds)
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
-      snx.runJob(resultsRdd, (itr: Iterator[InternalRow]) => {
-
-        var (numCols, numEightColGroups, numPartCols) = (-1, -1, -1)
-
-        def evalNumColumnGroups(row: InternalRow): Unit = {
-          if (row != null) {
-            numCols = row.numFields
-            numEightColGroups = (numCols + 7) / 8
-            numPartCols = ((numCols - 1) % 8) + 1
-          }
-        }
-        val dos = new GfxdHeapDataOutputStream(
-          Misc.getMemStore.thresholdListener(), sql, true, null)
-        itr.foreach { row =>
-          if (numCols == -1) {
-            evalNumColumnGroups(row)
-          }
-          SparkSQLExecuteImpl.writeRow(row, numCols, numEightColGroups,
-            numPartCols, schema, dos)
-        }
-        dos.toByteArray
-      }, (partitionId, block: Array[Byte]) => {
-        if (block.length > 0) {
-          val blockId = RDDBlockId(resultsRdd.id, partitionId)
-          bm.putBytes(blockId, ByteBuffer.wrap(block),
-            StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
-          partitionBlockIds(partitionId) = blockId
-        }
-      }))
+      handler(resultsRdd, df)
 
       hdos.clearForReuse()
       var metaDataSent = false
@@ -244,7 +211,7 @@ class SparkSQLExecuteImpl(val sql: String,
 object SparkSQLExecuteImpl {
   val LONG_UTF8_TERMINATION = Array((0xE0 & 0xFF).toByte, 0.toByte, 0.toByte)
 
-  private def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
+  def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
       numPartCols: Int, schema: StructType, hdos: GfxdHeapDataOutputStream) = {
     var groupNum: Int = 0
     // using the gemfirexd way of sending results where in the number of
@@ -322,6 +289,51 @@ object SparkSQLExecuteImpl {
         }
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
+    }
+  }
+}
+
+class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
+    partitionBlockIds: Array[RDDBlockId]) extends Logging {
+
+  def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
+    SnappyUIUtils.withNewExecutionId(df.sqlContext, df.queryExecution) {
+      val sc = SnappyContext.globalSparkContext
+      sc.runJob(resultsRdd, rowIter _, resultHandler _)
+    }
+  }
+
+  private[snappydata] def rowIter(itr: Iterator[InternalRow]): Array[Byte] = {
+
+    var (numCols, numEightColGroups, numPartCols) = (-1, -1, -1)
+
+    def evalNumColumnGroups(row: InternalRow): Unit = {
+      if (row != null) {
+        numCols = row.numFields
+        numEightColGroups = (numCols + 7) / 8
+        numPartCols = ((numCols - 1) % 8) + 1
+      }
+    }
+    val dos = new GfxdHeapDataOutputStream(
+      Misc.getMemStore.thresholdListener(), sql, true, null)
+    itr.foreach { row =>
+      if (numCols == -1) {
+        evalNumColumnGroups(row)
+      }
+      SparkSQLExecuteImpl.writeRow(row, numCols, numEightColGroups,
+        numPartCols, schema, dos)
+    }
+    dos.toByteArray
+  }
+
+  private[snappydata] def resultHandler(partitionId: Int,
+      block: Array[Byte]): Unit = {
+    if (block.length > 0) {
+      val bm = SparkEnv.get.blockManager
+      val blockId = RDDBlockId(rddId, partitionId)
+      bm.putBytes(blockId, ByteBuffer.wrap(block),
+        StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
+      partitionBlockIds(partitionId) = blockId
     }
   }
 }
