@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -64,7 +64,7 @@ object Utils {
   }
 }
 
-object SparkShellRDDHelper {
+final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -89,26 +89,10 @@ object SparkShellRDDHelper {
     (statement, rs)
   }
 
-
   def getConnection(connectionProperties: ConnectionProperties, split: Partition): Connection = {
     val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
-    useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
+    useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
-  }
-
-  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
-    useLocatorURL = false
-    store.tryExecute(tableName, {
-      case conn =>
-        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-        val bucketToServerList = getBucketToServerMapping(resolvedName)
-        val numPartitions = bucketToServerList.length
-        val partitions = new Array[Partition](numPartitions)
-        for (p <- 0 until numPartitions) {
-          partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
-        }
-        partitions
-    })
   }
 
   def createConnection(connProps: ConnectionProperties, hostList: ArrayBuffer[(String, String)])
@@ -145,6 +129,23 @@ object SparkShellRDDHelper {
           createConnection(connProps, hostList)
         }
     }
+  }
+}
+
+object SparkShellRDDHelper {
+
+  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
+    store.tryExecute(tableName, {
+      case conn =>
+        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+        val bucketToServerList = getBucketToServerMapping(resolvedName)
+        val numPartitions = bucketToServerList.length
+        val partitions = new Array[Partition](numPartitions)
+        for (p <- 0 until numPartitions) {
+          partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
+        }
+        partitions
+    })
   }
 
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
