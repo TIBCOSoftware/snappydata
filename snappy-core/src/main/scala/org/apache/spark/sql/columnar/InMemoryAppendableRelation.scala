@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -52,9 +52,9 @@ private[sql] class InMemoryAppendableRelation(
     new ArrayBuffer[RDD[CachedBatch]]())
     extends InMemoryRelation(output, useCompression, batchSize,
       storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
-          _stats: Statistics,
-          _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow])
-    with MultiInstanceRelation with InMemoryAppendableRelationTrait{
+      _stats: Statistics,
+      _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow])
+    with MultiInstanceRelation with InMemoryAppendableRelationTrait {
 
   override private[sql] val reservoirRDD: Option[RDD[InternalRow]] = None
 
@@ -109,7 +109,7 @@ private[sql] class InMemoryAppendableRelation(
   override def withOutput(newOutput: Seq[Attribute]): InMemoryRelation = {
     new InMemoryAppendableRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName)(super.cachedColumnBuffers,
-          statisticsToBePropagated, batchStats, _cachedBufferList)
+      statisticsToBePropagated, batchStats, _cachedBufferList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -122,8 +122,8 @@ private[sql] class InMemoryAppendableRelation(
       storageLevel,
       child,
       tableName)(super.cachedColumnBuffers,
-          statisticsToBePropagated,
-          batchStats, _cachedBufferList).asInstanceOf[this.type]
+      statisticsToBePropagated,
+      batchStats, _cachedBufferList).asInstanceOf[this.type]
   }
 
   def getInMemoryRelationCachedColumnBuffers: RDD[CachedBatch] = super.cachedColumnBuffers
@@ -162,39 +162,25 @@ private[sql] object InMemoryAppendableRelation {
 private[sql] class InMemoryAppendableColumnarTableScan(
     override val attributes: Seq[Attribute],
     override val predicates: Seq[Expression],
-    override val relation: InMemoryAppendableRelation)
+    @transient override val relation: InMemoryAppendableRelation)
     extends InMemoryColumnarTableScan(attributes, predicates, relation) {
 
   protected override def doExecute(): RDD[InternalRow] = {
 
     val rdd = relation.reservoirRDD
-    val rel = relation.output
-    if (rdd.isEmpty) {
+    val relOutput = relation.output
+    val attributes = this.attributes
+
+    if (rdd.isEmpty || rdd.get.partitions.length == 0) {
       return super.doExecute()
     }
-    val rel_out = relation.output
     val reservoirRows: RDD[InternalRow] = rdd.get.mapPartitionsPreserve { rows =>
 
       // Find the ordinals and data types of the requested columns.
-      // If none are requested, use the narrowest (the field with
-      // minimum default element size).
-      val (requestedColumnIndices, requestedColumnDataTypes) = if (attributes.isEmpty) {
-        val (narrowestOrdinal, narrowestDataType) =
-
-          rel.zipWithIndex.map { case (a, ordinal) =>
-
-            ordinal -> a.dataType
-          } minBy { case (_, dataType) =>
-            ColumnType(dataType).defaultSize
-          }
-        Seq(narrowestOrdinal) -> Seq(narrowestDataType)
-      } else {
+      val (requestedColumnIndices, requestedColumnDataTypes) =
         attributes.map { a =>
-
-          rel.indexWhere(_.exprId == a.exprId) -> a.dataType
-
+          relOutput.indexWhere(_.exprId == a.exprId) -> a.dataType
         }.unzip
-      }
 
       val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,6 +18,7 @@ package org.apache.spark.sql.rowtable
 
 import java.util.Properties
 
+import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -29,7 +30,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.PartitionedDataSourceScan
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartition, JDBCRDD}
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -81,7 +82,7 @@ class RowFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          ConnectionProperties(url,driver,_poolProps,connProperties,hikariCP),
+          ConnectionProperties(url, driver, _poolProps, connProperties, hikariCP),
           filters,
           parts,
           blockMap,
@@ -104,29 +105,26 @@ class RowFormatRelation(
    */
   override def numPartitions: Int = {
     val resolvedName = StoreUtils.lookupName(table, tableSchema)
-    val region = Misc.getRegionForTable(resolvedName, true)
-    if (region.isInstanceOf[PartitionedRegion]) {
-      val par = region.asInstanceOf[PartitionedRegion]
-      par.getTotalNumberOfBuckets
-    } else {
-      1
+    val region: Region[_, _] = Misc.getRegionForTable(resolvedName, true)
+    region match {
+      case pr: PartitionedRegion => pr.getTotalNumberOfBuckets
+      case _ => 1
     }
   }
 
   override def partitionColumns: Seq[String] = {
     val resolvedName = StoreUtils.lookupName(table, tableSchema)
-    val region = Misc.getRegionForTable(resolvedName, true)
-    val partitionColumn = if (region.isInstanceOf[PartitionedRegion]) {
-      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-      val resolver = region.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-      val parColumn = resolver.getColumnNames
-      parColumn.toSeq
-    } else {
-      Seq.empty[String]
+    val region: Region[_, _] = Misc.getRegionForTable(resolvedName, true)
+    val partitionColumn = region match {
+      case pr: PartitionedRegion =>
+        val resolver = pr.getPartitionResolver
+            .asInstanceOf[GfxdPartitionByExpressionResolver]
+        val parColumn = resolver.getColumnNames
+        parColumn.toSeq
+      case _ => Seq.empty[String]
     }
     partitionColumn
   }
-
 }
 
 final class DefaultSource extends MutableRelationProvider {
@@ -136,8 +134,10 @@ final class DefaultSource extends MutableRelationProvider {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
-    val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parameters)
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters, true, false)
+    val partitions = ExternalStoreUtils.getTotalPartitions(
+      sqlContext.sparkContext, parameters)
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters,
+      isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"
     val preservePartitions = parameters.remove("preservepartitions")
     val sc = sqlContext.sparkContext
@@ -150,7 +150,8 @@ final class DefaultSource extends MutableRelationProvider {
     val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =
       dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table, None, partitions , connProperties)
+        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
+          None, partitions, connProperties)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -74,14 +74,13 @@ object KafkaConsumer {
       "strataReservoirSize" -> "300",
       "timeInterval" -> "3m"), Some("tweetstreamtable"))
 
-    tableStream.saveStream(Seq("tweetstreamtable_sampled"))
+    ssnc.snappyContext.saveStream(tableStream, Seq("tweetstreamtable_sampled"), None)
 
     var numTimes = 0
-    tableStream.foreachRDD { rdd =>
+    tableStream.foreachDataFrame { df =>
       println("Evaluating new batch") // scalastyle:ignore
       var start: Long = 0
       var end: Long = 0
-      val df = tableStream.createDataFrame(rdd)
       df.write.format("column").mode(SaveMode.Append).options(props)
         .saveAsTable("rawStreamColumnTable")
 
@@ -125,13 +124,12 @@ object KafkaConsumer {
         )
 */
 
-    ssnc.sql( """STREAMING CONTEXT START """)
-
+    ssnc.sql("STREAMING START")
 
     ssnc.awaitTerminationOrTimeout(1800* 1000)
     ssnc.sql( "select count(*) from rawStreamColumnTable").show
 
-    ssnc.sql( """STREAMING CONTEXT STOP """)
+    ssnc.sql("STREAMING STOP")
   }
 
 }
