@@ -343,10 +343,12 @@ object SnappyContextPerConnection {
   private lazy val concurrentMap = new java.util.concurrent.ConcurrentHashMap[Long, SnappyContext]()
 
   def getSnappyContextForConnection(connectionID: Long): SnappyContext = {
-    if (concurrentMap.get(connectionID) == null) {
-      concurrentMap.put(connectionID, SnappyContext.getOrCreate(null).newSession())
+    var context = concurrentMap.get(connectionID)
+    if (context == null) {
+      context = SnappyContext.getOrCreate(null).newSession()
+      concurrentMap.put(connectionID, context)
     }
-    concurrentMap.get(connectionID)
+    context
   }
 
   def removeSnappyContext(connectionID: Long): Unit = {
