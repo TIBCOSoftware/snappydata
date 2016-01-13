@@ -89,7 +89,8 @@ object AQPDefault extends AQPContext{
   def createSampleDataFrameContract(sqlContext: SnappyContext, df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
   = throw new UnsupportedOperationException("missing aqp jar")
 
-  def convertToStratifiedSample(options: Map[String, Any], logicalPlan: LogicalPlan): LogicalPlan
+  def convertToStratifiedSample(options: Map[String, Any], snc: SnappyContext,
+                                logicalPlan: LogicalPlan): LogicalPlan
   = throw new UnsupportedOperationException("missing aqp jar")
 
   def getPlanner(context: SnappyContext) : SparkPlanner = new DefaultPlanner(context)
