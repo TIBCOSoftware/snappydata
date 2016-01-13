@@ -62,7 +62,7 @@ If the build works fine, then import into Intellij:
   * Increase the compiler heap sizes or else the build can take quite long especially with integrated GemFireXD. In ````File->Settings->Build, Execution, Deployment->Compiler increase ````, ````Build process heap size```` to say 1536 or 2048. Similarly increase JVM maximum heap size in ````Languages & Frameworks->Scala Compiler Server```` to 1536 or 2048.
   * Test the full build.
   * ````Open Run->Edit Configurations````. Expand Defaults, and select Application. Add ````-XX:MaxPermSize=350m```` in VM options. Similarly add it to VM parameters for ScalaTest and JUnit.
-  * For JUnit configuration also append ````/build-artifacts```` to the working directory i.e. the directory should be ````$MODULE_DIR$/build-artifacts`````. Likewise change working directory for ScalaTest to be inside build-artifacts otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
+  * For JUnit configuration also append ````/build-artifacts```` to the working directory i.e. the directory should be ````$MODULE_DIR$/build-artifacts````. Likewise change working directory for ScalaTest to be inside build-artifacts otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
   * Try ````Run->Run````... on a test like SparkSQLTest.
 
 
