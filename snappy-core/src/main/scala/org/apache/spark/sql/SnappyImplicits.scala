@@ -108,6 +108,7 @@ object snappy extends Serializable {
 private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
                                                   df: DataFrame) {
 
+
   /**
    * Creates stratified sampled data from given DataFrame
    * {{{
@@ -115,7 +116,7 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * }}}
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame = new SampleDataFrame(context,
-    context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
+    context.aqpContext.convertToStratifiedSample(options, context, df.logicalPlan) )
 
 
   def createTopK(ident: String, keyColumnName: String, options: Map[String, Any]): Unit =
