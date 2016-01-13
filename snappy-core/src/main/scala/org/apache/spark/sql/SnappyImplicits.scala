@@ -1,10 +1,24 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql
 
 import org.apache.spark.rdd.RDD
 
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.streaming.{SnappyStreamingContext, StreamingCtxtHolder}
-import org.apache.spark.streaming.StreamingContext
 import org.apache.spark.{SparkContext, TaskContext}
 
 import scala.language.implicitConversions
@@ -33,6 +47,7 @@ object snappy extends Serializable {
       case _ => plan
     }
   }
+/*
 
   implicit class SparkContextOperations(val s: SparkContext) {
     def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
@@ -40,10 +55,13 @@ object snappy extends Serializable {
     }
   }
 
+*/
   implicit class RDDExtensions[T: ClassTag](rdd: RDD[T]) extends Serializable {
 
     /**
      * Return a new RDD by applying a function to all elements of this RDD.
+     *
+     * This variant also preserves the preferred locations of parent RDD.
      */
     def mapPreserve[U: ClassTag](f: T => U): RDD[U] = rdd.withScope {
       val cleanF = rdd.sparkContext.clean(f)
@@ -53,6 +71,7 @@ object snappy extends Serializable {
 
     /**
      * Return a new RDD by applying a function to each partition of given RDD.
+     *
      * This variant also preserves the preferred locations of parent RDD.
      *
      * `preservesPartitioning` indicates whether the input function preserves
@@ -71,6 +90,7 @@ object snappy extends Serializable {
     /**
      * Return a new RDD by applying a function to each partition of given RDD,
      * while tracking the index of the original partition.
+     *
      * This variant also preserves the preferred locations of parent RDD.
      *
      * `preservesPartitioning` indicates whether the input function preserves
@@ -109,8 +129,8 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
   /**
    * Table must be registered using #registerSampleTable.
    */
-  def insertIntoAQPStructures(aqpStructureNamea: String*): Unit =
-    context.saveTable( df, aqpStructureNamea)
+  def insertIntoAQPStructures(aqpStructureNames: String*): Unit =
+    context.saveTable( df, aqpStructureNames)
 
 
   /**

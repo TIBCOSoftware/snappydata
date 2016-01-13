@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.columnar
 
 import scala.collection.mutable.ArrayBuffer
@@ -14,7 +30,7 @@ import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 
-private[sql]  class ExternalStoreRelation(
+private[sql] class ExternalStoreRelation(
     override val output: Seq[Attribute],
     override val useCompression: Boolean,
     override val batchSize: Int,
@@ -24,13 +40,13 @@ private[sql]  class ExternalStoreRelation(
     val externalStore: ExternalStore)(
     private var _ccb: RDD[CachedBatch] = null,
     private var _stats: Statistics = null,
-    private var _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow] = null,
-    private[columnar] var uuidList: ArrayBuffer[RDD[UUIDRegionKey]]
-     = new ArrayBuffer[RDD[UUIDRegionKey]]())
-    extends InMemoryAppendableRelation(
-     output, useCompression, batchSize, storageLevel, child, tableName)(_ccb: RDD[CachedBatch],
-        _stats: Statistics,
-        _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow]) {
+    private var _bstats: Accumulable[ArrayBuffer[InternalRow],
+        InternalRow] = null,
+    private[columnar] var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] =
+        new ArrayBuffer[RDD[UUIDRegionKey]]())
+    extends InMemoryAppendableRelation(output, useCompression, batchSize,
+      storageLevel, child, tableName)(_ccb: RDD[CachedBatch], _stats: Statistics,
+      _bstats: Accumulable[ArrayBuffer[InternalRow], InternalRow]) {
 
   override def appendBatch(batch: RDD[CachedBatch]) = writeLock {
     throw new IllegalStateException(
@@ -56,8 +72,8 @@ private[sql]  class ExternalStoreRelation(
   override def withOutput(newOutput: Seq[Attribute]): InMemoryRelation = {
     new ExternalStoreRelation(newOutput, useCompression, batchSize,
       storageLevel, child, tableName, externalStore)(
-          cachedColumnBuffers, super.statisticsToBePropagated,
-          batchStats, uuidList)
+      cachedColumnBuffers, super.statisticsToBePropagated,
+      batchStats, uuidList)
   }
 
   override def children: Seq[LogicalPlan] = Seq.empty
@@ -70,7 +86,7 @@ private[sql]  class ExternalStoreRelation(
     child,
     tableName,
     externalStore)(cachedColumnBuffers, super.statisticsToBePropagated,
-        batchStats, uuidList).asInstanceOf[this.type]
+    batchStats, uuidList).asInstanceOf[this.type]
 
   override def cachedColumnBuffers: RDD[CachedBatch] = readLock {
     externalStore.getCachedBatchRDD(tableName.get, null,
@@ -91,8 +107,8 @@ private[sql]  class ExternalStoreRelation(
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
       batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-    val uuid = externalStore.storeCachedBatch(tableName.getOrElse(throw new IllegalStateException("missing tableName"))
-      , batch)
+    val uuid = externalStore.storeCachedBatch(tableName.getOrElse(
+      throw new IllegalStateException("missing tableName")), batch)
     accumulated += uuid
   }
 }
@@ -107,7 +123,7 @@ private[sql] object ExternalStoreRelation {
       jdbcSource: ExternalStore): ExternalStoreRelation =
     new ExternalStoreRelation(child.output, useCompression, batchSize,
       storageLevel, if (child.outputsUnsafeRows) child else ConvertToUnsafe(child),
-      tableName,  jdbcSource)()
+      tableName, jdbcSource)()
 
 
   def apply(useCompression: Boolean,
