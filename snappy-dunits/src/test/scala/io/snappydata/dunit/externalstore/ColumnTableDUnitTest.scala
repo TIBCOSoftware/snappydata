@@ -1,5 +1,7 @@
 package io.snappydata.dunit.externalstore
 
+import scala.collection.JavaConversions
+
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.SerializableCallable
@@ -127,6 +129,56 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     newCounts.zip(counts).foreach { case (c1, c2) =>
       assert(c1 == c2, s"newCount=$c1 count=$c2")
     }
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect()
+    assert(r.length == 1008)
+
+    snc.dropTable(tableName, ifExists = true)
+    logger.info("Successful")
+  }
+
+  // changing the test to such that batches are created
+  // and looking for column table stats
+  def testSNAP365_FetchRemoteBucketEntries(): Unit = {
+    val snc = SnappyContext(sc)
+
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt)
+    }
+    val rdd = sc.parallelize(data, 3).map(
+      s => new Data(s(0), s(1), s(2)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val p = Map.empty[String, String]
+    snc.createExternalTable(tableName, "column", dataDF.schema, p)
+
+    // we don't expect any increase in put distribution stats
+    val getTotalEntriesCount = new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        val pr: PartitionedRegion = Misc.getRegionForTable("APP.COLUMNTABLE_SHADOW_", true).asInstanceOf[PartitionedRegion]
+        var buckets = Set.empty[Integer]
+        0 to (pr.getTotalNumberOfBuckets-1) foreach { x =>
+          buckets = buckets + x
+        }
+        val iter = pr.getAppropriateLocalEntriesIterator(JavaConversions.setAsJavaSet(buckets), false, false, true, pr, true)
+        var count = 0
+        while(iter.hasNext) {
+          iter.next
+          count = count + 1
+        }
+        println("The total count is " + count)
+        Int.box(count)
+      }
+    }
+
+    dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
+    val counts = Array(vm0, vm1, vm2).map(_.invoke(getTotalEntriesCount))
+    assert(counts(0) == counts(1))
+    assert(counts(0) == counts(2))
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
