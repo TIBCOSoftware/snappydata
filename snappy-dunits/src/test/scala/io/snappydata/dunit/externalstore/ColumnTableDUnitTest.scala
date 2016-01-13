@@ -175,10 +175,27 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       }
     }
 
+    val getLocalEntriesCount = new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        val pr: PartitionedRegion = Misc.getRegionForTable("APP.COLUMNTABLE_SHADOW_", true).asInstanceOf[PartitionedRegion]
+        val iter = pr.getAppropriateLocalEntriesIterator(pr.getDataStore.getAllLocalBucketIds, false, false, true, pr, false)
+        var count = 0
+        while (iter.hasNext) {
+          iter.next
+          count = count + 1
+        }
+        Int.box(count)
+      }
+    }
+
     dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
-    val counts = Array(vm0, vm1, vm2).map(_.invoke(getTotalEntriesCount))
-    assert(counts(0) == counts(1))
-    assert(counts(0) == counts(2))
+    val totalCounts = Array(vm0, vm1, vm2).map(_.invoke(getTotalEntriesCount))
+    assert(totalCounts(0) == totalCounts(1))
+    assert(totalCounts(0) == totalCounts(2))
+
+    val localCounts = Array(vm0, vm1, vm2).map(_.invoke(getLocalEntriesCount).asInstanceOf[Int])
+
+    assert(totalCounts(0) == localCounts.sum)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
