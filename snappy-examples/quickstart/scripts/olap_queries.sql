@@ -1,4 +1,5 @@
 elapsedtime on;
+set spark.sql.shuffle.partitions=5;
 
 -------------------------------------------------------------
 ---- Which airline had the most flights each year? ----
