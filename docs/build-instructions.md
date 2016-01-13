@@ -37,16 +37,16 @@ Note that git operations have still to be done separately on snappy-commons, sna
 Gradle builds have been arranged in a way so that all of snappy projects including snappy's spark variant can be built from the top-level. In addition snappy-spark and GemFireXD (inside snappy-store) can also be built separately. If the snappy-spark directory is not present inside snappy-commons, then it will try to use locally published snappy-spark artifacts instead. Likewise if there is no snappy-store directory, then it will use the local artifacts inside local-repo in snappy-commons:
   * The full build and Intellij import has been tested with only JDK7. If you are using JDK8, then you are on your own (though it will likely work). On Ubuntu/Mint systems, best way to get Oracle JDK7 as default:
 
-    - add webupd8 java repository: sudo add-apt-repository ppa:webupd8team/java
-    - install and set jdk7 as default: sudo aptitude install oracle-java7-set-default
+    - add webupd8 java repository: ````sudo add-apt-repository ppa:webupd8team/java````
+    - install and set jdk7 as default: ````sudo aptitude install oracle-java7-set-default```
     - you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
-    - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run "source /etc/profile.d/jdk.sh" to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
+    - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run ````source /etc/profile.d/jdk.sh```` to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
 
   * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. Similarly move the GemFireXD (snappy-store branch) repository inside snappy-commons by "snappy-store" name. The integrated build depends on its name and presence inside else it will use the local artifacts as mentioned before. *DO NOT JUST SYMLINK THE DIRECTORIES* -- that is known to cause trouble with IDE though command-line build may go through.
-  * Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-store branch. Then test the build with: ./gradlew clean && ./gradlew assemble
-  * If you see an error like "Could not find hadoop-common-tests.jar", then clear maven cache artifacts: rm -rf ~/.m2/repository/org/apache/hadoop, so that gradle can download all required depedencies, then run assemble target again.
-  * Run a snappy-core test application: ./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest
-    AND/OR a GemFireXD junit test: ./gradlew :snappy-store:gemfirexd:tools:test -Dtest.single=\*\*/BugsTest
+  * Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-store branch. Then test the build with: ````./gradlew clean```` && ````./gradlew assemble````
+  * If you see an error like "Could not find hadoop-common-tests.jar", then clear maven cache artifacts: ````rm -rf ~/.m2/repository/org/apache/hadoop````, so that gradle can download all required depedencies, then run assemble target again.
+  * Run a snappy-core test application: ````./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest````
+    AND/OR a GemFireXD junit test: ````./gradlew :snappy-store:gemfirexd:tools:test -Dtest.single=\*\*/BugsTest````
 
 
 ## Setting up Intellij with gradle
