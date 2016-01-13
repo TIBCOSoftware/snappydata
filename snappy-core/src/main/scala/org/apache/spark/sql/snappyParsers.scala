@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types.{StringType, DataType, StructType}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 
@@ -89,11 +89,21 @@ class SnappyParserBase extends SqlParserBase {
     initLexical
     phrase(projection)(new lexical.Scanner(input)) match {
       case Success(plan, _) => plan
-      //case failureOrError => sys.error(failureOrError.toString)
-      case failureOrError => throw new SQLException(failureOrError.toString, "42X01")
+      // case failureOrError => sys.error(failureOrError.toString)
+      case failureOrError =>
+        throw new SQLException(failureOrError.toString, "42X01")
     }
   }
 
+  override def parse(input: String): LogicalPlan = synchronized {
+    // Initialize the Keywords.
+    initLexical
+    phrase(start)(new lexical.Scanner(input)) match {
+      case Success(plan, _) => plan
+      case failureOrError =>
+        throw new SQLException(failureOrError.toString, "42X01")
+    }
+  }
 }
 
 object SnappyParser extends SnappyParserBase{
@@ -113,6 +123,27 @@ private[sql] class SnappyParserDialect extends ParserDialect {
  */
 private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     extends DDLParser(parseQuery) {
+
+  override def parse(input: String): LogicalPlan = synchronized {
+    // Initialize the Keywords.
+    initLexical
+    phrase(start)(new lexical.Scanner(input)) match {
+      case Success(plan, _) => plan
+      case failureOrError =>
+        throw new SQLException(failureOrError.toString, "42X01")
+    }
+  }
+
+  override def parse(input: String, exceptionOnError: Boolean): LogicalPlan = {
+    try {
+      parse(input)
+    } catch {
+      case ddlException: DDLException => throw ddlException
+      case t: SQLException if !exceptionOnError =>
+        parseQuery(input)
+      case x: Throwable => throw x
+    }
+  }
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
@@ -174,8 +205,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
             phrase(tableCols.?)(new lexical.Scanner(schemaString)) match {
-              case Success(columns, _) => columns.flatMap(fields => Some(StructType(fields)))
-              case failure => throw new DDLException(failure.toString)
+              case Success(columns, _) =>
+                columns.flatMap(fields => Some(StructType(fields)))
+              case failure =>
+                throw new DDLException(failure.toString)
             }
           }
           val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
@@ -190,6 +223,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           }
         }
     }
+
+  protected override lazy val varchar: Parser[DataType] =
+    (("(?i)varchar".r ~> ("(" ~> numericLit <~ ")").?) |
+     "(?i)clob".r) ^^^ StringType
 
   protected lazy val createIndex: Parser[LogicalPlan] =
     (CREATE ~> INDEX ~> ident) ~ (ON ~> ident) ~ wholeInput ^^ {
