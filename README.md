@@ -65,7 +65,9 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 ###Start the SnappyData Cluster
 Like Spark, SnappyData can also be run in [“local” mode](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).  Here we use a cluster to show how SnappyData running as a database server cluster. 
 Start the cluster using:
-````sbin/snappy-start-all.sh```` 
+```
+sbin/snappy-start-all.sh
+```
 This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
 
 ![ClusterArchitecture](docs/GettingStarted_Architecture.png)
