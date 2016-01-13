@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -74,8 +74,8 @@ object StoreUtils extends Logging {
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
-      if (tableName.indexOf(".") <= 0) {
-        schema + "." + tableName
+      if (tableName.indexOf('.') <= 0) {
+        schema + '.' + tableName
       } else tableName
     }.toUpperCase
     lookupName
@@ -110,21 +110,13 @@ object StoreUtils extends Logging {
     val numPartitions = 1
     val partitions = new Array[Partition](numPartitions)
 
-    val distMembers = if (Utils.isLoner(sc)) {
+    val regionMembers = if (Utils.isLoner(sc)) {
       Set(Misc.getGemFireCache.getDistributedSystem.getDistributedMember)
     } else {
-      Misc.getGemFireCache.getMembers(region)
-          .asScala.asInstanceOf[scala.collection.Set[InternalDistributedMember]]
+      region.getDistributionAdvisor().adviseInitializedReplicates().asScala
     }
-
-    for (p <- 0 until numPartitions) {
-
-      val prefNodes = distMembers.map(
-        m => blockMap(m)
-      ).toSeq
-
-      partitions(p) = new MultiExecutorLocalPartition(p, prefNodes)
-    }
+    val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
+    partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
     partitions
   }
 

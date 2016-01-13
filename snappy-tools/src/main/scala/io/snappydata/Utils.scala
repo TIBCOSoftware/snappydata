@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,10 +16,13 @@
  */
 package io.snappydata
 
-import java.sql.{ResultSet, Statement, SQLException, Connection}
+import java.sql.{Connection, ResultSet, SQLException, Statement}
 import java.util.regex.Pattern
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+
 import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -29,26 +32,26 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
+
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.{ExecutorLocalShellPartition}
+import org.apache.spark.sql.collection.ExecutorLocalShellPartition
 import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
-import scala.collection.JavaConverters._
-/**
- * Created by soubhikc on 20/10/15.
- */
+
 object Utils {
-  val LocatorURLPattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])");
+  val LocatorURLPattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   val SnappyDataThreadGroup = new GemFireThreadGroup("SnappyData Thread Group") {
     override def uncaughtException(t: Thread, e: Throwable) {
-      if (e.isInstanceOf[Error] && SystemFailure.isJVMFailureError(e.asInstanceOf[Error])) {
-        SystemFailure.setFailure(e.asInstanceOf[Error])
+      e match {
+        case err: Error if SystemFailure.isJVMFailureError(err) =>
+          SystemFailure.setFailure(e.asInstanceOf[Error])
+        case _ =>
       }
-      Thread.dumpStack
+      Thread.dumpStack()
     }
   }
 
@@ -61,7 +64,7 @@ object Utils {
   }
 }
 
-object SparkShellRDDHelper {
+final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
@@ -86,27 +89,10 @@ object SparkShellRDDHelper {
     (statement, rs)
   }
 
-
   def getConnection(connectionProperties: ConnectionProperties, split: Partition): Connection = {
-    val par = split.index
     val urlsOfNetServerHost = split.asInstanceOf[ExecutorLocalShellPartition].hostList
-    useLocatorURL = useLocatorUrl(urlsOfNetServerHost)
+    useLocatorURL = SparkShellRDDHelper.useLocatorUrl(urlsOfNetServerHost)
     createConnection(connectionProperties, urlsOfNetServerHost)
-  }
-
-  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
-    useLocatorURL=false;
-    store.tryExecute(tableName, {
-      case conn =>
-        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-        val bucketToServerList = getBucketToServerMapping(resolvedName)
-        val numPartitions = bucketToServerList.length
-        val partitions = new Array[Partition](numPartitions)
-        for (p <- 0 until numPartitions) {
-          partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
-        }
-        partitions
-    })
   }
 
   def createConnection(connProps: ConnectionProperties, hostList: ArrayBuffer[(String, String)])
@@ -144,10 +130,26 @@ object SparkShellRDDHelper {
         }
     }
   }
+}
 
-  private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean = {
-    hostList.size == 0
+object SparkShellRDDHelper {
+
+  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
+    store.tryExecute(tableName, {
+      case conn =>
+        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+        val bucketToServerList = getBucketToServerMapping(resolvedName)
+        val numPartitions = bucketToServerList.length
+        val partitions = new Array[Partition](numPartitions)
+        for (p <- 0 until numPartitions) {
+          partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
+        }
+        partitions
+    })
   }
+
+  private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
+    hostList.isEmpty
 
   private def fillNetUrlsForServer(node: InternalDistributedMember,
       membersToNetServers: java.util.Map[InternalDistributedMember, String],

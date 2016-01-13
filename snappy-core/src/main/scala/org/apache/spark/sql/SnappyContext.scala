@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql
 
 import java.sql.{Connection, SQLException}
@@ -19,15 +35,14 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Scala
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
-import org.apache.spark.sql.execution.{ConnectionPool, ExtractPythonUDFs, LogicalRDD, SparkPlan}
+import org.apache.spark.sql.execution.{ConnectionPool, LogicalRDD, SparkPlan}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
-import org.apache.spark.sql.sources.{DeletableRelation, DestroyRelation, IndexableRelation, JdbcExtendedUtils, RowInsertableRelation, UpdatableRelation}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{execution => sparkexecution}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -455,10 +470,11 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
               (mode != SaveMode.ErrorIfExists).toString))
     }
 
+    val plan = LogicalRelation(resolved.relation)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params,
       ExternalTableType.getTableType(resolved.relation))
-    LogicalRelation(resolved.relation)
+    plan
   }
 
   /**
@@ -704,19 +720,8 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
   }
 
   @transient
-  override protected[sql] lazy val analyzer: Analyzer =
-    new Analyzer(catalog, functionRegistry, conf) {
-      override val extendedResolutionRules =
-        ExtractPythonUDFs ::
-            sparkexecution.datasources.PreInsertCastAndRename ::
-         //   ReplaceWithSampleTable ::
-          //  WeightageRule ::
-            //TestRule::
-            Nil
-
-      override val extendedCheckRules = Seq(
-        sparkexecution.datasources.PreWriteCheck(catalog))
-    }
+  override protected[sql] lazy val analyzer: Analyzer = this.aqpContext.createAnalyzer(catalog, functionRegistry,
+    conf)
 
   @transient
   override protected[sql] val planner = this.aqpContext.getPlanner(this)
@@ -828,7 +833,9 @@ object SnappyContext extends Logging {
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "column_sample" -> "org.apache.spark.sql.sampling.DefaultSource",
+    "topk" -> "org.apache.spark.sql.topk.DefaultSource",
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "stream" -> "org.apache.spark.sql.streaming.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
@@ -1024,88 +1031,3 @@ case class LocalMode(override val sc: SparkContext,
 
 case class ExternalClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
-
-/*
-private[sql] case class SnappyOperations(context: SnappyContext,
-    df: DataFrame) {
-
-  /**
-    * Creates stratified sampled data from given DataFrame
-    * {{{
-    *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
-    * }}}
-    */
-  def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context,
-      context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
-
-  def createTopK(ident: String, options: Map[String, Any]): Unit =
-    context.aqpContext.createTopK(df, context, ident, options)
-
-
-  /**
-    * Table must be registered using #registerSampleTable.
-    */
-  def insertIntoSampleTables(sampleTableName: String*): Unit =
-    context.aqpContext.collectSamples(context, df.rdd, sampleTableName, System.currentTimeMillis())
-
-
-
-
-  /**
-    * Append to an existing cache table.
-    * Automatically uses #cacheQuery if not done already.
-    */
-  def appendToCache(tableName: String): Unit =  context.appendToCache(df, tableName)
-
-}
-
-private[sql] case class SnappyDStreamOperations[T: ClassTag](
-    context: SnappyContext, ds: DStream[T]) {
-
-  def saveStream(sampleTab: Seq[String],
-      formatter: (RDD[T], StructType) => RDD[Row],
-      schema: StructType,
-      transform: RDD[Row] => RDD[Row] = null): Unit =
-      context.aqpContext.saveStream(context, ds, sampleTab, formatter, schema, transform)
-
-
-
-  def saveToExternalTable[A <: Product : Ty1peTag](externalTable: String,
-      jdbcSource: Map[String, String]): Unit = {
-    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  def saveToExternalTable(externalTable: String, schema: StructType,
-      jdbcSource: Map[String, String]): Unit = {
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  private def saveStreamToExternalTable(externalTable: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = context.catalog.getExternalTable(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-
-    ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
-  }
-}*/
-
