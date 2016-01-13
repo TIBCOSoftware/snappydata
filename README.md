@@ -63,8 +63,10 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 - **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. The SnappyData value add demonstrated here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
 
 ###Start the SnappyData Cluster
-Like Spark, SnappyData can also be run in “local” mode(link?).  Here we use a cluster to show how snappyData running as a database server cluster. 
-Start the cluster using sbin/snappy-start-all.sh. This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
+Like Spark, SnappyData can also be run in [“local” mode](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).  Here we use a cluster to show how SnappyData running as a database server cluster. 
+Start the cluster using:
+````sbin/snappy-start-all.sh```` 
+This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
 
 ![ClusterArchitecture](docs/GettingStarted_Architecture.png)
 
@@ -100,9 +102,9 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 ```
 You can check the state of the cluster using [Pulse](link) - a graphical dashboard for monitoring vital, real-time health and performance of SnappyData members. 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and to SQL requests via JDBC/ODBC.
+At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and SQL requests via JDBC/ODBC.
 
-> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+> We provide interfaces for developers familiar with Spark programming as well as SQL. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
 ### goto [Getting started with Spark API (with SnappyData extensions)](###Getting started with Spark API (with SnappyData extensions))
 
 > A general comment: We should move out the details about row table, column table and approximate query processing out of the SQL quickstart so that it can be referred by the Spark API quickstart as well. 
