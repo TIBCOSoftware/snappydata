@@ -4,7 +4,6 @@
 # This script helps to download and
 # untar the uploaded airline parquet data.
 
-
 if [ $# -eq 0 ]; then
     echo "ERROR: incorrect argument specified: " "$@"
     echo "Usage:./download_full_airlinedata.sh <destination_folder>"
@@ -15,11 +14,11 @@ FILEID=0Bz26LQmzyZJHLTItWkp5THJZbHc
 source=https://googledrive.com/host/$FILEID
 
 # Download the parquet data from source to destination
- wget -P $1 $source
+fileName=airlineParquetData_2007-15.tar.gz
+destFile="$1/${fileName}"
+mkdir -p "$1"
+curl -L -o "${destFile}" $source
 
- #untar the downloaded file.
- destFile=$1/airlineParquetData_2007-15.tar.gz
- mv $1/0Bz26LQmzyZJHLTItWkp5THJZbHc $destFile
- cd $1
- tar -zxf $destFile
-
+#untar the downloaded file.
+cd "$1"
+tar -zxf "${fileName}"
