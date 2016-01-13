@@ -16,6 +16,7 @@
  */
 package io.snappydata.gemxd
 
+import java.lang.Long
 import java.util
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -35,7 +36,7 @@ import org.apache.spark.scheduler.cluster.{SnappyClusterManager, SnappyEmbeddedM
   */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
-  override def getLeaderGroup : util.HashSet[String] = {
+  override def getLeaderGroup: util.HashSet[String] = {
     val leaderServerGroup = new util.HashSet[String]
     leaderServerGroup.add(LeadImpl.LEADER_SERVERGROUP)
     leaderServerGroup
@@ -70,7 +71,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getSQLExecute(sql: String, ctx: LeadNodeExecutionContext,
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, v)
+
+  override def clearSnappyContextForConnection(connectionId: Long): Unit = {
+    SnappyContextPerConnection.removeSnappyContext(connectionId)
+  }
 }
+
 
 /**
   * Created by soubhikc on 19/10/15.
