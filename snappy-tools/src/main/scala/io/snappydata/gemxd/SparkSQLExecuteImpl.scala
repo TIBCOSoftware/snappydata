@@ -18,7 +18,6 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 import java.nio.ByteBuffer
-
 import com.gemstone.gemfire.DataSerializer
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.gemstone.gemfire.internal.shared.Version
@@ -37,18 +36,20 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyUIUtils, DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.{Logging, SparkEnv}
-
+import org.apache.spark.{SparkContext, Logging, SparkEnv}
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
 class SparkSQLExecuteImpl(val sql: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
+
   // spark context will be constructed by now as this will be invoked when drda queries
   // will reach the lead node
   // TODO: KN Later get the SnappyContext as per the ctx passed to this executor
-  private lazy val snx = SnappyContext(null)
+
+  private lazy val snx = SnappyContextPerConnection.getSnappyContextForConnection(ctx.getConnId)
+
   private lazy val df: DataFrame = snx.sql(sql)
 
   private lazy val hdos = new GfxdHeapDataOutputStream(
@@ -386,5 +387,22 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
         StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
       partitionBlockIds(partitionId) = blockId
     }
+  }
+}
+
+object SnappyContextPerConnection {
+  private lazy val concurrentMap = new java.util.concurrent.ConcurrentHashMap[Long, SnappyContext]()
+
+  def getSnappyContextForConnection(connectionID: Long): SnappyContext = {
+    var context = concurrentMap.get(connectionID)
+    if (context == null) {
+      context = SnappyContext.getOrCreate(null).newSession()
+      concurrentMap.put(connectionID, context)
+    }
+    context
+  }
+
+  def removeSnappyContext(connectionID: Long): Unit = {
+    concurrentMap.remove(connectionID)
   }
 }
