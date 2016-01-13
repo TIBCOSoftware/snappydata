@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,7 @@
  */
 package io.snappydata.gemxd
 
+import java.lang.Long
 import java.util
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -26,7 +27,7 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
+import org.apache.spark.scheduler.cluster.{SnappyClusterManager, SnappyEmbeddedModeClusterManager}
 
 /**
   * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -35,10 +36,10 @@ import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
   */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
-  override def getLeaderGroup : util.HashSet[String] = {
+  override def getLeaderGroup: util.HashSet[String] = {
     val leaderServerGroup = new util.HashSet[String]
     leaderServerGroup.add(LeadImpl.LEADER_SERVERGROUP)
-    return leaderServerGroup;
+    leaderServerGroup
   }
 
   override def launchExecutor(driverUrl: String, driverDM: InternalDistributedMember): Unit = {
@@ -54,7 +55,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def getDriverURL: String = {
-    return SnappyEmbeddedModeClusterManager.schedulerBackend match {
+
+    return SnappyClusterManager.cm.map(_.schedulerBackend) match {
       case Some(x) =>
         logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
@@ -69,7 +71,12 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getSQLExecute(sql: String, ctx: LeadNodeExecutionContext,
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, v)
+
+  override def clearSnappyContextForConnection(connectionId: Long): Unit = {
+    SnappyContextPerConnection.removeSnappyContext(connectionId)
+  }
 }
+
 
 /**
   * Created by soubhikc on 19/10/15.

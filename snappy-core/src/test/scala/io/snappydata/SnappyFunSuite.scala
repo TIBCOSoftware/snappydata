@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -98,8 +98,8 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val scL = this.sc
-      if (scL != null && !scL.isStopped) {
+      val sc = SnappyContext.globalSparkContext
+      if (sc != null && !sc.isStopped) {
         val snc = this.snc
         snc.catalog.getTables(None).foreach {
           case (tableName, false) =>
