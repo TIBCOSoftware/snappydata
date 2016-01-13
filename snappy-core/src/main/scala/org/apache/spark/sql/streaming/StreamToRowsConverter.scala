@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,9 +18,6 @@ package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.catalyst.InternalRow
 
-/**
-  * Created by ymahajan on 4/11/15.
-  */
 trait StreamToRowsConverter extends Serializable {
   def toRows(message: Any): Seq[InternalRow]
 }
