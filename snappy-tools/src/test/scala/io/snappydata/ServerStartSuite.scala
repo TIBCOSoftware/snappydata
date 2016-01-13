@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -32,8 +32,6 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     SnappyContext.stop()
-
-    Class.forName("org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager$") //scalastyle:ignore
     props = TestUtil.doCommonSetup(null)
     GemFireXDUtils.IS_TEST_MODE = true
   }

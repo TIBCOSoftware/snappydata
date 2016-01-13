@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,36 +16,31 @@
  */
 package org.apache.spark.sql.streaming
 
+import scala.collection.immutable
+
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.streaming.dstream.DStream
 
-import scala.collection.immutable
-
 /**
   * A PhysicalPlan wrapper of SchemaDStream, inject the validTime and
   * generate an effective RDD of current batchDuration.
   *
   * @param output
-  * @param stream
-  *
-  *
+  * @param rowStream
   */
 case class PhysicalDStreamPlan(output: Seq[Attribute],
-                               @transient stream: DStream[InternalRow])
-  extends SparkPlan with StreamPlan {
+    @transient rowStream: DStream[InternalRow])
+    extends SparkPlan with StreamPlan {
 
   def children: immutable.Nil.type = Nil
 
   override def doExecute(): RDD[InternalRow] = {
     import StreamHelper._
     assert(validTime != null)
-    // For dynamic CQ
-    // if(!stream.isInitialized) stream
-    // .initializeAfterContextStart(validTime)
-    stream.getOrCompute(validTime)
-      .getOrElse(new EmptyRDD[InternalRow](sparkContext))
+    rowStream.getOrCompute(validTime)
+        .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 }

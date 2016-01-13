@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,11 +21,10 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
-
-import scala.reflect.runtime.universe.TypeTag
 
 /**
   * A SQL based DStream with support for schema/Product
@@ -33,71 +32,59 @@ import scala.reflect.runtime.universe.TypeTag
   * It is similar to SchemaRDD, which offers the similar functions
   * Internally, RDD of each batch duration is treated as a small
   * table and CQs are evaluated on those small tables
-  *
+  * Some of the code and idea is borrowed from the project:
+  * https://github.com/Intel-bigdata/spark-streamingsql
   * @param snsc
   * @param queryExecution
   *
   */
 final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
-                          @transient val queryExecution: QueryExecution)
-  extends DStream[Row](snsc){
+    @transient val queryExecution: QueryExecution)
+    extends DStream[Row](snsc) {
 
-  @transient private val snappyContext : SnappyContext = snsc.snappyContext
+  @transient private val snappyContext: SnappyContext = snsc.snappyContext
 
   @transient private val catalog = snsc.snappyContext.catalog
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
     this(ssc, ssc.snappyContext.executePlan(logicalPlan))
 
-  def saveStream(sampleTab: Seq[String]): Unit = {
-    snappyContext.saveStream(this, sampleTab, None)
-  }
-
+  /** Return a new DStream containing only the elements that satisfy a predicate. */
   override def filter(filterFunc: Row => Boolean): DStream[Row] = {
     super.filter(filterFunc)
   }
 
-  def createDataFrame(rowRDD: RDD[Row]): DataFrame = {
-    snappyContext.createDataFrame(rowRDD, this.schema, needsConversion = true)
-  }
-
-  def createDataFrame[A <: Product : TypeTag](rdd: RDD[A]): DataFrame = {
-    snappyContext.createDataFrame(rdd)
-  }
-
-//  def saveToExternalTable[A <: Product : TypeTag](externalTable: String,
-//                                                  jdbcSource: Map[String, String]): Unit = {
-//    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-//    saveToExternalTable(externalTable, schema, jdbcSource)
-//  }
-
-  def saveToExternalTable(externalTable: String,
-                          jdbcSource: Map[String, String]): Unit = {
-    saveToExternalTable(externalTable, this.schema, jdbcSource)
-  }
-
-  private def saveToExternalTable(externalTable: String,
-                                  schema : StructType,
-   jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = catalog.newQualifiedTableName(externalTable)
-    val externalStore = catalog.getExternalTable(jdbcSource)
-    catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(snappyContext))(snappyContext)
-      DataFrame(snappyContext, plan)
+  /**
+    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+    */
+  def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
+    val func = (rdd: RDD[Row]) => {
+      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
     }
-    catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    snappyContext.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-    foreachRDD(rdd => {
-      snappyContext.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
+    this.foreachRDD(func)
+  }
+
+  /**
+    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+    */
+  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
+    val func = (rdd: RDD[Row], time: Time) => {
+      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true), time)
+    }
+    this.foreachRDD(func)
+  }
+
+  /** Registers this SchemaDStream as a table in the catalog. */
+  def registerAsTable(tableName: String): Unit = {
+    catalog.registerTable(
+      catalog.newQualifiedTableName(tableName),
+      logicalPlan)
+
+    catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
+      Array.empty[String], "stream", Map.empty[String, String],
+      ExternalTableType.Stream)
   }
 
   /** Returns the schema of this SchemaDStream (represented by
@@ -107,14 +94,6 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   /** List of parent DStreams on which this DStream depends on */
   override def dependencies: List[DStream[InternalRow]] = parentStreams.toList
 
-  /** Registers this SchemaDStream as a temporary table in the catalog.
-    * Temporary tables exist only during the lifetime of this instance of SQLContext. */
-  def registerAsTable(tableName: String): Unit = {
-    snsc.snappyContext.catalog.registerTable(
-      snsc.snappyContext.catalog.newQualifiedTableName(tableName),
-      logicalPlan)
-  }
-
   /** Time interval after which the DStream generates a RDD */
   override def slideDuration: Duration = parentStreams.head.slideDuration
 
@@ -122,24 +101,20 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   match {
     case _: InsertIntoTable =>
       throw new IllegalStateException(s"logical plan ${queryExecution.logical} " +
-        s"is not supported currently")
+          s"is not supported currently")
     case _ => queryExecution.logical
   }
 
   /** Method that generates a RDD for the given time */
   override def compute(validTime: Time): Option[RDD[Row]] = {
-    // Set the valid batch duration for this rule to get
-    // correct RDD in DStream of this batch duration
     StreamHelper.setValidTime(validTime)
-    // Scan the streaming logic plan to convert streaming plan
-    // to specific RDD logic plan.
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
     Some(queryExecution.executedPlan.execute().map(converter(_).asInstanceOf[Row]))
   }
 
   @transient private lazy val parentStreams = {
     def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
-      case x: StreamPlan => x.stream :: Nil
+      case x: StreamPlan => x.rowStream :: Nil
       case _ => plan.children.flatMap(traverse(_))
     }
     val streams = traverse(queryExecution.executedPlan)
@@ -166,27 +141,5 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   def printSchema(): Unit = {
     println(schema.treeString) // scalastyle:ignore
-  }
-
-  /**
-   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
-   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
-   */
-  def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
-    val func = (rdd: RDD[Row]) => {
-      foreachFunc(createDataFrame(rdd))
-    }
-    this.foreachRDD(func)
-  }
-
-  /**
-   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
-   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
-   */
-  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
-    val func = (rdd: RDD[Row], time: Time) => {
-      foreachFunc(createDataFrame(rdd), time)
-    }
-    this.foreachRDD(func)
   }
 }
