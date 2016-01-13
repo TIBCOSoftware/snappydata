@@ -1,3 +1,25 @@
+## Table of Contents
+* [Introduction](#introduction)
+* [Download](#download-binary-distribution)
+* [Community Support](#community-support)
+* [Link with SnappyData Distribution](#link-with-snappydata-distribution)
+* [Working with the Source](#working-with-snappydata-source-code)
+* [Building from the Source](#building-snappydata-from-source)
+* [Key Features](#key-features)
+* [Getting Started](#getting-started)
+  * [Objectives](#objectives) 
+  * [Start the Cluster](#start-the-snappydata-cluster)
+  * [Using SQL](#getting-started-using-sql)
+    * [Create Column/Row Tables & Load Data](#create-column-row-tables-and-load-data)
+    * [Run OLAP/OLTP Queries](#run-olap-oltp-queries)
+    * [Approximate Query Processing](#approximate-query-processing-aqp)
+    * [Stream Analytics with SQL & Spark](#stream-analytics-using-sql-and-spark-streaming)
+  * [Using Spark](#getting-started-with-spark-api-with-snappydata-extensions)
+    * [Snappy Jobs](#snappy-jobs)
+    * [SnappyContexts](#snappycontext-and-snappystreamingcontext)
+    * [Row/Column/Sample Tables using Spark](#row-column-and-sample-tables-using-spark-api)
+    * [Streaming Jobs](#streaming-jobs)
+
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics). 
 
@@ -111,7 +133,7 @@ At this point, the SnappyData cluster is up and running and is ready to accept S
 
 > A general comment: We should move out the details about row table, column table and approximate query processing out of the SQL quickstart so that it can be referred by the Spark API quickstart as well. 
 
-### Getting stated using SQL
+### Getting started using SQL
 
 The SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster)
 
