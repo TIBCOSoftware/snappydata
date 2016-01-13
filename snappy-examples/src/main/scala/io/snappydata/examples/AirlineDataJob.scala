@@ -15,55 +15,62 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
 object AirlineDataJob extends SnappySQLJob {
 
   override def runJob(snc: C, jobConfig: Config): Any = {
-    val colTableName = "airline"
+    val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
-    val rowTableName = "airlineref"
+    val rowTable = "AIRLINEREF"
+    val sampleTable = "AIRLINE_SAMPLE"
+
     def getCurrentDirectory = new java.io.File( "." ).getCanonicalPath
     val pw = new PrintWriter("AirlineDataJob.out")
 
     // Get the tables that were created using sql scripts via snappy-shell
-    val airlineDF: DataFrame = snc.table(colTableName)
-    val airlineCodeDF: DataFrame = snc.table(rowTableName)
+    val airlineDF: DataFrame = snc.table(colTable)
+    val airlineCodeDF: DataFrame = snc.table(rowTable)
     val airlineParquetDF: DataFrame = snc.table(parquetTable)
+    val sampleDF: DataFrame = snc.table(sampleTable)
 
     // Cache the airline data in a Spark table as well
     airlineParquetDF.cache()
     airlineParquetDF.count()
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
-   val actualResult = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
+    // Data Frame query on Airline table :Which Airlines Arrive On Schedule? JOIN with reference table
+    val actualResult = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
         equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("Year_"), airlineDF("Month_"), airlineCodeDF("DESCRIPTION")).
-        agg("ArrDelay" -> "avg", "FlightNum" -> "count")
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
     val start = System.currentTimeMillis
     val result = actualResult.collect()
     val totalTime = (System.currentTimeMillis - start)
-    pw.println(s"****** Output of Airline Snappy table took ${totalTime}ms ******")
+    pw.println(s"****** Query Execution on Airline Snappy table took ${totalTime}ms ******")
     result.foreach(rs => {
       pw.println(rs.toString)
     })
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
+    // Data Frame query on Spark table :Which Airlines Arrive On Schedule? JOIN with reference table
     val parquetResult = airlineParquetDF.join(airlineCodeDF, airlineParquetDF.col("UniqueCarrier").
         equalTo(airlineCodeDF("CODE"))).groupBy(airlineParquetDF("UniqueCarrier"),
-      airlineParquetDF("Year"), airlineParquetDF("Month"), airlineCodeDF("DESCRIPTION")).
-        agg("ArrDelay" -> "avg", "FlightNum" -> "count")
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
     val startP = System.currentTimeMillis
     val resultP = parquetResult.collect()
     val totalTimeP = (System.currentTimeMillis - startP)
-    pw.println(s"\n****** Output of Airline Spark table took ${totalTimeP}ms******")
+    pw.println(s"\n****** Query Execution on Airline Spark table took ${totalTimeP}ms******")
     resultP.foreach(rs => {
       pw.println(rs.toString)
     })
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
-    // TODO: Fix it after the SNAP-304 is fixed
-    /*
+    // Data Frame query on Sample table :Which Airlines Arrive On Schedule? JOIN with reference table
+    // TODO: Fix it after SNAP-391 is fixed
+    val sampleResult = snc.sql("select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier "+
+        "from airline, airlineref "+
+    "where airline.UniqueCarrier = airlineref.Code "+
+    "group by UniqueCarrier, description "+
+    "order by arrivalDelay with error 0.07 confidence 0.92")
     val startSample = System.currentTimeMillis
-    val sampleResult = sampleDF.select("FlightNum", "ArrDelay").
-        filter("FlightNum = 2626").groupBy(sampleDF("FlightNum")).agg("ArrDelay" -> "count")
+    val resultSP = sampleResult.collect()
     val totalTimeSample = (System.currentTimeMillis - startSample)
-    */
+    pw.println(s"\n****** Query Execution on Airline Sample table took ${totalTimeSample}ms******")
+    resultSP.foreach(rs => {
+      pw.println(rs.toString)
+    })
 
     pw.close()
     Map("The output of the queries is in the following file: " -> s"${getCurrentDirectory}/AirlineDataJob.out")
