@@ -116,10 +116,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   @transient
   override lazy val catalog = this.aqpContext.getSnappyCatalogue(this)
 
-  //@transient
-  //override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
-
-
   /**
    * :: DeveloperApi ::
    * @todo do we need this anymore? If useful functionality, make this
