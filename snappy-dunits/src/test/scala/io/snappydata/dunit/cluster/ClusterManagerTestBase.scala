@@ -153,7 +153,6 @@ object ClusterManagerTestBase {
    */
   def startSnappyLead(locatorPort: Int, props: Properties): Unit = {
     // bootProps.setProperty("log-level", "fine")
-    SparkContext.registerClusterManager(SnappyEmbeddedModeClusterManager)
     val conf: SparkConf = new SparkConf()
         .setMaster(s"snappydata://localhost[$locatorPort]")
         .setAppName("myapp")

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,15 +35,16 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Scala
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
-import org.apache.spark.sql.execution.{ConnectionPool, ExtractPythonUDFs, LogicalRDD, SparkPlan}
+
+import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.{ConnectionPool, LogicalRDD, SparkPlan}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
-import org.apache.spark.sql.sources.{DeletableRelation, DestroyRelation, IndexableRelation, JdbcExtendedUtils, RowInsertableRelation, UpdatableRelation}
+import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{execution => sparkexecution}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
@@ -70,29 +71,22 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  * @todo Provide links to above descriptions
  *
  */
-
-class SnappyContext protected[spark] (@transient sc: SparkContext)
-    extends SQLContext(sc) with Serializable with Logging {
+class SnappyContext protected[spark](@transient override val sparkContext: SparkContext,
+    override val listener: SQLListener,
+    override val isRootContext: Boolean ,
+    val aqpContext: AQPContext = GlobalSnappyInit.getAQPContext)
+    extends SQLContext(sparkContext, aqpContext.getSnappyCacheManager, listener, isRootContext)
+    with Serializable with Logging {
 
   self =>
-
-  val aqpContext = Try {
-    val mirror = u.runtimeMirror(getClass.getClassLoader)
-    val cls = mirror.classSymbol(Class.forName(SnappyContext.aqpContextImplClass))
-    val clsType = cls.toType
-    val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
-    val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
-    val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
-    runtimeCtr().asInstanceOf[AQPContext]
-  }  match {
-    case Success(v) => v
-    case Failure(_) => AQPDefault
+  protected[spark] def this(sc: SparkContext) {
+    this(sc, SQLContext.createListenerAndUI(sc), true)
   }
 
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  GlobalSnappyInit.initGlobalSnappyContext(sc)
+  GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -103,6 +97,10 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     }else {
       false
     }
+  }
+
+  override def newSession(): SnappyContext = {
+    new SnappyContext(this.sparkContext, this.listener, false, this.aqpContext)
   }
 
   @transient
@@ -118,9 +116,6 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
 
   @transient
   override lazy val catalog = this.aqpContext.getSnappyCatalogue(this)
-
-  @transient
-  override protected[sql] val cacheManager =  this.aqpContext.getSnappyCacheManager
 
   /**
    * :: DeveloperApi ::
@@ -471,10 +466,11 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
               (mode != SaveMode.ErrorIfExists).toString))
     }
 
+    val plan = LogicalRelation(resolved.relation)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params,
       ExternalTableType.getTableType(resolved.relation))
-    LogicalRelation(resolved.relation)
+    plan
   }
 
   /**
@@ -592,9 +588,9 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
     var conn: Connection = null
     try {
       val connProperties =
-        ExternalStoreUtils.validateAndGetAllProps(sc, new mutable.HashMap[String, String])
+        ExternalStoreUtils.validateAndGetAllProps(sparkContext, new mutable.HashMap[String, String])
       conn = ExternalStoreUtils.getConnection(connProperties.url, connProperties.connProps,
-        JdbcDialects.get(connProperties.url), Utils.isLoner(sc))
+        JdbcDialects.get(connProperties.url), Utils.isLoner(sparkContext))
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
@@ -716,7 +712,7 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
       rdd: RDD[T],
       processPartition: Iterator[T] => U,
       resultHandler: (Int, U) => Unit): Unit = {
-    self.sc.runJob(rdd, processPartition, resultHandler)
+    self.sparkContext.runJob(rdd, processPartition, resultHandler)
   }
 
   @transient
@@ -775,6 +771,23 @@ class SnappyContext protected[spark] (@transient sc: SparkContext)
  * @todo document me
  */
 object GlobalSnappyInit {
+
+  private val aqpContextImplClass = "org.apache.spark.sql.execution.AQPContextImpl"
+  private[spark] def getAQPContext : AQPContext = {
+     Try {
+      val mirror = u.runtimeMirror(getClass.getClassLoader)
+      val cls = mirror.classSymbol(Class.forName(aqpContextImplClass))
+      val clsType = cls.toType
+      val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
+      val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
+      val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
+      runtimeCtr().asInstanceOf[AQPContext]
+    }  match {
+      case Success(v) => v
+      case Failure(_) => AQPDefault
+    }
+  }
+
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
 
@@ -821,8 +834,6 @@ object SnappyContext extends Logging {
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
 
-  private val aqpContextImplClass = "org.apache.spark.sql.execution.AQPContextImpl"
-
   var SnappySC:SnappyContext = null
 
   private[this] val contextLock = new AnyRef
@@ -833,7 +844,9 @@ object SnappyContext extends Logging {
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
     "column" -> classOf[columnar.DefaultSource].getCanonicalName,
     "column_sample" -> "org.apache.spark.sql.sampling.DefaultSource",
+    "topk" -> "org.apache.spark.sql.topk.DefaultSource",
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    "stream" -> "org.apache.spark.sql.streaming.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
@@ -1029,88 +1042,3 @@ case class LocalMode(override val sc: SparkContext,
 
 case class ExternalClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
-
-/*
-private[sql] case class SnappyOperations(context: SnappyContext,
-    df: DataFrame) {
-
-  /**
-    * Creates stratified sampled data from given DataFrame
-    * {{{
-    *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
-    * }}}
-    */
-  def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context,
-      context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
-
-  def createTopK(ident: String, options: Map[String, Any]): Unit =
-    context.aqpContext.createTopK(df, context, ident, options)
-
-
-  /**
-    * Table must be registered using #registerSampleTable.
-    */
-  def insertIntoSampleTables(sampleTableName: String*): Unit =
-    context.aqpContext.collectSamples(context, df.rdd, sampleTableName, System.currentTimeMillis())
-
-
-
-
-  /**
-    * Append to an existing cache table.
-    * Automatically uses #cacheQuery if not done already.
-    */
-  def appendToCache(tableName: String): Unit =  context.appendToCache(df, tableName)
-
-}
-
-private[sql] case class SnappyDStreamOperations[T: ClassTag](
-    context: SnappyContext, ds: DStream[T]) {
-
-  def saveStream(sampleTab: Seq[String],
-      formatter: (RDD[T], StructType) => RDD[Row],
-      schema: StructType,
-      transform: RDD[Row] => RDD[Row] = null): Unit =
-      context.aqpContext.saveStream(context, ds, sampleTab, formatter, schema, transform)
-
-
-
-  def saveToExternalTable[A <: Product : Ty1peTag](externalTable: String,
-      jdbcSource: Map[String, String]): Unit = {
-    val schema: StructType = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  def saveToExternalTable(externalTable: String, schema: StructType,
-      jdbcSource: Map[String, String]): Unit = {
-    saveStreamToExternalTable(externalTable, schema, jdbcSource)
-  }
-
-  private def saveStreamToExternalTable(externalTable: String,
-      schema: StructType, jdbcSource: Map[String, String]): Unit = {
-    require(externalTable != null && externalTable.length > 0,
-      "saveToExternalTable: expected non-empty table name")
-
-    val tableIdent = context.catalog.newQualifiedTableName(externalTable)
-    val externalStore = context.catalog.getExternalTable(jdbcSource)
-    context.catalog.createExternalTableForCachedBatches(tableIdent.table,
-      externalStore)
-    val attributeSeq = schema.toAttributes
-
-    val dummyDF = {
-      val plan: LogicalRDD = LogicalRDD(attributeSeq,
-        new DummyRDD(context))(context)
-      DataFrame(context, plan)
-    }
-
-    context.catalog.tables.put(tableIdent, dummyDF.logicalPlan)
-    context.cacheManager.cacheQuery_ext(dummyDF, Some(tableIdent.table),
-      externalStore)
-
-    ds.foreachRDD((rdd: RDD[T], time: Time) => {
-      context.appendToCacheRDD(rdd, tableIdent.table, schema)
-    })
-  }
-}*/
-
