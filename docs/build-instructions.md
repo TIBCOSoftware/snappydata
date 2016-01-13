@@ -71,17 +71,17 @@ If the build works fine, then import into Intellij:
 Running an application like SparkSQLTest should be straightforward -- just ensure that MaxPermSize has been increased as mentioned above especially for Spark/Snappy tests. For running junit/scalatest:
 
  * When selecting a run configuration for junit/scalatest, avoid selecting the gradle one (green round icon) otherwise that will launch an external gradle process that will start building the project all over again. Use the normal junit (red+green arrows icon) or scalatest (junit like with red overlay).
- * For JUnit tests, ensure that working directory is "$MODULE_DIR$/build-artifacts" as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in many tests. They will also pollute the checkouts with large number of log files etc, so this will allow those to go into build-artifacts that can also be cleaned up easily.
+ * For JUnit tests, ensure that working directory is ````$MODULE_DIR$/build-artifacts```` as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in many tests. They will also pollute the checkouts with large number of log files etc, so this will allow those to go into build-artifacts that can also be cleaned up easily.
 
 
 ### Manual sources and docs imports
 
-If sources and docs were selected during initial import, then it can take a long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit Shift->Ctrl->T when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
-  * Open the File->Project Structure->Libraries
-  * Click on the '+' sign at the top to add new library, and choose Maven.
-  * In the box, provide "scala-library-2.10.4" and click on the search tool.
-  * Select the "org.scala-lang:scala-library:2.10.4" in the drop down. Then check "Sources", "JavaDocs" options and go ahead.
-  * Do the same for others like "scala-reflect-2.10.4" and "scala-compiler-2.10.4" as required.
+If sources and docs were selected during initial import, then it can take a long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit ````Shift->Ctrl->T```` when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
+  * Open the ````File->Project Structure->Libraries````
+  * Click on the ````+```` sign at the top to add new library, and choose Maven.
+  * In the box, provide ````scala-library-2.10.4```` and click on the search tool.
+  * Select the ````org.scala-lang:scala-library:2.10.4```` in the drop down. Then check "Sources", "JavaDocs" options and go ahead.
+  * Do the same for others like ````scala-reflect-2.10.4```` and ````scala-compiler-2.10.4```` as required.
   * Once this is done, don't select OK on the main Project Structure box. Instead hit "Cancel" and it should be all good since we only wanted to get Maven to download the sources and docs for these jars.
 
 
