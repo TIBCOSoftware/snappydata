@@ -140,7 +140,6 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
     } catch {
       case ddlException: DDLException => throw ddlException
       case t: SQLException if !exceptionOnError =>
-        logInfo("SB: DDL failed with exception for: " + input, t)
         parseQuery(input)
       case x: Throwable => throw x
     }
@@ -205,13 +204,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           }
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
-            logInfo("SB: parsing schemaString: " + schemaString)
             phrase(tableCols.?)(new lexical.Scanner(schemaString)) match {
               case Success(columns, _) =>
-                logInfo("SB: parsed columns: " + columns)
                 columns.flatMap(fields => Some(StructType(fields)))
               case failure =>
-                logInfo("SB: failed parsing columns: " + failure.toString)
                 throw new DDLException(failure.toString)
             }
           }
