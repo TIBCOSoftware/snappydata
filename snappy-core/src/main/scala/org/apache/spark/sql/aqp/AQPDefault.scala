@@ -40,6 +40,7 @@ import org.apache.spark.sql.{execution => sparkexecution}
  * Created by ashahid on 12/11/15.
  */
 object AQPDefault extends AQPContext{
+
   protected[sql] def executePlan(context: SnappyContext, plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(context, plan)
 
