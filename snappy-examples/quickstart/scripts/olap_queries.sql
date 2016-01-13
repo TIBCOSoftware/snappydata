@@ -1,21 +1,43 @@
 elapsedtime on;
 
----- Find Flights to SFO that has been delayed(Arrival/Dep) at least 5 times ----
-SELECT FlightNum, COUNT(ArrDelay) as ARR_DEL
-  FROM airline
-  WHERE CAST(Dest AS VARCHAR(24)) = 'SFO'
-      AND ArrDelay > 0
-  GROUP BY FlightNum
-  HAVING COUNT(ArrDelay) >= 5;
+-------------------------------------------------------------
+---- Which airline had the most flights each year? ----
+-------------------------------------------------------------
+select  count(*) flightRecCount, description AirlineName, UniqueCarrier carrierCode ,Year_ 
+   from airline , airlineref
+   where airline.UniqueCarrier = airlineref.code
+   group by UniqueCarrier,description, Year_ 
+   order by flightRecCount desc limit 10 ;
 
----- Query to get Avg ARR_DELAY with Airline name from AIRLINE and AIRLINE_REF table.----
-SELECT AVG(ArrDelay) as AVGDELAY, count(*) as TOTALCNT, UniqueCarrier, airlineref.DESCRIPTION, Year_, Month_
-  FROM airline, airlineref 
-  WHERE airline.UniqueCarrier = airlineref.CODE 
-  GROUP BY UniqueCarrier, DESCRIPTION, Year_,Month_;
+-------------------------------------------------------------
+---- Which Airlines Arrive On Schedule? ----
+-------------------------------------------------------------
+select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier from airline   
+   group by UniqueCarrier
+   order by arrivalDelay;
 
----- List the flights and its details ,that are affected due to delays caused by weather ----
-SELECT FlightNum, airlineref.DESCRIPTION 
+-------------------------------------------------------------
+---- Which Airlines Arrive On Schedule? JOIN with reference table ----
+-------------------------------------------------------------
+select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier 
+  from airline, airlineref
+  where airline.UniqueCarrier = airlineref.Code 
+  group by UniqueCarrier, description 
+  order by arrivalDelay;
+
+-------------------------------------------------------------
+---- What is the trend in arrival delays across all airlines in the US? ----
+-------------------------------------------------------------
+select AVG(ArrDelay) ArrivalDelay, Year_
+  from airline 
+  group by Year_ 
+  order by Year_ ;
+
+-------------------------------------------------------------
+---- Which airline out of SanFrancisco had most delays due to weather ----
+-------------------------------------------------------------
+SELECT sum(WeatherDelay) totalWeatherDelay, airlineref.DESCRIPTION 
   FROM airline, airlineref 
   WHERE airline.UniqueCarrier = airlineref.CODE AND  Origin like '%SFO%' AND WeatherDelay > 0 
-  GROUP BY FlightNum ,DESCRIPTION;
+  GROUP BY DESCRIPTION 
+  limit 20;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,10 +22,10 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.streaming.Duration
 
 case class WindowLogicalPlan(
-                              windowDuration: Duration,
-                              slideDuration: Option[Duration],
-                              child: LogicalPlan)
-  extends logical.UnaryNode {
+    windowDuration: Duration,
+    slideDuration: Option[Duration],
+    child: LogicalPlan)
+    extends logical.UnaryNode {
 
   override def output: Seq[Attribute] = child.output
 }
