@@ -2,11 +2,11 @@
 
 As of now, only the "integrated" build seems to work. Quickstart to compile
 project:
-
+````
 1. git clone git@github.com:SnappyDataInc/snappydata.git --recursive
 2. cd snappydata
 3. ./gradlew clean assemble
-
+````
 ## Repository layout
 
 There were few proposals about how to manage the various repositories mentioned in [this document](https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document.
