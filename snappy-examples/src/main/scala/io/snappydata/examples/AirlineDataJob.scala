@@ -59,7 +59,7 @@ object AirlineDataJob extends SnappySQLJob {
 
     // Data Frame query on Sample table :Which Airlines Arrive On Schedule? JOIN with reference table
     // TODO: Fix it after SNAP-391 is fixed
-    val sampleResult = snc.sql("select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier "+
+    val sampleResult = snc.sql("select UniqueCarrier carrier, description AirlineName, AVG(ArrDelay) arrivalDelay "+
         "from airline, airlineref "+
     "where airline.UniqueCarrier = airlineref.Code "+
     "group by UniqueCarrier, description "+
