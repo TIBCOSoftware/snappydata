@@ -4,6 +4,8 @@ import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.SerializableCallable
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import org.apache.spark.sql.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
 import scala.util.Random
@@ -67,9 +69,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.createTable(tableName, "column", dataDF.schema, p)
 
     // we don't expect any increase in put distribution stats
+    val columnTableRegionName = ColumnFormatRelation.cachedBatchTableName(tableName).toUpperCase
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        Int.box(Misc.getRegion("/APP/COLUMNTABLE_SHADOW_", true, false).
+        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
             asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
       }
     }
@@ -113,11 +116,11 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //TDOD : Merge and validate test after SNAP-105
     val p = Map.empty[String, String]
     snc.createExternalTable(tableName, "column", dataDF.schema, p)
-
+    val columnTableRegionName = ColumnFormatRelation.cachedBatchTableName(tableName).toUpperCase
     // we don't expect any increase in put distribution stats
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        Int.box(Misc.getRegion("/APP/COLUMNTABLE_SHADOW_", true, false).
+        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
             asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
       }
     }
@@ -182,7 +185,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableName.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(s"APP.${tableName.toUpperCase()}_SHADOW_",
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName(tableName).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
     //1005/region.getTotalNumberOfBuckets
@@ -230,7 +233,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1005)
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}_SHADOW_",
+    val shadowRegion = Misc.getRegionForTable(
+      ColumnFormatRelation.cachedBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob3 " + region.size())
@@ -279,7 +283,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}_SHADOW_",
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob4 " + region.size())
@@ -333,7 +337,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}_SHADOW_",
+    val shadowRegion = Misc.getRegionForTable(
+      ColumnFormatRelation.cachedBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob5 " + region.size())
@@ -383,7 +388,9 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(
+      ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE4").toUpperCase(),
+      true).asInstanceOf[PartitionedRegion]
 
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())
@@ -438,7 +445,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
 
     val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE4_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE4").toUpperCase(),
+        true).asInstanceOf[PartitionedRegion]
 
     println("region.size() " + region.size())
     println("shadowRegion.size()" + shadowRegion.size())

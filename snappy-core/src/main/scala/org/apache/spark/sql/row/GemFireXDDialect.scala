@@ -145,6 +145,10 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     }
   }
 
+  override def createSchema(schemaName: String, conn: Connection): Unit = {
+    JdbcExtendedUtils.executeUpdate("CREATE SCHEMA " + schemaName, conn)
+  }
+
   override def dropTable(tableName: String, conn: Connection,
       context: SQLContext, ifExists: Boolean): Unit = {
     if (ifExists) {
