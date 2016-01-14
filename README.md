@@ -1,19 +1,38 @@
+## Table of Contents
+* [Introduction](#introduction)
+* [Download](#download-binary-distribution)
+* [Community Support](#community-support)
+* [Link with SnappyData Distribution](#link-with-snappydata-distribution)
+* [Working with the Source](#working-with-snappydata-source-code)
+* [Building from the Source](#building-snappydata-from-source)
+* [Key Features](#key-features)
+* [Getting Started](#getting-started)
+  * [Objectives](#objectives) 
+  * [Start the Cluster](#start-the-snappydata-cluster)
+  * [Using SQL](#getting-started-using-sql)
+    * [Create Column/Row Tables & Load Data](#create-column-row-tables-and-load-data)
+    * [Run OLAP/OLTP Queries](#run-olap-oltp-queries)
+    * [Approximate Query Processing](#approximate-query-processing-aqp)
+    * [Stream Analytics with SQL & Spark](#stream-analytics-using-sql-and-spark-streaming)
+  * [Using Spark](#getting-started-with-spark-api-with-snappydata-extensions)
+    * [Snappy Jobs](#snappy-jobs)
+    * [SnappyContexts](#snappycontext-and-snappystreamingcontext)
+    * [Row/Column/Sample Tables using Spark](#row-column-and-sample-tables-using-spark-api)
+    * [Streaming Jobs](#streaming-jobs)
+
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics). 
 
 ![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
 
 ## Download binary distribution
-You can download the latest version of SnappyData from [here][2]. SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site)
+You can download the latest version of SnappyData from [here][2]. SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site) [Skip to Getting Started](#getting-started)
 
 ## Community Support
-Get Community help on
-* [Slack](http://snappydata-slackin.herokuapp.com/) ![Slack](http://i.imgur.com/h3sc6GM.png)
-* Gitter ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
-* [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)
-* [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
-* [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)
-* JIRA ![JIRA](http://i.imgur.com/E92zntA.png)
+
+We monitor channels listed below for comments/questions. We prefer using Stackoverflow. 
+
+[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)    [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)        Gitter ![Gitter](http://i.imgur.com/jNAJeOn.jpg)          [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)             [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          JIRA ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData distribution
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
@@ -63,8 +82,12 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 - **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. The SnappyData value add demonstrated here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
 
 ###Start the SnappyData Cluster
-Like Spark, SnappyData can also be run in “local” mode(link?).  Here we use a cluster to show how snappyData running as a database server cluster. 
-Start the cluster using sbin/snappy-start-all.sh. This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
+Like Spark, SnappyData can also be run in [“local” mode](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).  Here we use a cluster to show how SnappyData running as a database server cluster. 
+Start the cluster using:
+```
+sbin/snappy-start-all.sh
+```
+This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
 
 ![ClusterArchitecture](docs/GettingStarted_Architecture.png)
 
@@ -100,12 +123,14 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 ```
 You can check the state of the cluster using [Pulse](link) - a graphical dashboard for monitoring vital, real-time health and performance of SnappyData members. 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and to SQL requests via JDBC/ODBC.
+At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and SQL requests via JDBC/ODBC.
 
-> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
-### goto [Getting started using Spark++ APIs](linkToSparkGettingStarted)
+> We provide interfaces for developers familiar with Spark programming as well as SQL. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+### goto [Getting started with Spark API (with SnappyData extensions)](###Getting started with Spark API (with SnappyData extensions))
 
-### Getting stated using SQL
+> A general comment: We should move out the details about row table, column table and approximate query processing out of the SQL quickstart so that it can be referred by the Spark API quickstart as well. 
+
+### Getting started using SQL
 
 The SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster)
 
@@ -129,7 +154,8 @@ this will list each cluster member and its status.
 Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236)
 
 
-#### Create column, row tables and load data
+#### Create column, row tables and load data 
+
 [Column tables](columnTables) organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). 
 ```sql
 snappy> run 'create_and_load_column_table.sql';
@@ -279,10 +305,89 @@ snappy> create stream table tweetstreamtable
 > We assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/) 
 >  Or, is it better to explain just the few things they need to know right here?
 
-First, follow the [instructions](#Getting stated using SQL) to start the SnappyData cluster. Unlike Apache Spark, which is primarily a computational engine with caching, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark Jobs to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways:
+Unlike Apache Spark, which is primarily a computational engine with caching, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark Jobs to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways:
 1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of jobs/tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
+
+#### Snappy Jobs
+A job that is to be submitted to SnappyData can be like a self contained Spark application or can share state with other jobs using SnappyData store. A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. 
+
+```scala
+class SnappySampleJob implements SnappySQLJob {
+  /** Snappy uses this as an entry point to execute Snappy jobs. **/
+  def runJob(sc: SnappyContext, jobConfig: Config): Any
+
+  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  def validate(sc: SnappyContext, config: Config): SparkJobValidation
+}
+```
+The implementation of runJob function of SnappySQLJob should use SnappyContext to interact with SnappyData store to process and store tables. The implementation of runJob of SnappyStreamingJob should use SnappyStreamingContext to create streams and manage the streaming context. 
+
+The jobs can be submitted to lead of SnappyData over REST API using a spark-submit like utility. 
+
+#### SnappyContext and SnappyStreamingContext 
+
+> Talk about our extensions in SnappyContext and SnappyStreamingContext.
+> The code that we would be firing in the jobs would be discussed here. 
+
+#### Row, Column and Sample tables using Spark API
+
+```
+$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+```
+This utility submits the job and returns a JSON that has a jobId of this job. 
+```
+{
+  "status": "STARTED",
+  "result": {
+    "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
+    "context": "snappyContext1452598154529305363"
+  }
+}
+```
+This job ID can be used to query the status of the running job. 
+```
+$ bin/snappy-job.sh status  \
+    --lead hostNameOfLead:8090  \
+    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
+
+{
+  "duration": "17.53 secs",
+  "classPath": "io.snappydata.examples.CreateAndLoadAirlineDataJob",
+  "startTime": "2016-01-12T16:59:14.746+05:30",
+  "context": "snappyContext1452598154529305363",
+  "result": "See /home/hemant/snappyhome/work/localhost-lead-1/CreateAndLoadAirlineDataJob.out",
+  "status": "FINISHED",
+  "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
+}
+```
+Once the tables are created, they can be queried by firing another job. 
+```
+$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.AirlineDataJob \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+```
+The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
+
+#### Streaming jobs
+
+An implementation of SnappyStreamingJob can be submitted to lead of SnappyData by specifying --stream as a parameter to the snappy-job.sh. 
+```
+$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.TwitterPopularTagsJob \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar \ 
+    --stream
+```
+
 
 > NOTE: SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. 
 > But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. 

@@ -4,7 +4,7 @@ import java.io.{File, PrintWriter}
 
 import com.typesafe.config.Config
 import org.apache.spark.sql.types.{StructType, StructField}
-import org.apache.spark.sql.{SaveMode, DataFrame, SnappySQLJob}
+import org.apache.spark.sql.{SnappyContext, SaveMode, SnappySQLJob}
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 /**
@@ -20,7 +20,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   val sampleTable = "AIRLINE_SAMPLE"
   val stagingAirline = "STAGING_AIRLINE"
 
-  override def runJob(snc: C, jobConfig: Config): Any = {
+  override def runJob(snc: SnappyContext, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("CreateAndLoadAirlineDataJob.out")
     try {
@@ -34,10 +34,9 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
-      val parquetFile = snc.read.parquet(airlinefilePath)
       // Create a DF from the parquet data file and make it a table
       val airlineDF = snc.createTable(stagingAirline, "parquet",
-        parquetFile.schema, Map("path" -> airlinefilePath))
+        Map("path" -> airlinefilePath))
       val updatedSchema = replaceReservedWords(airlineDF.schema)
 
       // Create a table in snappy store
@@ -90,7 +89,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
     * Validate if the data files are available, else throw SparkJobInvalid
     *
     */
-  override def validate(snc: C, config: Config): SparkJobValidation = {
+  override def validate(snc: SnappyContext, config: Config): SparkJobValidation = {
 
     airlinefilePath = if (config.hasPath("airline_file")) {
       config.getString("parquet_file")

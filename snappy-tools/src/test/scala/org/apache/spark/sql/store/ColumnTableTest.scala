@@ -39,8 +39,6 @@ class ColumnTableTest
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
-
-
   after {
     snc.dropTable(tableName, ifExists = true)
     snc.dropTable("ColumnTable2", ifExists = true)
