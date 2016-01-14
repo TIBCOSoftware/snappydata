@@ -109,9 +109,11 @@ with BeforeAndAfter {
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
+        asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8) , Seq(9, 2))//, Seq(4, 2), Seq(5, 6))
@@ -151,9 +153,11 @@ with BeforeAndAfter {
         "BUCKETS '2'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
+        asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
       true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
@@ -200,8 +204,10 @@ with BeforeAndAfter {
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE7").toUpperCase()
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
+        asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE7").toUpperCase()
       , true).asInstanceOf[PartitionedRegion]
 
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
