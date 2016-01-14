@@ -82,9 +82,9 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
       catalog.newQualifiedTableName(tableName),
       logicalPlan)
 
-    catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
+    /* catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
       Array.empty[String], "stream", Map.empty[String, String],
-      ExternalTableType.Stream)
+      ExternalTableType.Stream) */
   }
 
   /** Returns the schema of this SchemaDStream (represented by
@@ -95,7 +95,9 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   override def dependencies: List[DStream[InternalRow]] = parentStreams.toList
 
   /** Time interval after which the DStream generates a RDD */
-  override def slideDuration: Duration = parentStreams.head.slideDuration
+  override def slideDuration: Duration = {
+    parentStreams.head.slideDuration
+  }
 
   @transient val logicalPlan: LogicalPlan = queryExecution.logical
   match {

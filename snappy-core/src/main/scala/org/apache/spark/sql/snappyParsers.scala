@@ -462,8 +462,8 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
           case None => // do nothing
         }
         // start the streaming
-        SnappyStreamingContext.getActive().get.start()
-      case 2 => SnappyStreamingContext.getActive().get.stop()
+        SnappyStreamingContext.start()
+      case 2 => SnappyStreamingContext.stop()
     }
     Seq.empty[Row]
   }
