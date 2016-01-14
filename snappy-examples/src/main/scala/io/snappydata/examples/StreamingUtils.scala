@@ -42,7 +42,7 @@ object StreamingUtils {
 
   }
 
-  def convertPopularTweetsToRow(message: Any):  Array[twitterSchema] = {
+  def convertPopularTweetsToRow(message: Any):  Array[TwitterSchema] = {
     var json: JSONObject = null
     var retweetCnt : Int = 0
     var retweetTxt : String = null
@@ -62,8 +62,8 @@ object StreamingUtils {
         retweetCnt = status.getRetweetedStatus.getRetweetCount
       }
     }
-    val sampleRow = new Array[twitterSchema](1)
-    sampleRow(0) = new twitterSchema(retweetCnt, retweetTxt)
+    val sampleRow = new Array[TwitterSchema](1)
+    sampleRow(0) = new TwitterSchema(retweetCnt, retweetTxt)
     sampleRow
   }
 
@@ -81,4 +81,4 @@ object StreamingUtils {
   }
 }
 
-case class twitterSchema(retweetCnt : Int, retweetTxt: String)
+case class TwitterSchema(retweetCnt : Int, retweetTxt: String)

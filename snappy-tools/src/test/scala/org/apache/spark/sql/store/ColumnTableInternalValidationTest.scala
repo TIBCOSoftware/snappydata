@@ -25,6 +25,7 @@ import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.DDLException
 
 /**
@@ -108,9 +109,12 @@ with BeforeAndAfter {
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
+        asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE7_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+      true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8) , Seq(9, 2))//, Seq(4, 2), Seq(5, 6))
 
@@ -149,9 +153,12 @@ with BeforeAndAfter {
         "BUCKETS '2'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
+        asInstanceOf[PartitionedRegion]
 
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE7_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE7").toUpperCase,
+      true).asInstanceOf[PartitionedRegion]
 
     val data = Seq(Seq(1, 2), Seq(7, 8), Seq(9, 2), Seq(4, 2), Seq(5, 6))
 
@@ -197,8 +204,11 @@ with BeforeAndAfter {
         "BUCKETS '1'," +
         "REDUNDANCY '2')")
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable("APP.COLUMNTABLE7_SHADOW_", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE7", true).
+        asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE7").toUpperCase()
+      , true).asInstanceOf[PartitionedRegion]
 
     snc.sql("insert into COLUMNTABLE7 VALUES(1,11)")
     snc.sql("insert into COLUMNTABLE7 VALUES(2,11)")
