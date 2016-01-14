@@ -424,7 +424,16 @@ abstract class MutableRelationProvider
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
 
     val relation = createRelation(sqlContext, mode, options, schemaString)
-    relation.insert(data)
-    relation
+    var success = false
+    try {
+      relation.insert(data)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 }
