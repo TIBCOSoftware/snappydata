@@ -1,19 +1,38 @@
+## Table of Contents
+* [Introduction](#introduction)
+* [Download](#download-binary-distribution)
+* [Community Support](#community-support)
+* [Link with SnappyData Distribution](#link-with-snappydata-distribution)
+* [Working with the Source](#working-with-snappydata-source-code)
+* [Building from the Source](#building-snappydata-from-source)
+* [Key Features](#key-features)
+* [Getting Started](#getting-started)
+  * [Objectives](#objectives) 
+  * [Start the Cluster](#start-the-snappydata-cluster)
+  * [Using SQL](#getting-started-using-sql)
+    * [Create Column/Row Tables & Load Data](#create-column-row-tables-and-load-data)
+    * [Run OLAP/OLTP Queries](#run-olap-oltp-queries)
+    * [Approximate Query Processing](#approximate-query-processing-aqp)
+    * [Stream Analytics with SQL & Spark](#stream-analytics-using-sql-and-spark-streaming)
+  * [Using Spark](#getting-started-with-spark-api-with-snappydata-extensions)
+    * [Snappy Jobs](#snappy-jobs)
+    * [SnappyContexts](#snappycontext-and-snappystreamingcontext)
+    * [Row/Column/Sample Tables using Spark](#row-column-and-sample-tables-using-spark-api)
+    * [Streaming Jobs](#streaming-jobs)
+
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics). 
 
 ![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
 
 ## Download binary distribution
-You can download the latest version of SnappyData from [here][2]. SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site)
+You can download the latest version of SnappyData from [here][2]. SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site) [Skip to Getting Started](#getting-started)
 
 ## Community Support
-Get Community help on
-* [Slack](http://snappydata-slackin.herokuapp.com/) ![Slack](http://i.imgur.com/h3sc6GM.png)
-* Gitter ![Gitter](http://i.imgur.com/jNAJeOn.jpg)
-* [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)
-* [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)
-* [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)
-* JIRA ![JIRA](http://i.imgur.com/E92zntA.png)
+
+We monitor channels listed below for comments/questions. We prefer using Stackoverflow. 
+
+[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)    [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)        Gitter ![Gitter](http://i.imgur.com/jNAJeOn.jpg)          [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)             [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          JIRA ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData distribution
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
@@ -63,8 +82,12 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 - **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. The SnappyData value add demonstrated here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
 
 ###Start the SnappyData Cluster
-Like Spark, SnappyData can also be run in “local” mode(link?).  Here we use a cluster to show how snappyData running as a database server cluster. 
-Start the cluster using sbin/snappy-start-all.sh. This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
+Like Spark, SnappyData can also be run in [“local” mode](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).  Here we use a cluster to show how SnappyData running as a database server cluster. 
+Start the cluster using:
+```
+sbin/snappy-start-all.sh
+```
+This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. See figure below. Servers and lead are configured to use 1GB of memory by default. 
 
 ![ClusterArchitecture](docs/GettingStarted_Architecture.png)
 
@@ -100,14 +123,14 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 ```
 You can check the state of the cluster using [Pulse](link) - a graphical dashboard for monitoring vital, real-time health and performance of SnappyData members. 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and to SQL requests via JDBC/ODBC.
+At this point, the SnappyData cluster is up and running and is ready to accept Spark jobs and SQL requests via JDBC/ODBC.
 
-> We target both developers familiar with Spark programming as well as SQL developers. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+> We provide interfaces for developers familiar with Spark programming as well as SQL. We showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
 ### goto [Getting started with Spark API (with SnappyData extensions)](###Getting started with Spark API (with SnappyData extensions))
 
 > A general comment: We should move out the details about row table, column table and approximate query processing out of the SQL quickstart so that it can be referred by the Spark API quickstart as well. 
 
-### Getting stated using SQL
+### Getting started using SQL
 
 The SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster)
 

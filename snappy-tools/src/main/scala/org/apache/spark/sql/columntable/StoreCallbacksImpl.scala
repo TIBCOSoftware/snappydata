@@ -31,6 +31,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, Transac
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 
@@ -86,7 +87,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             false, 0, TransactionController.MODE_RECORD,
             TransactionController.ISOLATION_NOLOCK /* not used */ , null, null, 0, null, null, 0, null);
 
-          val batchCreator = new CachedBatchCreator(s"${container.getTableName}_SHADOW_", schema,
+          val batchCreator = new CachedBatchCreator(
+            ColumnFormatRelation.cachedBatchTableName(container.getTableName), schema,
             externalStore, cachedBatchSize, useCompression)
           val keys = batchCreator.createAndStoreBatch(sc, row, batchID, bucketID)
           JavaConversions.mutableSetAsJavaSet(keys)
