@@ -28,14 +28,12 @@ object AirlineDataSparkApp {
     val airlineDF: DataFrame = snc.table(colTableName)
     val airlineCodeDF: DataFrame = snc.table(rowTableName)
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
-    val start = System.currentTimeMillis
+    // Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
     val colResult = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
-      equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("Year_"), airlineDF("Month_"), airlineCodeDF("DESCRIPTION")).
-      agg("ArrDelay" -> "avg", "FlightNum" -> "count")
-
-    println("ARR_DELAY Result:")
+        equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
+    println("Airline arrival schedule")
+    val start = System.currentTimeMillis
     colResult.show
     val totalTimeCol = (System.currentTimeMillis - start)
     println(s"Query time:${totalTimeCol}ms\n")
@@ -43,25 +41,23 @@ object AirlineDataSparkApp {
     // Update the row table
     // Suppose a particular Airline company say 'Alaska Airlines Inc.'
     // re-brands itself as 'Alaska Inc.'
-    val startUpd = System.currentTimeMillis
     val updateVal = udf { (DESCRIPTION: String) =>
-      if (DESCRIPTION == "Alaska Airlines Inc.") "Alaska Inc." else DESCRIPTION
+      if (DESCRIPTION == "Delta Air Lines Inc.") "Delta America" else DESCRIPTION
     }
     val updateResult = airlineCodeDF.withColumn("DESCRIPTION",
       updateVal(airlineCodeDF("DESCRIPTION")))
     println("Updated values:")
+    val startUpd = System.currentTimeMillis
     updateResult.show
     val totalTimeUpd = (System.currentTimeMillis - startUpd)
     println(s" Query time:${totalTimeUpd}ms\n")
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
-    // Result of this query qill show
-    val startColUpd = System.currentTimeMillis
+    // Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
     val colResultAftUpd = airlineDF.join(updateResult, airlineDF.col("UniqueCarrier").
-      equalTo(updateResult("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("Year_"), airlineDF("Month_"), updateResult("DESCRIPTION")).
-      agg("ArrDelay" -> "avg", "FlightNum" -> "count")
-    println("ARR_DELAY after Updated values:")
+        equalTo(updateResult("CODE"))).groupBy(airlineDF("UniqueCarrier"),
+      updateResult("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
+    println("Airline arrival schedule after Updated values:")
+    val startColUpd = System.currentTimeMillis
     colResultAftUpd.show
     val totalTimeColUpd = (System.currentTimeMillis - startColUpd)
     println(s" Query time:${totalTimeColUpd}ms")
