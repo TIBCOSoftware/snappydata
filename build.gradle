@@ -494,6 +494,8 @@ task runQuickstart(dependsOn: product) {
       runSQLScript("create_and_load_column_table.sql")
 
       runSQLScript("create_and_load_row_table.sql")
+      
+      runSQLScript("create_and_load_sample_table.sql")
 
       runSQLScript("status_queries.sql")
 
@@ -502,6 +504,8 @@ task runQuickstart(dependsOn: product) {
       runSQLScript("oltp_queries.sql")
 
       runSQLScript("olap_queries.sql")
+      
+      runSQLScript("olap_approx_queries.sql")
 
       runSubmitQuery("io.snappydata.examples.CreateAndLoadAirlineDataJob", "createJob")
 
