@@ -69,7 +69,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     snc.createTable(tableName, "column", dataDF.schema, p)
 
     // we don't expect any increase in put distribution stats
-    val columnTableRegionName = ColumnFormatRelation.cachedBatchTableName(tableName).toUpperCase
+    val columnTableRegionName = ColumnFormatRelation.
+        cachedBatchTableName(tableName).toUpperCase
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
         Int.box(Misc.getRegionForTable(columnTableRegionName, true).
@@ -116,7 +117,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     //TDOD : Merge and validate test after SNAP-105
     val p = Map.empty[String, String]
     snc.createExternalTable(tableName, "column", dataDF.schema, p)
-    val columnTableRegionName = ColumnFormatRelation.cachedBatchTableName(tableName).toUpperCase
+    val columnTableRegionName = ColumnFormatRelation.
+        cachedBatchTableName(tableName).toUpperCase
     // we don't expect any increase in put distribution stats
     val getPRMessageCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
@@ -185,7 +187,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableName.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName(tableName).toUpperCase(),
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName(tableName).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
     //1005/region.getTotalNumberOfBuckets
@@ -249,14 +252,16 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
   def startSparkJob4(): Unit = {
     val snc = org.apache.spark.sql.SnappyContext(sc)
 
-    snc.sql(s"CREATE TABLE $tableNameWithPartition(Key1 INT ,Value STRING, other1 STRING, other2 STRING )" +
+    snc.sql(s"CREATE TABLE $tableNameWithPartition" +
+        s"(Key1 INT ,Value STRING, other1 STRING, other2 STRING )" +
         "USING column " +
         "options " +
         "(" +
         "PARTITION_BY 'Key1'," +
         "REDUNDANCY '2')")
 
-    var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4), Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
+    var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
+      Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
     1 to 1000 foreach { _ =>
       data = data :+ Seq.fill(4)(Random.nextInt)
     }
@@ -283,7 +288,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val region = Misc.getRegionForTable(s"APP.${tableNameWithPartition.toUpperCase()}",
       true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName(tableNameWithPartition).toUpperCase(),
+    val shadowRegion = Misc.getRegionForTable(
+      ColumnFormatRelation.cachedBatchTableName(tableNameWithPartition).toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
 
     println("startSparkJob4 " + region.size())
@@ -305,7 +311,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 //        "PARTITION_BY 'Key1'," +
 //        "REDUNDANCY '2')")
 
-    var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4), Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
+    var data = Seq(Seq(1, 2, 3, 4), Seq(7, 8, 9, 4), Seq(9, 2, 3, 4),
+      Seq(4, 2, 3, 4), Seq(5, 6, 7, 4))
     1 to 1000 foreach { _ =>
       data = data :+ Seq.fill(4)(Random.nextInt)
     }
@@ -344,7 +351,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("startSparkJob5 " + region.size())
     println("startSparkJob5 " + shadowRegion.size())
 
-    assert(1005 == (region.size() + GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()))
+    assert(1005 == (region.size() +
+        GemFireCacheImpl.getColumnBatchSize * shadowRegion.size()))
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
@@ -387,7 +395,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("total region.size() " + r.length)
 
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).
+        asInstanceOf[PartitionedRegion]
     val shadowRegion = Misc.getRegionForTable(
       ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE4").toUpperCase(),
       true).asInstanceOf[PartitionedRegion]
@@ -444,8 +453,10 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     println("total region.size() " + r.length)
 
 
-    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).asInstanceOf[PartitionedRegion]
-    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.cachedBatchTableName("COLUMNTABLE4").toUpperCase(),
+    val region = Misc.getRegionForTable("APP.COLUMNTABLE4", true).
+        asInstanceOf[PartitionedRegion]
+    val shadowRegion = Misc.getRegionForTable(ColumnFormatRelation.
+        cachedBatchTableName("COLUMNTABLE4").toUpperCase(),
         true).asInstanceOf[PartitionedRegion]
 
     println("region.size() " + region.size())

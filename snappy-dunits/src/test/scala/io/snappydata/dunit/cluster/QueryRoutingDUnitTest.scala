@@ -307,12 +307,13 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, "INTERNAL", null,
+    val rSet2 = dbmd.getTables(null, ColumnFormatRelation.INTERNAL_SCHEMA_NAME, null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"${t + ColumnFormatRelation.SHADOW_TABLE_SUFFIX}".equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
+      if (s"${t + ColumnFormatRelation.SHADOW_TABLE_SUFFIX}".
+          equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
       }
