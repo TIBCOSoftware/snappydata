@@ -18,6 +18,8 @@ package org.apache.spark.sql.store
 
 import java.util.Properties
 
+import scala.collection.concurrent.TrieMap
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -35,7 +37,7 @@ import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Accumulator, Partition, SparkEnv, TaskContext}
+import org.apache.spark.{SparkContext, Accumulator, Partition, SparkEnv, TaskContext}
 
 /**
   * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's
@@ -58,6 +60,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
   GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
+  val rddId = StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext)
 
   override def compute(split: Partition, context: TaskContext): Iterator[(InternalDistributedMember, BlockManagerId)] = {
     GemFireXDDialect.init()
@@ -69,8 +72,9 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     userSchema match {
       case Some(schema) =>
         val store = new JDBCSourceAsColumnarStore(connProperties,partitions)
+        println("sdeshmukh StoreInitRDD.compute registering table = " + table)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
-          schema, store, columnBatchSize, userCompression)
+          schema, store, columnBatchSize, userCompression, rddId)
       case None =>
     }
 
@@ -115,4 +119,19 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
   def createPartition(index: Int,
       blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
+}
+
+object StoreInitRDD {
+  val tableToIdMap = new TrieMap[String, Int]()
+
+  def getRddIdForTable(table: String, sc: SparkContext): Int = synchronized {
+    tableToIdMap.get(table) match {
+      case Some(id) => id
+      case None => {
+        val rddId = sc.newRddId()
+        tableToIdMap.put(table, rddId)
+        rddId
+      }
+    }
+  }
 }

@@ -31,6 +31,7 @@ import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ExternalStoreUtils}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
 import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.storage.{BlockId, BlockStatus, RDDBlockId, StorageLevel}
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /*
@@ -53,9 +54,9 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   }
 
   override def storeCachedBatch(tableName: String, batch: CachedBatch,
-      bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey = {
+      bucketId: Int = -1, batchId: Option[UUID] = None, rddId: Int = -1): UUIDRegionKey = {
     val uuid = getUUIDRegionKey(tableName, bucketId, batchId)
-    storeCurrentBatch(tableName, batch, uuid)
+    storeCurrentBatch(tableName, batch, uuid, rddId)
     uuid
   }
 
@@ -65,7 +66,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   }
 
   def storeCurrentBatch(tableName: String, batch: CachedBatch,
-      uuid: UUIDRegionKey): Unit = {
+      uuid: UUIDRegionKey, rddId: Int): Unit = {
+    var cachedBatchSizeInBytes :Long = 0L
     tryExecute(tableName, {
       case connection =>
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
@@ -73,15 +75,31 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         stmt.setString(1, uuid.getUUID.toString)
         stmt.setInt(2, uuid.getBucketId)
         stmt.setInt(3, batch.numRows)
-        stmt.setBytes(4, SparkSqlSerializer.serialize(batch.stats))
+        val stats: Array[Byte] = SparkSqlSerializer.serialize(batch.stats)
+        stmt.setBytes(4, stats)
         var columnIndex = 5
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
           columnIndex += 1
+          cachedBatchSizeInBytes += buffer.size
         })
         stmt.executeUpdate()
         stmt.close()
+        cachedBatchSizeInBytes += uuid.getUUID.toString.size +
+            2*4 /*size of bucket id and numrows*/ + stats.length
     })
+
+//    log.trace("cachedBatchSizeInBytes =" + cachedBatchSizeInBytes
+//    + " rddId=" + rddId + " bucketId =" + uuid.getBucketId )
+    val metrics = TaskContext.get().taskMetrics
+    val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(Seq[(BlockId, BlockStatus)]())
+    val blockIdAndStatus = (RDDBlockId(rddId, uuid.getBucketId),
+                      BlockStatus(StorageLevel.OFF_HEAP, 0L, 0L, cachedBatchSizeInBytes))
+    metrics.updatedBlocks = Some(lastUpdatedBlocks ++ Seq(blockIdAndStatus))
+//    val blockInfo: BlockInfo =  new BlockInfo(StorageLevel.OFF_HEAP, true)
+//    SparkEnv.get.blockManager.reportBlockStatus(RDDBlockId(rddId, uuid.getBucketId),
+//      blockInfo,
+//      BlockStatus(StorageLevel.OFF_HEAP, 0L, 0L, cachedBatchSizeInBytes))
   }
 
   override def getConnection(id: String): Connection = {
