@@ -19,7 +19,7 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.{StringType, DataType, StructType}
+import org.apache.spark.sql.types.{DataType, StringType, StructType}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 

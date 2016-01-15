@@ -65,7 +65,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         "size" -> 10
       )
 
-    snsc.snappyContext.createTopK("topktable", "hashtag", schema, topKOption, false)
+    snsc.snappyContext.createApproxTSTopK("topktable", "hashtag", schema, topKOption)
 
     snsc.snappyContext.saveStream(rowStream,
       Seq("topktable"),
@@ -91,13 +91,13 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         Thread.sleep(2000)
         pw.println("\n******** Top 10 hash tags for the last interval *******\n")
 
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 2000, System.currentTimeMillis).collect.foreach(result => {
+        snsc.snappyContext.queryApproxTSTopK("topktable",System.currentTimeMillis - 2000, System.currentTimeMillis).collect.foreach(result => {
           pw.println(result.toString)
         })
 
         pw.println("\n************ Top 10 hash tags until now ***************\n")
 
-        snsc.snappyContext.queryTopK("topktable").collect.foreach(result => {
+        snsc.snappyContext.queryApproxTSTopK("topktable").collect.foreach(result => {
           pw.println(result.toString)
         })
 
