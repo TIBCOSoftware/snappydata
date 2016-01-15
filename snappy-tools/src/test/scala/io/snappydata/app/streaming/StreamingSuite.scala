@@ -19,7 +19,8 @@ package io.snappydata.app.streaming
 import scala.collection.mutable.Queue
 
 import io.snappydata.SnappyFunSuite
-import org.scalatest.BeforeAndAfter
+import org.scalatest.concurrent.Eventually
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import twitter4j.{Status, TwitterObjectFactory}
 
 import org.apache.spark.rdd.RDD
@@ -29,10 +30,8 @@ import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingContext, St
 import org.apache.spark.streaming._
 import org.apache.spark.unsafe.types.UTF8String
 
-/**
-  * Created by ymahajan on 25/09/15.
-  */
-class StreamingSuite extends SnappyFunSuite with BeforeAndAfter {
+class StreamingSuite extends SnappyFunSuite with Eventually
+with BeforeAndAfterAll with BeforeAndAfter {
 
   private var ssnc: SnappyStreamingContext = _
 
@@ -43,15 +42,91 @@ class StreamingSuite extends SnappyFunSuite with BeforeAndAfter {
   def batchDuration: Duration = Seconds(1)
 
   before {
-    ssnc = SnappyStreamingContext(snc, batchDuration);
-    // ssc.checkpoint("/tmp")
+    super.beforeAll()
+    ssnc = SnappyStreamingContext(snc, batchDuration)
   }
 
   after {
+    this.afterAll()
+  }
+
+  override def afterAll(): Unit = {
+
+    super.afterAll()
     if (ssnc != null) {
+
       SnappyStreamingContext.stop()
     }
   }
+
+  test("SNAP-414") {
+    ssnc.sql("create stream table tableStream " +
+        "(id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) " +
+        "using twitter_stream options (" +
+        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
+
+    ssnc.sql("create stream table tableStream2 " +
+        "(text string) " +
+        "using twitter_stream options (" +
+        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+        "rowConverter 'org.apache.spark.sql.streaming.HashTagToRowsConverter')")
+
+    ssnc.sql("STREAMING START")
+    for (a <- 1 to 3) {
+      Thread.sleep(2000)
+      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").show
+    }
+    for (a <- 1 to 3) {
+      Thread.sleep(2000)
+      ssnc.sql("select text from tableStream2 where text like '%e%'").show
+    }
+    ssnc.sql("drop table tableStream")
+    ssnc.sql("drop table tableStream2")
+  }
+
+  ignore("SNAP-408") {
+    ssnc.sql("create stream table tableStream " +
+        "(id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) " +
+        "using twitter_stream options (" +
+        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
+    ssnc.sql("STREAMING START")
+    for (a <- 1 to 3) {
+      Thread.sleep(2000)
+      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
+    }
+    ssnc.sql("drop table tableStream")
+    val thrown = intercept[Exception] {
+      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
+    }
+    ssnc.sql("create stream table tableStream " +
+        "(id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) " +
+        "using twitter_stream options (" +
+        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
+    for (a <- 1 to 3) {
+      Thread.sleep(1000)
+      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
+    }
+    ssnc.sql("drop table tableStream")
+  }
+
   test("stream ad-hoc sql") {
     ssnc.sql("create stream table tweetsTable " +
         "(id long, text string, fullName string, " +
@@ -370,7 +445,7 @@ class StreamingSuite extends SnappyFunSuite with BeforeAndAfter {
   }
 
 
-  test("sql on direct kafka streams") {
+  /* test("sql on direct kafka streams") {
 
     intercept[Exception] {
       // java.nio.channels.ClosedChannelException since no kafka cluster
@@ -386,9 +461,9 @@ class StreamingSuite extends SnappyFunSuite with BeforeAndAfter {
     }
     assert(ex.getMessage === "requirement failed: No output operations" +
         " registered, so nothing to execute")
-  }
+  } */
 
-  test("sql on file streams") {
+  /* test("sql on file streams") {
 
     // var hfile: String = getClass.getResource("/2015.parquet").getPath
     ssnc.sql("create stream table fileStreamTable (name string, age int)" +
@@ -404,7 +479,7 @@ class StreamingSuite extends SnappyFunSuite with BeforeAndAfter {
     // assert(thrown.getMessage === "requirement failed: No output operations" +
     //    " registered, so nothing to execute")
     ssnc.sql("drop table fileStreamTable")
-  }
+  } */
 }
 
 case class Tweet(id: Int, text: String)
