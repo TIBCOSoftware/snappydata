@@ -19,33 +19,32 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-import org.apache.spark.rdd.RDD
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect, BaseRelation}
+import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.types.{DataType, StructType}
 import org.apache.spark.sql.streaming._
+import org.apache.spark.sql.types.{Metadata, StructField, StructType, DataType}
 import org.apache.spark.{Logging, Partition, TaskContext}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -320,6 +319,39 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
   }
 
+  private def requiresNormalization(k: String): Boolean = {
+    var index = 0
+    val len = k.length
+    while (index < len) {
+      if (Character.isUpperCase(k.charAt(index))) {
+        return true
+      }
+      index += 1
+    }
+    false
+  }
+
+  def normalizeSchema(schema: StructType): StructType = {
+    if (conf.caseSensitiveAnalysis) {
+      schema
+    } else {
+      val fields = schema.fields
+      if (fields.exists(f => requiresNormalization(f.fieldName))) {
+        StructType(fields.map { f =>
+          val name = Utils.normalizeId(f.fieldName)
+          val metadata = if (f.metadata.contains("name")) {
+            new Metadata(f.metadata.map + ("name" -> name))
+          } else {
+            f.metadata
+          }
+          StructField(name, f.dataType, f.nullable, metadata)
+        })
+      } else {
+        schema
+      }
+    }
+  }
+
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
     new QualifiedTableName(tableIdent.database,
       SnappyStoreHiveCatalog.processTableIdentifier(tableIdent.table, conf))
@@ -357,7 +389,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = {
     if (tables.contains(tableIdent)) {
-      context.truncateTable(tableIdent.table)
+      context.truncateTempTable(tableIdent.table)
       tables -= tableIdent
     }
   }
@@ -729,15 +761,13 @@ object ExternalTableType extends Enumeration {
   type Type = Value
 
   val Row = Value("ROW")
-  val Columnar = Value("COLUMN")
+  val Column = Value("COLUMN")
   val Stream = Value("STREAM")
-  val Sample = Value("SAMPLE")
-  val TopK = Value("TOPK")
 
   def getTableType(relation: BaseRelation): ExternalTableType.Type = {
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case x: JDBCAppendableRelation => ExternalTableType.Column
       case x: TwitterStreamRelation => ExternalTableType.Stream
       case x: FileStreamRelation => ExternalTableType.Stream
       case x: SocketStreamRelation => ExternalTableType.Stream

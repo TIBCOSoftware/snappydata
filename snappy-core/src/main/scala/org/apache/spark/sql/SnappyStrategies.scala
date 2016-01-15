@@ -90,9 +90,9 @@ private[sql] trait SnappyStrategies {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
 
       val x1: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-        case CreateStreamTable(streamName, userColumns, provider, options) =>
+        case CreateStreamTable(streamIdent, userColumns, provider, options) =>
           ExecutedCommand(
-            CreateStreamTableCmd(streamName, userColumns, provider, options)) :: Nil
+            CreateStreamTableCmd(streamIdent, userColumns, provider, options)) :: Nil
       }
 
       val x2: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
