@@ -48,7 +48,7 @@ object AQPDefault extends AQPContext{
 
   override def createTopK(context: SnappyContext, tableName: String,
       keyColumnName: String, schema: StructType,
-      topkOptions: Map[String, Any], ifExists: Boolean): Unit =
+      topkOptions: Map[String, String], ifExists: Boolean): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
   override def dropTopK(context: SnappyContext, topKName: String): Unit =

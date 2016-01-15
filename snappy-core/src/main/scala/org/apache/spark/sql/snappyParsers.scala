@@ -229,31 +229,31 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
      "(?i)clob".r) ^^^ StringType
 
   protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> INDEX ~> ident) ~ (ON ~> ident) ~ wholeInput ^^ {
+    (CREATE ~> INDEX ~> tableIdentifier) ~ (ON ~> tableIdentifier) ~ wholeInput ^^ {
       case indexName ~ tableName ~ sql =>
         CreateIndex(tableName, sql)
     }
 
   protected lazy val dropIndex: Parser[LogicalPlan] =
-    (DROP ~> INDEX ~> ident) ~ wholeInput ^^ {
+    (DROP ~> INDEX ~> tableIdentifier) ~ wholeInput ^^ {
       case indexName ~ sql =>
         DropIndex(sql)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
-    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ ident ^^ {
+    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ tableIdentifier ^^ {
       case temporary ~ allowExisting ~ tableName =>
         DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
     }
 
   protected lazy val truncateTable: Parser[LogicalPlan] =
-    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ ident ^^ {
+    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ tableIdentifier ^^ {
       case temporary ~ tableName =>
         TruncateTable(tableName, temporary.isDefined)
     }
 
   protected lazy val createStream: Parser[LogicalPlan] =
-    (CREATE ~> STREAM ~> TABLE ~> ident) ~
+    (CREATE ~> STREAM ~> TABLE ~> tableIdentifier) ~
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
       case streamname ~ cols ~ providerName ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
@@ -336,37 +336,39 @@ private[sql] case class CreateExternalTableUsingSelect(
 }
 
 private[sql] case class DropTable(
-    tableName: String,
+    tableIdent: TableIdentifier,
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    if (temporary) snc.dropTempTable(tableName, ifExists)
-    else snc.dropTable(tableName, ifExists)
+    val qualifiedTable = snc.catalog.newQualifiedTableName(tableIdent)
+    if (temporary) snc.dropTempTable(qualifiedTable, ifExists)
+    else snc.dropTable(qualifiedTable, ifExists)
     Seq.empty
   }
 }
 
 private[sql] case class TruncateTable(
-    tableName: String,
+    tableIdent: TableIdentifier,
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    if (temporary) snc.truncateTable(tableName)
-    else snc.truncateExternalTable(tableName)
+    val qualifiedTable = snc.catalog.newQualifiedTableName(tableIdent)
+    if (temporary) snc.truncateTempTable(qualifiedTable)
+    else snc.truncateTable(qualifiedTable)
     Seq.empty
   }
 }
 
 private[sql] case class CreateIndex(
-    tableName: String,
+    tableIdent: TableIdentifier,
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc =sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnTable(tableName, sql)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    snc.createIndexOnTable(snc.catalog.newQualifiedTableName(tableIdent), sql)
     Seq.empty
   }
 }
@@ -376,7 +378,7 @@ private[sql] case class DropIndex(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndexOnTable(sql)
+    snc.dropIndexOfTable(sql)
     Seq.empty
   }
 }
@@ -393,7 +395,7 @@ case class DMLExternalTable(
 }
 
 
-private[sql] case class CreateStreamTable(streamName: String,
+private[sql] case class CreateStreamTable(streamIdent: TableIdentifier,
     userColumns: Option[StructType],
     provider: String,
     options: Map[String, String])
@@ -417,7 +419,7 @@ private[sql] case class StreamOperationsLogicalPlan(action: Int,
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
-private[sql] case class CreateStreamTableCmd(streamIdent: String,
+private[sql] case class CreateStreamTableCmd(streamIdent: TableIdentifier,
     userColumns: Option[StructType],
     provider: String,
     options: Map[String, String])
@@ -429,15 +431,15 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val plan = LogicalRelation(resolved.relation)
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
-    val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
 
+    val streamName = catalog.newQualifiedTableName(streamIdent)
     // add the stream to the tables in the catalog
-    catalog.tables.get(streamTable) match {
-      case None => catalog.tables.put(streamTable, plan)
+    catalog.tables.get(streamName) match {
+      case None => catalog.tables.put(streamName, plan)
       case Some(x) => throw new IllegalStateException(
-        s"Stream table name $streamTable already defined")
+        s"Stream table name $streamName already defined")
     }
-    catalog.registerExternalTable(streamTable, userColumns,
+    catalog.registerExternalTable(streamName, userColumns,
       Array.empty[String], provider, options,
       ExternalTableType.getTableType(resolved.relation))
 

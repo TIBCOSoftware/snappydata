@@ -42,7 +42,7 @@ trait AQPContext {
 
   def createTopK(context: SnappyContext, topKName: String,
       keyColumnName: String, inputDataSchema: StructType,
-      topkOptions: Map[String, Any], ifExists: Boolean): Unit
+      topkOptions: Map[String, String], ifExists: Boolean): Unit
 
   def dropTopK(context: SnappyContext, topKName: String): Unit
 
