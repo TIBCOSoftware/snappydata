@@ -31,11 +31,11 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext}
 
 /**
-  * Provides an ability to manipulate SQL like query on DStream
-  */
+ * Provides an ability to manipulate SQL like query on DStream
+ */
 class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
-    val batchDur: Duration)
-    extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
+                                              val batchDur: Duration)
+  extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
 
   self =>
 
@@ -44,11 +44,11 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   }
 
   /**
-    * Registers and executes given SQL query and
-    * returns [[SchemaDStream]] to consume the results
-    * @param queryStr
-    * @return
-    */
+   * Registers and executes given SQL query and
+   * returns [[SchemaDStream]] to consume the results
+   * @param queryStr
+   * @return
+   */
   def registerCQ(queryStr: String): SchemaDStream = {
     val plan = sql(queryStr).queryExecution.logical
     val dStream = new SchemaDStream(self, plan)
@@ -60,8 +60,8 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   }
 
   /**
-    * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
-    */
+   * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
+   */
   def createSchemaDStream[A <: Product : TypeTag]
   (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
@@ -106,19 +106,21 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-  def start(): Unit = {
-    val snsc = getActive().get
-    snsc.start()
+  def start(): Unit = getActive() match {
+    case Some(snsc) => snsc.start()
+    case None =>
   }
 
   def stop(stopSparkContext: Boolean = false,
-      stopGracefully: Boolean = true): Unit = {
-    val snsc = getActive().get
-    if (snsc != null) {
-      snsc.stop(stopSparkContext, stopGracefully)
-      snsc.snappyContext.clearCache()
-      SnappyContext.stop()
-      setActiveContext(null)
+           stopGracefully: Boolean = true): Unit = {
+    getActive() match {
+      case Some(snsc) => {
+        snsc.stop(stopSparkContext, stopGracefully)
+        snsc.snappyContext.clearCache()
+        SnappyContext.stop()
+        setActiveContext(null)
+      }
+      case None =>
     }
   }
 }
