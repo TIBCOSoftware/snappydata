@@ -91,11 +91,13 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
 //    log.trace("cachedBatchSizeInBytes =" + cachedBatchSizeInBytes
 //    + " rddId=" + rddId + " bucketId =" + uuid.getBucketId )
-    val metrics = TaskContext.get().taskMetrics
-    val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(Seq[(BlockId, BlockStatus)]())
-    val blockIdAndStatus = (RDDBlockId(rddId, uuid.getBucketId),
-                      BlockStatus(StorageLevel.OFF_HEAP, 0L, 0L, cachedBatchSizeInBytes))
-    metrics.updatedBlocks = Some(lastUpdatedBlocks ++ Seq(blockIdAndStatus))
+    if (Option(TaskContext.get) != None) {
+      val metrics = TaskContext.get.taskMetrics
+      val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(Seq[(BlockId, BlockStatus)]())
+      val blockIdAndStatus = (RDDBlockId(rddId, uuid.getBucketId),
+          BlockStatus(StorageLevel.OFF_HEAP, 0L, 0L, cachedBatchSizeInBytes))
+      metrics.updatedBlocks = Some(lastUpdatedBlocks ++ Seq(blockIdAndStatus))
+    }
 //    val blockInfo: BlockInfo =  new BlockInfo(StorageLevel.OFF_HEAP, true)
 //    SparkEnv.get.blockManager.reportBlockStatus(RDDBlockId(rddId, uuid.getBucketId),
 //      blockInfo,
