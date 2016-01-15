@@ -38,7 +38,6 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) with Logging with StreamPlan with Serializable {
 
-  val tableName = options("tableName")
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
     t.split(", ").map { s =>

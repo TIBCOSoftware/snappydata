@@ -38,7 +38,6 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  val tableName = options("tableName")
   val consumerKey = options("consumerKey")
   val consumerSecret = options("consumerSecret")
   val accessToken = options("accessToken")

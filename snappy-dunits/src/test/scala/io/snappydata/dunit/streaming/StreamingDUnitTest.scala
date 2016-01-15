@@ -20,10 +20,8 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val url = "jdbc:snappydata://localhost:" + netPort + "/"
     DriverManager.getConnection(url)
   }
-  def testStreamingSQL(): Unit = {
 
-  }
-  def _testStreamingSQL(): Unit = {
+  def testStreamingAdhocSQL(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
@@ -43,12 +41,40 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       Thread.sleep(2000)
       s.execute("select text, fullName from tweetsTable where text like '%e%'")
       val rs = s.getResultSet
+      if(a==5) assert(rs.next)
       while (rs.next()) {
-        println("YOGS RESULTSET: " + rs.getString(1) + ", " + rs.getString(2))
+        rs.getString(1)
+        rs.getString(2)
       }
     }
-    s.execute("drop table tweetsTable")
     s.execute("streaming stop")
+    s.execute("drop table tweetsTable")
+
+    conn.close()
+  }
+
+  def testSnappyStreamingContextStartStop(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val s = conn.createStatement()
+    s.execute("streaming stop")
+    s.execute("streaming init 2")
+    s.execute("streaming init 4")
+    s.execute("create stream table tweetsTable " +
+        "(id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) " +
+        "using twitter_stream options (" +
+        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+        "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
+    s.execute("streaming start")
+    s.execute("streaming start")
+    s.execute("streaming stop")
+    s.execute("streaming stop")
+    s.execute("drop table tweetsTable")
     conn.close()
   }
 }

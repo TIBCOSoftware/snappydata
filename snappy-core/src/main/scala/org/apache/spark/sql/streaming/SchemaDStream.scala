@@ -109,7 +109,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Method that generates a RDD for the given time */
   override def compute(validTime: Time): Option[RDD[Row]] = {
-    StreamHelper.setValidTime(validTime)
+    StreamBaseRelation.setValidTime(validTime)
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
     Some(queryExecution.executedPlan.execute().map(converter(_).asInstanceOf[Row]))
   }

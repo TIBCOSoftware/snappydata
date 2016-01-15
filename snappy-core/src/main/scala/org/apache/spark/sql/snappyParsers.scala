@@ -433,11 +433,11 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
 
     // add the stream to the tables in the catalog
-    /* catalog.tables.get(streamTable) match {
+     catalog.tables.get(streamTable) match {
       case None => catalog.tables.put(streamTable, plan)
       case Some(x) => throw new IllegalStateException(
         s"Stream table name $streamTable already defined")
-    } */
+    }
 
     catalog.registerExternalTable(streamTable, userColumns,
       Array.empty[String], provider, options,

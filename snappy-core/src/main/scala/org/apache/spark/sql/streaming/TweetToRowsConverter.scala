@@ -1,10 +1,10 @@
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.json.{JSONArray, JSONObject}
 import twitter4j.Status
 
-import org.apache.spark.sql.catalyst.{InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
 class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
@@ -20,6 +20,14 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
   }
 
 }
+
+class HashTagToRowsConverter extends StreamToRowsConverter with Serializable {
+  override def toRows(message: Any): Seq[InternalRow] = {
+    val status: Status = message.asInstanceOf[Status]
+    Seq(InternalRow.fromSeq(Seq(UTF8String.fromString(status.getText))))
+  }
+}
+
 class TweetToHashtagRow extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[InternalRow] = {

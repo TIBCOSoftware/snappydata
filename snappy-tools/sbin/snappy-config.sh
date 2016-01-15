@@ -20,3 +20,4 @@
 # also should not be passed any arguments, since we need original $*
 
 # resolve links - $0 may be a softlink
+export SNAPPY_HOME="${SPARK_HOME}"

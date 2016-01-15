@@ -35,8 +35,6 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  val tableName = options("tableName")
-
   // Zookeeper quorum (hostname:port,hostname:port,..)
   val ZK_QUORUM = "zkquorum"
 

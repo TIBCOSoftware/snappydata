@@ -34,7 +34,6 @@ case class SocketStreamRelation(@transient override val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  val tableName = options("tableName")
   val hostname: String = options.get("hostname").get // .getOrElse("localhost")
 
   val port: Int = options.get("port").map(_.toInt).get // .getOrElse(9999)

@@ -27,11 +27,13 @@ import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String]) extends BaseRelation with StreamPlan
-with TableScan /* with DeletableRelation with DestroyRelation */ with Serializable with Logging {
+with TableScan with DestroyRelation with DeletableRelation with Serializable with Logging {
 
   @transient val context = SnappyStreamingContext.getActive().get
 
   @transient var rowStream: DStream[InternalRow] = _
+
+  @transient val tableName = options("tableName")
 
   val storageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)
@@ -61,8 +63,11 @@ with TableScan /* with DeletableRelation with DestroyRelation */ with Serializab
     } */
   }
 
-  /* override def destroy(ifExists: Boolean): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
+  override def destroy(ifExists: Boolean): Unit = {
+    val catalog = context.snappyContext.catalog
+    val qualifiedTable = catalog.newQualifiedTableName(tableName)
+    catalog.tables -= qualifiedTable
+    StreamBaseRelation.tableToStream -= tableName
   }
 
   override def delete(filterExpr: String): Int = {
@@ -71,29 +76,15 @@ with TableScan /* with DeletableRelation with DestroyRelation */ with Serializab
 
   def truncate(): Unit = {
     throw new IllegalAccessException("Stream tables cannot be truncated")
-  } */
-
+  }
 }
 
-object StreamBaseRelation extends Logging {
+private object StreamBaseRelation extends Logging {
 
   private var tableToStream =
     new scala.collection.mutable.HashMap[String, DStream[InternalRow]]()
 
   val LOCK = new Object()
-
-  def setRowStream(tableName: String, stream: DStream[InternalRow]): Unit = {
-    tableToStream += (tableName -> stream)
-    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-    stream.foreachRDD { rdd => rdd }
-  }
-
-  def getRowStream(tableName: String): DStream[InternalRow] = {
-    tableToStream.getOrElse(tableName, null)
-  }
-}
-
-private object StreamHelper {
 
   var validTime: Time = null
 
@@ -104,5 +95,15 @@ private object StreamHelper {
       validTime = time
     } else {
     }
+  }
+
+  def setRowStream(tableName: String, stream: DStream[InternalRow]): Unit = {
+    tableToStream += (tableName -> stream)
+    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
+    stream.foreachRDD { rdd => rdd }
+  }
+
+  def getRowStream(tableName: String): DStream[InternalRow] = {
+    tableToStream.getOrElse(tableName, null)
   }
 }
