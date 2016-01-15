@@ -20,10 +20,8 @@ import kafka.serializer.StringDecoder
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
 class DirectKafkaStreamSource extends SchemaRelationProvider {
@@ -40,6 +38,7 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) with Logging with StreamPlan with Serializable {
 
+  val tableName = options("tableName")
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
     t.split(", ").map { s =>
@@ -48,32 +47,16 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     }.toMap
   }.getOrElse(Map())
 
-  DirectKafkaStreamRelation.LOCK.synchronized {
-    if (DirectKafkaStreamRelation.getRowStream() == null) {
+  StreamBaseRelation.LOCK.synchronized {
+    if (StreamBaseRelation.getRowStream(tableName) == null) {
       rowStream = {
         KafkaUtils
             .createDirectStream[String, String, StringDecoder, StringDecoder](
           context, kafkaParams, topicsSet).map(_._2).flatMap(rowConverter.toRows)
       }
-      DirectKafkaStreamRelation.setRowStream(rowStream)
-      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-      rowStream.foreachRDD { rdd => rdd }
+      StreamBaseRelation.setRowStream(tableName, rowStream)
     } else {
-      rowStream = DirectKafkaStreamRelation.getRowStream()
+      rowStream = StreamBaseRelation.getRowStream(tableName)
     }
-  }
-}
-
-object DirectKafkaStreamRelation extends Logging {
-  private var rStream: DStream[InternalRow] = null
-
-  private val LOCK = new Object()
-
-  private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    rStream = stream
-  }
-
-  private def getRowStream(): DStream[InternalRow] = {
-    rStream
   }
 }

@@ -19,22 +19,10 @@ package org.apache.spark.sql.streaming
 import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
-import org.apache.spark.Logging
-import org.apache.spark.rdd.{EmptyRDD, RDD}
-import org.apache.spark.sql.{Row, SQLContext}
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.twitter.TwitterUtils
-import org.apache.spark.rdd.{EmptyRDD, RDD}
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.sources.{BaseRelation, TableScan}
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.Time
-import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.util.Utils
 
 final class TwitterStreamSource extends SchemaRelationProvider {
 
@@ -50,10 +38,12 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
+  val tableName = options("tableName")
   val consumerKey = options("consumerKey")
   val consumerSecret = options("consumerSecret")
   val accessToken = options("accessToken")
   val accessTokenSecret = options("accessTokenSecret")
+
 
   //  TODO Yogesh, need to pass this through DDL
   val filters = Seq("e")
@@ -73,31 +63,15 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     new OAuthAuthorization(getTwitterConf)
   }
 
-  TwitterStreamRelation.LOCK.synchronized {
-    if (TwitterStreamRelation.getRowStream() == null) {
+  StreamBaseRelation.LOCK.synchronized {
+    if (StreamBaseRelation.getRowStream(tableName) == null) {
       rowStream = {
         TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
           filters, storageLevel).flatMap(rowConverter.toRows)
       }
-      TwitterStreamRelation.setRowStream(rowStream)
-      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-      rowStream.foreachRDD { rdd => rdd }
+      StreamBaseRelation.setRowStream(tableName, rowStream)
     } else {
-      rowStream = TwitterStreamRelation.getRowStream()
+      rowStream = StreamBaseRelation.getRowStream(tableName)
     }
-  }
-}
-
-object TwitterStreamRelation extends Logging {
-  private var rStream: DStream[InternalRow] = null
-
-  private val LOCK = new Object()
-
-  private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    rStream = stream
-  }
-
-  private def getRowStream(): DStream[InternalRow] = {
-    rStream
   }
 }
