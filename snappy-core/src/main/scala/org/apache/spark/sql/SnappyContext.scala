@@ -35,7 +35,6 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Scala
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
-
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{ConnectionPool, LogicalRDD, SparkPlan}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -82,6 +81,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   protected[spark] def this(sc: SparkContext) {
     this(sc, SQLContext.createListenerAndUI(sc), true)
   }
+
+  @transient protected[sql] val snappyCacheManager: SnappyCacheManager =
+    cacheManager.asInstanceOf[SnappyCacheManager]
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -356,23 +358,29 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         samplingOptions, streamTable,
       jdbcSource)
 
-
   /**
-   * @todo rename to createApproxTSTopK .. it is approximate and time series
+   * Create approximate structure to query top-K with time series support.
    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
-   * @param topKName
+   * @param topKName the qualified name of the top-K structure
    * @param keyColumnName
    * @param inputDataSchema
    * @param topkOptions
-   * @param isStreamSummary
    */
-  def createTopK(topKName: String, keyColumnName: String,
-                 inputDataSchema: StructType,
-      topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit =
-      aqpContext.createTopK(self, topKName, keyColumnName, inputDataSchema,
-        topkOptions, isStreamSummary)
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      inputDataSchema: StructType, topkOptions: Map[String, Any],
+      ifExists: Boolean = false): Unit =
+    aqpContext.createTopK(self, topKName, keyColumnName, inputDataSchema,
+      topkOptions, ifExists)
 
+  /**
+   * Drop approximate top-K structure.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   */
+  def dropApproxTSTopK(topKName: String): Unit =
+    aqpContext.dropTopK(self, topKName)
 
   /**
    * Creates a SnappyData table. This differs from
@@ -723,9 +731,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   override protected[sql] val planner = this.aqpContext.getPlanner(this)
 
 
-
-
-
   /**
     * Fetch the topK entries in the Approx TopK synopsis for the specified
    * time interval. See _createTopK_ for how to create this data structure
@@ -746,25 +751,22 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     *          This is to be passed only for stream summary
     * @return returns the top K elements with their respective frequencies between two time
     */
-  def queryTopK[T: ClassTag](topKName: String,
+  def queryApproxTSTopK(topKName: String,
       startTime: String = null, endTime: String = null,
       k: Int = -1): DataFrame =
-      aqpContext.queryTopK[T](this, topKName,
+      aqpContext.queryTopK(this, topKName,
         startTime, endTime, k)
-
 
   /**
    * @todo why do we need this method? K is optional in the above method
    */
-  def queryTopK[T: ClassTag](topKName: String,
+  def queryApproxTSTopK(topKName: String,
       startTime: Long, endTime: Long): DataFrame =
-    queryTopK[T](topKName, startTime, endTime, -1)
+    queryApproxTSTopK(topKName, startTime, endTime, -1)
 
-  def queryTopK[T: ClassTag](topK: String,
-                             startTime: Long, endTime: Long, k: Int): DataFrame =
-    aqpContext.queryTopK[T](this, topK, startTime, endTime, k)
-
-
+  def queryApproxTSTopK(topK: String,
+      startTime: Long, endTime: Long, k: Int): DataFrame =
+    aqpContext.queryTopK(this, topK, startTime, endTime, k)
 }
 
 /**

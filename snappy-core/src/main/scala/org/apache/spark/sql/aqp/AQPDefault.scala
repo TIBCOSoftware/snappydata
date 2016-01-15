@@ -16,29 +16,19 @@
  */
 package org.apache.spark.sql.aqp
 
+import scala.reflect.runtime.{universe => u}
+
 import org.apache.spark.rdd.RDD
-
-
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.CatalystConf
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, Catalog, Analyzer}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.{StoreDataSourceStrategy, DDLParser}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.execution.datasources.{DDLParser, StoreDataSourceStrategy}
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.StoreStrategy
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{execution => sparkexecution, _}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.dstream.DStream
 
-import scala.reflect.ClassTag
-
-import scala.reflect.runtime.{universe => u}
-import org.apache.spark.sql.{execution => sparkexecution}
-/**
- * Created by ashahid on 12/11/15.
- */
 object AQPDefault extends AQPContext{
 
   protected[sql] def executePlan(context: SnappyContext, plan: LogicalPlan): QueryExecution =
@@ -56,21 +46,29 @@ object AQPDefault extends AQPContext{
                                          (implicit ev: u.TypeTag[A]): DataFrame
   = throw new UnsupportedOperationException("missing aqp jar")
 
-  def createTopK(context: SnappyContext, tableName: String, keyColumnName: String, schema: StructType,
-                   topkOptions: Map[String, Any], isStreamSummary: Boolean): Unit=
+  override def createTopK(context: SnappyContext, tableName: String,
+      keyColumnName: String, schema: StructType,
+      topkOptions: Map[String, Any], ifExists: Boolean): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
+  override def dropTopK(context: SnappyContext, topKName: String): Unit =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def queryTopK[T: ClassTag](context: SnappyContext, topKName: String,
-                             startTime: String = null, endTime: String = null,
-                             k: Int = -1): DataFrame = throw new UnsupportedOperationException("missing aqp jar")
+  def insertIntoTopK(context: SnappyContext, rows: RDD[Row],
+      topKName: QualifiedTableName, time: Long): Unit =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-  def queryTopK[T: ClassTag](context: SnappyContext, topK: String,
-                             startTime: Long, endTime: Long, k: Int): DataFrame
-  = throw new UnsupportedOperationException("missing aqp jar")
+  override def queryTopK(context: SnappyContext, topKName: String,
+      startTime: String, endTime: String, k: Int): DataFrame =
+    throw new UnsupportedOperationException("missing aqp jar")
 
+  override def queryTopK(context: SnappyContext, topK: String,
+      startTime: Long, endTime: Long, k: Int): DataFrame =
+    throw new UnsupportedOperationException("missing aqp jar")
 
-
+  override def queryTopKRDD(context: SnappyContext, topK: String,
+      startTime: String, endTime: String): RDD[Row] =
+    throw new UnsupportedOperationException("missing aqp jar")
 
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row], aqpTables: Seq[String],
                                     time: Long,
@@ -128,27 +126,29 @@ object AQPDefault extends AQPContext{
   }
 }
 
-class DefaultPlanner(snappyContext: SnappyContext) extends execution.SparkPlanner(snappyContext)  with SnappyStrategies{
-  val sampleSnappyCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
-  val sampleStreamCase : PartialFunction[LogicalPlan, Seq[SparkPlan]] = {case _ => Nil}
+class DefaultPlanner(snappyContext: SnappyContext)
+    extends SparkPlanner(snappyContext) with SnappyStrategies {
 
-
-
+  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case _ => Nil
+  }
+  val sampleStreamCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case _ => Nil
+  }
 
   // TODO temporary flag till we determine every thing works fine with the optimizations
   val storeOptimization = snappyContext.sparkContext.getConf.get(
     "snappy.store.optimization", "true").toBoolean
 
   val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
-    Seq(StoreDataSourceStrategy , LocalJoinStrategies)
+    Seq(StoreDataSourceStrategy, LocalJoinStrategies)
   else Nil
 
   override def strategies: Seq[Strategy] =
-    Seq(SnappyStrategies, StreamDDLStrategy(snappyContext.aqpContext.getSampleTablePopulator, sampleStreamCase),
+    Seq(SnappyStrategies,
+      StreamDDLStrategy(snappyContext.aqpContext.getSampleTablePopulator,
+        sampleStreamCase),
       StoreStrategy, StreamQueryStrategy) ++
-      storeOptimizedRules ++
-      super.strategies
-
-
-
+        storeOptimizedRules ++
+        super.strategies
 }

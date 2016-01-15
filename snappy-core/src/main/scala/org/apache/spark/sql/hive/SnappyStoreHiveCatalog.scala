@@ -664,6 +664,13 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
         (tableIdent.table, true)
     }.toSeq ++ client.listTables(dbName).map((_, false))
   }
+
+  def getExternalTables(dbIdent: Option[String]): Seq[String] = {
+    val client = this.client
+    val dbName = dbIdent.map(processTableIdentifier)
+        .getOrElse(client.currentDatabase)
+    client.listTables(dbName)
+  }
 }
 
 object SnappyStoreHiveCatalog {

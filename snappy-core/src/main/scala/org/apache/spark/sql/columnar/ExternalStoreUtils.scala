@@ -78,19 +78,19 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  class CaseInsensitiveMutableHashMap(map: Map[String, String])
-      extends mutable.Map[String, String] with Serializable {
+  class CaseInsensitiveMutableHashMap[T](map: Map[String, T])
+      extends mutable.Map[String, T] with Serializable {
 
-    val baseMap = new mutable.HashMap[String, String]
+    val baseMap = new mutable.HashMap[String, T]
     baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
 
-    override def get(k: String): Option[String] = baseMap.get(k.toLowerCase)
+    override def get(k: String): Option[T] = baseMap.get(k.toLowerCase)
 
-    override def remove(k: String): Option[String] = baseMap.remove(k.toLowerCase)
+    override def remove(k: String): Option[T] = baseMap.remove(k.toLowerCase)
 
-    override def iterator: Iterator[(String, String)] = baseMap.iterator
+    override def iterator: Iterator[(String, T)] = baseMap.iterator
 
-    override def +=(kv: (String, String)) = {
+    override def +=(kv: (String, T)) = {
       baseMap += kv
       this
     }
