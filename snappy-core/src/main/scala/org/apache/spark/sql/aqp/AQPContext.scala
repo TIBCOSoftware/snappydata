@@ -77,7 +77,8 @@ trait AQPContext {
 
   def createSampleDataFrameContract(sqlContext: SnappyContext, df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
 
-  def convertToStratifiedSample(options: Map[String, Any], logicalPlan: LogicalPlan): LogicalPlan
+  def convertToStratifiedSample(options: Map[String, Any],
+                          snc: SnappyContext,  logicalPlan: LogicalPlan): LogicalPlan
 
   def getPlanner(context: SnappyContext) : SparkPlanner
 

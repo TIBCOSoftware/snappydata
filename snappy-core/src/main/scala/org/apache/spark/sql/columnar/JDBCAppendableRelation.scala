@@ -43,7 +43,7 @@ import org.apache.spark.sql.types.StructType
  * are retrieved using a JDBC URL or DataSource.
  */
 
-class JDBCAppendableRelation(
+case class JDBCAppendableRelation(
     val table: String,
     val provider: String,
     val mode: SaveMode,
@@ -355,8 +355,17 @@ class ColumnarRelationProvider
       options: Map[String, String], data: DataFrame): BaseRelation = {
     val rel = getRelation(sqlContext, options)
     val relation = rel.createRelation(sqlContext, mode, options, data.schema)
-    relation.insert(data, mode == SaveMode.Overwrite)
-    relation
+    var success = false
+    try {
+      relation.insert(data, mode == SaveMode.Overwrite)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 
   def getRelation(sqlContext: SQLContext,

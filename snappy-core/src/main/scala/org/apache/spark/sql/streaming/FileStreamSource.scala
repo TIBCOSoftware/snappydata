@@ -34,8 +34,6 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  val tableName = options("tableName")
-
   // HDFS directory to monitor for new file
   val DIRECTORY = "directory"
 
