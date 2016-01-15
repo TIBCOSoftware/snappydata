@@ -72,7 +72,6 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     userSchema match {
       case Some(schema) =>
         val store = new JDBCSourceAsColumnarStore(connProperties,partitions)
-        println("sdeshmukh StoreInitRDD.compute registering table = " + table)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
           schema, store, columnBatchSize, userCompression, rddId)
       case None =>
