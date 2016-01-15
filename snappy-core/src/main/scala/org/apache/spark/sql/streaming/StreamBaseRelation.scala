@@ -20,14 +20,14 @@ import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.sources.{BaseRelation, DeletableRelation, DestroyRelation, TableScan}
+import org.apache.spark.sql.sources.{BaseRelation, DestroyRelation, TableScan}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String]) extends BaseRelation with StreamPlan
-with TableScan with DestroyRelation with DeletableRelation with Serializable with Logging {
+with TableScan with DestroyRelation with Serializable with Logging {
 
   @transient val context = SnappyStreamingContext.getActive().get
 
@@ -68,10 +68,6 @@ with TableScan with DestroyRelation with DeletableRelation with Serializable wit
     val qualifiedTable = catalog.newQualifiedTableName(tableName)
     catalog.tables -= qualifiedTable
     StreamBaseRelation.tableToStream -= tableName
-  }
-
-  override def delete(filterExpr: String): Int = {
-    throw new IllegalAccessException("Stream tables cannot be dropped")
   }
 
   def truncate(): Unit = {
