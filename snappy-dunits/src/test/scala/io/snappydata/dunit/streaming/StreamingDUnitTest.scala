@@ -21,7 +21,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def testStreamingAdhocSQL(): Unit = {
+  def SNAP405_testStreamingAdhocSQL(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)

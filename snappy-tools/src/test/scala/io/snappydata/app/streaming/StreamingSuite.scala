@@ -92,7 +92,7 @@ with BeforeAndAfterAll with BeforeAndAfter {
     ssnc.sql("drop table tableStream2")
   }
 
-  test("SNAP-408") {
+  ignore("SNAP-408") {
     ssnc.sql("create stream table tableStream " +
         "(id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) " +
