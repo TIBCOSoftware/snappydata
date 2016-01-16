@@ -4,7 +4,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
 
 
-Conceptually, you could **think of SnappyData as a in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While SnappyData storage engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced DataSets. 
+Conceptually, you could **think of SnappyData as a in-memory database that embeds Spark as its computational engine** - to process streams, work with myriad data sources like HDFS, and process data through a rich set of higher level abstractions. While the SnappyData engine is primarily designed for SQL processing, applications can work with Objects through Spark RDDs and the newly introduced DataSets. 
 
 Any Spark DataFrame can be easily managed as a SnappyData Table or conversely any table can be accessed as a DataFrame. 
 
