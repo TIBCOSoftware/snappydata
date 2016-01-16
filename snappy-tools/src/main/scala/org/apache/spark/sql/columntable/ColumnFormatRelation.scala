@@ -67,7 +67,7 @@ import org.apache.spark.{Logging, Partition}
     Bulk insert example is shown above.
 
  */
-class ColumnFormatRelation(
+  class ColumnFormatRelation(
     override val table: String,
     override val provider: String,
     override val mode: SaveMode,

@@ -10,4 +10,4 @@ SELECT hashtag, count(*) as tagcount FROM HASHTAG_FILESTREAMTABLE group by hasht
 
 --- Get the top 10 popular retweet -----
 
-SELECT retweetCnt as RetweetsCount, retweetTxt as Text FROM RETWEET_FILESTREAMTABLE order by RetweetsCount desc limit 10;
+SELECT retweetId as RetweetId, retweetCnt as RetweetsCount, retweetTxt as Text FROM RETWEET_FILESTREAMTABLE order by RetweetsCount desc limit 10;

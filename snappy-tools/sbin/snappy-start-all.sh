@@ -24,8 +24,8 @@ sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
 # Load the Spark configuration
-. "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
+. "$sbin/snappy-config.sh"
 
 # Start Locators
 "$sbin"/snappy-locators.sh start

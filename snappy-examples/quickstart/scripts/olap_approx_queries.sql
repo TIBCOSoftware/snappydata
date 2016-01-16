@@ -14,20 +14,20 @@ select  count(*) flightRecCount, description AirlineName, UniqueCarrier carrierC
 -------------------------------------------------------------
 ---- Which Airlines Arrive On Schedule? ----
 -------------------------------------------------------------
-select AVG(ArrDelay) arrivalDelay, absolute_error(arrivalDelay) abs_err, relative_error(arrivalDelay) rel_err, UniqueCarrier carrier from airline
+select AVG(ArrDelay) arrivalDelay, absolute_error(arrivalDelay) abs_err, relative_error(arrivalDelay) rel_err,
+   UniqueCarrier carrier from airline_sample
    group by UniqueCarrier
-   order by arrivalDelay
-   with error 0.20 confidence 0.80;
+   order by arrivalDelay;
 
 -------------------------------------------------------------
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
 -------------------------------------------------------------
-select AVG(ArrDelay) arrivalDelay, absolute_error(arrivalDelay) abs_err, relative_error(arrivalDelay) rel_err, description AirlineName, UniqueCarrier carrier
-  from airline, airlineref
-  where airline.UniqueCarrier = airlineref.Code
+select AVG(ArrDelay) arrivalDelay, absolute_error(arrivalDelay) abs_err, relative_error(arrivalDelay) rel_err,
+  description AirlineName, UniqueCarrier carrier
+  from airline_sample, airlineref
+  where airline_sample.UniqueCarrier = airlineref.Code
   group by UniqueCarrier, description
-  order by arrivalDelay
-  with error 0.20 confidence 0.80;
+  order by arrivalDelay;
 
 -------------------------------------------------------------
 ---- What is the trend in arrival delays across all airlines in the US? ----

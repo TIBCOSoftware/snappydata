@@ -36,8 +36,9 @@ fi
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
-. "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
+. "$sbin/snappy-config.sh"
+
 
 componentType=$1
 shift
@@ -59,8 +60,9 @@ then
   shift
 fi
 
-. "$SPARK_PREFIX/bin/load-snappy-env.sh"
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
+. "$SPARK_PREFIX/bin/load-snappy-env.sh"
+
 
 case $componentType in
 
