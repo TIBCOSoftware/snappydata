@@ -7,5 +7,5 @@ SELECT hashtag, count(*) as tagcount FROM HASHTAGTABLE group by hashtag order by
 
 --- Get the top 10 popular retweet -----
 
-SELECT retweetCnt as RetweetsCount, retweetTxt as Text FROM RETWEETTABLE order by RetweetsCount desc limit 10;
+SELECT retweetId as RetweetId, retweetCnt as RetweetsCount, retweetTxt as Text FROM RETWEETTABLE order by RetweetsCount desc limit 10;
 
