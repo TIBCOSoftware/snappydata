@@ -10,7 +10,7 @@ if [ $# -eq 0 ]; then
     exit 1
 fi
 
-FILEID=0Bz26LQmzyZJHLTItWkp5THJZbHc
+FILEID=0Bz26LQmzyZJHZ2FXUVVub3h3SWc
 source=https://googledrive.com/host/$FILEID
 
 # Download the parquet data from source to destination
