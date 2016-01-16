@@ -26,7 +26,7 @@ While Spark deserves much of the credit for being the first of its kind to offer
 SnappyData is the first AQP engine to  
 **1.** Provide automatic bias correction for arbitrarily complex SQL queries  
 **2.** Provide an intuitive means for end users to express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts  
-**3.** Unlike traditional load shedding techniques that are restricted to simple queries, SnappyData can provide error estimates for arbitrarily complex queries on streams
+**3.** Provide error estimates for arbitrarily complex queries on streams (Unlike traditional load shedding techniques that are restricted to simple queries)
 
 
 
