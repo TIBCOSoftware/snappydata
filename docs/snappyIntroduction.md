@@ -8,7 +8,7 @@ Conceptually, you could **think of SnappyData as a in-memory database that embed
 
 Any Spark DataFrame can be easily managed as a SnappyData Table or conversely any table can be accessed as a DataFrame. 
 
-By default, when the cluster is started, the data store is bootstrapped and when any Spark Jobs or OLAP queries are submitted Spark executors are automatically launched within the Snappy process space (JVMs). There is no need to connect and manage external data store clusters. The Snappy store can synchronously replicate for HA with strong consistency,  or even store/recover from disk for reliability.
+By default, when the cluster is started, the data store is bootstrapped and when any Spark Jobs or OLAP queries are submitted Spark executors are automatically launched within the Snappy process space (JVMs). There is no need to connect and manage external data store clusters. The Snappy store can synchronously replicate for HA with strong consistency and store/recover from disk for additional reliability.
 
 ### Extensions to the Spark Runtime
 SnappyData makes the following contributions to deliver a unified and optimized runtime.
