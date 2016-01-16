@@ -15,7 +15,7 @@ CREATE STREAM TABLE HASHTAGTABLE (hashtag string) USING twitter_stream OPTIONS (
     accessTokenSecret '***REMOVED***', 
     rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow') ;
 
-CREATE STREAM TABLE RETWEETTABLE (retweetCnt int, retweetTxt string) USING twitter_stream OPTIONS (consumerKey '***REMOVED***', 
+CREATE STREAM TABLE RETWEETTABLE (retweetId long,retweetCnt int, retweetTxt string) USING twitter_stream OPTIONS (consumerKey '***REMOVED***',
     consumerSecret '***REMOVED***', 
     accessToken '***REMOVED***', 
     accessTokenSecret '***REMOVED***', 
@@ -26,7 +26,7 @@ CREATE STREAM TABLE HASHTAG_FILESTREAMTABLE (hashtag string) USING file_stream O
     rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow', 
     directory '/tmp/copiedtwitterdata');
 
-CREATE STREAM TABLE RETWEET_FILESTREAMTABLE (retweetCnt int, retweetTxt string) USING file_stream OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', 
+CREATE STREAM TABLE RETWEET_FILESTREAMTABLE (retweetId long, retweetCnt int, retweetTxt string) USING file_stream OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2',
     rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow', 
     directory '/tmp/copiedtwitterdata');
 
