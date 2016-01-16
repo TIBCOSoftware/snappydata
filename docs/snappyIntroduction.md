@@ -11,7 +11,7 @@ Any Spark DataFrame can be easily managed as a SnappyData Table or conversely an
 By default, when the cluster is started, the data store is bootstrapped and when any Spark Jobs/OLAP queries are submitted Spark executors are automatically launched within the Snappy process space (JVMs). There is no need to connect and manage external data store clusters. The Snappy store can synchronously replicate for HA with strong consistency and store/recover from disk for additional reliability.
 
 ### Extensions to the Spark Runtime
-SnappyData makes the following contributions to deliver a unified and optimized runtime.
+SnappyData makes the following contributions to deliver a unified and optimized runtime.  
 **(a) Integrating an operational in-memory data store with Spark’s computational model:** We introduce a number of extensions to fuse our runtime with that of Spark. Spark executors run in the same process space as our store’s execution threads, sharing the same pool of memory. When Spark executes tasks in a partitioned manner, it is designed to keep all the available CPU cores busy. We extend this design by allowing low latency and fine grained operations to interleave and get higher priority, without involving the scheduler. Furthermore, to support high concurrency, we extend the runtime with a “Job Server” that decouples applications from data servers, operating much in the same way as a traditional database, whereby state is shared across many clients and applications. (See section 5)
 
 **(b) Unified API for OLAP, OLTP, and Streaming:** Spark builds on a common set of abstractions to provide a rich API for a diverse range of applications, such as MapReduce, Machine learning, stream processing, and SQL. 
