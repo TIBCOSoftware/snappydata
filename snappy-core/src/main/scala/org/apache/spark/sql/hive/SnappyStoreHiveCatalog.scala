@@ -44,7 +44,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.streaming._
+import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
 
@@ -683,11 +683,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     val plan: LogicalPlan = tables.getOrElse(tableName,
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
     plan match {
-      case LogicalRelation(sr: SocketStreamRelation, _) => sr.schema
-      case LogicalRelation(kr: KafkaStreamRelation, _) => kr.schema
-      case LogicalRelation(fr: FileStreamRelation, _) => fr.schema
-      case LogicalRelation(tr: TwitterStreamRelation, _) => tr.schema
-      case LogicalRelation(dkr: DirectKafkaStreamRelation, _) => dkr.schema
+      case LogicalRelation(sr: StreamBaseRelation, _) => sr.schema
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }
@@ -720,6 +716,15 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       } else {
         processTableIdentifier(t)
       }
+    }
+  }
+
+  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
+    relation match {
+      case x: JDBCMutableRelation => ExternalTableType.Row
+      case x: JDBCAppendableRelation => ExternalTableType.Column
+      case x: StreamBaseRelation => ExternalTableType.Stream
+      case _ => ExternalTableType.Row
     }
   }
 }
@@ -782,17 +787,6 @@ object ExternalTableType extends Enumeration {
   val Row = Value("ROW")
   val Column = Value("COLUMN")
   val Stream = Value("STREAM")
-
-  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
-    relation match {
-      case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: JDBCAppendableRelation => ExternalTableType.Column
-      case x: TwitterStreamRelation => ExternalTableType.Stream
-      case x: FileStreamRelation => ExternalTableType.Stream
-      case x: SocketStreamRelation => ExternalTableType.Stream
-      case x: KafkaStreamRelation => ExternalTableType.Stream
-      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
-      case _ => ExternalTableType.Row
-    }
-  }
+  val Sample = Value("SAMPLE")
+  val TopK = Value("TOPK")
 }
