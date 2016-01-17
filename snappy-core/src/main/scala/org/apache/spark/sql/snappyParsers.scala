@@ -275,10 +275,12 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected lazy val createStream: Parser[LogicalPlan] =
     (CREATE ~> STREAM ~> TABLE ~> tableIdentifier) ~
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
-      case streamname ~ cols ~ providerName ~ opts =>
+      case streamName ~ cols ~ providerName ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName)
-        CreateStreamTable(streamname, userColumns, provider, opts)
+        val userOpts = opts.updated("tableName", streamName.unquotedString)
+        CreateStreamTable(streamName, userColumns, provider,
+          new CaseInsensitiveMap(userOpts))
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
@@ -484,8 +486,8 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
           case None => // do nothing
         }
         // start the streaming
-        SnappyStreamingContext.getActive().get.start()
-      case 2 => SnappyStreamingContext.getActive().get.stop()
+        SnappyStreamingContext.start()
+      case 2 => SnappyStreamingContext.stop()
     }
     Seq.empty[Row]
   }
