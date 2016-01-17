@@ -157,13 +157,12 @@ public class SnappyHiveCatalog implements ExternalCatalog {
         case ISROWTABLE_QUERY:
           HiveMetaStoreClient hmc = SnappyHiveCatalog.this.hmClients.get();
           String type = getType(hmc);
-          return type.equals(ExternalTableType.Row().toString());
+          return type.equalsIgnoreCase(ExternalTableType.Row().toString());
 
         case ISCOLUMNTABLE_QUERY:
           hmc = SnappyHiveCatalog.this.hmClients.get();
           type = getType(hmc);
-          return type.equals(ExternalTableType.Column().toString())
-              || type.equals(ExternalTableType.Sample().toString());
+          return !type.equalsIgnoreCase(ExternalTableType.Row().toString());
 
         default:
           throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
