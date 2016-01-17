@@ -60,10 +60,10 @@ object AirlineDataJob extends SnappySQLJob {
     // Data Frame query on Sample table :Which Airlines Arrive On Schedule? JOIN with reference table
     // TODO: Fix it after SNAP-391 is fixed
     val sampleResult = snc.sql("select UniqueCarrier carrier, description AirlineName, AVG(ArrDelay) arrivalDelay "+
-        "from airline, airlineref "+
-    "where airline.UniqueCarrier = airlineref.Code "+
+        "from airline_sample, airlineref "+
+    "where airline_sample.UniqueCarrier = airlineref.Code "+
     "group by UniqueCarrier, description "+
-    "order by arrivalDelay with error 0.07 confidence 0.92")
+    "order by arrivalDelay")// with error 0.07 confidence 0.92")
     val startSample = System.currentTimeMillis
     val resultSP = sampleResult.collect()
     val totalTimeSample = (System.currentTimeMillis - startSample)

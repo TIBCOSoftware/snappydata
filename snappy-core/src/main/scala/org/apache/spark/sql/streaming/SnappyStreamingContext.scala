@@ -23,10 +23,10 @@ import scala.reflect.runtime.universe.TypeTag
 import scala.reflect.runtime.{universe => u}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{Row, _}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext}
 
@@ -65,11 +65,17 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   def createSchemaDStream[A <: Product : TypeTag]
   (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    val attributeSeq = schema.toAttributes
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
     (rdd, schema.map(_.dataType)))
-    new SchemaDStream(self, LogicalDStreamPlan(attributeSeq,
-      rowStream)(self))
+    val logicalPlan = LogicalDStreamPlan(schema.toAttributes, rowStream)(self)
+    new SchemaDStream(self, logicalPlan)
+  }
+
+  def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
+    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
+      rowStream.map(converter(_).asInstanceOf[InternalRow]))(self)
+    new SchemaDStream(self, logicalPlan)
   }
 }
 
@@ -106,19 +112,21 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-  def start(): Unit = {
-    val snsc = getActive().get
-    snsc.start()
+  def start(): Unit = getActive() match {
+    case Some(snsc) => snsc.start()
+    case None =>
   }
 
   def stop(stopSparkContext: Boolean = false,
       stopGracefully: Boolean = true): Unit = {
-    val snsc = getActive().get
-    if (snsc != null) {
-      snsc.stop(stopSparkContext, stopGracefully)
-      snsc.snappyContext.clearCache()
-      SnappyContext.stop()
-      setActiveContext(null)
+    getActive() match {
+      case Some(snsc) => {
+        snsc.stop(stopSparkContext, stopGracefully)
+        snsc.snappyContext.clearCache()
+        // SnappyContext.stop()
+        setActiveContext(null)
+      }
+      case None =>
     }
   }
 }

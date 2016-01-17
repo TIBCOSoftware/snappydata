@@ -255,10 +255,11 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected lazy val createStream: Parser[LogicalPlan] =
     (CREATE ~> STREAM ~> TABLE ~> ident) ~
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
-      case streamname ~ cols ~ providerName ~ opts =>
+      case streamName ~ cols ~ providerName ~ opts =>
         val userColumns = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName)
-        CreateStreamTable(streamname, userColumns, provider, opts)
+        val userOpts = opts.updated("tableName", streamName)
+        CreateStreamTable(streamName, userColumns, provider, new CaseInsensitiveMap(userOpts))
     }
 
   protected lazy val strmctxt: Parser[LogicalPlan] =
@@ -432,11 +433,12 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
 
     // add the stream to the tables in the catalog
-    catalog.tables.get(streamTable) match {
+     catalog.tables.get(streamTable) match {
       case None => catalog.tables.put(streamTable, plan)
       case Some(x) => throw new IllegalStateException(
         s"Stream table name $streamTable already defined")
     }
+
     catalog.registerExternalTable(streamTable, userColumns,
       Array.empty[String], provider, options,
       catalog.getTableType(resolved.relation))
@@ -462,8 +464,8 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
           case None => // do nothing
         }
         // start the streaming
-        SnappyStreamingContext.getActive().get.start()
-      case 2 => SnappyStreamingContext.getActive().get.stop()
+        SnappyStreamingContext.start()
+      case 2 => SnappyStreamingContext.stop()
     }
     Seq.empty[Row]
   }

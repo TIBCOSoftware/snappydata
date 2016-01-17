@@ -4,7 +4,7 @@ import java.io.PrintWriter
 
 import com.typesafe.config.Config
 import org.apache.spark.sql.{Row, SaveMode}
-import org.apache.spark.sql.streaming.{SnappyStreamingJob}
+import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingJob}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds}
@@ -38,26 +38,45 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     val schema = StructType(List(StructField("hashtag", StringType)))
 
+    snsc.snappyContext.sql("DROP TABLE IF EXISTS HASHTAGTABLE")
+    snsc.snappyContext.sql("DROP TABLE IF EXISTS RETWEETTABLE")
+
     if (jobConfig.hasPath("consumerKey") && jobConfig.hasPath("consumerKey")
       && jobConfig.hasPath("accessToken")  && jobConfig.hasPath("accessTokenSecret") ) {
       pw.println("##### Running example with live twitter stream #####")
 
-      stream = TwitterUtils.createStream(snsc, Some(StreamingUtils.getTwitterAuth(jobConfig)))
+      snsc.sql("CREATE STREAM TABLE HASHTAGTABLE (hashtag string) using " +
+        "twitter_stream options (" +
+        s"consumerKey '${jobConfig.getString("consumerKey")}', " +
+        s"consumerSecret '${jobConfig.getString("consumerSecret")}', " +
+        s"accessToken '${jobConfig.getString("accessToken")}', " +
+        s"accessTokenSecret '${jobConfig.getString("accessTokenSecret")}', " +
+        "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow')")
+
+      snsc.sql("CREATE STREAM TABLE RETWEETTABLE (retweetId long, retweetCnt int, retweetTxt string) using " +
+        "twitter_stream options (" +
+        s"consumerKey '${jobConfig.getString("consumerKey")}', " +
+        s"consumerSecret '${jobConfig.getString("consumerSecret")}', " +
+        s"accessToken '${jobConfig.getString("accessToken")}', " +
+        s"accessTokenSecret '${jobConfig.getString("accessTokenSecret")}', " +
+        "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow')")
+
 
     } else {
       // Create file stream
       pw.println("##### Running example with stored tweet data #####")
-      stream = snsc.textFileStream("/tmp/copiedtwitterdata")
+      snsc.sql("CREATE STREAM TABLE HASHTAGTABLE (hashtag string) USING file_stream " +
+        "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow'," +
+        "directory '/tmp/copiedtwitterdata')");
+
+      snsc.sql("CREATE STREAM TABLE RETWEETTABLE (retweetId long, retweetCnt int, retweetTxt string) USING file_stream " +
+        "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
+        "directory '/tmp/copiedtwitterdata')");
 
     }
+    val retweetStream: SchemaDStream = snsc.registerCQ("SELECT * FROM RETWEETTABLE window (duration '2' seconds, slide '2' seconds)")
+    val hashtagStream: SchemaDStream = snsc.registerCQ("SELECT * FROM HASHTAGTABLE window (duration '2' seconds, slide '2' seconds)")
 
-    // Create window of 1 second on the stream and apply schema to it
-    val rowStream: DStream[Row] =
-      stream.window(Seconds(1), Seconds(1)).flatMap(
-        StreamingUtils.convertTweetToRow(_, schema)
-      )
-
-    val tweetStream = stream.window(Seconds(1), Seconds(1)).flatMap(StreamingUtils.convertPopularTweetsToRow(_))
 
     val topKOption = Map(
         "epoch" -> System.currentTimeMillis(),
@@ -67,18 +86,19 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     snsc.snappyContext.createTopK("topktable", "hashtag", schema, topKOption, false)
 
-    snsc.snappyContext.saveStream(rowStream,
+    snsc.snappyContext.saveStream(hashtagStream,
       Seq("topktable"),
       None
     )
 
-    val schemaDStream = snsc.createSchemaDStream(tweetStream)
+    val tableName = "retweetStore"
 
-    val tableName = "retweetTable"
     snsc.snappyContext.dropTable(tableName,true )
-    snsc.snappyContext.createTable(tableName, "row", schemaDStream.schema , Map.empty[String, String])
 
-    schemaDStream.foreachDataFrame(df => {
+    snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId bigint, " +
+      s"retweetCnt int, retweetTxt string) USING row OPTIONS ()")
+
+    retweetStream.foreachDataFrame(df => {
       df.write.mode(SaveMode.Append).saveAsTable(tableName)
     })
 
@@ -91,23 +111,26 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         Thread.sleep(2000)
         pw.println("\n******** Top 10 hash tags for the last interval *******\n")
 
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 2000, System.currentTimeMillis).collect.foreach(result => {
+        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 2000,
+          System.currentTimeMillis).collect.foreach(result => {
           pw.println(result.toString)
         })
-
-        pw.println("\n************ Top 10 hash tags until now ***************\n")
-
-        snsc.snappyContext.queryTopK("topktable").collect.foreach(result => {
-          pw.println(result.toString)
-        })
-
-
       }
+      pw.println("\n************ Top 10 hash tags until now ***************\n")
+
+      snsc.snappyContext.queryTopK("topktable").collect.foreach(result => {
+        pw.println(result.toString)
+      })
+
       pw.println("\n####### Top 10 popular tweets using gemxd query #######\n")
-      snsc.snappyContext.sql(s"select retweetCnt as RetweetsCount, retweetTxt as Text from ${tableName} order by RetweetsCount desc limit 10").collect.foreach(row => {
+      snsc.snappyContext.sql(s"select retweetId as RetweetId, retweetCnt as RetweetsCount, " +
+        s"retweetTxt as Text from ${tableName} order by RetweetsCount desc limit 10")
+        .collect.foreach(row => {
         pw.println(row.toString())
       })
+
       pw.println("\n#######################################################")
+
     } finally {
       pw.close()
 

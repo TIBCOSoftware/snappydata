@@ -16,12 +16,9 @@
  */
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.streaming.dstream.DStream
 
 final class FileStreamSource extends SchemaRelationProvider {
 
@@ -61,30 +58,14 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
   val directory = options(DIRECTORY)
 
   // TODO: Yogesh, add support for other types of files streams
-  FileStreamRelation.LOCK.synchronized {
-    if (FileStreamRelation.getRowStream() == null) {
+  StreamBaseRelation.LOCK.synchronized {
+    if (StreamBaseRelation.getRowStream(tableName) == null) {
       rowStream = {
         context.textFileStream(directory).flatMap(rowConverter.toRows)
       }
-      FileStreamRelation.setRowStream(rowStream)
-      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-      rowStream.foreachRDD { rdd => rdd }
+      StreamBaseRelation.setRowStream(tableName, rowStream)
     } else {
-      rowStream = FileStreamRelation.getRowStream()
+      rowStream = StreamBaseRelation.getRowStream(tableName)
     }
-  }
-}
-
-object FileStreamRelation extends Logging {
-  private var rStream: DStream[InternalRow] = null
-
-  private val LOCK = new Object()
-
-  private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    rStream = stream
-  }
-
-  private def getRowStream(): DStream[InternalRow] = {
-    rStream
   }
 }
