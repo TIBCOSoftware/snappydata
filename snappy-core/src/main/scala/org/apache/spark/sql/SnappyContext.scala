@@ -846,7 +846,6 @@ object SnappyContext extends Logging {
     "column_sample" -> "org.apache.spark.sql.sampling.DefaultSource",
     "topk" -> "org.apache.spark.sql.topk.DefaultSource",
     "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
-    "stream" -> "org.apache.spark.sql.streaming.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,

@@ -8,6 +8,10 @@ sourceSets.main.java.srcDirs = []
 
 dependencies {
   compile project(':snappy-tools_' + scalaBinaryVersion)
+  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+    compile project(':snappy-aqp')
+  }
+
 }
 
 task productExamples(dependsOn: 'jar') << {

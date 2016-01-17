@@ -1,10 +1,10 @@
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.json.{JSONArray, JSONObject}
 import twitter4j.Status
 
-import org.apache.spark.sql.catalyst.{InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.UTF8String
 
 class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
@@ -20,6 +20,14 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
   }
 
 }
+
+class HashTagToRowsConverter extends StreamToRowsConverter with Serializable {
+  override def toRows(message: Any): Seq[InternalRow] = {
+    val status: Status = message.asInstanceOf[Status]
+    Seq(InternalRow.fromSeq(Seq(UTF8String.fromString(status.getText))))
+  }
+}
+
 class TweetToHashtagRow extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[InternalRow] = {
@@ -58,13 +66,15 @@ class TweetToRetweetRow extends StreamToRowsConverter with Serializable {
     var json: JSONObject = null
     var retweetCnt: Int = 0
     var retweetTxt: String = null
+    var retweetId: Long = 0
     if (message.isInstanceOf[String]) {
       //for file stream
       json = new JSONObject(message.asInstanceOf[String])
       if (json != null && json.has("retweetedStatus")) {
         val retweetedSts = json.getJSONObject("retweetedStatus")
-        retweetTxt = retweetedSts.get("text").asInstanceOf[String]
-        retweetCnt = retweetedSts.get("retweetCount").asInstanceOf[Int]
+        retweetTxt = retweetedSts.getString("text")
+        retweetCnt = retweetedSts.getInt("retweetCount")
+        retweetId = retweetedSts.getLong("id")
       }
     } else {
       //for twitter stream
@@ -72,10 +82,11 @@ class TweetToRetweetRow extends StreamToRowsConverter with Serializable {
       if (status.getRetweetedStatus != null) {
         retweetTxt = status.getRetweetedStatus.getText
         retweetCnt = status.getRetweetedStatus.getRetweetCount
+        retweetId = status.getRetweetedStatus.getId
       }
     }
     val sampleRow = new Array[InternalRow](1)
-    sampleRow(0) = InternalRow.fromSeq(Seq(retweetCnt, UTF8String.fromString(retweetTxt)))
+    sampleRow(0) = InternalRow.fromSeq(Seq(retweetId, retweetCnt, UTF8String.fromString(retweetTxt)))
     sampleRow.toSeq
   }
 }

@@ -28,11 +28,13 @@ sbin="`cd "$sbin"; pwd`"
 mode=$1
 shift
 
-. "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
+. "$sbin/snappy-config.sh"
 
-. "$SPARK_PREFIX/bin/load-snappy-env.sh"
+
 . "$SPARK_PREFIX/bin/load-spark-env.sh"
+. "$SPARK_PREFIX/bin/load-snappy-env.sh"
+
 
 
 # Start up  the locator instance

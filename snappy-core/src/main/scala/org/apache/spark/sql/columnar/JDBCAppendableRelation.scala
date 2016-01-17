@@ -43,7 +43,7 @@ import org.apache.spark.sql.types.StructType
  * are retrieved using a JDBC URL or DataSource.
  */
 
-class JDBCAppendableRelation(
+case class JDBCAppendableRelation(
     val table: String,
     val provider: String,
     val mode: SaveMode,
