@@ -664,6 +664,20 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
         (tableIdent.table, true)
     }.toSeq ++ client.listTables(dbName).map((_, false))
   }
+
+  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
+    relation match {
+      case x: JDBCMutableRelation => ExternalTableType.Row
+      case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case x: JDBCAppendableRelation => ExternalTableType.Columnar
+      case x: TwitterStreamRelation => ExternalTableType.Stream
+      case x: FileStreamRelation => ExternalTableType.Stream
+      case x: SocketStreamRelation => ExternalTableType.Stream
+      case x: KafkaStreamRelation => ExternalTableType.Stream
+      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
+      case _ => ExternalTableType.Row
+    }
+  }
 }
 
 object SnappyStoreHiveCatalog {
@@ -726,17 +740,4 @@ object ExternalTableType extends Enumeration {
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
-
-  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
-    relation match {
-      case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: JDBCAppendableRelation => ExternalTableType.Columnar
-      case x: TwitterStreamRelation => ExternalTableType.Stream
-      case x: FileStreamRelation => ExternalTableType.Stream
-      case x: SocketStreamRelation => ExternalTableType.Stream
-      case x: KafkaStreamRelation => ExternalTableType.Stream
-      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
-      case _ => ExternalTableType.Row
-    }
-  }
 }

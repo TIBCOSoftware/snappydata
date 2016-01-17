@@ -439,7 +439,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: String,
     }
     catalog.registerExternalTable(streamTable, userColumns,
       Array.empty[String], provider, options,
-      ExternalTableType.getTableType(resolved.relation))
+      catalog.getTableType(resolved.relation))
 
     Seq.empty
   }

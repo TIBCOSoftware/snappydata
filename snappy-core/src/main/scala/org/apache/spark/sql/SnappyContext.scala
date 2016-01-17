@@ -469,7 +469,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = LogicalRelation(resolved.relation)
     catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
       Array.empty[String], source, params,
-      ExternalTableType.getTableType(resolved.relation))
+      catalog.getTableType(resolved.relation))
     plan
   }
 
@@ -524,7 +524,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
     else {
       catalog.registerExternalTable(tableIdent, Some(data.schema),
-        partitionColumns, source, params, ExternalTableType.getTableType(resolved.relation))
+        partitionColumns, source, params, catalog.getTableType(resolved.relation))
     }
     LogicalRelation(resolved.relation)
   }
