@@ -35,6 +35,7 @@ import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
@@ -256,10 +257,25 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
               s"unexpected regex match 'unit'=$unit")
           }
         case _ => throw new AnalysisException(
-          s"$module: Cannot parse 'timeInterval'=$tis")
+          s"$module: Cannot parse 'timeInterval': $tis")
       }
       case _ => throw new AnalysisException(
-        s"$module: Cannot parse 'timeInterval'=$optV")
+        s"$module: Cannot parse 'timeInterval': $optV")
+    }
+  }
+
+  def parseTimestamp(ts: String, module: String, col: String): Long = {
+    try {
+      ts.toLong
+    } catch {
+      case nfe: NumberFormatException =>
+        try {
+          CastLongTime.getMillis(java.sql.Timestamp.valueOf(ts))
+        } catch {
+          case iae: IllegalArgumentException =>
+            throw new AnalysisException(
+              s"$module: Cannot parse timestamp '$col'=$ts")
+        }
     }
   }
 
@@ -329,6 +345,18 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
       index += 1
     }
     k
+  }
+
+  def hasLowerCase(k: String): Boolean = {
+    var index = 0
+    val len = k.length
+    while (index < len) {
+      if (Character.isLowerCase(k.charAt(index))) {
+        return true
+      }
+      index += 1
+    }
+    false
   }
 
   def toUpperCase(k: String): String = {

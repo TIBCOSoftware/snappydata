@@ -178,7 +178,12 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected val ON = Keyword("ON")
 
   protected override lazy val className: Parser[String] =
-    repsep(ident, ".") ^^ { case s => s.map(Utils.toLowerCase).mkString(".") }
+    repsep(ident, ".") ^^ { case s =>
+      // A workaround to address lack of case information at this point.
+      // If value is all CAPS then convert to lowercase else preserve case.
+      if (s.exists(Utils.hasLowerCase)) s.mkString(".")
+      else s.map(Utils.toLowerCase).mkString(".")
+    }
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
       s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)
@@ -470,8 +475,7 @@ private[sql] case class CreateStreamTableCmd(streamIdent: TableIdentifier,
 }
 
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Option[Int],
-    sampleTablePopulation: Option[(SQLContext) => Unit])
+    batchInterval: Option[Int])
     extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
@@ -479,19 +483,9 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
       case 0 =>
         SnappyStreamingContext(sqlContext.asInstanceOf[SnappyContext],
           Seconds(batchInterval.get))
-      case 1 =>
-        // Register sampling of all the streams
-        sampleTablePopulation match {
-          case Some(func) => func(sqlContext)
-          case None => // do nothing
-        }
-        // start the streaming
-        SnappyStreamingContext.start()
+      case 1 => SnappyStreamingContext.start()
       case 2 => SnappyStreamingContext.stop()
     }
     Seq.empty[Row]
   }
 }
-
-
-
