@@ -26,8 +26,6 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
@@ -47,8 +45,8 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
+
 /**
- * Created by rishim on 29/10/15.
  * This class acts as a DataSource provider for column format tables provided Snappy.
  * It uses GemFireXD as actual datastore to physically locate the tables.
  * Column tables can be used for storing data in columnar compressed format.
@@ -64,9 +62,8 @@ import org.apache.spark.{Logging, Partition}
     It does not introduces a shuffle if simple table query is fired.
     One can insert a single or multiple rows into this table as well as do a bulk insert by a Spark DataFrame.
     Bulk insert example is shown above.
-
  */
-  class ColumnFormatRelation(
+class ColumnFormatRelation(
     override val table: String,
     override val provider: String,
     override val mode: SaveMode,
@@ -137,7 +134,7 @@ import org.apache.spark.{Logging, Partition}
         }
 
       //TODO: This needs to be changed for non-embedded mode, inefficient
-      case _ => {
+      case _ =>
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
           connector,
@@ -150,8 +147,6 @@ import org.apache.spark.{Logging, Partition}
         ).asInstanceOf[RDD[Row]]
 
         colRdd.union(rowRdd)
-
-      }
     }
     union
   }
@@ -313,13 +308,12 @@ import org.apache.spark.{Logging, Partition}
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
         dialect match {
-          case GemFireXDDialect => {
+          case GemFireXDDialect =>
             GemFireXDDialect.initializeTable(table,
               sqlContext.conf.caseSensitiveAnalysis, conn)
             GemFireXDDialect.initializeTable(ColumnFormatRelation.
                 cachedBatchTableName(table),
               sqlContext.conf.caseSensitiveAnalysis, conn)
-          }
           case _ => // Do nothing
         }
         return
@@ -345,7 +339,7 @@ import org.apache.spark.{Logging, Partition}
             "primary key (uuid, bucketId) ", d.getPartitionByClause("bucketId"))
       case _ => ("primary key (uuid)", "") //TODO. How to get primary key contraint from each DB
     }
-    val colocationClause = s"COLOCATE WITH (${table})"
+    val colocationClause = s"COLOCATE WITH ($table)"
 
     createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
         "not null, bucketId integer, numRows integer not null, stats blob, " +
@@ -367,7 +361,7 @@ import org.apache.spark.{Logging, Partition}
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
-        val sql = s"CREATE TABLE ${tableName} $schemaExtensions "
+        val sql = s"CREATE TABLE $tableName $schemaExtensions "
         logInfo("Applying DDL : " + sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
@@ -447,13 +441,14 @@ final class DefaultSource extends ColumnarRelationProvider {
     val sc = sqlContext.sparkContext
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
     val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
-    val ddlExtension = StoreUtils.ddlExtensionString(parameters, false, false)
+    val ddlExtension = StoreUtils.ddlExtensionString(parameters,
+      isRowTable = false, isShadowTable = false)
 
     val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext,
       parametersForShadowTable)
 
     val ddlExtensionForShadowTable = StoreUtils.ddlExtensionString(
-      parametersForShadowTable, false, true)
+      parametersForShadowTable, isRowTable = false, isShadowTable = true)
 
     val connProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)

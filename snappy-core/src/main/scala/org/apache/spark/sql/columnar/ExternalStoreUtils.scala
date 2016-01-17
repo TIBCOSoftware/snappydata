@@ -197,7 +197,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    val hikariCP = poolImpl.map(Utils.normalizeId) match {
+    val hikariCP = poolImpl.map(Utils.toLowerCase) match {
       case Some("hikari") => true
       case Some("tomcat") => false
       case Some(p) =>
@@ -298,7 +298,7 @@ private[sql] object ExternalStoreUtils extends Logging {
   def pruneSchema(fieldMap: Map[String, StructField],
       columns: Array[String]): StructType = {
     new StructType(columns.map { col =>
-      fieldMap.getOrElse(col, fieldMap.getOrElse(Utils.normalizeId(col),
+      fieldMap.getOrElse(col, fieldMap.getOrElse(col,
         throw new AnalysisException("JDBCAppendableRelation: Cannot resolve " +
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))

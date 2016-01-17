@@ -17,6 +17,7 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -40,12 +41,35 @@ trait SingleRowInsertableRelation {
   def executeUpdate(sql: String): Int
 }
 
+/**
+ * ::DeveloperApi
+ *
+ * An extension to <code>InsertableRelation</code> that allows for data to be
+ * inserted (possibily having different schema) into the target relation after
+ * comparing against the result of <code>insertSchema</code>.
+ */
+@DeveloperApi
+trait SchemaInsertableRelation extends InsertableRelation {
+
+  /**
+   * Return the schema required for insertion into the relation
+   * or None if <code>sourceSchema</code> cannot be inserted.
+   */
+  def schemaForInsert(sourceSchema: Seq[Attribute]): Option[Seq[Attribute]]
+}
+
 @DeveloperApi
 trait SamplingRelation extends BaseRelation with InsertableRelation {
+
   /**
    * Options set for this sampling relation.
    */
   def samplingOptions: Map[String, Any]
+
+  /**
+   * The QCS columns for the sample.
+   */
+  def qcs: Array[String]
 
   /**
    * Base table name on which sampling has been defined. Can be empty
