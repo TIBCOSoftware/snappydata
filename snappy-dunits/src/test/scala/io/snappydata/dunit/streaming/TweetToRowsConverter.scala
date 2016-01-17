@@ -6,9 +6,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.streaming.StreamToRowsConverter
 import org.apache.spark.unsafe.types.UTF8String
 
-/**
-  * Created by ymahajan on 30/12/15.
-  */
 class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[InternalRow] = {
