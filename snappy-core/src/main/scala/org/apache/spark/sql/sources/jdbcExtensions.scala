@@ -113,14 +113,12 @@ object JdbcExtendedUtils {
     // using the JDBC meta-data API
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
-      Utils.normalizeIdUpperCase(table.substring(0, dotIndex))
+      table.substring(0, dotIndex)
     } else {
       // get the current schema
       getCurrentSchema(conn, dialect)
     }
-    val tableName = Utils.normalizeIdUpperCase(if (dotIndex > 0)
-      table.substring(dotIndex + 1)
-    else table)
+    val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     try {
       val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()

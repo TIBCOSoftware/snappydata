@@ -19,10 +19,10 @@ package org.apache.spark.sql.aqp
 import scala.reflect.runtime.{universe => u}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry}
+import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.{DDLParser, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.datasources.{DDLParser, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.StoreStrategy
 import org.apache.spark.sql.types.StructType
@@ -96,34 +96,34 @@ object AQPDefault extends AQPContext{
 
   def getSnappyCacheManager: SnappyCacheManager = new SnappyCacheManager()
 
-  def getSQLDialectClassName: String = classOf[SnappyParserDialect].getCanonicalName
+  def getSQLDialect(context: SnappyContext): SnappyParserDialect =
+    new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
 
   def getSampleTablePopulator : Option[(SQLContext) => Unit] = None
 
-  def getSnappyCatalogue(context: SnappyContext) : SnappyStoreHiveCatalog
-  = new SnappyStoreHiveCatalog(context)
+  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog =
+    new SnappyStoreHiveCatalog(context)
 
-  def getSnappyDDLParser (planGenerator: String => LogicalPlan): DDLParser = new SnappyDDLParser(planGenerator)
+  def getSnappyDDLParser(context: SnappyContext,
+      planGenerator: String => LogicalPlan): DDLParser =
+    new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)
 
   def dropSampleTable(tableName: String, ifExists: Boolean = false) =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def isTungstenEnabled: Boolean = true
 
-  def createAnalyzer( catalog: SnappyStoreHiveCatalog, functionRegistry: FunctionRegistry,
-                     conf: SQLConf): Analyzer =
-    new Analyzer(catalog, functionRegistry, conf) {
-    override val extendedResolutionRules =
-      ExtractPythonUDFs ::
-        sparkexecution.datasources.PreInsertCastAndRename ::
-        //   ReplaceWithSampleTable ::
-        //  WeightageRule ::
-        //TestRule::
-        Nil
+  def createAnalyzer(context: SnappyContext): Analyzer =
+    new Analyzer(context.catalog, context.functionRegistry, context.conf) {
+      override val extendedResolutionRules =
+          ExtractPythonUDFs ::
+          PreInsertCheckCastAndRename ::
+          (if (context.conf.runSQLOnFile) new ResolveDataSource(context) :: Nil
+          else Nil)
 
-    override val extendedCheckRules = Seq(
-      sparkexecution.datasources.PreWriteCheck(catalog))
-  }
+      override val extendedCheckRules = Seq(
+        sparkexecution.datasources.PreWriteCheck(context.catalog))
+    }
 }
 
 class DefaultPlanner(snappyContext: SnappyContext)

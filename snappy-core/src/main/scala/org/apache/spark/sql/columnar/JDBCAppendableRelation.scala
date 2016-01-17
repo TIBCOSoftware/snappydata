@@ -42,14 +42,13 @@ import org.apache.spark.sql.types.StructType
  * A LogicalPlan implementation for an external column table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-
 case class JDBCAppendableRelation(
-    val table: String,
-    val provider: String,
-    val mode: SaveMode,
+    table: String,
+    provider: String,
+    mode: SaveMode,
     userSchema: StructType,
-    val origOptions: Map[String, String],
-    val externalStore: ExternalStore,
+    origOptions: Map[String, String],
+    externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)(
     private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] =
     new ArrayBuffer[RDD[UUIDRegionKey]]())

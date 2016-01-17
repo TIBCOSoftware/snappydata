@@ -18,12 +18,14 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
+import java.util.concurrent.ExecutionException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
@@ -43,7 +45,7 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.{Metadata, StructField, StructType, DataType}
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
@@ -315,6 +317,15 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     CacheBuilder.newBuilder().maximumSize(1000).build(cacheLoader)
   }
 
+  private def getCachedHiveTable(table: QualifiedTableName): LogicalPlan = {
+    try {
+      cachedDataSourceTables(table)
+    } catch {
+      case e@(_: UncheckedExecutionException | _: ExecutionException) =>
+        throw e.getCause
+    }
+  }
+
   def processTableIdentifier(tableIdentifier: String): String = {
     SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
   }
@@ -323,7 +334,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     var index = 0
     val len = k.length
     while (index < len) {
-      if (Character.isUpperCase(k.charAt(index))) {
+      if (Character.isLowerCase(k.charAt(index))) {
         return true
       }
       index += 1
@@ -338,18 +349,25 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       val fields = schema.fields
       if (fields.exists(f => requiresNormalization(f.fieldName))) {
         StructType(fields.map { f =>
-          val name = Utils.normalizeId(f.fieldName)
+          val name = Utils.toUpperCase(f.fieldName)
           val metadata = if (f.metadata.contains("name")) {
             new Metadata(f.metadata.map + ("name" -> name))
           } else {
             f.metadata
           }
-          StructField(name, f.dataType, f.nullable, metadata)
+          f.copy(name = name, metadata = metadata)
         })
       } else {
         schema
       }
     }
+  }
+
+  def compatibleSchema(schema1: StructType, schema2: StructType): Boolean = {
+    schema1.fields.length == schema2.fields.length &&
+        !schema1.zip(schema2).exists { case (f1, f2) =>
+          !f1.dataType.sameType(f2.dataType)
+        }
   }
 
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
@@ -400,7 +418,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       tableIdent.getTableOption(client) match {
         case Some(table) =>
           if (table.properties.contains(HIVE_PROVIDER)) {
-            cachedDataSourceTables(tableIdent)
+            getCachedHiveTable(tableIdent)
           } else if (table.tableType == VirtualView) {
             val viewText = table.viewText
                 .getOrElse(sys.error("Invalid view without text."))
@@ -726,7 +744,7 @@ object SnappyStoreHiveCatalog {
     if (conf.caseSensitiveAnalysis) {
       tableIdentifier
     } else {
-      Utils.normalizeId(tableIdentifier)
+      Utils.toUpperCase(tableIdentifier)
     }
   }
 

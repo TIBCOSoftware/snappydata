@@ -22,7 +22,8 @@ import java.util.regex.Pattern
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
+import org.apache.spark.sql.catalyst.{DefaultParserDialect, SqlLexical, SqlParserBase, TableIdentifier}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.hive.ExternalTableType
@@ -32,7 +33,7 @@ import org.apache.spark.sql.types.{DataType, StringType, StructType}
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 
-class SnappyParserBase extends SqlParserBase {
+class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
 
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
@@ -43,6 +44,8 @@ class SnappyParserBase extends SqlParserBase {
   protected val MILLISECONDS = Keyword("MILLISECONDS")
   protected val SECONDS = Keyword("SECONDS")
   protected val MINUTES = Keyword("MINUTES")
+
+  override val lexical = new SnappyLexical(caseSensitive)
 
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
       cte | dmlForExternalTable
@@ -106,23 +109,38 @@ class SnappyParserBase extends SqlParserBase {
   }
 }
 
-object SnappyParser extends SnappyParserBase{
+final class SnappyLexical(caseSensitive: Boolean) extends SqlLexical {
 
+  protected override def processIdent(name: String) = {
+    val token = normalizeKeyword(name)
+    if (reserved contains token) Keyword(token)
+    else if (caseSensitive) {
+      Identifier(name)
+    } else {
+      Identifier(Utils.toUpperCase(name))
+    }
+  }
 }
 
-/** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
-private[sql] class SnappyParserDialect extends ParserDialect {
+object SnappyParser extends SnappyParserBase(false)
 
-  override def parse(sqlText: String): LogicalPlan = {
-    SnappyParser.parse(sqlText)
-  }
+object SnappyParserCaseSensitive extends SnappyParserBase(true)
+
+/** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
+private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
+    extends DefaultParserDialect {
+
+  @transient protected override val sqlParser =
+    if (caseSensitive) SnappyParserCaseSensitive else SnappyParser
 }
 
 /**
  * Snappy DDL extensions for streaming and sampling.
  */
-private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
-    extends DDLParser(parseQuery) {
+private[sql] class SnappyDDLParser(caseSensitive: Boolean,
+    parseQuery: String => LogicalPlan) extends DDLParser(parseQuery) {
+
+  override val lexical = new SnappyLexical(caseSensitive)
 
   override def parse(input: String): LogicalPlan = synchronized {
     // Initialize the Keywords.
@@ -141,7 +159,6 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
       case ddlException: DDLException => throw ddlException
       case t: SQLException if !exceptionOnError =>
         parseQuery(input)
-      case x: Throwable => throw x
     }
   }
 
@@ -159,6 +176,9 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val TRUNCATE = Keyword("TRUNCATE")
   protected val INDEX = Keyword("INDEX")
   protected val ON = Keyword("ON")
+
+  protected override lazy val className: Parser[String] =
+    repsep(ident, ".") ^^ { case s => s.map(Utils.toLowerCase).mkString(".") }
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
       s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)

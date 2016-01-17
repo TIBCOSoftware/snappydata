@@ -30,12 +30,13 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{AQPContext, AQPDefault}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{DDLException, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -106,18 +107,22 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   @transient
-  override protected[sql] val ddlParser = this.aqpContext.getSnappyDDLParser(sqlParser.parse)
+  override protected[sql] val ddlParser =
+    aqpContext.getSnappyDDLParser(self, sqlParser.parse)
 
-
-  override protected[sql] def dialectClassName = if (conf.dialect == "sql") {
-    this.aqpContext.getSQLDialectClassName
-  } else {
-    conf.dialect
+  protected[sql] override def getSQLDialect(): ParserDialect = {
+    if (conf.dialect == "sql") {
+      aqpContext.getSQLDialect(self)
+    } else {
+      super.getSQLDialect()
+    }
   }
-  override protected[sql] def executePlan(plan: LogicalPlan) =   aqpContext.executePlan(this, plan)
+
+  override protected[sql] def executePlan(plan: LogicalPlan) =
+    aqpContext.executePlan(this, plan)
 
   @transient
-  override lazy val catalog = this.aqpContext.getSnappyCatalogue(this)
+  override lazy val catalog = this.aqpContext.getSnappyCatalog(this)
 
   /**
    * :: DeveloperApi ::
@@ -337,19 +342,11 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       inputDataSchema: Option[StructType], topkOptions: Map[String, String],
       ifExists: Boolean = false): Unit = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
-      SnappyContext.TOPK_SOURCE, inputDataSchema, schemaDDL = None,
-      SaveMode.ErrorIfExists, topkOptions + ("key" -> keyColumnName))
+      SnappyContext.TOPK_SOURCE, inputDataSchema.map(catalog.normalizeSchema),
+      schemaDDL = None, SaveMode.ErrorIfExists,
+      topkOptions + ("key" -> keyColumnName))
     DataFrame(self, plan)
   }
-
-  /**
-   * Drop approximate top-K structure.
-   * @todo provide lot more details and examples to explain creating and
-   *       using TopK with time series
-   * @param topKName the qualified name of the top-K structure
-   */
-  def dropApproxTSTopK(topKName: String): Unit =
-    aqpContext.dropTopK(self, topKName)
 
   /**
    * Creates a SnappyData table. This differs from
@@ -388,7 +385,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       schema: StructType,
       options: Map[String, String]): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
-      Some(schema), schemaDDL = None, SaveMode.ErrorIfExists, options)
+      Some(catalog.normalizeSchema(schema)), schemaDDL = None,
+      SaveMode.ErrorIfExists, options)
     DataFrame(self, plan)
   }
 
@@ -545,8 +543,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = try {
       catalog.lookupRelation(tableIdent, None)
     } catch {
-      case ae: AnalysisException =>
-        if (ifExists) return else throw ae
+      case e@(_: AnalysisException | _: DDLException) =>
+        if (ifExists) return else throw e
     }
     // additional cleanup for external tables, if required
     snappy.unwrapSubquery(plan) match {
@@ -630,8 +628,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = try {
       catalog.lookupRelation(tableIdent, None)
     } catch {
-      case ae: AnalysisException =>
-        if (ifExists) return else throw ae
+      case e@(_: AnalysisException | _: DDLException) =>
+        if (ifExists) return else throw e
     }
     cacheManager.tryUncacheQuery(DataFrame(self, plan))
     catalog.unregisterTable(tableIdent)
@@ -648,13 +646,12 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = try {
       catalog.lookupRelation(qualifiedTable, None)
     } catch {
-      case ae: AnalysisException =>
-        if (ifExists) return else throw ae
+      case e@(_: AnalysisException | _: DDLException) =>
+        if (ifExists) return else throw e
     }
     cacheManager.tryUncacheQuery(DataFrame(self, plan))
     catalog.unregisterTable(qualifiedTable)
     this.aqpContext.dropSampleTable(tableName, ifExists)
-
   }
 
   /**
@@ -730,8 +727,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   @transient
-  override protected[sql] lazy val analyzer: Analyzer = this.aqpContext.createAnalyzer(catalog, functionRegistry,
-    conf)
+  override protected[sql] lazy val analyzer: Analyzer =
+    aqpContext.createAnalyzer(self)
 
   @transient
   override protected[sql] val planner = this.aqpContext.getPlanner(this)
@@ -1032,6 +1029,37 @@ object SnappyContext extends Logging {
 }
 
 // end of SnappyContext
+
+private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
+  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    // Wait until children are resolved.
+    case p: LogicalPlan if !p.childrenResolved => p
+
+    // Check for SchemaInsertableRelation first
+    case i@InsertIntoTable(l@LogicalRelation(r:
+        SchemaInsertableRelation, _), _, child, _, _) =>
+      r.schemaForInsert(child.output) match {
+        case Some(output) =>
+          PreInsertCastAndRename.castAndRenameChildOutput(i, output, child)
+        case None =>
+          throw new AnalysisException(s"$l requires that the query in the " +
+              "SELECT clause of the INSERT INTO/OVERWRITE statement " +
+              "generates the same number of columns as its schema.")
+      }
+
+    // We are inserting into an InsertableRelation or HadoopFsRelation.
+    case i@InsertIntoTable(l@LogicalRelation(_: InsertableRelation |
+                                             _: HadoopFsRelation, _), _, child, _, _) =>
+      // First, make sure the data to be inserted have the same number of fields with the
+      // schema of the relation.
+      if (l.output.size != child.output.size) {
+        throw new AnalysisException(s"$l requires that the query in the " +
+            "SELECT clause of the INSERT INTO/OVERWRITE statement " +
+            "generates the same number of columns as its schema.")
+      }
+      PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
+  }
+}
 
 abstract class ClusterMode {
   val sc: SparkContext
