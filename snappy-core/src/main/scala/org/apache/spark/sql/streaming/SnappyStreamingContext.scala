@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.runtime.{universe => u}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
@@ -28,7 +27,7 @@ import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, _}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext}
+import org.apache.spark.streaming.{StreamingContextState, Duration, Milliseconds, StreamingContext}
 
 /**
   * Provides an ability to manipulate SQL like query on DStream
@@ -38,6 +37,20 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
     extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
 
   self =>
+
+  /**
+   * Start the execution of the streams.
+   * Also registers population of AQP tables from stream tables if present.
+   *
+   * @throws IllegalStateException if the StreamingContext is already stopped
+   */
+  override def start(): Unit = synchronized {
+    // register population of AQP tables from stream tables
+    if (getState() == StreamingContextState.INITIALIZED) {
+      snappyContext.aqpContext.getSampleTablePopulator.foreach(_ (snappyContext))
+    }
+    super.start()
+  }
 
   def sql(sqlText: String): DataFrame = {
     snappyContext.sql(sqlText)

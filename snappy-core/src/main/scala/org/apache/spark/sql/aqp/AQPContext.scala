@@ -20,8 +20,8 @@ import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.ParserDialect
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry}
+import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
+import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.DDLParser
@@ -61,7 +61,7 @@ trait AQPContext {
       startTime: Long, endTime: Long, k: Int): DataFrame
 
   def queryTopKRDD(context: SnappyContext, topK: String,
-      startTime: String, endTime: String): RDD[Row]
+      startTime: String, endTime: String, schema: StructType): RDD[InternalRow]
 
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row],
       aqpTables: Seq[String], time: Long,

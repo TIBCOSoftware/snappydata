@@ -19,6 +19,7 @@ package org.apache.spark.sql.aqp
 import scala.reflect.runtime.{universe => u}
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution._
@@ -67,7 +68,7 @@ object AQPDefault extends AQPContext{
     throw new UnsupportedOperationException("missing aqp jar")
 
   override def queryTopKRDD(context: SnappyContext, topK: String,
-      startTime: String, endTime: String): RDD[Row] =
+      startTime: String, endTime: String, schema: StructType): RDD[InternalRow] =
     throw new UnsupportedOperationException("missing aqp jar")
 
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row], aqpTables: Seq[String],
@@ -146,8 +147,7 @@ class DefaultPlanner(snappyContext: SnappyContext)
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
-      StreamDDLStrategy(snappyContext.aqpContext.getSampleTablePopulator,
-        sampleStreamCase),
+      StreamDDLStrategy(sampleStreamCase),
       StoreStrategy, StreamQueryStrategy) ++
         storeOptimizedRules ++
         super.strategies

@@ -330,24 +330,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
   }
 
-  private def requiresNormalization(k: String): Boolean = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return true
-      }
-      index += 1
-    }
-    false
-  }
-
   def normalizeSchema(schema: StructType): StructType = {
     if (conf.caseSensitiveAnalysis) {
       schema
     } else {
       val fields = schema.fields
-      if (fields.exists(f => requiresNormalization(f.fieldName))) {
+      if (fields.exists(f => Utils.hasLowerCase(f.fieldName))) {
         StructType(fields.map { f =>
           val name = Utils.toUpperCase(f.fieldName)
           val metadata = if (f.metadata.contains("name")) {
@@ -712,14 +700,27 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     tables.collect {
       case (tableIdent, _) if tableIdent.getDatabase(client) == dbName =>
         (tableIdent.table, true)
-    }.toSeq ++ client.listTables(dbName).map((_, false))
+    }.toSeq ++
+        client.listTables(dbName).map { t =>
+          if (dbIdent.isDefined) {
+            (dbName + "." + processTableIdentifier(t), false)
+          } else {
+            (processTableIdentifier(t), false)
+          }
+        }
   }
 
   def getExternalTables(dbIdent: Option[String]): Seq[String] = {
     val client = this.client
     val dbName = dbIdent.map(processTableIdentifier)
         .getOrElse(client.currentDatabase)
-    client.listTables(dbName)
+    client.listTables(dbName).map { t =>
+      if (dbIdent.isDefined) {
+        dbName + "." + processTableIdentifier(t)
+      } else {
+        processTableIdentifier(t)
+      }
+    }
   }
 }
 

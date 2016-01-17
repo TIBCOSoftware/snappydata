@@ -79,7 +79,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     val topKOption = Map(
         "epoch" -> System.currentTimeMillis().toString,
-        "timeInterval" -> "2000",
+        "timeInterval" -> "2000ms",
         "size" -> "10"
       )
 
