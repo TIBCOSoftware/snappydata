@@ -425,8 +425,16 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     Iterator.empty
   }
 
-  final def cachedBatchTableName(table: String) = INTERNAL_SCHEMA_NAME + "." + table +
-      SHADOW_TABLE_SUFFIX
+  final def cachedBatchTableName(table: String) = {
+
+    val tableName = if(table.indexOf('.') > 0){
+      table.replace(".","__")
+    }else{
+      table
+    }
+    INTERNAL_SCHEMA_NAME + "." + tableName +
+        SHADOW_TABLE_SUFFIX
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
