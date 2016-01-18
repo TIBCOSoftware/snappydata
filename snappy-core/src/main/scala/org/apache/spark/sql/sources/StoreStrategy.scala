@@ -60,8 +60,10 @@ private[sql] case class ExternalTableDMLCmd(
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
       case relation: SingleRowInsertableRelation => relation.executeUpdate(command)
+      case relation: RowPutRelation => relation.put(command)
       case other => throw new AnalysisException("DML support requires " +
-          "UpdatableRelation/SingleRowInsertableRelation but found " + other)
+          "UpdatableRelation/SingleRowInsertableRelation/RowPutRelation" +
+          " but found " + other)
     }
     Seq.empty
   }

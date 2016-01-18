@@ -33,6 +33,19 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
+trait RowPutRelation {
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
+   * @param rows the rows to be upserted
+   *
+   * @return number of rows upserted
+   */
+
+  def put(rows: Seq[Row]): Int
+}
+
 @DeveloperApi
 trait SingleRowInsertableRelation {
   /**
