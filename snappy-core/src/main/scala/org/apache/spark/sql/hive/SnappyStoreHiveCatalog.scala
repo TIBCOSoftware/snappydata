@@ -147,7 +147,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
         dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "HIVE_METASTORE")
+        HIVE_METASTORE)
     } else if (dbURL != null) {
       logInfo(s"Using specified metastore database, dbURL = $dbURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
@@ -745,6 +745,7 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_SCHEMA_OLD = "spark.sql.sources.schema"
+  val HIVE_METASTORE = "HIVE_METASTORE"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
