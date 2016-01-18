@@ -146,7 +146,7 @@ snappy> connect client 'localhost:1527';
 snappy> show connections; 
 
 Check the cluster status ..
-snappy> select id, kind, status, host, port from sys.members;
+snappy> show members;
 this will list each cluster member and its status.
 ```
 > #### Note
@@ -178,7 +178,8 @@ _create table_ DDL allows tables to be partitioned on primary keys, custom parti
 snappy> run 'create_and_load_row_table.sql';
 snappy> select count(*) from airlineref; //row count 
 
--- This creates the airline code table containing airline name reference data. And, as a row table it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
+-- This creates the airline code table containing airline name reference data. And, as a row table 
+-- it can be replicated to each node so join processing with other partitioned tables can completely avoid data shuffling. 
 ```
 
 
@@ -228,29 +229,28 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 > ```
 > To download the larger data set run this command from the shell:
 > $ ./download_full_airlinedata.sh ../data   (Is this correct?)
-> Then, go back to the SQL shell and re-run the 'create_and_load_column_table.sql' script. You could re-run the OLAP queries to note the performance. 
+> Then, go back to the SQL shell and re-run the 'create_and_load_column_table.sql' script. 
+> You could re-run the OLAP queries to note the performance. 
 
 ```sql
--- Execute the following script to create a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). 
+-- Execute the following script to create a sample that is 3% of the full data set and stratified on 3 columns.
+-- The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). 
 -- Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
 snappy> run 'create_and_load_sample_table.sql';
 
 -- Here is the _Create DDL_ for the sample table
 -- CREATE TABLE AIRLINE_SAMPLE
---   USING column_sample  //All Sample tables are columnar
+--   USING column_sample                    //All Sample tables are columnar
 --   OPTIONS(
---    buckets '5',  // Number of partitions 
---    qcs 'UniqueCarrier, Year_, Month_', 
---        //QueryColumnSet: The strata - 3% of each combination of Carrier, Year and Month is stored as sample
---    fraction '0.03', //How big should the sample be
---    strataReservoirSize '50', //Reservoir sampling to support streaming inserts
---    basetable 'Airline') // The parent base table
+--    buckets '5',                          // Number of partitions 
+--    qcs 'UniqueCarrier, Year_, Month_',   // QueryColumnSet(qcs): The strata - 3% of each combination of Carrier, 
+--                                          // Year and Month is stored as sample
+--    fraction '0.03',                      // How big should the sample be
+--    strataReservoirSize '50',             //Reservoir sampling to support streaming inserts
+--    basetable 'Airline')                  // The parent base table
   ...
 ```
-
-> Todo: Provide script file with SQL based on error and confidence .... Hemant?
-
 
 You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
 
@@ -260,15 +260,18 @@ snappy>
 snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0 
     group by Month_
     with error .05 ;
--- The above query will consult the sample and return an answer if the estimated answer is at least 95% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
+-- The above query will consult the sample and return an answer if the estimated answer 
+-- is at least 95% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
 
 -- You can also access the error using built-in functions. 
-snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay) error, Month_ 
+snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_ 
     from Airline where ArrDelay >0 
     group by Month_
     with error .05 ;
+-- TWO PROBLEMS IN CURRENT IMPL: (1) PRESENTED ERROR IS NOT WITHIN RANGE (2) ERROR CONSTRAINT NOT MET .. BUT QUERY RETURNS VALUE
 -- The correct answer is within +/- 'error'
--- Consult the docs for access to other related functions like relative_error(), lower and upper bounds for the error returned. 
+-- Consult the docs for access to other related functions like relative_error(), 
+--  lower and upper bounds for the error returned. 
 ```
 
 you can now re-run the previous OLAP queries with an error constraint and compare the results.  You should notice a 10X or larger difference in query execution latency while the results remain nearly accurate. As a reminder,  we recommend downloading the larger data set for this exercise.
@@ -276,7 +279,6 @@ you can now re-run the previous OLAP queries with an error constraint and compar
 ```sql
 -- re-run olap queries with error constraint to automatically use sampling
 snappy> run 'olap_approx_queries.sql';
--- THIS SCRIPT NEEDS TO BE ADDED .. HEMANT?
 ```
 > where/how can we show memory utilization with sampling. 
 
