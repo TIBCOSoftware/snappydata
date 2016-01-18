@@ -123,8 +123,9 @@ class CachedBatchCreator(
     def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
       var rddId = -1
-      if (StoreCallbacksImpl.stores.get(tableName.toUpperCase) != None) {
-        val (schema, externalStore, id) = StoreCallbacksImpl.stores.get(tableName.toUpperCase).get
+      val storeEntry = StoreCallbacksImpl.stores.get(tableName)
+      if (storeEntry != None) {
+        val (schema, externalStore, id) = storeEntry.get
         rddId = id
       }
       val uuid = externalStore.storeCachedBatch(tableName , batch, bucketID, Option(batchID), rddId)

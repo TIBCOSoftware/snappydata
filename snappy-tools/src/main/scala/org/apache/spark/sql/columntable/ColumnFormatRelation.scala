@@ -358,8 +358,9 @@ class ColumnFormatRelation(
 
   def registerRDDInfoForUI(): Unit = {
     val sc = sqlContext.sparkContext
-    if (StoreCallbacksImpl.stores.get(table.toUpperCase) != None) {
-      val (schema, externalStore, rddId) = StoreCallbacksImpl.stores.get(table.toUpperCase).get
+    val storeEntry = StoreCallbacksImpl.stores.get(table)
+    if ( storeEntry != None) {
+      val (schema, externalStore, rddId) = storeEntry.get
       val rddInfo = new RDDInfo(rddId, table.toUpperCase, numPartitions, StorageLevel.OFF_HEAP, Seq(), None)
       rddInfo.numCachedPartitions = numPartitions
       sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
@@ -368,8 +369,9 @@ class ColumnFormatRelation(
 
   def unregisterRDDInforForUI(): Unit = {
     val sc = sqlContext.sparkContext
-    if (StoreCallbacksImpl.stores.get(table.toUpperCase) != None) {
-      val (schema, externalStore, rddId) = StoreCallbacksImpl.stores.get(table.toUpperCase).get
+    val storeEntry = StoreCallbacksImpl.stores.get(table)
+    if ( storeEntry != None) {
+      val (schema, externalStore, rddId) = storeEntry.get
       sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
     }
   }

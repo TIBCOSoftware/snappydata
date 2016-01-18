@@ -53,10 +53,12 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       rddId: Int) = {
     stores.synchronized {
       stores.get(tableName) match {
-        case None => {
-          stores.put(tableName, (schema, externalStore, rddId))
+        case None => stores.put(tableName, (schema, externalStore, rddId))
+        case Some((previousSchema, _, _)) => {
+          if (previousSchema != schema) {
+            stores.put(tableName, (schema, externalStore, rddId))
+          }
         }
-        case Some((previousSchema, _, _)) => if (previousSchema != schema) stores.put(tableName, (schema, externalStore, rddId))
       }
     }
     sqlContext = Some(context)

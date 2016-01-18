@@ -123,14 +123,16 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
 object StoreInitRDD {
   val tableToIdMap = new TrieMap[String, Int]()
 
-  def getRddIdForTable(table: String, sc: SparkContext): Int = synchronized {
+  def getRddIdForTable(table: String, sc: SparkContext): Int = {
     tableToIdMap.get(table) match {
       case Some(id) => id
-      case None => {
+      case None =>
         val rddId = sc.newRddId()
-        tableToIdMap.put(table, rddId)
-        rddId
-      }
+        tableToIdMap.putIfAbsent(table, rddId) match {
+          case None => rddId
+          case Some(oldId) => oldId
+        }
     }
   }
+
 }

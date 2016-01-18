@@ -21,6 +21,7 @@ import java.util.UUID
 import java.util.concurrent.locks.ReentrantLock
 
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -91,17 +92,15 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
 //    log.trace("cachedBatchSizeInBytes =" + cachedBatchSizeInBytes
 //    + " rddId=" + rddId + " bucketId =" + uuid.getBucketId )
-    if (Option(TaskContext.get) != None) {
-      val metrics = TaskContext.get.taskMetrics
-      val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(Seq[(BlockId, BlockStatus)]())
+    val taskContext = TaskContext.get
+    if (Option(taskContext) != None) {
+      val metrics = taskContext.taskMetrics
+      val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(
+        new ArrayBuffer[(BlockId, BlockStatus)]())
       val blockIdAndStatus = (RDDBlockId(rddId, uuid.getBucketId),
           BlockStatus(StorageLevel.OFF_HEAP, 0L, 0L, cachedBatchSizeInBytes))
-      metrics.updatedBlocks = Some(lastUpdatedBlocks ++ Seq(blockIdAndStatus))
+      metrics.updatedBlocks = Some(lastUpdatedBlocks.+:(blockIdAndStatus))
     }
-//    val blockInfo: BlockInfo =  new BlockInfo(StorageLevel.OFF_HEAP, true)
-//    SparkEnv.get.blockManager.reportBlockStatus(RDDBlockId(rddId, uuid.getBucketId),
-//      blockInfo,
-//      BlockStatus(StorageLevel.OFF_HEAP, 0L, 0L, cachedBatchSizeInBytes))
   }
 
   override def getConnection(id: String): Connection = {
