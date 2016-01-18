@@ -38,7 +38,7 @@ import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, Extern
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.{DDLException, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
@@ -406,8 +406,12 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       provider: String,
       schemaDDL: String,
       options: Map[String, String]): DataFrame = {
+    var schemaStr = schemaDDL.trim
+    if (schemaStr.charAt(0) != '(') {
+      schemaStr = "(" + schemaStr + ")"
+    }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
-      userSpecifiedSchema = None, Some(schemaDDL),
+      userSpecifiedSchema = None, Some(schemaStr),
       SaveMode.ErrorIfExists, options)
     DataFrame(self, plan)
   }
