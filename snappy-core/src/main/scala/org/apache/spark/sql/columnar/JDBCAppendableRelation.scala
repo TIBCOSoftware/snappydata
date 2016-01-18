@@ -78,7 +78,6 @@ case class JDBCAppendableRelation(
     externalStore.connProperties.connProps,
     externalStore.connProperties.hikariCP)
 
-  createTable(mode)
   private val bufferLock = new ReentrantReadWriteLock()
 
   /** Acquires a read lock on the cache for the duration of `f`. */
@@ -293,19 +292,6 @@ case class JDBCAppendableRelation(
 }
 
 object JDBCAppendableRelation extends Logging {
-  def apply(
-      table: String,
-      provider: String,
-      mode: SaveMode,
-      schema: StructType,
-      numPartitions: Int,
-      options: Map[String, String],
-      sqlContext: SQLContext): JDBCAppendableRelation =
-    new JDBCAppendableRelation(
-      SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema,
-      options, null, sqlContext)()
-
   private def removePool(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     Iterator.empty
@@ -334,9 +320,21 @@ class ColumnarRelationProvider
     val externalStore = getExternalSource(sqlContext, connectionProperties,
       partitions)
 
-    new JDBCAppendableRelation(SnappyStoreHiveCatalog.processTableIdentifier(
-      table, sqlContext.conf), getClass.getCanonicalName, mode, schema,
-      options, externalStore, sqlContext)()
+    var success = false
+    val relation = new JDBCAppendableRelation(SnappyStoreHiveCatalog
+        .processTableIdentifier(table, sqlContext.conf),
+      getClass.getCanonicalName, mode, schema, options,
+      externalStore, sqlContext)()
+    try {
+      relation.createTable(mode)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 
   override def createRelation(sqlContext: SQLContext,

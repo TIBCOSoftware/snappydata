@@ -61,11 +61,23 @@ abstract class MutableRelationProvider
         numPartitions.get.toInt)
     }
     val parts = JDBCRelation.columnPartition(partitionInfo)
-    new JDBCMutableRelation(connProperties.url,
+
+    var success = false
+    val relation = new JDBCMutableRelation(connProperties.url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema, parts,
       connProperties.poolProps, connProperties.connProps,
       connProperties.hikariCP, options, sqlContext)
+    try {
+      relation.tableSchema = relation.createTable(mode)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 
   override def createRelation(sqlContext: SQLContext,

@@ -155,7 +155,8 @@ final class DefaultSource extends MutableRelationProvider {
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 
-    new RowFormatRelation(connProperties.url,
+    var success = false
+    val relation = new RowFormatRelation(connProperties.url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
       preservePartitions.exists(_.toBoolean),
@@ -168,5 +169,15 @@ final class DefaultSource extends MutableRelationProvider {
       options,
       blockMap,
       sqlContext)
+    try {
+      relation.tableSchema = relation.createTable(mode)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 }
