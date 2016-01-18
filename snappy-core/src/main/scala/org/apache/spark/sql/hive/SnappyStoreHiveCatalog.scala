@@ -125,6 +125,8 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   private def newClient(): ClientInterface = {
 
+    def currentDatabase: String = DEFAULT_SCHEMA
+
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
     // We instantiate a HiveConf here to read in the hive-site.xml file and
@@ -534,6 +536,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
     tableProperties.put("EXTERNAL", tableType.toString)
 
+
     val dataBase = tableIdent.getDatabase(client)
     val dbInHive = client.getDatabaseOption(dataBase)
     dbInHive match {
@@ -701,7 +704,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   override def getTables(dbIdent: Option[String]): Seq[(String, Boolean)] = {
     val client = this.client
     val dbName = dbIdent.map(processTableIdentifier)
-        .getOrElse(SnappyStoreHiveCatalog.DEFAULT_SCHEMA)
+        .getOrElse(client.currentDatabase)
     tables.collect {
       case (tableIdent, _) if tableIdent.getDatabase(client) == dbName =>
         (tableIdent.table, true)
@@ -777,7 +780,7 @@ final class QualifiedTableName(_database: Option[String], _tableIdent: String)
   @transient private[this] var _table: Option[HiveTable] = None
 
   def getDatabase(client: ClientInterface): String =
-    database.getOrElse(DEFAULT_SCHEMA)
+    database.getOrElse(client.currentDatabase)
 
   def getTableOption(client: ClientInterface) = _table.orElse {
     _table = client.getTableOption(getDatabase(client), table)
