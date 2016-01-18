@@ -221,7 +221,7 @@ You can execute transactions using commands _autocommit off_ and _commit_.
 > In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
 
 #### Approximate query processing (AQP)
-OLAP queries tend to be very expensive as this require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
+OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs (and DDL) to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
 
 > #### Note
@@ -230,6 +230,7 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 > To download the larger data set run this command from the shell:
 > $ ./download_full_airlinedata.sh ../data   (Is this correct?)
 > Then, go back to the SQL shell and re-run the 'create_and_load_column_table.sql' script. 
+> You will need to change the script to point at this data set.
 > You could re-run the OLAP queries to note the performance. 
 
 ```sql
@@ -304,10 +305,12 @@ snappy> create stream table tweetstreamtable
 > show sample dynamic SQL queries on this stream ....
 
 ### Getting started with Spark API (with SnappyData extensions)
-> We assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/) 
->  Or, is it better to explain just the few things they need to know right here?
+> We assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/). 
+> And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs
+> listed in the Spark guides will work in SnappyData also.
 
-Unlike Apache Spark, which is primarily a computational engine with caching, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark Jobs to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways:
+Unlike Apache Spark, which is primarily a computational engine, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark Jobs to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
+
 1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of jobs/tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
