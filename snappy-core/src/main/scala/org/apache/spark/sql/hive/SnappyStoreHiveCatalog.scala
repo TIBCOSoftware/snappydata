@@ -18,34 +18,35 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
+import java.util.concurrent.ExecutionException
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
 
 import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-import org.apache.spark.rdd.RDD
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect, BaseRelation}
+import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.sql.streaming._
+import org.apache.spark.sql.streaming.StreamBaseRelation
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
-
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -316,8 +317,45 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     CacheBuilder.newBuilder().maximumSize(1000).build(cacheLoader)
   }
 
+  private def getCachedHiveTable(table: QualifiedTableName): LogicalPlan = {
+    try {
+      cachedDataSourceTables(table)
+    } catch {
+      case e@(_: UncheckedExecutionException | _: ExecutionException) =>
+        throw e.getCause
+    }
+  }
+
   def processTableIdentifier(tableIdentifier: String): String = {
     SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
+  }
+
+  def normalizeSchema(schema: StructType): StructType = {
+    if (conf.caseSensitiveAnalysis) {
+      schema
+    } else {
+      val fields = schema.fields
+      if (fields.exists(f => Utils.hasLowerCase(f.fieldName))) {
+        StructType(fields.map { f =>
+          val name = Utils.toUpperCase(f.fieldName)
+          val metadata = if (f.metadata.contains("name")) {
+            new Metadata(f.metadata.map + ("name" -> name))
+          } else {
+            f.metadata
+          }
+          f.copy(name = name, metadata = metadata)
+        })
+      } else {
+        schema
+      }
+    }
+  }
+
+  def compatibleSchema(schema1: StructType, schema2: StructType): Boolean = {
+    schema1.fields.length == schema2.fields.length &&
+        !schema1.zip(schema2).exists { case (f1, f2) =>
+          !f1.dataType.sameType(f2.dataType)
+        }
   }
 
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
@@ -357,7 +395,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = {
     if (tables.contains(tableIdent)) {
-      context.truncateTable(tableIdent.table)
+      context.truncateTempTable(tableIdent.table)
       tables -= tableIdent
     }
   }
@@ -368,7 +406,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       tableIdent.getTableOption(client) match {
         case Some(table) =>
           if (table.properties.contains(HIVE_PROVIDER)) {
-            cachedDataSourceTables(tableIdent)
+            getCachedHiveTable(tableIdent)
           } else if (table.tableType == VirtualView) {
             val viewText = table.viewText
                 .getOrElse(sys.error("Invalid view without text."))
@@ -645,11 +683,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     val plan: LogicalPlan = tables.getOrElse(tableName,
       throw new IllegalStateException(s"Plan for stream $tableName not found"))
     plan match {
-      case LogicalRelation(sr: SocketStreamRelation, _) => sr.schema
-      case LogicalRelation(kr: KafkaStreamRelation, _) => kr.schema
-      case LogicalRelation(fr: FileStreamRelation, _) => fr.schema
-      case LogicalRelation(tr: TwitterStreamRelation, _) => tr.schema
-      case LogicalRelation(dkr: DirectKafkaStreamRelation, _) => dkr.schema
+      case LogicalRelation(sr: StreamBaseRelation, _) => sr.schema
       case _ => throw new IllegalStateException(
         s"StreamRelation was expected for $tableName but got $plan")
     }
@@ -662,19 +696,34 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     tables.collect {
       case (tableIdent, _) if tableIdent.getDatabase(client) == dbName =>
         (tableIdent.table, true)
-    }.toSeq ++ client.listTables(dbName).map((_, false))
+    }.toSeq ++
+        client.listTables(dbName).map { t =>
+          if (dbIdent.isDefined) {
+            (dbName + "." + processTableIdentifier(t), false)
+          } else {
+            (processTableIdentifier(t), false)
+          }
+        }
+  }
+
+  def getExternalTables(dbIdent: Option[String]): Seq[String] = {
+    val client = this.client
+    val dbName = dbIdent.map(processTableIdentifier)
+        .getOrElse(client.currentDatabase)
+    client.listTables(dbName).map { t =>
+      if (dbIdent.isDefined) {
+        dbName + "." + processTableIdentifier(t)
+      } else {
+        processTableIdentifier(t)
+      }
+    }
   }
 
   def getTableType(relation: BaseRelation): ExternalTableType.Type = {
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: JDBCAppendableRelation => ExternalTableType.Columnar
-      case x: JDBCAppendableRelation => ExternalTableType.Columnar
-      case x: TwitterStreamRelation => ExternalTableType.Stream
-      case x: FileStreamRelation => ExternalTableType.Stream
-      case x: SocketStreamRelation => ExternalTableType.Stream
-      case x: KafkaStreamRelation => ExternalTableType.Stream
-      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
+      case x: JDBCAppendableRelation => ExternalTableType.Column
+      case x: StreamBaseRelation => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
   }
@@ -701,7 +750,7 @@ object SnappyStoreHiveCatalog {
     if (conf.caseSensitiveAnalysis) {
       tableIdentifier
     } else {
-      Utils.normalizeId(tableIdentifier)
+      Utils.toUpperCase(tableIdentifier)
     }
   }
 
@@ -736,7 +785,7 @@ object ExternalTableType extends Enumeration {
   type Type = Value
 
   val Row = Value("ROW")
-  val Columnar = Value("COLUMN")
+  val Column = Value("COLUMN")
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")

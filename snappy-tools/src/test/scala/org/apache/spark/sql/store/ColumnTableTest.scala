@@ -232,7 +232,7 @@ class ColumnTableTest
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    snc.truncateExternalTable(tableName)
+    snc.truncateTable(tableName)
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect

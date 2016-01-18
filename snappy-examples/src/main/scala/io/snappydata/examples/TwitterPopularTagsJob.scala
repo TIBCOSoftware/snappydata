@@ -3,13 +3,12 @@ package io.snappydata.examples
 import java.io.PrintWriter
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{Row, SaveMode}
+import spark.jobserver.{SparkJobValid, SparkJobValidation}
+
+import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingJob}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Seconds}
-import org.apache.spark.streaming.twitter._
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 /**
  * Run this on your local machine:
@@ -79,12 +78,13 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
 
     val topKOption = Map(
-        "epoch" -> System.currentTimeMillis(),
-        "timeInterval" -> 2000,
-        "size" -> 10
+        "epoch" -> System.currentTimeMillis().toString,
+        "timeInterval" -> "2000ms",
+        "size" -> "10"
       )
 
-    snsc.snappyContext.createTopK("topktable", "hashtag", schema, topKOption, false)
+    snsc.snappyContext.createApproxTSTopK("topktable", "hashtag",
+      Some(schema), topKOption)
 
     snsc.snappyContext.saveStream(hashtagStream,
       Seq("topktable"),
@@ -111,16 +111,23 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
         Thread.sleep(2000)
         pw.println("\n******** Top 10 hash tags for the last interval *******\n")
 
-        snsc.snappyContext.queryTopK("topktable",System.currentTimeMillis - 2000,
-          System.currentTimeMillis).collect.foreach(result => {
-          pw.println(result.toString)
-        })
+        snsc.snappyContext.queryApproxTSTopK("topktable",
+          System.currentTimeMillis - 2000,
+          System.currentTimeMillis).collect().foreach {
+          result => pw.println(result.toString())
+        }
+
+        pw.println("\n************ Top 10 hash tags until now ***************\n")
+
+        snsc.snappyContext.queryApproxTSTopK("topktable").collect().foreach {
+          result => pw.println(result.toString())
+        }
       }
       pw.println("\n************ Top 10 hash tags until now ***************\n")
 
-      snsc.snappyContext.queryTopK("topktable").collect.foreach(result => {
-        pw.println(result.toString)
-      })
+      snsc.snappyContext.queryApproxTSTopK("topktable").collect().foreach {
+        result => pw.println(result.toString())
+      }
 
       pw.println("\n####### Top 10 popular tweets using gemxd query #######\n")
       snsc.snappyContext.sql(s"select retweetId as RetweetId, retweetCnt as RetweetsCount, " +

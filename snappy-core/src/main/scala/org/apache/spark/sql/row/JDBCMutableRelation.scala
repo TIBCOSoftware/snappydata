@@ -229,7 +229,7 @@ class JDBCMutableRelation(
     // may not have efficient index lookup
     updateColumns.foreach { col =>
       setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
-        Utils.normalizeId(col), throw new AnalysisException(
+        col, throw new AnalysisException(
           "JDBCUpdatableRelation: Cannot resolve column name " +
               s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
