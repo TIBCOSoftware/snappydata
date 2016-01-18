@@ -1,44 +1,44 @@
 ## Getting Started with SnappyData SQL Shell
 
-The SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster)
+The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. Internally it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 
-```sql
-// from the SnappyData base directory
-$ cd quickstart/scripts
-$ ../../bin/snappy-shell
-Version 2.0-SNAPSHOT.1
-snappy> 
+```
+sql  
+// from the SnappyData base directory  
+**$ cd quickstart/scripts  
+$ ../../bin/snappy-shell  
+Version 2.0-SNAPSHOT.1  
+snappy> **
 
---Connect to the cluster using thin client connection  ..
+//Connect to the cluster as a client  
 snappy> connect client 'localhost:1527';
 
---Check all the available connections ...
-snappy> show connections; 
+//Show active connections  
+snappy> show connections;
 
---To list each cluster member and its status in the cluster ...
+//Display cluster members by querying a system table  
 snappy> select id, kind, status, host, port from sys.members;
 
--- Use quickstart script to create column table and load data ...
+//Run a sql script. This particular script creates and loads a column table in the default schema  
 snappy> run 'create_and_load_column_table.sql';
 
 
--- Use quickstart script to create row table and load data ...
+//Run a sql script. This particular script creates and loads a row table in the default schema  
 snappy> run 'create_and_load_row_table.sql';
 
---Start pulse to monitor cluster
+//Start pulse to monitor the SnappyData cluster  
 snappy> start pulse;
 ```
 
-You can learn more about SnappyData SQL Shell comands [here] http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html
+The complete list of commands available through _snappy_shell_ can be found [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html)
 
 
+## Using JDBC with SnappyData
 
-## Connecting to SnappyData from JDBC
+SnappyData System supports two different JDBC drivers to connect to the cluster. These allow two different ways of connecting into the cluster. The SnappyData cluster is a peer to peer connected cluster where group members are connected to each other. The embedded mode driver is part of an application that connects into the cluster as a peer. The client mode driver is typically an application that connects into the cluster as a client (TCP connection over a network)
 
-SnappyData System supports two different JDBC drivers to connect to the cluster.
-
-###Peer JDBC Driver for Embedded Mode
-The embedded, peer-to-peer distributed system (also known as an embedded cluster) is the building block for all SnappyData installations. With an embedded cluster, the core SnappyData engine is embedded alongside an existing Java application in the same JVM. When the application initiates a connection to SnappyData using the peer JDBC driver, it starts a SnappyData peer member that joins other peers in the same cluster. 
+###Embedded mode driver
+When an application initiates a connection to SnappyData using the peer JDBC driver, it starts a SnappyData peer member that joins other peers in the same cluster. 
 
 If your application embeds a SnappyData member of any type (a peer client, server, or locator), you should use the ServiceManager API to embed the required type. For example to Join the already running cluster as Accessor(this is a SnappyData member that does not host data, but otherwise participates in the cluster) 
 
@@ -52,7 +52,8 @@ server.start(props)
 
 ```
 
-If you just need a connection object in the embedded mode the following code can be used and it will start the Snappy server on it's own.
+If you just need a connection object in the embedded mode the following code can be used and it will start the Snappy server on it's own.  
+
 ```
 val props:Properties = new Properties()
 // add desired properties if required.
