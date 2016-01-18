@@ -2,9 +2,9 @@ import groovy.json.JsonSlurper
 
 apply plugin: 'wrapper'
 
-if(JavaVersion.current() != JavaVersion.VERSION_1_7){
-    throw new GradleException("==== This build must be run with java 7 ====")
-}
+//if(JavaVersion.current() != JavaVersion.VERSION_1_7){
+//    throw new GradleException("==== This build must be run with java 7 ====")
+//}
 
 buildscript {
   repositories {
