@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.row
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.Connection
 import java.util.Properties
 
 import org.apache.spark.rdd.RDD
@@ -29,8 +29,6 @@ import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, Partition}
-
-import scala.collection.mutable
 
 /**
  * A LogicalPlan implementation for an external row table whose contents
@@ -65,7 +63,7 @@ class JDBCMutableRelation(
   final val dialect = JdbcDialects.get(url)
 
   // create table in external store once upfront
-  val tableSchema = createTable(mode)
+  var tableSchema: String = _
 
   override val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)

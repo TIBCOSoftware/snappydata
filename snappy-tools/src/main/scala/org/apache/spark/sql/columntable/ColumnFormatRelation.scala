@@ -476,7 +476,8 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     ColumnFormatRelation.registerStoreCallbacks(sqlContext, table, schema, externalStore)
 
-    new ColumnFormatRelation(SnappyStoreHiveCatalog.
+    var success = false
+    val relation = new ColumnFormatRelation(SnappyStoreHiveCatalog.
         processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
       mode,
@@ -488,5 +489,15 @@ final class DefaultSource extends ColumnarRelationProvider {
       blockMap,
       partitioningColumn,
       sqlContext)()
+    try {
+      relation.createTable(mode)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 }
