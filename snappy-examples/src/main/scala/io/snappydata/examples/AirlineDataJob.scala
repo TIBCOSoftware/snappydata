@@ -2,6 +2,7 @@ package io.snappydata.examples
 
 import java.io.{PrintWriter}
 import com.typesafe.config.Config
+import org.apache.spark.sql.SnappyAQP._
 import org.apache.spark.sql.{DataFrame, SnappySQLJob}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
@@ -58,17 +59,26 @@ object AirlineDataJob extends SnappySQLJob {
     })
 
     // Data Frame query on Sample table :Which Airlines Arrive On Schedule? JOIN with reference table
-    // TODO: Fix it after SNAP-391 is fixed
-    val sampleResult = snc.sql("select UniqueCarrier carrier, description AirlineName, AVG(ArrDelay) arrivalDelay "+
-        "from airline_sample, airlineref "+
-    "where airline_sample.UniqueCarrier = airlineref.Code "+
-    "group by UniqueCarrier, description "+
-    "order by arrivalDelay")// with error 0.07 confidence 0.92")
-    val startSample = System.currentTimeMillis
-    val resultSP = sampleResult.collect()
-    val totalTimeSample = (System.currentTimeMillis - startSample)
-    pw.println(s"\n****** Query Execution on Airline Sample table took ${totalTimeSample}ms******")
-    resultSP.foreach(rs => {
+    val sampleResult = sampleDF.join(airlineCodeDF, sampleDF.col("UniqueCarrier").
+        equalTo(airlineCodeDF("CODE"))).groupBy(sampleDF("UniqueCarrier"),
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
+    val startS = System.currentTimeMillis
+    val resultS = sampleResult.collect()
+    val totalTimeS = (System.currentTimeMillis - startS)
+    pw.println(s"\n****** Query Execution on Airline Sample table took ${totalTimeS}ms******")
+    resultS.foreach(rs => {
+      pw.println(rs.toString)
+    })
+
+    //Sampling on Base table(i.e Airline table) with error and confidence clause
+    val sampleBaseTableResult = airlineDF.groupBy(airlineDF("Year_"))
+        .agg("ArrDelay" -> "avg")
+        .orderBy("Year_").withError(0.20,0.80)
+    val startSB = System.currentTimeMillis
+    val resultSB = sampleBaseTableResult.collect()
+    val totalTimeSB = (System.currentTimeMillis - startSB)
+    pw.println(s"\n****** Query Execution with sampling on Airline table took ${totalTimeSB}ms******")
+    resultSB.foreach(rs => {
       pw.println(rs.toString)
     })
 

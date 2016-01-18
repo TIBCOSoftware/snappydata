@@ -84,21 +84,20 @@ private[sql] trait SnappyStrategies {
   }
 
   /** Stream related strategies DDL stratgies */
-  case class StreamDDLStrategy(sampleTablePopulation: Option[(SQLContext) => Unit],
-      sampleStreamCase: PartialFunction[LogicalPlan,
+  case class StreamDDLStrategy(sampleStreamCase: PartialFunction[LogicalPlan,
           Seq[SparkPlan]]) extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
 
       val x1: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-        case CreateStreamTable(streamName, userColumns, provider, options) =>
+        case CreateStreamTable(streamIdent, userColumns, provider, options) =>
           ExecutedCommand(
-            CreateStreamTableCmd(streamName, userColumns, provider, options)) :: Nil
+            CreateStreamTableCmd(streamIdent, userColumns, provider, options)) :: Nil
       }
 
       val x2: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
         case StreamOperationsLogicalPlan(action, batchInterval) =>
           ExecutedCommand(
-            SnappyStreamingActionsCommand(action, batchInterval, sampleTablePopulation)) :: Nil
+            SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 
       }
       x1.orElse(x2).orElse(sampleStreamCase)(plan)

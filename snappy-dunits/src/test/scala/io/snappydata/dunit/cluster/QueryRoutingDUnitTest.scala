@@ -49,8 +49,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     println("metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 1)
-    assert(md.getColumnName(1).equals("col1"))
-    assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+    assert(md.getColumnName(1).equals("COL1"))
+    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
 
     // 2nd query which compiles in gemxd too but needs to be routed
     s.execute("select * from ColumnTableQR")
@@ -64,12 +64,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     println("2nd metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 3)
-    assert(md.getColumnName(1).equals("col1"))
-    assert(md.getColumnName(2).equals("col2"))
-    assert(md.getColumnName(3).equals("col3"))
-    assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
-    assert(md.getTableName(2).equalsIgnoreCase("columnTableqr"))
-    assert(md.getTableName(3).equalsIgnoreCase("columnTableqr"))
+    assert(md.getColumnName(1).equals("COL1"))
+    assert(md.getColumnName(2).equals("COL2"))
+    assert(md.getColumnName(3).equals("COL3"))
+    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
+    assert(md.getTableName(2).equals("COLUMNTABLEQR"))
+    assert(md.getTableName(3).equals("COLUMNTABLEQR"))
 
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {

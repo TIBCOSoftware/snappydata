@@ -2,8 +2,7 @@
 DROP TABLE IF EXISTS AIRLINE_SAMPLE ;
 
 --- CREATE SAMPLE TABLE ---
-CREATE TABLE AIRLINE_SAMPLE 
-  USING column_sample 
+CREATE SAMPLE TABLE AIRLINE_SAMPLE 
   OPTIONS(
     buckets '5',
     qcs 'UniqueCarrier, Year_, Month_',

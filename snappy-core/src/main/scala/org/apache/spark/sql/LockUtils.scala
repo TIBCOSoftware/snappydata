@@ -18,9 +18,6 @@ package org.apache.spark.sql
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-/**
- * Created by hemantb on 7/14/15.
- */
 object LockUtils {
 
   class ReadWriteLock {
