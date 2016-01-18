@@ -36,6 +36,7 @@ import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
 import org.apache.spark.sql.hive.ExternalTableType;
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
 import org.apache.thrift.TException;
 
 public class SnappyHiveCatalog implements ExternalCatalog {
@@ -183,7 +184,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       // Need to see proper cleanup of the metastore entries between tests. Will put a proper
       // cleanup soon.
       boolean snappyFunSuite = Boolean.getBoolean("scalaTest");
-      String url = "jdbc:snappydata:;user=HIVE_METASTORE;disable-streaming=true"
+      String url = "jdbc:snappydata:;user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() + ";disable-streaming=true"
           + (snappyFunSuite ? "" : ";default-persistent=true");
       HiveConf metadataConf = new HiveConf();
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
