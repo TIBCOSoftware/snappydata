@@ -79,7 +79,7 @@ When running a native spark program, you can access SnappyData purely as a DataS
     )
 
   // Save some application dataframe into a SnappyData row table
-  myAppDataFrame.write.format("row").options(props).saveAsTable("MutableTable")
+  myAppDataFrame.write.format("jdbc").options(props).saveAsTable("MutableTable")
 ```
 
 
