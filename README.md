@@ -18,6 +18,8 @@
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries)
     * [Approximate query processing (AQP)](#approximate-query-processing-aqp)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
+    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming)
+    * [Step 5 - Create and Query Stream Table Declaratively](#step-5---create-and-query-stream-table-declaratively)
   * [SnappyData with Spark API](#snappydata-with-spark-api)
     * [Column and Row tables](#column-and-row-tables-1)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
@@ -89,7 +91,7 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 - **AQP**: We run the same analytic queries by creating adjunct stratified samples to note the performance difference - can we get close to interactive query performance speeds?
 - **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. The SnappyData value add demonstrated here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
 
-In this document, we discuss various concepts and then ask you take **actions** that showcase these concepts. 
+In this document, we discuss the features mentioned above and ask you to take steps to run the scripts that demonstrate these features. 
 
 > Note: Discuss local mode:  Like Spark, SnappyData can also be run in [“local” mode](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).  
 
@@ -297,6 +299,59 @@ You can now re-run the previous OLAP queries with an error constraint and compar
 -- re-run olap queries with error constraint to automatically use sampling
 snappy> run 'olap_approx_queries.sql';
 ```
+#### Stream analytics using SQL and Spark Streaming
+
+SnappyData extends Spark streaming so stream definitions can be declaratively done using SQL and you can analyze these streams using SQL. You can also dynamically run SQL queries on these streams. There is no need to learn Spark streaming APIs or statically define all the rules to be executed on these streams.
+
+The example below consumes tweets, models the stream as a table (so it can be queried) and we then run ad-hoc SQL from remote clients on the current state of the stream. 
+```sql
+--- Inits the Streaming Context 
+snappy> STREAMING INIT 2
+--- create a stream table
+snappy> CREATE STREAM TABLE HASHTAG_FILESTREAMTABLE
+              (hashtag string)
+            USING file_stream
+            OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2',
+              rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow',
+              directory '/tmp/copiedtwitterdata')
+--- Start streaming context 
+snappy> STREAMING START
+--- Adhoc sql on the stream table to query the current batch
+--- Get top 10 popular hashtags ----
+snappy> SELECT hashtag, count(*) as tagcount
+        FROM HASHTAG_FILESTREAMTABLE
+        GROUP BY hashtag
+        ORDER BY tagcount DESC limit 10;
+```
+Later, in the Spark code section we further enhance to showcase "continuous queries" (CQ). Dynamic registration of CQs (from remote clients) will be available in the next release.
+
+#### Step 5 - Create and Query Stream Table Declaratively 
+
+Ideally, we would like you to try this example using live twitter stream. For that, you would have to generate authorization keys and secrets on [twitter apps](https://apps.twitter.com/) and update SNAPPY_HOME/quickstart/scripts/create_and_start_twitter_streaming.sql with the keys and secrets. Alternatively, you can use use file stream scripts that simulate twitter stream by copying pre-loaded tweets in a tmp folder. 
+
+##### Steps to work with live Twitter stream
+
+Create a live twitter stream then start the streaming context. After starting the streaming context, you can query the current batch of stream using SQL. 
+```sql
+snappy> run './quickstart/scripts/create_and_start_twitter_streaming.sql';
+
+snappy> run './quickstart/scripts/twitter_streaming_query.sql';
+```
+
+##### Steps to work with simulated Twitter stream
+
+Create a file stream table that listens on a folder and then start the streaming context. 
+```sql
+snappy> run './quickstart/scripts/create_and_start_file_streaming.sql';
+```
+Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table.
+```bash 
+$ quickstart/scripts/simulateTwitterStream 
+```
+Now query the current batch of the stream using the following script. simulateTwitterStream script runs for only for a minute or so. Since our script is querying the current window, it will return no results after the streaming is over. 
+```sql
+snappy> run './quickstart/scripts/file_streaming_query.sql';
+```
 
 ### SnappyData with Spark API 
 
@@ -398,7 +453,7 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 
 The following scala code creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
-```
+```scala
 val sampleDF = snappyContext.createTable(sampleTable, 
         "column_sample", // DataSource provider for sample tables
         updatedSchema, Map("buckets" -> "5",
