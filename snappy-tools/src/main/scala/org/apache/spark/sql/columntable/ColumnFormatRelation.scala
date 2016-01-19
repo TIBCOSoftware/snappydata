@@ -160,7 +160,7 @@ class ColumnFormatRelation(
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      val (s, e, id) = StoreCallbacksImpl.stores.get(table.toUpperCase).get
+      val (s, e, id) = StoreCallbacksImpl.stores.get(table).get
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch, rddId = id)
       accumulated += uuid
@@ -361,7 +361,7 @@ class ColumnFormatRelation(
     val storeEntry = StoreCallbacksImpl.stores.get(table)
     if ( storeEntry != None) {
       val (schema, externalStore, rddId) = storeEntry.get
-      val rddInfo = new RDDInfo(rddId, table.toUpperCase, numPartitions, StorageLevel.OFF_HEAP, Seq(), None)
+      val rddInfo = new RDDInfo(rddId, table, numPartitions, StorageLevel.OFF_HEAP, Seq(), None)
       rddInfo.numCachedPartitions = numPartitions
       sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
     }
@@ -374,6 +374,7 @@ class ColumnFormatRelation(
       val (schema, externalStore, rddId) = storeEntry.get
       sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
     }
+    StoreInitRDD.tableToIdMap.remove(table)
   }
 
   //TODO: Suranjan make sure that this table doesn't evict to disk by setting some property, may be MemLRU?
@@ -453,6 +454,16 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def cachedBatchTableName(table: String) = INTERNAL_SCHEMA_NAME + "." + table +
       SHADOW_TABLE_SUFFIX
+
+  final def getRowBufferTableName(cachedBatchTableName: String): String = {
+    val dotIndex = cachedBatchTableName.indexOf('.')
+    val suffixIndex = cachedBatchTableName.indexOf(SHADOW_TABLE_SUFFIX)
+    if (dotIndex == -1 || suffixIndex == -1) {
+      return cachedBatchTableName
+    }
+    val tableName = cachedBatchTableName.substring(dotIndex + 1, suffixIndex)
+    tableName
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
