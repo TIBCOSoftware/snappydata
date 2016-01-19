@@ -23,6 +23,9 @@ dependencies {
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
     compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
   }
+  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+    compile project(':snappy-aqp')
+  }
 }
 
 testClasses.doLast {
