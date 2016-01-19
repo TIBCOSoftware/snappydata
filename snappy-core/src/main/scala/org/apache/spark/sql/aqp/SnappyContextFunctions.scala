@@ -29,7 +29,7 @@ import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 
-trait AQPContext {
+trait SnappyContextFunctions {
 
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution
