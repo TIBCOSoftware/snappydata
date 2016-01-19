@@ -46,7 +46,7 @@ final class SampleDataFrame(@transient override val sqlContext: SnappyContext,
     implementor.errorEstimateAverage(columnName, confidence, groupByColumns)
 
   private def createSampleDataFrameContract =
-    sqlContext.aqpContext.createSampleDataFrameContract(sqlContext,
+    sqlContext.snappyContextFunctions.createSampleDataFrameContract(sqlContext,
       this, logicalPlan)
 }
 
