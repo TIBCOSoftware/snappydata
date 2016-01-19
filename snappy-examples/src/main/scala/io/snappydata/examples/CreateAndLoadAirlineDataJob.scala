@@ -61,10 +61,9 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       pw.println(s"Created and imported data in $rowTable table")
 
-      // Create a sample table sampling parameters. Specifying provider as
-      // column_sample makes the table a sampled table connected with a base table
-      snc.createTable(sampleTable, "column_sample",
-        updatedSchema, Map("buckets" -> "5",
+      // Create a sample table sampling parameters.
+      snc.createSampleTable(sampleTable, None,
+        Map("buckets" -> "5",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
           "strataReservoirSize" -> "50",
