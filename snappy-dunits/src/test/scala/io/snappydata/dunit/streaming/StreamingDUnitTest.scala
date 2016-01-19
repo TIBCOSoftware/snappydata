@@ -21,7 +21,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def SNAP405_testStreamingAdhocSQL(): Unit = {
+  def testStreamingAdhocSQL(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
@@ -37,8 +37,13 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
         "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
     s.execute("streaming start")
+
+    s.execute("create topk table topkTweets on tweetsTable options(" +
+        s"key 'hashtag', epoch '${System.currentTimeMillis()}', " +
+        "timeInterval '2000ms', size '10')")
     for (a <- 1 to 5) {
       Thread.sleep(2000)
+      /* commented out for now due to SNAP-405
       s.execute("select text, fullName from tweetsTable where text like '%e%'")
       val rs = s.getResultSet
       if(a==5) assert(rs.next)
@@ -46,9 +51,21 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         rs.getString(1)
         rs.getString(2)
       }
+      */
+      s.execute("select * from topkTweets")
+      println("\n\n-----  TOPK Tweets  -----\n")
+      val rs = s.getResultSet
+      var numResults = 0
+      while (rs.next()) {
+        println(s"${rs.getString(1)} ; ${rs.getLong(2)} ; ${rs.getObject(3)}")
+        numResults += 1
+      }
+      println(s"Num results=$numResults")
+      assert(numResults <= 10)
     }
     s.execute("streaming stop")
     s.execute("drop table tweetsTable")
+    s.execute("drop table topktweets")
 
     conn.close()
   }
