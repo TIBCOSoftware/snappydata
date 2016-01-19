@@ -758,7 +758,7 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_SCHEMA_OLD = "spark.sql.sources.schema"
 
-  val DEFAULT_SCHEMA = "app"
+  val DEFAULT_SCHEMA = "APP"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
