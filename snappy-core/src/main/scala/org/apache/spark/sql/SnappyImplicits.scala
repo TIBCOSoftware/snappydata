@@ -22,6 +22,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.devapi._
 
 /**
  * Implicit conversions used by Snappy.

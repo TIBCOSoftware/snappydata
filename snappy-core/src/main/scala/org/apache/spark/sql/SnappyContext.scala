@@ -28,26 +28,22 @@ import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.aqp.{SnappyContextFunctions, SnappyContextDefaultFunctions}
+import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
+import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.{DDLException, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.Time
-import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkContext, SparkException}
 
 /**
@@ -124,149 +120,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
-  /**
-   * :: DeveloperApi ::
-   * @todo do we need this anymore? If useful functionality, make this
-   *       private to sql package ... SchemaDStream should use the data source
-   *       API?
-   *              Tagging as developer API, for now
-   * @param stream
-   * @param aqpTables
-   * @param transformer
-   * @param v
-   * @tparam T
-   * @return
-   */
-  @DeveloperApi
-  def saveStream[T](stream: DStream[T],
-                              aqpTables: Seq[String],
-                              transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
-    val transfrmr = transformer match {
-      case Some(x) => x
-      case None =>  if ( !(v.tpe =:= u.typeOf[Row])) {
-        //check if the stream type is already a Row
-        throw new IllegalStateException(" Transformation to Row type needs to be supplied")
-      }else {
-        null
-      }
-    }
-    stream.foreachRDD((rdd: RDD[T], time: Time) => {
-
-      val rddRows = if( transfrmr != null) {
-        transfrmr(rdd)
-      }else {
-        rdd.asInstanceOf[RDD[Row]]
-      }
-      snappyContextFunctions.collectSamples(this, rddRows, aqpTables, time.milliseconds)
-    })
-  }
-
-  /**
-   * @todo remove its reference from SnappyImplicits ... use DataSource API
-   *       instead
-   * @param df
-   * @param aqpTables
-   */
-  def saveTable(df: DataFrame,  aqpTables: Seq[String]): Unit= this
-    .snappyContextFunctions.collectSamples(this, df.rdd,
-    aqpTables, System.currentTimeMillis())
-
-
-  /**
-   * Append dataframe to cache table in Spark.
-   * @todo should this be renamed to appendToTempTable(...) ?
-   *
-   * @param df
-   * @param table
-   * @param storageLevel default storage level is MEMORY_AND_DISK
-   * @return  @todo -> return type?
-   */
-  def appendToCache(df: DataFrame, table: String,
-                    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
-    val useCompression = conf.useCompression
-    val columnBatchSize = conf.columnBatchSize
-
-    val tableIdent = catalog.newQualifiedTableName(table)
-    val plan = catalog.lookupRelation(tableIdent, None)
-    val relation = cacheManager.lookupCachedData(plan).getOrElse {
-      cacheManager.cacheQuery(DataFrame(self, plan),
-        Some(tableIdent.table), storageLevel)
-
-      cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableIdent")
-      }
-    }
-
-    val (schema, output) = (df.schema, df.logicalPlan.output)
-
-    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
-
-      val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation, output)
-
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-        .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
-    }.persist(storageLevel)
-
-    // trigger an Action to materialize 'cached' batch
-    if (cached.count() > 0) {
-      relation.cachedRepresentation match {
-        case externalStore: ExternalStoreRelation =>
-          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
-        case appendable: InMemoryAppendableRelation =>
-          appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-      }
-    }
-  }
-
-
-  /**
-   * @param rdd
-   * @param table
-   * @param schema
-   * @param storageLevel
-   */
-  private[sql] def appendToCacheRDD(rdd: RDD[_], table: String, schema:
-    StructType,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
-    val useCompression = conf.useCompression
-    val columnBatchSize = conf.columnBatchSize
-
-    val tableIdent = catalog.newQualifiedTableName(table)
-    val plan = catalog.lookupRelation(tableIdent, None)
-    val relation = cacheManager.lookupCachedData(plan).getOrElse {
-      cacheManager.cacheQuery(DataFrame(this, plan),
-        Some(tableIdent.table), storageLevel)
-
-      cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableIdent")
-      }
-    }
-
-    val cached = rdd.mapPartitionsPreserve { rowIterator =>
-
-      val batches = ExternalStoreRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
-
-    }.persist(storageLevel)
-
-    // trigger an Action to materialize 'cached' batch
-    if (cached.count() > 0) {
-      relation.cachedRepresentation match {
-        case externalStore: ExternalStoreRelation =>
-          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
-        case appendable: InMemoryAppendableRelation =>
-          appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-      }
-    }
-  }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
@@ -311,23 +164,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         asInstanceOf[InMemoryAppendableRelation].truncate())
   }
 
-  /**
-   * :: DeveloperApi ::
-   * @todo Remove ... use DataSource API
-   * @param tableName
-   * @param schema
-   * @param samplingOptions
-   * @param streamTable
-   * @param jdbcSource
-   * @return
-   */
-  @DeveloperApi
-  def registerSampleTable(tableName: String, schema: StructType,
-      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame =
-       snappyContextFunctions.registerSampleTable(self,  tableName, schema,
-         samplingOptions, streamTable,
-       jdbcSource)
 
   /**
    * Create approximate structure to query top-K with time series support.
@@ -639,24 +475,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     catalog.unregisterTable(tableIdent)
   }
 
-  /**
-   * :: DeveloperApi ::
-   * @todo why can't this be done using dropTable ?
-   */
-  @DeveloperApi
-  def dropSampleTable(tableName: String, ifExists: Boolean = false): Unit = {
 
-    val qualifiedTable = catalog.newQualifiedTableName(tableName)
-    val plan = try {
-      catalog.lookupRelation(qualifiedTable, None)
-    } catch {
-      case e@(_: AnalysisException | _: DDLException) =>
-        if (ifExists) return else throw e
-    }
-    cacheManager.tryUncacheQuery(DataFrame(self, plan))
-    catalog.unregisterTable(qualifiedTable)
-    this.snappyContextFunctions.dropSampleTable(tableName, ifExists)
-  }
 
   /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
