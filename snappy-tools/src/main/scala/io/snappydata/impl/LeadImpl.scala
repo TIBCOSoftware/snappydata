@@ -92,8 +92,6 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     try {
 
-      logInfo("About to initialize SparkContext")
-
       val locator = {
         bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
           case v if v != null => v
@@ -125,6 +123,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         }
         conf.set(key, v)
       })
+
+      logInfo("About to initialize SparkContext with SparkConf=" + conf.toDebugString)
 
       sparkContext = new SparkContext(conf)
 
@@ -183,6 +183,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
             logInfo("Primary Lead node (Spark Driver) is already running in the system." +
                 "Standing by as secondary.")
             primaryLeaderLock.lockInterruptibly()
+
+            //TODO: check cancelInProgress and other shutdown possibilities.
 
             logInfo("Resuming startup sequence from STANDBY ...")
             serverstatus = State.STARTING
