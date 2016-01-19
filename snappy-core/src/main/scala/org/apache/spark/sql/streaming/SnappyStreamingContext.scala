@@ -90,6 +90,8 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
       rowStream.map(converter(_).asInstanceOf[InternalRow]))(self)
     new SchemaDStream(self, logicalPlan)
   }
+
+  SnappyStreamingContext.setActiveContext(self)
 }
 
 object SnappyStreamingContext extends Logging {
