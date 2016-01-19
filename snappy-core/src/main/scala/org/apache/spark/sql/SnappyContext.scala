@@ -28,7 +28,7 @@ import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.aqp.{AQPContext, AQPDefault}
+import org.apache.spark.sql.aqp.{SnappyContextFunctions, SnappyContextDefaultFunctions}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -74,8 +74,8 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
 class SnappyContext protected[spark](@transient override val sparkContext: SparkContext,
     override val listener: SQLListener,
     override val isRootContext: Boolean ,
-    val aqpContext: AQPContext = GlobalSnappyInit.getAQPContext)
-    extends SQLContext(sparkContext, aqpContext.getSnappyCacheManager, listener, isRootContext)
+    val snappyContextFunctions: SnappyContextFunctions = GlobalSnappyInit.getSnappyContextFunctionsImpl)
+    extends SQLContext(sparkContext, snappyContextFunctions.getSnappyCacheManager, listener, isRootContext)
     with Serializable with Logging {
 
   self =>
@@ -95,7 +95,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
 
-    override def unsafeEnabled: Boolean = if(aqpContext.isTungstenEnabled) {
+    override def unsafeEnabled: Boolean = if(snappyContextFunctions.isTungstenEnabled) {
       super.unsafeEnabled
     }else {
       false
@@ -103,26 +103,26 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   override def newSession(): SnappyContext = {
-    new SnappyContext(this.sparkContext, this.listener, false, this.aqpContext)
+    new SnappyContext(this.sparkContext, this.listener, false, this.snappyContextFunctions)
   }
 
   @transient
   override protected[sql] val ddlParser =
-    aqpContext.getSnappyDDLParser(self, sqlParser.parse)
+    snappyContextFunctions.getSnappyDDLParser(self, sqlParser.parse)
 
   protected[sql] override def getSQLDialect(): ParserDialect = {
     if (conf.dialect == "sql") {
-      aqpContext.getSQLDialect(self)
+      snappyContextFunctions.getSQLDialect(self)
     } else {
       super.getSQLDialect()
     }
   }
 
   override protected[sql] def executePlan(plan: LogicalPlan) =
-    aqpContext.executePlan(this, plan)
+    snappyContextFunctions.executePlan(this, plan)
 
   @transient
-  override lazy val catalog = this.aqpContext.getSnappyCatalog(this)
+  override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
   /**
    * :: DeveloperApi ::
@@ -157,7 +157,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       }else {
         rdd.asInstanceOf[RDD[Row]]
       }
-      aqpContext.collectSamples(this, rddRows, aqpTables, time.milliseconds)
+      snappyContextFunctions.collectSamples(this, rddRows, aqpTables, time.milliseconds)
     })
   }
 
@@ -168,7 +168,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param aqpTables
    */
   def saveTable(df: DataFrame,  aqpTables: Seq[String]): Unit= this
-    .aqpContext.collectSamples(this, df.rdd,
+    .snappyContextFunctions.collectSamples(this, df.rdd,
     aqpTables, System.currentTimeMillis())
 
 
@@ -325,7 +325,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   def registerSampleTable(tableName: String, schema: StructType,
       samplingOptions: Map[String, Any], streamTable: Option[String] = None,
       jdbcSource: Option[Map[String, String]] = None): SampleDataFrame =
-       aqpContext.registerSampleTable(self,  tableName, schema,
+       snappyContextFunctions.registerSampleTable(self,  tableName, schema,
          samplingOptions, streamTable,
        jdbcSource)
 
@@ -655,7 +655,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
     cacheManager.tryUncacheQuery(DataFrame(self, plan))
     catalog.unregisterTable(qualifiedTable)
-    this.aqpContext.dropSampleTable(tableName, ifExists)
+    this.snappyContextFunctions.dropSampleTable(tableName, ifExists)
   }
 
   /**
@@ -732,10 +732,10 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
-    aqpContext.createAnalyzer(self)
+    snappyContextFunctions.createAnalyzer(self)
 
   @transient
-  override protected[sql] val planner = this.aqpContext.getPlanner(this)
+  override protected[sql] val planner = this.snappyContextFunctions.getPlanner(this)
 
 
   /**
@@ -761,7 +761,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   def queryApproxTSTopK(topKName: String,
       startTime: String = null, endTime: String = null,
       k: Int = -1): DataFrame =
-      aqpContext.queryTopK(this, topKName,
+      snappyContextFunctions.queryTopK(this, topKName,
         startTime, endTime, k)
 
   /**
@@ -773,7 +773,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   def queryApproxTSTopK(topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
-    aqpContext.queryTopK(this, topK, startTime, endTime, k)
+    snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 }
 
 /**
@@ -781,19 +781,19 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
  */
 object GlobalSnappyInit {
 
-  private val aqpContextImplClass = "org.apache.spark.sql.execution.AQPContextImpl"
-  private[spark] def getAQPContext : AQPContext = {
+  private val aqpContextFunctionImplClass = "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
+  private[spark] def getSnappyContextFunctionsImpl : SnappyContextFunctions = {
      Try {
       val mirror = u.runtimeMirror(getClass.getClassLoader)
-      val cls = mirror.classSymbol(Class.forName(aqpContextImplClass))
+      val cls = mirror.classSymbol(Class.forName(aqpContextFunctionImplClass))
       val clsType = cls.toType
       val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
       val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
       val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
-      runtimeCtr().asInstanceOf[AQPContext]
+      runtimeCtr().asInstanceOf[SnappyContextFunctions]
     }  match {
       case Success(v) => v
-      case Failure(_) => AQPDefault
+      case Failure(_) => SnappyContextDefaultFunctions
     }
   }
 

@@ -30,7 +30,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{execution => sparkexecution, _}
 import org.apache.spark.storage.StorageLevel
 
-object AQPDefault extends AQPContext{
+object SnappyContextDefaultFunctions extends SnappyContextFunctions{
 
   protected[sql] def executePlan(context: SnappyContext, plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(context, plan)
