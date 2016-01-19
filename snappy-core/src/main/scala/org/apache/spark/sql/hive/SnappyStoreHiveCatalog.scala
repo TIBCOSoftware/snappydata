@@ -125,7 +125,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   private def newClient(): ClientInterface = {
 
-    def currentDatabase: String = DEFAULT_SCHEMA
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
