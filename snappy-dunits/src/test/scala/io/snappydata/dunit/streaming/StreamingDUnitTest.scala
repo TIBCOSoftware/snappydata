@@ -43,18 +43,16 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "timeInterval '2000ms', size '10')")
     for (a <- 1 to 5) {
       Thread.sleep(2000)
-      /* commented out for now due to SNAP-405
       s.execute("select text, fullName from tweetsTable where text like '%e%'")
-      val rs = s.getResultSet
-      if(a==5) assert(rs.next)
+      var rs = s.getResultSet
+      if (a == 5) assert(rs.next)
       while (rs.next()) {
         rs.getString(1)
         rs.getString(2)
       }
-      */
       s.execute("select * from topkTweets")
       println("\n\n-----  TOPK Tweets  -----\n")
-      val rs = s.getResultSet
+      rs = s.getResultSet
       var numResults = 0
       while (rs.next()) {
         println(s"${rs.getString(1)} ; ${rs.getLong(2)} ; ${rs.getObject(3)}")
