@@ -28,6 +28,7 @@ import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
@@ -511,6 +512,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = try {
       catalog.lookupRelation(tableIdent, None)
     } catch {
+      case ae: AnalysisException =>
+        if (ifExists) return else throw ae
       case NonFatal(_) =>
         // table loading may fail due to an initialization exception
         // in relation, so try to remove from hive catalog in any case
