@@ -18,9 +18,10 @@ package io.snappydata.gemxd
 
 import java.io.DataOutput
 import java.nio.ByteBuffer
+
 import com.gemstone.gemfire.DataSerializer
-import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.gemstone.gemfire.internal.shared.Version
+import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.message.LeadNodeExecutorMsg
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -34,9 +35,9 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappyUIUtils, DataFrame, SnappyContext}
+import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.{SparkContext, Logging, SparkEnv}
+import org.apache.spark.{Logging, SparkEnv}
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
@@ -205,6 +206,9 @@ class SparkSQLExecuteImpl(val sql: String,
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
       case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
+      // TODO: specific codes for other complex types like
+      // ArrayType, StructType, MapType? (SNAP-428)
+      case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
@@ -277,6 +281,10 @@ object SparkSQLExecuteImpl {
       case ByteType => hdos.writeByte(row.getByte(colIndex))
       case FloatType => hdos.writeFloat(row.getFloat(colIndex))
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
+      // TODO: transmitting rest as CLOBs; change for complex types (SNAP-428)
+      case other =>
+        // write the full length as an integer
+        hdos.writeFullUTF(row.get(colIndex, other).toString, true, false)
     }
   }
 
@@ -336,6 +344,18 @@ object SparkSQLExecuteImpl {
             dvd.setValue(in.readFloat())
           case StoredFormatIds.SQL_DOUBLE_ID =>
             dvd.setValue(in.readDouble())
+          case StoredFormatIds.SQL_VARCHAR_ID =>
+            // read the full length as an integer
+            val utfLen = in.readInt()
+            if (utfLen >= 0) {
+              val pos = in.position()
+              dvd.readBytes(in.array(), pos, utfLen)
+              in.setPosition(pos + utfLen)
+            } else {
+              dvd.setToNull()
+            }
+          case other => throw new GemFireXDRuntimeException(
+            s"SparkSQLExecuteImpl: unexpected typeFormatId $other")
         }
       } else {
         dvd.setToNull()
