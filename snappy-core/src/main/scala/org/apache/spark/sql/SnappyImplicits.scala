@@ -126,13 +126,6 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
 
 
   /**
-   * Table must be registered using #registerSampleTable.
-   */
-  def insertIntoAQPStructures(aqpStructureNames: String*): Unit =
-    context.saveTable(df, aqpStructureNames)
-
-
-  /**
    * Append to an existing cache table.
    * Automatically uses #cacheQuery if not done already.
    */

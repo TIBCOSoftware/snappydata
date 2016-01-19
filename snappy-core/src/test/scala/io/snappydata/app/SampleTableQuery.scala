@@ -20,17 +20,11 @@ import java.lang.management.ManagementFactory
 import java.sql.Date
 import java.text.SimpleDateFormat
 
-
-import org.apache.spark.sql.types.{DateType, StringType, FloatType, IntegerType, StructField, StructType}
-import org.apache.spark.sql.{Row, SnappyContext, SQLContext, DataFrame}
-import org.apache.spark.sql.hive.HiveContext
-import org.apache.spark.sql.snappy._
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.sql.types.{DateType, FloatType, IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SnappyContext}
+import org.apache.spark.{SparkConf, SparkContext}
 
 
-/**
- * Created by ashahid on 10/20/15.
- */
 object SampleTableQuery  extends Serializable {
 
   // var LINEITEM_DATA_FILE = "/Users/pmclain/Snappy/Data/tcph/tpch_data/1G/lineitem.tbl"
@@ -92,13 +86,14 @@ object SampleTableQuery  extends Serializable {
 
 
 
-      spc.registerSampleTable("mainTable_sampled",
-       mainTable.schema, Map(
+      spc.createSampleTable("mainTable_sampled", None,
+        Map(
           "qcs" -> "l_quantity",
-          "fraction" -> 0.01,
-          "strataReservoirSize" -> 50), Some("mainTable"))
+          "fraction" -> "0.01",
+          "strataReservoirSize" -> "50",
+          "baseTable" -> "mainTable"))
 
-      mainTable.insertIntoAQPStructures("mainTable_sampled")
+      mainTable.write.insertInto("mainTable_sampled")
 
       //Run query on actual table
       val result = spc.sql("SELECT sum(l_quantity) as T FROM mainTable confidence 95")
@@ -206,7 +201,6 @@ object SampleTableQuery  extends Serializable {
     ))
 
     hiveContext.sql("DROP TABLE IF EXISTS " + tableName)
-    import hiveContext.implicits._
     val people = hiveContext.sparkContext.textFile(LINEITEM_DATA_FILE).map(_.split('|')).map(p => Row(p(0).trim.toInt, p(1).trim.toInt, p(2).trim.toInt,p(3).trim.toInt,p(4).trim.toFloat,p(5).trim.toFloat,p(6).trim.toFloat,p(7).trim.toFloat,
       p(8).trim, p(9).trim,  java.sql.Date.valueOf(p(10).trim) , java.sql.Date.valueOf(p(11).trim), java.sql.Date.valueOf(p(12).trim), p(13).trim, p(14).trim, p(15).trim, p(16).trim.toInt ))
 
