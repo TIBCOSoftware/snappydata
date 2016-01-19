@@ -208,7 +208,7 @@ class SparkSQLExecuteImpl(val sql: String,
       case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
       // TODO: specific codes for other complex types like
       // ArrayType, StructType, MapType? (SNAP-428)
-      case _ => (StoredFormatIds.SQL_CHAR_ID, -1, -1)
+      case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
@@ -344,7 +344,7 @@ object SparkSQLExecuteImpl {
             dvd.setValue(in.readFloat())
           case StoredFormatIds.SQL_DOUBLE_ID =>
             dvd.setValue(in.readDouble())
-          case StoredFormatIds.SQL_CHAR_ID =>
+          case StoredFormatIds.SQL_VARCHAR_ID =>
             // read the full length as an integer
             val utfLen = in.readInt()
             if (utfLen >= 0) {
