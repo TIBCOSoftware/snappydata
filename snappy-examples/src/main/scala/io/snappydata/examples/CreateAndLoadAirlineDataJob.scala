@@ -2,6 +2,8 @@ package io.snappydata.examples
 
 import java.io.{File, PrintWriter}
 
+import scala.util.{Failure, Success, Try}
+
 import com.typesafe.config.Config
 import org.apache.spark.sql.types.{StructType, StructField}
 import org.apache.spark.sql.{SnappyContext, SaveMode, SnappySQLJob}
@@ -23,7 +25,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   override def runJob(snc: SnappyContext, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("CreateAndLoadAirlineDataJob.out")
-    try {
+    Try {
       // scalastyle:off println
 
       // Drop tables if already exists
@@ -76,13 +78,13 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       pw.println(s"****** Job finished ******")
 
-    } finally {
-      pw.close()
+    } match {
+      case Success(v) => pw.close()
+        s"See ${getCurrentDirectory}/CreateAndLoadAirlineDataJob.out"
+      case Failure(e) => pw.close();
+        throw e;
     }
-
-    s"See ${getCurrentDirectory}/CreateAndLoadAirlineDataJob.out"
-
-    // scalastyle:off println
+    // scalastyle:on println
   }
 
   /**
