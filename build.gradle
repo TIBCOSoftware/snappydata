@@ -5,6 +5,13 @@ apply plugin: 'wrapper'
 //if(JavaVersion.current() != JavaVersion.VERSION_1_7){
 //    throw new GradleException("==== This build must be run with java 7 ====")
 //}
+if (JavaVersion.current().isJava8Compatible()) {
+  allprojects {
+    tasks.withType(Javadoc) {
+      options.addStringOption('Xdoclint:none', '-quiet')
+    }
+  }
+}
 
 buildscript {
   repositories {
