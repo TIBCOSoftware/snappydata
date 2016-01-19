@@ -17,6 +17,7 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.{Row, SQLContext, SaveMode}
 
@@ -56,10 +57,15 @@ trait SchemaInsertableRelation extends InsertableRelation {
    * or None if <code>sourceSchema</code> cannot be inserted.
    */
   def schemaForInsert(sourceSchema: Seq[Attribute]): Option[Seq[Attribute]]
+
+  /**
+   * Append a given RDD or rows into the relation.
+   */
+  def append(rows: RDD[Row], time: Long = -1): Unit
 }
 
 @DeveloperApi
-trait SamplingRelation extends BaseRelation with InsertableRelation {
+trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
 
   /**
    * Options set for this sampling relation.

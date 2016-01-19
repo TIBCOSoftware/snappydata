@@ -20,23 +20,23 @@ import java.sql.{Connection, SQLException}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.aqp.{SnappyContextFunctions, SnappyContextDefaultFunctions}
+import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.{DDLException, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -139,38 +139,27 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    */
   @DeveloperApi
   def saveStream[T](stream: DStream[T],
-                              aqpTables: Seq[String],
-                              transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
-    val transfrmr = transformer match {
+      aqpTables: Seq[String],
+      transformer: Option[(RDD[T]) => RDD[Row]])(implicit v: u.TypeTag[T]) {
+    val transform = transformer match {
       case Some(x) => x
-      case None =>  if ( !(v.tpe =:= u.typeOf[Row])) {
+      case None => if (!(v.tpe =:= u.typeOf[Row])) {
         //check if the stream type is already a Row
         throw new IllegalStateException(" Transformation to Row type needs to be supplied")
-      }else {
+      } else {
         null
       }
     }
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
-      val rddRows = if( transfrmr != null) {
-        transfrmr(rdd)
+      val rddRows = if( transform != null) {
+        transform(rdd)
       }else {
         rdd.asInstanceOf[RDD[Row]]
       }
       snappyContextFunctions.collectSamples(this, rddRows, aqpTables, time.milliseconds)
     })
   }
-
-  /**
-   * @todo remove its reference from SnappyImplicits ... use DataSource API
-   *       instead
-   * @param df
-   * @param aqpTables
-   */
-  def saveTable(df: DataFrame,  aqpTables: Seq[String]): Unit= this
-    .snappyContextFunctions.collectSamples(this, df.rdd,
-    aqpTables, System.currentTimeMillis())
-
 
   /**
    * Append dataframe to cache table in Spark.
@@ -201,7 +190,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
 
-      val batches = ExternalStoreRelation(useCompression, columnBatchSize,
+      val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, output)
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
@@ -213,15 +202,10 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation.cachedRepresentation match {
-        case externalStore: ExternalStoreRelation =>
-          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
-        case appendable: InMemoryAppendableRelation =>
-          appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-      }
+      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
+          .appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
     }
   }
-
 
   /**
    * @param rdd
@@ -248,7 +232,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     val cached = rdd.mapPartitionsPreserve { rowIterator =>
 
-      val batches = ExternalStoreRelation(useCompression, columnBatchSize,
+      val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
@@ -259,18 +243,13 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     // trigger an Action to materialize 'cached' batch
     if (cached.count() > 0) {
-      relation.cachedRepresentation match {
-        case externalStore: ExternalStoreRelation =>
-          externalStore.appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
-        case appendable: InMemoryAppendableRelation =>
-          appendable.appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-      }
+      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
+          .appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
     }
   }
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-   * For truncating temporary tables use <code>truncateTempTable</code>.
    * @param tableName full table name to be truncated
    */
   def truncateTable(tableName: String): Unit =
@@ -278,10 +257,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-   * For truncating temporary tables use <code>truncateTempTable</code>.
    * @param tableIdent qualified name of table to be truncated
    */
-  def truncateTable(tableIdent: QualifiedTableName): Unit = {
+  private[sql] def truncateTable(tableIdent: QualifiedTableName): Unit = {
     val plan = catalog.lookupRelation(tableIdent, None)
     snappy.unwrapSubquery(plan) match {
       case LogicalRelation(br, _) =>
@@ -289,45 +267,30 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ => throw new AnalysisException(
-        s"truncateTable: Table $tableIdent not an external table")
+      case _ => cacheManager.lookupCachedData(plan).foreach(
+        _.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
+            .truncate())
     }
   }
 
-  /**
-   * Empties the contents of a temporary table without deleting the catalog entry.
-   * @param tableName full table name to be truncated
-   */
-  def truncateTempTable(tableName: String): Unit =
-    truncateTempTable(catalog.newQualifiedTableName(tableName))
 
   /**
-   * Empties the contents of a temporary table without deleting the catalog entry.
-   * @param tableIdent qualified name of table to be truncated
-   */
-  private[sql] def truncateTempTable(tableIdent: QualifiedTableName): Unit = {
-    cacheManager.lookupCachedData(catalog.lookupRelation(
-      tableIdent)).foreach(_.cachedRepresentation.
-        asInstanceOf[InMemoryAppendableRelation].truncate())
-  }
-
-  /**
-   * :: DeveloperApi ::
-   * @todo Remove ... use DataSource API
-   * @param tableName
+   * Create a stratified sample table.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
    * @param schema
    * @param samplingOptions
-   * @param streamTable
-   * @param jdbcSource
-   * @return
+   * @param ifExists
    */
-  @DeveloperApi
-  def registerSampleTable(tableName: String, schema: StructType,
-      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame =
-       snappyContextFunctions.registerSampleTable(self,  tableName, schema,
-         samplingOptions, streamTable,
-       jdbcSource)
+  def createSampleTable(tableName: String, schema: Option[StructType],
+      samplingOptions: Map[String, String],
+      ifExists: Boolean = false): DataFrame = {
+    val plan = createTable(catalog.newQualifiedTableName(tableName),
+      SnappyContext.SAMPLE_SOURCE, schema.map(catalog.normalizeSchema),
+      schemaDDL = None, SaveMode.ErrorIfExists, samplingOptions)
+    DataFrame(self, plan)
+  }
 
   /**
    * Create approximate structure to query top-K with time series support.
@@ -337,10 +300,11 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param keyColumnName
    * @param inputDataSchema
    * @param topkOptions
+   * @param ifExists
    */
   def createApproxTSTopK(topKName: String, keyColumnName: String,
       inputDataSchema: Option[StructType], topkOptions: Map[String, String],
-      ifExists: Boolean = false): Unit = {
+      ifExists: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, inputDataSchema.map(catalog.normalizeSchema),
       schemaDDL = None, SaveMode.ErrorIfExists,
@@ -547,8 +511,17 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = try {
       catalog.lookupRelation(tableIdent, None)
     } catch {
-      case e@(_: AnalysisException | _: DDLException) =>
-        if (ifExists) return else throw e
+      case NonFatal(_) =>
+        // table loading may fail due to an initialization exception
+        // in relation, so try to remove from hive catalog in any case
+        try {
+          catalog.unregisterExternalTable(tableIdent)
+          return
+        } catch {
+          case NonFatal(e) =>
+            if (ifExists) return
+            else throw new AnalysisException(s"Table Not Found: $tableIdent", e)
+        }
     }
     // additional cleanup for external tables, if required
     snappy.unwrapSubquery(plan) match {
@@ -559,8 +532,10 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
           case d: DestroyRelation => d.destroy(ifExists)
           case _ => // Do nothing
         }
-      case _ => throw new AnalysisException(
-        s"dropExternalTable: Table $tableIdent not an external table")
+      case _ =>
+        // assume a temporary table
+        cacheManager.tryUncacheQuery(DataFrame(self, plan))
+        catalog.unregisterTable(tableIdent)
     }
   }
 
@@ -619,46 +594,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * Drop a temporary table from spark memory
-   */
-  def dropTempTable(tableName: String, ifExists: Boolean = false): Unit =
-    dropTempTable(catalog.newQualifiedTableName(tableName), ifExists)
-
-  /**
-   * Drop a temporary table from spark memory
-   */
-  private[sql] def dropTempTable(tableIdent: QualifiedTableName,
-      ifExists: Boolean): Unit = {
-    val plan = try {
-      catalog.lookupRelation(tableIdent, None)
-    } catch {
-      case e@(_: AnalysisException | _: DDLException) =>
-        if (ifExists) return else throw e
-    }
-    cacheManager.tryUncacheQuery(DataFrame(self, plan))
-    catalog.unregisterTable(tableIdent)
-  }
-
-  /**
    * :: DeveloperApi ::
-   * @todo why can't this be done using dropTable ?
-   */
-  @DeveloperApi
-  def dropSampleTable(tableName: String, ifExists: Boolean = false): Unit = {
-
-    val qualifiedTable = catalog.newQualifiedTableName(tableName)
-    val plan = try {
-      catalog.lookupRelation(qualifiedTable, None)
-    } catch {
-      case e@(_: AnalysisException | _: DDLException) =>
-        if (ifExists) return else throw e
-    }
-    cacheManager.tryUncacheQuery(DataFrame(self, plan))
-    catalog.unregisterTable(qualifiedTable)
-    this.snappyContextFunctions.dropSampleTable(tableName, ifExists)
-  }
-
-  /**
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
    * @todo provide an example : insert a DF using foreachPartition...
    *       {{{
@@ -670,6 +606,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param rows
    * @return
    */
+  @DeveloperApi
   def insert(tableName: String, rows: Row*): Int = {
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {
@@ -680,6 +617,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
+   * :: DeveloperApi ::
    * Update all rows in table that match passed filter expression
    * @todo provide an example
    * @param tableName
@@ -690,6 +628,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param updateColumns   List of all column names being updated
    * @return
    */
+  @DeveloperApi
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
     val plan = catalog.lookupRelation(tableName)
@@ -702,12 +641,14 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
+   * :: DeveloperApi ::
    * Delete all rows in table that match passed filter expression
    *
    * @param tableName
    * @param filterExpr
    * @return
    */
+  @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {
@@ -718,17 +659,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   // end of insert/update/delete operations
-
-  /**
-   * :: DeveloperApi ::
-   */
-  @DeveloperApi
-  def runJob[T, U: ClassTag](
-      rdd: RDD[T],
-      processPartition: Iterator[T] => U,
-      resultHandler: (Int, U) => Unit): Unit = {
-    self.sparkContext.runJob(rdd, processPartition, resultHandler)
-  }
 
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
