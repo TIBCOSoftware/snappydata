@@ -110,7 +110,7 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * }}}
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context, context.aqpContext.convertToStratifiedSample(
+    new SampleDataFrame(context, context.snappyContextFunctions.convertToStratifiedSample(
       options, context, df.logicalPlan))
 
 
