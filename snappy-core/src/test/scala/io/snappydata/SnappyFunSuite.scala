@@ -26,13 +26,13 @@ import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.devapi._
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
  *
- * Created by soubhikc on 6/10/15.
  */
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore

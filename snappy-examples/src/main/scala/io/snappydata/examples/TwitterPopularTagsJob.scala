@@ -8,6 +8,7 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingJob}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.devapi._
 import org.apache.spark.streaming.dstream.DStream
 
 /**

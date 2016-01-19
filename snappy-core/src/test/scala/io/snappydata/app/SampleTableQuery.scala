@@ -25,6 +25,7 @@ import org.apache.spark.sql.types.{DateType, StringType, FloatType, IntegerType,
 import org.apache.spark.sql.{Row, SnappyContext, SQLContext, DataFrame}
 import org.apache.spark.sql.hive.HiveContext
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.devapi._
 import org.apache.spark.{SparkContext, SparkConf}
 
 
