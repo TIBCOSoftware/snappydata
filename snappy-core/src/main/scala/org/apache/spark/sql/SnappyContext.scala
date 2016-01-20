@@ -66,9 +66,15 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  * shared context managed by SnappyData makes it possible to re-use Executors
  * across client connections or applications.
  *
- * @see document describing the various URL options to create
- *      Snappy/Spark Context
- * @see document describing the Job server API
+ * SnappyContext uses a HiveMetaStore for catalog , which is
+ * persistent. This enables table metadata info recreated on driver restart.
+ *
+ * User should use obtain reference to a SnappyContext instance as below
+ * val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
+ *
+ * @see https://github.com/SnappyDataInc/snappydata#step-1---start-the-snappydata-cluster
+ * @see https://github.com/SnappyDataInc/snappydata#interacting-with-snappydata
+ * @todo document describing the Job server API
  * @todo Provide links to above descriptions
  *
  */
@@ -171,6 +177,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param storageLevel default storage level is MEMORY_AND_DISK
    * @return  @todo -> return type?
    */
+  @DeveloperApi
   def appendToCache(df: DataFrame, table: String,
                     storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
     val useCompression = conf.useCompression
@@ -214,6 +221,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param schema
    * @param storageLevel
    */
+  @DeveloperApi
   private[sql] def appendToCacheRDD(rdd: RDD[_], table: String, schema:
     StructType,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
@@ -314,12 +322,17 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * Creates a SnappyData table. This differs from
-   * SnappyContext.createExternalTable in that this API creates a persistent
-   * catalog entry for the table which is recovered after restart.
+   * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
+   * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
+   * API creates a persistent catalog entry.
    *
+   * {{{
+   *
+   * val airlineDF = snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
+   *
+   * }}}
    * @param tableName Name of the table
-   * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param options Properties for table creation
    * @return DataFrame for the table
    */
@@ -334,14 +347,26 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * Creates a SnappyData table. This differs from
-   * SnappyContext.createExternalTable in that this API creates a persistent
-   * catalog entry for the table which is recovered after restart.
+   * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
+   * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
+   * API creates a persistent catalog entry.
+   *
+   * {{{
+   *
+   *    case class Data(col1: Int, col2: Int, col3: Int)
+   *    val props = Map.empty[String, String]
+   *    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+   *    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+   *    val dataDF = snc.createDataFrame(rdd)
+   *    snappyContext.createTable(tableName, "column", dataDF.schema, props)
+   *
+   * }}}
    *
    * @param tableName Name of the table
-   * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param schema   Table schema
-   * @param options  Properties for table creation
+   * @param options  Properties for table creation. See options list for different tables.
+   *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @return DataFrame for the table
    */
   def createTable(
@@ -356,14 +381,44 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * Creates a SnappyData table. This differs from
-   * SnappyContext.createExternalTable in that this API creates a persistent
-   * catalog entry for the table which is recovered after restart.
+   * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
+   * should adhere to syntax of underlying JDBC store. SnappyData ships with inbuilt JDBC store ,
+   * which can be accessed by Row format data store.
+   * The option parameter can take connection details.
+   * Unlike SqlContext.createExternalTable this API creates a persistent catalog entry.
+   *
+   * {{{
+   *    val props = Map(
+   * "url" -> s"jdbc:derby:$path",
+   * "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
+   * "poolImpl" -> "tomcat",
+   * "user" -> "app",
+   * "password" -> "app"
+   * )
+   *
+
+   * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+   * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
+   *
+   * Any DataFrame of the same schema can be inserted into the JDBC table using
+   * DataFrameWriter Api.
+   *
+   * e.g.
+   *
+   * case class Data(col1: Int, col2: Int, col3: Int)
+   *
+   * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+   * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+   * val dataDF = snc.createDataFrame(rdd)
+   * dataDF.write.format("jdbc").mode(SaveMode.Append).saveAsTable("jdbcTable")
+   *
+   * }}}
    *
    * @param tableName Name of the table
-   * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC' etc.
+   * @param provider  Provider name 'ROW' and 'JDBC'.
    * @param schemaDDL Table schema as a string interpreted by provider
-   * @param options   Properties for table creation
+   * @param options   Properties for table creation. See options list for different tables.
+   * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @return DataFrame for the table
    */
   def createTable(
@@ -597,9 +652,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * :: DeveloperApi ::
    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
-   * @todo provide an example : insert a DF using foreachPartition...
+   * A user can insert a DataFrame using foreachPartition...
    *       {{{
    *         someDataFrame.foreachPartition (x => snappyContext.insert
    *            ("MyTable", x.toSeq)
@@ -607,7 +661,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    *       }}}
    * @param tableName
    * @param rows
-   * @return
+   * @return number of rows inserted
    */
   @DeveloperApi
   def insert(tableName: String, rows: Row*): Int = {
@@ -620,11 +674,12 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * :: DeveloperApi ::
    * Update all rows in table that match passed filter expression
-   * @todo provide an example
-   * @param tableName
-   * @param filterExpr
+   * {{{
+   *   snappyContext.update("jdbcTable", "ITEMREF = 3" , Row(99) , "ITEMREF" )
+   * }}}
+   * @param tableName    table name which needs to be updated
+   * @param filterExpr    SQL WHERE criteria to select rows that will be updated
    * @param newColumnValues  A single Row containing all updated column
    *                         values. They MUST match the updateColumn list
    *                         passed
@@ -644,12 +699,11 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-   * :: DeveloperApi ::
    * Delete all rows in table that match passed filter expression
    *
-   * @param tableName
-   * @param filterExpr
-   * @return
+   * @param tableName  table name
+   * @param filterExpr SQL WHERE criteria to select rows that will be updated
+   * @return  number of rows deleted
    */
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
@@ -660,8 +714,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         s"$tableName is not a deletable table")
     }
   }
-
-  // end of insert/update/delete operations
 
   @transient
   override protected[sql] lazy val analyzer: Analyzer =
