@@ -2,6 +2,8 @@ package io.snappydata.examples
 
 import java.io.{File, PrintWriter}
 
+import scala.util.{Failure, Success, Try}
+
 import com.typesafe.config.Config
 import org.apache.spark.sql.types.{StructType, StructField}
 import org.apache.spark.sql.{SnappyContext, SaveMode, SnappySQLJob}
@@ -23,7 +25,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   override def runJob(snc: SnappyContext, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val pw = new PrintWriter("CreateAndLoadAirlineDataJob.out")
-    try {
+    Try {
       // scalastyle:off println
 
       // Drop tables if already exists
@@ -59,10 +61,9 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       pw.println(s"Created and imported data in $rowTable table")
 
-      // Create a sample table sampling parameters. Specifying provider as
-      // column_sample makes the table a sampled table connected with a base table
-      snc.createTable(sampleTable, "column_sample",
-        updatedSchema, Map("buckets" -> "5",
+      // Create a sample table sampling parameters.
+      snc.createSampleTable(sampleTable, None,
+        Map("buckets" -> "5",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
           "strataReservoirSize" -> "50",
@@ -76,13 +77,13 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
 
       pw.println(s"****** Job finished ******")
 
-    } finally {
-      pw.close()
+    } match {
+      case Success(v) => pw.close()
+        s"See ${getCurrentDirectory}/CreateAndLoadAirlineDataJob.out"
+      case Failure(e) => pw.close();
+        throw e;
     }
-
-    s"See ${getCurrentDirectory}/CreateAndLoadAirlineDataJob.out"
-
-    // scalastyle:off println
+    // scalastyle:on println
   }
 
   /**
@@ -92,7 +93,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   override def validate(snc: SnappyContext, config: Config): SparkJobValidation = {
 
     airlinefilePath = if (config.hasPath("airline_file")) {
-      config.getString("parquet_file")
+      config.getString("airline_file")
     } else {
       "../../quickstart/data/airlineParquetData"
     }
@@ -103,7 +104,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
     }
 
     airlinereftablefilePath = if (config.hasPath("airlineref_file")) {
-      config.getString("parquet_file")
+      config.getString("airlineref_file")
     } else {
       "../../quickstart/data/airportcodeParquetData"
     }

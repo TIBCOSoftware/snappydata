@@ -59,9 +59,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override val conf = context.conf
 
-  val tables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
-
-
+  val tempTables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
 
   /**
    * The version of the hive client that will be used to communicate
@@ -386,7 +384,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   override def unregisterAllTables(): Unit = {
-    tables.clear()
+    tempTables.clear()
   }
 
   override def unregisterTable(tableIdentifier: TableIdentifier): Unit = {
@@ -394,15 +392,15 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = {
-    if (tables.contains(tableIdent)) {
-      context.truncateTempTable(tableIdent.table)
-      tables -= tableIdent
+    if (tempTables.contains(tableIdent)) {
+      context.truncateTable(tableIdent)
+      tempTables -= tableIdent
     }
   }
 
-  def lookupRelation(tableIdent: QualifiedTableName,
+  final def lookupRelation(tableIdent: QualifiedTableName,
       alias: Option[String]): LogicalPlan = {
-    val plan = tables.getOrElse(tableIdent,
+    val plan = tempTables.getOrElse(tableIdent,
       tableIdent.getTableOption(client) match {
         case Some(table) =>
           if (table.properties.contains(HIVE_PROVIDER)) {
@@ -424,7 +422,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     Subquery(alias.getOrElse(tableIdent.table), plan)
   }
 
-  def lookupRelation(tableIdentifier: String): LogicalPlan = {
+  final def lookupRelation(tableIdentifier: String): LogicalPlan = {
     lookupRelation(newQualifiedTableName(tableIdentifier), None)
   }
 
@@ -442,17 +440,17 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def tableExists(tableName: QualifiedTableName): Boolean = {
-    tables.contains(tableName) ||
+    tempTables.contains(tableName) ||
         tableName.getTableOption(client).isDefined
   }
 
   override def registerTable(tableIdentifier: TableIdentifier,
       plan: LogicalPlan): Unit = {
-    tables += (newQualifiedTableName(tableIdentifier) -> plan)
+    tempTables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
   def registerTable(tableName: QualifiedTableName, plan: LogicalPlan): Unit = {
-    tables += (tableName -> plan)
+    tempTables += (tableName -> plan)
   }
 
   def registerExternalTable(tableName: QualifiedTableName,
@@ -564,13 +562,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     }
   }
 
-  def registerSampleTable(table: String, schema: StructType,
-      samplingOptions: Map[String, Any], df: Option[SampleDataFrame] = None,
-      streamTable: Option[QualifiedTableName] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
-    throw new UnsupportedOperationException("missing AQP jar")
-  }
-
   /*def registerTopK(tableIdent: String,
       schema: StructType, topkOptions: Map[String, Any], rdd: RDD[(Int, TopK)]): Unit = {
     throw new UnsupportedOperationException("missing AQP jar")
@@ -671,29 +662,11 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
         s"$partitionStrategy", tableName, dropIfExists = true)
   }
 
-  /** tableName is assumed to be pre-normalized with processTableIdentifier*/
-  private[sql] def getStreamTableSchema(
-      tableIdentifier: String): StructType = {
-    getStreamTableSchema(newQualifiedTableName(tableIdentifier))
-  }
-
-  /** tableName is assumed to be pre-normalized with processTableIdentifier */
-  private[sql] def getStreamTableSchema[T](
-      tableName: QualifiedTableName): StructType = {
-    val plan: LogicalPlan = tables.getOrElse(tableName,
-      throw new IllegalStateException(s"Plan for stream $tableName not found"))
-    plan match {
-      case LogicalRelation(sr: StreamBaseRelation, _) => sr.schema
-      case _ => throw new IllegalStateException(
-        s"StreamRelation was expected for $tableName but got $plan")
-    }
-  }
-
   override def getTables(dbIdent: Option[String]): Seq[(String, Boolean)] = {
     val client = this.client
     val dbName = dbIdent.map(processTableIdentifier)
         .getOrElse(client.currentDatabase)
-    tables.collect {
+    tempTables.collect {
       case (tableIdent, _) if tableIdent.getDatabase(client) == dbName =>
         (tableIdent.table, true)
     }.toSeq ++

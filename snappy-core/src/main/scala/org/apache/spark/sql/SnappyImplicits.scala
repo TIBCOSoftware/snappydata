@@ -110,7 +110,7 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * }}}
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context, context.aqpContext.convertToStratifiedSample(
+    new SampleDataFrame(context, context.snappyContextFunctions.convertToStratifiedSample(
       options, context, df.logicalPlan))
 
 
@@ -123,13 +123,6 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    */
   def withTime(time: Long): DataFrameWithTime =
     new DataFrameWithTime(context, df.logicalPlan, time)
-
-
-  /**
-   * Table must be registered using #registerSampleTable.
-   */
-  def insertIntoAQPStructures(aqpStructureNames: String*): Unit =
-    context.saveTable(df, aqpStructureNames)
 
 
   /**
