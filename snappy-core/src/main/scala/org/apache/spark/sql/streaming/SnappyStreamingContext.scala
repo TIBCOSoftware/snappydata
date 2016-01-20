@@ -45,6 +45,9 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
    * @throws IllegalStateException if the StreamingContext is already stopped
    */
   override def start(): Unit = synchronized {
+    StreamBaseRelation.LOCK.synchronized {
+      StreamBaseRelation.clearStreams()
+    }
     // register population of AQP tables from stream tables
     if (getState() == StreamingContextState.INITIALIZED) {
       snappyContext.snappyContextFunctions.getSampleTablePopulator.foreach(_ (snappyContext))
