@@ -65,10 +65,10 @@ class JDBCMutableRelation(
   // create table in external store once upfront
   var tableSchema: String = _
 
-  override val schema: StructType =
+  override final lazy val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
 
-  final val schemaFields = Utils.schemaFields(schema)
+  final lazy val schemaFields = Utils.schemaFields(schema)
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -152,7 +152,7 @@ class JDBCMutableRelation(
       connProperties).asInstanceOf[RDD[Row]]
   }
 
-  final val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
+  final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
