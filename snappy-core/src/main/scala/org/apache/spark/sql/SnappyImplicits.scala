@@ -21,7 +21,6 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Subquery}
 
@@ -106,21 +105,21 @@ object snappy extends Serializable {
      * that the schema of the [[DataFrame]] is the same as the schema of the table.
      * If the row is already present then it is updated.
      *
-     * This doesn't work for mode other than SaveMode.Overwrite.
+     * This ignores all SaveMode
      *
      * @since 1.6.0
      */
     def putInto(tableName: String): Unit = {
       val partitions = dfWriter.partitioningColumns.map(_.map(col => col -> (None: Option[String])).toMap)
       //Suranjan: ignore mode altogether.
-      val overwrite = dfWriter.mode == SaveMode.Overwrite
+      val overwrite = true
       val df = dfWriter.df
       df.sqlContext.executePlan(
       InsertIntoTable(
         UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
         partitions.getOrElse(Map.empty[String, Option[String]]),
         df.logicalPlan,
-        true,
+        overwrite,
         ifNotExists = false)).toRdd
     }
   }

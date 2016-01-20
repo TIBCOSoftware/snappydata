@@ -74,7 +74,7 @@ class RowFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  final val putStr = ExternalStoreUtils.getPUTString(table, schema)
+  final val putStr = ExternalStoreUtils.getPutString(table, schema)
 
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
@@ -140,7 +140,7 @@ class RowFormatRelation(
    */
 
   def put(data: DataFrame): Unit = {
-    JdbcUtils.saveTable(data, url, table, connProperties, true)
+    StoreUtils.saveTable(data, url, table, connProperties, true)
   }
 
 

@@ -617,6 +617,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
+   * :: DeveloperApi ::
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
    * @todo provide an example : upsert a DF using foreachPartition...
    *       {{{
@@ -628,6 +629,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param rows
    * @return
    */
+  @DeveloperApi
   def put(tableName: String, rows: Row*): Int = {
     val plan = catalog.lookupRelation(tableName)
     snappy.unwrapSubquery(plan) match {

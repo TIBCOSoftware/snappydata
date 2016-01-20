@@ -306,6 +306,21 @@ class RowTableTest
     assert(snc.sql("SELECT * FROM " + tableName).collect.length == 3)
   }
 
+  test("PUT INTO TABLE USING SQL with COLUMN NAME"){
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+    snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3) VALUES(1,11, 111)")
+    snc.sql("PUT INTO " + tableName +  " (Col1, Col2, Col3)  VALUES(2,11, 111)")
+    snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3)  VALUES(3,11, 111)")
+
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    // just update a row
+    snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3) VALUES(3,111, 1111)")
+    assert(snc.sql("SELECT * FROM " + tableName).collect.length == 3)
+  }
+
   test("Test the creation of table using SQL and SnappyContext ") {
 
     snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
