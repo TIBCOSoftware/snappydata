@@ -13,3 +13,6 @@ SELECT retweetId as RetweetId, retweetCnt as RetweetsCount, retweetTxt as Text
 FROM RETWEETTABLE 
 ORDER BY RetweetsCount DESC limit 10;
 
+SELECT hashtag, count(hashtag) as TopKCount 
+FROM TOPKTABLE 
+GROUP BY hashtag ORDER BY TopKCount limit 10;

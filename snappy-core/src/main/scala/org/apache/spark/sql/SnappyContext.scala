@@ -74,8 +74,10 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
 class SnappyContext protected[spark](@transient override val sparkContext: SparkContext,
     override val listener: SQLListener,
     override val isRootContext: Boolean ,
-    val snappyContextFunctions: SnappyContextFunctions = GlobalSnappyInit.getSnappyContextFunctionsImpl)
-    extends SQLContext(sparkContext, snappyContextFunctions.getSnappyCacheManager, listener, isRootContext)
+    val snappyContextFunctions: SnappyContextFunctions =
+                 GlobalSnappyInit.getSnappyContextFunctionsImpl)
+    extends SQLContext(sparkContext, snappyContextFunctions.getSnappyCacheManager,
+      listener, isRootContext)
     with Serializable with Logging {
 
   self =>
@@ -734,17 +736,20 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
  */
 object GlobalSnappyInit {
 
-  private val aqpContextFunctionImplClass = "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
-  private[spark] def getSnappyContextFunctionsImpl : SnappyContextFunctions = {
-     Try {
+  private val aqpContextFunctionImplClass =
+    "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
+
+  private[spark] def getSnappyContextFunctionsImpl: SnappyContextFunctions = {
+    Try {
       val mirror = u.runtimeMirror(getClass.getClassLoader)
-      val cls = mirror.classSymbol(Class.forName(aqpContextFunctionImplClass))
+      val cls = mirror.classSymbol(org.apache.spark.util.Utils.
+          classForName(aqpContextFunctionImplClass))
       val clsType = cls.toType
       val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
       val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
       val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
       runtimeCtr().asInstanceOf[SnappyContextFunctions]
-    }  match {
+    } match {
       case Success(v) => v
       case Failure(_) => SnappyContextDefaultFunctions
     }
@@ -795,8 +800,6 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
-
-  var SnappySC:SnappyContext = null
 
   private[this] val contextLock = new AnyRef
 
