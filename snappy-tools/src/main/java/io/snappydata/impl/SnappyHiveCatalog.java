@@ -184,8 +184,8 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       // Need to see proper cleanup of the metastore entries between tests. Will put a proper
       // cleanup soon.
       boolean snappyFunSuite = Boolean.getBoolean("scalaTest");
-      String url = "jdbc:snappydata:;user=" + SnappyStoreHiveCatalog.HIVE_METASTORE() + ";disable-streaming=true"
-          + (snappyFunSuite ? "" : ";default-persistent=true");
+      String url = "jdbc:snappydata:;user=" + SnappyStoreHiveCatalog.HIVE_METASTORE()
+          + ";disable-streaming=true" + (snappyFunSuite ? "" : ";default-persistent=true");
       HiveConf metadataConf = new HiveConf();
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
