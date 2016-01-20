@@ -78,7 +78,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  class CaseInsensitiveMutableHashMap[T](map: Map[String, T])
+  class CaseInsensitiveMutableHashMap[T](map: scala.collection.Map[String, T])
       extends mutable.Map[String, T] with Serializable {
 
     val baseMap = new mutable.HashMap[String, T]
@@ -111,10 +111,10 @@ private[sql] object ExternalStoreUtils extends Logging {
     table
   }
 
-  def removeSamplingOption(parameters: mutable.Map[String, String]): Map[String, String] = {
+  def removeSamplingOptions(parameters: mutable.Map[String, String]): Map[String, String] = {
 
     val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
-      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", " timeInterval")
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", "timeInterval")
 
     val optMap = new mutable.HashMap[String, String]
 

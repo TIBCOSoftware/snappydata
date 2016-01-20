@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.aqp
 
-import scala.reflect.runtime.{universe => u}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.Analyzer
@@ -28,24 +26,11 @@ import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.StoreStrategy
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{execution => sparkexecution, _}
-import org.apache.spark.storage.StorageLevel
 
-object AQPDefault extends AQPContext{
+object SnappyContextDefaultFunctions extends SnappyContextFunctions{
 
   protected[sql] def executePlan(context: SnappyContext, plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(context, plan)
-
-  def registerSampleTable(context: SnappyContext, tableName: String, schema: StructType,
-                          samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-                          jdbcSource: Option[Map[String, String]] = None): SampleDataFrame
-  = throw new UnsupportedOperationException("missing aqp jar")
-
-  def registerSampleTableOn[A <: Product](context: SnappyContext,
-                                                      tableName: String,
-                                                      samplingOptions: Map[String, Any], streamTable: Option[String] = None,
-                                                      jdbcSource: Option[Map[String, String]] = None)
-                                         (implicit ev: u.TypeTag[A]): DataFrame
-  = throw new UnsupportedOperationException("missing aqp jar")
 
   override def createTopK(context: SnappyContext, tableName: String,
       keyColumnName: String, schema: StructType,
@@ -71,11 +56,9 @@ object AQPDefault extends AQPContext{
       startTime: String, endTime: String, schema: StructType): RDD[InternalRow] =
     throw new UnsupportedOperationException("missing aqp jar")
 
-  protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row], aqpTables: Seq[String],
-                                    time: Long,
-                                    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK)
-  = throw new UnsupportedOperationException("missing aqp jar")
-
+  protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row],
+      aqpTables: Seq[String], time: Long): Unit =
+    throw new UnsupportedOperationException("missing aqp jar")
 
  /* def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
                               aqpTables: Seq[String],
@@ -108,9 +91,6 @@ object AQPDefault extends AQPContext{
   def getSnappyDDLParser(context: SnappyContext,
       planGenerator: String => LogicalPlan): DDLParser =
     new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)
-
-  def dropSampleTable(tableName: String, ifExists: Boolean = false) =
-    throw new UnsupportedOperationException("missing aqp jar")
 
   def isTungstenEnabled: Boolean = true
 
