@@ -216,7 +216,6 @@ class SparkSQLExecuteImpl(val sql: String,
 }
 
 object SparkSQLExecuteImpl {
-  val LONG_UTF8_TERMINATION = Array((0xE0 & 0xFF).toByte, 0.toByte, 0.toByte)
 
   def writeRow(row: InternalRow, numCols: Int, numEightColGroups: Int,
       numPartCols: Int, schema: StructType, hdos: GfxdHeapDataOutputStream) = {
@@ -288,29 +287,31 @@ object SparkSQLExecuteImpl {
     }
   }
 
-  def readDVDArray(dvds: Array[DataValueDescriptor], in: ByteArrayDataInput,
-      numEightColGroups: Int, numPartialCols: Int): Unit = {
+  def readDVDArray(dvds: Array[DataValueDescriptor], types: Array[Int],
+      in: ByteArrayDataInput, numEightColGroups: Int,
+      numPartialCols: Int): Unit = {
     var groupNum: Int = 0
     // using the gemfirexd way of sending results where in the number of
     // columns in each row is divided into sets of 8 columns. Per eight column
     // group a byte will be sent to indicate which all column in that group
     // has a non-null value.
     while (groupNum < numEightColGroups - 1) {
-      readAGroup(groupNum, 8, dvds, in)
+      readAGroup(groupNum, 8, dvds, types, in)
       groupNum += 1
     }
-    readAGroup(groupNum, numPartialCols, dvds, in)
+    readAGroup(groupNum, numPartialCols, dvds, types, in)
   }
 
   private def readAGroup(groupNum: Int, numColsInGroup: Int,
-      dvds: Array[DataValueDescriptor], in: ByteArrayDataInput): Unit = {
+      dvds: Array[DataValueDescriptor], types: Array[Int],
+      in: ByteArrayDataInput): Unit = {
     val activeByteForGroup: Byte = DataSerializer.readPrimitiveByte(in)
     var index: Int = 0
     while (index < numColsInGroup) {
       val dvdIndex = (groupNum << 3) + index
       val dvd = dvds(dvdIndex)
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
-        dvd.getTypeFormatId match {
+        types(index) match {
           case StoredFormatIds.SQL_CLOB_ID =>
             val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {
@@ -349,7 +350,7 @@ object SparkSQLExecuteImpl {
             val utfLen = in.readInt()
             if (utfLen >= 0) {
               val pos = in.position()
-              dvd.setValue(new String(in.array(), pos, utfLen, "utf-8"))
+              dvd.readBytes(in.array(), pos, utfLen)
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()
