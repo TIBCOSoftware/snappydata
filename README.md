@@ -29,8 +29,6 @@
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
     * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming)
     * [Step 5 - Create and Query Stream Table](#step-5---create-and-query-stream-table)
-      * [Steps to work with live Twitter stream](#steps-to-work-with-live-twitter-stream-1)
-      * [Steps to work with simulated Twitter stream](#steps-to-work-with-simulated-twitter-stream-1)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
     * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
