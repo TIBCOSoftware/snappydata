@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 
@@ -112,6 +113,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     } else {
       new util.HashSet()
     }
+  }
+
+  def getInternalTableSchemas: util.List[String] = {
+    val schemas = new util.ArrayList[String](2)
+    schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
+    schemas.add(ColumnFormatRelation.INTERNAL_SCHEMA_NAME)
+    schemas
   }
 }
 
