@@ -52,6 +52,211 @@ testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }
 
+ext {
+  genDoc = 'true'
+}
+
+//task alljavadoc2(type: ScalaDoc) {
+//  Set<String> allSource = []
+//  rootProject.subprojects.collect { project ->
+//    println("Executing in for project = ${project.name} and genDoc = " + project.hasProperty("genDoc"))
+//    if (project.getProperties().containsKey("genDoc")) {
+//      println("filtered project = ${project.name}")
+//      //println("Executing in for project = ${project}")
+//      if (project.plugins.hasPlugin('scala')) {
+//        allSource.addAll(project.sourceSets.main.allScala)
+//        //allSource.addAll(project.sourceSets.main.allJava)
+//        //println project.sourceSets.main.allScala
+//      } else if (project.plugins.hasPlugin('java')) {
+//        allSource.addAll(project.sourceSets.main.allJava)
+//        //println project.sourceSets.main.allJava
+//      }
+//    }
+//  }
+//  source = allSource
+////  source.collect { s ->
+////    println("Source s = " + s)
+////  }
+//  println("All Source = " + allSource)
+//  classpath = files(rootProject.subprojects.collect { project ->
+//    if (project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) {
+//      project.sourceSets.main.compileClasspath
+//    }
+//  })
+//  println("classpath = " + classpath)
+//  //classpath.files.collect { f ->
+//    //println(" File = " + f)
+//  //}
+//  destinationDir = file("${rootProject.buildDir}/javadoc")
+//}
+
+task docs {
+  dependsOn ':snappy-tools_' + scalaBinaryVersion + ':copySubmodulesDocs'
+  doLast {
+    println("Time to make the index files")
+  }
+}
+
+task copySubmodulesDocs {
+  dependsOn ':snappy-tools_' + scalaBinaryVersion + ':generateSubmodulesDocs'
+  doLast {
+    def src = "${project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).buildDir}/docs"
+    def dest = "${rootProject.buildDir}/docs/snappy-core"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-bagel"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-graphx"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-mllib"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-tools"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-network-shuffle"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-network-yarn"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-catalyst"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-sql"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-hive"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-hive-thriftserver"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-unsafe"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming-twitter"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming-flume"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming-flume-sink"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming-mqtt"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming-zeromq"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-repl"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-launcher"
+    copyDirs(src, dest)
+    src = "${project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-streaming-kafka"
+    copyDirs(src, dest)
+    src = "${project(':snappy-tools_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-tools"
+    copyDirs(src, dest)
+    src = "${project(':snappy-core_' + scalaBinaryVersion).buildDir}/docs"
+    dest = "${rootProject.buildDir}/docs/snappy-core"
+    copyDirs(src, dest)
+    // copy the store documents
+    //copyDirs()
+    // Now write the main doc index
+    writeMainDocIndex("${rootProject.buildDir}/docs/index.html")
+  }
+}
+
+def copyDirs(def srcDir, def destDir) {
+  mkdir(destDir)
+  copy {
+    from srcDir
+    into destDir
+  }
+}
+
+def writeMainDocIndex(def fileName) {
+  println("Writing the index.html file in file = " + fileName)
+  new File("$fileName").withWriter { out ->
+    println("Writing inside")
+    out.println "<!DOCTYPE html>"
+    out.println "<html>"
+    out.println "<head>"
+    out.println "<title>Page Title</title>"
+    out.println "</head>"
+    out.println "<body>"
+    out.println "<h1>SnappyData Java Docs</h1>"
+    out.println "<p>Below are the links to all the sub modules of SnappyData</p>"
+    out.println "</body>"
+    out.println "</html>"
+    out.println "<a href=\"snappy-core/scaladoc/index.html\">snappy-core<br></a>"
+    out.println "<a href=\"snappy-catalyst/scaladoc/index.html\">snappy-catalyst<br></a>"
+    out.println "<a href=\"snappy-graphx/scaladoc/index.html\">snappy-graphx<br></a>"
+    out.println "<a href=\"snappy-hive-thriftserver/scaladoc/index.html\">snappy-hive-thriftserver<br></a>"
+    out.println "<a href=\"snappy-mllib/scaladoc/index.html\">snappy-mllib<br></a>"
+    out.println "<a href=\"snappy-network-yarn/scaladoc/index.html\">snappy-network-yarn<br></a>"
+    out.println "<a href=\"snappy-sql/scaladoc/index.html\">snappy-sql<br></a>"
+    out.println "<a href=\"snappy-streaming-flume/scaladoc/index.html\">snappy-streaming-flume<br></a>"
+    out.println "<a href=\"snappy-streaming-kafka/scaladoc/index.html\">snappy-streaming-kafka<br></a>"
+    out.println "<a href=\"snappy-streaming-twitter/scaladoc/index.html\">snappy-streaming-twitter<br></a>"
+    out.println "<a href=\"snappy-tools/scaladoc/index.html\">snappy-tools<br></a>"
+    out.println "<a href=\"snappy-bagel/scaladoc/index.html\">snappy-bagel<br></a>"
+    out.println "<a href=\"snappy-core/scaladoc/index.html\">snappy-core<br></a>"
+    out.println "<a href=\"snappy-hive/scaladoc/index.html\">snappy-hive<br></a>"
+    out.println "<a href=\"snappy-launcher/scaladoc/index.html\">snappy-launcher<br></a>"
+    out.println "<a href=\"snappy-network-shuffle/scaladoc/index.html\">snappy-network-shuffle<br></a>"
+    out.println "<a href=\"snappy-repl/scaladoc/index.html\">snappy-repl<br></a>"
+    out.println "<a href=\"snappy-streaming/scaladoc/index.html\">snappy-streaming<br></a>"
+    out.println "<a href=\"snappy-streaming-flume-sink/scaladoc/index.html\">snappy-streaming-flume-sink<br></a>"
+    out.println "<a href=\"snappy-streaming-mqtt/scaladoc/index.html\">snappy-streaming-mqtt<br></a>"
+    out.println "<a href=\"snappy-streaming-zeromq/scaladoc/index.html\">snappy-streaming-zeromq<br></a>"
+    out.println "<a href=\"snappy-unsafe/scaladoc/index.html\">snappy-unsafe<br></a>"
+    out.close()
+  }
+  println("Done the index.html file")
+}
+
+task generateSubmodulesDocs {
+  dependsOn ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-bagel_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-tools_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-network-shuffle_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-network-yarn_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-hive_'  + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming-mqtt_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming-zeromq_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-launcher_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-tools_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':snappy-core_' + scalaBinaryVersion + ':scaladoc'
+  dependsOn ':spark-jobserver:scaladoc'
+}
+
+task generateAllDocs {
+  dependsOn 'generateDocs'
+  dependsOn ':snappy-aqp_' + scalaBinaryVersion + ':scaladoc'
+}
+
 test.dependsOn ':cleanJUnit'
 scalaTest {
   // This property is a temporary fix for scala tests to not use default-persistent
