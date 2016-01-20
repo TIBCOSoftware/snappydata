@@ -51,13 +51,14 @@ class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
       put | cte | dmlForExternalTable
 
   protected lazy val put: Parser[LogicalPlan] =
-    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~ select ^^ {
+    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~
+        select ^^ {
       case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]], s, o, false)
     }
 
-
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | PUT ~> INTO |DELETE ~> FROM | UPDATE) ~> tableIdentifier ~ wholeInput ^^ {
+    (INSERT ~> INTO | PUT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~
+        wholeInput ^^ {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
     }
 

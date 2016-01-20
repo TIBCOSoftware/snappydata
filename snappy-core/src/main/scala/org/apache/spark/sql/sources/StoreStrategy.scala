@@ -87,7 +87,8 @@ private[sql] case class PutIntoDataSource(
     val relation = logicalRelation.relation.asInstanceOf[RowPutRelation]
     val data = DataFrame(sqlContext, query)
     // Apply the schema of the existing table to the new data.
-    val df = sqlContext.internalCreateDataFrame(data.queryExecution.toRdd, logicalRelation.schema)
+    val df = sqlContext.internalCreateDataFrame(data.queryExecution.toRdd,
+      logicalRelation.schema)
     relation.put(df)
 
     // Invalidate the cache.

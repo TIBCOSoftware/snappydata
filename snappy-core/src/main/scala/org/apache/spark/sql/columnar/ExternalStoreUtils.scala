@@ -314,7 +314,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     sb.append("?)").toString()
   }
 
-  def getPUTString(table: String, userSchema: StructType) = {
+  def getPutString(table: String, userSchema: StructType) = {
     val sb = new mutable.StringBuilder("PUT INTO ")
     sb.append(table).append(" VALUES (")
     (1 until userSchema.length).foreach { _ =>
@@ -478,7 +478,7 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
     if (rowCount % batchSize == 0 || flush) {
       JdbcUtils.savePartition(getConnection, table, buff.iterator.map(toScala(_).asInstanceOf[Row]),
-        schema, nullTypes, batchSize, false)
+        schema, nullTypes, batchSize)
       buff = new ArrayBuffer[InternalRow]()
       rowCount = 0
     }
