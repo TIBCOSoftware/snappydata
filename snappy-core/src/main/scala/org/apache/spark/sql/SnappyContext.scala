@@ -617,7 +617,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-<<<<<<< HEAD
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
    * @todo provide an example : upsert a DF using foreachPartition...
    *       {{{
@@ -639,10 +638,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   }
 
   /**
-||||||| merged common ancestors
-=======
    * :: DeveloperApi ::
->>>>>>> master
    * Update all rows in table that match passed filter expression
    * @todo provide an example
    * @param tableName
