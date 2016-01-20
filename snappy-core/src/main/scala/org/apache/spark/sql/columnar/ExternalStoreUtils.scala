@@ -314,6 +314,15 @@ private[sql] object ExternalStoreUtils extends Logging {
     sb.append("?)").toString()
   }
 
+  def getPutString(table: String, userSchema: StructType) = {
+    val sb = new mutable.StringBuilder("PUT INTO ")
+    sb.append(table).append(" VALUES (")
+    (1 until userSchema.length).foreach { _ =>
+      sb.append("?,")
+    }
+    sb.append("?)").toString()
+  }
+
   def getInsertStringWithColumnName(table: String, rddSchema: StructType) = {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
