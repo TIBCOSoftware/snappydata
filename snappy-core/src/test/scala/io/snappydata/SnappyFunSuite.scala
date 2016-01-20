@@ -17,16 +17,13 @@
 package io.snappydata
 
 import java.io.File
-import java.sql.SQLException
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -102,14 +99,8 @@ abstract class SnappyFunSuite
       if (sc != null && !sc.isStopped) {
         val snc = this.snc
         snc.catalog.getTables(None).foreach {
-          case (tableName, false) =>
+          case (tableName, _) =>
             snc.dropTable(tableName, ifExists = true)
-          case (tableName, true) =>
-            if (tableName.indexOf("_sampled") != -1) {
-              snc.dropSampleTable(tableName, ifExists = true)
-            } else {
-              snc.dropTempTable(tableName, ifExists = true)
-            }
         }
       }
     } finally {

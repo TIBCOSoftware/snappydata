@@ -26,7 +26,6 @@ import org.apache.spark.sql.catalyst.{DefaultParserDialect, SqlLexical, SqlParse
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{DataType, StringType, StructType}
@@ -164,7 +163,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream  | strmctxt | truncateTable | createIndex | dropIndex
+        createStream  | streamContext | truncateTable | createIndex | dropIndex
 
   protected val STREAM = Keyword("STREAM")
   protected val STREAMING = Keyword("STREAMING")
@@ -278,17 +277,17 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   protected lazy val createStream: Parser[LogicalPlan] =
-    (CREATE ~> STREAM ~> TABLE ~> tableIdentifier) ~
+    (CREATE ~> STREAM ~> TABLE ~> tableIdentifier) ~ (IF ~> NOT <~ EXISTS).? ~
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
-      case streamName ~ cols ~ providerName ~ opts =>
-        val userColumns = cols.flatMap(fields => Some(StructType(fields)))
+      case streamName ~ allowExisting ~ cols ~ providerName ~ opts =>
+        val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName)
         val userOpts = opts.updated("tableName", streamName.unquotedString)
-        CreateStreamTable(streamName, userColumns, provider,
-          new CaseInsensitiveMap(userOpts))
+        CreateExternalTableUsing(streamName, specifiedSchema, None,
+          provider, allowExisting.isDefined, userOpts)
     }
 
-  protected lazy val strmctxt: Parser[LogicalPlan] =
+  protected lazy val streamContext: Parser[LogicalPlan] =
     (STREAMING ~>
         (INIT ^^^ 0 | START ^^^ 1 | STOP ^^^ 2) ~ numericLit.?) ^^ {
       case action ~ batchInterval =>
@@ -370,8 +369,7 @@ private[sql] case class DropTable(
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val qualifiedTable = snc.catalog.newQualifiedTableName(tableIdent)
-    if (temporary) snc.dropTempTable(qualifiedTable, ifExists)
-    else snc.dropTable(qualifiedTable, ifExists)
+    snc.dropTable(qualifiedTable, ifExists)
     Seq.empty
   }
 }
@@ -383,8 +381,7 @@ private[sql] case class TruncateTable(
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val qualifiedTable = snc.catalog.newQualifiedTableName(tableIdent)
-    if (temporary) snc.truncateTempTable(qualifiedTable)
-    else snc.truncateTable(qualifiedTable)
+    snc.truncateTable(qualifiedTable)
     Seq.empty
   }
 }
@@ -421,21 +418,6 @@ case class DMLExternalTable(
   override def output: Seq[Attribute] = child.output
 }
 
-
-private[sql] case class CreateStreamTable(streamIdent: TableIdentifier,
-    userColumns: Option[StructType],
-    provider: String,
-    options: Map[String, String])
-    extends LogicalPlan with Command {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
-}
-
-
-
 private[sql] case class StreamOperationsLogicalPlan(action: Int,
     batchInterval: Option[Int])
     extends LogicalPlan with Command {
@@ -444,34 +426,6 @@ private[sql] case class StreamOperationsLogicalPlan(action: Int,
 
   /** Returns a Seq of the children of this node */
   override def children: Seq[LogicalPlan] = Seq.empty
-}
-
-private[sql] case class CreateStreamTableCmd(streamIdent: TableIdentifier,
-    userColumns: Option[StructType],
-    provider: String,
-    options: Map[String, String])
-    extends RunnableCommand {
-
-  def run(sqlContext: SQLContext): Seq[Row] = {
-    val resolved = ResolvedDataSource(sqlContext, userColumns,
-      Array.empty[String], provider, options)
-    val plan = LogicalRelation(resolved.relation)
-    val snc = sqlContext.asInstanceOf[SnappyContext]
-    val catalog = snc.catalog
-
-    val streamName = catalog.newQualifiedTableName(streamIdent)
-    // add the stream to the tables in the catalog
-    catalog.tables.get(streamName) match {
-      case None => catalog.tables.put(streamName, plan)
-      case Some(x) => throw new IllegalStateException(
-        s"Stream table name $streamName already defined")
-    }
-    catalog.registerExternalTable(streamName, userColumns,
-      Array.empty[String], provider, options,
-      catalog.getTableType(resolved.relation))
-
-    Seq.empty
-  }
 }
 
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
