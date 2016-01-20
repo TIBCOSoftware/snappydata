@@ -16,14 +16,14 @@
  */
 package org.apache.spark.sql.store
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Random, Failure, Success, Try}
 
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{AnalysisException, SaveMode}
+import org.apache.spark.sql.{Row, AnalysisException, SaveMode}
 
 /**
  * Tests for ROW tables.
@@ -86,10 +86,11 @@ class RowTableTest
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
     //Again do putInto, as there is no primary key, all will be appended
-    dataDF.write.format("row").mode(SaveMode.Append).options(props).putInto(tableName)
+    dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
+    // no primary key
     assert(r.length == 10)
     println("Successful")
   }
@@ -201,9 +202,23 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    import org.apache.spark.sql.snappy._
     dataDF.write.format("row").mode(SaveMode.Ignore).options(props).putInto(tableName)
 
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 5)
+    println("Successful")
+  }
+
+  test("Test the creation using SQL and put a seq of rows in append/overwrite/errorifexists mode") {
+
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7), Seq(1,100,200))
+    data.map { r =>
+      snc.put(tableName, Row.fromSeq(r))
+    }
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)

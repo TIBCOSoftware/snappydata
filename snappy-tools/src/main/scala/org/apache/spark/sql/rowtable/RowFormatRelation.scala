@@ -140,7 +140,6 @@ class RowFormatRelation(
    */
 
   def put(data: DataFrame): Unit = {
-    createTable(mode)
     JdbcUtils.saveTable(data, url, table, connProperties, true)
   }
 
