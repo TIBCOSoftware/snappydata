@@ -21,7 +21,7 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.columnar.InMemoryAppendableColumnarTableScan
+import org.apache.spark.sql.columnar.InMemoryColumnarTableScan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.streaming._
@@ -33,23 +33,7 @@ private[sql] trait SnappyStrategies {
 
   self: DefaultPlanner =>
 
-  //val snappyContext: SnappyContext
-
   object SnappyStrategies extends Strategy {
-
-    /* def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-      case s@StratifiedSample(options, child, _) =>
-        s.getExecution(planLater(child)) :: Nil
-      case PhysicalOperation(projectList, filters,
-      mem: columnar.InMemoryAppendableRelation) =>
-        pruneFilterProject(
-          projectList,
-          filters,
-          identity[Seq[Expression]], // All filters still need to be evaluated
-          InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
-      case _ => Nil
-    }*/
-
 
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
       val x: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
@@ -59,7 +43,7 @@ private[sql] trait SnappyStrategies {
             projectList,
             filters,
             identity[Seq[Expression]], // All filters still need to be evaluated
-            InMemoryAppendableColumnarTableScan(_, filters, mem)) :: Nil
+            InMemoryColumnarTableScan(_, filters, mem)) :: Nil
       }
 
       x.orElse(sampleSnappyCase)(plan)
@@ -88,19 +72,13 @@ private[sql] trait SnappyStrategies {
           Seq[SparkPlan]]) extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
 
-      val x1: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-        case CreateStreamTable(streamIdent, userColumns, provider, options) =>
-          ExecutedCommand(
-            CreateStreamTableCmd(streamIdent, userColumns, provider, options)) :: Nil
-      }
-
-      val x2: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
         case StreamOperationsLogicalPlan(action, batchInterval) =>
           ExecutedCommand(
             SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 
       }
-      x1.orElse(x2).orElse(sampleStreamCase)(plan)
+      x.orElse(sampleStreamCase)(plan)
     }
   }
 

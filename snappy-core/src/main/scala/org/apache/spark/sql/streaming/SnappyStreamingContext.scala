@@ -47,7 +47,7 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   override def start(): Unit = synchronized {
     // register population of AQP tables from stream tables
     if (getState() == StreamingContextState.INITIALIZED) {
-      snappyContext.aqpContext.getSampleTablePopulator.foreach(_ (snappyContext))
+      snappyContext.snappyContextFunctions.getSampleTablePopulator.foreach(_ (snappyContext))
     }
     super.start()
   }
@@ -90,6 +90,8 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
       rowStream.map(converter(_).asInstanceOf[InternalRow]))(self)
     new SchemaDStream(self, logicalPlan)
   }
+
+  SnappyStreamingContext.setActiveContext(self)
 }
 
 object SnappyStreamingContext extends Logging {

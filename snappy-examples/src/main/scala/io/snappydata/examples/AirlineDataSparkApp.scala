@@ -13,7 +13,7 @@ import org.apache.spark.sql.functions._
 object AirlineDataSparkApp {
 
   def main(args: Array[String]) {
-
+    // scalastyle:off println
     val conf = new SparkConf().
       setAppName("Airline Data Application")
 
@@ -38,29 +38,21 @@ object AirlineDataSparkApp {
     val totalTimeCol = (System.currentTimeMillis - start)
     println(s"Query time:${totalTimeCol}ms\n")
 
-    // Update the row table
-    // Suppose a particular Airline company say 'Alaska Airlines Inc.'
-    // re-brands itself as 'Alaska Inc.'
-    val updateVal = udf { (DESCRIPTION: String) =>
-      if (DESCRIPTION == "Delta Air Lines Inc.") "Delta America" else DESCRIPTION
-    }
-    val updateResult = airlineCodeDF.withColumn("DESCRIPTION",
-      updateVal(airlineCodeDF("DESCRIPTION")))
-    println("Updated values:")
-    val startUpd = System.currentTimeMillis
-    updateResult.show
-    val totalTimeUpd = (System.currentTimeMillis - startUpd)
-    println(s" Query time:${totalTimeUpd}ms\n")
+    // Suppose a particular Airline company say 'Virgin America'
+    // re-brands itself as 'Virgin Airlines Inc.'. Update the row table.
+    snc.sql("UPDATE AIRLINEREF SET DESCRIPTION='Virgin Airlines Inc.' " +
+        "WHERE CAST(CODE AS VARCHAR(25))='VX'").collect
 
     // Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
-    val colResultAftUpd = airlineDF.join(updateResult, airlineDF.col("UniqueCarrier").
-        equalTo(updateResult("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      updateResult("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
+    val colResultAftUpd = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
+        equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
     println("Airline arrival schedule after Updated values:")
     val startColUpd = System.currentTimeMillis
     colResultAftUpd.show
     val totalTimeColUpd = (System.currentTimeMillis - startColUpd)
     println(s" Query time:${totalTimeColUpd}ms")
+    // scalastyle:on println
   }
 
 }
