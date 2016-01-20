@@ -478,7 +478,7 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
     if (rowCount % batchSize == 0 || flush) {
       JdbcUtils.savePartition(getConnection, table, buff.iterator.map(toScala(_).asInstanceOf[Row]),
-        schema, nullTypes, batchSize)
+        schema, nullTypes, batchSize, false)
       buff = new ArrayBuffer[InternalRow]()
       rowCount = 0
     }

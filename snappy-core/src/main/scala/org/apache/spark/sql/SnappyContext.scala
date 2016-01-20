@@ -35,10 +35,10 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreRelation, ExternalStoreUtils, InMemoryAppendableRelation}
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.{DDLException, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
+import org.apache.spark.sql.execution.{datasources, ExtractPythonUDFs, ConnectionPool}
+import org.apache.spark.sql.execution.datasources.{PreWriteCheck, ResolveDataSource, DDLException, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ResolveHiveWindowFunction, ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
@@ -589,8 +589,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
    */
   def dropIndexOfTable(sql: String): Unit = {
-    //println("drop-index" + " sql=" + sql)
-
     var conn: Connection = null
     try {
       val connProperties =
@@ -672,6 +670,27 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
+    }
+  }
+
+  /**
+   * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
+   * @todo provide an example : upsert a DF using foreachPartition...
+   *       {{{
+   *         someDataFrame.foreachPartition (x => snappyContext.put
+   *            ("MyTable", x.toSeq)
+   *         )
+   *       }}}
+   * @param tableName
+   * @param rows
+   * @return
+   */
+  def put(tableName: String, rows: Row*): Int = {
+    val plan = catalog.lookupRelation(tableName)
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(r: RowPutRelation, _) => r.put(rows)
+      case _ => throw new AnalysisException(
+        s"$tableName is not a row upsertable table")
     }
   }
 
@@ -914,6 +933,14 @@ object SnappyContext extends Logging {
     }
   }
 
+  /**
+   * @todo document me
+   * @return
+   */
+  def getAnyInstance(): Option[SnappyContext] = {
+    val gnc = _anySNContext
+    if (gnc != null) Some(gnc) else None
+  }
 
   /**
    * @todo document me
@@ -1053,10 +1080,22 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
       // schema of the relation.
       if (l.output.size != child.output.size) {
         throw new AnalysisException(s"$l requires that the query in the " +
-            "SELECT clause of the INSERT INTO/OVERWRITE statement " +
+            "SELECT clause of the INSERT/PUT INTO/OVERWRITE statement " +
             "generates the same number of columns as its schema.")
       }
       PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
+
+//    // We are inserting into an PutRelation or HadoopFsRelation.
+//    case i@PutIntoTable(l@LogicalRelation(_: InsertableRelation |
+//                                             _: HadoopFsRelation, _), _, child, _, _) =>
+//      // First, make sure the data to be inserted have the same number of fields with the
+//      // schema of the relation.
+//      if (l.output.size != child.output.size) {
+//        throw new AnalysisException(s"$l requires that the query in the " +
+//            "SELECT clause of the PUT INTO/OVERWRITE statement " +
+//            "generates the same number of columns as its schema.")
+//      }
+//      PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
   }
 }
 
