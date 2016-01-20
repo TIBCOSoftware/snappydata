@@ -15,7 +15,7 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
       UTF8String.fromString(status.getUser().getName),
       UTF8String.fromString(status.getUser.getLang),
       status.getRetweetCount, UTF8String.fromString(
-        status.getHashtagEntities.mkString(",")))))
+        status.getHashtagEntities.map(_.getText).mkString(",")))))
   }
 
 }
