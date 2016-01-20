@@ -51,13 +51,10 @@ class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
       put | cte | dmlForExternalTable
 
-//  protected lazy val put: Parser[LogicalPlan] =
-//    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~ select ^^ {
-//      case o ~ r ~ s => PutIntoTable(r, Map.empty[String, Option[String]], s, o, false)
-protected lazy val put: Parser[LogicalPlan] =
-  PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~ select ^^ {
-    case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]], s, o, false)
-  }
+  protected lazy val put: Parser[LogicalPlan] =
+    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~ select ^^ {
+      case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]], s, o, false)
+    }
 
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
@@ -430,14 +427,6 @@ case class DMLExternalTable(
 
   override def output: Seq[Attribute] = child.output
 }
-
-//case class PutIntoTable(
-//    override val table: LogicalPlan,
-//    override val partition: Map[String, Option[String]],
-//    override val child: LogicalPlan,
-//    override val overwrite: Boolean,
-//    override val ifNotExists: Boolean)
-//    extends InsertIntoTable(table, partition, child, overwrite, ifNotExists)
 
 private[sql] case class CreateStreamTable(streamIdent: TableIdentifier,
     userColumns: Option[StructType],

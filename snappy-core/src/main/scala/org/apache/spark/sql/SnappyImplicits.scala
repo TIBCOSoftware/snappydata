@@ -115,12 +115,6 @@ object snappy extends Serializable {
       val overwrite = dfWriter.mode == SaveMode.Overwrite
       val df = dfWriter.df
       df.sqlContext.executePlan(
-//        PutIntoTable(
-//          UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
-//          partitions.getOrElse(Map.empty[String, Option[String]]),
-//          df.logicalPlan,
-//          overwrite,
-//          ifNotExists = false)).toRdd
       InsertIntoTable(
         UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
         partitions.getOrElse(Map.empty[String, Option[String]]),
