@@ -75,9 +75,9 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, v)
 
   override def readDVDArray(dvds: Array[DataValueDescriptor],
-      in: ByteArrayDataInput, numEightColGroups: Int,
+      types: Array[Int], in: ByteArrayDataInput, numEightColGroups: Int,
       numPartialCols: Int): Unit = {
-    SparkSQLExecuteImpl.readDVDArray(dvds, in, numEightColGroups,
+    SparkSQLExecuteImpl.readDVDArray(dvds, types, in, numEightColGroups,
       numPartialCols)
   }
 

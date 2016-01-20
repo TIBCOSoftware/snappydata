@@ -36,30 +36,43 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "accessToken '***REMOVED***', " +
         "accessTokenSecret '***REMOVED***', " +
         "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
-    s.execute("streaming start")
-
     s.execute("create topk table topkTweets on tweetsTable options(" +
         s"key 'hashtag', epoch '${System.currentTimeMillis()}', " +
         "timeInterval '2000ms', size '10')")
+
+    s.execute("streaming start")
+
     for (a <- 1 to 5) {
+
       Thread.sleep(2000)
-      s.execute("select text, fullName from tweetsTable where text like '%e%'")
+
+      s.execute("select hashtag, count(hashtag) as cht from tweetsTable " +
+          "group by hashtag order by cht desc limit 10")
+      println("\n\n-----  TOP Tweets  -----\n")
       var rs = s.getResultSet
+      if (a == 5) assert(rs.next)
+      while (rs.next()) {
+        println(s"${rs.getString(1)} ; ${rs.getInt(2)}")
+      }
+
+      s.execute("select * from topkTweets order by EstimatedValue desc")
+      println("\n\n-----  TOPK Tweets  -----\n")
+      rs = s.getResultSet
+      var numResults = 0
+      while (rs.next()) {
+        println(s"${rs.getString(1)} ; ${rs.getLong(2)} ; ${rs.getString(3)}")
+        numResults += 1
+      }
+      println(s"Num results=$numResults")
+      assert(numResults <= 10)
+
+      s.execute("select text, fullName from tweetsTable where text like '%e%'")
+      rs = s.getResultSet
       if (a == 5) assert(rs.next)
       while (rs.next()) {
         rs.getString(1)
         rs.getString(2)
       }
-      s.execute("select * from topkTweets")
-      println("\n\n-----  TOPK Tweets  -----\n")
-      rs = s.getResultSet
-      var numResults = 0
-      while (rs.next()) {
-        println(s"${rs.getString(1)} ; ${rs.getLong(2)} ; ${rs.getObject(3)}")
-        numResults += 1
-      }
-      println(s"Num results=$numResults")
-      assert(numResults <= 10)
     }
     s.execute("streaming stop")
     s.execute("drop table tweetsTable")

@@ -171,6 +171,7 @@ class JDBCMutableRelation(
   // at least the insert can be split into batches and modelled as an RDD
  // TODO: Suranjan common code in  ColumnFormatRelation too
   override def insert(rows: Seq[Row]): Int = {
+
     val numRows = rows.length
     if (numRows == 0) {
       throw new IllegalArgumentException(

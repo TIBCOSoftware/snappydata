@@ -34,6 +34,7 @@ import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
 
+  protected val PUT = Keyword("PUT")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
   // Added for streaming window CQs
@@ -47,10 +48,17 @@ class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
   override val lexical = new SnappyLexical(caseSensitive)
 
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
-      cte | dmlForExternalTable
+      put | cte | dmlForExternalTable
+
+  protected lazy val put: Parser[LogicalPlan] =
+    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~
+        select ^^ {
+      case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]], s, o, false)
+    }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~ wholeInput ^^ {
+    (INSERT ~> INTO | PUT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~
+        wholeInput ^^ {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
     }
 
