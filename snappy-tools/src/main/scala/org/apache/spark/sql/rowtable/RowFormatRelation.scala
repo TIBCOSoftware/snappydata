@@ -29,8 +29,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.execution.PartitionedDataSourceScan
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
+import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
+import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, JDBCPartition}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -66,11 +66,15 @@ class RowFormatRelation(
       connProperties,
       hikariCP,
       origOptions,
-      sqlContext) with PartitionedDataSourceScan {
+      sqlContext)
+    with PartitionedDataSourceScan
+    with RowPutRelation {
 
   override def toString: String = s"RowFormatRelation[$table]"
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
+
+  final val putStr = ExternalStoreUtils.getPutString(table, schema)
 
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
@@ -124,6 +128,59 @@ class RowFormatRelation(
       case _ => Seq.empty[String]
     }
     partitionColumn
+  }
+
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
+   * @param data the DataFrame to be upserted
+   *
+   * @return number of rows upserted
+   */
+
+  def put(data: DataFrame): Unit = {
+    StoreUtils.saveTable(data, url, table, connProperties, true)
+  }
+
+
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
+   * @param rows the rows to be upserted
+   *
+   * @return number of rows upserted
+   */
+  override def put(rows: Seq[Row]): Int = {
+    val numRows = rows.length
+    if (numRows == 0) {
+      throw new IllegalArgumentException(
+        "RowFormatRelation.put: no rows provided")
+    }
+    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+      poolProperties, connProperties, hikariCP)
+    try {
+      val stmt = connection.prepareStatement(putStr)
+      var result = 0
+      if (numRows > 1) {
+        for (row <- rows) {
+          ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
+            row, dialect)
+          stmt.addBatch()
+        }
+        val putCounts = stmt.executeBatch()
+        result = putCounts.length
+      } else {
+        ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
+          rows.head, dialect)
+        result = stmt.executeUpdate()
+      }
+      stmt.close()
+      result
+    } finally {
+      connection.close()
+    }
   }
 }
 
