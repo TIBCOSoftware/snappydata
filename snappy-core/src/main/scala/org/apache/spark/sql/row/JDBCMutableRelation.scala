@@ -267,18 +267,21 @@ class JDBCMutableRelation(
   }
 
   override def destroy(ifExists: Boolean): Unit = {
-    // clean up the connection pool on executors first
-    Utils.mapExecutors(sqlContext,
-      JDBCMutableRelation.removePool(table)).count()
-    // then on the driver
-    JDBCMutableRelation.removePool(table)
     // drop the external table using a non-pool connection
     val conn = ExternalStoreUtils.getConnection(url, connProperties,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      // clean up the connection pool on executors first
+      Utils.mapExecutors(sqlContext,
+        JDBCMutableRelation.removePool(table)).count()
+      // then on the driver
+      JDBCMutableRelation.removePool(table)
     } finally {
-      conn.close()
+      try {
+        JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      } finally {
+        conn.close()
+      }
     }
   }
 

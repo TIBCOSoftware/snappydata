@@ -38,6 +38,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.{Logging, SparkEnv}
+
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
@@ -270,14 +271,19 @@ object SparkSQLExecuteImpl {
         } else {
           InternalDataSerializer.writeSignedVL(-1, hdos)
         }
-      case IntegerType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
-      case LongType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case TimestampType => InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
-      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(colIndex, t.precision,
-        t.scale).toJavaBigDecimal, hdos)
+      case IntegerType =>
+        InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
+      case LongType =>
+        InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
+      case TimestampType =>
+        InternalDataSerializer.writeSignedVL(row.getLong(colIndex), hdos)
+      case t: DecimalType => DataSerializer.writeObject(row.getDecimal(
+        colIndex, t.precision, t.scale).toJavaBigDecimal, hdos)
       case BooleanType => hdos.writeBoolean(row.getBoolean(colIndex))
-      case DateType => InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
-      case ShortType => InternalDataSerializer.writeSignedVL(row.getShort(colIndex), hdos)
+      case DateType =>
+        InternalDataSerializer.writeSignedVL(row.getInt(colIndex), hdos)
+      case ShortType =>
+        InternalDataSerializer.writeSignedVL(row.getShort(colIndex), hdos)
       case ByteType => hdos.writeByte(row.getByte(colIndex))
       case FloatType => hdos.writeFloat(row.getFloat(colIndex))
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
@@ -349,7 +355,7 @@ object SparkSQLExecuteImpl {
             val utfLen = in.readInt()
             if (utfLen >= 0) {
               val pos = in.position()
-              dvd.setValue(new String(in.array(), pos, utfLen, "utf-8"))
+              dvd.readBytes(in.array(), pos, utfLen)
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()
@@ -366,7 +372,7 @@ object SparkSQLExecuteImpl {
 }
 
 class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
-    partitionBlockIds: Array[RDDBlockId]) extends Logging with Serializable {
+    partitionBlockIds: Array[RDDBlockId]) extends Serializable {
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
     SnappyUIUtils.withNewExecutionId(df.sqlContext, df.queryExecution) {
@@ -411,18 +417,20 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
 }
 
 object SnappyContextPerConnection {
-  private lazy val concurrentMap = new java.util.concurrent.ConcurrentHashMap[Long, SnappyContext]()
+
+  private lazy val connectionIdMap =
+    new java.util.concurrent.ConcurrentHashMap[Long, SnappyContext]()
 
   def getSnappyContextForConnection(connectionID: Long): SnappyContext = {
-    var context = concurrentMap.get(connectionID)
+    var context = connectionIdMap.get(connectionID)
     if (context == null) {
       context = SnappyContext.getOrCreate(null).newSession()
-      concurrentMap.put(connectionID, context)
+      connectionIdMap.put(connectionID, context)
     }
     context
   }
 
   def removeSnappyContext(connectionID: Long): Unit = {
-    concurrentMap.remove(connectionID)
+    connectionIdMap.remove(connectionID)
   }
 }

@@ -34,7 +34,7 @@ abstract class MutableRelationProvider
     with CreatableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String) = {
+      options: Map[String, String], schema: String): JDBCMutableRelation = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
     val partitionColumn = parameters.remove("partitioncolumn")
