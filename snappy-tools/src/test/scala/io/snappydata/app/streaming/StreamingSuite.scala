@@ -92,7 +92,7 @@ with BeforeAndAfterAll with BeforeAndAfter {
     ssnc.sql("drop table tableStream2")
   }
 
-  ignore("SNAP-408") {
+  test("SNAP-408") {
     ssnc.sql("create stream table tableStream " +
         "(id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) " +
@@ -107,6 +107,9 @@ with BeforeAndAfterAll with BeforeAndAfter {
       Thread.sleep(2000)
       ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
     }
+    // try drop from another streaming context
+    SnappyStreamingContext.stop(stopSparkContext = false, stopGracefully = true)
+    ssnc = SnappyStreamingContext(snc, batchDuration)
     ssnc.sql("drop table tableStream")
     val thrown = intercept[Exception] {
       ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
