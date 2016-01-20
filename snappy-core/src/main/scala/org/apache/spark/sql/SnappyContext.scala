@@ -28,7 +28,6 @@ import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
@@ -75,8 +74,10 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
 class SnappyContext protected[spark](@transient override val sparkContext: SparkContext,
     override val listener: SQLListener,
     override val isRootContext: Boolean ,
-    val snappyContextFunctions: SnappyContextFunctions = GlobalSnappyInit.getSnappyContextFunctionsImpl)
-    extends SQLContext(sparkContext, snappyContextFunctions.getSnappyCacheManager, listener, isRootContext)
+    val snappyContextFunctions: SnappyContextFunctions =
+                 GlobalSnappyInit.getSnappyContextFunctionsImpl)
+    extends SQLContext(sparkContext, snappyContextFunctions.getSnappyCacheManager,
+      listener, isRootContext)
     with Serializable with Logging {
 
   self =>
@@ -571,8 +572,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
    */
   def dropIndexOfTable(sql: String): Unit = {
-    //println("drop-index" + " sql=" + sql)
-
     var conn: Connection = null
     try {
       val connProperties =
@@ -616,6 +615,29 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
+    }
+  }
+
+  /**
+   * :: DeveloperApi ::
+   * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
+   * @todo provide an example : upsert a DF using foreachPartition...
+   *       {{{
+   *         someDataFrame.foreachPartition (x => snappyContext.put
+   *            ("MyTable", x.toSeq)
+   *         )
+   *       }}}
+   * @param tableName
+   * @param rows
+   * @return
+   */
+  @DeveloperApi
+  def put(tableName: String, rows: Row*): Int = {
+    val plan = catalog.lookupRelation(tableName)
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(r: RowPutRelation, _) => r.put(rows)
+      case _ => throw new AnalysisException(
+        s"$tableName is not a row upsertable table")
     }
   }
 
@@ -714,17 +736,20 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
  */
 object GlobalSnappyInit {
 
-  private val aqpContextFunctionImplClass = "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
-  private[spark] def getSnappyContextFunctionsImpl : SnappyContextFunctions = {
-     Try {
+  private val aqpContextFunctionImplClass =
+    "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
+
+  private[spark] def getSnappyContextFunctionsImpl: SnappyContextFunctions = {
+    Try {
       val mirror = u.runtimeMirror(getClass.getClassLoader)
-      val cls = mirror.classSymbol(Class.forName(aqpContextFunctionImplClass))
+      val cls = mirror.classSymbol(org.apache.spark.util.Utils.
+          classForName(aqpContextFunctionImplClass))
       val clsType = cls.toType
       val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
       val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
       val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
       runtimeCtr().asInstanceOf[SnappyContextFunctions]
-    }  match {
+    } match {
       case Success(v) => v
       case Failure(_) => SnappyContextDefaultFunctions
     }
@@ -775,8 +800,6 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
-
-  var SnappySC:SnappyContext = null
 
   private[this] val contextLock = new AnyRef
 
@@ -850,7 +873,6 @@ object SnappyContext extends Logging {
       }
     }
   }
-
 
   /**
    * @todo document me
@@ -990,7 +1012,7 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
       // schema of the relation.
       if (l.output.size != child.output.size) {
         throw new AnalysisException(s"$l requires that the query in the " +
-            "SELECT clause of the INSERT INTO/OVERWRITE statement " +
+            "SELECT clause of the INSERT/PUT INTO/OVERWRITE statement " +
             "generates the same number of columns as its schema.")
       }
       PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
