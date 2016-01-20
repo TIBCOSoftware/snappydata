@@ -935,15 +935,6 @@ object SnappyContext extends Logging {
 
   /**
    * @todo document me
-   * @return
-   */
-  def getAnyInstance(): Option[SnappyContext] = {
-    val gnc = _anySNContext
-    if (gnc != null) Some(gnc) else None
-  }
-
-  /**
-   * @todo document me
    * @param url
    * @param sc
    */
@@ -1084,18 +1075,6 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
             "generates the same number of columns as its schema.")
       }
       PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
-
-//    // We are inserting into an PutRelation or HadoopFsRelation.
-//    case i@PutIntoTable(l@LogicalRelation(_: InsertableRelation |
-//                                             _: HadoopFsRelation, _), _, child, _, _) =>
-//      // First, make sure the data to be inserted have the same number of fields with the
-//      // schema of the relation.
-//      if (l.output.size != child.output.size) {
-//        throw new AnalysisException(s"$l requires that the query in the " +
-//            "SELECT clause of the PUT INTO/OVERWRITE statement " +
-//            "generates the same number of columns as its schema.")
-//      }
-//      PreInsertCastAndRename.castAndRenameChildOutput(i, l.output, child)
   }
 }
 

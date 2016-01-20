@@ -48,9 +48,6 @@ object StoreStrategy extends Strategy {
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-//    case PutIntoTable(l @ LogicalRelation(t: RowPutRelation, _),
-//    part, query, overwrite, false) if part.isEmpty =>
-//      ExecutedCommand(PutIntoDataSource(l, query, overwrite)) :: Nil
     case InsertIntoTable(l @ LogicalRelation(t: RowPutRelation, _),
     part, query, overwrite, false) if part.isEmpty =>
       ExecutedCommand(PutIntoDataSource(l, query, overwrite)) :: Nil

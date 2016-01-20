@@ -140,7 +140,6 @@ class RowFormatRelation(
    */
 
   def put(data: DataFrame): Unit = {
-    println("SKSK putting df in gemxd")
     createTable(mode)
     JdbcUtils.saveTable(data, url, table, connProperties, true)
   }
