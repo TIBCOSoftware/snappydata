@@ -16,11 +16,10 @@
  */
 package org.apache.spark.sql.sources
 
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, _}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
-
 /**
  * Support for DML and other operations on external tables.
  *
@@ -48,6 +47,14 @@ object StoreStrategy extends Strategy {
 
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
+
+//    case PutIntoTable(l @ LogicalRelation(t: RowPutRelation, _),
+//    part, query, overwrite, false) if part.isEmpty =>
+//      ExecutedCommand(PutIntoDataSource(l, query, overwrite)) :: Nil
+    case InsertIntoTable(l @ LogicalRelation(t: RowPutRelation, _),
+    part, query, overwrite, false) if part.isEmpty =>
+      ExecutedCommand(PutIntoDataSource(l, query, overwrite)) :: Nil
+
     case _ => Nil
   }
 }
@@ -60,11 +67,35 @@ private[sql] case class ExternalTableDMLCmd(
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
       case relation: SingleRowInsertableRelation => relation.executeUpdate(command)
-      case relation: RowPutRelation => relation.put(command)
+      //this may be unnecessary as RowPutRelation is anyway SingleRowInsertableRelation
+      case relation: RowPutRelation => relation.executeUpdate(command)
       case other => throw new AnalysisException("DML support requires " +
           "UpdatableRelation/SingleRowInsertableRelation/RowPutRelation" +
           " but found " + other)
     }
     Seq.empty
+  }
+}
+
+/**
+ * Puts the results of `query` in to a relation that extends [[RowPutRelation]].
+ */
+private[sql] case class PutIntoDataSource(
+    logicalRelation: LogicalRelation,
+    query: LogicalPlan,
+    overwrite: Boolean)
+    extends RunnableCommand {
+
+  override def run(sqlContext: SQLContext): Seq[Row] = {
+    val relation = logicalRelation.relation.asInstanceOf[RowPutRelation]
+    val data = DataFrame(sqlContext, query)
+    // Apply the schema of the existing table to the new data.
+    val df = sqlContext.internalCreateDataFrame(data.queryExecution.toRdd, logicalRelation.schema)
+    relation.put(df)
+
+    // Invalidate the cache.
+    sqlContext.cacheManager.invalidateCache(logicalRelation)
+
+    Seq.empty[Row]
   }
 }

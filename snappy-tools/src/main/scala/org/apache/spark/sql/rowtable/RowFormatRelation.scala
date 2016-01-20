@@ -30,7 +30,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
+import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, JDBCPartition}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -134,6 +134,22 @@ class RowFormatRelation(
    * If the row is already present, it gets updated otherwise it gets
    * inserted into the table represented by this relation
    *
+   * @param data the DataFrame to be upserted
+   *
+   * @return number of rows upserted
+   */
+
+  def put(data: DataFrame): Unit = {
+    println("SKSK putting df in gemxd")
+    createTable(mode)
+    JdbcUtils.saveTable(data, url, table, connProperties, true)
+  }
+
+
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
    * @param rows the rows to be upserted
    *
    * @return number of rows upserted
@@ -155,8 +171,8 @@ class RowFormatRelation(
             row, dialect)
           stmt.addBatch()
         }
-        val insertCounts = stmt.executeBatch()
-        result = insertCounts.length
+        val putCounts = stmt.executeBatch()
+        result = putCounts.length
       } else {
         ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
           rows.head, dialect)

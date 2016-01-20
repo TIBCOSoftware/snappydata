@@ -21,7 +21,9 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Subquery}
 
 /**
  * Implicit conversions used by Snappy.
@@ -97,6 +99,37 @@ object snappy extends Serializable {
     }
   }
 
+  implicit class DataFrameWriterExtensions(dfWriter: DataFrameWriter) extends Serializable {
+
+    /**
+     * Inserts the content of the [[DataFrame]] to the specified table. It requires
+     * that the schema of the [[DataFrame]] is the same as the schema of the table.
+     * If the row is already present then it is updated.
+     *
+     * This doesn't work for mode other than SaveMode.Overwrite.
+     *
+     * @since 1.6.0
+     */
+    def putInto(tableName: String): Unit = {
+      val partitions = dfWriter.partitioningColumns.map(_.map(col => col -> (None: Option[String])).toMap)
+      val overwrite = dfWriter.mode == SaveMode.Overwrite
+      val df = dfWriter.df
+      df.sqlContext.executePlan(
+//        PutIntoTable(
+//          UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
+//          partitions.getOrElse(Map.empty[String, Option[String]]),
+//          df.logicalPlan,
+//          overwrite,
+//          ifNotExists = false)).toRdd
+      InsertIntoTable(
+        UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
+        partitions.getOrElse(Map.empty[String, Option[String]]),
+        df.logicalPlan,
+        overwrite,
+        ifNotExists = false)).toRdd
+    }
+  }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
@@ -139,3 +172,4 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
   def appendToCache(tableName: String): Unit =
     context.appendToCache(df, tableName)
 }
+

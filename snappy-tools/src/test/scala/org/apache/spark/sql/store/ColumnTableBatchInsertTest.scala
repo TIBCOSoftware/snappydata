@@ -133,6 +133,7 @@ with BeforeAndAfter {
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")

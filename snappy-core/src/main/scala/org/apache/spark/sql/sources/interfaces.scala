@@ -18,7 +18,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.{Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -33,7 +33,7 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
   def insert(rows: Seq[Row]): Int
 }
 
-trait RowPutRelation {
+trait RowPutRelation extends SingleRowInsertableRelation {
   /**
    * If the row is already present, it gets updated otherwise it gets
    * inserted into the table represented by this relation
@@ -44,6 +44,15 @@ trait RowPutRelation {
    */
 
   def put(rows: Seq[Row]): Int
+
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
+   * @param df the <code>DataFrame</code> to be upserted
+   *
+   */
+  def put(df: DataFrame): Unit
 }
 
 @DeveloperApi
