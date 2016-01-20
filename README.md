@@ -128,7 +128,11 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 ```
 This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [docs_config]() discusses the custom configuration and startup options. 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can check the state of the cluster using [Pulse](link) - a graphical dashboard for monitoring vital, real-time health and performance of SnappyData members. You can also check the details of the embedded Spark driver using [Spark UI](localhost:4040)
+At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can also check the details of the embedded Spark driver which by default can be seen at http://hostnameOfLead:4040. You can explore the Spark SQL query plan, the job execution stages and storage details of column tables.
+
+<img src="docs/ExternalBlockStoreSize.png" width="800">
+
+<img src="docs/queryPlan.png" height="800">
 
 ### Interacting with SnappyData
 
@@ -180,6 +184,7 @@ _create table_ DDL allows tables to be partitioned on primary keys, custom parti
 -- DDL to create a row table
 CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
 ```
+
 #### Step 2 - Create column table, row table and load data
 > 
 > Default airline data shipped with product is of 15 MB compressed size. To download the larger data set run this command from the shell:
@@ -203,6 +208,8 @@ snappy> select count(*) from airlineref; //row count
 -- See the status of system
 snappy> run './quickstart/scripts/status_queries.sql'
 ```
+You can see the size of the column tables on Spark UI which by default can be seen at http://hostNameOfLead:4040. 
+
 #### OLAP and OLTP queries
 SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __ Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
 
@@ -236,9 +243,7 @@ select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrie
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
-
-You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution. (Todo: Add more details here .. image?).
-(Todo: If the storage tab will not work, suggest user to peek at the memory used using Jconsole?)
+You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution.
 
 ```sql
 -- Run a simple update SQL statement on the replicated row table.
@@ -549,12 +554,9 @@ $ quickstart/scripts/simulateTwitterStream
 SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. 
 
 ```bash
-# Start the Spark standalone cluster.
-$ sbin/start-all.sh 
-
-# Start the spark shell. Pass Snappy locator’s host:port as a conf parameter so that it can connect with the Snappy cluster.  
+# Start the spark shell in local mode. Pass Snappy locator’s host:port as a conf parameter.
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
-$ bin/spark-shell  --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
+$ bin/spark-shell  --master local[*] --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
 scala>
 Try few commands on the spark-shell 
 
@@ -593,8 +595,8 @@ localhost: The SnappyData Locator has stopped.
 >  - in All of this link to relevant sections in Spark guide.
 >  .- Explain the 'runJob' trait? What is a SnappySQLJob?
 >  - Mimic the sampling queries using API .... can we show them error related functions also using API
->  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
 >  Finally, we go through Spark standalone cluster working with Snappy .... 
+>  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
 
 
 -----
