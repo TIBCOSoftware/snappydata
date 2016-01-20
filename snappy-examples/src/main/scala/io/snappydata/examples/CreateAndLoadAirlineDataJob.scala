@@ -93,7 +93,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
   override def validate(snc: SnappyContext, config: Config): SparkJobValidation = {
 
     airlinefilePath = if (config.hasPath("airline_file")) {
-      config.getString("parquet_file")
+      config.getString("airline_file")
     } else {
       "../../quickstart/data/airlineParquetData"
     }
@@ -104,7 +104,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
     }
 
     airlinereftablefilePath = if (config.hasPath("airlineref_file")) {
-      config.getString("parquet_file")
+      config.getString("airlineref_file")
     } else {
       "../../quickstart/data/airportcodeParquetData"
     }
