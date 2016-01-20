@@ -106,6 +106,10 @@ private object StreamBaseRelation extends Logging {
     stream.foreachRDD { rdd => rdd }
   }
 
+  def clearStreams(): Unit = {
+    tableToStream.clear()
+  }
+
   def getRowStream(tableName: String): DStream[InternalRow] = {
     tableToStream.getOrElse(tableName, null)
   }
