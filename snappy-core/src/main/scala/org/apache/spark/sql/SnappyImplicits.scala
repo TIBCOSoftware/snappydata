@@ -112,6 +112,7 @@ object snappy extends Serializable {
      */
     def putInto(tableName: String): Unit = {
       val partitions = dfWriter.partitioningColumns.map(_.map(col => col -> (None: Option[String])).toMap)
+      //Suranjan: ignore mode altogether.
       val overwrite = dfWriter.mode == SaveMode.Overwrite
       val df = dfWriter.df
       df.sqlContext.executePlan(
@@ -119,7 +120,7 @@ object snappy extends Serializable {
         UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
         partitions.getOrElse(Map.empty[String, Option[String]]),
         df.logicalPlan,
-        overwrite,
+        true,
         ifNotExists = false)).toRdd
     }
   }
