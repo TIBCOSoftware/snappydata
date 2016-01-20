@@ -27,9 +27,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
 
-/**
- * Created by neeraj on 16/7/15.
- */
 trait ExternalStore extends Serializable {
 
   final val columnPrefix = "Col_"

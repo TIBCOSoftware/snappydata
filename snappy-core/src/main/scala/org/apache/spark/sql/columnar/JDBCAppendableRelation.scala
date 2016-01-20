@@ -49,9 +49,7 @@ case class JDBCAppendableRelation(
     userSchema: StructType,
     origOptions: Map[String, String],
     externalStore: ExternalStore,
-    @transient override val sqlContext: SQLContext)(
-    private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] =
-    new ArrayBuffer[RDD[UUIDRegionKey]]())
+    @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedFilteredScan
     with InsertableRelation
@@ -162,7 +160,7 @@ case class JDBCAppendableRelation(
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
     val output = df.logicalPlan.output
-    val cached = rdd.mapPartitionsPreserveWithIndex({ (split, rowIterator) =>
+    val cached = rdd.mapPartitionsPreserve(rowIterator => {
 
       def columnBuilders = output.map { attribute =>
         val columnType = ColumnType(attribute.dataType)
@@ -174,20 +172,14 @@ case class JDBCAppendableRelation(
       val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize, schema,
         new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
-      val batches = holder.asInstanceOf[CachedBatchHolder[ArrayBuffer[Serializable]]]
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
-    }, true)
+          .foreach(holder.appendRow((), _))
+      holder.forceEndOfBatch()
+      Iterator.empty
+    }, preservesPartitioning = true)
     // trigger an Action to materialize 'cached' batch
     cached.count()
-    appendUUIDBatch(cached.asInstanceOf[RDD[UUIDRegionKey]])
-  }
-
-
-  def appendUUIDBatch(batch: RDD[UUIDRegionKey]) = writeLock {
-    uuidList += batch
   }
 
   // truncate both actual and shadow table
@@ -197,7 +189,6 @@ case class JDBCAppendableRelation(
       case conn =>
         JdbcExtendedUtils.truncateTable(conn, table, dialect)
     })
-    uuidList.clear()
   }
 
   def createTable(mode: SaveMode): Unit = {
@@ -274,19 +265,22 @@ case class JDBCAppendableRelation(
    * dropping the external table that this relation represents.
    */
   override def destroy(ifExists: Boolean): Unit = {
-    // clean up the connection pool on executors first
-    Utils.mapExecutors(sqlContext,
-      JDBCAppendableRelation.removePool(table)).count()
-    // then on the driver
-    JDBCAppendableRelation.removePool(table)
     // drop the external table using a non-pool connection
     val conn = ExternalStoreUtils.getConnection(
       externalStore.connProperties.url, externalStore.connProperties.connProps,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+    // clean up the connection pool on executors first
+    Utils.mapExecutors(sqlContext,
+      JDBCAppendableRelation.removePool(table)).count()
+    // then on the driver
+    JDBCAppendableRelation.removePool(table)
     } finally {
-      conn.close()
+      try {
+        JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      } finally {
+        conn.close()
+      }
     }
   }
 }
@@ -324,7 +318,7 @@ class ColumnarRelationProvider
     val relation = new JDBCAppendableRelation(SnappyStoreHiveCatalog
         .processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName, mode, schema, options,
-      externalStore, sqlContext)()
+      externalStore, sqlContext)
     try {
       relation.createTable(mode)
       success = true

@@ -27,8 +27,6 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.SparkListenerUnpersistRDD
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
@@ -43,10 +41,10 @@ import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
-import org.apache.spark.sql.store.{StoreInitRDD, ExternalStore, StoreUtils}
+import org.apache.spark.sql.store.{ExternalStore, StoreInitRDD, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
-import org.apache.spark.storage.{StorageLevel, RDDInfo, BlockManagerId}
+import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -79,9 +77,8 @@ class ColumnFormatRelation(
     partitioningColumns: Seq[String],
     @transient override val sqlContext: SQLContext
     )
-    (private var uuidList: ArrayBuffer[RDD[UUIDRegionKey]] = new ArrayBuffer[RDD[UUIDRegionKey]]())
     extends JDBCAppendableRelation(table, provider, mode, userSchema
-      , origOptions, externalStore, sqlContext)()
+      , origOptions, externalStore, sqlContext)
     with PartitionedDataSourceScan with RowInsertableRelation {
 
   override def toString: String = s"ColumnFormatRelation[$table]"
@@ -160,7 +157,7 @@ class ColumnFormatRelation(
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      val (s, e, id) = StoreCallbacksImpl.stores.get(table.toUpperCase).get
+      val id = StoreCallbacksImpl.stores.get(table).get._3
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch, rddId = id)
       accumulated += uuid
@@ -266,16 +263,18 @@ class ColumnFormatRelation(
 
   // truncate both actual and shadow table
   override def truncate() = writeLock {
-    externalStore.tryExecute(ColumnFormatRelation.cachedBatchTableName(table), {
-      case conn =>
-        JdbcExtendedUtils.truncateTable(conn, ColumnFormatRelation.
-            cachedBatchTableName(table), dialect)
-    })
-    externalStore.tryExecute(table, {
-      case conn =>
-        JdbcExtendedUtils.truncateTable(conn, table, dialect)
-    })
-    uuidList.clear()
+    try {
+      externalStore.tryExecute(ColumnFormatRelation.cachedBatchTableName(table), {
+        case conn =>
+          JdbcExtendedUtils.truncateTable(conn, ColumnFormatRelation.
+              cachedBatchTableName(table), dialect)
+      })
+    } finally {
+      externalStore.tryExecute(table, {
+        case conn =>
+          JdbcExtendedUtils.truncateTable(conn, table, dialect)
+      })
+    }
   }
 
   /**
@@ -283,22 +282,30 @@ class ColumnFormatRelation(
    * dropping the external table that this relation represents.
    */
   override def destroy(ifExists: Boolean): Unit = {
-    // clean up the connection pool on executors first
-    Utils.mapExecutors(sqlContext,
-      ColumnFormatRelation.removePool(table)).count()
-    // then on the driver
-    ColumnFormatRelation.removePool(table)
-    // drop the external table using a non-pool connection
+    // use a non-pool connection for operations
     val conn = JdbcUtils.createConnection(externalStore.connProperties.url,
       externalStore.connProperties.connProps)
     try {
+      // clean up the connection pool on executors first
+      Utils.mapExecutors(sqlContext,
+        ColumnFormatRelation.removePool(table)).count()
+      // then on the driver
+      ColumnFormatRelation.removePool(table)
+      // drop the external table using a non-pool connection
       unregisterRDDInforForUI()
-      JdbcExtendedUtils.dropTable(conn, ColumnFormatRelation.
-          cachedBatchTableName(table), dialect, sqlContext,
-        ifExists)
-      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
     } finally {
-      conn.close()
+      try {
+        try {
+          JdbcExtendedUtils.dropTable(conn, ColumnFormatRelation.
+              cachedBatchTableName(table), dialect, sqlContext,
+            ifExists)
+        } finally {
+          JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext,
+            ifExists)
+        }
+      } finally {
+        conn.close()
+      }
     }
   }
 
@@ -358,25 +365,27 @@ class ColumnFormatRelation(
 
   def registerRDDInfoForUI(): Unit = {
     val sc = sqlContext.sparkContext
-    val storeEntry = StoreCallbacksImpl.stores.get(table)
-    if ( storeEntry != None) {
-      val (schema, externalStore, rddId) = storeEntry.get
-      val rddInfo = new RDDInfo(rddId, table.toUpperCase, numPartitions, StorageLevel.OFF_HEAP, Seq(), None)
-      rddInfo.numCachedPartitions = numPartitions
-      sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
+    StoreCallbacksImpl.stores.get(table) match {
+      case Some((_, _, rddId)) =>
+        val rddInfo = new RDDInfo(rddId, table, numPartitions,
+          StorageLevel.OFF_HEAP, Seq(), None)
+        rddInfo.numCachedPartitions = numPartitions
+        sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
+      case None => // nothing
     }
   }
 
   def unregisterRDDInforForUI(): Unit = {
     val sc = sqlContext.sparkContext
-    val storeEntry = StoreCallbacksImpl.stores.get(table)
-    if ( storeEntry != None) {
-      val (schema, externalStore, rddId) = storeEntry.get
-      sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
+    StoreCallbacksImpl.stores.get(table) match {
+      case Some((_, _, rddId)) =>
+        sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
+      case None => // nothing
     }
   }
 
-  //TODO: Suranjan make sure that this table doesn't evict to disk by setting some property, may be MemLRU?
+  //TODO: Suranjan make sure that this table doesn't evict to disk by
+  // setting some property, may be MemLRU?
   def createActualTable(tableName: String, externalStore: ExternalStore) = {
     // Create the table if the table didn't exist.
     var conn: Connection = null
@@ -441,7 +450,7 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   def registerStoreCallbacks(sqlContext: SQLContext,table: String,
       userSchema: StructType, externalStore: ExternalStore) = {
-    StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase, userSchema,
+    StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
       StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
   }
@@ -514,7 +523,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       externalStore,
       blockMap,
       partitioningColumn,
-      sqlContext)()
+      sqlContext)
     try {
       relation.createTable(mode)
       success = true
