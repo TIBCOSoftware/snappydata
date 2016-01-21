@@ -17,6 +17,7 @@
 package org.apache.spark.sql.streaming
 
 import scala.collection.concurrent.TrieMap
+import scala.util.control.NonFatal
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
@@ -66,21 +67,9 @@ with TableScan with DestroyRelation with Serializable with Logging {
     } */
   }
 
-  override def destroy(ifExists: Boolean): Unit = {
-    StreamBaseRelation.tableToStream.remove(tableName).foreach {
-      case inputStream: ReceiverInputDStream[_] =>
-        try {
-          val receiver = inputStream.getReceiver()
-          if (receiver != null) {
-            receiver.stop("destroyRelation")
-          }
-        } finally {
-          inputStream.stop()
-        }
-      case inputStream: InputDStream[_] => inputStream.stop()
-      case _ => // nothing
-    }
-  }
+  override def destroy(ifExists: Boolean): Unit =
+    StreamBaseRelation.tableToStream.remove(tableName).foreach(
+      StreamBaseRelation.stopStream)
 
   def truncate(): Unit = {
     throw new DDLException("Stream tables cannot be truncated")
@@ -91,7 +80,7 @@ private object StreamBaseRelation extends Logging {
 
   private val tableToStream = new TrieMap[String, DStream[InternalRow]]()
 
-  val LOCK = new Object()
+  private[streaming] val LOCK = new Object()
 
   var validTime: Time = null
 
@@ -110,9 +99,21 @@ private object StreamBaseRelation extends Logging {
     stream.foreachRDD { rdd => rdd }
   }
 
-  def clearStreams(): Unit = {
-    tableToStream.clear()
+  def stopStream(stream: DStream[_]): Unit = stream match {
+    case inputStream: ReceiverInputDStream[_] =>
+      try {
+        val receiver = inputStream.getReceiver()
+        if (receiver != null && !receiver.isStopped()) {
+          receiver.stop("destroyRelation")
+        }
+      } finally {
+        inputStream.stop()
+      }
+    case inputStream: InputDStream[_] => inputStream.stop()
+    case _ => // nothing
   }
+
+  def clearStreams(): Unit = tableToStream.clear()
 
   def getRowStream(tableName: String): DStream[InternalRow] = {
     tableToStream.getOrElse(tableName, null)
