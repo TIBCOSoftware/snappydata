@@ -19,6 +19,7 @@ package org.apache.spark.sql.hive
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util.concurrent.ExecutionException
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -44,7 +45,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.streaming.StreamBaseRelation
+import org.apache.spark.sql.streaming.StreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, Partition, TaskContext}
 
@@ -261,7 +262,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  protected[sql] val cachedDataSourceTables = {
+  private val cachedDataSourceTables = {
     val cacheLoader = new CacheLoader[QualifiedTableName, LogicalPlan]() {
       override def load(in: QualifiedTableName): LogicalPlan = {
         logDebug(s"Creating new cached data source for $in")
@@ -314,13 +315,35 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     CacheBuilder.newBuilder().maximumSize(1000).build(cacheLoader)
   }
 
+  private var relationDestroyVersion = 0
+
   private def getCachedHiveTable(table: QualifiedTableName): LogicalPlan = {
+    val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
+    sync.lock()
     try {
+      // if a relation has been destroyed (e.g. by another instance of catalog),
+      // then the cached ones can be stale, so check and clear entire cache
+      val globalVersion = SnappyStoreHiveCatalog.getRelationDestroyVersion
+      if (globalVersion > this.relationDestroyVersion) {
+        cachedDataSourceTables.invalidateAll()
+        this.relationDestroyVersion = globalVersion
+      }
+
       cachedDataSourceTables(table)
     } catch {
       case e@(_: UncheckedExecutionException | _: ExecutionException) =>
         throw e.getCause
+    } finally {
+      sync.unlock()
     }
+  }
+
+  private def registerRelationDestroy(): Unit = {
+    val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
+    if (globalVersion > this.relationDestroyVersion) {
+      cachedDataSourceTables.invalidateAll()
+    }
+    this.relationDestroyVersion = globalVersion + 1
   }
 
   def processTableIdentifier(tableIdentifier: String): String = {
@@ -462,6 +485,9 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def unregisterExternalTable(tableIdent: QualifiedTableName): Unit = {
+    cachedDataSourceTables.invalidate(tableIdent)
+    registerRelationDestroy()
+
     val dbName = tableIdent.getDatabase(client)
     try {
       client.dropTable(dbName, tableIdent.table)
@@ -705,7 +731,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
       case x: JDBCAppendableRelation => ExternalTableType.Column
-      case x: StreamBaseRelation => ExternalTableType.Stream
+      case x: StreamPlan => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
   }
@@ -736,6 +762,23 @@ object SnappyStoreHiveCatalog {
       tableIdentifier
     } else {
       Utils.toUpperCase(tableIdentifier)
+    }
+  }
+
+  private[this] var relationDestroyVersion = 0
+  private val relationDestroyLock = new ReentrantReadWriteLock()
+
+  private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
+
+  private[sql] def registerRelationDestroy(): Int = {
+    val sync = relationDestroyLock.writeLock()
+    sync.lock()
+    try {
+      val globalVersion = relationDestroyVersion
+      relationDestroyVersion += 1
+      globalVersion
+    } finally {
+      sync.unlock()
     }
   }
 
