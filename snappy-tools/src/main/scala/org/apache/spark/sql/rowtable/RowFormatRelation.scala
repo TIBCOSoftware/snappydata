@@ -74,7 +74,7 @@ class RowFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
 
-  final val putStr = ExternalStoreUtils.getPutString(table, schema)
+  final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
@@ -187,7 +187,7 @@ class RowFormatRelation(
 final class DefaultSource extends MutableRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: String) = {
+      options: Map[String, String], schema: String): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
@@ -212,7 +212,8 @@ final class DefaultSource extends MutableRelationProvider {
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 
-    new RowFormatRelation(connProperties.url,
+    var success = false
+    val relation = new RowFormatRelation(connProperties.url,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
       preservePartitions.exists(_.toBoolean),
@@ -225,5 +226,15 @@ final class DefaultSource extends MutableRelationProvider {
       options,
       blockMap,
       sqlContext)
+    try {
+      relation.tableSchema = relation.createTable(mode)
+      success = true
+      relation
+    } finally {
+      if (!success) {
+        // destroy the relation
+        relation.destroy(ifExists = true)
+      }
+    }
   }
 }
