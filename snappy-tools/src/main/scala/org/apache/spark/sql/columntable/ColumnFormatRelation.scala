@@ -274,6 +274,9 @@ class ColumnFormatRelation(
         case conn =>
           JdbcExtendedUtils.truncateTable(conn, table, dialect)
       })
+      // remove info from UI
+      unregisterRDDInfoForUI()
+      registerRDDInfoForUI()
     }
   }
 
@@ -292,7 +295,7 @@ class ColumnFormatRelation(
       // then on the driver
       ColumnFormatRelation.removePool(table)
       // drop the external table using a non-pool connection
-      unregisterRDDInforForUI()
+      unregisterRDDInfoForUI()
     } finally {
       try {
         try {
@@ -375,13 +378,14 @@ class ColumnFormatRelation(
     }
   }
 
-  def unregisterRDDInforForUI(): Unit = {
+  def unregisterRDDInfoForUI(): Unit = {
     val sc = sqlContext.sparkContext
     StoreCallbacksImpl.stores.get(table) match {
       case Some((_, _, rddId)) =>
         sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
       case None => // nothing
     }
+    StoreInitRDD.tableToIdMap.remove(table)
   }
 
   //TODO: Suranjan make sure that this table doesn't evict to disk by

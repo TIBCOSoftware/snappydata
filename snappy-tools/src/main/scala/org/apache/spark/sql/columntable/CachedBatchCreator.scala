@@ -39,7 +39,8 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
 class CachedBatchCreator(
-    val tableName: String,
+    val tableName: String, // internal column table name
+    val userTableName: String, // user given table name (row buffer)
     val schema: StructType,
     val externalStore: ExternalStore,
     val columnBatchSize: Int,
@@ -119,11 +120,11 @@ class CachedBatchCreator(
     def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
         batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
       var rddId = -1
-      val storeEntry = StoreCallbacksImpl.stores.get(tableName)
-      if (storeEntry != None) {
-        val (schema, externalStore, id) = storeEntry.get
-        rddId = id
+      StoreCallbacksImpl.stores.get(userTableName) match {
+        case Some((_, _, id)) => rddId = id
+        case None => // nothing
       }
+
       val uuid = externalStore.storeCachedBatch(tableName , batch, bucketID, Option(batchID), rddId)
       accumulated += uuid
     }
