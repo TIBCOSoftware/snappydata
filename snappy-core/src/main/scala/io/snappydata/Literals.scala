@@ -17,8 +17,6 @@
 package io.snappydata
 
 /**
- * Created by soubhikc on 11/11/15.
- *
  * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
  *

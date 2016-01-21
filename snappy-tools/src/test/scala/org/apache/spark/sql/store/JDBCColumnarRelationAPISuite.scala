@@ -25,8 +25,6 @@ import org.scalatest.BeforeAndAfterAll
 
 /**
  * Simple test to check column tables using non-Gem JDBC driver.
- *
- * Created by rishim on 3/11/15.
  */
 class JDBCColumnarRelationAPISuite
     extends SnappyFunSuite

@@ -19,9 +19,6 @@ package io.snappydata.benchmark
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{ResultSet, Statement}
 
-/**
- * Created by kishor on 27/10/15.
- */
 object TPCH_Memsql {
 
   var fOutStream = new FileOutputStream(new File(s"Performance.out"))

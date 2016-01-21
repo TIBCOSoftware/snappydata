@@ -20,9 +20,6 @@ import java.sql.DriverManager
 
 import io.snappydata.benchmark.TPCH_Memsql
 
-/**
- * Created by kishor on 9/12/15.
- */
 object Cluster_TPCH_Memsql_Query {
 
   def main(args: Array[String]) {

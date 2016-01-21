@@ -27,10 +27,6 @@ import kafka.javaapi.producer.Producer
 import kafka.producer.{KeyedMessage, ProducerConfig}
 import twitter4j._
 
-/**
- * Created by ymahajan on 28/10/15.
- */
-
 object KafkaProducer {
 
   //val KafkaTopic = "tweetstream"

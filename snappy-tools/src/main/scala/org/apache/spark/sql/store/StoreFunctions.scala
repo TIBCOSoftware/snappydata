@@ -20,9 +20,6 @@ import java.sql.Connection
 
 import scala.reflect.ClassTag
 
-/**
- * Created by rishim on 3/11/15.
- */
 object StoreFunctions {
 
   implicit def executeWithConnection[T: ClassTag](getConnection: () => Connection, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean = true): T = {

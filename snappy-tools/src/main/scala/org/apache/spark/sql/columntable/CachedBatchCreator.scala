@@ -38,10 +38,6 @@ import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
 
-/**
- * Created by skumar on 5/11/15.
- */
-
 class CachedBatchCreator(
     val tableName: String,
     val schema: StructType,

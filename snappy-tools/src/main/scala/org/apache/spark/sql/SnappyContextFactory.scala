@@ -23,18 +23,10 @@ import spark.jobserver.{ContextLike, SparkJobBase}
 
 import org.apache.spark.SparkConf
 
-
-/**
-  * Created by soubhikc on 22/10/15.
-  */
 trait SnappySQLJob extends SparkJobBase {
   type C = SnappyContext
 }
 
-
-/**
-  * Created by soubhikc on 22/10/15.
-  */
 class SnappyContextFactory extends SparkContextFactory {
 
   type C = SnappyContext with ContextLike

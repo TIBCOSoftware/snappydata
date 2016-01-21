@@ -24,9 +24,6 @@ import org.scalatest.BeforeAndAfter
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
 
-/**
- * Created by skumar on 13/11/15.
- */
 class ColumnTableBatchInsertTest extends SnappyFunSuite
 with Logging
 with BeforeAndAfter {

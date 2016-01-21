@@ -41,8 +41,6 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  * This class is responsible for initiating the executor process inside
  * the jvm. Also, if an executor has to be stopped, driverURL can be set as None
  * and it will take care of stopping the executor.
- *
- * Created by hemant on 15/10/15.
  */
 object ExecutorInitiator extends Logging {
 

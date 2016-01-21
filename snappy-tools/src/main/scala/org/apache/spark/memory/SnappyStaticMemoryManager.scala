@@ -21,9 +21,6 @@ import scala.collection.mutable
 import org.apache.spark.SparkConf
 import org.apache.spark.storage.{BlockStatus, BlockId}
 
-/**
- * Created by shirishd on 17/11/15.
- */
 private[spark] class SnappyStaticMemoryManager(
     override val conf: SparkConf,
     override val maxExecutionMemory: Long,

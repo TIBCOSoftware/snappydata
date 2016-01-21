@@ -20,9 +20,6 @@ import io.snappydata.benchmark.{TPCH_Snappy_Query, TPCHReplicatedTable, TPCHRowP
 
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
- * Created by kishor on 19/10/15.
- */
 object Cluster_TPCH_Snappy {
 
   def main (args: Array[String]) {

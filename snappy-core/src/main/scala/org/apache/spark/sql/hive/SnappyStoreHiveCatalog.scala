@@ -51,8 +51,6 @@ import org.apache.spark.{Logging, Partition, TaskContext}
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
  * stream/topK tables and returning LogicalPlan to materialize these entities.
- *
- * Created by Sumedh on 7/27/15.
  */
 class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {

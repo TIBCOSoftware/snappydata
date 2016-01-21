@@ -5,9 +5,6 @@ import scala.util.Random
 
 import org.apache.spark.sql.{Row, SnappyContext}
 
-/**
- * Created by hemant on 16/10/15.
- */
 class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   import ClusterMgrDUnitTest._
