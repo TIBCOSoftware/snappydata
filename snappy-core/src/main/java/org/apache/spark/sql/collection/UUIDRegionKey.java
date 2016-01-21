@@ -18,9 +18,6 @@ package org.apache.spark.sql.collection;
 
 import java.util.UUID;
 
-/**
- * Created by soubhikc on 27/7/15.
- */
 public final class UUIDRegionKey implements java.io.Serializable, Comparable<UUIDRegionKey> {
   private final UUID uuid;
   private final int bucketId;

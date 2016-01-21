@@ -4,9 +4,6 @@ import io.snappydata.dunit.cluster.ClusterManagerTestBase
 
 import org.apache.spark.sql.SaveMode
 
-/**
- * Created by rishim on 6/11/15.
- */
 class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {

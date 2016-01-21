@@ -29,8 +29,6 @@ import io.snappydata.LocalizedMessages
 
 /**
  * Launcher class encompassing snappy processes command lines.
- *
- * Created by soubhikc on 30/09/15.
  */
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 

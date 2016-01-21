@@ -26,9 +26,6 @@ import io.snappydata.core.LocalSparkConf
 
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
-/**
-  * Created by vivek on 16/10/15.
-  */
 class BasicStoreTest(s: String) extends TestUtil(s) {
 
   override protected def tearDown(): Unit = {

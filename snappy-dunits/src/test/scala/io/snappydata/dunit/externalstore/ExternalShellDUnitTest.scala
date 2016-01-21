@@ -17,8 +17,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
- *
- * Created by nthanvi on 20/10/15.
  */
 class ExternalShellDUnitTest(s: String)
     extends ClusterManagerTestBase(s) with Serializable {

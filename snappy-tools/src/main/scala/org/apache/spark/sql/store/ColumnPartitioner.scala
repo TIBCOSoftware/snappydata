@@ -19,9 +19,6 @@ package org.apache.spark.sql.store
 import org.apache.spark.Partitioner
 import org.apache.spark.util.Utils
 
-/**
- * Created by rishim on 7/10/15.
- */
 class ColumnPartitioner (partitions: Int) extends Partitioner {
   require(partitions >= 0, s"Number of partitions ($partitions) cannot be negative.")
 

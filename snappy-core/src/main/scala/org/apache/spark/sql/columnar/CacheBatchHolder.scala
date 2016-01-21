@@ -19,9 +19,6 @@ package org.apache.spark.sql.columnar
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.types.StructType
 
-/**
- * Created by skumar on 9/10/15.
- */
 private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int, schema: StructType,
     val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {

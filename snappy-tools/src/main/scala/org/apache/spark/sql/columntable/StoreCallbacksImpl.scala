@@ -38,9 +38,6 @@ import org.apache.spark.sql.types._
 
 import scala.collection.{JavaConversions, mutable}
 
-/**
- * Created by skumar on 6/11/15.
- */
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   @transient private var sqlContext = None: Option[SQLContext]
