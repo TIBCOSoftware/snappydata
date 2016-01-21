@@ -464,7 +464,7 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
     val tableName = if(table.indexOf('.') > 0){
       table.replace(".","__")
-    }else{
+    } else {
       table
     }
     INTERNAL_SCHEMA_NAME + "." + tableName +
