@@ -11,7 +11,7 @@
   * [Start the SnappyData Cluster](#start-the-snappydata-cluster)
     * [Step 1 - Start the SnappyData cluster](#step-1---start-the-snappydata-cluster)
   * [Interacting with SnappyData](#interacting-with-snappydata)
-  * [SnappyData with SQL](#snappydata-with-sql)
+  * [Getting Started with SQL](#getting-started-with-sql)
     * [Column and Row tables](#column-and-row-tables)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data)
     * [OLAP and OLTP queries](#olap-and-oltp-queries)
@@ -20,15 +20,18 @@
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
     * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming)
     * [Step 5 - Create and Query Stream Table Declaratively](#step-5---create-and-query-stream-table-declaratively)
-  * [SnappyData with Spark API](#snappydata-with-spark-api)
+  * [Getting Started with Spark API](#getting-started-with-spark-api)
     * [Column and Row tables](#column-and-row-tables-1)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
     * [OLAP and OLTP Store](#olap-and-oltp-store)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries-1)
     * [Approximate query processing (AQP)](#approximate-query-processing-aqp-1)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
-    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming)
-  * [Note: More TODOs for Hemant](#note-more-todos-for-hemant)
+    * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming)
+    * [Step 5 - Create and Query Stream Table](#step-5---create-and-query-stream-table)
+    * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
+    * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
+  * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
 
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics). 
@@ -125,7 +128,11 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 ```
 This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [docs_config]() discusses the custom configuration and startup options. 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can check the state of the cluster using [Pulse](link) - a graphical dashboard for monitoring vital, real-time health and performance of SnappyData members. You can also check the details of the embedded Spark driver using [Spark UI](localhost:4040)
+At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can also check the details of the embedded Spark driver which by default can be seen at http://hostnameOfLead:4040. You can explore the Spark SQL query plan, the job execution stages and storage details of column tables.
+
+<img src="docs/ExternalBlockStoreSize.png" width="800">
+
+<img src="docs/queryPlan.png" height="800">
 
 ### Interacting with SnappyData
 
@@ -140,13 +147,21 @@ Unlike Apache Spark, which is primarily a computational engine, SnappyData clust
 1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
-
-In this document, we showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+ 
 > #### Note
 > The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
-Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236)
+Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236). 
+However to host this data more resources are needed, configure snappy to start two servers with max heap size as 4G each. 
+```bash
+$ cat conf/servers
+# start two servers with total of 8G.
+yourhostName -J-Xmx4g
+yourhostName -J-Xmx4g 
+```
 
-### SnappyData with SQL
+In this document, we showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark and go directly to [Getting Started with Spark API](#getting-started-with-spark-api).
+
+### Getting Started with SQL
 
 For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster).
 
@@ -177,6 +192,7 @@ _create table_ DDL allows tables to be partitioned on primary keys, custom parti
 -- DDL to create a row table
 CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
 ```
+
 #### Step 2 - Create column table, row table and load data
 > 
 > Default airline data shipped with product is of 15 MB compressed size. To download the larger data set run this command from the shell:
@@ -200,6 +216,8 @@ snappy> select count(*) from airlineref; //row count
 -- See the status of system
 snappy> run './quickstart/scripts/status_queries.sql'
 ```
+You can see the size of the column tables on Spark UI which by default can be seen at http://hostNameOfLead:4040. 
+
 #### OLAP and OLTP queries
 SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __ Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
 
@@ -233,9 +251,7 @@ select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrie
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
-
-You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution. (Todo: Add more details here .. image?).
-(Todo: If the storage tab will not work, suggest user to peek at the memory used using Jconsole?)
+You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution.
 
 ```sql
 -- Run a simple update SQL statement on the replicated row table.
@@ -333,6 +349,8 @@ Ideally, we would like you to try this example using live twitter stream. For th
 
 Create a live twitter stream then start the streaming context. After starting the streaming context, you can query the current batch of stream using SQL. 
 ```sql
+--- Run the create and start script that has keys and secrets to fetch live twitter stream
+--- Note: Currently, we do not encrypt the keys. 
 snappy> run './quickstart/scripts/create_and_start_twitter_streaming.sql';
 
 snappy> run './quickstart/scripts/twitter_streaming_query.sql';
@@ -344,7 +362,7 @@ Create a file stream table that listens on a folder and then start the streaming
 ```sql
 snappy> run './quickstart/scripts/create_and_start_file_streaming.sql';
 ```
-Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table.
+Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 ```bash 
 $ quickstart/scripts/simulateTwitterStream 
 ```
@@ -353,7 +371,7 @@ Now query the current batch of the stream using the following script. simulateTw
 snappy> run './quickstart/scripts/file_streaming_query.sql';
 ```
 
-### SnappyData with Spark API 
+### Getting Started with Spark API 
 
 Snappy jobs are the primary mechanism to interact with SnappyData using Spark API. A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. 
 
@@ -390,7 +408,7 @@ val airlineCodeDF = snappyContext.createTable("AIRLINEREF", "row", schema, Map()
 >> export APP_PROPS="airline_file=destFolder"
 
 SQL scripts to create and load column and row tables.
-To do the same thing via Scala API, submit CreateAndLoadAirlineDataJob to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md)
+To do the same thing via Scala API, submit CreateAndLoadAirlineDataJob to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md). 
 
 ```bash
 $ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
@@ -412,6 +430,8 @@ $ bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4
 }
 # Tables are created
 ```
+The output of the job can be found in CreateAndLoadAirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+
 #### OLAP and OLTP Store
 
 SnappyContext extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
@@ -422,6 +442,13 @@ val resultDF = airlineDF.join(airlineCodeDF,
         agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
 ```
 For low latency OLTP queries in jobs, SnappyData won't schedule these queries instead execute them immediately on SnappyData servers without any scheduling overhead. Quite often, this may mean simply fetching or updating a row by hashing a key (in nanoseconds). 
+```scala
+// Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself as 'Delta America'. Update the row table.
+val filterExpr: String = " CODE ='DL'"
+val newColumnValues: Row = Row("Delta America")
+val updateColumns = "DESCRIPTION"
+snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
+```
 
 #### Step 3 - Run OLAP and OLTP queries
 
@@ -443,6 +470,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
   "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2"
 }
 ```
+The output of the job can be found in AirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
 
 #### Approximate query processing (AQP)
 OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
@@ -484,30 +512,101 @@ CreateAndLoadAirlineDataJob and AirlineDataJob executed in the previous sections
 
 > where/how can we show memory utilization with sampling. 
 
-#### Stream analytics using SQL and Spark Streaming
-SnappyData extends Spark streaming so stream definitions can be declaratively done using SQL and you can analyze these streams using SQL.  You can also dynamically run SQL queries on these streams. There is no need to learn Spark streaming APIs or statically define all the rules to be executed on these streams. 
+#### Stream analytics using Spark Streaming
 
-The example below consumes tweets, models the stream as a table (so it can be queried) and we then run ad-hoc SQL from remote clients on the current state of the stream (here the window interval is set to 5 seconds). Later,  in the Spark code section we further enhance to showcase "continuous queries" (CQ). Dynamic registration of CQs (from remote clients) will be available in the next release.
+SnappyData extends Spark streaming so stream definitions can be declaratively done using SQL and you can analyze these streams using SQL. Also, SnappyData introduces "continuous queries" (CQ) on the stream. One can define a continous query as a SQL query on the stream with window and slide extensions which is returned as SchemaDStream i.e. DStream with schema. SnappyData's extensions provide functionality to insert a SchemaDStream into snappy store. 
 
-```sql
-snappy> create stream table tweetstreamtable
-       (id long, text string, fullName string, 
-      country string, retweets int, hashtag string)
-      using twitter_stream options (
-        consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi',
-        consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', 
-        accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', 
-        accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', 
-        streamToRows 'io.snappydata.app.streaming.TweetToRowsConverter'
-      );
--- Should we showing option that simulates the stream first? Show consuming actual stream only in packaged example?
--- You can also just run script 'create_stream_table.sql'
-``` 
-> show sample dynamic SQL queries on this stream ....
+Dynamic registration of CQs (from remote clients) will be available in the next release.
 
-> NOTE: SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. 
-> But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. 
-> To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. 
+```scala
+// create a stream table declaratively 
+snsc.sql("CREATE STREAM TABLE RETWEETTABLE (retweetId long, " +
+    "retweetCnt int, retweetTxt string) USING file_stream " +
+    "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
+    "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
+    "directory '/tmp/copiedtwitterdata')");
+
+// Register a continous query on the stream table with window and slide parameters
+val retweetStream: SchemaDStream = snsc.registerCQ("SELECT retweetId, retweetCnt FROM RETWEETTABLE " +
+    "window (duration '2' seconds, slide '2' seconds)")
+
+// Create a row table to hold the retweets based on their id 
+snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId bigint PRIMARY KEY, " +
+    s"retweetCnt int, retweetTxt string) USING row OPTIONS ()")
+
+// Iterate over the stream and insert it into snappy store
+retweetStream.foreachDataFrame(df => {
+    df.write.mode(SaveMode.Append).saveAsTable(tableName)
+})
+```
+#### Step 5 - Create and Query Stream Table
+
+Ideally, we would like you to try this example using live twitter stream. For that, you would have to generate authorization keys and secrets on twitter apps. Alternatively, you can use use file stream scripts that simulate twitter stream by copying pre-loaded tweets in a tmp folder.
+
+##### Steps to work with live Twitter stream
+
+```bash
+# Set the keys and secrets to fetch live twitter stream
+# Note: Currently, we do not encrypt the keys. 
+$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
+
+# submit the TwitterPopularTagsJob that declares a stream table, registers CQ on it and stores the result in a gemxd table 
+# This job runs streaming for three minutes - TODO: Is this configurable
+$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+
+```
+##### Steps to work with simulated Twitter stream
+
+Submit the TwitterPopularTagsJob that declares a stream table, registers CQ on it and stores the result in a gemxd table. It starts the streaming and waits for three minutes (_TODO: Is this configurable_). 
+ 
+```bash
+# Submit the TwitterPopularTagsJob 
+$ ./bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+
+# Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
+$ quickstart/scripts/simulateTwitterStream 
+
+```
+The output of the job can be found in TwitterPopularTagsJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+
+#### Working with Spark shell and spark-submit
+
+SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. 
+
+```bash
+# Start the spark shell in local mode. Pass Snappy locator’s host:port as a conf parameter.
+# Change the UI port because the default port 4040 is being used by Snappy’s lead. 
+$ bin/spark-shell  --master local[*] --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
+scala>
+Try few commands on the spark-shell 
+
+# fetch the tables and using sqlContext which is going to be an instance of SnappyContext in this case
+scala> val airlinerefDF = sqlContext.table("airlineref").show
+scala> val airlineDF = sqlContext.table("airline").show
+
+# you can now work with the dataframes to fetch the data.
+```
+#### Step 6 - Submit a Spark App that interacts with SnappyData 
+
+```bash
+# Start the Spark standalone cluster.
+$ sbin/start-all.sh 
+# Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+
+# The results can be seen on the command line. 
+```
+
+### Final Step - Stop the SnappyData Cluster
+
+```
+$ sbin/snappy-stop-all.sh 
+localhost: The SnappyData Leader has stopped.
+localhost: The SnappyData Server has stopped.
+localhost: The SnappyData Locator has stopped.
+
+```
+
 
 > ### Note: More TODOs for Hemant
 > - explain and walk thru code to run olap queries using the DF API ... 
@@ -516,8 +615,8 @@ snappy> create stream table tweetstreamtable
 >  - in All of this link to relevant sections in Spark guide.
 >  .- Explain the 'runJob' trait? What is a SnappySQLJob?
 >  - Mimic the sampling queries using API .... can we show them error related functions also using API
->  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
 >  Finally, we go through Spark standalone cluster working with Snappy .... 
+>  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
 
 
 -----

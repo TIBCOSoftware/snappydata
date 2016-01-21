@@ -14,3 +14,7 @@ ORDER BY tagcount DESC limit 10;
 SELECT retweetId as RetweetId, retweetCnt as RetweetsCount, retweetTxt as Text 
 FROM RETWEET_FILESTREAMTABLE 
 ORDER BY RetweetsCount DESC limit 10;
+
+SELECT hashtag, count(hashtag) as TopKCount
+FROM FILESTREAM_TOPKTABLE 
+GROUP BY hashtag ORDER BY TopKCount limit 10;
