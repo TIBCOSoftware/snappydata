@@ -147,11 +147,19 @@ Unlike Apache Spark, which is primarily a computational engine, SnappyData clust
 1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
-
-In this document, we showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark. 
+ 
 > #### Note
 > The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
-Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236)
+Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236). 
+However to host this data more resources are needed, configure snappy to start two servers with max heap size as 4G each. 
+```bash
+$ cat conf/servers
+# start two servers with total of 8G.
+yourhostName -J-Xmx4g
+yourhostName -J-Xmx4g 
+```
+
+In this document, we showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark and go directly to [Getting Started with Spark API](#getting-started-with-spark-api).
 
 ### Getting Started with SQL
 
@@ -400,7 +408,7 @@ val airlineCodeDF = snappyContext.createTable("AIRLINEREF", "row", schema, Map()
 >> export APP_PROPS="airline_file=destFolder"
 
 SQL scripts to create and load column and row tables.
-To do the same thing via Scala API, submit CreateAndLoadAirlineDataJob to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md). The output of the job can be found in CreateAndLoadAirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+To do the same thing via Scala API, submit CreateAndLoadAirlineDataJob to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md). 
 
 ```bash
 $ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
@@ -422,6 +430,8 @@ $ bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4
 }
 # Tables are created
 ```
+The output of the job can be found in CreateAndLoadAirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+
 #### OLAP and OLTP Store
 
 SnappyContext extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
@@ -432,10 +442,17 @@ val resultDF = airlineDF.join(airlineCodeDF,
         agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
 ```
 For low latency OLTP queries in jobs, SnappyData won't schedule these queries instead execute them immediately on SnappyData servers without any scheduling overhead. Quite often, this may mean simply fetching or updating a row by hashing a key (in nanoseconds). 
+```scala
+// Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself as 'Delta America'. Update the row table.
+val filterExpr: String = " CODE ='DL'"
+val newColumnValues: Row = Row("Delta America")
+val updateColumns = "DESCRIPTION"
+snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
+```
 
 #### Step 3 - Run OLAP and OLTP queries
 
-You can query the tables using a scala program as well. See AirlineDataJob. The output of the job can be found in AirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+You can query the tables using a scala program as well. See AirlineDataJob. 
 ```bash
 $ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 { "status": "STARTED",
@@ -453,6 +470,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
   "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2"
 }
 ```
+The output of the job can be found in AirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
 
 #### Approximate query processing (AQP)
 OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
@@ -539,16 +557,18 @@ $ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopular
 ```
 ##### Steps to work with simulated Twitter stream
 
-Submit the TwitterPopularTagsJob that declares a stream table, registers CQ on it and stores the result in a gemxd table. It starts the streaming and waits for three minutes (_TODO: Is this configurable_). The output of the job can be found in TwitterPopularTagsJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+Submit the TwitterPopularTagsJob that declares a stream table, registers CQ on it and stores the result in a gemxd table. It starts the streaming and waits for three minutes (_TODO: Is this configurable_). 
  
 ```bash
 # Submit the TwitterPopularTagsJob 
-$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ ./bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
 
 ```
+The output of the job can be found in TwitterPopularTagsJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+
 #### Working with Spark shell and spark-submit
 
 SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. 

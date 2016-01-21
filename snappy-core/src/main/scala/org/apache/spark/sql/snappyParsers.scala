@@ -306,12 +306,6 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         }
     }
 
-  protected override lazy val tableIdentifier: Parser[TableIdentifier] =
-    (ident <~ ".").? ~ (ident <~ ".").? ~ ident ^^ {
-      case maybeDbName ~ maybeSchemaName ~ tableName =>
-        val schemaPrefix = maybeSchemaName.map(_ + '.').getOrElse("")
-        TableIdentifier(schemaPrefix + tableName, maybeDbName)
-    }
 
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
     def apply(in: Input): ParseResult[String] = {
