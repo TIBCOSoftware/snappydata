@@ -1,12 +1,14 @@
 package io.snappydata.examples
 
-import java.io.{PrintWriter}
+import java.io.PrintWriter
+
 import scala.util.{Failure, Success, Try}
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.SnappyAQP._
-import org.apache.spark.sql.{DataFrame, SnappySQLJob}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
+
+import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.{DataFrame, SnappySQLJob}
 
 /**
  * Fetches already created tables. Airline table is already persisted in

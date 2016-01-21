@@ -43,6 +43,8 @@ object Constant {
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
   val DEFAULT_SCHEMA = "APP"
+
+  val DEFAULT_CONFIDENCE: Double = 0.95
 }
 
 /**
