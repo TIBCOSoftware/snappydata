@@ -3,6 +3,7 @@
 ---- create file stream table and start streaming context ----
 ---------------------------------------------------------------------
 
+DROP TABLE IF EXISTS FILESTREAM_TOPKTABLE ;
 DROP TABLE IF EXISTS HASHTAG_FILESTREAMTABLE ;
 DROP TABLE IF EXISTS RETWEET_FILESTREAMTABLE ;
 
@@ -22,4 +23,7 @@ CREATE STREAM TABLE RETWEET_FILESTREAMTABLE
       rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow', 
       directory '/tmp/copiedtwitterdata');
 
-STREAMING START ;
+CREATE TOPK TABLE FILESTREAM_TOPKTABLE ON HASHTAG_FILESTREAMTABLE OPTIONS
+(key 'hashtag', timeInterval '2000ms', size '10' );
+
+STREAMING START;

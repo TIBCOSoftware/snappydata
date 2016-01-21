@@ -1,9 +1,7 @@
 package io.snappydata.examples
 
-import org.apache.spark.sql.{SnappyContext}
+import org.apache.spark.sql.{Row, SnappyContext, DataFrame}
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.{DataFrame}
-import org.apache.spark.sql.functions._
 
 /**
   * This application depicts how a Spark cluster can
@@ -38,10 +36,11 @@ object AirlineDataSparkApp {
     val totalTimeCol = (System.currentTimeMillis - start)
     println(s"Query time:${totalTimeCol}ms\n")
 
-    // Suppose a particular Airline company say 'Virgin America'
-    // re-brands itself as 'Virgin Airlines Inc.'. Update the row table.
-    snc.sql("UPDATE AIRLINEREF SET DESCRIPTION='Virgin Airlines Inc.' " +
-        "WHERE CAST(CODE AS VARCHAR(25))='VX'").collect
+    // Suppose a particular Airline company say 'Delta Air Lines Inc.'
+    // re-brands itself as 'Delta America'.Update the row table.
+    val query: String = " CODE ='DL'"
+    val newColumnValues: Row = Row("Delta America")
+    snc.update(rowTableName,query,newColumnValues,"DESCRIPTION")
 
     // Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
     val colResultAftUpd = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
