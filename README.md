@@ -8,7 +8,7 @@
 * [Key Features](#key-features)
 * [Getting started](#getting-started)
   * [Objectives](#objectives)
-  * [Start the SnappyData Cluster](#start-the-snappydata-cluster)
+  * [SnappyData Cluster](#snappydata-cluster)
     * [Step 1 - Start the SnappyData cluster](#step-1---start-the-snappydata-cluster)
   * [Interacting with SnappyData](#interacting-with-snappydata)
   * [Getting Started with SQL](#getting-started-with-sql)
@@ -96,17 +96,38 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 
 In this document, we discuss the features mentioned above and ask you to take steps to run the scripts that demonstrate these features. 
 
-> Note: Discuss local mode:  Like Spark, SnappyData can also be run in [“local” mode](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).  
+### SnappyData Cluster
+SnappyData, a database server cluster, has three main components - Locator, Server and Lead. 
 
-###Start the SnappyData Cluster
-SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Details of these components can be found [here](docs/architecture.md). 
+- **Locator**: Provides discovery service for the cluster. Informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
+- **Lead Node**: Acts as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
+- **Data Servers**: Hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
 
 ![ClusterArchitecture](docs/GettingStarted_Architecture.png)
 
+Details of about the architecture can be found [here](./docs/architecture.md). SnappyData also has multiple deployment options which can be found [here](./docs/deployment.md).
+
 #### Step 1 - Start the SnappyData cluster 
 
-> Note : The quick start scripts use ssh to start up various processes. By default, this requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable passwordless ssh 
+> ##### Note
+> The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
+Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236).
+> Default airline data shipped with product is of 15 MB compressed size. To download the larger data set run this command from the shell:
+>> $ ./download_full_airlinedata.sh full_dataset_folder
 
+>In case you are running Getting Started with full dataset, configure snappy to start two servers with max heap size as 4G each. 
+```bash
+$ cat conf/servers
+# Two servers with total of 8G.
+yourhostName -J-Xmx4g
+yourhostName -J-Xmx4g 
+```
+
+>##### Passwordless ssh
+>The quick start scripts use ssh to start up various processes. By default, this requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable passwordless ssh.
+
+
+The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [article](./docs/configuration.md) discusses the custom configuration and startup options.
 ```
 $ sbin/snappy-start-all.sh 
   (Roughly can take upto a minute. Associated logs are in the ‘work’ sub-directory)
@@ -125,8 +146,7 @@ localhost:   Distributed system now has 3 members.
 
 localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mbpro(56819:datastore)<v1>:39737
 
-```
-This script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [docs_config]() discusses the custom configuration and startup options. 
+``` 
 
 At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can also check the details of the embedded Spark driver which by default can be seen at http://hostnameOfLead:4040. You can explore the Spark SQL query plan, the job execution stages and storage details of column tables.
 
@@ -148,17 +168,6 @@ Unlike Apache Spark, which is primarily a computational engine, SnappyData clust
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
  
-> #### Note
-> The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
-Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236). 
-However to host this data more resources are needed, configure snappy to start two servers with max heap size as 4G each. 
-```bash
-$ cat conf/servers
-# start two servers with total of 8G.
-yourhostName -J-Xmx4g
-yourhostName -J-Xmx4g 
-```
-
 In this document, we showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark and go directly to [Getting Started with Spark API](#getting-started-with-spark-api).
 
 ### Getting Started with SQL
@@ -166,7 +175,7 @@ In this document, we showcase mostly the same set of features via Spark API or u
 For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster).
 
 ```sql
-// from the SnappyData base directory
+// Run from the SnappyData base directory
 $ ./bin/snappy-shell
 Version 2.0-SNAPSHOT.1
 snappy> 
@@ -187,18 +196,15 @@ snappy> show members;
 CREATE TABLE AIRLINE (<column definitions>) USING column OPTIONS(buckets '5') ;
 ```
 [Row tables](rowTables), unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.  
-_create table_ DDL allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](docs) for the details.
+_create table_ DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](./docs/rowAndColumnTables.md) for the details.
 ```sql
 -- DDL to create a row table
 CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
 ```
 
 #### Step 2 - Create column table, row table and load data
-> 
-> Default airline data shipped with product is of 15 MB compressed size. To download the larger data set run this command from the shell:
->> $ ./download_full_airlinedata.sh destFolder
 
-> Then, change the 'create_and_load_column_table.sql' script to point at this data set.
+> To run the scripts with full airline data set, change the 'create_and_load_column_table.sql' script to point at the data set that you had downloaded in Step 1.
 
 
 SQL scripts to create and load column and row tables.
@@ -206,12 +212,10 @@ SQL scripts to create and load column and row tables.
 -- Loads parquet formatted data into a temporary spark table 
 -- then saves it in  column table called Airline.
 snappy> run './quickstart/scripts/create_and_load_column_table.sql';
-snappy> select count(*) from airline; 
 
 -- Creates the airline code table. Row tables can be replicated to each node 
 -- so join processing with other tables can completely avoid shuffling 
 snappy> run './quickstart/scripts/create_and_load_row_table.sql';
-snappy> select count(*) from airlineref; //row count 
 
 -- See the status of system
 snappy> run './quickstart/scripts/status_queries.sql'
@@ -236,7 +240,7 @@ For low latency OLTP queries, the engine won't route it to the lead and instead 
 --- the airline code can be updated in the row table
 UPDATE AIRLINEREF SET DESCRIPTION='Delta America' WHERE CAST(CODE AS VARCHAR(25))='DL';
 ```
-Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to GemXD SQL reference](http://gemxd).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
+Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/index.html#reference/sql-language-reference.html).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
 
 #### Step 3 - Run OLAP and OLTP queries
  
@@ -251,7 +255,7 @@ select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrie
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
-You can explore the [Spark SQL query plan](http://localhost:4040/jobs/). Each query is executed as a Job and you can explore the different stages of the query execution.
+You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostnameOfLead:4040. Each query is executed as a Job and you can explore the different stages of the query execution.
 
 ```sql
 -- Run a simple update SQL statement on the replicated row table.
@@ -268,7 +272,7 @@ OLAP queries are expensive as they require traversing through large data sets an
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
 
 > #### Note
-> We recommend downloading the _onTime airline_ data for 2009-2015 which is about 50 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
+> We recommend downloading the _onTime airline_ data for 2009-2015 which is about 52 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
 
 
 The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
@@ -403,11 +407,9 @@ _create table_ DDL allows tables to be partitioned on primary keys, custom parti
 val airlineCodeDF = snappyContext.createTable("AIRLINEREF", "row", schema, Map())
 ```
 #### Step 2 - Create column table, row table and load data
-> 
-> Default airline data shipped with product is of 15 MB compressed size. To download the larger data set run this command from the shell:
->> $ ./download_full_airlinedata.sh destFolder
-> Then, set the following parameter before starting the job. 
->> export APP_PROPS="airline_file=destFolder"
+
+> To run the scripts with full airline data set, set the following config parameter to point at the data set that you had downloaded in Step 1.
+>> export APP_PROPS="airline_file=full_dataset_folder"
 
 SQL scripts to create and load column and row tables.
 To do the same thing via Scala API, submit CreateAndLoadAirlineDataJob to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md). 
@@ -426,13 +428,13 @@ $ bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4
   "classPath": "io.snappydata.examples.CreateAndLoadAirlineDataJob",
   "startTime": "2016-01-12T16:59:14.746+05:30",
   "context": "snappyContext1452598154529305363",
-  "result": "See /home/hemant/snappyhome/work/localhost-lead-1/CreateAndLoadAirlineDataJob.out",
+  "result": "See /snappy/work/localhost-lead-1/CreateAndLoadAirlineDataJob.out",
   "status": "FINISHED",
   "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 }
 # Tables are created
 ```
-The output of the job can be found in CreateAndLoadAirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+The output of the job can be found in CreateAndLoadAirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. You can see the size of the column tables on Spark UI which by default can be seen at http://hostNameOfLead:4040. 
 
 #### OLAP and OLTP Store
 
@@ -472,7 +474,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
   "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2"
 }
 ```
-The output of the job can be found in AirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. 
+The output of the job can be found in AirlineDataJob_timestamp.out in the lead directory which by default is SNAPPY_HOME/work/localhost-lead-*/. You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostNameOfLead:4040.
 
 #### Approximate query processing (AQP)
 OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
