@@ -19,7 +19,8 @@
     * [Approximate query processing (AQP)](#approximate-query-processing-aqp)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
     * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming)
-    * [Step 5 - Create and Query Stream Table Declaratively](#step-5---create-and-query-stream-table-declaratively)
+    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream)
+    * [Step 5 - Create and Query Stream Table and Top-K Declaratively](#step-5---create-and-query-stream-table-and-top-k-declaratively)
   * [Getting Started with Spark API](#getting-started-with-spark-api)
     * [Column and Row tables](#column-and-row-tables-1)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
@@ -28,7 +29,8 @@
     * [Approximate query processing (AQP)](#approximate-query-processing-aqp-1)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
     * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming)
-    * [Step 5 - Create and Query Stream Table](#step-5---create-and-query-stream-table)
+    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-1)
+    * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k-1")
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
     * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
@@ -345,7 +347,23 @@ snappy> SELECT hashtag, count(*) as tagcount
 ```
 Later, in the Spark code section we further enhance to showcase "continuous queries" (CQ). Dynamic registration of CQs (from remote clients) will be available in the next release.
 
-#### Step 5 - Create and Query Stream Table Declaratively 
+#### Top-K Elements in a Stream 
+
+Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found [here.](./docs/aqp.md)
+
+SnappyData provides DDL extensions to create Top-k structure. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using SQL queries. 
+
+```sql
+--- Create a topk table from a stream table
+CREATE TOPK TABLE filestream_topktable ON HASHTAG_FILESTREAMTABLE OPTIONS
+(key 'hashtag', timeInterval '2000ms', size '10' );
+--- Query a topk table 
+SELECT hashtag, COUNT(hashtag) AS TopKCount
+FROM filestream_topktable
+GROUP BY hashtag ORDER BY TopKCount limit 10;
+```
+ 
+#### Step 5 - Create and Query Stream Table and Top-K Declaratively 
 
 Ideally, we would like you to try this example using live twitter stream. Alternatively, you can use use file stream scripts that simulate twitter stream by copying pre-loaded tweets in a tmp folder. 
 
@@ -355,6 +373,7 @@ You would have to generate authorization keys and secrets on [twitter apps](http
 ```sql
 --- Run the create and start script that has keys and secrets to fetch live twitter stream
 --- Note: Currently, we do not encrypt the keys. 
+-- This also creates Topk structures
 snappy> run './quickstart/scripts/create_and_start_twitter_streaming.sql';
 
 snappy> run './quickstart/scripts/twitter_streaming_query.sql';
@@ -370,7 +389,7 @@ Run the following utility in another terminal that simulates a twitter stream by
 ```bash 
 $ quickstart/scripts/simulateTwitterStream 
 ```
-Now query the current batch of the stream using the following script. simulateTwitterStream script runs for only for a minute or so. Since our script is querying the current window, it will return no results after the streaming is over. 
+Now query the current batch of the stream using the following script. This also creates Topk structures. simulateTwitterStream script runs for only for a minute or so. Since our script is querying the current window, it will return no results after the streaming is over. 
 ```sql
 snappy> run './quickstart/scripts/file_streaming_query.sql';
 ```
@@ -541,7 +560,27 @@ retweetStream.foreachDataFrame(df => {
     df.write.mode(SaveMode.Append).saveAsTable(tableName)
 })
 ```
-#### Step 5 - Create and Query Stream Table
+#### Top-K Elements in a Stream 
+
+Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures. More details about SnappyData's implementation of top-k can be found [here.](./docs/aqp.md)
+
+SnappyData provides API in SnappyContext to create Top-k structure. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
+
+```scala
+--- Create a topk table from a stream table
+snappyContext.createApproxTSTopK("topktable", "hashtag",
+    Some(schema), Map(
+      "epoch" -> System.currentTimeMillis().toString,
+      "timeInterval" -> "2000ms",
+      "size" -> "10",
+      "basetable" -> "HASHTAGTABLE"
+    ))
+--- Query a topk table 
+val topKDF = snappyContext.queryApproxTSTopK("topktable",
+                System.currentTimeMillis - 2000,
+                System.currentTimeMillis)
+```
+#### Step 5 -  Create and Query Stream Table and Top-K
 
 Ideally, we would like you to try this example using live twitter stream. For that, you would have to generate authorization keys and secrets on twitter apps. Alternatively, you can use use file stream scripts that simulate twitter stream by copying pre-loaded tweets in a tmp folder.
 
@@ -552,14 +591,15 @@ Ideally, we would like you to try this example using live twitter stream. For th
 # Note: Currently, we do not encrypt the keys. 
 $ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
 
-# submit the TwitterPopularTagsJob that declares a stream table, registers CQ on it and stores the result in a gemxd table 
-# This job runs streaming for three minutes - TODO: Is this configurable
+# submit the TwitterPopularTagsJob that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
+# This job runs streaming for two minutes. 
 $ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 ```
+
 ##### Steps to work with simulated Twitter stream
 
-Submit the TwitterPopularTagsJob that declares a stream table, registers CQ on it and stores the result in a gemxd table. It starts the streaming and waits for three minutes (_TODO: Is this configurable_). 
+Submit the TwitterPopularTagsJob that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a gemxd table. It starts the streaming and waits for two minutes. 
  
 ```bash
 # Submit the TwitterPopularTagsJob 
@@ -601,17 +641,12 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 
 ### Final Step - Stop the SnappyData Cluster
 
-```
+```bash
 $ sbin/snappy-stop-all.sh 
 localhost: The SnappyData Leader has stopped.
 localhost: The SnappyData Server has stopped.
 localhost: The SnappyData Locator has stopped.
-
 ```
-
-> ### Note: More TODOs for Hemant
->  - Describe streaming --- this is quite different than SQL counterpart ....  The topK thing is quite unique ... describe the use case and walk thru code, etc.
-
 
 -----
 
