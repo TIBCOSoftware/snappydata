@@ -3,16 +3,16 @@
 ---- Get top 10 popular hashtags ------
 ------------------------------------------------------------
 
-SELECT hashtag, count(*) as tagcount 
-FROM HASHTAGTABLE 
-GROUP BY hashtag 
-ORDER BY tagcount DESC limit 10;
+SELECT hashtag, COUNT(*) AS tagcount
+FROM hashtagtable
+GROUP BY hashtag
+ORDER BY tagcount DESC LIMIT 10;
 
 --- Get the top 10 popular retweet -----
-SELECT retweetId as RetweetId, retweetCnt as RetweetsCount, retweetTxt as Text 
-FROM RETWEETTABLE 
-ORDER BY RetweetsCount DESC limit 10;
+SELECT retweetId AS RetweetId, retweetCnt AS RetweetsCount, retweetTxt AS Text
+FROM retweettable
+ORDER BY RetweetsCount DESC LIMIT 10;
 
-SELECT hashtag, count(hashtag) as TopKCount 
-FROM TOPKTABLE 
-GROUP BY hashtag ORDER BY TopKCount limit 10;
+SELECT hashtag, COUNT(hashtag) AS TopKCount
+FROM TOPKTABLE
+GROUP BY hashtag ORDER BY TopKCount LIMIT 10;

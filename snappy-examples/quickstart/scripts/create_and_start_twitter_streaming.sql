@@ -3,31 +3,33 @@
 ---- create file stream table and start streaming context ----
 ---------------------------------------------------------------------
 
-DROP TABLE IF EXISTS TOPKTABLE ;
-DROP TABLE IF EXISTS HASHTAGTABLE ;
-DROP TABLE IF EXISTS RETWEETTABLE ;
+DROP TABLE IF EXISTS topktable ;
+DROP TABLE IF EXISTS hashtagtable ;
+DROP TABLE IF EXISTS retweettable ;
 
 STREAMING INIT 2;
+-- Provide twitter credentials (consumerKey,consumerSecret,accessToken,accessTokenSecret)
+-- in create stream table hashtagtable and retweettable.
 
-CREATE STREAM TABLE HASHTAGTABLE 
-      (hashtag string) 
-    USING twitter_stream 
-    OPTIONS (consumerKey '***REMOVED***', 
-      consumerSecret '***REMOVED***', 
-      accessToken '***REMOVED***', 
-      accessTokenSecret '***REMOVED***', 
+CREATE STREAM TABLE hashtagtable
+      (hashtag STRING)
+    USING twitter_stream
+    OPTIONS (consumerKey 'consumerKey',
+      consumerSecret 'consumerSecret',
+      accessToken 'accessToken',
+      accessTokenSecret 'accessTokenSecret',
       rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow') ;
 
-CREATE STREAM TABLE RETWEETTABLE 
-      (retweetId long,retweetCnt int, retweetTxt string) 
-    USING twitter_stream 
-    OPTIONS (consumerKey '***REMOVED***',
-      consumerSecret '***REMOVED***', 
-      accessToken '***REMOVED***', 
-      accessTokenSecret '***REMOVED***', 
+CREATE STREAM TABLE retweettable
+      (retweetId LONG, retweetCnt INT, retweetTxt STRING)
+    USING twitter_stream
+    OPTIONS (consumerKey 'consumerKey',
+      consumerSecret 'consumerSecret',
+      accessToken 'accessToken',
+      accessTokenSecret 'accessTokenSecret',
       rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow') ;
 
-CREATE TOPK TABLE TOPKTABLE ON HASHTAGTABLE OPTIONS
+CREATE TOPK TABLE topktable ON hashtagtable OPTIONS
 (key 'hashtag', timeInterval '2000ms', size '10' );
 
 STREAMING START ;
