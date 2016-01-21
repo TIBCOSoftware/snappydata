@@ -28,9 +28,6 @@ import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.DDLException
 
-/**
- * Created by skumar on 23/11/15.
- */
 class ColumnTableInternalValidationTest extends SnappyFunSuite
 with Logging
 with BeforeAndAfter {

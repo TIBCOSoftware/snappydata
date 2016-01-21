@@ -5,9 +5,6 @@ import java.sql.{Connection, DriverManager}
 import dunit.AvailablePortHelper
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
 
-/**
-  * Created by ymahajan on 23/12/15.
-  */
 class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   override def tearDown2(): Unit = {

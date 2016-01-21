@@ -29,9 +29,6 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.{SparkConf, SparkContext}
 
-/**
- * Created by soubhikc on 6/10/15.
- */
 class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)

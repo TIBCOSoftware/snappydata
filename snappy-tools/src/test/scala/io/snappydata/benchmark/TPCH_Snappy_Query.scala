@@ -21,9 +21,6 @@ import java.io.{File, FileOutputStream, PrintStream}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.SnappyContext
 
-/**
- * Created by kishor on 27/10/15.
- */
 object TPCH_Snappy_Query {
 
   var fOutStream = new FileOutputStream(new File(s"Performance.out"))

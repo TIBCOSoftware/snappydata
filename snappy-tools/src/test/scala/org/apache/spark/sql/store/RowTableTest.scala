@@ -27,8 +27,6 @@ import org.apache.spark.sql.{Row, AnalysisException, SaveMode}
 
 /**
  * Tests for ROW tables.
- *
- * Created by rishim on 6/11/15.
  */
 class RowTableTest
     extends SnappyFunSuite

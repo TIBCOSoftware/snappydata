@@ -26,9 +26,6 @@ import org.apache.spark.sql.execution.{Exchange, PartitionedPhysicalRDD, Physica
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.{Logging, SparkContext}
 
-/**
- * Created by rishim on 6/11/15.
- */
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   val props = Map.empty[String, String]

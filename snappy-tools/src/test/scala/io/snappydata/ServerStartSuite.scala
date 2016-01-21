@@ -24,9 +24,6 @@ import com.pivotal.gemfirexd.{FabricLocator, FabricService, TestUtil}
 import org.apache.spark.sql.SnappyContext
 import org.scalatest.BeforeAndAfterAll
 
-/**
-  * Created by hemantb.
-  */
 class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   var props: Properties = null
 

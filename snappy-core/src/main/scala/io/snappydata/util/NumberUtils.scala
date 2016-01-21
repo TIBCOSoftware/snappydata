@@ -16,9 +16,6 @@
  */
 package io.snappydata.util
 
-/**
- * Created by pbm on 2015-04-24.
- */
 object NumberUtils {
   /**
    * Returns the floor of the log base 2 of i

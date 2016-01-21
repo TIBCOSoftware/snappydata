@@ -37,9 +37,6 @@ trait Locator extends FabricLocator with ClusterCallback {
 
 }
 
-/**
- * Created by soubhikc on 16/10/15.
- */
 trait ProtocolOverrides extends FabricServiceImpl {
 
   abstract override def getProtocol: java.lang.String = {

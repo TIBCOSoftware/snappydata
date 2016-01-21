@@ -20,9 +20,6 @@ import scala.io.Source
 import org.scalatest._
 import Inspectors._  // picks up forAll () {}
 
-/**
- * Created by pbm on 2015-04-24.
- */
 class NumberUtilsSpec extends FlatSpec with Matchers {
   "NumberUtils" should "calculate ilog2 correctly" in {
     NumberUtils.ilog2(0) should be (0) // for our purposes, anyway...

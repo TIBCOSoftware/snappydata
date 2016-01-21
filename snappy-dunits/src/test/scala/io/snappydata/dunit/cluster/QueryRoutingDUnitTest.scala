@@ -11,8 +11,6 @@ import org.apache.spark.sql.{SnappyContext, SaveMode}
 
 /**
  * Tests for query routing from JDBC client driver.
- *
- * Created by kneeraj on 29/10/15.
  */
 class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 

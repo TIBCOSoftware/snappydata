@@ -18,9 +18,6 @@ package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 
-/**
- * Created by shirishd on 29/10/15.
- */
 object SnappyMemoryUtils {
   /**
    * Checks whether GemFire critical threshold is breached

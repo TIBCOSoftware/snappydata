@@ -30,8 +30,6 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
  * Tests for column tables in GFXD.
- *
- * Created by Suranjan on 14/10/15.
  */
 class ColumnTableTest
     extends SnappyFunSuite
