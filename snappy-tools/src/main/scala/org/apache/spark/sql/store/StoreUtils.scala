@@ -226,7 +226,7 @@ object StoreUtils extends Logging {
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
-        throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+        throw new DDLException("Expiry for Column table is not supported")
       }
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
     })
