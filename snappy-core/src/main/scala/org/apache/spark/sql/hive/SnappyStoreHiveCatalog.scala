@@ -324,7 +324,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       // if a relation has been destroyed (e.g. by another instance of catalog),
       // then the cached ones can be stale, so check and clear entire cache
       val globalVersion = SnappyStoreHiveCatalog.getRelationDestroyVersion
-      if (globalVersion > this.relationDestroyVersion) {
+      if (globalVersion != this.relationDestroyVersion) {
         cachedDataSourceTables.invalidateAll()
         this.relationDestroyVersion = globalVersion
       }
@@ -340,7 +340,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   private def registerRelationDestroy(): Unit = {
     val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
-    if (globalVersion > this.relationDestroyVersion) {
+    if (globalVersion != this.relationDestroyVersion) {
       cachedDataSourceTables.invalidateAll()
     }
     this.relationDestroyVersion = globalVersion + 1

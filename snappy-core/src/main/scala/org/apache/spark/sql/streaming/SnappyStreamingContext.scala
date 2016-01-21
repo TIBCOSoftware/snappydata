@@ -46,18 +46,23 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
    * @throws IllegalStateException if the StreamingContext is already stopped
    */
   override def start(): Unit = synchronized {
-    StreamBaseRelation.LOCK.synchronized {
-      StreamBaseRelation.clearStreams()
-    }
-    // force invalidate all the cached relations for any stale streams
-    SnappyStoreHiveCatalog.registerRelationDestroy()
-
-    // register population of AQP tables from stream tables
     if (getState() == StreamingContextState.INITIALIZED) {
+      // register population of AQP tables from stream tables
       snappyContext.snappyContextFunctions.getAQPTablePopulator
           .foreach(_ (snappyContext))
     }
     super.start()
+  }
+
+  override def stop(stopSparkContext: Boolean,
+      stopGracefully: Boolean): Unit = {
+    try {
+      super.stop(stopSparkContext, stopGracefully)
+    } finally {
+      // force invalidate all the cached relations to remove any stale streams
+      SnappyStoreHiveCatalog.registerRelationDestroy()
+      StreamBaseRelation.clearStreams()
+    }
   }
 
   def sql(sqlText: String): DataFrame = {
@@ -156,5 +161,6 @@ object SnappyStreamingContext extends Logging {
 
 trait StreamPlan {
   def rowStream: DStream[InternalRow]
-}
 
+  def schema: StructType
+}
