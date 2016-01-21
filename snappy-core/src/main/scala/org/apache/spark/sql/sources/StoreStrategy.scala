@@ -63,9 +63,9 @@ private[sql] case class ExternalTableDMLCmd(
   def run(sqlContext: SQLContext): Seq[Row] = {
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
-      case relation: SingleRowInsertableRelation => relation.executeUpdate(command)
-      //this may be unnecessary as RowPutRelation is anyway SingleRowInsertableRelation
       case relation: RowPutRelation => relation.executeUpdate(command)
+      case relation: SingleRowInsertableRelation =>
+        relation.executeUpdate(command)
       case other => throw new AnalysisException("DML support requires " +
           "UpdatableRelation/SingleRowInsertableRelation/RowPutRelation" +
           " but found " + other)

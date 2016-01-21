@@ -43,8 +43,8 @@ private[sql] class SnappyCacheManager extends execution.CacheManager {
       val sqlContext = query.sqlContext
 
       cachedData += execution.CachedData(query.logicalPlan,
-        getRelation(sqlContext, storageLevel, query.queryExecution.executedPlan, tableName, query)
-        )
+        getRelation(sqlContext, storageLevel,
+          query.queryExecution.executedPlan, tableName, query))
     }
   }
 
