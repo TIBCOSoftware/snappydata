@@ -164,7 +164,7 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     val dotIndex = tableName.indexOf('.')
     val (schema, table) = if(dotIndex > 0){
       (tableName.substring(0, dotIndex), tableName.substring(dotIndex + 1))
-    }else{
+    } else {
       (SnappyStoreHiveCatalog.DEFAULT_SCHEMA, tableName)
     }
     val stmt = conn.createStatement()
