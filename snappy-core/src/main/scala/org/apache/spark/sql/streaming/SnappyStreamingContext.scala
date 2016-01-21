@@ -24,10 +24,11 @@ import scala.reflect.runtime.universe.TypeTag
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.RDDConversions
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, _}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{StreamingContextState, Duration, Milliseconds, StreamingContext}
+import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext}
 
 /**
   * Provides an ability to manipulate SQL like query on DStream
@@ -48,10 +49,12 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
     StreamBaseRelation.LOCK.synchronized {
       StreamBaseRelation.clearStreams()
     }
+    // force invalidate all the cached relations for any stale streams
+    SnappyStoreHiveCatalog.registerRelationDestroy()
+
     // register population of AQP tables from stream tables
-    if (getState() == StreamingContextState.INITIALIZED) {
-      snappyContext.snappyContextFunctions.getSampleTablePopulator.foreach(_ (snappyContext))
-    }
+    snappyContext.snappyContextFunctions.getAQPTablePopulator
+        .foreach(_ (snappyContext))
     super.start()
   }
 
