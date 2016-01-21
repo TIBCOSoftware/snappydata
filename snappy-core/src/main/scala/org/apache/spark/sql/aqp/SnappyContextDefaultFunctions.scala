@@ -76,6 +76,10 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions{
                                 logicalPlan: LogicalPlan): LogicalPlan
   = throw new UnsupportedOperationException("missing aqp jar")
 
+  def withErrorDataFrame(df: DataFrame, error: Double,
+      confidence: Double): DataFrame =
+    throw new UnsupportedOperationException("missing aqp jar")
+
   def getPlanner(context: SnappyContext) : SparkPlanner = new DefaultPlanner(context)
 
   def getSnappyCacheManager: SnappyCacheManager = new SnappyCacheManager()
