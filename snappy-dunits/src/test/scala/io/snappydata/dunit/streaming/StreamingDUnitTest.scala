@@ -21,7 +21,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     DriverManager.getConnection(url)
   }
 
-  def SNAP405_testStreamingAdhocSQL(): Unit = {
+  def testStreamingAdhocSQL(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
@@ -36,12 +36,39 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
         "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
         "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
+    s.execute("create topk table topkTweets on tweetsTable options(" +
+        s"key 'hashtag', epoch '${System.currentTimeMillis()}', " +
+        "timeInterval '2000ms', size '10')")
+
     s.execute("streaming start")
+
     for (a <- 1 to 5) {
+
       Thread.sleep(2000)
+
+      s.execute("select hashtag, count(hashtag) as cht from tweetsTable " +
+          "group by hashtag order by cht desc limit 10")
+      println("\n\n-----  TOP Tweets  -----\n")
+      var rs = s.getResultSet
+      if (a == 5) assert(rs.next)
+      while (rs.next()) {
+        println(s"${rs.getString(1)} ; ${rs.getInt(2)}")
+      }
+
+      s.execute("select * from topkTweets order by EstimatedValue desc")
+      println("\n\n-----  TOPK Tweets  -----\n")
+      rs = s.getResultSet
+      var numResults = 0
+      while (rs.next()) {
+        println(s"${rs.getString(1)} ; ${rs.getLong(2)} ; ${rs.getString(3)}")
+        numResults += 1
+      }
+      println(s"Num results=$numResults")
+      assert(numResults <= 10)
+
       s.execute("select text, fullName from tweetsTable where text like '%e%'")
-      val rs = s.getResultSet
-      if(a==5) assert(rs.next)
+      rs = s.getResultSet
+      if (a == 5) assert(rs.next)
       while (rs.next()) {
         rs.getString(1)
         rs.getString(2)
@@ -49,6 +76,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     s.execute("streaming stop")
     s.execute("drop table tweetsTable")
+    s.execute("drop table topktweets")
 
     conn.close()
   }

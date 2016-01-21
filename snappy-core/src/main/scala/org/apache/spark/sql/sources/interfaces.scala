@@ -17,8 +17,9 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.{Row, SQLContext, SaveMode}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
 trait RowInsertableRelation extends SingleRowInsertableRelation {
@@ -31,6 +32,28 @@ trait RowInsertableRelation extends SingleRowInsertableRelation {
    * @return number of rows inserted
    */
   def insert(rows: Seq[Row]): Int
+}
+
+trait RowPutRelation extends SingleRowInsertableRelation {
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
+   * @param rows the rows to be upserted
+   *
+   * @return number of rows upserted
+   */
+
+  def put(rows: Seq[Row]): Int
+
+  /**
+   * If the row is already present, it gets updated otherwise it gets
+   * inserted into the table represented by this relation
+   *
+   * @param df the <code>DataFrame</code> to be upserted
+   *
+   */
+  def put(df: DataFrame): Unit
 }
 
 @DeveloperApi
@@ -56,10 +79,15 @@ trait SchemaInsertableRelation extends InsertableRelation {
    * or None if <code>sourceSchema</code> cannot be inserted.
    */
   def schemaForInsert(sourceSchema: Seq[Attribute]): Option[Seq[Attribute]]
+
+  /**
+   * Append a given RDD or rows into the relation.
+   */
+  def append(rows: RDD[Row], time: Long = -1): Unit
 }
 
 @DeveloperApi
-trait SamplingRelation extends BaseRelation with InsertableRelation {
+trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
 
   /**
    * Options set for this sampling relation.
@@ -115,6 +143,7 @@ trait DestroyRelation {
    * Truncate the table represented by this relation.
    */
   def truncate(): Unit
+
   /**
    * Destroy and cleanup this relation. It may include, but not limited to,
    * dropping the external table that this relation represents.

@@ -21,7 +21,7 @@ import org.apache.spark.streaming.dstream.DStream
  *
  * `$ ./bin/snappy-job.sh submit --lead localhost:8090 \
  * --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob \
- * --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --context snappyStreamingContext `
+ * --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream`
  *
  * To run with stored twitter data, run simulateTwitterStream after the Job is submitted:
  * `$ ./quickstart/scripts/simulateTwitterStream`
@@ -36,7 +36,8 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     val pw = new PrintWriter(s"TwitterPopularTagsJob-${System.currentTimeMillis}.out")
 
     val schema = StructType(List(StructField("hashtag", StringType)))
-
+    
+    snsc.snappyContext.sql("DROP TABLE IF EXISTS topktable")
     snsc.snappyContext.sql("DROP TABLE IF EXISTS HASHTAGTABLE")
     snsc.snappyContext.sql("DROP TABLE IF EXISTS RETWEETTABLE")
 
@@ -80,16 +81,12 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     val topKOption = Map(
         "epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "2000ms",
-        "size" -> "10"
+        "size" -> "10",
+        "basetable" -> "HASHTAGTABLE"
       )
 
     snsc.snappyContext.createApproxTSTopK("topktable", "hashtag",
       Some(schema), topKOption)
-
-    snsc.snappyContext.saveStream(hashtagStream,
-      Seq("topktable"),
-      None
-    )
 
     val tableName = "retweetStore"
 
@@ -117,15 +114,10 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
           result => pw.println(result.toString())
         }
 
-        pw.println("\n************ Top 10 hash tags until now ***************\n")
-
-        snsc.snappyContext.queryApproxTSTopK("topktable").collect().foreach {
-          result => pw.println(result.toString())
-        }
       }
       pw.println("\n************ Top 10 hash tags until now ***************\n")
 
-      snsc.snappyContext.queryApproxTSTopK("topktable").collect().foreach {
+      snsc.sql("SELECT * FROM topktable").collect().foreach {
         result => pw.println(result.toString())
       }
 

@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 
@@ -43,17 +44,22 @@ import scala.collection.{JavaConversions, mutable}
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   @transient private var sqlContext = None: Option[SQLContext]
-  val stores = new mutable.HashMap[String, (StructType, ExternalStore)]
+  val stores = new mutable.HashMap[String, (StructType, ExternalStore, Int)]
 
   var useCompression = false
   var cachedBatchSize = 0
 
   def registerExternalStoreAndSchema(context: SQLContext, tableName: String,
-      schema: StructType, externalStore: ExternalStore, batchSize: Int, compress : Boolean) = {
+      schema: StructType, externalStore: ExternalStore, batchSize: Int, compress : Boolean,
+      rddId: Int) = {
     stores.synchronized {
       stores.get(tableName) match {
-        case None => stores.put(tableName, (schema, externalStore))
-        case Some((previousSchema, _)) => if (previousSchema != schema) stores.put(tableName, (schema, externalStore))
+        case None => stores.put(tableName, (schema, externalStore, rddId))
+        case Some((previousSchema, _, _)) => {
+          if (previousSchema != schema) {
+            stores.put(tableName, (schema, externalStore, rddId))
+          }
+        }
       }
     }
     sqlContext = Some(context)
@@ -65,7 +71,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     val container: GemFireContainer = region.getPartitionedRegion.getUserAttribute.asInstanceOf[GemFireContainer]
 
     if (stores.get(container.getTableName) != None) {
-      val (schema, externalStore) = stores.get(container.getTableName).get
+      val (schema, externalStore, rddId) = stores.get(container.getTableName).get
       //LCC should be available assuming insert is already being done via a proper connection
       var conn: EmbedConnection = null
       var contextSet: Boolean = false
@@ -107,6 +113,13 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     } else {
       new util.HashSet()
     }
+  }
+
+  def getInternalTableSchemas: util.List[String] = {
+    val schemas = new util.ArrayList[String](2)
+    schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
+    schemas.add(ColumnFormatRelation.INTERNAL_SCHEMA_NAME)
+    schemas
   }
 }
 
