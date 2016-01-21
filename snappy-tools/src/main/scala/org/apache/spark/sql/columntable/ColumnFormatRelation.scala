@@ -296,6 +296,7 @@ class ColumnFormatRelation(
       ColumnFormatRelation.removePool(table)
       // drop the external table using a non-pool connection
       unregisterRDDInfoForUI()
+      StoreInitRDD.tableToIdMap.remove(table)
     } finally {
       try {
         try {
@@ -385,7 +386,6 @@ class ColumnFormatRelation(
         sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
       case None => // nothing
     }
-    StoreInitRDD.tableToIdMap.remove(table)
   }
 
   //TODO: Suranjan make sure that this table doesn't evict to disk by
