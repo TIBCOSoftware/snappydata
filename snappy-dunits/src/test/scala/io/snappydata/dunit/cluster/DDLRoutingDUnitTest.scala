@@ -101,14 +101,14 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def createTableXD(conn: Connection, tableName: String, usingStr: String): Unit = {
     val s = conn.createStatement()
     val options = ""
-    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING " + usingStr +
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 STRING) " + " USING " + usingStr +
         " " + options)
   }
 
   def createTableByDefaultXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("set spark.sql.shuffle.partitions=5")
-    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) ")
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 STRING) ")
   }
 
   def Snap319(conn: Connection): Unit = {
@@ -170,8 +170,9 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   def insertDataXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
-    s.execute("insert into " + tableName + " values(10, 200, 3) ")
-    s.execute("insert into " + tableName + " values(70, 800, 9),(90, 200, 3),(40, 200, 3),(50, 600, 7) ")
+    s.execute("insert into " + tableName + " values(10, 200, '3') ")
+    s.execute("insert into " + tableName
+        + " values(70, 800, '9'),(90, 200, '3'),(40, 200, '3'),(50, 600, '7') ")
   }
 
   def dropTableXD(conn: Connection, tableName: String): Unit = {
