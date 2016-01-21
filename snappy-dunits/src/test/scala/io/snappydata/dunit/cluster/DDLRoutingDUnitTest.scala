@@ -39,6 +39,10 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     insertDataXD(conn, tableName)
     queryData(tableName)
 
+    truncateTableXD(conn, tableName)
+    insertDataXD(conn, tableName)
+    queryData(tableName)
+
     createTempTableXD(conn)
 
     queryDataXD(conn, tableName)
@@ -67,6 +71,10 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     insertDataXD(conn, tableName)
     queryData(tableName)
 
+    truncateTableXD(conn, tableName)
+    insertDataXD(conn, tableName)
+    queryData(tableName)
+    
     createTempTableXD(conn)
 
     queryDataXD(conn, tableName)
@@ -178,6 +186,11 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def dropTableXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("drop table " + tableName)
+  }
+
+  def truncateTableXD(conn: Connection, tableName: String): Unit = {
+    val s = conn.createStatement()
+    s.execute("truncate table " + tableName)
   }
 
   def createTempTableXD(conn : Connection): Unit = {
