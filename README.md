@@ -373,7 +373,9 @@ snappy> run './quickstart/scripts/file_streaming_query.sql';
 
 ### Getting Started with Spark API 
 
-Snappy jobs are the primary mechanism to interact with SnappyData using Spark API. A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. 
+SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the Snappy store. Similarly, SnappyStreamingContext is an entry point for SnappyData extensions to Spark streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
+
+Applications typically submit Jobs to SnappyData and do not explicitly create a SnappyContext or SnappyStreamingContext. These jobs are the primary mechanism to interact with SnappyData using Spark API. A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. 
 
 ```scala
 class SnappySampleJob implements SnappySQLJob {
@@ -384,7 +386,7 @@ class SnappySampleJob implements SnappySQLJob {
   def validate(sc: SnappyContext, config: Config): SparkJobValidation
 }
 ```
-The implementation of _runJob_ function of SnappySQLJob can use SnappyContext to interact with SnappyData store to process and store tables. The implementation of runJob of SnappyStreamingJob can use SnappyStreamingContext to create streams and manage the streaming context. The jobs are submitted to lead node of SnappyData over REST API using a _spark-submit_ like utility.  
+The implementation of _runJob_ function of SnappySQLJob uses SnappyContext to interact with SnappyData store to process and store tables. The implementation of runJob of SnappyStreamingJob uses SnappyStreamingContext to create streams and manage the streaming context. The jobs are submitted to lead node of SnappyData over REST API using a _spark-submit_ like utility. See more details about jobs [here](./docs/jobs.md)
 
 #### Column and Row tables 
 
