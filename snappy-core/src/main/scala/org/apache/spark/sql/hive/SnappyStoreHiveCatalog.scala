@@ -123,6 +123,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   private def newClient(): ClientInterface = {
 
+
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
     // We instantiate a HiveConf here to read in the hive-site.xml file and
@@ -145,7 +146,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
         dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "HIVE_METASTORE")
+        HIVE_METASTORE)
     } else if (dbURL != null) {
       logInfo(s"Using specified metastore database, dbURL = $dbURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
@@ -363,7 +364,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   def newQualifiedTableName(tableIdent: String): QualifiedTableName = {
     val tableName = processTableIdentifier(tableIdent)
     val dotIndex = tableName.indexOf('.')
-    if (dotIndex > 0 && tableName.indexOf('.', dotIndex + 1) > 0) {
+    if (dotIndex > 0) {
       new QualifiedTableName(Some(tableName.substring(0, dotIndex)),
         tableName.substring(dotIndex + 1))
     } else {
@@ -532,8 +533,18 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
     tableProperties.put("EXTERNAL", tableType.toString)
 
+
+    val dataBase = tableIdent.getDatabase(client)
+    val dbInHive = client.getDatabaseOption(dataBase)
+    dbInHive match {
+      case Some(x) => // We are all good
+      case None => client.createDatabase(new HiveDatabase(dataBase, ""))
+      // Path is empty String for now @TODO for parquet & hadoop relation
+      // handle path correctly
+    }
+
     val hiveTable = HiveTable(
-      specifiedDatabase = Option(tableIdent.getDatabase(client)),
+      specifiedDatabase = Option(dataBase),
       name = tableIdent.table,
       schema = Seq.empty,
       partitionColumns = metastorePartitionColumns,
@@ -718,6 +729,9 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_SCHEMA_OLD = "spark.sql.sources.schema"
+  val HIVE_METASTORE = "HIVE_METASTORE"
+
+  val DEFAULT_SCHEMA = "APP"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {

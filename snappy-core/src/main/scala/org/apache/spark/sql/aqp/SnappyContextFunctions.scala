@@ -53,6 +53,9 @@ trait SnappyContextFunctions {
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row],
       aqpTables: Seq[String], time: Long): Unit
 
+  def withErrorDataFrame(df: DataFrame, error: Double,
+      confidence: Double): DataFrame
+
   def createSampleDataFrameContract(sqlContext: SnappyContext,
       df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
 
