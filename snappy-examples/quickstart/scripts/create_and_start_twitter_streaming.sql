@@ -3,31 +3,33 @@
 ---- create file stream table and start streaming context ----
 ---------------------------------------------------------------------
 
-DROP TABLE IF EXISTS TOPKTABLE ;
-DROP TABLE IF EXISTS HASHTAGTABLE ;
-DROP TABLE IF EXISTS RETWEETTABLE ;
+DROP TABLE IF EXISTS topktable ;
+DROP TABLE IF EXISTS hashtagtable ;
+DROP TABLE IF EXISTS retweettable ;
 
 STREAMING INIT 2;
+-- Provide twitter credentials (consumerKey,consumerSecret,accessToken,accessTokenSecret)
+-- in create stream table hashtagtable and retweettable.
 
-CREATE STREAM TABLE HASHTAGTABLE 
-      (hashtag string) 
-    USING twitter_stream 
-    OPTIONS (consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', 
-      consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', 
-      accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', 
-      accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', 
+CREATE STREAM TABLE hashtagtable
+      (hashtag STRING)
+    USING twitter_stream
+    OPTIONS (consumerKey 'consumerKey',
+      consumerSecret 'consumerSecret',
+      accessToken 'accessToken',
+      accessTokenSecret 'accessTokenSecret',
       rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow') ;
 
-CREATE STREAM TABLE RETWEETTABLE 
-      (retweetId long,retweetCnt int, retweetTxt string) 
-    USING twitter_stream 
-    OPTIONS (consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi',
-      consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', 
-      accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', 
-      accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', 
+CREATE STREAM TABLE retweettable
+      (retweetId LONG, retweetCnt INT, retweetTxt STRING)
+    USING twitter_stream
+    OPTIONS (consumerKey 'consumerKey',
+      consumerSecret 'consumerSecret',
+      accessToken 'accessToken',
+      accessTokenSecret 'accessTokenSecret',
       rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow') ;
 
-CREATE TOPK TABLE TOPKTABLE ON HASHTAGTABLE OPTIONS
+CREATE TOPK TABLE topktable ON hashtagtable OPTIONS
 (key 'hashtag', timeInterval '2000ms', size '10' );
 
 STREAMING START ;

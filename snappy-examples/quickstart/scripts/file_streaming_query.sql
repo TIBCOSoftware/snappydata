@@ -5,16 +5,16 @@
 --------------------------------------------------------------------------------------
 
 --- Get top 10 popular hashtags ----
-SELECT hashtag, count(*) as tagcount 
-FROM HASHTAG_FILESTREAMTABLE 
+SELECT hashtag, COUNT(*) AS tagcount
+FROM hashtag_filestreamtable
 GROUP BY hashtag 
-ORDER BY tagcount DESC limit 10;
+ORDER BY tagcount DESC LIMIT 10;
 
 --- Get the top 10 popular retweet -----
-SELECT retweetId as RetweetId, retweetCnt as RetweetsCount, retweetTxt as Text 
-FROM RETWEET_FILESTREAMTABLE 
-ORDER BY RetweetsCount DESC limit 10;
+SELECT retweetId AS RetweetId, retweetCnt AS RetweetsCount, retweetTxt AS Text
+FROM retweet_filestreamtable
+ORDER BY RetweetsCount DESC LIMIT 10;
 
-SELECT hashtag, count(hashtag) as TopKCount
-FROM FILESTREAM_TOPKTABLE 
-GROUP BY hashtag ORDER BY TopKCount limit 10;
+SELECT hashtag, COUNT(hashtag) AS TopKCount
+FROM filestream_topktable
+GROUP BY hashtag ORDER BY TopKCount LIMIT 10;
