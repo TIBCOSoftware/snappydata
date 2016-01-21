@@ -42,21 +42,12 @@ with BeforeAndAfterAll with BeforeAndAfter {
   def batchDuration: Duration = Seconds(1)
 
   before {
-    super.beforeAll()
+    SnappyStreamingContext.stop()
     ssnc = SnappyStreamingContext(snc, batchDuration)
   }
 
   after {
-    this.afterAll()
-  }
-
-  override def afterAll(): Unit = {
-
-    super.afterAll()
-    if (ssnc != null) {
-
-      SnappyStreamingContext.stop()
-    }
+    SnappyStreamingContext.stop()
   }
 
   test("SNAP-414") {
