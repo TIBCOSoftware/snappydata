@@ -38,7 +38,7 @@ case class WindowPhysicalPlan(
   }
 
   @transient private val wrappedStream =
-    new DStream[InternalRow](SnappyStreamingContext.getActive().get) {
+    new DStream[InternalRow](SnappyStreamingContext.getActive.get) {
       override def dependencies = parentStreams.toList
 
       override def slideDuration: Duration = {
