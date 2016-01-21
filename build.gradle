@@ -566,9 +566,10 @@ task checkAll {
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
-  mustRunAfter buildAll
   mustRunAfter product
+  mustRunAfter buildAll
 }
 task precheckin {
-  dependsOn cleanAll, buildAll, product, checkAll, runQuickstart
+  dependsOn cleanAll, product, buildAll, checkAll, runQuickstart
+
 }

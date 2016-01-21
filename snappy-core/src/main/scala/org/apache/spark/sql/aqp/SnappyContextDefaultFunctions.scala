@@ -87,7 +87,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions{
   def getSQLDialect(context: SnappyContext): SnappyParserDialect =
     new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
 
-  def getSampleTablePopulator : Option[(SQLContext) => Unit] = None
+  def getAQPTablePopulator : Option[(SQLContext) => Unit] = None
 
   def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog =
     new SnappyStoreHiveCatalog(context)
