@@ -47,6 +47,7 @@ with BeforeAndAfterAll with BeforeAndAfter {
   }
 
   after {
+    baseCleanup()
     SnappyStreamingContext.stop()
   }
 

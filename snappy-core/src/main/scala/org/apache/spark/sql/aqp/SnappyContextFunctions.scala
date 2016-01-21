@@ -68,7 +68,7 @@ trait SnappyContextFunctions {
 
   def getSQLDialect(context: SnappyContext): ParserDialect
 
-  def getSampleTablePopulator: Option[(SQLContext) => Unit]
+  def getAQPTablePopulator: Option[(SQLContext) => Unit]
 
   def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog
 
