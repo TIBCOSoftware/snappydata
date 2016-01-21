@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.row
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.Connection
 import java.util.Properties
 
 import org.apache.spark.rdd.RDD
@@ -29,8 +29,6 @@ import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, Partition}
-
-import scala.collection.mutable
 
 /**
  * A LogicalPlan implementation for an external row table whose contents
@@ -65,12 +63,12 @@ class JDBCMutableRelation(
   final val dialect = JdbcDialects.get(url)
 
   // create table in external store once upfront
-  val tableSchema = createTable(mode)
+  var tableSchema: String = _
 
-  override val schema: StructType =
+  override final lazy val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
 
-  final val schemaFields = Utils.schemaFields(schema)
+  final lazy val schemaFields = Utils.schemaFields(schema)
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -154,7 +152,7 @@ class JDBCMutableRelation(
       connProperties).asInstanceOf[RDD[Row]]
   }
 
-  final val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
+  final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
@@ -173,6 +171,7 @@ class JDBCMutableRelation(
   // at least the insert can be split into batches and modelled as an RDD
  // TODO: Suranjan common code in  ColumnFormatRelation too
   override def insert(rows: Seq[Row]): Int = {
+
     val numRows = rows.length
     if (numRows == 0) {
       throw new IllegalArgumentException(
@@ -269,18 +268,21 @@ class JDBCMutableRelation(
   }
 
   override def destroy(ifExists: Boolean): Unit = {
-    // clean up the connection pool on executors first
-    Utils.mapExecutors(sqlContext,
-      JDBCMutableRelation.removePool(table)).count()
-    // then on the driver
-    JDBCMutableRelation.removePool(table)
     // drop the external table using a non-pool connection
     val conn = ExternalStoreUtils.getConnection(url, connProperties,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      // clean up the connection pool on executors first
+      Utils.mapExecutors(sqlContext,
+        JDBCMutableRelation.removePool(table)).count()
+      // then on the driver
+      JDBCMutableRelation.removePool(table)
     } finally {
-      conn.close()
+      try {
+        JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      } finally {
+        conn.close()
+      }
     }
   }
 

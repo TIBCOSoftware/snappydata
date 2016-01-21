@@ -1,14 +1,15 @@
-## Getting Started with SnappyData SQL Shell
+## Using the SnappyData SQL Shell
 
 The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interface to the SnappyData cluster. It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. Internally it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.
 
-```
-sql  
+<!--using javascript as the code language here... should this be sql?-->
+```javascript
+
 // from the SnappyData base directory  
-**$ cd quickstart/scripts  
+$ cd quickstart/scripts  
 $ ../../bin/snappy-shell  
 Version 2.0-SNAPSHOT.1  
-snappy> **
+snappy> 
 
 //Connect to the cluster as a client  
 snappy> connect client 'localhost:1527';
@@ -18,6 +19,8 @@ snappy> show connections;
 
 //Display cluster members by querying a system table  
 snappy> select id, kind, status, host, port from sys.members;
+//or
+snappy> show members;
 
 //Run a sql script. This particular script creates and loads a column table in the default schema  
 snappy> run 'create_and_load_column_table.sql';
@@ -34,49 +37,49 @@ The complete list of commands available through _snappy_shell_ can be found [her
 
 
 ## Using JDBC with SnappyData
+SnappyData ships with a few JDBC drivers. 
+The connection URL typically points to one of the Locators. Underneath the covers the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically swizzling underlying physical connections in case servers were to fail. 
 
-SnappyData System supports two different JDBC drivers to connect to the cluster. These allow two different ways of connecting into the cluster. The SnappyData cluster is a peer to peer connected cluster where group members are connected to each other. The embedded mode driver is part of an application that connects into the cluster as a peer. The client mode driver is typically an application that connects into the cluster as a client (TCP connection over a network)
+```java
 
-###Embedded mode driver
-When an application initiates a connection to SnappyData using the peer JDBC driver, it starts a SnappyData peer member that joins other peers in the same cluster. 
-
-If your application embeds a SnappyData member of any type (a peer client, server, or locator), you should use the ServiceManager API to embed the required type. For example to Join the already running cluster as Accessor(this is a SnappyData member that does not host data, but otherwise participates in the cluster) 
-
-```
-val props:Properties = new Properties()
-// add desired properties if required.
-props.setProperty("locators", "localhost[10334]")
-props.setProperty("host-data", "false")
-val server :ServiceManager = ServiceManager.getServerInstance()
-server.start(props)
-
+// 1527 is the default port a Locator or Server uses to listen for thin client connections
+Connection c = DriverManager.getConnection ("jdbc:snappydata://locatorHostName:1527/");
+// While, clients typically just point to a locator, you could also directly point the 
+//   connection at a server endpoint
 ```
 
-If you just need a connection object in the embedded mode the following code can be used and it will start the Snappy server on it's own.  
+## Accessing SnappyData Tables from Spark code
+Spark applications access the SnappyStore using the new [Spark Data Source API](http://spark.apache.org/docs/latest/sql-programming-guide.html#jdbc-to-other-databases). 
+
+By default, SnappyData servers runs the Spark Executors collocated with the data store. And, the default store provider is SnappyData. 
+When the spark program connects to the cluster using a SnappyContext (extends SQLContext), there is no need to configure the database URL and other options.  
+
+```scala
+// Here is an Scala example 
+  val sc = new org.apache.spark.SparkContext(conf)
+  val snContext = org.apache.spark.sql.SnappyContext(sc)
+
+  val props = Map[String, String]()
+  // Save some application dataframe into a SnappyData row table
+  myAppDataFrame.write.format("row").options(props).saveAsTable("MutableTable")
 
 ```
-val props:Properties = new Properties()
-// add desired properties if required.
-props.setProperty("locators", "localhost[10334]")
-props.setProperty("host-data", "false")
-//to get Connection to this server
-DriverManager.getConnection("jdbc:snappydata:", props);
-```
 
+When running a native spark program, you can access SnappyData purely as a DataSource ...
+```scala
+// Access SnappyData as a storage cluster .. 
+  val sc = new org.apache.spark.SparkContext(conf)
+  val sqlContext = new org.apache.spark.sql.SQLContext(sc)
 
-###Thin Client Driver for Non Embedded Mode
-The thin client driver class is packaged in com.pivotal.gemfirexd.jdbc.ClientDriver. In addition to the basic JDBC Connection URL, you specify the host and port number of a Snappy server or a Snappy locator to which the thin client driver will connect. 
+  val props = Map(
+    "url" -> "jdbc:snappydata://locatorHostName:1527/",
+    "poolImpl" -> "tomcat", 
+    "user" -> "app",
+    "password" -> "app"
+    )
 
-```
-try {
-// 1527 is the default port that a Snappy server uses to listen for thin client connections
-  val conn = DriverManager.getConnection ("jdbc:snappydata://myHostName:1527/")
-// do something with the connection
-}
-catch {
-  case sqlException: SQLException =>
-  println ("SQLException: " + ex.getMessage () + "SQLState: " + ex.getSQLState () )
-}
+  // Save some application dataframe into a SnappyData row table
+  myAppDataFrame.write.format("jdbc").options(props).saveAsTable("MutableTable")
 ```
 
 

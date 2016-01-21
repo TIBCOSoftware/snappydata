@@ -16,13 +16,14 @@
  */
 package org.apache.spark.sql.store
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Random, Failure, Success, Try}
 
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.{AnalysisException, SaveMode}
+import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.{Row, AnalysisException, SaveMode}
 
 /**
  * Tests for ROW tables.
@@ -98,7 +99,29 @@ class RowTableTest
     println("Successful")
   }
 
-  test("Test the creation of table using Snappy API and then append/ignore/overwrite DF using DataSource API") {
+  test("Test the creation of table using DataSource API(PUT)") {
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    intercept[AnalysisException] {
+      dataDF.write.format("row").mode(SaveMode.Append).options(props).putInto(tableName)
+    }
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    //Again do putInto, as there is no primary key, all will be appended
+    dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    // no primary key
+    assert(r.length == 10)
+    println("Successful")
+  }
+
+
+  test("Test the creation of table using Snappy API and then append/ignore/overwrite/upsert" +
+      " DF using DataSource API") {
     var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     var rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     var dataDF = snc.createDataFrame(rdd)
@@ -106,7 +129,8 @@ class RowTableTest
     snc.createTable(tableName, "row", dataDF.schema, props)
 
     intercept[AnalysisException] {
-      dataDF.write.format("row").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
+      dataDF.write.format("row").mode(SaveMode.ErrorIfExists).
+      options(props).saveAsTable(tableName)
     }
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
@@ -115,7 +139,8 @@ class RowTableTest
     assert(r.length == 5)
 
     // Ignore if table is present
-    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
+    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300),
+      Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
     rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("row").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
@@ -124,7 +149,8 @@ class RowTableTest
     assert(r.length == 5)
 
     // Append if table is present
-    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
+    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300),
+      Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
     rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
@@ -133,7 +159,8 @@ class RowTableTest
     assert(r.length == 11)
 
     // Overwrite if table is present
-    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300), Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
+    data = Seq(Seq(100, 200, 300), Seq(700, 800, 900), Seq(900, 200, 300),
+      Seq(400, 200, 300), Seq(500, 600, 700), Seq(800, 900, 1000))
     rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
@@ -178,8 +205,6 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Ignore).options(props).saveAsTable(tableName)
-
     intercept[AnalysisException] {
       dataDF.write.format("row").mode(SaveMode.ErrorIfExists).options(props).saveAsTable(tableName)
     }
@@ -190,6 +215,134 @@ class RowTableTest
     val r = result.collect
     assert(r.length == 5)
     println("Successful")
+  }
+
+  test("Test the creation using SQL and put a DF in append/overwrite/errorifexists mode") {
+
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("row").mode(SaveMode.Ignore).options(props).putInto(tableName)
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 5)
+    println("Successful")
+  }
+
+  test("Test the creation using SQL and put a seq of rows in append/overwrite/errorifexists mode") {
+
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7), Seq(1,100,200))
+    data.map { r =>
+      snc.put(tableName, Row.fromSeq(r))
+    }
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 5)
+    println("Successful")
+  }
+
+  // should throw exception if primary key is getting updated?
+  test("Test Creation using SQL with Primary Key and PUT INTO") {
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),Seq(1, 200, 300))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 5)
+
+    //check if the row against primary key 1 is 1, 200, 300
+
+    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'")
+    assert(row1.collect.length == 1)
+
+    println(row1.show)
+
+    println("Successful")
+  }
+
+  test("Test Creation using SQL with Primary Key and PUT INTO SLECT AS ") {
+    snc.sql("CREATE TABLE tempTable  (Col1 INT, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+
+    val data1 = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7),Seq(1, 200, 300))
+
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("tempTable")
+    val result1 = snc.sql("SELECT * FROM tempTable")
+    val r1 = result1.collect
+    assert(r1.length == 6)
+
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+
+    val rdd1 = sc.parallelize(data1, data1.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF1 = snc.createDataFrame(rdd1)
+
+    dataDF1.write.format("row").mode(SaveMode.Overwrite).options(props).saveAsTable(tableName)
+
+    snc.sql("PUT INTO TABLE " + tableName + " SELECT * FROM tempTable")
+
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    assert(r.length == 5)
+
+    //check if the row against primary key 1 is 1, 200, 300
+
+    val row1 = snc.sql(s"SELECT * FROM $tableName WHERE Col1='1'")
+    assert(row1.collect.length == 1)
+
+    println(row1.show)
+    snc.dropTable("tempTable")
+
+    println("Successful")
+  }
+
+  test("PUT INTO TABLE USING SQL"){
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+    snc.sql("PUT INTO " + tableName + " VALUES(1,11, 111)")
+    snc.sql("PUT INTO " + tableName +  " VALUES(2,11, 111)")
+    snc.sql("PUT INTO " + tableName + " VALUES(3,11, 111)")
+
+
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    // just update a row
+    snc.sql("PUT INTO " + tableName + " VALUES(3,111, 1111)")
+    assert(snc.sql("SELECT * FROM " + tableName).collect.length == 3)
+  }
+
+  test("PUT INTO TABLE USING SQL with COLUMN NAME"){
+    snc.sql("CREATE TABLE " + tableName + " (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) " + " USING row " +
+        options)
+    snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3) VALUES(1,11, 111)")
+    snc.sql("PUT INTO " + tableName +  " (Col1, Col2, Col3)  VALUES(2,11, 111)")
+    snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3)  VALUES(3,11, 111)")
+
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect
+    // just update a row
+    snc.sql("PUT INTO " + tableName + " (Col1, Col2, Col3) VALUES(3,111, 1111)")
+    assert(snc.sql("SELECT * FROM " + tableName).collect.length == 3)
   }
 
   test("Test the creation of table using SQL and SnappyContext ") {

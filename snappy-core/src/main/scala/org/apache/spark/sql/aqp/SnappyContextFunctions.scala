@@ -16,33 +16,20 @@
  */
 package org.apache.spark.sql.aqp
 
-import scala.reflect.runtime.universe.TypeTag
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.DDLParser
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.StorageLevel
 
-trait AQPContext {
+trait SnappyContextFunctions {
 
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution
-
-  def registerSampleTable(context: SnappyContext, tableName: String,
-      schema: StructType, samplingOptions: Map[String, Any],
-      streamTable: Option[String] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame
-
-  def registerSampleTableOn[A <: Product](context: SnappyContext,
-      tableName: String, samplingOptions: Map[String, Any],
-      streamTable: Option[String], jdbcSource: Option[Map[String, String]])
-      (implicit ev: TypeTag[A]): DataFrame
 
   def createTopK(context: SnappyContext, topKName: String,
       keyColumnName: String, inputDataSchema: StructType,
@@ -64,8 +51,10 @@ trait AQPContext {
       startTime: String, endTime: String, schema: StructType): RDD[InternalRow]
 
   protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row],
-      aqpTables: Seq[String], time: Long,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK)
+      aqpTables: Seq[String], time: Long): Unit
+
+  def withErrorDataFrame(df: DataFrame, error: Double,
+      confidence: Double): DataFrame
 
   def createSampleDataFrameContract(sqlContext: SnappyContext,
       df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
@@ -85,8 +74,6 @@ trait AQPContext {
 
   def getSnappyDDLParser(context: SnappyContext,
       planGenerator: String => LogicalPlan): DDLParser
-
-  def dropSampleTable(tableName: String, ifExists: Boolean = false)
 
   def isTungstenEnabled: Boolean
 

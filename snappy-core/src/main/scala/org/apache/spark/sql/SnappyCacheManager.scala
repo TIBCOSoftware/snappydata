@@ -18,10 +18,6 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.columnar.InMemoryAppendableRelation
 import org.apache.spark.sql.execution.SparkPlan
-
-import scala.collection.mutable
-
-import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.storage.StorageLevel
 
 /**
@@ -49,26 +45,6 @@ private[sql] class SnappyCacheManager extends execution.CacheManager {
       cachedData += execution.CachedData(query.logicalPlan,
         getRelation(sqlContext, storageLevel, query.queryExecution.executedPlan, tableName, query)
         )
-    }
-  }
-
-  private[sql] def cacheQuery_ext(query: DataFrame, tableName: Option[String],
-      jdbcSource: ExternalStore) = writeLock {
-    val alreadyCached = lookupCachedData(query.logicalPlan)
-    if (alreadyCached.nonEmpty) {
-      logWarning("SnappyCacheManager: asked to cache already cached data.")
-    } else {
-      val sqlContext = query.sqlContext
-
-      cachedData += execution.CachedData(query.logicalPlan,
-        columnar.ExternalStoreRelation(
-          sqlContext.conf.useCompression,
-          sqlContext.conf.columnBatchSize,
-          StorageLevel.MEMORY_AND_DISK, // soubhik: RDD[UUID] should spill to disk. No ?
-          // StorageLevel.NONE, // storage level is meaningless in external store. set anything
-          query.queryExecution.executedPlan,
-          // all the properties including url should be in props
-          tableName, jdbcSource))
     }
   }
 

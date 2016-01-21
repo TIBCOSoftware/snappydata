@@ -21,7 +21,8 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Subquery}
 
 /**
  * Implicit conversions used by Snappy.
@@ -36,6 +37,10 @@ object snappy extends Serializable {
       case sc => throw new AnalysisException("Extended snappy operations " +
           s"require SnappyContext and not ${sc.getClass.getSimpleName}")
     }
+  }
+
+  implicit def convertToAQPFrame(df: DataFrame): AQPDataFrame = {
+    AQPDataFrame(df.sqlContext.asInstanceOf[SnappyContext], df.queryExecution)
   }
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
@@ -97,6 +102,32 @@ object snappy extends Serializable {
     }
   }
 
+  implicit class DataFrameWriterExtensions(dfWriter: DataFrameWriter) extends Serializable {
+
+    /**
+     * Inserts the content of the [[DataFrame]] to the specified table. It requires
+     * that the schema of the [[DataFrame]] is the same as the schema of the table.
+     * If the row is already present then it is updated.
+     *
+     * This ignores all SaveMode
+     *
+     * @since 1.6.0
+     */
+    def putInto(tableName: String): Unit = {
+      val partitions = dfWriter.partitioningColumns.map(_.map(col => col -> (None: Option[String])).toMap)
+      //Suranjan: ignore mode altogether.
+      val overwrite = true
+      val df = dfWriter.df
+      df.sqlContext.executePlan(
+      InsertIntoTable(
+        UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
+        partitions.getOrElse(Map.empty[String, Option[String]]),
+        df.logicalPlan,
+        overwrite,
+        ifNotExists = false)).toRdd
+    }
+  }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
@@ -110,7 +141,7 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * }}}
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context, context.aqpContext.convertToStratifiedSample(
+    new SampleDataFrame(context, context.snappyContextFunctions.convertToStratifiedSample(
       options, context, df.logicalPlan))
 
 
@@ -126,16 +157,10 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
 
 
   /**
-   * Table must be registered using #registerSampleTable.
-   */
-  def insertIntoAQPStructures(aqpStructureNames: String*): Unit =
-    context.saveTable(df, aqpStructureNames)
-
-
-  /**
    * Append to an existing cache table.
    * Automatically uses #cacheQuery if not done already.
    */
   def appendToCache(tableName: String): Unit =
     context.appendToCache(df, tableName)
 }
+

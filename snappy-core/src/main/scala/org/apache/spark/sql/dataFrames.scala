@@ -16,9 +16,12 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.Constant
+
 import org.apache.spark.sql.SampleDataFrameContract.ErrorRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.MultiColumnOpenHashMap
+import org.apache.spark.sql.execution.QueryExecution
 
 import org.apache.spark.sql.sources.StatCounter
 
@@ -46,10 +49,19 @@ final class SampleDataFrame(@transient override val sqlContext: SnappyContext,
     implementor.errorEstimateAverage(columnName, confidence, groupByColumns)
 
   private def createSampleDataFrameContract =
-    sqlContext.aqpContext.createSampleDataFrameContract(sqlContext,
+    sqlContext.snappyContextFunctions.createSampleDataFrameContract(sqlContext,
       this, logicalPlan)
 }
 
 final class DataFrameWithTime(@transient _sqlContext: SnappyContext,
     @transient _logicalPlan: LogicalPlan, val time: Long)
     extends DataFrame(_sqlContext, _logicalPlan) with Serializable
+
+case class AQPDataFrame(@transient override val sqlContext: SnappyContext,
+    @transient qe: QueryExecution) extends DataFrame(sqlContext, qe) {
+
+  def withError(error: Double,
+      confidence: Double = Constant.DEFAULT_CONFIDENCE): DataFrame =
+    sqlContext.snappyContextFunctions.withErrorDataFrame(this, error,
+      confidence)
+}

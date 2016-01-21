@@ -16,14 +16,17 @@
  */
 package org.apache.spark.sql.streaming
 
+import scala.collection.concurrent.TrieMap
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.sources.{BaseRelation, DestroyRelation, TableScan}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
-import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.dstream.{InputDStream, ReceiverInputDStream, DStream}
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String]) extends BaseRelation with StreamPlan
@@ -64,21 +67,29 @@ with TableScan with DestroyRelation with Serializable with Logging {
   }
 
   override def destroy(ifExists: Boolean): Unit = {
-    val catalog = context.snappyContext.catalog
-    val qualifiedTable = catalog.newQualifiedTableName(tableName)
-    catalog.tables -= qualifiedTable
-    StreamBaseRelation.tableToStream -= tableName
+    StreamBaseRelation.tableToStream.remove(tableName).foreach {
+      case inputStream: ReceiverInputDStream[_] =>
+        try {
+          val receiver = inputStream.getReceiver()
+          if (receiver != null) {
+            receiver.stop("destroyRelation")
+          }
+        } finally {
+          inputStream.stop()
+        }
+      case inputStream: InputDStream[_] => inputStream.stop()
+      case _ => // nothing
+    }
   }
 
   def truncate(): Unit = {
-    throw new IllegalAccessException("Stream tables cannot be truncated")
+    throw new DDLException("Stream tables cannot be truncated")
   }
 }
 
 private object StreamBaseRelation extends Logging {
 
-  private var tableToStream =
-    new scala.collection.mutable.HashMap[String, DStream[InternalRow]]()
+  private val tableToStream = new TrieMap[String, DStream[InternalRow]]()
 
   val LOCK = new Object()
 
@@ -97,6 +108,10 @@ private object StreamBaseRelation extends Logging {
     tableToStream += (tableName -> stream)
     // TODO Yogesh, this is required from snappy-shell, need to get rid of this
     stream.foreachRDD { rdd => rdd }
+  }
+
+  def clearStreams(): Unit = {
+    tableToStream.clear()
   }
 
   def getRowStream(tableName: String): DStream[InternalRow] = {
