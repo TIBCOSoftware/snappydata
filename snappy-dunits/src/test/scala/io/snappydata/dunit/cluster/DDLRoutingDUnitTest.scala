@@ -5,9 +5,6 @@ import java.sql.{Connection, DriverManager}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.{SerializableRunnable, AvailablePortHelper}
 
-/**
- * Created by vbhaskar on 16/11/15.
- */
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   private def getANetConnection(netPort: Int): Connection = {

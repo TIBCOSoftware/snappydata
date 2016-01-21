@@ -22,11 +22,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.snappy._
 
-
-
-/**
- * Created by kishor on 19/10/15.
- */
 object TPCHColumnPartitionedTable  {
 
   def createOrderTable_Memsql(stmt: Statement): Unit = {

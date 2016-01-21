@@ -21,9 +21,6 @@ import java.sql.Statement
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
-/**
- * Created by kishor on 19/10/15.
- */
 object TPCHReplicatedTable {
 
   def createRegionTable_Memsql(stmt:Statement): Unit = {

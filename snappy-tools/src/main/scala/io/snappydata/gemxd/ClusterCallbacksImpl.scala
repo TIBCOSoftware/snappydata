@@ -33,8 +33,6 @@ import org.apache.spark.scheduler.cluster.{SnappyClusterManager, SnappyEmbeddedM
 
 /**
   * Callbacks that are sent by GemXD to Snappy for cluster management
-  *
-  * Created by hemantb on 10/12/15.
   */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
@@ -86,10 +84,6 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 }
 
-
-/**
-  * Created by soubhikc on 19/10/15.
-  */
 trait ClusterCallback {
   CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
 }

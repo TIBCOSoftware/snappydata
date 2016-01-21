@@ -12,8 +12,6 @@ import scala.util.Random
 
 /**
  * Some basic column table tests.
- *
- * Created by skumar on 20/10/15.
  */
 class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 

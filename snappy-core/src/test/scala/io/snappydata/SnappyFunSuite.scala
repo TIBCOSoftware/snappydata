@@ -28,8 +28,6 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
- *
- * Created by soubhikc on 6/10/15.
  */
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore

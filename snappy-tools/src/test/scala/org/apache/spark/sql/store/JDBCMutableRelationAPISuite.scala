@@ -28,8 +28,6 @@ import org.apache.spark.sql.SaveMode
 
 /**
  * Tests for non-GFXD JDBC tables.
- *
- * Created by rishim on 27/8/15.
  */
 class JDBCMutableRelationAPISuite
     extends SnappyFunSuite

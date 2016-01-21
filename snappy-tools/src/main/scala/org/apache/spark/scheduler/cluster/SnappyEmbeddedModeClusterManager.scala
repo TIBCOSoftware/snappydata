@@ -26,8 +26,6 @@ import org.apache.spark.scheduler._
 /**
   * Snappy's cluster manager that is responsible for creating
   * scheduler and scheduler backend.
-  *
-  * Created by hemant
   */
 class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 

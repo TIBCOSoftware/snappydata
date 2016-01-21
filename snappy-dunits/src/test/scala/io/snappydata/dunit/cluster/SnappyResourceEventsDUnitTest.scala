@@ -11,9 +11,6 @@ import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.storage.{RDDInfo, StorageLevel}
 
-/**
- * Created by shirishd on 19/10/15.
- */
 class SnappyResourceEventsDUnitTest (s: String) extends ClusterManagerTestBase(s) {
 
   import SnappyResourceEventsDUnitTest._
