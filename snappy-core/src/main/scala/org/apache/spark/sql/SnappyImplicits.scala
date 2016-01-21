@@ -39,6 +39,10 @@ object snappy extends Serializable {
     }
   }
 
+  implicit def convertToAQPFrame(df: DataFrame): AQPDataFrame = {
+    AQPDataFrame(df.sqlContext.asInstanceOf[SnappyContext], df.queryExecution)
+  }
+
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
       case Subquery(_, child) => unwrapSubquery(child)
