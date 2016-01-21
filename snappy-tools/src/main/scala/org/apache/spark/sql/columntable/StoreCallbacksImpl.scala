@@ -91,7 +91,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             TransactionController.ISOLATION_NOLOCK /* not used */ , null, null, 0, null, null, 0, null);
 
           val batchCreator = new CachedBatchCreator(
-            ColumnFormatRelation.cachedBatchTableName(container.getTableName), schema,
+            ColumnFormatRelation.cachedBatchTableName(container.getTableName),
+            container.getTableName, schema,
             externalStore, cachedBatchSize, useCompression)
           val keys = batchCreator.createAndStoreBatch(sc, row, batchID, bucketID)
           JavaConversions.mutableSetAsJavaSet(keys)

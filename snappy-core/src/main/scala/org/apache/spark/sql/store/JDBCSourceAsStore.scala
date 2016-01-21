@@ -93,7 +93,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 //    log.trace("cachedBatchSizeInBytes =" + cachedBatchSizeInBytes
 //    + " rddId=" + rddId + " bucketId =" + uuid.getBucketId )
     val taskContext = TaskContext.get
-    if (Option(taskContext) != None) {
+    if (Option(taskContext) != None && cachedBatchSizeInBytes > 0L) {
       val metrics = taskContext.taskMetrics
       val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(
         new ArrayBuffer[(BlockId, BlockStatus)]())
