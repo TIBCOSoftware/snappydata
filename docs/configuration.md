@@ -1,12 +1,12 @@
 ## Table of Contents
 * [Configuration](#configuration")
-* [Configuration files](#configuration-files")
-  * [SnappyData specific properties](#snappydata-specific-properties")
-  * [Spark specific properties](#spark-specific-properties")
-  * [Example Configuration](#example-configuration")
-  * [Environment settings](#environment-settings")
-  * [Per Component Configuration](#per-component-configuration")
-* [snappy-shell Command Line Utility](#snappy-shell-command-line-utility")
+* [Configuration files](#configuration-files)
+  * [SnappyData specific properties](#snappydata-specific-properties)
+  * [Spark specific properties](#spark-specific-properties)
+  * [Example Configuration](#example-configuration)
+  * [Environment settings](#environment-settings)
+  * [Per Component Configuration](#per-component-configuration)
+* [snappy-shell Command Line Utility](#snappy-shell-command-line-utility)
 * [Logging](#logging")
 
 ## Configuration
