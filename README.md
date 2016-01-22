@@ -30,7 +30,7 @@
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
     * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming)
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-1)
-    * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k-1")
+    * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k-1)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
     * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
@@ -474,8 +474,10 @@ snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
 
 #### Step 3 - Run OLAP and OLTP queries
 
-You can query the tables using a scala program as well. See AirlineDataJob. 
+AirlineDataJob.scala runs OLAP and OLTP queries on Snappy tables. Also, it caches the same airline data in Spark cache and runs the same OLAP query on the Spark cache. With airline data set, we have seen both Spark cache and snappy store table to have more and less the same performance.  
+
 ```bash
+# Submit AirlineDataJob to SnappyData
 $ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 { "status": "STARTED",
   "result": {
@@ -575,7 +577,7 @@ snappyContext.createApproxTSTopK("topktable", "hashtag",
       "size" -> "10",
       "basetable" -> "HASHTAGTABLE"
     ))
---- Query a topk table 
+--- Query a topk table for the last two seconds
 val topKDF = snappyContext.queryApproxTSTopK("topktable",
                 System.currentTimeMillis - 2000,
                 System.currentTimeMillis)
