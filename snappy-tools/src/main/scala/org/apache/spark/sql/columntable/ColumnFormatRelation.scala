@@ -157,7 +157,13 @@ class ColumnFormatRelation(
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      val id = StoreCallbacksImpl.stores.get(table).get._3
+      //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
+      val id = {
+        StoreCallbacksImpl.stores.get(table) match {
+          case Some((_, _, rddId)) => rddId
+          case _ => -1
+        }
+      }
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch, rddId = id)
       accumulated += uuid
