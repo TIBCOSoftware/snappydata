@@ -570,6 +570,6 @@ task checkAll {
   mustRunAfter buildAll
 }
 task precheckin {
-  dependsOn cleanAll, product, buildAll, checkAll, runQuickstart
+  dependsOn cleanAll, product, buildAll, checkAll, runQuickstart, ":snappy-tools_${scalaBinaryVersion}:docs"
 
 }
