@@ -437,7 +437,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
           }
 
         case None =>
-          throw new AnalysisException(s"Table Not Found: $tableIdent")
+          throw new TableNotFoundException(s"Table Not Found: $tableIdent")
       })
     // If an alias was specified by the lookup, wrap the plan in a
     // sub-query so that attributes are properly qualified with this alias
@@ -802,7 +802,7 @@ final class QualifiedTableName(_database: Option[String], _tableIdent: String)
   }
 
   def getTable(client: ClientInterface) =
-    getTableOption(client).getOrElse(throw new AnalysisException(
+    getTableOption(client).getOrElse(throw new TableNotFoundException(
       s"Table Not Found: $table (in database: ${getDatabase(client)})"))
 
   override def toString: String =
