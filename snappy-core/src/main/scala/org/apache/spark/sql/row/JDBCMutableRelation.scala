@@ -308,9 +308,8 @@ class JDBCMutableRelation(
       // Create the Index if the table exist.
       if (tableExists) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
-      }
-      else {
-        throw new AnalysisException(s"Table $table do not exists.")
+      } else {
+        throw new AnalysisException(s"Base table $table does not exist.")
       }
     } catch {
       case sqle: java.sql.SQLException =>
