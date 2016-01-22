@@ -1,4 +1,4 @@
-# Deployment toplogies (rough)
+# Deployment toplogies
 
 This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 
 There are three deployment modes available in snappydata. 
@@ -44,9 +44,17 @@ val conf = new SparkConf().
               set("jobserver.enabled", "true")
 val sc = new SparkContext(conf) 
 ```
+> ### Note
+> We currently don't support external cluster managers like YARN when operating in this mode. While, it is easy to expand and redistribute the data by starting new data servers dynamically we expect such dynamic resource allocations to be a planned and seldom exercised option. Re-distributing large quantities of data can be very expensive and can slow down running applications. 
+>For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode(describe next). 
 
 ## Split cluster mode
-This is the default Spark model where the Spark cluster manager or external cluster manager manages the computational resources. Executors no longer share same process space as data nodes … yada yada …
+In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. 
+
+Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
+
+The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the _locator_ host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog meta data is used to locate the store servers managing data partitions and would be accessed in parallel. 
+Read the [Spark cluster overview](http://spark.apache.org/docs/latest/cluster-overview.html) for more details on the native Spark architecture. 
 
 ```scala
 val conf = new SparkConf().
@@ -62,15 +70,11 @@ val snappyContext = SnappyContext(sc)
 The catalog is initialized lazily when SnappyData functionality is accessed. 
 The big benefit even while the clusters for compute and data is split is that the catalog is immediately visible to the Spark executors nodes and applications don’t have to explicitly manage connections and schema related information. This design is quite similar to the Spark’s native support for Hive. 
 
-When accessing partitioned data, the partitions are fetched as compressed blobs that is fully compatible with the columnar compression built into Spark. 
-All access is automatically parallelized. 
+When accessing partitioned data, the partitions are fetched as compressed blobs that is fully compatible with the columnar compression built into Spark. All access is automatically parallelized. 
 
-e.g. with Spark native URL … etc
-
-(Show picture for each deployment mode)
 
 ## Local mode
-Say this and that from Spark guides.
+As the name implies, use this mode to execute everything locally in the application JVM. The local vs cluster modes are described in the [Spark Programming guide](http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes).
 
 ```scala
 val conf = new SparkConf().
