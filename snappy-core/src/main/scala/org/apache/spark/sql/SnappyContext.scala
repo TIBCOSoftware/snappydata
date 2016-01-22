@@ -568,7 +568,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     val plan = try {
       catalog.lookupRelation(tableIdent, None)
     } catch {
-      case ae: AnalysisException =>
+      case ae: TableNotFoundException =>
         if (ifExists) return else throw ae
       case NonFatal(_) =>
         // table loading may fail due to an initialization exception
@@ -579,7 +579,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         } catch {
           case NonFatal(e) =>
             if (ifExists) return
-            else throw new AnalysisException(s"Table Not Found: $tableIdent", e)
+            else throw new TableNotFoundException(
+              s"Table Not Found: $tableIdent", e)
         }
     }
     // additional cleanup for external tables, if required
@@ -1089,3 +1090,12 @@ case class LocalMode(override val sc: SparkContext,
 
 case class ExternalClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
+
+class TableNotFoundException(message: String)
+    extends AnalysisException(message) with Serializable {
+
+  def this(message: String, cause: Throwable) = {
+    this(message)
+    initCause(cause)
+  }
+}
