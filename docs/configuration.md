@@ -1,13 +1,13 @@
 ## Table of Contents
-* [Configuration](#configuration" aria-hidden="true"><span aria-hidden="true)
-* [Configuration files](#configuration-files" aria-hidden="true"><span aria-hidden="true)
-  * [SnappyData specific properties](#snappydata-specific-properties" aria-hidden="true"><span aria-hidden="true)
-  * [Spark specific properties](#spark-specific-properties" aria-hidden="true"><span aria-hidden="true)
-  * [Example Configuration](#example-configuration" aria-hidden="true"><span aria-hidden="true)
-  * [Environment settings](#environment-settings" aria-hidden="true"><span aria-hidden="true)
-  * [Per Component Configuration](#per-component-configuration" aria-hidden="true"><span aria-hidden="true)
-* [snappy-shell Command Line Utility](#snappy-shell-command-line-utility" aria-hidden="true"><span aria-hidden="true)
-* [Logging](#logging" aria-hidden="true"><span aria-hidden="true)
+* [Configuration](#configuration")
+* [Configuration files](#configuration-files")
+  * [SnappyData specific properties](#snappydata-specific-properties")
+  * [Spark specific properties](#spark-specific-properties")
+  * [Example Configuration](#example-configuration")
+  * [Environment settings](#environment-settings")
+  * [Per Component Configuration](#per-component-configuration")
+* [snappy-shell Command Line Utility](#snappy-shell-command-line-utility")
+* [Logging](#logging")
 
 ## Configuration
 
