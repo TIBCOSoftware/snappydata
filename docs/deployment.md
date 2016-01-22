@@ -26,7 +26,7 @@ Not sure if we want to document this. But if yes, here is the code.
 val conf = new SparkConf().
               // here the locator url is passed as part of master url
               setMasterURL("snappydata://localhost:10334").
-              set("snappy.jobserver.enabled", "true")
+              set("jobserver.enabled", "true")
 val sc = new SparkContext(conf) 
 ```
 
@@ -37,7 +37,7 @@ This is the default Spark model where the Spark cluster manager or external clus
 val conf = new SparkConf().
               // Here the spark context connects with Spark's master running on 7077. 
               setMasterURL("spark://localhost:7077").
-              set("snappy.locator", "localhost[10334]") 
+              set("snappydata.store.locators", "localhost:10334") 
 val sc = new SparkContext(conf) 
 // use sc to use Spark and Snappy features. 
 // The following code connects with the snappy locator to fetch hive metastore. 
@@ -61,7 +61,7 @@ Say this and that from Spark guides.
 val conf = new SparkConf().
                setMasterURL("snappydata:local[*]"). 
                // Starting jobserver helps when you would want to test your jobs in a local mode. 
-               set("snappy.jobserver.enabled", "true")
+               set("jobserver.enabled", "true")
 val sc = new SparkContext(conf) 
 // use sc to use Spark and Snappy features. 
 // JobServer is started too. 
