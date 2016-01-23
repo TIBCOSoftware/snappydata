@@ -26,6 +26,7 @@ import org.apache.spark.sql.catalyst.{DefaultParserDialect, SqlLexical, SqlParse
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{DataType, StringType, StructType}
@@ -53,7 +54,8 @@ class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
   protected lazy val put: Parser[LogicalPlan] =
     PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~
         select ^^ {
-      case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]], s, o, false)
+      case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]],
+        s, o, ifNotExists = false)
     }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
@@ -93,6 +95,12 @@ class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
           Subquery(alias, child))
       }.getOrElse(Subquery(alias, child))
     })
+
+  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
+    (ident <~ ".").? ~ ident ^^ {
+      case maybeSchemaName ~ tableName =>
+        new QualifiedTableName(maybeSchemaName, tableName)
+    }
 
   override def parseExpression(input: String): Expression = synchronized {
     // Initialize the Keywords.
@@ -203,7 +211,8 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
           providerName ~ opts ~ query =>
 
         val options = opts.getOrElse(Map.empty[String, String])
-        val provider = SnappyContext.getProvider(providerName.getOrElse(SnappyContext.DEFAULT_SOURCE))
+        val provider = SnappyContext.getProvider(providerName.getOrElse(
+          SnappyContext.DEFAULT_SOURCE), onlyBuiltin = false)
         if (query.isDefined) {
           if (schemaString.length > 0) {
             throw new DDLException("CREATE TABLE AS SELECT statement " +
@@ -219,7 +228,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
             CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
               Array.empty[String], mode, options, queryPlan)
           } else {
-            CreateExternalTableUsingSelect(tableIdent, provider,
+            CreateMetastoreTableUsingSelect(tableIdent, provider,
               Array.empty[String], mode, options, queryPlan)
           }
         } else {
@@ -250,10 +259,17 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
               temporary = true, options, allowExisting.isDefined,
               managedIfNoPath = false)
           } else {
-            CreateExternalTableUsing(tableIdent, userSpecifiedSchema,
+            CreateMetastoreTableUsing(tableIdent, userSpecifiedSchema,
               schemaDDL, provider, allowExisting.isDefined, options)
           }
         }
+    }
+
+  // This is the same as tableIdentifier in SnappyParser.
+  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
+    (ident <~ ".").? ~ ident ^^ {
+      case maybeSchemaName ~ tableName =>
+        new QualifiedTableName(maybeSchemaName, tableName)
     }
 
   protected override lazy val varchar: Parser[DataType] =
@@ -289,10 +305,17 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
       case streamName ~ allowExisting ~ cols ~ providerName ~ opts =>
         val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
-        val provider = SnappyContext.getProvider(providerName)
+        val provider = SnappyContext.getProvider(providerName,
+          onlyBuiltin = false)
         val userOpts = opts.updated("tableName", streamName.unquotedString)
-        CreateExternalTableUsing(streamName, specifiedSchema, None,
-          provider, allowExisting.isDefined, userOpts)
+        // check that the provider is a stream relation
+        val clazz = ResolvedDataSource.lookupDataSource(provider)
+        if (!classOf[StreamPlan].isAssignableFrom(clazz)) {
+          throw new AnalysisException(s"CREATE STREAM provider $providerName" +
+              " does not implement StreamPlan")
+        }
+        CreateMetastoreTableUsing(streamName, specifiedSchema, None,
+          provider, allowExisting.isDefined, userOpts, onlyExternal = false)
     }
 
   protected lazy val streamContext: Parser[LogicalPlan] =
@@ -327,36 +350,40 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   }
 }
 
-private[sql] case class CreateExternalTableUsing(
+private[sql] case class CreateMetastoreTableUsing(
     tableIdent: TableIdentifier,
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     allowExisting: Boolean,
-    options: Map[String, String]) extends RunnableCommand {
+    options: Map[String, String],
+    onlyExternal: Boolean = false) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
-      userSpecifiedSchema, schemaDDL, mode, options)
+      userSpecifiedSchema, schemaDDL, mode, options,
+      onlyBuiltIn = false, onlyExternal)
     Seq.empty
   }
 }
 
-private[sql] case class CreateExternalTableUsingSelect(
+private[sql] case class CreateMetastoreTableUsingSelect(
     tableIdent: TableIdentifier,
     provider: String,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
-    query: LogicalPlan) extends RunnableCommand {
+    query: LogicalPlan,
+    onlyExternal: Boolean = false) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
     snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-      partitionColumns, mode, options, query)
+      partitionColumns, mode, options, query,
+      onlyBuiltIn = false, onlyExternal)
     // refresh cache of the table in catalog
     catalog.invalidateTable(tableIdent)
     Seq.empty

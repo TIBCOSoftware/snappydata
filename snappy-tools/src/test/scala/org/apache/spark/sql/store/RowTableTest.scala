@@ -43,11 +43,6 @@ class RowTableTest
   }
 
   test("Test the creation/dropping of row table using Schema") {
-    //shouldn't be able to create without schema
-    /* intercept[AnalysisException] {
-       snc.createExternalTable(tableName, "row", props)
-     }*/
-
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -67,11 +62,6 @@ class RowTableTest
 
 
   test("Test the creation/dropping of row table using Snappy API") {
-    //shouldn't be able to create without schema
-    /* intercept[AnalysisException] {
-       snc.createExternalTable(tableName, "row", props)
-     }*/
-
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
