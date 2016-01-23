@@ -24,7 +24,9 @@ import scala.reflect.runtime.universe.TypeTag
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.RDDConversions
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, _}
 import org.apache.spark.streaming.dstream.DStream
@@ -82,7 +84,13 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   }
 
   def getSchemaDStream(tableName: String): SchemaDStream = {
-    new SchemaDStream(self, snappyContext.catalog.lookupRelation(tableName))
+    val plan = snappyContext.catalog.lookupRelation(tableName)
+    snappy.unwrapSubquery(plan) match {
+      case LogicalRelation(sr: StreamPlan, _) => new SchemaDStream(self,
+        LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(self))
+      case _ =>
+        throw new AnalysisException(s"Table $tableName not a stream table")
+    }
   }
 
   /**
@@ -119,7 +127,7 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-  def getActive(): Option[SnappyStreamingContext] = {
+  def getActive: Option[SnappyStreamingContext] = {
     ACTIVATION_LOCK.synchronized {
       Option(activeContext.get())
     }
@@ -140,20 +148,19 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-  def start(): Unit = getActive() match {
+  def start(): Unit = getActive match {
     case Some(snsc) => snsc.start()
     case None =>
   }
 
   def stop(stopSparkContext: Boolean = false,
       stopGracefully: Boolean = true): Unit = {
-    getActive() match {
-      case Some(snsc) => {
+    getActive match {
+      case Some(snsc) =>
         snsc.stop(stopSparkContext, stopGracefully)
         snsc.snappyContext.clearCache()
         // SnappyContext.stop()
         setActiveContext(null)
-      }
       case None =>
     }
   }
@@ -164,3 +171,5 @@ trait StreamPlan {
 
   def schema: StructType
 }
+
+trait StreamPlanProvider extends SchemaRelationProvider

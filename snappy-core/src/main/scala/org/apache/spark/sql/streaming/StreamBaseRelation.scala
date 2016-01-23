@@ -30,10 +30,11 @@ import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.{InputDStream, ReceiverInputDStream, DStream}
 import org.apache.spark.util.Utils
 
-abstract class StreamBaseRelation(options: Map[String, String]) extends BaseRelation with StreamPlan
-with TableScan with DestroyRelation with Serializable with Logging {
+abstract class StreamBaseRelation(options: Map[String, String])
+    extends BaseRelation with StreamPlan with TableScan
+    with DestroyRelation with Serializable with Logging {
 
-  @transient val context = SnappyStreamingContext.getActive().get
+  @transient val context = SnappyStreamingContext.getActive.get
 
   @transient var rowStream: DStream[InternalRow] = _
 

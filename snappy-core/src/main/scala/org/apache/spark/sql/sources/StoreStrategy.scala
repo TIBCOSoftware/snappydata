@@ -30,17 +30,21 @@ object StoreStrategy extends Strategy {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
     false, opts, allowExisting, _) =>
-      ExecutedCommand(CreateExternalTableUsing(tableIdent,
-        userSpecifiedSchema, None, provider, allowExisting, opts)) :: Nil
+      ExecutedCommand(CreateMetastoreTableUsing(tableIdent,
+        userSpecifiedSchema, None, provider, allowExisting, opts,
+        onlyExternal = true)) :: Nil
 
     case CreateTableUsingAsSelect(tableIdent, provider, false,
     partitionCols, mode, opts, query) =>
-      ExecutedCommand(CreateExternalTableUsingSelect(
-        tableIdent, provider, partitionCols, mode, opts, query)) :: Nil
+      // CreateTableUsingSelect is only invoked by DataFrameWriter etc
+      // so that should support both builtin and external tables
+      ExecutedCommand(CreateMetastoreTableUsingSelect(
+        tableIdent, provider, partitionCols, mode, opts, query,
+        onlyExternal = false)) :: Nil
 
-    case create: CreateExternalTableUsing =>
+    case create: CreateMetastoreTableUsing =>
       ExecutedCommand(create) :: Nil
-    case createSelect: CreateExternalTableUsingSelect =>
+    case createSelect: CreateMetastoreTableUsingSelect =>
       ExecutedCommand(createSelect) :: Nil
     case drop: DropTable =>
       ExecutedCommand(drop) :: Nil
@@ -63,9 +67,9 @@ private[sql] case class ExternalTableDMLCmd(
   def run(sqlContext: SQLContext): Seq[Row] = {
     storeRelation.relation match {
       case relation: UpdatableRelation => relation.executeUpdate(command)
-      case relation: SingleRowInsertableRelation => relation.executeUpdate(command)
-      //this may be unnecessary as RowPutRelation is anyway SingleRowInsertableRelation
       case relation: RowPutRelation => relation.executeUpdate(command)
+      case relation: SingleRowInsertableRelation =>
+        relation.executeUpdate(command)
       case other => throw new AnalysisException("DML support requires " +
           "UpdatableRelation/SingleRowInsertableRelation/RowPutRelation" +
           " but found " + other)

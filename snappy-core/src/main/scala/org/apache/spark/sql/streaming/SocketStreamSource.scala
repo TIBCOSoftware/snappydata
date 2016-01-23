@@ -17,11 +17,10 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.util.Utils
 
-final class SocketStreamSource extends SchemaRelationProvider {
+final class SocketStreamSource extends StreamPlanProvider {
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
       schema: StructType): SocketStreamRelation = {
