@@ -37,7 +37,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
       // Create a DF from the parquet data file and make it a table
-      val airlineDF = snc.createTable(stagingAirline, "parquet",
+      val airlineDF = snc.createExternalTable(stagingAirline, "parquet",
         Map("path" -> airlinefilePath))
       val updatedSchema = replaceReservedWords(airlineDF.schema)
 
