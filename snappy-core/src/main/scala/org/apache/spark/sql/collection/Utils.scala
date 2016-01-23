@@ -31,8 +31,9 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
@@ -445,6 +446,85 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
           throw new DDLException(s"CREATE $tableType TABLE must provide " +
               "either column definition or baseTable option.")
       }
+    }
+  }
+
+  def dataTypeStringBuilder(dataType: DataType,
+      result: StringBuilder): Any => Unit = value => {
+    dataType match {
+      case utype: UserDefinedType[_] =>
+        // check if serialized
+        if (value != null && !utype.userClass.isInstance(value)) {
+          result.append(utype.deserialize(value))
+        } else {
+          result.append(value)
+        }
+      case atype: ArrayType => value match {
+        case data: ArrayData =>
+          result.append('[')
+          val etype = atype.elementType
+          val len = data.numElements()
+          if (len > 0) {
+            val ebuilder = dataTypeStringBuilder(etype, result)
+            ebuilder(data.get(0, etype))
+            var index = 1
+            while (index < len) {
+              result.append(',')
+              ebuilder(data.get(index, etype))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case mtype: MapType => value match {
+        case data: MapData =>
+          result.append('[')
+          val ktype = mtype.keyType
+          val vtype = mtype.valueType
+          val len = data.numElements()
+          if (len > 0) {
+            val kbuilder = dataTypeStringBuilder(ktype, result)
+            val vbuilder = dataTypeStringBuilder(vtype, result)
+            val keys = data.keyArray()
+            val values = data.valueArray()
+            kbuilder(keys.get(0, ktype))
+            result.append('=')
+            vbuilder(values.get(0, ktype))
+            var index = 1
+            while (index < len) {
+              result.append(',')
+              kbuilder(keys.get(index, ktype))
+              result.append('=')
+              vbuilder(values.get(index, ktype))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case stype: StructType => value match {
+        case data: InternalRow =>
+          result.append('[')
+          val len = data.numFields
+          if (len > 0) {
+            val etype = stype.fields(0).dataType
+            dataTypeStringBuilder(etype, result)(data.get(0, etype))
+            var index = 1
+            while (index < len) {
+              result.append(',')
+              val etype = stype.fields(index).dataType
+              dataTypeStringBuilder(etype, result)(data.get(index, etype))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case _ => result.append(value)
     }
   }
 }
