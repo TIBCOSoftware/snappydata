@@ -312,7 +312,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         val clazz = ResolvedDataSource.lookupDataSource(provider)
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw new AnalysisException(s"CREATE STREAM provider $providerName" +
-              " does not implement StreamPlan")
+              " does not implement StreamPlanProvider")
         }
         CreateMetastoreTableUsing(streamName, specifiedSchema, None,
           provider, allowExisting.isDefined, userOpts, onlyExternal = false)
