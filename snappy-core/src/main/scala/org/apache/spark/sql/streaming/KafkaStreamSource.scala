@@ -17,11 +17,11 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.kafka.KafkaUtils
 
-class KafkaStreamSource extends SchemaRelationProvider {
+class KafkaStreamSource extends StreamPlanProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
