@@ -26,7 +26,7 @@ import scala.collection.mutable
 trait SampleDataFrameContract {
 
 
-  def registerSampleTable(tableName: String): Unit
+  def registerSampleTable(tableName: String, baseTable: Option[String]): Unit
 
   def errorStats(columnName: String,
                  groupBy: Set[String] = Set.empty): MultiColumnOpenHashMap[StatCounter]
