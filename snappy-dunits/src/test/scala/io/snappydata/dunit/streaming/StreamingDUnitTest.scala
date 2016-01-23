@@ -5,6 +5,9 @@ import java.sql.{Connection, DriverManager}
 import dunit.AvailablePortHelper
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
 
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.streaming.SnappyStreamingContext
+
 class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   override def tearDown2(): Unit = {
@@ -95,9 +98,21 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
         "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
         "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
+    s.execute("create table fullTweetsTable (id long, text string, " +
+        "fullName string, country string, retweets int, " +
+        "hashtag string) using column")
     s.execute("create topk table topkTweets on tweetsTable options(" +
-        s"key 'hashtag', epoch '${System.currentTimeMillis()}', " +
-        "timeInterval '2000ms', size '10')")
+        s"key 'hashtag', " +
+        "timeInterval '10000ms', size '10')")
+
+    val tweetsStream = SnappyStreamingContext.getActive.get
+        .getSchemaDStream("tweetsTable")
+    tweetsStream.foreachDataFrame { df =>
+      // println("SW: inserting into fullTweetsTable rows: " + df.collect().mkString("\n"))
+      df.write.insertInto("fullTweetsTable")
+    }
+
+    val snc = SnappyContext()
 
     s.execute("streaming start")
 
@@ -105,7 +120,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
       Thread.sleep(2000)
 
-      s.execute("select hashtag, count(hashtag) as cht from tweetsTable " +
+      s.execute("select hashtag, count(hashtag) as cht from fullTweetsTable " +
           "group by hashtag order by cht desc limit 10")
       println("\n\n-----  TOP Tweets  -----\n")
       var rs = s.getResultSet
@@ -125,7 +140,16 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       println(s"Num results=$numResults")
       assert(numResults <= 10)
 
-      s.execute("select text, fullName from tweetsTable where text like '%e%'")
+      val topKdf = snc.queryApproxTSTopK("topkTweets", -1, -1)
+      println("\n\n-----  TOPK Tweets2  -----\n")
+      val topKRes = topKdf.collect()
+      topKRes.foreach(println)
+      numResults = topKRes.length
+      println(s"Num results=$numResults")
+      assert(numResults <= 10)
+
+      s.execute("select text, fullName from fullTweetsTable " +
+          "where text like '%e%'")
       rs = s.getResultSet
       if (a == 5) assert(rs.next)
       while (rs.next()) {
@@ -134,8 +158,9 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       }
     }
     s.execute("streaming stop")
-    s.execute("drop table tweetsTable")
+    s.execute("drop table fullTweetsTable")
     s.execute("drop table topktweets")
+    s.execute("drop table tweetsTable")
 
     conn.close()
   }
@@ -165,4 +190,3 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 }
-

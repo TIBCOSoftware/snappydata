@@ -21,7 +21,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
@@ -117,24 +116,24 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   @transient private lazy val parentStreams = {
     def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
       case x: StreamPlan => x.rowStream :: Nil
-      case _ => plan.children.flatMap(traverse(_))
+      case _ => plan.children.flatMap(traverse)
     }
     val streams = traverse(queryExecution.executedPlan)
     streams
   }
 
-  def explain(): Unit = explain(extended = false)
-
-  /**
-    * Explain the query to get logical plan as well as physical plan.
-    */
-  def explain(extended: Boolean): Unit = {
-    val explain = ExplainCommand(queryExecution.logical, extended = extended)
-    val sds = new SchemaDStream(snsc, explain)
-    sds.queryExecution.executedPlan.executeCollect().map {
-      r => println(r.getString(0)) // scalastyle:ignore
-    }
-  }
+//  def explain(): Unit = explain(extended = false)
+//
+//  /**
+//    * Explain the query to get logical plan as well as physical plan.
+//    */
+//  def explain(extended: Boolean): Unit = {
+//    val explain = ExplainCommand(queryExecution.logical, extended = extended)
+//    val sds = new SchemaDStream(snsc, explain)
+//    sds.queryExecution.executedPlan.executeCollect().foreach {
+//      r => println(r.getString(0)) // scalastyle:ignore
+//    }
+//  }
 
   /**
     * Returns all column names as an array.

@@ -34,11 +34,8 @@ final class SampleDataFrame(@transient override val sqlContext: SnappyContext,
   @transient var implementor: SampleDataFrameContract =
     createSampleDataFrameContract
 
-  def registerSampleTable(tableName: String): Unit =
-    implementor.registerSampleTable(tableName)
-
-  override def registerTempTable(tableName: String): Unit =
-    registerSampleTable(tableName)
+  def registerSampleTable(tableName: String, baseTable: Option[String]): Unit =
+    implementor.registerSampleTable(tableName, baseTable)
 
   def errorStats(columnName: String,
       groupBy: Set[String] = Set.empty): MultiColumnOpenHashMap[StatCounter] =

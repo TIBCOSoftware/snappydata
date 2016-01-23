@@ -1,14 +1,14 @@
 package io.snappydata.dunit.externalstore
 
+import scala.util.Random
+
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import dunit.SerializableCallable
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
-import org.apache.spark.sql.columnar.JDBCAppendableRelation
+
 import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
-
-import scala.util.Random
 
 /**
  * Some basic column table tests.
@@ -114,7 +114,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     //TDOD : Merge and validate test after SNAP-105
     val p = Map.empty[String, String]
-    snc.createExternalTable(tableName, "column", dataDF.schema, p)
+    snc.createTable(tableName, "column", dataDF.schema, p)
     val columnTableRegionName = ColumnFormatRelation.
         cachedBatchTableName(tableName).toUpperCase
     // we don't expect any increase in put distribution stats
