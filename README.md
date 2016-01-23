@@ -70,7 +70,7 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview (??)
 
 #### Building SnappyData from source
 You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc, [here](docs/build-instructions.md)
-> #### NOTE:
+>  NOTE:
 > SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
 
 
@@ -641,7 +641,7 @@ $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master s
 # The results can be seen on the command line. 
 ```
 
-### Final Step - Stop the SnappyData Cluster
+#### Final Step - Stop the SnappyData Cluster
 
 ```bash
 $ sbin/snappy-stop-all.sh 
