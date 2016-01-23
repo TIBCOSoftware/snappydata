@@ -26,6 +26,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Scala
 import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{Row, _}
 import org.apache.spark.streaming.dstream.DStream
@@ -170,3 +171,5 @@ trait StreamPlan {
 
   def schema: StructType
 }
+
+trait StreamPlanProvider extends SchemaRelationProvider

@@ -17,10 +17,10 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 
-final class FileStreamSource extends SchemaRelationProvider {
+final class FileStreamSource extends StreamPlanProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],

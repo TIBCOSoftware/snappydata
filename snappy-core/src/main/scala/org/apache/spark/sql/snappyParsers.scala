@@ -310,7 +310,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         val userOpts = opts.updated("tableName", streamName.unquotedString)
         // check that the provider is a stream relation
         val clazz = ResolvedDataSource.lookupDataSource(provider)
-        if (!classOf[StreamPlan].isAssignableFrom(clazz)) {
+        if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw new AnalysisException(s"CREATE STREAM provider $providerName" +
               " does not implement StreamPlan")
         }
