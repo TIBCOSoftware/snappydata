@@ -378,9 +378,13 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
         }
   }
 
-  def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
-    new QualifiedTableName(tableIdent.database,
-      SnappyStoreHiveCatalog.processTableIdentifier(tableIdent.table, conf))
+  def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName = {
+    tableIdent match {
+      case q: QualifiedTableName => q
+      case _ => new QualifiedTableName(tableIdent.database.map(
+        processTableIdentifier), processTableIdentifier(tableIdent.table))
+    }
+  }
 
   def newQualifiedTableName(tableIdent: String): QualifiedTableName = {
     val tableName = processTableIdentifier(tableIdent)

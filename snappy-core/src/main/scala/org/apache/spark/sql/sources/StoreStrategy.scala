@@ -30,17 +30,21 @@ object StoreStrategy extends Strategy {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
     false, opts, allowExisting, _) =>
-      ExecutedCommand(CreateExternalTableUsing(tableIdent,
-        userSpecifiedSchema, None, provider, allowExisting, opts)) :: Nil
+      ExecutedCommand(CreateMetastoreTableUsing(tableIdent,
+        userSpecifiedSchema, None, provider, allowExisting, opts,
+        onlyExternal = true)) :: Nil
 
     case CreateTableUsingAsSelect(tableIdent, provider, false,
     partitionCols, mode, opts, query) =>
-      ExecutedCommand(CreateExternalTableUsingSelect(
-        tableIdent, provider, partitionCols, mode, opts, query)) :: Nil
+      // CreateTableUsingSelect is only invoked by DataFrameWriter etc
+      // so that should support both builtin and external tables
+      ExecutedCommand(CreateMetastoreTableUsingSelect(
+        tableIdent, provider, partitionCols, mode, opts, query,
+        onlyExternal = false)) :: Nil
 
-    case create: CreateExternalTableUsing =>
+    case create: CreateMetastoreTableUsing =>
       ExecutedCommand(create) :: Nil
-    case createSelect: CreateExternalTableUsingSelect =>
+    case createSelect: CreateMetastoreTableUsingSelect =>
       ExecutedCommand(createSelect) :: Nil
     case drop: DropTable =>
       ExecutedCommand(drop) :: Nil

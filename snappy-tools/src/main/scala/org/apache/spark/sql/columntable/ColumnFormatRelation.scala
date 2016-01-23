@@ -56,8 +56,8 @@ import org.apache.spark.{Logging, Partition}
  * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
-    snc.createExternalTable(tableName, "column", dataDF.schema, props)
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.createTable(tableName, "column", dataDF.schema, props)
+    dataDF.write.insertInto(tableName)
 
     This provider scans underlying tables in parallel and is aware of the data partition.
     It does not introduces a shuffle if simple table query is fired.

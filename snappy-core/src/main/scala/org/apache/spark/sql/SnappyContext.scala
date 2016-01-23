@@ -297,8 +297,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       samplingOptions: Map[String, String],
       ifExists: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
-      SnappyContext.SAMPLE_SOURCE, schema.map(catalog.normalizeSchema),
-      schemaDDL = None, SaveMode.ErrorIfExists, samplingOptions)
+      SnappyContext.SAMPLE_SOURCE, schema, schemaDDL = None,
+      SaveMode.ErrorIfExists, samplingOptions,
+      onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
 
@@ -316,9 +317,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       inputDataSchema: Option[StructType], topkOptions: Map[String, String],
       ifExists: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
-      SnappyContext.TOPK_SOURCE, inputDataSchema.map(catalog.normalizeSchema),
-      schemaDDL = None, SaveMode.ErrorIfExists,
-      topkOptions + ("key" -> keyColumnName))
+      SnappyContext.TOPK_SOURCE, inputDataSchema, schemaDDL = None,
+      SaveMode.ErrorIfExists, topkOptions + ("key" -> keyColumnName),
+      onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
 
@@ -343,7 +344,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       options: Map[String, String]): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
-      SaveMode.ErrorIfExists, options)
+      SaveMode.ErrorIfExists, options,
+      onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
 
@@ -376,8 +378,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       schema: StructType,
       options: Map[String, String]): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
-      Some(catalog.normalizeSchema(schema)), schemaDDL = None,
-      SaveMode.ErrorIfExists, options)
+      Some(schema), schemaDDL = None, SaveMode.ErrorIfExists, options,
+      onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
 
@@ -433,15 +435,10 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, Some(schemaStr),
-      SaveMode.ErrorIfExists, options)
+      SaveMode.ErrorIfExists, options,
+      onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
-
-  /**
-   * @todo Jags: Recommend we change behavior so createExternal is used only to
-   * create non-snappy managed tables. 'createTable' should create snappy
-   * managed tables.
-   */
 
 
   /**
@@ -453,7 +450,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       userSpecifiedSchema: Option[StructType],
       schemaDDL: Option[String],
       mode: SaveMode,
-      options: Map[String, String]): LogicalPlan = {
+      options: Map[String, String],
+      onlyBuiltIn: Boolean,
+      onlyExternal: Boolean): LogicalPlan = {
 
     if (catalog.tableExists(tableIdent)) {
       mode match {
@@ -475,22 +474,24 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       options + (dbtableProp -> tableIdent.toString)
     }
 
-    val source = SnappyContext.getProvider(provider)
+    val schema = userSpecifiedSchema.map(catalog.normalizeSchema)
+    val source = if (onlyExternal) provider
+    else SnappyContext.getProvider(provider, onlyBuiltIn)
+
     val resolved = schemaDDL match {
-      case Some(schema) => JdbcExtendedUtils.externalResolvedDataSource(self,
-        schema, source, mode, params)
+      case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
+        cols, source, mode, params)
 
       case None =>
         // add allowExisting in properties used by some implementations
-        ResolvedDataSource(self, userSpecifiedSchema, Array.empty[String],
+        ResolvedDataSource(self, schema, Array.empty[String],
           source, params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
               (mode != SaveMode.ErrorIfExists).toString))
     }
 
     val plan = LogicalRelation(resolved.relation)
-    catalog.registerExternalTable(tableIdent, userSpecifiedSchema,
-      Array.empty[String], source, params,
-      catalog.getTableType(resolved.relation))
+    catalog.registerExternalTable(tableIdent, schema, Array.empty[String],
+      source, params, catalog.getTableType(resolved.relation))
     plan
   }
 
@@ -503,7 +504,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       partitionColumns: Array[String],
       mode: SaveMode,
       options: Map[String, String],
-      query: LogicalPlan): LogicalPlan = {
+      query: LogicalPlan,
+      onlyBuiltIn: Boolean,
+      onlyExternal: Boolean): LogicalPlan = {
 
     var data = DataFrame(self, query)
     if (catalog.tableExists(tableIdent)) {
@@ -535,7 +538,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     // this gives the provider..
 
-    val source = SnappyContext.getProvider(provider)
+    val source = if (onlyExternal) provider
+    else SnappyContext.getProvider(provider, onlyBuiltIn)
+
     val resolved = ResolvedDataSource(self, source, partitionColumns,
       mode, params, data)
 
@@ -854,16 +859,19 @@ object SnappyContext extends Logging {
 
   private[this] val contextLock = new AnyRef
 
-  val DEFAULT_SOURCE = "row"
+  val COLUMN_SOURCE = "column"
+  val ROW_SOURCE = "row"
   val SAMPLE_SOURCE = "column_sample"
   val TOPK_SOURCE = "approx_topk"
 
+  val DEFAULT_SOURCE = ROW_SOURCE
+
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    "column" -> classOf[columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[columnar.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
-    "row" -> "org.apache.spark.sql.rowtable.DefaultSource",
+    ROW_SOURCE -> "org.apache.spark.sql.rowtable.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
@@ -1031,10 +1039,13 @@ object SnappyContext extends Logging {
   /**
    * Checks if the passed provider is recognized
    * @param providerName
+   * @param onlyBuiltin
    * @return
    */
-  def getProvider(providerName: String): String =
-    builtinSources.getOrElse(providerName, providerName)
+  def getProvider(providerName: String, onlyBuiltin: Boolean): String =
+    builtinSources.getOrElse(providerName,
+      if (onlyBuiltin) throw new AnalysisException(
+        s"Failed to find a builtin provider $providerName") else providerName)
 }
 
 // end of SnappyContext
