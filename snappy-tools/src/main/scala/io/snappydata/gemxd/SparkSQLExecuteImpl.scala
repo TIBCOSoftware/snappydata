@@ -34,6 +34,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
@@ -288,8 +289,10 @@ object SparkSQLExecuteImpl {
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
       // TODO: transmitting rest as CLOBs; change for complex types (SNAP-428)
       case other =>
+        val sb = new StringBuilder()
+        Utils.dataTypeStringBuilder(other, sb)(row.get(colIndex, other))
         // write the full length as an integer
-        hdos.writeFullUTF(row.get(colIndex, other).toString, true, false)
+        hdos.writeFullUTF(sb.toString(), true, false)
     }
   }
 
