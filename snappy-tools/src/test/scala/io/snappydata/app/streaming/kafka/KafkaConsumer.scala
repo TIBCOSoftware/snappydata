@@ -111,7 +111,7 @@ object KafkaConsumer {
                 //SnappyContext.createTopKRDD()
                 //df.show
                 //df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
-                //ssnc.appendToCacheRDD(rdd, streamTable, resultSet.schema)
+                //ssnc.appendToTempTableCache(rdd, streamTable, resultSet.schema)
               }
               }")
         )
