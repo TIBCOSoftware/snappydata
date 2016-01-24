@@ -17,28 +17,32 @@
 package org.apache.spark.sql.streaming
 
 import scala.collection.concurrent.TrieMap
-import scala.util.control.NonFatal
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.sources.{BaseRelation, DestroyRelation, TableScan}
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.sources.{DependentRelation, DestroyRelation, JdbcExtendedUtils, ParentRelation, TableScan}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
-import org.apache.spark.streaming.dstream.{InputDStream, ReceiverInputDStream, DStream}
+import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String])
-    extends BaseRelation with StreamPlan with TableScan
+    extends ParentRelation with StreamPlan with TableScan
     with DestroyRelation with Serializable with Logging {
 
-  @transient val context = SnappyStreamingContext.getActive.get
+  final def context = SnappyStreamingContext.getActive.getOrElse(
+    throw new IllegalStateException("No active streaming context"))
 
-  @transient var rowStream: DStream[InternalRow] = _
+  @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 
-  @transient val tableName = options("tableName")
+  override def getDependents(
+      catalog: SnappyStoreHiveCatalog): Seq[DependentRelation] =
+    catalog.getExternalRelations[DependentRelation](Seq(
+        ExternalTableType.Sample, ExternalTableType.TopK), Some(tableName))
 
   val storageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)
@@ -52,6 +56,19 @@ abstract class StreamBaseRelation(options: Map[String, String])
       case e: Exception => sys.error(s"Failed to load class : ${e.toString}")
     }
   }
+
+  protected def createRowStream(): DStream[InternalRow]
+
+  @transient override final lazy val rowStream: DStream[InternalRow] =
+    StreamBaseRelation.LOCK.synchronized {
+      StreamBaseRelation.getRowStream(tableName) match {
+        case None =>
+          val stream = createRowStream()
+          StreamBaseRelation.setRowStream(tableName, stream)
+          stream
+        case Some(stream) => stream
+      }
+    }
 
   override def buildScan(): RDD[Row] = {
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
@@ -94,11 +111,9 @@ private object StreamBaseRelation extends Logging {
     }
   }
 
-  def setRowStream(tableName: String, stream: DStream[InternalRow]): Unit = {
+  private def setRowStream(tableName: String,
+      stream: DStream[InternalRow]): Unit =
     tableToStream += (tableName -> stream)
-    // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-    stream.foreachRDD { rdd => rdd }
-  }
 
   def stopStream(stream: DStream[_]): Unit = stream match {
     case inputStream: ReceiverInputDStream[_] =>
@@ -114,9 +129,9 @@ private object StreamBaseRelation extends Logging {
     case _ => // nothing
   }
 
-  def clearStreams(): Unit = tableToStream.clear()
+  private[streaming] def clearStreams(): Unit = tableToStream.clear()
 
-  def getRowStream(tableName: String): DStream[InternalRow] = {
-    tableToStream.getOrElse(tableName, null)
+  private def getRowStream(tableName: String): Option[DStream[InternalRow]] = {
+    tableToStream.get(tableName)
   }
 }

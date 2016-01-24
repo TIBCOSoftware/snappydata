@@ -19,6 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -86,8 +87,32 @@ trait SchemaInsertableRelation extends InsertableRelation {
   def append(rows: RDD[Row], time: Long = -1): Unit
 }
 
+/**
+ * A relation having a parent-child relationship with a base relation.
+ */
 @DeveloperApi
-trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
+trait DependentRelation extends BaseRelation {
+
+  /** Base table of this relation. */
+  def baseTable: Option[String]
+
+  /** Name of this relation in the catalog. */
+  def name: String
+}
+
+/**
+ * A relation having a parent-child relationship with one or more
+ * <code>DependentRelation</code>s as children.
+ */
+@DeveloperApi
+trait ParentRelation extends BaseRelation with DestroyRelation {
+
+  /** Get the dependent child relations. */
+  def getDependents(catalog: SnappyStoreHiveCatalog): Seq[DependentRelation]
+}
+
+@DeveloperApi
+trait SamplingRelation extends DependentRelation with SchemaInsertableRelation {
 
   /**
    * Options set for this sampling relation.
@@ -98,12 +123,6 @@ trait SamplingRelation extends BaseRelation with SchemaInsertableRelation {
    * The QCS columns for the sample.
    */
   def qcs: Array[String]
-
-  /**
-   * Base table name on which sampling has been defined. Can be empty
-   * in which case the sample table is expected to be filled in explicitly.
-   */
-  def baseTable: Option[String]
 }
 
 @DeveloperApi

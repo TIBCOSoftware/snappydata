@@ -20,8 +20,10 @@ import kafka.serializer.StringDecoder
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
 class DirectKafkaStreamSource extends StreamPlanProvider {
@@ -33,10 +35,12 @@ class DirectKafkaStreamSource extends StreamPlanProvider {
   }
 }
 
-case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
+final class DirectKafkaStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) with Logging with StreamPlan with Serializable {
+    extends StreamBaseRelation(options)
+    with Logging with StreamPlan with Serializable {
 
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
@@ -46,16 +50,8 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     }.toMap
   }.getOrElse(Map())
 
-  StreamBaseRelation.LOCK.synchronized {
-    if (StreamBaseRelation.getRowStream(tableName) == null) {
-      rowStream = {
-        KafkaUtils
-            .createDirectStream[String, String, StringDecoder, StringDecoder](
-          context, kafkaParams, topicsSet).map(_._2).flatMap(rowConverter.toRows)
-      }
-      StreamBaseRelation.setRowStream(tableName, rowStream)
-    } else {
-      rowStream = StreamBaseRelation.getRowStream(tableName)
-    }
-  }
+  override protected def createRowStream(): DStream[InternalRow] =
+    KafkaUtils.createDirectStream[String, String, StringDecoder,
+     StringDecoder](context, kafkaParams, topicsSet).map(_._2)
+        .flatMap(rowConverter.toRows)
 }
