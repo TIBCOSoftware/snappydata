@@ -160,7 +160,7 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * Append to an existing cache table.
    * Automatically uses #cacheQuery if not done already.
    */
-  def appendToCache(tableName: String): Unit =
-    context.appendToCache(df, tableName)
+  def appendToTempTableCache(tableName: String): Unit =
+    context.appendToTempTableCache(df, tableName)
 }
 

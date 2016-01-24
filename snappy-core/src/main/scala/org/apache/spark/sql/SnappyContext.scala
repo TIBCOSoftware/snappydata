@@ -171,7 +171,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Append dataframe to cache table in Spark.
-   * @todo should this be renamed to appendToTempTable(...) ?
    *
    * @param df
    * @param table
@@ -179,8 +178,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @return  @todo -> return type?
    */
   @DeveloperApi
-  def appendToCache(df: DataFrame, table: String,
-                    storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
+  def appendToTempTableCache(df: DataFrame, table: String,
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
@@ -223,8 +222,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param storageLevel
    */
   @DeveloperApi
-  private[sql] def appendToCacheRDD(rdd: RDD[_], table: String, schema:
-    StructType,
+  private[sql] def appendToTempTableCache(rdd: RDD[_], table: String,
+      schema: StructType,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
