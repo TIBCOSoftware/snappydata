@@ -90,7 +90,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions{
   def aqpTablePopulator(context: SnappyContext): Unit = {
     // register blank tasks for the stream tables so that the streams start
     val catalog = context.catalog
-    catalog.getExternalRelations[StreamBaseRelation](Seq(ExternalTableType
+    catalog.getDataSourceRelations[StreamBaseRelation](Seq(ExternalTableType
         .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
   }
 
