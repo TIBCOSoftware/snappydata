@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, _}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SnappyContext, Row}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext, StreamingContextState}
 
@@ -87,8 +87,8 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   }
 
   def getSchemaDStream(tableName: String): SchemaDStream = {
-    val plan = snappyContext.catalog.lookupRelation(tableName)
-    snappy.unwrapSubquery(plan) match {
+    val catalog = snappyContext.catalog
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(sr: StreamPlan, _) => new SchemaDStream(self,
         LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(self))
       case _ =>

@@ -105,10 +105,18 @@ trait DependentRelation extends BaseRelation {
  * <code>DependentRelation</code>s as children.
  */
 @DeveloperApi
-trait ParentRelation extends BaseRelation with DestroyRelation {
+trait ParentRelation extends BaseRelation {
+
+  /** Used by <code>DependentRelation</code>s to register with parent */
+  def addDependent(dependent: DependentRelation,
+      catalog: SnappyStoreHiveCatalog): Boolean
+
+  /** Used by <code>DependentRelation</code>s to unregister with parent */
+  def removeDependent(dependent: DependentRelation,
+      catalog: SnappyStoreHiveCatalog): Boolean
 
   /** Get the dependent child relations. */
-  def getDependents(catalog: SnappyStoreHiveCatalog): Seq[DependentRelation]
+  def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String]
 }
 
 @DeveloperApi

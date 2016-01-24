@@ -25,7 +25,7 @@ object TestUtils {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       // drop all the stream tables that can have dependents at the end
-      val streams = snc.catalog.getExternalTables(Seq(ExternalTableType.Stream))
+      val streams = snc.catalog.getDataSourceTables(Seq(ExternalTableType.Stream))
       snc.catalog.getTables(None).filter(t => !streams.exists(_.toString ==
           t._1)).foreach(t => snc.dropTable(t._1, ifExists = true))
       streams.foreach(s => snc.dropTable(s.toString, ifExists = true))
