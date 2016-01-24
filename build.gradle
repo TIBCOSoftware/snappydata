@@ -151,8 +151,8 @@ subprojects {
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
-    maxHeapSize '8g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=4G', '-ea'
+    maxHeapSize '4g'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     List<String> suites = []
@@ -172,8 +172,8 @@ subprojects {
   }
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
-    maxHeapSize '1g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=350M', '-ea'
+    maxHeapSize '2g'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     workingDir = "${testResultsBase}/junit"

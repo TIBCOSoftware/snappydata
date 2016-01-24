@@ -307,7 +307,6 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName,
           onlyBuiltin = false)
-        val userOpts = opts.updated("tableName", streamName.unquotedString)
         // check that the provider is a stream relation
         val clazz = ResolvedDataSource.lookupDataSource(provider)
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
@@ -315,7 +314,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
               " does not implement StreamPlanProvider")
         }
         CreateMetastoreTableUsing(streamName, specifiedSchema, None,
-          provider, allowExisting.isDefined, userOpts, onlyExternal = false)
+          provider, allowExisting.isDefined, opts, onlyExternal = false)
     }
 
   protected lazy val streamContext: Parser[LogicalPlan] =

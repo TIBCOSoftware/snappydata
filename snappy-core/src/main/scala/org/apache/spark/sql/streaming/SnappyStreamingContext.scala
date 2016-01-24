@@ -50,8 +50,7 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   override def start(): Unit = synchronized {
     if (getState() == StreamingContextState.INITIALIZED) {
       // register population of AQP tables from stream tables
-      snappyContext.snappyContextFunctions.getAQPTablePopulator
-          .foreach(_ (snappyContext))
+      snappyContext.snappyContextFunctions.aqpTablePopulator(snappyContext)
     }
     super.start()
   }
@@ -80,6 +79,10 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   def registerCQ(queryStr: String): SchemaDStream = {
     val plan = sql(queryStr).queryExecution.logical
     val dStream = new SchemaDStream(self, plan)
+    // register a dummy task so that the DStream gets started
+    // TODO: need to remove once we add proper registration of registerCQ
+    // streams in catalog and possible AQP structures on top
+    dStream.foreachRDD(rdd => Unit)
     dStream
   }
 

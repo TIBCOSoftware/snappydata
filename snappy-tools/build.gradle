@@ -60,7 +60,7 @@ task docs(type: ScalaDoc) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':deleteDocsDir'
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
-    println("Executing in for project = ${project}")
+    // println("Executing in for project = ${project}")
     if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
         // jobserver depends on Apache Spark 1.5.x which causes conflicts
         !project.name.contains('jobserver') &&
@@ -80,10 +80,8 @@ task docs(type: ScalaDoc) {
   }
   source = allSource
   classpath = files(docProjects.collect { project ->
-    println("Got project = $project")
-    //if (project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) {
-      project.sourceSets.main.compileClasspath
-    //}
+    // println("Got project = $project")
+    project.sourceSets.main.compileClasspath
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
