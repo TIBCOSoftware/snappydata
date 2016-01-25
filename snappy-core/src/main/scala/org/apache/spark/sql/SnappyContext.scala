@@ -223,8 +223,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    */
   @DeveloperApi
   private[sql] def appendToTempTableCache(rdd: RDD[_], table: String,
-      schema: StructType,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) {
+      schema: StructType, storageLevel: StorageLevel) {
     val useCompression = conf.useCompression
     val columnBatchSize = conf.columnBatchSize
 
