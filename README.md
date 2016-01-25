@@ -41,7 +41,11 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
 
 ## Download binary distribution
-You can download the latest version of SnappyData from [here][2]. SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site) [Skip to Getting Started](#getting-started)
+You can download the latest version of SnappyData here:
+
+* [SnappyData Preview 0.1 download link](1)
+
+SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html).  (this info should also be in the download page on our web site) [Skip to Getting Started](#getting-started)
 
 ## Community Support
 
