@@ -44,7 +44,42 @@ We offer the following enhancements over Spark Streaming :
 
 
 ## Working with stream tables
-SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources. For example to create a stream table using kafka source : 
+SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.
+
+    // DDL for creating a stream table
+    CREATE STREAM TABLE [IF NOT EXISTS] table_name
+    (COLUMN_DEFININTION)
+    USING 'kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream'
+    OPTIONS (
+     // multiple stream source specific options
+    storagelevel '', 
+    rowConverter '', 
+    zkQuorum '',
+    groupId '',
+    topics '', 
+    kafkaParams '',
+    consumerKey '',
+    consumerSecret '',
+    accessToken '',
+    accessTokenSecret '',
+    hostname '',
+    port '',
+    directory ''
+    )
+
+    // DDL for dropping a stream table
+    DROP TABLE [IF EXISTS] table_name
+
+    // Initialize StreamingContext
+    STREAMING INIT <batchIntervalSeconds> 
+
+    // Start streaming
+    STREAMING START
+
+    // Stop streaming
+    STREAMING STOP
+
+For example to create a stream table using kafka source : 
 
     val sc = new SparkContext(new SparkConf().setAppName("example").setMaster("local[*]"))
     val snc = SnappyContext.getOrCreate(sc)
