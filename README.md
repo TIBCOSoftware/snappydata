@@ -304,15 +304,15 @@ You can run queries directly on the sample table (stored in columnar format) or 
 -- What is the average arrival delay for all airlines for each month?;
 snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0 
     group by Month_
-    with error .05 ;
+    with error .1 ;
 -- The above query will consult the sample and return an answer if the estimated answer 
--- is at least 95% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
+-- is at least 90% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
 
 -- You can also access the error using built-in functions. 
 snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_ 
     from Airline where ArrDelay >0 
     group by Month_
-    with error .05 ;
+    with error .1 ;
 ```
 #### Step 4 - Create, Load and Query Sample Table
 
