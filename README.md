@@ -114,9 +114,10 @@ Details of about the architecture can be found [here](./docs/architecture.md). S
 > ##### Note
 > The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
 Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236).
-> Default airline data shipped with product is of 15 MB compressed size. To download the larger data set run this command from the shell:
->> $ ./download_full_airlinedata.sh full_dataset_folder
+> Default airline data shipped with product is of 15 MB compressed size. If you are interested in studying Approximate query processing we recommend downloading the full data set run this command (from quickstart/scripts directory):
+>> $ ./download_full_airlinedata.sh ../data 
 
+##### Do we need this? seems to work with default cluster ...
 >In case you are running Getting Started with full dataset, configure snappy to start two servers with max heap size as 4G each. 
 ```bash
 $ cat conf/servers
