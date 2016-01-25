@@ -64,10 +64,13 @@ task docs(type: ScalaDoc) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':deleteDocsDir'
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
-    // println("Executing in for project = ${project}")
     if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
         // jobserver depends on Apache Spark 1.5.x which causes conflicts
+        !project.path.contains('snappy-store') &&
         !project.name.contains('jobserver') &&
+        // below three will get filtered with the snappy-store path check itself
+        // but still keeping it as when we would remove the snappy-store path filter
+        // still the below three sub prejects should not be built.
         !project.name.contains('jgroups') &&
         !project.name.contains('gemfire-examples') &&
         !project.name.contains('trove') &&
