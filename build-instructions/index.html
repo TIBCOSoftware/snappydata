@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData development team">
+  
+  <title>Building from source, project layout - SnappyData Docs - 0.1 release</title>
+  
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Building from source, project layout";
+    var mkdocs_page_input_path = "build-instructions.md";
+    var mkdocs_page_url = "/build-instructions/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Docs - 0.1 release</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>User Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../README/">Getting Started</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../features/">Key features</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Building from source, project layout</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#build-quickstart">Build Quickstart</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#repository-layout">Repository layout</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#building-using-gradle">Building using gradle</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#setting-up-intellij-with-gradle">Setting up Intellij with gradle</a></li>
+                
+                    <li><a class="toctree-l4" href="#running-a-junitscalatest">Running a junit/scalatest</a></li>
+                
+                    <li><a class="toctree-l4" href="#manual-sources-and-docs-imports">Manual sources and docs imports</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#git-configuration-to-use-keyringkeychain">Git configuration to use keyring/keychain</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectingToCluster/">Connecting using JDBC, Spark</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../jobs/">Developing Apps using the Spark API</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the cluster</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../rowAndColumnTables/">Row and Column tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../deployment/">Deployment topologies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Approximate query processing</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../streamingWithSQL/">Stream processing using SQL</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Docs - 0.1 release</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User Guide &raquo;</li>
+        
+      
+    
+    <li>Building from source, project layout</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="build-quickstart">Build Quickstart<a class="headerlink" href="#build-quickstart" title="Permanent link">&para;</a></h2>
+<p>As of now, only the "integrated" build seems to work. Quickstart to compile
+project:</p>
+<pre><code>1. git clone git@github.com:SnappyDataInc/snappydata.git --recursive
+2. cd snappydata
+3. ./gradlew clean assemble
+</code></pre>
+
+<h2 id="repository-layout">Repository layout<a class="headerlink" href="#repository-layout" title="Permanent link">&para;</a></h2>
+<p>There were few proposals about how to manage the various repositories mentioned in <a href="https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#">this document</a>. Based on few discussions, we shortlisted Proposal 4 in the document.</p>
+<p>According to "Proposal 4" gemxd and snappy-spark repositories will be independent of any other repository. There will be a third repository that will hold the code of Snappy - snappy-commons. Snappy-Commons will have two projects:</p>
+<p>(a) <strong>snappy-core</strong> - Any code that is an extension to Spark code and is not dependent on gemxd, job server etc. should go in here. For e.g. SnappyContext, cluster manager etc.</p>
+<p>(b) <strong>snappy-tools</strong> - This is the code that serves as the bridge between GemXD and snappy-spark.  For e.g. query routing, job server initialization etc.</p>
+<p>Code in snappy-tools can depend on snappy-core but it cannot happen other way round.</p>
+<p>The snappy-spark repository has to be copied or moved inside snappy-commons for an integrated build.</p>
+<p>(c) <strong>snappy-spark</strong> - This is the Spark code with Snappy modifcations.</p>
+<p>Similarly the GemfireXD repository can be copied or moved inside snappy-commons by name <em>snappy-store</em> for an integrated build with GemFireXD. The branch of GemFireXD to use is also <em>snappy-store</em> that has been branched from rebrand_Dec13 recently for this purpose.</p>
+<p>(d) <strong>snappy-store</strong> - This is the GemFireXD with Snappy additions.</p>
+<p>(e) <strong>snappy-aqp</strong> - This is the Snappy Data proprietary code (AQP error estimation)</p>
+<p>Note that git operations have still to be done separately on snappy-commons, snappy-spark and snappy-store(GemFireXD) repositories.</p>
+<h2 id="building-using-gradle">Building using gradle<a class="headerlink" href="#building-using-gradle" title="Permanent link">&para;</a></h2>
+<p>Gradle builds have been arranged in a way so that all of snappy projects including snappy's spark variant can be built from the top-level. In addition snappy-spark and GemFireXD (inside snappy-store) can also be built separately. If the snappy-spark directory is not present inside snappy-commons, then it will try to use locally published snappy-spark artifacts instead. Likewise if there is no snappy-store directory, then it will use the local artifacts inside local-repo in snappy-commons:
+  * The full build and Intellij import has been tested with only JDK7. If you are using JDK8, then you are on your own (though it will likely work). On Ubuntu/Mint systems, best way to get Oracle JDK7 as default:</p>
+<pre><code>- add webupd8 java repository: ````sudo add-apt-repository ppa:webupd8team/java````
+- install and set jdk7 as default: ````sudo aptitude install oracle-java7-set-default````
+- you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
+- this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run ````source /etc/profile.d/jdk.sh```` to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
+</code></pre>
+<ul>
+<li>Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. Similarly move the GemFireXD (snappy-store branch) repository inside snappy-commons by "snappy-store" name. The integrated build depends on its name and presence inside else it will use the local artifacts as mentioned before. <em>DO NOT JUST SYMLINK THE DIRECTORIES</em> -- that is known to cause trouble with IDE though command-line build may go through.</li>
+<li>Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-store branch. Then test the build with: <code>./gradlew clean</code> &amp;&amp; <code>./gradlew assemble</code></li>
+<li>If you see an error like "Could not find hadoop-common-tests.jar", then clear maven cache artifacts: <code>rm -rf ~/.m2/repository/org/apache/hadoop</code>, so that gradle can download all required depedencies, then run assemble target again.</li>
+<li>Run a snappy-core test application: <code>./gradlew :snappy-core_2.10:run -PmainClass=io.snappydata.app.SparkSQLTest</code>
+    AND/OR a GemFireXD junit test: <code>./gradlew :snappy-store:gemfirexd:tools:test -Dtest.single=\*\*/BugsTest</code></li>
+</ul>
+<h2 id="setting-up-intellij-with-gradle">Setting up Intellij with gradle<a class="headerlink" href="#setting-up-intellij-with-gradle" title="Permanent link">&para;</a></h2>
+<p>If the build works fine, then import into Intellij:
+  * Update Intellij to the latest version, including the latest Scala plugin. Check using <code>Help-&gt;Check for Update</code>. The scala plugin version in <code>File-&gt;Settings-&gt;Plugins-&gt;Scala</code> should be at least 1.5.4 else update the plugin from that page.
+  * Double check that Scala plugin is enabled in <code>File-&gt;Settings-&gt;Plugins</code>, as also the Gradle plugin. Note that update in previous step could have disabled either or both, so don't assume it would be enabled.
+  * Select import project, then point to the snappy-commons directory. Use external Gradle import. Add <code>-XX:MaxPermSize=350m</code> to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore "Gradle location is unknown warning". Ensure that a JDK7 installation has been selected.
+  * Disable the "Unindexed remote maven repositories found" warning message.
+  * Once import finishes, go to <code>File-&gt;Settings-&gt;Editor-&gt;Code Style-&gt;Scala</code>. Set the scheme as <code>Project</code>. Check that the same has been set in Java's Code Style too. Then OK to close it. Next copy <code>codeStyleSettings.xml</code> in snappy-commons to .idea directory created by Intellij and then <code>File-&gt;Synchronize</code> just to be sure. Check that settings are now applied in <code>File-&gt;Settings-&gt;Editor-&gt;Code Style-&gt;Java</code> which should show TabSize, Indent as 2 and continuation indent as 4 (same for Scala).
+  * If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.
+  * Generate avro and GemFireXD required sources by expanding: <code>snappy-commons_2.10-&gt;Tasks-&gt;other</code>. Right click on <code>generateSources</code> and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if <code>./gradlew clean</code> has been run, or you have made changes to <code>javacc/avro/messages.xml</code> source files. <em>IF YOU GET UNEXPECTED DATABASE NOT FOUND OR NPE ERRORS IN GemFireXD LAYER, THEN FIRST THING TO TRY IS TO RUN THE generateSources TARGET AGAIN.</em>
+  * Increase the compiler heap sizes or else the build can take quite long especially with integrated GemFireXD. In <code>File-&gt;Settings-&gt;Build, Execution, Deployment-&gt;Compiler increase</code>, <code>Build process heap size</code> to say 1536 or 2048. Similarly increase JVM maximum heap size in <code>Languages &amp; Frameworks-&gt;Scala Compiler Server</code> to 1536 or 2048.
+  * Test the full build.
+  * <code>Open Run-&gt;Edit Configurations</code>. Expand Defaults, and select Application. Add <code>-XX:MaxPermSize=350m</code> in VM options. Similarly add it to VM parameters for ScalaTest and JUnit.
+  * For JUnit configuration also append <code>/build-artifacts</code> to the working directory i.e. the directory should be <code>$MODULE_DIR$/build-artifacts</code>. Likewise change working directory for ScalaTest to be inside build-artifacts otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.
+  * Try <code>Run-&gt;Run</code>... on a test like SparkSQLTest.</p>
+<h3 id="running-a-junitscalatest">Running a junit/scalatest<a class="headerlink" href="#running-a-junitscalatest" title="Permanent link">&para;</a></h3>
+<p>Running an application like SparkSQLTest should be straightforward -- just ensure that MaxPermSize has been increased as mentioned above especially for Spark/Snappy tests. For running junit/scalatest:</p>
+<ul>
+<li>When selecting a run configuration for junit/scalatest, avoid selecting the gradle one (green round icon) otherwise that will launch an external gradle process that will start building the project all over again. Use the normal junit (red+green arrows icon) or scalatest (junit like with red overlay).</li>
+<li>For JUnit tests, ensure that working directory is <code>$MODULE_DIR$/build-artifacts</code> as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in many tests. They will also pollute the checkouts with large number of log files etc, so this will allow those to go into build-artifacts that can also be cleaned up easily.</li>
+</ul>
+<h3 id="manual-sources-and-docs-imports">Manual sources and docs imports<a class="headerlink" href="#manual-sources-and-docs-imports" title="Permanent link">&para;</a></h3>
+<p>If sources and docs were selected during initial import, then it can take a long time to get sources+docs for all dependencies. Instead one way could be to get the sources+docs for only scala-lang jars. The project setup after import already links sources and javadocs to appropriate locations in .m2 local cache, but since sources+docs were not selected during import so Maven may not have downloaded them yet. Check if you already have sources in m2 cache by opening a scala-lang class like Seq (hit <code>Shift-&gt;Ctrl-&gt;T</code> when using eclipse bindings and type scala.collection.Seq) and check if sources+docs are correctly shown. If not, then to easily download for selected jars do this:
+  * Open the <code>File-&gt;Project Structure-&gt;Libraries</code>
+  * Click on the <code>+</code> sign at the top to add new library, and choose Maven.
+  * In the box, provide <code>scala-library-2.10.4</code> and click on the search tool.
+  * Select the <code>org.scala-lang:scala-library:2.10.4</code> in the drop down. Then check "Sources", "JavaDocs" options and go ahead.
+  * Do the same for others like <code>scala-reflect-2.10.4</code> and <code>scala-compiler-2.10.4</code> as required.
+  * Once this is done, don't select OK on the main Project Structure box. Instead hit "Cancel" and it should be all good since we only wanted to get Maven to download the sources and docs for these jars.</p>
+<h2 id="git-configuration-to-use-keyringkeychain">Git configuration to use keyring/keychain<a class="headerlink" href="#git-configuration-to-use-keyringkeychain" title="Permanent link">&para;</a></h2>
+<p>Snappy is currently hosting private repositories and will continue to do
+so for foreseable future. One way to avoid passing credentials everytime could
+have been to upload the public SSH key and use git:// URL. However, that doesn't
+work at least in Pune network due to firewall issue (and proxy server not
+supporting proxying ssh). However, it is possible to configure git to enable
+using gnome-keyring on Linux platforms, and KeyChain on OSX to avoid it.
+(sumedh: latter not verified by me yet, so someone who uses OSX should do it)</p>
+<p>On Linux Ubuntu/Mint:</p>
+<p>Install gnome-keyring dev files: sudo aptitude install libgnome-keyring-dev</p>
+<p>Build git-credential-gnome-keyring:</p>
+<pre><code>cd build/git-gnome-keyring
+make
+</code></pre>
+<p>Copy to PATH (optional):</p>
+<pre><code>sudo cp git-credential-gnome-keyring /usr/local/bin
+make clean
+</code></pre>
+<p>Note that if you skip this step then need to give full path in the next
+step i.e. /path-to-snappy-commons/build/git-gnome-keyring/git-credential-gnome-keyring</p>
+<p>Configure git: git config --global credential.helper gnome-keyring</p>
+<p>Similarly on OSX locate git-credential-osxkeychain, build it if not present
+(it is named "osxkeychain" instead of gnome-keyring), then set in git config.</p>
+<p>Now your git password will be stored in keyring/keychain which is normally
+unlocked automatically on login (or you will be asked to unlock on first use).</p>
+<p>On Linux, you can install "seahorse", if not already, to see/modify all
+the passwords in keyring (GUI menu "Passwords and Keys" under Preferences
+or Accessories or System Tools)</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../connectingToCluster/" class="btn btn-neutral float-right" title="Connecting using JDBC, Spark">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../architecture/" class="btn btn-neutral" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../architecture/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../connectingToCluster/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

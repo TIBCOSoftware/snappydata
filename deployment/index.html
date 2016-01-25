@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData development team">
+  
+  <title>Deployment topologies - SnappyData Docs - 0.1 release</title>
+  
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Deployment topologies";
+    var mkdocs_page_input_path = "deployment.md";
+    var mkdocs_page_url = "/deployment/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Docs - 0.1 release</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>User Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../README/">Getting Started</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../features/">Key features</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../build-instructions/">Building from source, project layout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectingToCluster/">Connecting using JDBC, Spark</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../jobs/">Developing Apps using the Spark API</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the cluster</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../rowAndColumnTables/">Row and Column tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Deployment topologies</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#deployment-toplogies">Deployment toplogies</a></li>
+                
+                    <li><a class="toctree-l4" href="#unified-cluster-mode-aka-embedded-store-mode">Unified cluster mode (aka 'Embedded store' mode)</a></li>
+                
+                    <li><a class="toctree-l4" href="#split-cluster-mode">Split cluster mode</a></li>
+                
+                    <li><a class="toctree-l4" href="#local-mode">Local mode</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Approximate query processing</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../streamingWithSQL/">Stream processing using SQL</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Docs - 0.1 release</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User Guide &raquo;</li>
+        
+      
+    
+    <li>Deployment topologies</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="deployment-toplogies">Deployment toplogies<a class="headerlink" href="#deployment-toplogies" title="Permanent link">&para;</a></h1>
+<p>This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 
+There are three deployment modes available in snappydata. </p>
+<table>
+<thead>
+<tr>
+<th>Deployment Mode</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unified Cluster</td>
+<td>Real time production application. Here the Spark Executor(compute) and Snappy DataStore are collocated</td>
+</tr>
+<tr>
+<td>Split Cluster</td>
+<td>Spark executors and SnappyStore form independent clusters. Use for computationally heavy computing and Batch processing</td>
+</tr>
+<tr>
+<td>Local</td>
+<td>This is for development where client application, the executors and data store are all running in the same JVM</td>
+</tr>
+</tbody>
+</table>
+<h2 id="unified-cluster-mode-aka-embedded-store-mode">Unified cluster mode (aka 'Embedded store' mode)<a class="headerlink" href="#unified-cluster-mode-aka-embedded-store-mode" title="Permanent link">&para;</a></h2>
+<p>This is the default cluster model where Spark computations and in-memory data store run collocated in the same JVM. This is our ootb configuration and suitable for most SnappyData real time production environments. You launch Snappy Data servers to bootstrap any data from disk, replicas or from external data sources and Spark executors are dynamically launched when the first Spark Job arrives. </p>
+<p>You either start SnappyData members using the <em>snappy_start_all</em> script or you start them individually. </p>
+<pre><code class="bash"># start members using the ssh scripts 
+$ sbin\snappy-start-all.sh
+
+# start members individually
+$ bin/snappy-shell locator start  -dir=/node-a/locator1 
+$ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
+</code></pre>
+
+<p>Spark applications are coordinated by a SparkContext instance that runs in the Application's main program called the 'Driver'. The driver coordinates the execution by running parallel tasks on executors and is responsible for delivering results to the application when 'Jobs'(i.e. actions like print() ) are executed. 
+When executing in this unified cluster mode there can only be a single Spark Context (a single coordinator if you may) for the cluster. To support multiple concurrent Jobs or applications Snappydata manages a singleton SparkContext created and running in the 'Lead' node. i.e. the Spark context is fully managed by Snappydata. Applications simply submit <a href="../jobs">Jobs</a> and don't have to be concerned about HA for the context or the driver program. 
+The rationale for our design is further explored <a href="../architecture">here</a>. </p>
+<h3 id="fully-managed-spark-driver-and-context">Fully managed Spark driver and context<a class="headerlink" href="#fully-managed-spark-driver-and-context" title="Permanent link">&para;</a></h3>
+<p>Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or managed the Spark context. Applications implement the <em>SnappySQLJob</em> or the <em>SnappyStreamingJob</em> trait as describing in the <a href="../BuildingSparkApps">'Building Spark Apps'</a> section.</p>
+<h3 id="application-managed-spark-driver-and-context">Application managed Spark driver and context<a class="headerlink" href="#application-managed-spark-driver-and-context" title="Permanent link">&para;</a></h3>
+<p>While Snappy recommends the use of these above mentioned scala traits to implement your application, you could also run your native Spark program on the unified cluster with a slight change to the cluster URL. </p>
+<pre><code class="scala">val conf = new SparkConf().
+              // here the locator url is passed as part of the master url
+              setMasterURL(&quot;snappydata://localhost:10334&quot;).
+              set(&quot;jobserver.enabled&quot;, &quot;true&quot;)
+val sc = new SparkContext(conf) 
+</code></pre>
+
+<blockquote>
+<h3 id="note">Note<a class="headerlink" href="#note" title="Permanent link">&para;</a></h3>
+<p>We currently don't support external cluster managers like YARN when operating in this mode. While, it is easy to expand and redistribute the data by starting new data servers dynamically we expect such dynamic resource allocations to be a planned and seldom exercised option. Re-distributing large quantities of data can be very expensive and can slow down running applications. 
+For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode(describe next). </p>
+</blockquote>
+<h2 id="split-cluster-mode">Split cluster mode<a class="headerlink" href="#split-cluster-mode" title="Permanent link">&para;</a></h2>
+<p>In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. </p>
+<p>Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.</p>
+<p>The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the <em>locator</em> host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog meta data is used to locate the store servers managing data partitions and would be accessed in parallel. 
+Read the <a href="http://spark.apache.org/docs/latest/cluster-overview.html">Spark cluster overview</a> for more details on the native Spark architecture. </p>
+<pre><code class="scala">val conf = new SparkConf().
+              // Here the spark context connects with Spark's master running on 7077. 
+              setMasterURL(&quot;spark://localhost:7077&quot;).
+              set(&quot;snappydata.store.locators&quot;, &quot;localhost:10334&quot;) 
+val sc = new SparkContext(conf) 
+// use sc to use Spark and Snappy features. 
+// The following code connects with the snappy locator to fetch hive metastore. 
+val snappyContext = SnappyContext(sc) 
+
+</code></pre>
+
+<p>The catalog is initialized lazily when SnappyData functionality is accessed. 
+The big benefit even while the clusters for compute and data is split is that the catalog is immediately visible to the Spark executors nodes and applications don’t have to explicitly manage connections and schema related information. This design is quite similar to the Spark’s native support for Hive. </p>
+<p>When accessing partitioned data, the partitions are fetched as compressed blobs that is fully compatible with the columnar compression built into Spark. All access is automatically parallelized. </p>
+<h2 id="local-mode">Local mode<a class="headerlink" href="#local-mode" title="Permanent link">&para;</a></h2>
+<p>As the name implies, use this mode to execute everything locally in the application JVM. The local vs cluster modes are described in the <a href="http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes">Spark Programming guide</a>.</p>
+<pre><code class="scala">val conf = new SparkConf().
+               setMasterURL(&quot;snappydata:local[*]&quot;). 
+               // Starting jobserver helps when you would want to test your jobs in a local mode. 
+               set(&quot;jobserver.enabled&quot;, &quot;true&quot;)
+val sc = new SparkContext(conf) 
+// use sc to use Spark and Snappy features. 
+// JobServer is started too. 
+</code></pre>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../aqp/" class="btn btn-neutral float-right" title="Approximate query processing">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../rowAndColumnTables/" class="btn btn-neutral" title="Row and Column tables"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../rowAndColumnTables/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../aqp/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>

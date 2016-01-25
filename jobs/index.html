@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <meta name="author" content="SnappyData development team">
+  
+  <title>Developing Apps using the Spark API - SnappyData Docs - 0.1 release</title>
+  
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Developing Apps using the Spark API";
+    var mkdocs_page_input_path = "jobs.md";
+    var mkdocs_page_url = "/jobs/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
+
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> SnappyData Docs - 0.1 release</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        <ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>User Guide</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../README/">Getting Started</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../features/">Key features</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../architecture/">Architecture</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../build-instructions/">Building from source, project layout</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../connectingToCluster/">Connecting using JDBC, Spark</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Developing Apps using the Spark API</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#building-snappy-applications-using-spark-api">Building Snappy applications using Spark API</a></li>
+                
+                    <li><a class="toctree-l4" href="#snappycontext">SnappyContext</a></li>
+                
+                    <li><a class="toctree-l4" href="#deployment-topologies-with-snappydata-hemant-can-own-this">Deployment topologies with SnappyData … hemant can own this?</a></li>
+                
+                    <li><a class="toctree-l4" href="#running-spark-programs-inside-the-database">Running Spark programs inside the database</a></li>
+                
+                    <li><a class="toctree-l4" href="#running-a-standalone-spark-compute-cluster">Running a standalone Spark compute cluster</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../configuration/">Configuring the cluster</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../rowAndColumnTables/">Row and Column tables</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../deployment/">Deployment topologies</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../aqp/">Approximate query processing</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../streamingWithSQL/">Stream processing using SQL</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>About</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../LICENSE/">License</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">SnappyData Docs - 0.1 release</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>User Guide &raquo;</li>
+        
+      
+    
+    <li>Developing Apps using the Spark API</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github"> Edit on GitHub</a>
+        
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="building-snappy-applications-using-spark-api">Building Snappy applications using Spark API<a class="headerlink" href="#building-snappy-applications-using-spark-api" title="Permanent link">&para;</a></h2>
+<blockquote>
+<p>..Explain the SQLJob and programming example
+Submitting jobs
+Running Spark native programs … submitting and running jobs</p>
+</blockquote>
+<hr />
+<p>SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the rich higher level APIs. Working with the SnappyData Tables themselves builds on top of Spark SQL. So, we recommend getting to know the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#overview">concepts in SparkSQL</a> (and hence some core Spark concepts). </p>
+<p>You primarily interact with SnappyData tables using SQL (a richer, more compliant SQL) or the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes">DataFrame API</a>. And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. </p>
+<p>In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in catalog and persisted using the SnappyStore to disk (i.e. the tables will be there when the cluster recovers). This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. </p>
+<h3 id="snappycontext">SnappyContext<a class="headerlink" href="#snappycontext" title="Permanent link">&para;</a></h3>
+<p>A SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [[org.apache.spark.sql.hive.HiveContext HiveContext]] - integrates the SQLContext functionality with the Snappy store.</p>
+<p>When running in the <strong>embedded</strong> mode (i.e. Spark executor collocated with Snappy data store), Applications typically submit Jobs to the Snappy-JobServer (provide link) and do not explicitly create a SnappyContext. A single shared context managed by SnappyData makes it possible to re-use Executors across client connections or applications.</p>
+<blockquote>
+<p>Todo: Provide a simple local[*] example … create sparkContext; snContext = SnappyContext(sc); store into a table
+See Spark SQL guide  … scribe along similar lines ..
+describe few important methods in SnappyContext </p>
+</blockquote>
+<h3 id="deployment-topologies-with-snappydata-hemant-can-own-this">Deployment topologies with SnappyData … hemant can own this?<a class="headerlink" href="#deployment-topologies-with-snappydata-hemant-can-own-this" title="Permanent link">&para;</a></h3>
+<ul>
+<li>running in local mode … provide an example with SnappyContext and master URL</li>
+<li>running in embedded mode … DB and Spark programs are collocated … who is playing the role of the master, URL? 
+This is our primary execution model where Spark is running collocated within the database and the recommended deployment topology for real time data intensive applications to achieve highest possible performance. </li>
+</ul>
+<pre><code>snappy locator start -peer-discovery-address=localhost -dir=locator1
+snappy server start -locators=localhost[10334] -dir=server1
+snappy lead start -locators=localhost[10334] -dir=lead1
+</code></pre>
+
+<p>As soon as the lead node joins the system, it starts a Spark driver and then asks server nodes to start Spark executors within them. </p>
+<blockquote>
+<p>show architecture and explain</p>
+</blockquote>
+<ul>
+<li>running Spark in standalone cluster</li>
+</ul>
+<blockquote>
+<p>What else?</p>
+</blockquote>
+<h3 id="running-spark-programs-inside-the-database">Running Spark programs inside the database<a class="headerlink" href="#running-spark-programs-inside-the-database" title="Permanent link">&para;</a></h3>
+<p>To create a job that can be submitted through the job server, the job must implement the <em>SnappySQLJob or SnappyStreamingJob</em> trait. Your job will look like:</p>
+<pre><code class="scala">class SnappySampleJob implements SnappySQLJob {
+  /** Snappy uses this as an entry point to execute Snappy jobs. **/
+  def runJob(sc: SnappyContext, jobConfig: Config): Any
+
+  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  def validate(sc: SnappyContext, config: Config): SparkJobValidation
+}
+</code></pre>
+
+<blockquote>
+<p>The <em>Job</em> traits are simply extensions of the <em>SparkJob</em> implemented by <a href="https://github.com/spark-jobserver/spark-jobserver">Spark JobServer</a>. </p>
+</blockquote>
+<p>• runJob contains the implementation of the Job. The SparkContext is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
+• validate allows for an initial validation of the context and any provided configuration. If the context and configuration are OK to run the job, returning spark.jobserver.SparkJobValid will let the job execute, otherwise returning spark.jobserver.SparkJobInvalid(reason) prevents the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an HTTP/1.1 400 Bad Request status code. validate helps you preventing running jobs that will eventually fail due to missing or wrong configuration and save both time and resources.</p>
+<p>See examples(link?) for Spark and spark streaming jobs in the <Product_root>/examples directory.</p>
+<p>(Todo: In what way have we extended the SparkJob trait? )
+SnappyData manages a SparkContext as a singleton but creates one SQLContext per incoming SQL Connection. </p>
+<h4 id="submitting-jobs">Submitting jobs<a class="headerlink" href="#submitting-jobs" title="Permanent link">&para;</a></h4>
+<p>Running Spark native programs … submitting and running jobs</p>
+<pre><code>$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+</code></pre>
+
+<p>This utility submits the job and returns a JSON that has a jobId of this job. </p>
+<pre><code>{
+  &quot;status&quot;: &quot;STARTED&quot;,
+  &quot;result&quot;: {
+    &quot;jobId&quot;: &quot;321e5136-4a18-4c4f-b8ab-f3c8f04f0b48&quot;,
+    &quot;context&quot;: &quot;snappyContext1452598154529305363&quot;
+  }
+}
+</code></pre>
+
+<p>This job ID can be used to query the status of the running job. </p>
+<pre><code>$ bin/snappy-job.sh status  \
+    --lead hostNameOfLead:8090  \
+    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48&quot;
+
+{
+  &quot;duration&quot;: &quot;17.53 secs&quot;,
+  &quot;classPath&quot;: &quot;io.snappydata.examples.CreateAndLoadAirlineDataJob&quot;,
+  &quot;startTime&quot;: &quot;2016-01-12T16:59:14.746+05:30&quot;,
+  &quot;context&quot;: &quot;snappyContext1452598154529305363&quot;,
+  &quot;result&quot;: &quot;See /home/hemant/snappyhome/work/localhost-lead-1/CreateAndLoadAirlineDataJob.out&quot;,
+  &quot;status&quot;: &quot;FINISHED&quot;,
+  &quot;jobId&quot;: &quot;321e5136-4a18-4c4f-b8ab-f3c8f04f0b48&quot;
+}
+</code></pre>
+
+<p>Once the tables are created, they can be queried by firing another job. </p>
+<pre><code>$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.AirlineDataJob \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+</code></pre>
+
+<p>The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. </p>
+<h4 id="streaming-jobs">Streaming jobs<a class="headerlink" href="#streaming-jobs" title="Permanent link">&para;</a></h4>
+<p>An implementation of SnappyStreamingJob can be submitted to lead of SnappyData by specifying --stream as a parameter to the snappy-job.sh. </p>
+<pre><code>$ bin/snappy-job.sh submit  \
+    --lead hostNameOfLead:8090  \
+    --app-name airlineApp \
+    --class  io.snappydata.examples.TwitterPopularTagsJob \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar \ 
+    --stream
+</code></pre>
+
+<h3 id="running-a-standalone-spark-compute-cluster">Running a standalone Spark compute cluster<a class="headerlink" href="#running-a-standalone-spark-compute-cluster" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p>NOTE: SnappyData, out-of-the-box, collocates Spark executors and the data store for efficient data intensive computations. 
+But, it may desirable to isolate the computational cluster for other reasons - for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate for a  cache data set repeatedly. 
+To support such scenarios it is also possible to run native Spark jobs that accesses a SnappyData cluster as a storage layer in a parallel fashion. </p>
+</blockquote>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../configuration/" class="btn btn-neutral float-right" title="Configuring the cluster">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../connectingToCluster/" class="btn btn-neutral" title="Connecting using JDBC, Spark"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+<div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../connectingToCluster/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../configuration/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+
+</body>
+</html>
