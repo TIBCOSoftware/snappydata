@@ -17,8 +17,10 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 
 final class FileStreamSource extends StreamPlanProvider {
 
@@ -29,7 +31,8 @@ final class FileStreamSource extends StreamPlanProvider {
   }
 }
 
-case class FileStreamRelation(@transient val sqlContext: SQLContext,
+final class FileStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options) {
@@ -58,14 +61,6 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
   val directory = options(DIRECTORY)
 
   // TODO: Yogesh, add support for other types of files streams
-  StreamBaseRelation.LOCK.synchronized {
-    if (StreamBaseRelation.getRowStream(tableName) == null) {
-      rowStream = {
-        context.textFileStream(directory).flatMap(rowConverter.toRows)
-      }
-      StreamBaseRelation.setRowStream(tableName, rowStream)
-    } else {
-      rowStream = StreamBaseRelation.getRowStream(tableName)
-    }
-  }
+  override protected def createRowStream(): DStream[InternalRow] =
+    context.textFileStream(directory).flatMap(rowConverter.toRows)
 }

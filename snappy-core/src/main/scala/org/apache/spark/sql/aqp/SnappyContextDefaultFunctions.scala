@@ -22,8 +22,9 @@ import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DDLParser, ResolveDataSource, StoreDataSourceStrategy}
-import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.StoreStrategy
+import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{execution => sparkexecution, _}
 
@@ -67,10 +68,9 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions{
                               transform: RDD[Row] => RDD[Row] = null)
   = throw new UnsupportedOperationException("missing aqp jar")*/
 
-
-
-  def createSampleDataFrameContract(sqlContext: SnappyContext, df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
-  = throw new UnsupportedOperationException("missing aqp jar")
+  def createSampleDataFrameContract(context: SnappyContext, df: DataFrame,
+      logicalPlan: LogicalPlan): SampleDataFrameContract =
+    throw new UnsupportedOperationException("missing aqp jar")
 
   def convertToStratifiedSample(options: Map[String, Any], snc: SnappyContext,
                                 logicalPlan: LogicalPlan): LogicalPlan
@@ -87,7 +87,12 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions{
   def getSQLDialect(context: SnappyContext): SnappyParserDialect =
     new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
 
-  def getAQPTablePopulator : Option[(SQLContext) => Unit] = None
+  def aqpTablePopulator(context: SnappyContext): Unit = {
+    // register blank tasks for the stream tables so that the streams start
+    val catalog = context.catalog
+    catalog.getDataSourceRelations[StreamBaseRelation](Seq(ExternalTableType
+        .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
+  }
 
   def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog =
     new SnappyStoreHiveCatalog(context)

@@ -22,11 +22,9 @@ import java.util.Properties
 import scala.util.control.NonFatal
 
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
-import org.apache.spark.sql.{AnalysisException, SaveMode, SQLContext}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
-
+import org.apache.spark.sql.{AnalysisException, SQLContext, SaveMode}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -66,6 +64,8 @@ object JdbcExtendedUtils {
   val SCHEMA_PROPERTY = "schemaddl"
   val ALLOW_EXISTING_PROPERTY = "allowexisting"
   val BASETABLE_PROPERTY = "basetable"
+
+  val TABLETYPE_PROPERTY = "EXTERNAL"
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
     val stmt = conn.createStatement()

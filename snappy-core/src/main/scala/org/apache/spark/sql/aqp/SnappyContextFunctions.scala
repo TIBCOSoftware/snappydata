@@ -56,7 +56,7 @@ trait SnappyContextFunctions {
   def withErrorDataFrame(df: DataFrame, error: Double,
       confidence: Double): DataFrame
 
-  def createSampleDataFrameContract(sqlContext: SnappyContext,
+  def createSampleDataFrameContract(context: SnappyContext,
       df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
 
   def convertToStratifiedSample(options: Map[String, Any],
@@ -68,7 +68,7 @@ trait SnappyContextFunctions {
 
   def getSQLDialect(context: SnappyContext): ParserDialect
 
-  def getAQPTablePopulator: Option[(SQLContext) => Unit]
+  def aqpTablePopulator(context: SnappyContext): Unit
 
   def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog
 

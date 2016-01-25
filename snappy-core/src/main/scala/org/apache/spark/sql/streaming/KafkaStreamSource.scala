@@ -17,8 +17,10 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
 
 class KafkaStreamSource extends StreamPlanProvider {
@@ -30,7 +32,8 @@ class KafkaStreamSource extends StreamPlanProvider {
   }
 }
 
-case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
+final class KafkaStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options) {
@@ -52,15 +55,7 @@ case class KafkaStreamRelation(@transient val sqlContext: SQLContext,
     (a(0), a(1).toInt)
   }.toMap
 
-  StreamBaseRelation.LOCK.synchronized {
-    if (StreamBaseRelation.getRowStream(tableName) == null) {
-      rowStream = {
-        KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
-            .map(_._2).flatMap(rowConverter.toRows)
-      }
-      StreamBaseRelation.setRowStream(tableName, rowStream)
-    } else {
-      rowStream = StreamBaseRelation.getRowStream(tableName)
-    }
-  }
+  override protected def createRowStream(): DStream[InternalRow] =
+    KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
+        .map(_._2).flatMap(rowConverter.toRows)
 }
