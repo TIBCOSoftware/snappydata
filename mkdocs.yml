@@ -2,6 +2,7 @@ site_name: SnappyData Docs - 0.1 release
 site_url: http://www.snappydata.io/product/0.1/docs
 site_description: Project documentation with Markdown.
 site_author: SnappyData development team
+theme: readthedocs
 
 repo_url: https://github.com/SnappyDataInc/snappydata
 
