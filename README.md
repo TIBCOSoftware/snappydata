@@ -151,7 +151,7 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 
 ``` 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can also check the details of the embedded Spark driver which by default can be seen at http://hostnameOfLead:4040. You can explore the Spark SQL query plan, the job execution stages and storage details of column tables.
+At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
 
 <img src="docs/ExternalBlockStoreSize.png" width="800">
 
@@ -171,7 +171,7 @@ Unlike Apache Spark, which is primarily a computational engine, SnappyData clust
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
  
-In this document, we showcase mostly the same set of features via Spark API or using SQL. You can skip the SQL part if you are familiar with Scala and Spark and go directly to [Getting Started with Spark API](#getting-started-with-spark-api).
+In this document, we showcase mostly the same set of features via Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to [__Getting Started with Spark API__](#getting-started-with-spark-api).
 
 ### Getting Started with SQL
 
@@ -223,10 +223,10 @@ snappy> run './quickstart/scripts/create_and_load_row_table.sql';
 -- See the status of system
 snappy> run './quickstart/scripts/status_queries.sql'
 ```
-You can see the size of the column tables on Spark UI which by default can be seen at http://hostNameOfLead:4040. 
+You can see the memory consumed on [Spark Console](http://localhost:4040/storage/). 
 
 #### OLAP and OLTP queries
-SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __ Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
+SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
 
 ```sql
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
@@ -236,7 +236,7 @@ snappy> select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrie
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
-For low latency OLTP queries, the engine won't route it to the lead and instead execute it immediately without any scheduling overhead. Quite often, this may mean simply fetching a row by hashing a key (in nanoseconds).
+For low latency OLTP queries, the engine won't route it to the lead and instead execute it immediately without any scheduling overhead. Quite often, this may mean simply fetching a row by hashing a key (in microseconds).
  
 ```sql
 --- Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself as 'Delta America'
@@ -258,7 +258,8 @@ select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrie
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
-You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostnameOfLead:4040. Each query is executed as a Job and you can explore the different stages of the query execution.
+
+Each query is executed as one or more Jobs and each Job executed in one or more stages. You can explore the query execution plan and metrics [here](http://localhost:4040/SQL/)
 
 ```sql
 -- Run a simple update SQL statement on the replicated row table.
@@ -278,7 +279,7 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 > We recommend downloading the _onTime airline_ data for 2009-2015 which is about 52 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
 
 
-The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
+The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make up the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
 ```sql
 CREATE SAMPLE TABLE AIRLINE_SAMPLE
@@ -305,10 +306,6 @@ snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_
     from Airline where ArrDelay >0 
     group by Month_
     with error .05 ;
--- TWO PROBLEMS IN CURRENT IMPL: (1) PRESENTED ERROR IS NOT WITHIN RANGE (2) ERROR CONSTRAINT NOT MET .. BUT QUERY RETURNS VALUE
--- The correct answer is within +/- 'error'
--- Consult the docs for access to other related functions like relative_error(), 
---  lower and upper bounds for the error returned. 
 ```
 #### Step 4 - Create, Load and Query Sample Table
 
