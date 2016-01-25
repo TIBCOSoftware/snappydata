@@ -5,6 +5,8 @@ DROP TABLE IF EXISTS AIRLINE ;
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
 CREATE TABLE STAGING_AIRLINE
   USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');
+-- Use below line to work with larger data set
+--  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData_2007-15');
 
 ----- CREATE COLUMN TABLE -----  
 ----- Airline row count is small so we use 5 buckets (i.e. 5 partitions) -----
