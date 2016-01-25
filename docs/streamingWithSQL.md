@@ -44,23 +44,67 @@ We offer the following enhancements over Spark Streaming :
 
 
 ## Working with stream tables
+SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources. For example to create a stream table using kafka source : 
 
-Describe SQL syntax for creating one.
-Provide examples using the shell.
-Life cycle commands to manage a streaming app
-Running SQL queries dynamically from clients on stream tables
+    val sc = new SparkContext(new SparkConf().setAppName("example").setMaster("local[*]"))
+    val snc = SnappyContext.getOrCreate(sc)
+    var snsc = SnappyStreamingContext(snc, Seconds(1))
 
-Provide examples when created using Snappy Context. Returned SchemaDStream is described next.
+    snsc.sql("create stream table streamTable (userId string, clickStreamLog string) " +
+        "using kafka_stream options (" +
+        "storagelevel 'MEMORY_AND_DISK_SER_2', " +
+        "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
+        "zkQuorum 'localhost:2181', " +
+        "groupId 'streamConsumer', " +
+        "topics 'streamTopic:01')")
 
+    // You can get a handle of underlying DStream of the table
+    val dStream = snsc.getSchemaDStream("streamTable")
+
+    // You can also save the DataFrames to an external table
+    dStream.foreachDataFrame(_.write.insertInto(tableName))
+
+The streamTable created in above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.
+
+##Stream SQL through Snappy-Shell
+Start a SnappyData cluster and connect through snappy-shell : 
+ 
+    //create a connection
+    snappy> connect client 'localhost:1527';
+
+    // Initialize streaming with batchInterval of 2 seconds
+    snappy> streaming init 2;
+
+    // Create a stream table
+    snappy> create stream table streamTable (id long, text string, fullName string, country string, retweets int, hashtag  string) using twitter_stream options (consumerKey '', consumerSecret '', accessToken '', accessTokenSecret '', rowConverter 'org.apache.spark.sql.streaming.TweetToRowsConverter') ;
+
+    // Start the streaming 
+    snappy> streaming start;
+
+    //Run ad-hoc queries on the streamTable on current batch of data
+    snappy> select id, text, fullName from streamTable where text like '%snappy%'
+
+    // Drop the streamTable
+    snappy> drop table streamTable;
+
+    // Stop the streaming
+    snappy> streaming stop;
 
 ## SchemaDStream
-How is it different than a DStream?
-Describe its API in brief?
-Provide some examples.
+SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL query on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as table.
 
 ## Registering Continuous queries
+
+    //You can join two stream tables and produce a result stream. 
+    val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (duration '2' seconds, 
+    slide '2' seconds) s1 JOIN stream2 s2 ON s1.id = s2.id")
+    
+    // You can also save the DataFrames to an external table
+    dStream.foreachDataFrame(_.write.insertInto(tableName))
+
 How do you register on SchemaDStreams? 
 How can you control the time windows for such queries?
-
+## Dynamic(ad-hoc) Conitnous queries
+Unlike Spark streaming, you do not need to register all your stream output transformations (which is continous query in this case) before the start of StreamingContext. The CQs can be registered even after the SnappyStreamingContext has started.
 ## What is currently out-of-scope?
-
+Continous Queries through command line(Snappy-Shell) 
