@@ -1,7 +1,11 @@
-## Row and column tables
-SnappyStore provides two types of table. One is row format and other one is column format.
-//Put some detail about structure & design etc.
-### DDL and DML Syntax for tables
+### Row and column tables
+Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
+
+Row tables, unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.
+
+Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.
+
+#### DDL and DML Syntax for tables
 
     CREATE TABLE [IF NOT EXISTS] table_name
        (
@@ -15,7 +19,7 @@ SnappyStore provides two types of table. One is row format and other one is colu
     REDUNDANCY        '1' ,
     RECOVER_DELAY     '-1',
     MAX_PART_SIZE      '50',
-    EVICTION_BY  ‘MEMSIZE 200 | COUNT 200 | HEAPPERCENT,
+    EVICTION_BY  ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
     PERSISTENT   ‘DISKSTORE_NAME ASYNCHRONOUS |  SYNCHRONOUS’, // Empty string will map to default disk store.
     OFFHEAP ‘true | false’ ,
     EXPIRE ‘TIMETOLIVE in seconds',
@@ -26,12 +30,12 @@ SnappyStore provides two types of table. One is row format and other one is colu
 
 For row format tables column definition can take underlying GemFire XD syntax to create a table.e.g.note the PRIMARY KEY clause below.
 
-    snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) USING row options()" )
+    snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) USING row options(BUCKETS '5')" )
 
 But for column table its restricted to Spark syntax for column definition e.g.
 
-    snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options()" )
-
+    snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
+Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. 
 ##### Spark API for managing tables
 
 Get a reference to SnappyContext
@@ -40,7 +44,7 @@ Get a reference to SnappyContext
 
 Create a SnappyStore table using Spark APIs
 
-    val props = Map.empty[String, String] // This map should contain all the DDL extensions, described below
+    val props = Map('BUCKETS','5')  // This map should contain required DDL extensions, described in next section
     case class Data(col1: Int, col2: Int, col3: Int)
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
@@ -53,7 +57,8 @@ Drop a SnappyStore table using Spark APIs
 
     snc.dropTable(tableName, ifExists = true)
 
-#### DDL extensions to SnappyStore tables
+##### DDL extensions to SnappyStore tables
+The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified default values are attached. See next section for various restrictions. 
 
    1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist
    2. PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified it will be a replicated table.
@@ -66,10 +71,15 @@ Drop a SnappyStore table using Spark APIs
    9. OFFHEAP : SnappyStore enables you to store the data for selected tables outside of the JVM heap. Storing a table in off-heap memory can improve performance for the table by reducing the CPU resources required to manage the table's data in the heap (garbage collection)
    10.  EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
 
-### Persistent tables
-> Note: Restrictions on column tables in the preview release
-#### DML operations on tables
+##### Restrictions on column tables in the preview release
+1. Column tables can not specify any primary key, unique key constarints.
+2. Index on column table is not supported.
+2. Option EXPIRE is not applicable for column tables.
+3. Option EVICTION_BY with value LRUCOUNT is not applicable for column tables. 
 
+
+#### DML operations on tables
+   
     INSERT OVERWRITE TABLE tablename1 select_statement1 FROM from_statement;
     INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
     INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
@@ -113,7 +123,10 @@ Usage SnappyConytext.delete(): Delete all rows in table that match passed filter
 
 Explain the delta row buffer and how queries are executed
 
-##### A note on how the catalog is managed in SnappyData
+##### Catalog in SnappyStore
+We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver failover, we chose GemFireXd itself to store meta information. This gives us ability to query underlying GemFireXD to reconstruct the metastore incase of a driver failover. 
+
+There are pending work towards unifying DRDA & Spark layer catalog, which will part of future releases. 
 ##### SQL Reference to the Syntax
 For detailed syntax for GemFire XD check
 http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html
