@@ -411,7 +411,8 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
           // if both baseTable and schema have been specified, then both
           // should have matching schema
           try {
-            val tableSchema = catalog.lookupRelation(baseTableName).schema
+            val tableSchema = catalog.lookupRelation(
+              catalog.newQualifiedTableName(baseTableName)).schema
             if (catalog.compatibleSchema(tableSchema, s)) {
               s
             } else if (asSelect) {
@@ -436,7 +437,8 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
           try {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
-            catalog.normalizeSchema(catalog.lookupRelation(baseTable).schema)
+            catalog.normalizeSchema(catalog.lookupRelation(
+              catalog.newQualifiedTableName(baseTable)).schema)
           } catch {
             case e@(_: AnalysisException | _: DDLException) =>
               throw new AnalysisException(s"Base table $baseTable " +

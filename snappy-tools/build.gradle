@@ -11,7 +11,11 @@ dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
-  compile group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0'
+  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
   compile project(':snappy-core_' + scalaBinaryVersion)
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
@@ -60,7 +64,7 @@ task docs(type: ScalaDoc) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':deleteDocsDir'
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
-    println("Executing in for project = ${project}")
+    // println("Executing in for project = ${project}")
     if ((project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) &&
         // jobserver depends on Apache Spark 1.5.x which causes conflicts
         !project.name.contains('jobserver') &&
@@ -80,10 +84,8 @@ task docs(type: ScalaDoc) {
   }
   source = allSource
   classpath = files(docProjects.collect { project ->
-    println("Got project = $project")
-    //if (project.plugins.hasPlugin('scala') || project.plugins.hasPlugin('java')) {
-      project.sourceSets.main.compileClasspath
-    //}
+    // println("Got project = $project")
+    project.sourceSets.main.compileClasspath
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
