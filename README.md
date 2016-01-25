@@ -231,8 +231,8 @@ SQL client connections (via JDBC or ODBC) are routed to the appropriate data ser
 ```sql
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
 snappy> select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier 
-  from airline_sample, airlineref
-  where airline_sample.UniqueCarrier = airlineref.Code 
+  from airline, airlineref
+  where airline.UniqueCarrier = airlineref.Code
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
@@ -253,8 +253,8 @@ snappy> run './quickstart/scripts/olap_queries.sql';
 
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
 select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier 
-  from airline_sample, airlineref
-  where airline_sample.UniqueCarrier = airlineref.Code 
+  from airline, airlineref
+  where airline.UniqueCarrier = airlineref.Code
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
@@ -276,7 +276,7 @@ OLAP queries are expensive as they require traversing through large data sets an
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
 
 > #### Note
-> We recommend downloading the _onTime airline_ data for 2009-2015 which is about 52 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
+> We recommend downloading the _onTime airline_ data for 2007-2015 which is about 52 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
 
 
 The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make up the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
@@ -311,13 +311,13 @@ snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_
 
 ```sql
 --- Creates and then samples a table from the Airline table 
-snappy> run 'create_and_load_sample_table.sql';
+snappy> run './quickstart/scripts/create_and_load_sample_table.sql';
 ```
 You can now re-run the previous OLAP queries with an error constraint and compare the results.  You should notice a 10X or larger difference in query execution latency while the results remain nearly accurate. As a reminder, we recommend downloading the larger data set for this exercise.
 
 ```sql
 -- re-run olap queries with error constraint to automatically use sampling
-snappy> run 'olap_approx_queries.sql';
+snappy> run './quickstart/scripts/olap_approx_queries.sql';
 ```
 #### Stream analytics using SQL and Spark Streaming
 
@@ -500,7 +500,7 @@ OLAP jobs are expensive as they require traversing through large data sets and s
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
 
 > #### Note
-> We recommend downloading the _onTime airline_ data for 2009-2015 which is about 50 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
+> We recommend downloading the _onTime airline_ data for 2007-2015 which is about 50 million records. With the above data set (1 million rows) only about third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
 
 The following scala code creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ make us the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
