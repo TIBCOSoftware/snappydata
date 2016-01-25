@@ -26,6 +26,8 @@ dependencies {
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     compile project(':snappy-aqp')
   }
+
+  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }
 
 testClasses.doLast {
