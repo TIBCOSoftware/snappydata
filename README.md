@@ -323,17 +323,20 @@ snappy> run './quickstart/scripts/olap_approx_queries.sql';
 
 SnappyData extends Spark streaming so stream definitions can be declaratively done using SQL and you can analyze these streams using SQL. You can also dynamically run SQL queries on these streams. There is no need to learn Spark streaming APIs or statically define all the rules to be executed on these streams.
 
-The commands below consume tweets, models the stream as a table (so it can be queried) and we then run ad-hoc SQL from remote clients on the current state of the stream. 
+The commands below consume tweets, filters our just the hashtags and converts these into Row objects, models the stream as a table (so it can be queried) and we then run ad-hoc SQL from remote clients on the current state of the stream. 
 ```sql
---- Inits the Streaming Context 
+--- Inits the Streaming Context with the batch interval of 2 seconds.
+--- i.e. the stream is processed once every 2 seconds.
 snappy> STREAMING INIT 2
---- create a stream table
+--- create a stream table just containing the hashtags
 snappy> CREATE STREAM TABLE HASHTAG_FILESTREAMTABLE
               (hashtag string)
             USING file_stream
             OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2',
               rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow',
               directory '/tmp/copiedtwitterdata')
+-- A file_stream data source monitors the directory and as files arrives they are ingested 
+--   into the streaming pipeline. First converted into Rows using 'TweetToHashtagRow' then visible as table
 --- Start streaming context 
 snappy> STREAMING START
 --- Adhoc sql on the stream table to query the current batch
@@ -347,9 +350,9 @@ Later, in the Spark code section we further enhance to showcase "continuous quer
 
 #### Top-K Elements in a Stream 
 
-Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found [here.](./docs/aqp.md)
+Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, top-100 pages on a popular website in the last 10 mins, top-10 sales regions in the last week, etc. As you can tell, if the query is on a arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events is use cases like in IoT. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found [here.](./docs/aqp.md)
 
-SnappyData provides DDL extensions to create Top-k structure. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using SQL queries. 
+SnappyData provides DDL extensions to create Top-k structure. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using regular SQL queries. 
 
 ```sql
 --- Create a topk table from a stream table
@@ -360,22 +363,11 @@ SELECT hashtag, COUNT(hashtag) AS TopKCount
 FROM filestream_topktable
 GROUP BY hashtag ORDER BY TopKCount limit 10;
 ```
- 
+Now, lets try analyzing some tweets using this above syntax in real time using the packaged scripts ..
+
 #### Step 5 - Create and Query Stream Table and Top-K Declaratively 
 
-Ideally, we would like you to try this example using live twitter stream. Alternatively, you can use use file stream scripts that simulate twitter stream by copying pre-loaded tweets in a tmp folder. 
-
-##### Steps to work with live Twitter stream
-
-You would have to generate authorization keys and secrets on [twitter apps](https://apps.twitter.com/) and update SNAPPY_HOME/quickstart/scripts/create_and_start_twitter_streaming.sql with the keys and secrets.
-```sql
---- Run the create and start script that has keys and secrets to fetch live twitter stream
---- Note: Currently, we do not encrypt the keys. 
--- This also creates Topk structures
-snappy> run './quickstart/scripts/create_and_start_twitter_streaming.sql';
-
-snappy> run './quickstart/scripts/twitter_streaming_query.sql';
-```
+You can use the scripts that simulates the twitter stream by copying pre-loaded tweets in a tmp folder. Or, you could use a script that access the live twitter stream.  
 
 ##### Steps to work with simulated Twitter stream
 
@@ -391,6 +383,19 @@ Now query the current batch of the stream using the following script. This also 
 ```sql
 snappy> run './quickstart/scripts/file_streaming_query.sql';
 ```
+
+##### Steps to work with live Twitter stream
+
+You would have to generate authorization keys and secrets on [twitter apps](https://apps.twitter.com/) and update SNAPPY_HOME/quickstart/scripts/create_and_start_twitter_streaming.sql with the keys and secrets.
+```sql
+--- Run the create and start script that has keys and secrets to fetch live twitter stream
+--- Note: Currently, we do not encrypt the keys. 
+-- This also creates Topk structures
+snappy> run './quickstart/scripts/create_and_start_twitter_streaming.sql';
+
+snappy> run './quickstart/scripts/twitter_streaming_query.sql';
+```
+
 
 ### Getting Started with Spark API 
 

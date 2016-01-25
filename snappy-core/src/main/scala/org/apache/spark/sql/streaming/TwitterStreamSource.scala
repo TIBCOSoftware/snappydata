@@ -20,8 +20,10 @@ import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.twitter.TwitterUtils
 
 final class TwitterStreamSource extends StreamPlanProvider {
@@ -33,7 +35,8 @@ final class TwitterStreamSource extends StreamPlanProvider {
   }
 }
 
-case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
+final class TwitterStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options) {
@@ -42,7 +45,6 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
   val consumerSecret = options("consumerSecret")
   val accessToken = options("accessToken")
   val accessTokenSecret = options("accessTokenSecret")
-
 
   //  TODO Yogesh, need to pass this through DDL
   val filters = Seq("e")
@@ -62,15 +64,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     new OAuthAuthorization(getTwitterConf)
   }
 
-  StreamBaseRelation.LOCK.synchronized {
-    if (StreamBaseRelation.getRowStream(tableName) == null) {
-      rowStream = {
-        TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-          filters, storageLevel).flatMap(rowConverter.toRows)
-      }
-      StreamBaseRelation.setRowStream(tableName, rowStream)
-    } else {
-      rowStream = StreamBaseRelation.getRowStream(tableName)
-    }
-  }
+  override protected def createRowStream(): DStream[InternalRow] =
+    TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
+      filters, storageLevel).flatMap(rowConverter.toRows)
 }

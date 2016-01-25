@@ -268,8 +268,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * @param tableIdent qualified name of table to be truncated
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName): Unit = {
-    val plan = catalog.lookupRelation(tableIdent, None)
-    snappy.unwrapSubquery(plan) match {
+    val plan = catalog.lookupRelation(tableIdent)
+    plan match {
       case LogicalRelation(br, _) =>
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
@@ -488,8 +488,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
 
     val plan = LogicalRelation(resolved.relation)
-    catalog.registerExternalTable(tableIdent, schema, Array.empty[String],
-      source, params, catalog.getTableType(resolved.relation))
+    catalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
+      source, params, resolved.relation)
     plan
   }
 
@@ -547,8 +547,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       cacheManager.tryUncacheQuery(data)
     }
     else {
-      catalog.registerExternalTable(tableIdent, Some(data.schema),
-        partitionColumns, source, params, catalog.getTableType(resolved.relation))
+      catalog.registerDataSourceTable(tableIdent, Some(data.schema),
+        partitionColumns, source, params, resolved.relation)
     }
     LogicalRelation(resolved.relation)
   }
@@ -569,15 +569,15 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   private[sql] def dropTable(tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     val plan = try {
-      catalog.lookupRelation(tableIdent, None)
+      catalog.lookupRelation(tableIdent)
     } catch {
-      case ae: TableNotFoundException =>
-        if (ifExists) return else throw ae
+      case tnfe: TableNotFoundException =>
+        if (ifExists) return else throw tnfe
       case NonFatal(_) =>
         // table loading may fail due to an initialization exception
         // in relation, so try to remove from hive catalog in any case
         try {
-          catalog.unregisterExternalTable(tableIdent)
+          catalog.unregisterDataSourceTable(tableIdent, None)
           return
         } catch {
           case NonFatal(e) =>
@@ -587,10 +587,21 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         }
     }
     // additional cleanup for external tables, if required
-    snappy.unwrapSubquery(plan) match {
+    plan match {
       case LogicalRelation(br, _) =>
+        br match {
+          case p: ParentRelation =>
+            // fail if any existing dependents
+            val dependents = p.getDependents(catalog)
+            if (dependents.nonEmpty) {
+              throw new AnalysisException(s"Object $tableIdent cannot be " +
+                  "dropped because of dependent objects: " +
+                  s"${dependents.mkString(",")}")
+            }
+          case _ => // ignore
+        }
         cacheManager.tryUncacheQuery(DataFrame(self, plan))
-        catalog.unregisterExternalTable(tableIdent)
+        catalog.unregisterDataSourceTable(tableIdent, Some(br))
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
           case _ => // Do nothing
@@ -619,9 +630,9 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
 
     //println("qualifiedTable=" + qualifiedTable)
-    snappy.unwrapSubquery(catalog.lookupRelation(tableIdent, None)) match {
+    catalog.lookupRelation(tableIdent) match {
       case LogicalRelation(i: IndexableRelation, _) =>
-        i.createIndex(tableIdent.unquotedString, sql)
+        i.createIndex(tableIdent.toString, sql)
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
@@ -668,8 +679,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    */
   @DeveloperApi
   def insert(tableName: String, rows: Row*): Int = {
-    val plan = catalog.lookupRelation(tableName)
-    snappy.unwrapSubquery(plan) match {
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
@@ -690,8 +700,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    */
   @DeveloperApi
   def put(tableName: String, rows: Row*): Int = {
-    val plan = catalog.lookupRelation(tableName)
-    snappy.unwrapSubquery(plan) match {
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(r: RowPutRelation, _) => r.put(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row upsertable table")
@@ -714,8 +723,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   @DeveloperApi
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
-    val plan = catalog.lookupRelation(tableName)
-    snappy.unwrapSubquery(plan) match {
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(u: UpdatableRelation, _) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
@@ -732,8 +740,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    */
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
-    val plan = catalog.lookupRelation(tableName)
-    snappy.unwrapSubquery(plan) match {
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(d: DeletableRelation, _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")

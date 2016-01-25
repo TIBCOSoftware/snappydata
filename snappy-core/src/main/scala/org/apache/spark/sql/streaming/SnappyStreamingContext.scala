@@ -28,7 +28,7 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{Row, _}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SnappyContext, Row}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext, StreamingContextState}
 
@@ -50,8 +50,7 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   override def start(): Unit = synchronized {
     if (getState() == StreamingContextState.INITIALIZED) {
       // register population of AQP tables from stream tables
-      snappyContext.snappyContextFunctions.getAQPTablePopulator
-          .foreach(_ (snappyContext))
+      snappyContext.snappyContextFunctions.aqpTablePopulator(snappyContext)
     }
     super.start()
   }
@@ -80,12 +79,16 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   def registerCQ(queryStr: String): SchemaDStream = {
     val plan = sql(queryStr).queryExecution.logical
     val dStream = new SchemaDStream(self, plan)
+    // register a dummy task so that the DStream gets started
+    // TODO: need to remove once we add proper registration of registerCQ
+    // streams in catalog and possible AQP structures on top
+    dStream.foreachRDD(rdd => Unit)
     dStream
   }
 
   def getSchemaDStream(tableName: String): SchemaDStream = {
-    val plan = snappyContext.catalog.lookupRelation(tableName)
-    snappy.unwrapSubquery(plan) match {
+    val catalog = snappyContext.catalog
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(sr: StreamPlan, _) => new SchemaDStream(self,
         LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(self))
       case _ =>

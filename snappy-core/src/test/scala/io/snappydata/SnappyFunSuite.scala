@@ -21,6 +21,7 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+import io.snappydata.util.TestUtils
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 
 import org.apache.spark.sql.SnappyContext
@@ -93,14 +94,7 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val sc = SnappyContext.globalSparkContext
-      if (sc != null && !sc.isStopped) {
-        val snc = this.snc
-        snc.catalog.getTables(None).foreach {
-          case (tableName, _) =>
-            snc.dropTable(tableName, ifExists = true)
-        }
-      }
+      TestUtils.dropAllTables(this.snc)
     } finally {
       dirCleanup()
     }
