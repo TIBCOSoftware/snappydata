@@ -613,8 +613,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
   }
 
-  def createIndexOnTable(tableName: String, sql: String): Unit =
-    createIndexOnTable(catalog.newQualifiedTableName(tableName), sql)
 
   /**
    * Create Index on a SnappyData table (created by a call to createTable).
@@ -641,7 +639,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   /**
    * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
    */
-  def dropIndexOfTable(sql: String): Unit = {
+  private[sql] def dropIndexOfTable(sql: String): Unit = {
     var conn: Connection = null
     try {
       val connProperties =
