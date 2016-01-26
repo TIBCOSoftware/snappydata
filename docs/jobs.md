@@ -15,14 +15,15 @@ When running in the __embedded__ mode (i.e. Spark executor collocated with Snapp
 ##### A simple example that uses SnappyContext to create table and query data 
 Create a SnappyContext from SparkContext
 ```
-val conf = new SparkConf().
-               setAppName("ExampleTest").
-               setMaster("local[*]"). 
-               // Starting jobserver helps when you would want to test your jobs in a local mode. 
-               set("jobserver.enabled", "true")
-val sc = new SparkContext(conf) 
-// get the SnappyContext
-val snc: SnappyContext = SnappyContext.getOrCreate(sc)
+  val conf = new org.apache.spark.SparkConf()
+               .setAppName("ExampleTest")
+               // Starting jobserver helps when you would want to test your jobs in a local mode.
+               .set("jobserver.enabled", "true")
+               .setMaster("local[*]")
+
+  val sc = new org.apache.spark.SparkContext(conf)
+  // get the SnappyContext
+  val snc: SnappyContext = org.apache.spark.sql.SnappyContext.getOrCreate(sc)
 ```
 
 Create columnar tables using API
@@ -30,47 +31,69 @@ Create columnar tables using API
 ```
   val props1 = Map(
     "BUCKETS" -> "2")
-  case class Data(col1: Int, col2: Int, col3: Int)
+  case class Data(COL1: Int, COL2: Int, COL3: Int)
   val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
   val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
 
   val dataDF = snc.createDataFrame(rdd)
 
   // create a column table
-  // "column_table" is the name of the table
+  // "COLUMN_TABLE" is the name of the table
+  // first drop the table if it already exists
+  snc.dropTable("COLUMN_TABLE", ifExists = true)
   // "column" is the table format (that is row or column)
   // dataDF.schema provides the schema for table
-  snc.createTable("column_table", "column", dataDF.schema, props1)
+  snc.createTable("COLUMN_TABLE", "column", dataDF.schema, props1)
   // insert the data in append mode
-  dataDF.write.format("column").mode(SaveMode.Append).options(props1).saveAsTable("column_table")
+  dataDF.write.format("column").mode(org.apache.spark.sql.SaveMode.Append).options(props1).saveAsTable("COLUMN_TABLE")
 
-  val results1 = snc.sql("select * from column_table")
+  val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
   println("contents of column table are:")
   results1.foreach(println)
-```
-
-The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. For more detailes about the properties ('props' map in above example) and createTable API refer to documentation for [row and column tables](https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md)
-
-Create row tables using API
 
 ```
-  // create a row format table called row_table
-  // "row_table" is the name of the table
+
+The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. For more detailes about the properties ('props1' map in above example) and createTable API refer to documentation for [row and column tables](https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md)
+
+Create row tables using API, update the contents of row table
+
+```
+  // create a row format table called ROW_TABLE
+  // "ROW_TABLE" is the name of the table
+  // first drop the table if it already exists
+  snc.dropTable("ROW_TABLE", ifExists = true)
   // "row" is the table format (that is row or column)
   // dataDF.schema provides the schema for table
   val props2 = Map.empty[String, String]
-  snc.createTable("row_table", "row", dataDF.schema, props2)
+  snc.createTable("ROW_TABLE", "row", dataDF.schema, props2)
 
   // insert the data in append mode
-  dataDF.write.format("row").mode(SaveMode.Append).options(props2).saveAsTable("row_table")
+  dataDF.write.format("row").mode(org.apache.spark.sql.SaveMode.Append).options(props2).saveAsTable("ROW_TABLE")
 
-  val results2 = snc.sql("select * from row_table")
+  val results2 = snc.sql("select * from ROW_TABLE")
   println("contents of row table are:")
   results2.foreach(println)
+
+  // row tables can be mutated
+  // for example update "ROW_TABLE" and set col3 to 99 where
+  // criteria "col3 = 3" is true using update API
+  snc.update("ROW_TABLE", "COL3 = 3", org.apache.spark.sql.Row(99), "COL3" )
+
+  val results3 = snc.sql("SELECT * FROM ROW_TABLE")
+  println("contents of row table are after setting col3 = 99 are:")
+  results3.foreach(println)
+
+  // update rows using sql update statement
+  snc.sql("UPDATE ROW_TABLE SET COL1 = 100 WHERE COL3 = 99")
+  val results4 = snc.sql("SELECT * FROM ROW_TABLE")
+  println("contents of row table are after setting col1 = 100 are:")
+  results4.foreach(println)
 ```
+
 
 ### Running Spark programs inside the database
 
+> Note: Above simple example uses local mode to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Please refer to [deployments](https://github.com/SnappyDataInc/snappydata/blob/master/docs/deployment.md) document for reference. Also please refer to [configuration](https://github.com/SnappyDataInc/snappydata/blob/master/docs/configuration.md) document for various configuration properties
 
 To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
 ```scala
@@ -115,7 +138,15 @@ $ bin/snappy-job.sh submit  \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 ```
-This utility submits the job and returns a JSON that has a jobId of this job. 
+The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.
+
+- --lead option specifies the host name of the lead node along with the port on which it accepts jobs (8090)
+- --app-name option specifies the name given to the submitted app
+-  --class specifies the name of the class that implements of the spark job to be run
+-  --app-jar specifies the jar file that packages the code for spark job
+
+The status returned by the utility is shown below:
+
 ```
 {
   "status": "STARTED",
@@ -141,7 +172,7 @@ $ bin/snappy-job.sh status  \
   "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 }
 ```
-Once the tables are created, they can be queried by firing another job. 
+Once the tables are created, they can be queried by firing another job. Please refer to [AirlineDataJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala) from [snapp-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) for the implementation of the job. 
 ```
 $ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
