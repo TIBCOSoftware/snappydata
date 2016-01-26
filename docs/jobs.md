@@ -14,8 +14,6 @@ Here is an example to create a SnappyContext from SparkContext.
 ```scala
   val conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
-               // Starting jobserver helps when you would want to test your jobs in a local mode.
-               .set("jobserver.enabled", "true")
                .setMaster("local[*]")
 
   val sc = new org.apache.spark.SparkContext(conf)
@@ -135,8 +133,8 @@ The utility snappy-job.sh submits the job and returns a JSON that has a jobId of
 
 - --lead option specifies the host name of the lead node along with the port on which it accepts jobs (8090)
 - --app-name option specifies the name given to the submitted app
--  --class specifies the name of the class that implements of the spark job to be run
--  --app-jar specifies the jar file that packages the code for spark job
+-  --class specifies the name of the class that contains implementation of the Spark job to be run
+-  --app-jar specifies the jar file that packages the code for Spark job
 
 The status returned by the utility is shown below:
 
