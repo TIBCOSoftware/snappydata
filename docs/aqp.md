@@ -21,7 +21,7 @@ The example above create a TopK table called MostPopularTweets, the base table f
 
 *Scala API for creating a TopK table*  
    
-	```
+	
 	val topKOptionMap = Map(
 		"epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",
@@ -33,23 +33,23 @@ The example above create a TopK table called MostPopularTweets, the base table f
       val schema = StructType(List(StructField("HashTag", StringType)))
       snc.createApproxTSTopK("MostPopularTweets", "HashTag",
         schema, topKOptionMap)
-	```  
+	  
 The code above shows how to do the same thing using the SnappyData Scala API  
   
 *Querying the TopK table*  
 	
-	```
+	
 	select * from topkTweets order by EstimatedValue desc  
-	```   
+	
 The example above queries the TopK table which returns the top 40 (the depth of the TopK table was set to 40) hashtags with the most retweets.
 ### Approximate TopK analytics for time series data
 Time is used as an attribute in creating the TopK structures. Time can be an attribute of the incoming data set (which is frequently the case with streaming data sets) and in the absence of that, the system uses arrival time of the batch as the timestamp for that incoming batch. The TopK structure is populated along the dimension of time. As an example, the most retweeted hashtags in each window are stored in the data structure. This allows us to issue queries like, "what are the most popular hashtags in a given time interval?" Queries of this nature are typically difficult to execute and not easy to optimize (due to space considerations)in a traditional system.
 
 Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData AQP module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
 	
-	```
+	
 	select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where startTime='2016-01-26 10:07:26.121' and endTime='2016-01-26 11:14:06.121' order by EstimatedValue desc
-	```   
+	  
 	
 If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the time stamp. 
 *SQL API for creating a TopK table in SnappyData specifying timestampColumn* 
@@ -63,7 +63,7 @@ The example above create a TopK table called MostPopularTweets, the base table f
 
 *Scala API for creating a TopK table*  
    
-	```val topKOptionMap = Map(
+	val topKOptionMap = Map(
 		"epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",
         "size" -> "40",
@@ -75,7 +75,7 @@ The example above create a TopK table called MostPopularTweets, the base table f
       val schema = StructType(List(StructField("HashTag", StringType)))
       snc.createApproxTSTopK("MostPopularTweets", "HashTag",
         schema, topKOptionMap)
-	```  
+	  
 The code above shows how to do the same thing using the SnappyData Scala API  
 
 It is worth noting that the user has the ability to disable time as a dimension if desired. This is done by not providing the *timeInterval* attribute when creating the TopK table.
