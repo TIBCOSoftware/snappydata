@@ -39,6 +39,22 @@ object snappy extends Serializable {
     }
   }
 
+  implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
+    df.sqlContext match {
+      case sc: SnappyContext =>
+        val plan = snappy.unwrapSubquery(df.logicalPlan)
+        if (sc.snappyContextFunctions.isStratifiedSample(plan)) {
+          new SampleDataFrame(sc, plan)
+        } else {
+          throw new AnalysisException("Stratified sampling " +
+              "operations require stratifiedSample plan and not " +
+              s"${plan.getClass.getSimpleName}")
+        }
+      case sc => throw new AnalysisException("Extended snappy operations " +
+          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+    }
+  }
+
   implicit def convertToAQPFrame(df: DataFrame): AQPDataFrame = {
     AQPDataFrame(df.sqlContext.asInstanceOf[SnappyContext], df.queryExecution)
   }

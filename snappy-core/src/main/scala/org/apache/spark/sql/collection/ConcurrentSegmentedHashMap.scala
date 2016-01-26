@@ -38,8 +38,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
    * A default constructor creates a concurrent hash map with initial size `32`
    * and concurrency `16`.
    */
-  def this(segmentCreator: (Int, Double) => M, hasher: K => Int) =
-    this(32, SegmentMap.DEFAULT_LOAD_FACTOR, 16, segmentCreator, hasher)
+  def this(concurrency: Int, segmentCreator: (Int, Double) => M,
+      hasher: K => Int) =
+    this(32, SegmentMap.DEFAULT_LOAD_FACTOR, concurrency,
+      segmentCreator, hasher)
 
   require(initialSize > 0,
     s"ConcurrentSegmentedHashMap: unexpected initialSize=$initialSize")
@@ -242,6 +244,11 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
   }
 
   def foldSegments[U](init: U)(f: (U, M) => U): U = _segments.foldLeft(init)(f)
+
+  def foldSegments[U](start: Int, end: Int, init: U)(f: (U, M) => U): U = {
+    val segments = _segments
+    (start until end).foldLeft(init)((itr, i) => f(itr, segments(i)))
+  }
 
   /**
    * No synchronization in this method so use with care.

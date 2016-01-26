@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.store
 
-import java.util.Properties
-
 import scala.collection.concurrent.TrieMap
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -26,7 +24,6 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.columntable.StoreCallbacksImpl
@@ -37,7 +34,7 @@ import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{SparkContext, Accumulator, Partition, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
 /**
   * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's
@@ -72,7 +69,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     userSchema match {
       case Some(schema) =>
         val store = new JDBCSourceAsColumnarStore(connProperties,partitions)
-        StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
+        StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table,
           schema, store, columnBatchSize, userCompression, rddId)
       case None =>
     }
@@ -91,8 +88,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     val conn = JdbcUtils.createConnection(connProperties.url, connProperties.connProps)
     conn.close()
     GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
-    Seq((Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)).iterator
-
+    Seq(Misc.getGemFireCache.getMyId ->
+        SparkEnv.get.blockManager.blockManagerId).iterator
   }
 
   override def getPartitions: Array[Partition] = {

@@ -185,16 +185,15 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
-    executeWithConnection(getConnection, {
-      case conn =>
-        val tableSchema = conn.getSchema
-        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-        if (region.isInstanceOf[PartitionedRegion]) {
-          StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
-        } else {
-          StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
-        }
+    executeWithConnection(getConnection, { conn =>
+      val tableSchema = conn.getSchema
+      val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+      val region = Misc.getRegionForTable(resolvedName, true)
+      if (region.isInstanceOf[PartitionedRegion]) {
+        StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
+      } else {
+        StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
+      }
     })
   }
 }

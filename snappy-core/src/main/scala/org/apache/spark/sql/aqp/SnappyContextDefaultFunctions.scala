@@ -28,9 +28,10 @@ import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{execution => sparkexecution, _}
 
-object SnappyContextDefaultFunctions extends SnappyContextFunctions{
+object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
-  protected[sql] def executePlan(context: SnappyContext, plan: LogicalPlan): QueryExecution =
+  protected[sql] def executePlan(context: SnappyContext,
+      plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(context, plan)
 
   override def createTopK(context: SnappyContext, tableName: String,
@@ -61,26 +62,23 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions{
       aqpTables: Seq[String], time: Long): Unit =
     throw new UnsupportedOperationException("missing aqp jar")
 
- /* def saveStream[T: ClassTag](context: SnappyContext, stream: DStream[T],
-                              aqpTables: Seq[String],
-                              formatter: (RDD[T], StructType) => RDD[Row],
-                              schema: StructType,
-                              transform: RDD[Row] => RDD[Row] = null)
-  = throw new UnsupportedOperationException("missing aqp jar")*/
-
   def createSampleDataFrameContract(context: SnappyContext, df: DataFrame,
       logicalPlan: LogicalPlan): SampleDataFrameContract =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def convertToStratifiedSample(options: Map[String, Any], snc: SnappyContext,
-                                logicalPlan: LogicalPlan): LogicalPlan
-  = throw new UnsupportedOperationException("missing aqp jar")
+      logicalPlan: LogicalPlan): LogicalPlan =
+    throw new UnsupportedOperationException("missing aqp jar")
+
+  def isStratifiedSample(logicalPlan: LogicalPlan): Boolean =
+    throw new UnsupportedOperationException("missing aqp jar")
 
   def withErrorDataFrame(df: DataFrame, error: Double,
       confidence: Double): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
-  def getPlanner(context: SnappyContext) : SparkPlanner = new DefaultPlanner(context)
+  def getPlanner(context: SnappyContext): SparkPlanner =
+    new DefaultPlanner(context)
 
   def getSnappyCacheManager: SnappyCacheManager = new SnappyCacheManager()
 
