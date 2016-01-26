@@ -78,7 +78,7 @@ As the name implies, use this mode to execute everything locally in the applicat
 
 ```scala
 val conf = new SparkConf().
-               setMasterURL("snappydata:local[*]"). 
+               setMaster("local[*]").
                // Starting jobserver helps when you would want to test your jobs in a local mode. 
                set("jobserver.enabled", "true")
 val sc = new SparkContext(conf) 
