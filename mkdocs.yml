@@ -1,31 +1,32 @@
-site_name: SnappyData Docs - 0.1 release
-site_url: http://www.snappydata.io/product/0.1/docs
+site_name: SnappyData Docs - Preview release
+site_url: http://www.snappydata.io
 site_description: Project documentation with Markdown.
 site_author: SnappyData development team
-theme: readthedocs
 
 repo_url: https://github.com/SnappyDataInc/snappydata
 
 pages:
-- Introduction: index.md
-- User Guide:
-    - Getting Started: README.md
-    - Key features: features.md
-    - Architecture: architecture.md
-    - Building from source, project layout: build-instructions.md
-    - Connecting using JDBC, Spark: connectingToCluster.md
-    - Developing Apps using the Spark API: jobs.md
-    - Configuring the cluster: configuration.md
-    - Row and Column tables: rowAndColumnTables.md
-    - Deployment topologies: deployment.md
-    - Approximate query processing: aqp.md
-    - Stream processing using SQL: streamingWithSQL.md
+- Table of Contents: index.md
+# this file may just be the [toc] tag .. not sure if that works.
+#
+- Getting Started: README.md
+- Building from source, project layout: build-instructions.md
+- Overview: snappyIntroduction.md
+- Key features: features.md
+- Architecture: architecture.md
+- Configuring the cluster: configuration.md
+- Connecting using JDBC, Spark: connectingToCluster.md
+- Developing Apps using the Spark API: jobs.md
+- Row and Column tables: rowAndColumnTables.md
+- Approximate query processing: aqp.md
+- Stream processing using SQL: streamingWithSQL.md
+- Deployment topologies: deployment.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
     - License: LICENSE.md
 
-#theme: readthedocs
+theme: readthedocs
 
 markdown_extensions:
     - toc:
