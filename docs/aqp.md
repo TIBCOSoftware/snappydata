@@ -71,7 +71,8 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
     ````
    
 *Equivalent Scala API for creating  the same sample table*  	 
-        String baseTable = "AIRLINE"		
+	
+	````String baseTable = "AIRLINE"		
        // Create a sample table sampling parameters.
       snc.createSampleTable(sampleTable, None,
         Map("buckets" -> "5",
@@ -81,8 +82,7 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
           "basetable" -> baseTable
         ))
         snc.table(baseTable).write.mode(SaveMode.Append).saveAsTable(sampleTable)
-      
-      ````
+     ````
 Here is an example of a query that can be run after the sample table has been created.  
 
 	````SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error 0.10 confidence 0.95
