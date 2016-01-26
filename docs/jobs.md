@@ -1,19 +1,16 @@
 ## Building Snappy applications using Spark API
 
-SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the rich higher level APIs. Working with the SnappyData Tables themselves builds on top of Spark SQL. So, we recommend getting to know the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) (and hence some core Spark concepts). 
+SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs(like Spark ML). All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  So, we recommend getting to know the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](rowAndColumnTables.md).
 
-You primarily interact with SnappyData tables using SQL (a richer, more compliant SQL) or the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. 
-
-In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in catalog and persisted using the SnappyStore to disk (i.e. the tables will be there when the cluster recovers). This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. 
+In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but, can also be reliably managed on disk. 
 
 
 ### SnappyContext
 A SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
 
-When running in the __embedded__ mode (i.e. Spark executor collocated with Snappy data store), Applications typically submit Jobs to the [Snappy-JobServer](https://github.com/SnappyDataInc/spark-jobserver) and do not explicitly create a SnappyContext. A single shared context managed by SnappyData makes it possible to re-use Executors across client connections or applications.
 
-##### A simple example that uses SnappyContext to create table and query data 
-Create a SnappyContext from SparkContext
+##### Using SnappyContext to create table and query data 
+Here is an example to create a SnappyContext from SparkContext. 
 ```
   val conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
@@ -26,11 +23,10 @@ Create a SnappyContext from SparkContext
   val snc: SnappyContext = org.apache.spark.sql.SnappyContext.getOrCreate(sc)
 ```
 
-Create columnar tables using API
+Create columnar tables using API. Other than `create`, `drop` table rest is all based on the Spark SQL Data Source APIs. 
 
 ```
-  val props1 = Map(
-    "BUCKETS" -> "2")
+  val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
   val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
   val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
@@ -38,9 +34,8 @@ Create columnar tables using API
   val dataDF = snc.createDataFrame(rdd)
 
   // create a column table
-  // "COLUMN_TABLE" is the name of the table
-  // first drop the table if it already exists
   snc.dropTable("COLUMN_TABLE", ifExists = true)
+
   // "column" is the table format (that is row or column)
   // dataDF.schema provides the schema for table
   snc.createTable("COLUMN_TABLE", "column", dataDF.schema, props1)
@@ -53,16 +48,14 @@ Create columnar tables using API
 
 ```
 
-The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. For more detailes about the properties ('props1' map in above example) and createTable API refer to documentation for [row and column tables](https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md)
+The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster was expanded) a bucket is the smallest unit that can be moved around. For more detailes about the properties ('props1' map in above example) and createTable API refer to documentation for [row and column tables](https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md)
 
 Create row tables using API, update the contents of row table
 
 ```
   // create a row format table called ROW_TABLE
-  // "ROW_TABLE" is the name of the table
-  // first drop the table if it already exists
   snc.dropTable("ROW_TABLE", ifExists = true)
-  // "row" is the table format (that is row or column)
+  // "row" is the table format 
   // dataDF.schema provides the schema for table
   val props2 = Map.empty[String, String]
   snc.createTable("ROW_TABLE", "row", dataDF.schema, props2)
@@ -93,7 +86,7 @@ Create row tables using API, update the contents of row table
 
 ### Running Spark programs inside the database
 
-> Note: Above simple example uses local mode to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Please refer to [deployments](https://github.com/SnappyDataInc/snappydata/blob/master/docs/deployment.md) document for reference. Also please refer to [configuration](https://github.com/SnappyDataInc/snappydata/blob/master/docs/configuration.md) document for various configuration properties
+> Note: Above simple example uses local mode(i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployments](https://github.com/SnappyDataInc/snappydata/blob/master/docs/deployment.md) chapter for all the supported deployment modes and the [configuration](https://github.com/SnappyDataInc/snappydata/blob/master/docs/configuration.md) chapter for configuring the cluster.
 
 To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
 ```scala
