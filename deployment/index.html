@@ -286,7 +286,7 @@ The big benefit even while the clusters for compute and data is split is that th
 <h2 id="local-mode">Local mode<a class="headerlink" href="#local-mode" title="Permanent link">&para;</a></h2>
 <p>As the name implies, use this mode to execute everything locally in the application JVM. The local vs cluster modes are described in the <a href="http://spark.apache.org/docs/latest/programming-guide.html#local-vs-cluster-modes">Spark Programming guide</a>.</p>
 <pre><code class="scala">val conf = new SparkConf().
-               setMasterURL(&quot;snappydata:local[*]&quot;). 
+               setMaster(&quot;local[*]&quot;).
                // Starting jobserver helps when you would want to test your jobs in a local mode. 
                set(&quot;jobserver.enabled&quot;, &quot;true&quot;)
 val sc = new SparkContext(conf) 
