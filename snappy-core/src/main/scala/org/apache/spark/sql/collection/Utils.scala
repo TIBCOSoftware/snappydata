@@ -18,9 +18,8 @@ package org.apache.spark.sql.collection
 
 import java.io.{IOException, ObjectOutputStream}
 
-import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{Map => SMap, Traversable, mutable}
+import scala.collection.{Map => SMap}
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
@@ -32,6 +31,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.DDLException
@@ -41,7 +41,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 
-object Utils extends MutableMapFactory[mutable.HashMap] {
+object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
 
@@ -303,18 +303,19 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
 
   def getInternalType(dataType: DataType): Class[_] = {
     dataType match {
-      case ByteType => classOf[scala.Byte]
-      case IntegerType => classOf[scala.Int]
-      case DoubleType => classOf[scala.Double]
-      //case "numeric" => org.apache.spark.sql.types.DoubleType
-      //case "character" => org.apache.spark.sql.types.StringType
+      case ByteType => classOf[Byte]
+      case IntegerType => classOf[Int]
+      case LongType => classOf[Long]
+      case FloatType => classOf[Float]
+      case DoubleType => classOf[Double]
       case StringType => classOf[String]
+      case DateType => classOf[Int]
+      case TimestampType => classOf[Long]
+      case d: DecimalType => classOf[Decimal]
       //case "binary" => org.apache.spark.sql.types.BinaryType
       //case "raw" => org.apache.spark.sql.types.BinaryType
       //case "logical" => org.apache.spark.sql.types.BooleanType
       //case "boolean" => org.apache.spark.sql.types.BooleanType
-      //case "timestamp" => org.apache.spark.sql.types.TimestampType
-      //case "date" => org.apache.spark.sql.types.DateType
       case _ => throw new IllegalArgumentException(s"Invalid type $dataType")
     }
   }
@@ -331,10 +332,8 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     }
   }
 
-  def isLoner(sc: SparkContext): Boolean = sc.schedulerBackend match {
-    case lb: LocalBackend => true
-    case _ => false
-  }
+  final def isLoner(sc: SparkContext): Boolean =
+    sc.schedulerBackend.isInstanceOf[LocalBackend]
 
   def toLowerCase(k: String): String = {
     var index = 0
@@ -372,24 +371,6 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     k
   }
 
-  def normalizeOptions[T](opts: Map[String, Any])
-      (implicit bf: CanBuildFrom[Map[String, Any], (String, Any), T]): T =
-    opts.map[(String, Any), T] {
-      case (k, v) => (toLowerCase(k), v)
-    }(bf)
-
-  // for mapping any tuple traversable to a mutable map
-
-  def empty[A, B]: mutable.HashMap[A, B] = new mutable.HashMap[A, B]
-
-  implicit def canBuildFrom[A, B] = new CanBuildFrom[Traversable[(A, B)],
-      (A, B), mutable.HashMap[A, B]] {
-
-    override def apply(from: Traversable[(A, B)]) = empty[A, B]
-
-    override def apply() = empty
-  }
-
   def schemaFields(schema : StructType): Map[String, StructField] = {
     Map(schema.fields.flatMap { f =>
       val name = if (f.metadata.contains("name")) f.metadata.getString("name")
@@ -402,19 +383,21 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
    * Get the result schema given an optional explicit schema and base table.
    * In case both are specified, then check compatibility between the two.
    */
-  def getSchemaFromBase(schemaOpt: Option[StructType],
+  def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
       baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
-      asSelect: Boolean, table: String, tableType: String): StructType = {
+      asSelect: Boolean, table: String,
+      tableType: String): (StructType, Option[LogicalPlan]) = {
     schemaOpt match {
       case Some(s) => baseTableOpt match {
         case Some(baseTableName) =>
           // if both baseTable and schema have been specified, then both
           // should have matching schema
           try {
-            val tableSchema = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTableName)).schema
+            val tablePlan = catalog.lookupRelation(
+              catalog.newQualifiedTableName(baseTableName))
+            val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
-              s
+              (s, Some(tablePlan))
             } else if (asSelect) {
               throw new DDLException(s"CREATE $tableType TABLE AS SELECT:" +
                   " mismatch of schema with that of base table." +
@@ -428,17 +411,18 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
             }
           } catch {
             // continue with specified schema if base table fails to load
-            case e@(_: AnalysisException | _: DDLException) => s
+            case e@(_: AnalysisException | _: DDLException) => (s, None)
           }
-        case None => s
+        case None => (s, None)
       }
       case None => baseTableOpt match {
         case Some(baseTable) =>
           try {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
-            catalog.normalizeSchema(catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTable)).schema)
+            val tablePlan = catalog.lookupRelation(
+              catalog.newQualifiedTableName(baseTable))
+            (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
             case e@(_: AnalysisException | _: DDLException) =>
               throw new AnalysisException(s"Base table $baseTable " +
@@ -559,7 +543,8 @@ class ExecutorLocalRDD[T: ClassTag](
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val part = split.asInstanceOf[ExecutorLocalPartition]
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
-    if (part.blockId != thisBlockId) {
+    if (part.blockId.host != thisBlockId.host ||
+        part.blockId.executorId != thisBlockId.executorId) {
       throw new IllegalStateException(
         s"Unexpected execution of $part on $thisBlockId")
     }

@@ -201,7 +201,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
           if (tableName.indexOf(".") <= 0) {
             conn.getSchema + "." + tableName
           } else tableName
-        }.toUpperCase
+        }
 
         val par = split.index
         val stmt = conn.createStatement()

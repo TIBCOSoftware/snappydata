@@ -44,7 +44,9 @@ import org.apache.spark.{Logging, SparkContext}
 private[sql] object ExternalStoreUtils extends Logging {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
-  final val DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE = "7"
+  final val DEFAULT_SAMPLE_TABLE_BUCKETS = "53"
+  final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "11"
+  final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
 
   def getAllPoolProperties(url: String, driver: String,
       poolProps: Map[String, String], hikariCP: Boolean) = {
@@ -91,12 +93,12 @@ private[sql] object ExternalStoreUtils extends Logging {
     override def iterator: Iterator[(String, T)] = baseMap.iterator
 
     override def +=(kv: (String, T)) = {
-      baseMap += kv
+      baseMap += kv.copy(_1 = kv._1.toLowerCase)
       this
     }
 
     override def -=(key: String) = {
-      baseMap -= key
+      baseMap -= key.toLowerCase
       this
     }
   }
@@ -413,16 +415,58 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
+  final val PARTITION_BY = "PARTITION_BY"
+  final val REPLICATE = "REPLICATE"
+  final val BUCKETS = "BUCKETS"
+
   def getTotalPartitions(sc: SparkContext,
-      parameters: mutable.Map[String, String]): Int = {
-    parameters.getOrElse("BUCKETS", SnappyContext.getClusterMode(sc) match {
-      case LocalMode(_, _) => DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE
-      case _ => DEFAULT_TABLE_BUCKETS
+      parameters: mutable.Map[String, String],
+      forManagedTable: Boolean, forColumnTable: Boolean = true,
+      forSampleTable: Boolean = false): Int = {
+    parameters.getOrElse(BUCKETS, {
+      val partitions = SnappyContext.getClusterMode(sc) match {
+        case LocalMode(_, _) =>
+          if (!forSampleTable) DEFAULT_TABLE_BUCKETS_LOCAL_MODE
+          else DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+        case _ =>
+          if (!forSampleTable) DEFAULT_TABLE_BUCKETS
+          else DEFAULT_SAMPLE_TABLE_BUCKETS
+      }
+      if (forManagedTable) {
+        if (forColumnTable) {
+          // column tables are always partitioned
+          parameters += BUCKETS -> partitions
+        } else if (parameters.contains(PARTITION_BY) &&
+            !parameters.contains(REPLICATE)) {
+          parameters += BUCKETS -> partitions
+        }
+      }
+      partitions
     }).toInt
   }
 
-  def cachedBatchesToRows(
-      cacheBatches: Iterator[CachedBatch] ,  requestedColumns:Array[String], schema:StructType): Iterator[InternalRow] = {
+  final def cachedBatchesToRows(
+      cacheBatches: Iterator[CachedBatch],
+      requestedColumns: Array[String],
+      schema: StructType): Iterator[InternalRow] = {
+    /* TODO: (native code gen does not work for some reason)
+    // check and compare with InMemoryColumnarTableScan
+    val numColumns = requestedColumns.length
+    val columnIndices = new Array[Int](numColumns)
+    val columnDataTypes = new Array[DataType](numColumns)
+    for (index <- 0 until numColumns) {
+      val fieldIndex = schema.fieldIndex(requestedColumns(index))
+      columnIndices(index) = fieldIndex
+      schema.fields(fieldIndex).dataType match {
+        case udt: UserDefinedType[_] => columnDataTypes(index) = udt.sqlType
+        case other => columnDataTypes(index) = other
+      }
+    }
+    // TODO: partition pruning like in InMemoryColumnarTableScan?
+    val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
+    columnarIterator.initialize(cacheBatches, columnDataTypes, columnIndices)
+    columnarIterator
+    */
     val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
       schema.getFieldIndex(a).get -> schema(a).dataType
     }.unzip
