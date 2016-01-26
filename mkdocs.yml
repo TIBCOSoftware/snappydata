@@ -34,4 +34,4 @@ markdown_extensions:
     - admonition:
 
 copyright: Copyright &copy; 2016 <a href="http://snappydata.io</a>.
-#google_analytics: ['UA-27795084-5', 'snappydata.io']
+#google_analytics: ['UA-64703291-1', 'snappydata.io']
