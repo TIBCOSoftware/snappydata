@@ -21,7 +21,8 @@ The example above create a TopK table called MostPopularTweets, the base table f
 
 *Scala API for creating a TopK table*  
    
-	```val topKOptionMap = Map(
+	```
+	val topKOptionMap = Map(
 		"epoch" -> System.currentTimeMillis().toString,
         "timeInterval" -> "1000ms",
         "size" -> "40",
@@ -92,7 +93,7 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
 
 *The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns* 
 
-	````CREATE SAMPLE TABLE AIRLINE_SAMPLE OPTIONS(
+	CREATE SAMPLE TABLE AIRLINE_SAMPLE OPTIONS(
     buckets '5',
     qcs 'UniqueCarrier, Year_, Month_',
     fraction '0.03',
@@ -106,11 +107,11 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
       Diverted, CarrierDelay, WeatherDelay, NASDelay, SecurityDelay,
       LateAircraftDelay, ArrDelaySlot
     FROM AIRLINE);
-    ````
+    
    
 *Equivalent Scala API for creating  the same sample table*  	 
 	
-	````String baseTable = "AIRLINE"		
+	 String baseTable = "AIRLINE"		
        // Create a sample table sampling parameters.
       snc.createSampleTable(sampleTable, None,
         Map("buckets" -> "5",
@@ -120,17 +121,17 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
           "basetable" -> baseTable
         ))
         snc.table(baseTable).write.mode(SaveMode.Append).saveAsTable(sampleTable)
-     ````
+     
 Here is an example of a query that can be run after the sample table has been created.  
 
-	````SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error 0.10 confidence 0.95
-	````  
+	SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error 0.10 confidence 0.95
+	  
 Note how the query specifies the acceptable error fraction and expected confidence interval. The table specified in the query is the base table, however the SnappyData AQP engine figures out that there are one or more appropriate sample tables that can be used to satisfy this query and transparently uses the sample table to satisfy the query.  
 
 Here is the scala API for running the same query     
 
-	````snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).withError(0.10, 0.95)  
-	````  
+	snc.table(baseTable).agg(Map("ArrDelay" -> "sum")).withError(0.10, 0.95)  
+	  
 The withError method takes in both the error fraction and the expected confidence interval for the returned result.
 
 In additiion to this, SnappyData supports error functions that can be specified in the query projection. Currently these error functions are supported for the SUM and AVG aggregates in the projection. The following four methods are available to be used in query projection when running approximate queries, and their definitions are self explanatory
