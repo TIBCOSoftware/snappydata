@@ -11,7 +11,7 @@ A SnappyContext is the main entry point for SnappyData extensions to Spark. A Sn
 
 ##### Using SnappyContext to create table and query data 
 Here is an example to create a SnappyContext from SparkContext. 
-```
+```scala
   val conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
                // Starting jobserver helps when you would want to test your jobs in a local mode.
@@ -25,7 +25,7 @@ Here is an example to create a SnappyContext from SparkContext.
 
 Create columnar tables using API. Other than `create`, `drop` table rest is all based on the Spark SQL Data Source APIs. 
 
-```
+```scala
   val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
   val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
@@ -52,7 +52,7 @@ The optional BUCKETS attribute specifies the number of partitions or buckets to 
 
 Create row tables using API, update the contents of row table
 
-```
+```scala
   // create a row format table called ROW_TABLE
   snc.dropTable("ROW_TABLE", ifExists = true)
   // "row" is the table format 
@@ -140,7 +140,7 @@ The utility snappy-job.sh submits the job and returns a JSON that has a jobId of
 
 The status returned by the utility is shown below:
 
-```
+```json
 {
   "status": "STARTED",
   "result": {
