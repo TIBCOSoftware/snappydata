@@ -36,7 +36,7 @@
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
 
 ## Introduction
-SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics). 
+SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in-memory transactional store with scale-out SQL semantics). 
 
 ![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
 
@@ -45,7 +45,9 @@ You can download the latest version of SnappyData here:
 
 * [SnappyData Preview 0.1 download link](1)
 
-SnappyData has been tested on Linux (mention kernel version) and Mac (OS X 10.9 and 10.10?). If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). [Skip to Getting Started](#getting-started)
+SnappyData has been tested on Linux (mention kernel version) and Mac OSX. If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
+
+[Skip to Getting Started](#getting-started)
 
 ## Community Support
 
@@ -62,7 +64,6 @@ version: 0.1_preview
 ```
 
 ## Working with SnappyData Source Code
-(Info for our download page?)
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
 Master development branch
@@ -86,8 +87,8 @@ You will find the instructions for building, layout of the code, integration wit
 - **In-memory row and column store**: Run the store collocated in Spark executors (i.e. a single compute and data cluster) or in its own process space (i.e. separate compute and data cluster)
 - **SQL standard compliance**: Spark SQL + several SQL extensions: DML, DDL, indexing, constraints.
 - **SQL based extensions for streaming processing**: Use native Spark streaming, Dataframe APIs or declaratively specify your streams and how you want it processed. No need to learn Spark APIs to get going with stream processing or its subtleties when processing in parallel.
-- **Interactive analytics using Approximate query processing(AQP)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce the in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background and can be completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions. 
-- **Mutate, transact on data in Spark**: Use SQL to insert, update, delete data in tables(something that you cannot do in Spark). We also provide extensions to Spark’s context so you can mutate data in your spark programs. Any tables in SnappyData is visible as DataFrames without having to maintain multiples copies of your data: cached RDDs in Spark and then separately in your data store. 
+- **Interactive analytics using Approximate Query Processing (AQP)**: We introduce multiple synopses techniques through data structures like count-min-sketch and stratified sampling to dramatically reduce in-memory space requirements and provide true interactive speeds for analytic queries. These structures can be created and managed by developers with little to no statistical background and are completely transparent to the SQL developer running queries. Error estimators are also integrated with simple mechanisms to get to the errors through built-in SQL functions. 
+- **Mutate, transact on data in Spark**: Use SQL to insert, update, delete data in tables. We also provide extensions to Spark’s context so you can mutate data in your spark programs. Any tables in SnappyData are visible as DataFrames without having to maintain multiples copies of your data. 
 - **Optimizations**: Use indexes to improve query performance in the row store (the GemFire SQL optimizer automatically uses in-memory indexes when available) 
 - **High availability not just Fault tolerance**: Data is instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications with continuous HA.
 - **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. 
@@ -98,10 +99,10 @@ Read SnappyData [docs](complete docs) for a more detailed list of all features a
 
 ###Objectives
 
-- **In-memory Column and Row tables**: Illustrate both SQL syntax and Spark API to create and manage column tables for large data and how row tables can be used for reference data and can be replicated to each node in the cluster. 
+- **In-memory Column and Row tables**: Illustrate both SQL syntax and Spark API to create and manage column tables for large data and illustrate how row tables can be used for reference data and can be replicated to each node in the cluster. 
 - **OLAP, OLTP operations**: We run analytic class SQL queries (full scan with aggregations) on column tables and fully distributed join queries and observe the space requirements as well as the performance of these queries. For OLTP, we run simple update queries - you can note the Spark API extensions to support mutations in Spark. 
 - **AQP**: We run the same analytic queries by creating adjunct stratified samples to note the performance difference - can we get close to interactive query performance speeds?
-- **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. The SnappyData value add demonstrated here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
+- **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. What SnappyData demonstrates here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
 
 In this document, we discuss the features mentioned above and ask you to take steps to run the scripts that demonstrate these features. 
 
@@ -114,7 +115,13 @@ SnappyData, a database server cluster, has three main components - Locator, Serv
 
 ![ClusterArchitecture](docs/GettingStarted_Architecture.png)
 
-Details of about the architecture can be found [here](./docs/architecture.md). SnappyData also has multiple deployment options which can be found [here](./docs/deployment.md).
+Details of about the architecture can be found here:
+
+[Architecture](./docs/architecture.md) 
+
+SnappyData also has multiple deployment options which can be found 
+
+[Deployment Options](./docs/deployment.md).
 
 #### Step 1 - Start the SnappyData cluster 
 
@@ -140,7 +147,10 @@ yourhostName -J-Xmx4g
 >The quick start scripts use ssh to start up various processes. By default, this requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable passwordless ssh.
 
 
-The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [article](./docs/configuration.md) discusses the custom configuration and startup options.
+The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
+
+[Custom Configuration](./docs/configuration.md)
+
 ```
 $ sbin/snappy-start-all.sh 
   (Roughly can take upto a minute. Associated logs are in the ‘work’ sub-directory)
@@ -161,7 +171,7 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 
 ``` 
 
-At this point, the SnappyData cluster is up and running and is ready to accept Snappy jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
+At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
 
 <img src="docs/ExternalBlockStoreSize.png" width="800">
 
@@ -173,19 +183,21 @@ At this point, the SnappyData cluster is up and running and is ready to accept S
 > And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs
 > listed in the Spark guides will work in SnappyData also.
 
-To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to SnappyData cluster and interact using SQL. On the other hand, users comfortable with Spark programming paradigm can write Snappy jobs to interact with SnappyData. Snappy jobs can be like a self contained Spark application or can share state with other jobs using SnappyData store. 
+To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to SnappyData cluster and interact using SQL. On the other hand, users comfortable with Spark programming paradigm can write jobs to interact with SnappyData. Jobs can be like a self contained Spark application or can share state with other jobs using SnappyData store. 
 
-Unlike Apache Spark, which is primarily a computational engine, SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark jobs/queries to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
+Unlike Apache Spark, which is primarily a computational engine, the SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark jobs/queries to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
 
-1. __Long running executors__: Executors are running within the Snappy store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
+1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
 Read [docs](docs) for details of the architecture.
  
-In this document, we showcase mostly the same set of features via Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to [__Getting Started with Spark API__](#getting-started-with-spark-api).
+In this document, we showcase mostly the same set of features via Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the Spark API section:
+
+[__Getting Started with Spark API__](#getting-started-with-spark-api).
 
 ### Getting Started with SQL
 
-For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster).
+For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer (a JDBC connection to the cluster).
 
 ```sql
 // Run from the SnappyData base directory
@@ -208,7 +220,7 @@ snappy> show members;
 -- DDL to create a column table
 CREATE TABLE AIRLINE (<column definitions>) USING column OPTIONS(buckets '5') ;
 ```
-[Row tables](rowTables), unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.  
+[Row tables](rowTables), unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys. A row's location is determined by a hash function and hence very fast for point lookups or updates.  
 _create table_ DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](./docs/rowAndColumnTables.md) for the details.
 ```sql
 -- DDL to create a row table
@@ -225,7 +237,7 @@ SQL scripts to create and load column and row tables.
 -- if you decided to work with the larger data set you have to edit the script below 
 --   to point to `airlineParquetData_2007-15` directory. Run `./download_full_airlinedata.sh ../data` first.
 -- This script loads parquet formatted data into a temporary spark table 
--- then saves it in  column table called Airline.
+-- then saves it in column table called Airline.
 snappy> run './quickstart/scripts/create_and_load_column_table.sql';
 
 -- Creates the airline code table. Row tables can be replicated to each node 
@@ -235,10 +247,10 @@ snappy> run './quickstart/scripts/create_and_load_row_table.sql';
 -- See the status of system
 snappy> run './quickstart/scripts/status_queries.sql'
 ```
-You can see the memory consumed on [Spark Console](http://localhost:4040/storage/). 
+You can see the memory consumed on the [Spark Console](http://localhost:4040/storage/). 
 
 #### OLAP and OLTP queries
-SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if it is a OLAP class or a OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to parallel run the query. In this case, our column table was created using _5 partitions(buckets)_ and hence will use 5 concurrent tasks. 
+SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if the query is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to run the query in parallel. In this case, our column table was created using _5 partitions (buckets)_ and hence will use 5 concurrent tasks. 
 
 ```sql
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
@@ -255,7 +267,7 @@ For low latency OLTP queries, the engine won't route it to the lead and instead 
 --- the airline code can be updated in the row table
 UPDATE AIRLINEREF SET DESCRIPTION='Delta America' WHERE CAST(CODE AS VARCHAR(25))='DL';
 ```
-Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/index.html#reference/sql-language-reference.html).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
+Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/index.html#reference/sql-language-reference.html).  As we show later, any table in SnappyData is also visible as a Spark DataFrame. 
 
 #### Step 3 - Run OLAP and OLTP queries
  
@@ -271,7 +283,7 @@ select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrie
   order by arrivalDelay;
 ```
 
-Each query is executed as one or more Jobs and each Job executed in one or more stages. You can explore the query execution plan and metrics [here](http://localhost:4040/SQL/)
+Each query is executed as one or more Jobs and each Job executed in one or more stages. You can explore the query execution plan and metrics [the Spark Console](http://localhost:4040/SQL/)
 
 ```sql
 -- Run a simple update SQL statement on the replicated row table.
