@@ -11,7 +11,8 @@
   <title>Developing Apps using the Spark API - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../img/favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
+  
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
@@ -19,6 +20,7 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
@@ -56,14 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Table of Contents</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../README/">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -207,65 +202,81 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="building-snappy-applications-using-spark-api">Building Snappy applications using Spark API<a class="headerlink" href="#building-snappy-applications-using-spark-api" title="Permanent link">&para;</a></h2>
-<p>SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the rich higher level APIs. Working with the SnappyData Tables themselves builds on top of Spark SQL. So, we recommend getting to know the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#overview">concepts in SparkSQL</a> (and hence some core Spark concepts). </p>
-<p>You primarily interact with SnappyData tables using SQL (a richer, more compliant SQL) or the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes">DataFrame API</a>. And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. </p>
-<p>In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in catalog and persisted using the SnappyStore to disk (i.e. the tables will be there when the cluster recovers). This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. </p>
-<h3 id="snappycontext">SnappyContext<a class="headerlink" href="#snappycontext" title="Permanent link">&para;</a></h3>
+                <h2 id="building-snappy-applications-using-spark-api">Building Snappy applications using Spark API</h2>
+<p>SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs(like Spark ML). All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  So, we recommend getting to know the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#overview">concepts in SparkSQL</a> and the <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes">DataFrame API</a>. And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced <a href="../rowAndColumnTables/">here</a>.</p>
+<p>In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but, can also be reliably managed on disk. </p>
+<h3 id="snappycontext">SnappyContext</h3>
 <p>A SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's <a href="http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext">SQLContext</a> to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to <a href="http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext">HiveContext</a> - integrates the SQLContext functionality with the Snappy store.</p>
-<p>When running in the <strong>embedded</strong> mode (i.e. Spark executor collocated with Snappy data store), Applications typically submit Jobs to the <a href="https://github.com/SnappyDataInc/spark-jobserver">Snappy-JobServer</a> and do not explicitly create a SnappyContext. A single shared context managed by SnappyData makes it possible to re-use Executors across client connections or applications.</p>
-<h5 id="a-simple-example-that-uses-snappycontext-to-create-table-and-query-data">A simple example that uses SnappyContext to create table and query data<a class="headerlink" href="#a-simple-example-that-uses-snappycontext-to-create-table-and-query-data" title="Permanent link">&para;</a></h5>
-<p>Create a SnappyContext from SparkContext</p>
-<pre><code>val conf = new SparkConf().
-               setAppName(&quot;ExampleTest&quot;).
-               setMaster(&quot;local[*]&quot;). 
-               // Starting jobserver helps when you would want to test your jobs in a local mode. 
-               set(&quot;jobserver.enabled&quot;, &quot;true&quot;)
-val sc = new SparkContext(conf) 
-// get the SnappyContext
-val snc: SnappyContext = SnappyContext.getOrCreate(sc)
+<h5 id="using-snappycontext-to-create-table-and-query-data">Using SnappyContext to create table and query data</h5>
+<p>Here is an example to create a SnappyContext from SparkContext. </p>
+<pre><code class="scala">  val conf = new org.apache.spark.SparkConf()
+               .setAppName(&quot;ExampleTest&quot;)
+               .setMaster(&quot;local[*]&quot;)
+
+  val sc = new org.apache.spark.SparkContext(conf)
+  // get the SnappyContext
+  val snc: SnappyContext = org.apache.spark.sql.SnappyContext.getOrCreate(sc)
 </code></pre>
 
-<p>Create columnar tables using API</p>
-<pre><code>  val props1 = Map(
-    &quot;BUCKETS&quot; -&gt; &quot;2&quot;)
-  case class Data(col1: Int, col2: Int, col3: Int)
+<p>Create columnar tables using API. Other than <code>create</code>, <code>drop</code> table rest is all based on the Spark SQL Data Source APIs. </p>
+<pre><code class="scala">  val props1 = Map(&quot;BUCKETS&quot; -&gt; &quot;2&quot;)  // Number of partitions to use in the SnappyStore
+  case class Data(COL1: Int, COL2: Int, COL3: Int)
   val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
   val rdd = sc.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
 
   val dataDF = snc.createDataFrame(rdd)
 
   // create a column table
-  // &quot;column_table&quot; is the name of the table
+  snc.dropTable(&quot;COLUMN_TABLE&quot;, ifExists = true)
+
   // &quot;column&quot; is the table format (that is row or column)
   // dataDF.schema provides the schema for table
-  snc.createTable(&quot;column_table&quot;, &quot;column&quot;, dataDF.schema, props1)
+  snc.createTable(&quot;COLUMN_TABLE&quot;, &quot;column&quot;, dataDF.schema, props1)
   // insert the data in append mode
-  dataDF.write.format(&quot;column&quot;).mode(SaveMode.Append).options(props1).saveAsTable(&quot;column_table&quot;)
+  dataDF.write.format(&quot;column&quot;).mode(org.apache.spark.sql.SaveMode.Append).options(props1).saveAsTable(&quot;COLUMN_TABLE&quot;)
 
-  val results1 = snc.sql(&quot;select * from column_table&quot;)
+  val results1 = snc.sql(&quot;SELECT * FROM COLUMN_TABLE&quot;)
   println(&quot;contents of column table are:&quot;)
   results1.foreach(println)
+
 </code></pre>
 
-<p>The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. For more detailes about the properties ('props' map in above example) and createTable API refer to documentation for <a href="https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md">row and column tables</a></p>
-<p>Create row tables using API</p>
-<pre><code>  // create a row format table called row_table
-  // &quot;row_table&quot; is the name of the table
-  // &quot;row&quot; is the table format (that is row or column)
+<p>The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster was expanded) a bucket is the smallest unit that can be moved around. For more detailes about the properties ('props1' map in above example) and createTable API refer to documentation for <a href="https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md">row and column tables</a></p>
+<p>Create row tables using API, update the contents of row table</p>
+<pre><code class="scala">  // create a row format table called ROW_TABLE
+  snc.dropTable(&quot;ROW_TABLE&quot;, ifExists = true)
+  // &quot;row&quot; is the table format 
   // dataDF.schema provides the schema for table
   val props2 = Map.empty[String, String]
-  snc.createTable(&quot;row_table&quot;, &quot;row&quot;, dataDF.schema, props2)
+  snc.createTable(&quot;ROW_TABLE&quot;, &quot;row&quot;, dataDF.schema, props2)
 
   // insert the data in append mode
-  dataDF.write.format(&quot;row&quot;).mode(SaveMode.Append).options(props2).saveAsTable(&quot;row_table&quot;)
+  dataDF.write.format(&quot;row&quot;).mode(org.apache.spark.sql.SaveMode.Append).options(props2).saveAsTable(&quot;ROW_TABLE&quot;)
 
-  val results2 = snc.sql(&quot;select * from row_table&quot;)
+  val results2 = snc.sql(&quot;select * from ROW_TABLE&quot;)
   println(&quot;contents of row table are:&quot;)
   results2.foreach(println)
+
+  // row tables can be mutated
+  // for example update &quot;ROW_TABLE&quot; and set col3 to 99 where
+  // criteria &quot;col3 = 3&quot; is true using update API
+  snc.update(&quot;ROW_TABLE&quot;, &quot;COL3 = 3&quot;, org.apache.spark.sql.Row(99), &quot;COL3&quot; )
+
+  val results3 = snc.sql(&quot;SELECT * FROM ROW_TABLE&quot;)
+  println(&quot;contents of row table are after setting col3 = 99 are:&quot;)
+  results3.foreach(println)
+
+  // update rows using sql update statement
+  snc.sql(&quot;UPDATE ROW_TABLE SET COL1 = 100 WHERE COL3 = 99&quot;)
+  val results4 = snc.sql(&quot;SELECT * FROM ROW_TABLE&quot;)
+  println(&quot;contents of row table are after setting col1 = 100 are:&quot;)
+  results4.foreach(println)
 </code></pre>
 
-<h3 id="running-spark-programs-inside-the-database">Running Spark programs inside the database<a class="headerlink" href="#running-spark-programs-inside-the-database" title="Permanent link">&para;</a></h3>
+<h3 id="running-spark-programs-inside-the-database">Running Spark programs inside the database</h3>
+<blockquote>
+<p>Note: Above simple example uses local mode(i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  <a href="https://github.com/SnappyDataInc/snappydata/blob/master/docs/deployment.md">deployments</a> chapter for all the supported deployment modes and the <a href="https://github.com/SnappyDataInc/snappydata/blob/master/docs/configuration.md">configuration</a> chapter for configuring the cluster.</p>
+</blockquote>
 <p>To create a job that can be submitted through the job server, the job must implement the <em>SnappySQLJob or SnappyStreamingJob</em> trait. Your job will look like:</p>
 <pre><code class="scala">class SnappySampleJob implements SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
@@ -292,7 +303,7 @@ val snc: SnappyContext = SnappyContext.getOrCreate(sc)
 <p>• <code>validate</code> allows for an initial validation of the context and any provided configuration. If the context and configuration are OK to run the job, returning spark.jobserver.SparkJobValid will let the job execute, otherwise returning spark.jobserver.SparkJobInvalid(reason) prevents the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an HTTP/1.1 400 Bad Request status code. validate helps you preventing running jobs that will eventually fail due to missing or wrong configuration and save both time and resources.</p>
 <p>See <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">examples</a> for Spark and spark streaming jobs. </p>
 <p>SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incomig SQL connection. Similarly SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs</p>
-<h4 id="submitting-jobs">Submitting jobs<a class="headerlink" href="#submitting-jobs" title="Permanent link">&para;</a></h4>
+<h4 id="submitting-jobs">Submitting jobs</h4>
 <p>Following command submits <a href="https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a> from the <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">snappy-examples</a> directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart-0.1.0-SNAPSHOT.jar) and submitted to jobs server as shown below.</p>
 <pre><code>$ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
@@ -301,8 +312,15 @@ val snc: SnappyContext = SnappyContext.getOrCreate(sc)
     --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 </code></pre>
 
-<p>This utility submits the job and returns a JSON that has a jobId of this job. </p>
-<pre><code>{
+<p>The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.</p>
+<ul>
+<li>--lead option specifies the host name of the lead node along with the port on which it accepts jobs (8090)</li>
+<li>--app-name option specifies the name given to the submitted app</li>
+<li>--class specifies the name of the class that contains implementation of the Spark job to be run</li>
+<li>--app-jar specifies the jar file that packages the code for Spark job</li>
+</ul>
+<p>The status returned by the utility is shown below:</p>
+<pre><code class="json">{
   &quot;status&quot;: &quot;STARTED&quot;,
   &quot;result&quot;: {
     &quot;jobId&quot;: &quot;321e5136-4a18-4c4f-b8ab-f3c8f04f0b48&quot;,
@@ -327,7 +345,7 @@ val snc: SnappyContext = SnappyContext.getOrCreate(sc)
 }
 </code></pre>
 
-<p>Once the tables are created, they can be queried by firing another job. </p>
+<p>Once the tables are created, they can be queried by firing another job. Please refer to <a href="https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/AirlineDataJob.scala">AirlineDataJob</a> from <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">snapp-examples</a> for the implementation of the job. </p>
 <pre><code>$ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
@@ -336,7 +354,7 @@ val snc: SnappyContext = SnappyContext.getOrCreate(sc)
 </code></pre>
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. </p>
-<h4 id="streaming-jobs">Streaming jobs<a class="headerlink" href="#streaming-jobs" title="Permanent link">&para;</a></h4>
+<h4 id="streaming-jobs">Streaming jobs</h4>
 <p>An implementation of SnappyStreamingJob can be submitted to lead of SnappyData by specifying --stream as a parameter to the snappy-job.sh.  For example <a href="https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala">TwitterPopularTagsJob</a> from the <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">snappy-examples</a> directory an be submitted as follows. This job creates stream tables on tweet streams, registers conctinuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.</p>
 <pre><code>$ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \

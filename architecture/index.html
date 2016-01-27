@@ -11,7 +11,8 @@
   <title>Architecture - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../img/favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
+  
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
@@ -19,6 +20,7 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
@@ -56,14 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Table of Contents</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../README/">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -211,9 +206,9 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="architecture-overview">Architecture overview<a class="headerlink" href="#architecture-overview" title="Permanent link">&para;</a></h2>
+                <h2 id="architecture-overview">Architecture overview</h2>
 <p>This section presents a high level overview of SnappyData’s core components, as well as our data pipeline as streams are ingested into our in-memory store and subsequently interacted with and analyzed.</p>
-<h3 id="core-components">Core components<a class="headerlink" href="#core-components" title="Permanent link">&para;</a></h3>
+<h3 id="core-components">Core components</h3>
 <p>Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
 <!--  <img alt="Core components" src="CoreComponents.png=100x100" /> --></p>
 <p><img src="CoreComponents.png" alt="Core Components" width="400" height="300"></p>
@@ -223,10 +218,10 @@
 <p>To support replica consistency, fast point updates, and instantaneous detection of failure conditions in the cluster, we use a P2P (peer-to-peer) cluster membership service that en- sures view consistency and virtual synchrony in the cluster. Any of the in-memory tables can be synchronously replicated using this P2P cluster.</p>
 <p>In addition to the “exact” dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API, applications can choose to trade accuracy for performance. SnappyData’s query engine has built-in support for approximate query processing (AQP) and will exploit appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.</p>
 <p>To understand the data flow architecture, we first walk through a real time use case that involves stream processing, ingesting into a in-memory store and interactive analytics. </p>
-<h3 id="use-case">Use case<a class="headerlink" href="#use-case" title="Permanent link">&para;</a></h3>
-<h4 id="location-based-services-from-telco-network-providers">Location based services from telco network providers<a class="headerlink" href="#location-based-services-from-telco-network-providers" title="Permanent link">&para;</a></h4>
+<h3 id="use-case">Use case</h3>
+<h4 id="location-based-services-from-telco-network-providers">Location based services from telco network providers</h4>
 <p>The global proliferation of mobile devices has created a growing market for location based services. In addition to locality-aware search and navigation, network providers are increasingly relying on location-based advertising, emergency call positioning, road traffic optimization, efficient call routing, triggering preemptive maintenance of cell towers, roaming analytics, and tracking vulnerable people in real time. Telemetry events are delivered as Call Detail Records (CDR), containing hundreds of attributes about each call. Ingested CDRs are cleansed and transformed for consumption by various applications. Not being able to correlate customer support calls with location specific network congestion information is a problem that frustrates customers and network technicians alike. The ability to do this in real time may involve expensive joins to history, tower traffic data and subscriber profiles. Incoming streams generate hundreds of aggregate metrics and KPIs (key performance indicators) grouped by subscriber, cell phone type, cell tower, and location. This requires continuous updates to counters accessed through primary keys (such as the subscriberID). While the generated data is massive, it still needs to be interactively queried by a data analyst for network performance analysis. Location-based services represent another common problem among our customers that involves high concurrency, continuous data updates, complex queries, time series data, and a source that cannot be throttled.</p>
-<h3 id="data-ingestion-pipeline">Data ingestion pipeline<a class="headerlink" href="#data-ingestion-pipeline" title="Permanent link">&para;</a></h3>
+<h3 id="data-ingestion-pipeline">Data ingestion pipeline</h3>
 <p>The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive archicture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
 <!-- <img alt="Data Ingestion Pipeline" src="DataIngestionPipeline.png" title="=250x" />  --></p>
 <p><img src="DataIngestionPipeline.png" alt="Data Ingestion pipeline" width="600" height="300"></p>
@@ -250,7 +245,7 @@
 <p>Once ingested, the data is readily available for interactive analytics using SQL. Similar to stream analytics, SnappyData can again use approximate query processing to ensure interactive analytics on massive historical data in accordance to users’ requested accuracy.</p>
 </li>
 </ol>
-<h3 id="hybrid-cluster-manager">Hybrid Cluster Manager<a class="headerlink" href="#hybrid-cluster-manager" title="Permanent link">&para;</a></h3>
+<h3 id="hybrid-cluster-manager">Hybrid Cluster Manager</h3>
 <p>As shown in Figure above, spark applications run as independent processes in the cluster, coordinated by the application’s main program, called the driver program. Spark applications connect to cluster managers (e.g., YARN and Mesos) to acquire executors on nodes in the cluster. Executors are processes that run computations and store data for the running application. The driver program owns a sin- gleton (SparkContext) object which it uses to communicate with its set of executors.</p>
 <p>While Spark’s approach is appropriate and geared towards compute-heavy tasks that scan large datasets, SnappyData must meet additional requirements (1–4) as an operational database.</p>
 <ol>
@@ -268,14 +263,14 @@
 After an overview of our cluster architecture in section 5.1, we explain how SnappyData meets each of these require- ments in the subsequent sections.</p>
 </li>
 </ol>
-<h4 id="snappydata-cluster-architecture">SnappyData Cluster Architecture<a class="headerlink" href="#snappydata-cluster-architecture" title="Permanent link">&para;</a></h4>
+<h4 id="snappydata-cluster-architecture">SnappyData Cluster Architecture</h4>
 <p>A SnappyData cluster is a peer-to-peer (P2P) network comprised of three distinct types of members (see figure 4).
 1. Locator. Locator members provide discovery service for the cluster. They inform a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
 2. Lead Node. The lead node member acts as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
 3. Data Servers. A data server member hosts data, em- beds a Spark executor, and also contains a SQL engine ca- pable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.</p>
-<h4 id="high-concurrency-in-snappydata">High Concurrency in SnappyData<a class="headerlink" href="#high-concurrency-in-snappydata" title="Permanent link">&para;</a></h4>
+<h4 id="high-concurrency-in-snappydata">High Concurrency in SnappyData</h4>
 <p>Thousands of concurrent ODBC and JDBC clients can si- multaneously connect to a SnappyData cluster. To support this degree of concurrency, SnappyData categorizes incom- ing requests from these clients into (i) low latency requests and (ii) high latency ones. For low latency operations, we completely bypass Spark’s scheduling mechanism and di- rectly operate on the data. We route high latency opera- tions (e.g., compute intensive queries) through Spark’s fair scheduling mechanism. This makes SnappyData a respon- sive system, capable of handling multiple low latency short operations as well as complex queries that iterate over large datasets simultaneously.</p>
-<h4 id="state-sharing-in-snappydata">State Sharing in SnappyData<a class="headerlink" href="#state-sharing-in-snappydata" title="Permanent link">&para;</a></h4>
+<h4 id="state-sharing-in-snappydata">State Sharing in SnappyData</h4>
 <p>A SnappyData cluster is designed to be a long running clustered database. State is managed in tables that can be shared across any number of connecting applications. Data is stored in memory and replicated to at least one other node in the system. Data can be persisted to disk in shared nothing disk files for quick recovery. (See section 4 for more details on table types and redundancy.) Nodes in the cluster stay up for a long time and their life-cycle is independent of application lifetimes. SnappyData achieves this goal by decoupling its process startup and shutdown mechanisms from those used by Spark.</p>
               
             </div>

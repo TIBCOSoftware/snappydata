@@ -11,7 +11,8 @@
   <title>Key features - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../img/favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
+  
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
@@ -19,6 +20,7 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
@@ -56,14 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Table of Contents</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../README/">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -206,7 +201,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="key-features">Key Features<a class="headerlink" href="#key-features" title="Permanent link">&para;</a></h2>
+                <h2 id="key-features">Key Features</h2>
 <ul>
 <li><strong>100% compatible with Spark</strong> - Use SnappyData as a database but also use any of the Spark APIs - ML, Graph, etc</li>
 <li><strong>in-memory row and column stores</strong>: run the store collocated in Spark executors or in its own process space (i.e. a computational cluster and a data cluster)</li>
@@ -219,7 +214,7 @@
 <li><strong>High availability not just Fault tolerance</strong>: Data can be instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications continuous HA.</li>
 <li><strong>Durability and recovery:</strong> Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. </li>
 </ul>
-<h2 id="spark-challenges-for-mixed-workloads-oltp-olap">Spark challenges for mixed workloads (OLTP, OLAP)<a class="headerlink" href="#spark-challenges-for-mixed-workloads-oltp-olap" title="Permanent link">&para;</a></h2>
+<h2 id="spark-challenges-for-mixed-workloads-oltp-olap">Spark challenges for mixed workloads (OLTP, OLAP)</h2>
 <p>Spark is designed as a computational engine for processing batch jobs. Each Spark application (e.g., a Map-reduce job) runs as an independent set of processes (i.e., executor JVMs) on the cluster. These JVMs are re- used for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients requires an ex- ternal storage tier, such as HDFS. We, on the other hand, target a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database on the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and de-coupled from individual applications.</p>
 <p>A second but related challenge is Spark’s design for how user requests (i.e., jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces</p>
 <ol>
@@ -228,7 +223,7 @@
 </ol>
 <p>Spark’s primary usage of memory is for caching RDDs and for shuffling blocks to other nodes. Data is managed in blocks and is immutable. On the other hand, we need to manage more complex data structures (along with indexes) for point access and updates. Therefore, another challenge is merging these two disparate storage systems with little impedance to the application. This challenge is exacerbated by current limitations of Spark SQL—mostly related to mu- tability characteristics and conformance to SQL.</p>
 <p>Finally, Spark’s strong and growing community has zero tolerance for incompatible forks. This means that no changes can be made to Spark’s execution model or its semantics for existing APIs. In other words, our changes have to be an extension.</p>
-<h2 id="_1"><Describe how SnappyData address these challenges /><a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<h2 id="_1"><Describe how SnappyData address these challenges /></h2>
               
             </div>
           </div>

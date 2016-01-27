@@ -11,7 +11,8 @@
   <title>Stream processing using SQL - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../img/favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
+  
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
@@ -19,6 +20,7 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
@@ -56,14 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Table of Contents</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../README/">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -225,10 +220,10 @@
             <div class="section">
               
                 <p>SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
-Here is a brief overview of <a href="../Spark streaming">Spark streaming</a> from the Spark Streaming guide. </p>
-<h2 id="spark-streaming-overview">Spark Streaming Overview<a class="headerlink" href="#spark-streaming-overview" title="Permanent link">&para;</a></h2>
+Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streaming-programming-guide.html">Spark streaming</a> from the Spark Streaming guide. </p>
+<h2 id="spark-streaming-overview">Spark Streaming Overview</h2>
 <p>Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like <code>map</code>, <code>reduce</code>, <code>join</code> and <code>window</code>.</p>
-<p>Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's <a href="../mllib-guide.html">machine learning</a> and <a href="../graphx-programming-guide.html">graph processing</a> algorithms on data streams.  </p>
+<p>Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's <a href="http://spark.apache.org/docs/latest/mllib-guide.html">machine learning</a> and <a href="http://spark.apache.org/docs/latest/graphx-programming-guide.html">graph processing</a> algorithms on data streams.  </p>
 <p style="text-align: center;">
   <img
     src="http://spark.apache.org/docs/latest/img/streaming-arch.png"
@@ -247,7 +242,7 @@ Here is a brief overview of <a href="../Spark streaming">Spark streaming</a> fro
 
 <p>Spark Streaming provides a high-level abstraction called <em>discretized stream</em> or <em>DStream</em>, which represents a continuous stream of data. DStreams can be created either from input data streams from sources such as Kafka, Flume, and Kinesis, or by applying high-level operations on other DStreams. Internally, a DStream is represented as a sequence of <a href="../api/scala/index.html#org.apache.spark.rdd.RDD">RDDs</a>. </p>
 <p>Additional details on the Spark Streaming concepts and programming is covered <a href="../Spark Streaming">here</a>.</p>
-<h2 id="snappydata-streaming-extensions-over-spark">SnappyData Streaming extensions over Spark<a class="headerlink" href="#snappydata-streaming-extensions-over-spark" title="Permanent link">&para;</a></h2>
+<h2 id="snappydata-streaming-extensions-over-spark">SnappyData Streaming extensions over Spark</h2>
 <p>We offer the following enhancements over Spark Streaming : </p>
 <ol>
 <li>
@@ -269,7 +264,7 @@ Here is a brief overview of <a href="../Spark streaming">Spark streaming</a> fro
 <p><strong>Approximate stream analytics</strong>: When the volumes are too high, a stream can be summarized using various forms of samples and sketches to enable fast time series analytics. This is particularly useful when applications are interested in trending patterns, for instance, rendering a set of trend lines in real time on user displays.</p>
 </li>
 </ol>
-<h2 id="working-with-stream-tables">Working with stream tables<a class="headerlink" href="#working-with-stream-tables" title="Permanent link">&para;</a></h2>
+<h2 id="working-with-stream-tables">Working with stream tables</h2>
 <p>SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.</p>
 <pre><code>// DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
@@ -324,7 +319,7 @@ val dStream = snsc.getSchemaDStream("streamTable")
 dStream.foreachDataFrame(_.write.insertInto(tableName))
 </code></pre>
 <p>The streamTable created in above example can be accessed from snappy-shell and can be queried using ad-hoc SQL queries.</p>
-<h2 id="stream-sql-through-snappy-shell">Stream SQL through Snappy-Shell<a class="headerlink" href="#stream-sql-through-snappy-shell" title="Permanent link">&para;</a></h2>
+<h2 id="stream-sql-through-snappy-shell">Stream SQL through Snappy-Shell</h2>
 <p>Start a SnappyData cluster and connect through snappy-shell : </p>
 <pre><code>//create a connection
 snappy&gt; connect client 'localhost:1527';
@@ -347,9 +342,9 @@ snappy&gt; drop table streamTable;
 // Stop the streaming
 snappy&gt; streaming stop;
 </code></pre>
-<h2 id="schemadstream">SchemaDStream<a class="headerlink" href="#schemadstream" title="Permanent link">&para;</a></h2>
+<h2 id="schemadstream">SchemaDStream</h2>
 <p>SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL query on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as table.</p>
-<h2 id="registering-continuous-queries">Registering Continuous queries<a class="headerlink" href="#registering-continuous-queries" title="Permanent link">&para;</a></h2>
+<h2 id="registering-continuous-queries">Registering Continuous queries</h2>
 <pre><code>//You can join two stream tables and produce a result stream. 
 val resultStream = snsc.registerCQ("SELECT s1.id, s1.text FROM stream1 window (duration '2' seconds, 
 slide '2' seconds) s1 JOIN stream2 s2 ON s1.id = s2.id")
@@ -359,9 +354,9 @@ dStream.foreachDataFrame(_.write.insertInto(tableName))
 </code></pre>
 <p>How do you register on SchemaDStreams? 
 How can you control the time windows for such queries?</p>
-<h2 id="dynamicad-hoc-conitnous-queries">Dynamic(ad-hoc) Conitnous queries<a class="headerlink" href="#dynamicad-hoc-conitnous-queries" title="Permanent link">&para;</a></h2>
+<h2 id="dynamicad-hoc-conitnous-queries">Dynamic(ad-hoc) Conitnous queries</h2>
 <p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is continous query in this case) before the start of StreamingContext. The CQs can be registered even after the SnappyStreamingContext has started.</p>
-<h2 id="what-is-currently-out-of-scope">What is currently out-of-scope?<a class="headerlink" href="#what-is-currently-out-of-scope" title="Permanent link">&para;</a></h2>
+<h2 id="what-is-currently-out-of-scope">What is currently out-of-scope?</h2>
 <p>Continous Queries through command line(Snappy-Shell) </p>
               
             </div>

@@ -11,7 +11,8 @@
   <title>Connecting using JDBC, Spark - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../img/favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
+  
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
@@ -19,6 +20,7 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
@@ -56,14 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="..">Table of Contents</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../README/">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -209,7 +204,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="using-the-snappydata-sql-shell">Using the SnappyData SQL Shell<a class="headerlink" href="#using-the-snappydata-sql-shell" title="Permanent link">&para;</a></h2>
+                <h2 id="using-the-snappydata-sql-shell">Using the SnappyData SQL Shell</h2>
 <p>The SnappyData SQL Shell (<em>snappy-shell</em>) provides a simple command line interface to the SnappyData cluster. It allows you to run interactive queries on row and column stores, run administrative operations and run status commands on the cluster. Internally it uses JDBC to interact with the cluster. You can also use tools like SquirrelSQL or DBVisualizer( JDBC to connect to the cluster) to interact with SnappyData.</p>
 <!--using javascript as the code language here... should this be sql?-->
 
@@ -243,7 +238,7 @@ snappy&gt; start pulse;
 </code></pre>
 
 <p>The complete list of commands available through <em>snappy_shell</em> can be found <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html">here</a></p>
-<h2 id="using-jdbc-with-snappydata">Using JDBC with SnappyData<a class="headerlink" href="#using-jdbc-with-snappydata" title="Permanent link">&para;</a></h2>
+<h2 id="using-jdbc-with-snappydata">Using JDBC with SnappyData</h2>
 <p>SnappyData ships with a few JDBC drivers. 
 The connection URL typically points to one of the Locators. Underneath the covers the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically swizzling underlying physical connections in case servers were to fail. </p>
 <pre><code class="java">
@@ -253,7 +248,7 @@ Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostN
 //   connection at a server endpoint
 </code></pre>
 
-<h2 id="accessing-snappydata-tables-from-spark-code">Accessing SnappyData Tables from Spark code<a class="headerlink" href="#accessing-snappydata-tables-from-spark-code" title="Permanent link">&para;</a></h2>
+<h2 id="accessing-snappydata-tables-from-spark-code">Accessing SnappyData Tables from Spark code</h2>
 <p>Spark applications access the SnappyStore using the new <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#jdbc-to-other-databases">Spark Data Source API</a>. </p>
 <p>By default, SnappyData servers runs the Spark Executors collocated with the data store. And, the default store provider is SnappyData. 
 When the spark program connects to the cluster using a SnappyContext (extends SQLContext), there is no need to configure the database URL and other options.  </p>
