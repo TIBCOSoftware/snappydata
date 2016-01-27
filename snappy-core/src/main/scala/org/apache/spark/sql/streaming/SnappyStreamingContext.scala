@@ -138,10 +138,10 @@ object SnappyStreamingContext extends Logging {
 
   def apply(sc: SnappyContext, batchDur: Duration): SnappyStreamingContext = {
     val snsc = activeContext.get()
-    if (snsc != null) snsc
+    if (snsc != null && snsc.getState() != StreamingContextState.STOPPED) snsc
     else ACTIVATION_LOCK.synchronized {
       val snsc = activeContext.get()
-      if (snsc != null) snsc
+      if (snsc != null && snsc.getState() != StreamingContextState.STOPPED) snsc
       else {
         val snsc = new SnappyStreamingContext(sc, batchDur)
         snsc.remember(Milliseconds(300 * 1000))
