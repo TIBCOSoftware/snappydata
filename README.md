@@ -8,28 +8,28 @@
 * [Key Features](#key-features)
 * [Getting started](#getting-started)
   * [Objectives](#objectives)
-  * [SnappyData Cluster](#snappydata-cluster)
+  * [SnappyData Cluster](#snappydata-cluster-conceptual)
     * [Step 1 - Start the SnappyData cluster](#step-1---start-the-snappydata-cluster)
-  * [Interacting with SnappyData](#interacting-with-snappydata)
+  * [Interacting with SnappyData](#interacting-with-snappydata-conceptual)
   * [Getting Started with SQL](#getting-started-with-sql)
-    * [Column and Row tables](#column-and-row-tables)
+    * [Column and Row tables](#column-and-row-tables-conceptual)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data)
-    * [OLAP and OLTP queries](#olap-and-oltp-queries)
+    * [OLAP and OLTP queries](#olap-and-oltp-queries-conceptual)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp)
+    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-conceptual)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
-    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming)
-    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream)
+    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming-conceptual)
+    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-conceptual)
     * [Step 5 - Create and Query Stream Table and Top-K Declaratively](#step-5---create-and-query-stream-table-and-top-k-declaratively)
   * [Getting Started with Spark API](#getting-started-with-spark-api)
-    * [Column and Row tables](#column-and-row-tables-1)
+    * [Column and Row tables](#column-and-row-tables-conceptual-1)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
-    * [OLAP and OLTP Store](#olap-and-oltp-store)
+    * [OLAP and OLTP Store](#olap-and-oltp-store-conceptual)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries-1)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-1)
+    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-conceptual-1)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
-    * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming)
-    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-1)
+    * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming-conceptual)
+    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-conceptual-1)
     * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k-1)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
     * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
@@ -373,7 +373,7 @@ snappy> SELECT hashtag, count(*) as tagcount
 ```
 Later, in the Spark API section we further enhance this concept to showcase ["continuous queries" (CQ)](https://github.com/SnappyDataInc/snappydata/blob/master/README.md#stream-analytics-using-spark-streaming). Dynamic registration of CQs (from remote clients) will be available in the next release.
 
-#### Top-K Elements in a Stream 
+#### Top-K Elements in a Stream (conceptual)
 
 Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, the top-100 pages on a popular website in the last 10 mins, the top-10 sales regions in the last week, etc. As you can see, if the query is on an arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events in use cases in the Internet of Things, for example. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found here:
 
@@ -534,7 +534,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
 ```
 The output of the job can be found in `AirlineDataJob.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostNameOfLead:4040.
 
-#### Approximate query processing (AQP)(conceptual)
+#### Approximate query processing (AQP) (conceptual)
 OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second, the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
