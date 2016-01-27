@@ -184,7 +184,7 @@ Unlike Apache Spark, which is primarily a computational engine, the SnappyData c
 
 1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
-Read our [docs](docs) for details of the architecture.
+Read our [docs](docs) for details on the architecture.
  
 In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the Spark API section:
 
@@ -229,9 +229,9 @@ Read our preliminary [row & column table docs](./docs/rowAndColumnTables.md) for
 
 #### Step 2 - Create column table, row table and load data
 
-> If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), edit the 'create_and_load_column_table.sql' script to point to `airlineParquetData_2007-15` directory. Run `./download_full_airlinedata.sh ../data` first. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.
+> If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), edit the 'create_and_load_column_table.sql' script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. Run `./download_full_airlinedata.sh ../data` first. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.
 
-The below SQL scripts execute the queries discussed above. The displayed command assumes you are in the base directory, /snappy/.
+The below SQL scripts create and populate the tables we need to continue. The displayed command assumes you started the snappy-shell the base directory, /snappy/. If you started the snappy-shell from /bin/, for example, you need to prepend the filepath with /..
 
 To create and load a column table:
 ```
@@ -245,10 +245,10 @@ To see the status of the system:
 ```
 run './quickstart/scripts/status_queries.sql'
 ```
-You can see the memory consumed on the [Spark Console](http://localhost:4040/storage/). 
+You can see the memory consumed in the [Spark Console](http://localhost:4040/storage/). 
 
-#### OLAP and OLTP queries
-SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if the query is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The Query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to run the query in parallel. In this case, our column table was created using _5 partitions (buckets)_ and hence will use 5 concurrent tasks. 
+#### OLAP and OLTP queries (conceptual)
+SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if the query is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to run the query in parallel. In this case, our column table was created using _5 partitions (buckets)_ and hence will use 5 concurrent tasks. 
 
 ```sql
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
@@ -268,24 +268,24 @@ UPDATE AIRLINEREF SET DESCRIPTION='Delta America' WHERE CAST(CODE AS VARCHAR(25)
 Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/index.html#reference/sql-language-reference.html).  As we show later, any table in SnappyData is also visible as a Spark DataFrame. 
 
 #### Step 3 - Run OLAP and OLTP queries
- 
-```sql
--- Simply run the script or copy/paste one query at a time if you want to explore the query execution on the Spark console. 
-snappy> run './quickstart/scripts/olap_queries.sql';
 
----- Which Airlines Arrive On Schedule? JOIN with reference table ----
+The OLAP query we're executing is asking "which airlines arrive on schedule?" which requires a join to a reference table. You have the option to run the packaged query script or paste one query at a time. To run the script, in the snappy-shell paste:
+```
+run './quickstart/scripts/olap_queries.sql';
+```
+To paste the actual query, paste:
+```sql
 select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier 
   from airline, airlineref
   where airline.UniqueCarrier = airlineref.Code
   group by UniqueCarrier, description 
   order by arrivalDelay;
 ```
+Each query is executed as one or more Jobs and each Job executed in one or more stages. You can explore the query execution plan and metrics [the Spark Console](http://localhost:4040/SQL/) under "SQL."
 
-Each query is executed as one or more Jobs and each Job executed in one or more stages. You can explore the query execution plan and metrics [the Spark Console](http://localhost:4040/SQL/)
-
+The OLTP query we're executing is updating "Delta Airlines" to "Delta America." Paste the following command:
 ```sql
--- Run a simple update SQL statement on the replicated row table.
-snappy> run './quickstart/scripts/oltp_queries.sql';
+run './quickstart/scripts/oltp_queries.sql';
 ```
 You can now re-run olap_queries.sql to see the updated join result set.
 
@@ -293,7 +293,7 @@ You can now re-run olap_queries.sql to see the updated join result set.
 > In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
 > You can execute transactions using commands _autocommit off_ and _commit_.  
 
-#### Approximate query processing (AQP)
+#### Approximate query processing (AQP) (conceptual)
 OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](http://stratifiedsamples) on large tables. 
 
