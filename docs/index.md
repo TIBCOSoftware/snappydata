@@ -1,40 +1,3 @@
-## Table of Contents
-* [Introduction](#introduction)
-* [Download binary distribution](#download-binary-distribution)
-* [Community Support](#community-support)
-* [Link with SnappyData distribution](#link-with-snappydata-distribution)
-* [Working with SnappyData Source Code](#working-with-snappydata-source-code)
-    * [Building SnappyData from source](#building-snappydata-from-source)
-* [Key Features](#key-features)
-* [Getting started](#getting-started)
-  * [Objectives](#objectives)
-  * [SnappyData Cluster](#snappydata-cluster)
-    * [Step 1 - Start the SnappyData cluster](#step-1---start-the-snappydata-cluster)
-  * [Interacting with SnappyData](#interacting-with-snappydata)
-  * [Getting Started with SQL](#getting-started-with-sql)
-    * [Column and Row tables](#column-and-row-tables)
-    * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data)
-    * [OLAP and OLTP queries](#olap-and-oltp-queries)
-    * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp)
-    * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
-    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming)
-    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream)
-    * [Step 5 - Create and Query Stream Table and Top-K Declaratively](#step-5---create-and-query-stream-table-and-top-k-declaratively)
-  * [Getting Started with Spark API](#getting-started-with-spark-api)
-    * [Column and Row tables](#column-and-row-tables-1)
-    * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
-    * [OLAP and OLTP Store](#olap-and-oltp-store)
-    * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries-1)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-1)
-    * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
-    * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming)
-    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-1)
-    * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k-1)
-    * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
-    * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
-  * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
-
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in- memory transactional store with scale-out SQL semantics). 
 
@@ -69,7 +32,7 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview (??)
 ```
 
 #### Building SnappyData from source
-You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc, [here](docs/build-instructions.md)
+You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc, [here](build-instructions.md)
 >  NOTE:
 > SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
 
@@ -107,7 +70,7 @@ SnappyData, a database server cluster, has three main components - Locator, Serv
 
 ![ClusterArchitecture](GettingStarted_Architecture.png)
 
-Details of about the architecture can be found [here](./docs/architecture.md). SnappyData also has multiple deployment options which can be found [here](./docs/deployment.md).
+Details of about the architecture can be found [here](architecture.md). SnappyData also has multiple deployment options which can be found [here](deployment.md).
 
 #### Step 1 - Start the SnappyData cluster 
 
@@ -130,7 +93,7 @@ yourhostName -J-Xmx4g
 >The quick start scripts use ssh to start up various processes. By default, this requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable passwordless ssh.
 
 
-The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [article](./docs/configuration.md) discusses the custom configuration and startup options.
+The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. The [article](configuration.md) discusses the custom configuration and startup options.
 ```
 $ sbin/snappy-start-all.sh 
   (Roughly can take upto a minute. Associated logs are in the ‘work’ sub-directory)
@@ -199,7 +162,7 @@ snappy> show members;
 CREATE TABLE AIRLINE (<column definitions>) USING column OPTIONS(buckets '5') ;
 ```
 [Row tables](rowTables), unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.  
-_create table_ DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](./docs/rowAndColumnTables.md) for the details.
+_create table_ DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](rowAndColumnTables.md) for the details.
 ```sql
 -- DDL to create a row table
 CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
@@ -350,7 +313,7 @@ Later, in the Spark code section we further enhance to showcase "continuous quer
 
 #### Top-K Elements in a Stream 
 
-Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, top-100 pages on a popular website in the last 10 mins, top-10 sales regions in the last week, etc. As you can tell, if the query is on a arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events is use cases like in IoT. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found [here.](./docs/aqp.md)
+Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, top-100 pages on a popular website in the last 10 mins, top-10 sales regions in the last week, etc. As you can tell, if the query is on a arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events is use cases like in IoT. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found [here.](aqp.md)
 
 SnappyData provides DDL extensions to create Top-k structure. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using regular SQL queries. 
 
@@ -412,7 +375,7 @@ class SnappySampleJob implements SnappySQLJob {
   def validate(sc: SnappyContext, config: Config): SparkJobValidation
 }
 ```
-The implementation of _runJob_ function of SnappySQLJob uses SnappyContext to interact with SnappyData store to process and store tables. The implementation of runJob of SnappyStreamingJob uses SnappyStreamingContext to create streams and manage the streaming context. The jobs are submitted to lead node of SnappyData over REST API using a _spark-submit_ like utility. See more details about jobs [here](./docs/jobs.md)
+The implementation of _runJob_ function of SnappySQLJob uses SnappyContext to interact with SnappyData store to process and store tables. The implementation of runJob of SnappyStreamingJob uses SnappyStreamingContext to create streams and manage the streaming context. The jobs are submitted to lead node of SnappyData over REST API using a _spark-submit_ like utility. See more details about jobs [here](jobs.md)
 
 #### Column and Row tables 
 
@@ -433,7 +396,7 @@ val airlineCodeDF = snappyContext.createTable("AIRLINEREF", "row", schema, Map()
 > To run the scripts with full airline data set, set the following config parameter to point at the data set that you had downloaded in Step 1.
 >> export APP_PROPS="airline_file=full_dataset_folder"
 
-Submit CreateAndLoadAirlineDataJob over REST API to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md). 
+Submit CreateAndLoadAirlineDataJob over REST API to create row and column tables. See more details about jobs and job submission [here.](jobs.md). 
 
 ```bash
 $ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
@@ -567,7 +530,7 @@ retweetStream.foreachDataFrame(df => {
 ```
 #### Top-K Elements in a Stream 
 
-Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures. More details about SnappyData's implementation of top-k can be found [here.](./docs/aqp.md)
+Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds temporal component (i.e. data can be queried based on time interval) to these structures. More details about SnappyData's implementation of top-k can be found [here.](aqp.md)
 
 SnappyData provides API in SnappyContext to create Top-k structure. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
 
