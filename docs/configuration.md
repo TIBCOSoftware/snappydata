@@ -33,7 +33,7 @@ For a detail list of SnappyData configurations for Leads and Servers, you can co
 
 #### Spark specific properties 
 
-Since SnappyData embeds Spark components, [Spark Runtime environment properties](http://spark.apache.org/docs/latest/configuration.html#runtime-environment) (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to specified using SnappyData configuration properties. Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the Servers or Locators file do not take effect. 
+Since SnappyData embeds Spark components, [Spark Runtime environment properties](http://spark.apache.org/docs/latest/configuration.html#runtime-environment) (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to be specified using SnappyData configuration properties. Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a _hyphen(-)_. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. 
 >#####Note:
 Currently we do not honour properties specified using spark-config.sh. 
 
@@ -43,7 +43,7 @@ Let's say you want to start two Locators (on node-a:9999 and node-b:8888), two s
 ```bash
 $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
-node-b -peer-discovery-port=888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
+node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
 
 $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -locators=node-b:8888,node-a:9999
