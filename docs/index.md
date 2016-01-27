@@ -131,9 +131,9 @@ To spin up remote nodes simply rename/copy the files without the template suffix
 
 At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
 
-<img src="docs/ExternalBlockStoreSize.png" width="800">
+<img src="ExternalBlockStoreSize.png" width="800">
 
-<img src="docs/queryPlan.png" height="800">
+<img src="queryPlan.png" height="800">
 
 ### Interacting with SnappyData (conceptual)
 
