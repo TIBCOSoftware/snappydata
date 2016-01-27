@@ -274,24 +274,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     }
   }
 
-  def readLock[U](f: Array[M] => U): U = {
-    val segments = _segments
-    val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
-    try {
-      for (seg <- segments) {
-        val lock = seg.readLock()
-        lock.lock()
-        locksObtained += lock
-      }
-      f(segments)
-    } finally {
-      for (lock <- locksObtained) {
-        lock.unlock()
-      }
-    }
-  }
-
-  def writeLock[U](f: Array[M] => U): U = {
+  def writeLockAllSegments[U](f: Array[M] => U): U = {
     val segments = _segments
     val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
     try {
@@ -308,9 +291,9 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     }
   }
 
-  def clear(): Unit = writeLock { segs =>
-    segs.indices.foreach(segs(_) =
-        segmentCreator(initSegmentCapacity(segs.length), loadFactor))
+  def clear(): Unit = writeLockAllSegments { segments =>
+    segments.indices.foreach(segments(_) =
+        segmentCreator(initSegmentCapacity(segments.length), loadFactor))
   }
 
   final def size = _size.get
