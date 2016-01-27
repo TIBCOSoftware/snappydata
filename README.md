@@ -127,19 +127,18 @@ SnappyData also has multiple deployment options which can be found here:
 
 The first step is to configure SNAPPY_HOME in your environment:
 
-``` export SNAPPY_HOME=<product root directory> ```
+``` export SNAPPY_HOME=/path/to/snappy/root ```
 
 The remainder of "Getting Started" is based on a set of [airline data](http://www.transtats.bts.gov/Fields.asp?Table_ID=236) we run different queries on. That data is packaged with SnappyData, however, it is only a portion of the full dataset. To download the full dataset, from ````snappy/quickstart/scripts```` run ````./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data````. This is recomended for the approximate query processing portion of "Getting Started," but not necessary.
 
 ##### Passwordless ssh
 The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with ````sudo apt-get install ssh````. By default, ssh requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable [passwordless ssh](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2). Otherwise, set up ssh for localhost with ````ssh localhost````
 
+Navigate to the /snappy/ root directory. The start script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. **Run the start script with:** ````./sbin/snappy-start-all.sh````
 
-The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
+It should roughly take up to a minute and look like this (logs are in the 'work' sub-directory):
 
-[Custom Configuration](./docs/configuration.md)
-
-```
+````
 $ sbin/snappy-start-all.sh 
   (Roughly can take upto a minute. Associated logs are in the ‘work’ sub-directory)
 This would output something like this ...
@@ -157,7 +156,14 @@ localhost:   Distributed system now has 3 members.
 
 localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mbpro(56819:datastore)<v1>:39737
 
-``` 
+````
+
+
+To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
+
+[Custom Configuration](./docs/configuration.md)
+
+
 
 At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
 
