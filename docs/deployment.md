@@ -31,7 +31,7 @@ The rationale for our design is further explored [here](architecture).
  
 ### Fully managed Spark driver and context
 
-Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or managed the Spark context. Applications implement the _SnappySQLJob_ or the _SnappyStreamingJob_ trait as describing in the ['Building Spark Apps'](BuildingSparkApps) section.
+Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or manage the Spark context. Applications implement the _SnappySQLJob_ or the _SnappyStreamingJob_ trait as describing in the ['Building Spark Apps'](BuildingSparkApps) section.
 
 
 ### Application managed Spark driver and context
