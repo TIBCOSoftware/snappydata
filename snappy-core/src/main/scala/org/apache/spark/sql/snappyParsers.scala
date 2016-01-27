@@ -29,7 +29,7 @@ import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.{DataType, StringType, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 
@@ -272,9 +272,27 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         new QualifiedTableName(maybeSchemaName, tableName)
     }
 
-  protected override lazy val varchar: Parser[DataType] =
-    (("(?i)varchar".r ~> ("(" ~> numericLit <~ ")").?) |
-     "(?i)clob".r) ^^^ StringType
+  protected override lazy val primitiveType: Parser[DataType] =
+    "(?i)(?:string|clob)".r ^^^ StringType |
+    "(?i)(?:int|integer)".r ^^^ IntegerType |
+    "(?i)(?:bigint|long)".r ^^^ LongType |
+    fixedDecimalType |
+    "(?i)(?:decimal|numeric)".r ^^^ DecimalType.USER_DEFAULT |
+    "(?i)double".r ^^^ DoubleType |
+    "(?i)(?:float|real)".r ^^^ FloatType |
+    "(?i)(?:binary|blob)".r ^^^ BinaryType |
+    "(?i)date".r ^^^ DateType |
+    "(?i)timestamp".r ^^^ TimestampType |
+    "(?i)(?:smallint|short)".r ^^^ ShortType |
+    "(?i)(?:tinyint|byte)".r ^^^ ByteType |
+    "(?i)boolean".r ^^^ BooleanType |
+    varchar
+
+  protected override lazy val fixedDecimalType: Parser[DataType] =
+    ("(?i)(?:decimal|numeric)".r ~> "(" ~> numericLit) ~ ("," ~> numericLit <~ ")") ^^ {
+      case precision ~ scale =>
+        DecimalType(precision.toInt, scale.toInt)
+    }
 
   protected lazy val createIndex: Parser[LogicalPlan] =
     (CREATE ~> INDEX ~> tableIdentifier) ~ (ON ~> tableIdentifier) ~ wholeInput ^^ {
@@ -380,47 +398,45 @@ private[sql] case class CreateMetastoreTableUsingSelect(
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
-    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-      partitionColumns, mode, options, query,
-      onlyBuiltIn = false, onlyExternal)
+    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
+    snc.createTable(qualifiedName, provider, partitionColumns, mode,
+      options, query, onlyBuiltIn = false, onlyExternal)
     // refresh cache of the table in catalog
-    catalog.invalidateTable(tableIdent)
+    catalog.invalidateTable(qualifiedName)
     Seq.empty
   }
 }
 
 private[sql] case class DropTable(
-    tableIdent: TableIdentifier,
+    tableIdent: QualifiedTableName,
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    val qualifiedTable = snc.catalog.newQualifiedTableName(tableIdent)
-    snc.dropTable(qualifiedTable, ifExists)
+    snc.dropTable(tableIdent, ifExists)
     Seq.empty
   }
 }
 
 private[sql] case class TruncateTable(
-    tableIdent: TableIdentifier,
+    tableIdent: QualifiedTableName,
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    val qualifiedTable = snc.catalog.newQualifiedTableName(tableIdent)
-    snc.truncateTable(qualifiedTable)
+    snc.truncateTable(tableIdent)
     Seq.empty
   }
 }
 
 private[sql] case class CreateIndex(
-    tableIdent: TableIdentifier,
+    tableIdent: QualifiedTableName,
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnTable(snc.catalog.newQualifiedTableName(tableIdent), sql)
+    snc.createIndexOnTable(tableIdent, sql)
     Seq.empty
   }
 }
@@ -436,7 +452,7 @@ private[sql] case class DropIndex(
 }
 
 case class DMLExternalTable(
-    tableName: TableIdentifier,
+    tableName: QualifiedTableName,
     child: LogicalPlan,
     command: String)
     extends LogicalPlan with Command {

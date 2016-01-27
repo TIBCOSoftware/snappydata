@@ -283,6 +283,10 @@ case class JDBCAppendableRelation(
       }
     }
   }
+
+  def flushRowBuffer(): Unit = {
+    // nothing by default
+  }
 }
 
 object JDBCAppendableRelation extends Logging {
@@ -309,7 +313,8 @@ class ColumnarRelationProvider
     val connectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(sc, parameters)
 
-    val partitions = ExternalStoreUtils.getTotalPartitions(sqlContext.sparkContext, parameters)
+    val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
+      forManagedTable = false)
 
     val externalStore = getExternalSource(sqlContext, connectionProperties,
       partitions)

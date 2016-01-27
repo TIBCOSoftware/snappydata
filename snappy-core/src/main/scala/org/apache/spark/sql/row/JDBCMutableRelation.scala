@@ -40,7 +40,7 @@ class JDBCMutableRelation(
     val provider: String,
     mode: SaveMode,
     userSpecifiedString: String,
-    parts: Array[Partition],
+    val parts: Array[Partition],
     val poolProperties: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
