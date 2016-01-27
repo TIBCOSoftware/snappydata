@@ -29,8 +29,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, JDBCPartition}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
@@ -43,30 +43,30 @@ import org.apache.spark.storage.BlockManagerId
  * are retrieved using a JDBC URL or DataSource.
  */
 class RowFormatRelation(
-    override val url: String,
-    override val table: String,
-    override val provider: String,
+    _url: String,
+    _table: String,
+    _provider: String,
     preservepartitions: Boolean,
-    mode: SaveMode,
-    userSpecifiedString: String,
-    parts: Array[Partition],
+    _mode: SaveMode,
+    _userSpecifiedString: String,
+    _parts: Array[Partition],
     _poolProps: Map[String, String],
-    override val connProperties: Properties,
-    override val hikariCP: Boolean,
-    override val origOptions: Map[String, String],
+    _connProperties: Properties,
+    _hikariCP: Boolean,
+    _origOptions: Map[String, String],
     blockMap: Map[InternalDistributedMember, BlockManagerId],
-    @transient override val sqlContext: SQLContext)
-    extends JDBCMutableRelation(url,
-      table,
-      provider,
-      mode,
-      userSpecifiedString,
-      parts,
+    _context: SQLContext)
+    extends JDBCMutableRelation(_url,
+      _table,
+      _provider,
+      _mode,
+      _userSpecifiedString,
+      _parts,
       _poolProps,
-      connProperties,
-      hikariCP,
-      origOptions,
-      sqlContext)
+      _connProperties,
+      _hikariCP,
+      _origOptions,
+      _context)
     with PartitionedDataSourceScan
     with RowPutRelation {
 
@@ -140,9 +140,8 @@ class RowFormatRelation(
    */
 
   def put(data: DataFrame): Unit = {
-    StoreUtils.saveTable(data, url, table, connProperties, true)
+    StoreUtils.saveTable(data, url, table, connProperties, upsert = true)
   }
-
 
   /**
    * If the row is already present, it gets updated otherwise it gets
@@ -192,7 +191,8 @@ final class DefaultSource extends MutableRelationProvider {
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val partitions = ExternalStoreUtils.getTotalPartitions(
-      sqlContext.sparkContext, parameters)
+      sqlContext.sparkContext, parameters,
+      forManagedTable = true, forColumnTable = false)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schema $ddlExtension"

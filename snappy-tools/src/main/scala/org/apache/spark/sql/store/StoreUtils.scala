@@ -27,7 +27,7 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.ConnectionProperties
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, ConnectionProperties}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCRDD}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -40,12 +40,9 @@ import org.apache.spark.{Logging, Partition, SparkContext}
   */
 object StoreUtils extends Logging {
 
-  val ddlOptions = Seq(PARTITION_BY, BUCKETS, COLOCATE_WITH, REDUNDANCY,
-    RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENT, SERVER_GROUPS, OFFHEAP, GEM_EXPIRE)
-
-  val PARTITION_BY = "PARTITION_BY"
-  val BUCKETS = "BUCKETS"
+  val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
+  val REPLICATE = ExternalStoreUtils.REPLICATE
+  val BUCKETS = ExternalStoreUtils.BUCKETS
   val COLOCATE_WITH = "COLOCATE_WITH"
   val REDUNDANCY = "REDUNDANCY"
   val RECOVERYDELAY = "RECOVERYDELAY"
@@ -55,11 +52,13 @@ object StoreUtils extends Logging {
   val SERVER_GROUPS = "SERVER_GROUPS"
   val OFFHEAP = "OFFHEAP"
   val EXPIRE = "EXPIRE"
+  val OVERFLOW = "OVERFLOW"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
   val GEM_COLOCATE_WITH = "COLOCATE WITH"
   val GEM_REDUNDANCY = "REDUNDANCY"
+  val GEM_REPLICATE = "REPLICATE"
   val GEM_RECOVERYDELAY = "RECOVERYDELAY"
   val GEM_MAXPARTSIZE = "MAXPARTSIZE"
   val GEM_EVICTION_BY = "EVICTION BY"
@@ -67,8 +66,14 @@ object StoreUtils extends Logging {
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_OFFHEAP = "OFFHEAP"
   val GEM_EXPIRE = "EXPIRE"
+  val GEM_OVERFLOW = "EVICTACTION OVERFLOW"
+  val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
+
+  val ddlOptions = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
+    REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
+    PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW)
 
   val EMPTY_STRING = ""
 
@@ -82,7 +87,7 @@ object StoreUtils extends Logging {
       if (tableName.indexOf('.') <= 0) {
         schema + '.' + tableName
       } else tableName
-    }.toUpperCase
+    }
     lookupName
   }
 
@@ -194,6 +199,11 @@ object StoreUtils extends Logging {
           .getOrElse(EMPTY_STRING))
     }
 
+    parameters.remove(REPLICATE).foreach(v =>
+      if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
+      else if (!parameters.contains(BUCKETS))
+        sb.append(GEM_BUCKETS).append(' ').append(
+          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' '))
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
 
@@ -203,34 +213,46 @@ object StoreUtils extends Logging {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
+
+    // if OVERFLOW has been provided, then use HEAPPERCENT as the default
+    // eviction policy (unless overridden explicitly)
+    val defaultEviction = if (parameters.contains(OVERFLOW)) GEM_HEAPPERCENT
+    else EMPTY_STRING
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
-          .getOrElse(EMPTY_STRING))
+          .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         v.contains(LRUCOUNT) match {
-          case true => throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+          case true => throw new DDLException(
+            "Column table cannot take LRUCOUNT as Evcition Attributes")
           case _ =>
         }
         s"$GEM_EVICTION_BY $v "
-      }).getOrElse(EMPTY_STRING))
+      }).getOrElse(defaultEviction))
     }
 
-
-    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
-        .getOrElse(EMPTY_STRING))
+    parameters.remove(PERSISTENT).foreach { v =>
+      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("true")) {
+        sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
+      } else if (v.equalsIgnoreCase("sync")) {
+        sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
+      } else if (!v.equalsIgnoreCase("false")) {
+        sb.append(s"$GEM_PERSISTENT $v ")
+      }
+    }
     sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
         .getOrElse(EMPTY_STRING))
+    parameters.remove(OVERFLOW).foreach(v => sb.append(s"$GEM_OVERFLOW "))
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
         throw new DDLException("Expiry for Column table is not supported")
       }
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
-    })
-        .getOrElse(EMPTY_STRING))
+    }).getOrElse(EMPTY_STRING))
 
     sb.toString()
   }

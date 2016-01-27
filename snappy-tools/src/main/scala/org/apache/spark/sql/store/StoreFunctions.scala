@@ -19,25 +19,25 @@ package org.apache.spark.sql.store
 import java.sql.Connection
 
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
 object StoreFunctions {
 
-  implicit def executeWithConnection[T: ClassTag](getConnection: () => Connection, f: PartialFunction[(Connection), T], closeOnSuccess: Boolean = true): T = {
-    val conn = getConnection()
-    var isClosed = false;
+  implicit def executeWithConnection[T: ClassTag](connector: () => Connection,
+      f: Connection => T, closeOnSuccess: Boolean = true): T = {
+    val conn = connector()
+    var isClosed = false
     try {
       f(conn)
     } catch {
-      case t: Throwable => {
+      case NonFatal(e) =>
         conn.close()
         isClosed = true
-        throw t;
-      }
+        throw e
     } finally {
       if (closeOnSuccess && !isClosed) {
         conn.close()
       }
     }
   }
-
 }

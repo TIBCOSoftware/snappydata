@@ -404,11 +404,11 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     // the cache. it is better at here to invalidate the cache to avoid
     // confusing warning logs from the cache loader (e.g. cannot find data
     // source provider, which is only defined for data source table).
-    invalidateTable(tableIdent)
+    invalidateTable(newQualifiedTableName(tableIdent))
   }
 
-  def invalidateTable(tableIdent: TableIdentifier): Unit = {
-    cachedDataSourceTables.invalidate(newQualifiedTableName(tableIdent))
+  def invalidateTable(tableIdent: QualifiedTableName): Unit = {
+    cachedDataSourceTables.invalidate(tableIdent)
   }
 
   override def unregisterAllTables(): Unit = {
@@ -750,8 +750,6 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_SCHEMA_OLD = "spark.sql.sources.schema"
   val HIVE_METASTORE = "HIVE_METASTORE"
-
-  val DEFAULT_SCHEMA = "APP"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {

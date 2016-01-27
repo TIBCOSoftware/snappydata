@@ -62,6 +62,8 @@ trait SnappyContextFunctions {
   def convertToStratifiedSample(options: Map[String, Any],
       snc: SnappyContext, logicalPlan: LogicalPlan): LogicalPlan
 
+  def isStratifiedSample(logicalPlan: LogicalPlan): Boolean
+
   def getPlanner(context: SnappyContext): SparkPlanner
 
   def getSnappyCacheManager: SnappyCacheManager
