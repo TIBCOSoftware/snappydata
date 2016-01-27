@@ -97,6 +97,8 @@ Read SnappyData [docs](https://github.com/SnappyDataInc/snappydata/tree/master/d
 
 ## Getting started
 
+Each header under "Getting Started" that contains conceptual information meant to orient you will append a "(conceptual)". Each header that contains actual steps for executing the "Getting Started" will prepend "Step".
+
 ###Objectives
 
 - **In-memory Column and Row tables**: Illustrate both SQL syntax and the Spark API to create and manage column tables for large data and illustrate how row tables can be used for reference data and can be replicated to each node in the cluster. 
@@ -106,7 +108,7 @@ Read SnappyData [docs](https://github.com/SnappyDataInc/snappydata/tree/master/d
 
 In this document, we discuss the features mentioned above and ask you to take steps to run the scripts that demonstrate these features. 
 
-### SnappyData Cluster
+### SnappyData Cluster (conceptual)
 SnappyData, a database server cluster, has three main components - Locator, Server and Lead. 
 
 - **Locator**: Provides discovery service for the cluster. Informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
@@ -123,7 +125,7 @@ SnappyData also has multiple deployment options which can be found here:
 
 [Deployment Options](./docs/deployment.md).
 
-#### Step 1 - Start the SnappyData cluster 
+#### Step 1 - Start the SnappyData cluster
 
 The first step is to configure SNAPPY_HOME in your environment:
 
@@ -134,7 +136,10 @@ The remainder of "Getting Started" is based on a set of [airline data](http://ww
 ##### Passwordless ssh
 The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with ````sudo apt-get install ssh````. By default, ssh requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable [passwordless ssh](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2). Otherwise, set up ssh for localhost with ````ssh localhost````
 
-Navigate to the /snappy/ root directory. The start script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. **Run the start script with:** ````./sbin/snappy-start-all.sh````
+Navigate to the /snappy/ root directory. The start script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. **Run the start script with:** 
+````
+./sbin/snappy-start-all.sh
+````
 
 It should roughly take up to a minute and look like this (logs are in the 'work' sub-directory):
 
@@ -167,7 +172,7 @@ At this point, the SnappyData cluster is up and running and is ready to accept j
 
 <img src="docs/queryPlan.png" height="800">
 
-### Interacting with SnappyData
+### Interacting with SnappyData (conceptual)
 
 > For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/). 
 > And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs
@@ -189,7 +194,10 @@ In this document, we showcase mostly the same set of features via the Spark API 
 
 For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer (a JDBC connection to the cluster).
 
-From the SnappyData base directory, /snappy/, run: ````./bin/snappy-shell````
+From the SnappyData base directory, /snappy/, run: 
+````
+./bin/snappy-shell
+````
 
 Connect to the cluster with
 
@@ -203,7 +211,7 @@ And check member status with:
 
 ````show members;````
 
-#### Column and Row tables 
+#### Column and Row tables (conceptual)
 
 Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 ```sql
@@ -221,23 +229,21 @@ Read our preliminary [row & column table docs](./docs/rowAndColumnTables.md) for
 
 #### Step 2 - Create column table, row table and load data
 
-> To run the scripts with full airline data set, change the 'create_and_load_column_table.sql' script to point at the data set that you had downloaded in Step 1.
+> If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), edit the 'create_and_load_column_table.sql' script to point to `airlineParquetData_2007-15` directory. Run `./download_full_airlinedata.sh ../data` first. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.
 
+The below SQL scripts execute the queries discussed above. The displayed command assumes you are in the base directory, /snappy/.
 
-SQL scripts to create and load column and row tables.
-```sql
--- if you decided to work with the larger data set you have to edit the script below 
---   to point to `airlineParquetData_2007-15` directory. Run `./download_full_airlinedata.sh ../data` first.
--- This script loads parquet formatted data into a temporary spark table 
--- then saves it in column table called Airline.
-snappy> run './quickstart/scripts/create_and_load_column_table.sql';
-
--- Creates the airline code table. Row tables can be replicated to each node 
--- so join processing with other tables can completely avoid shuffling 
-snappy> run './quickstart/scripts/create_and_load_row_table.sql';
-
--- See the status of system
-snappy> run './quickstart/scripts/status_queries.sql'
+To create and load a column table:
+```
+run './quickstart/scripts/create_and_load_column_table.sql';
+```
+To create and load a row table:
+```
+ run './quickstart/scripts/create_and_load_row_table.sql';
+```
+To see the status of the system:
+```
+run './quickstart/scripts/status_queries.sql'
 ```
 You can see the memory consumed on the [Spark Console](http://localhost:4040/storage/). 
 
