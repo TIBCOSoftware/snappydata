@@ -140,8 +140,6 @@ It should roughly take up to a minute and look like this (logs are in the 'work'
 
 ````
 $ sbin/snappy-start-all.sh 
-  (Roughly can take upto a minute. Associated logs are in the ‘work’ sub-directory)
-This would output something like this ...
 localhost: Starting SnappyData Locator using peer discovery on: 0.0.0.0[10334]
 ...
 localhost: SnappyData Locator pid: 56703 status: running
@@ -157,8 +155,6 @@ localhost:   Distributed system now has 3 members.
 localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mbpro(56819:datastore)<v1>:39737
 
 ````
-
-
 To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
 
 [Custom Configuration](./docs/configuration.md)
@@ -173,19 +169,19 @@ At this point, the SnappyData cluster is up and running and is ready to accept j
 
 ### Interacting with SnappyData
 
-> We assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/). 
+> For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/). 
 > And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs
-> listed in the Spark guides will work in SnappyData also.
+> listed in the Spark guides will work in SnappyData also. For the section on SQL, no Spark knowledge is necessary.
 
-To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to SnappyData cluster and interact using SQL. On the other hand, users comfortable with Spark programming paradigm can write jobs to interact with SnappyData. Jobs can be like a self contained Spark application or can share state with other jobs using SnappyData store. 
+To interact with SnappyData, we provide interfaces for developers familiar with Spark programming as well as SQL. JDBC can be used to connect to the SnappyData cluster and interact using SQL. On the other hand, users comfortable with the Spark programming paradigm can write jobs to interact with SnappyData. Jobs can be like a self contained Spark application or can share state with other jobs using the SnappyData store. 
 
 Unlike Apache Spark, which is primarily a computational engine, the SnappyData cluster holds mutable database state in its JVMs and requires all submitted Spark jobs/queries to share the same state (of course, with schema isolation and security as expected in a database). This required extending Spark in two fundamental ways.
 
 1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
-Read [docs](docs) for details of the architecture.
+Read our [docs](docs) for details of the architecture.
  
-In this document, we showcase mostly the same set of features via Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the Spark API section:
+In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the Spark API section:
 
 [__Getting Started with Spark API__](#getting-started-with-spark-api).
 
@@ -193,33 +189,35 @@ In this document, we showcase mostly the same set of features via Spark API or u
 
 For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer (a JDBC connection to the cluster).
 
-```sql
-// Run from the SnappyData base directory
-$ ./bin/snappy-shell
-Version 2.0-SNAPSHOT.1
-snappy> 
+From the SnappyData base directory, /snappy/, run: ````./bin/snappy-shell````
 
--- Connect to the cluster ..
-snappy> connect client 'localhost:1527';
-snappy> show connections; 
+Connect to the cluster with
 
--- Check the cluster status
-this will list each cluster member and its status
-snappy> show members;
-```
+````connect client 'localhost:1527';````
+
+You can view connections with
+
+````show connections;````
+
+And check member status with:
+
+````show members;````
+
 #### Column and Row tables 
 
-[Column tables](columnTables) organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
+Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 ```sql
 -- DDL to create a column table
 CREATE TABLE AIRLINE (<column definitions>) USING column OPTIONS(buckets '5') ;
 ```
-[Row tables](rowTables), unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys. A row's location is determined by a hash function and hence very fast for point lookups or updates.  
-_create table_ DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  Read our preliminary [docs](./docs/rowAndColumnTables.md) for the details.
+Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys. A row's location is determined by a hash function and hence very fast for point lookups or updates.  
+_create table_ DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.  
 ```sql
 -- DDL to create a row table
 CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
 ```
+
+Read our preliminary [row & column table docs](./docs/rowAndColumnTables.md) for the details.
 
 #### Step 2 - Create column table, row table and load data
 
