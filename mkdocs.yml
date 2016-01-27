@@ -2,14 +2,14 @@ site_name: SnappyData Docs - Preview release
 site_url: http://www.snappydata.io
 site_description: Project documentation with Markdown.
 site_author: SnappyData development team
+site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
 
 pages:
-- Table of Contents: index.md
 # this file may just be the [toc] tag .. not sure if that works.
 #
-- Getting Started: README.md
+- Getting Started: index.md
 - Building from source, project layout: build-instructions.md
 - Overview: snappyIntroduction.md
 - Key features: features.md
@@ -28,10 +28,7 @@ pages:
 
 theme: readthedocs
 
-markdown_extensions:
-    - toc:
-        permalink: True
-    - admonition:
+extra_css: [extra.css]
 
 copyright: Copyright &copy; 2016 <a href="http://snappydata.io</a>.
 #google_analytics: ['UA-64703291-1', 'snappydata.io']
