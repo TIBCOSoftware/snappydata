@@ -18,7 +18,7 @@ You either start SnappyData members using the _snappy_start_all_ script or you s
 
 ```bash
 # start members using the ssh scripts 
-$ sbin\snappy-start-all.sh
+$ sbin/snappy-start-all.sh
 
 # start members individually
 $ bin/snappy-shell locator start  -dir=/node-a/locator1 

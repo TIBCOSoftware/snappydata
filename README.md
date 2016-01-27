@@ -352,15 +352,18 @@ The commands below consume tweets, filters out just the hashtags and converts th
 --- Inits the Streaming Context with the batch interval of 2 seconds.
 --- i.e. the stream is processed once every 2 seconds.
 snappy> STREAMING INIT 2
---- create a stream table just containing the hashtags
+--- Create a stream table just containing the hashtags.
+--- /tmp/copiedtwitterdata is the directory that Streaming will use to find and read new text files.
+--- We use quickstart/scripts/simulateTwitterStream script in below example to simulate a twitter stream by
+--- copying tweets in /tmp/copiedtwitterdata folder.
 snappy> CREATE STREAM TABLE HASHTAG_FILESTREAMTABLE
               (hashtag string)
             USING file_stream
             OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2',
               rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow',
               directory '/tmp/copiedtwitterdata')
--- A file_stream data source monitors the directory and as files arrives they are ingested 
---   into the streaming pipeline. First converted into Rows using 'TweetToHashtagRow' then visible as table
+--- A file_stream data source monitors the directory and as files arrives they are ingested
+--- into the streaming pipeline. First converted into Rows using 'TweetToHashtagRow' then visible as table
 --- Start streaming context 
 snappy> STREAMING START
 --- Adhoc sql on the stream table to query the current batch
