@@ -36,7 +36,7 @@
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
 
 ## Introduction
-SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP(online transaction processing) and OLAP(online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD(as an in-memory transactional store with scale-out SQL semantics). 
+SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics). 
 
 ![SnappyDataOverview](https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png)
 
@@ -51,7 +51,7 @@ SnappyData has been tested on Linux (mention kernel version) and Mac OSX. If not
 
 ## Community Support
 
-We monitor channels listed below for comments/questions. We prefer using Stackoverflow. 
+We monitor channels listed below for comments/questions.
 
 [Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)    [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)        Gitter ![Gitter](http://i.imgur.com/jNAJeOn.jpg)          [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)             [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          JIRA ![JIRA](http://i.imgur.com/E92zntA.png)
 
@@ -70,7 +70,7 @@ Master development branch
 git clone https://github.com/SnappyDataInc/snappydata.git
 
 ###### 0.1 preview release branch with stability fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview (??)
+git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
 ```
 
 #### Building SnappyData from source
@@ -93,13 +93,13 @@ You will find the instructions for building, layout of the code, integration wit
 - **High availability not just Fault tolerance**: Data is instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications with continuous HA.
 - **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. 
 
-Read SnappyData [docs](complete docs) for a more detailed list of all features and semantics. 
+Read SnappyData [docs](https://github.com/SnappyDataInc/snappydata/tree/master/docs) for a more detailed list of all features and semantics. 
 
 ## Getting started
 
 ###Objectives
 
-- **In-memory Column and Row tables**: Illustrate both SQL syntax and Spark API to create and manage column tables for large data and illustrate how row tables can be used for reference data and can be replicated to each node in the cluster. 
+- **In-memory Column and Row tables**: Illustrate both SQL syntax and the Spark API to create and manage column tables for large data and illustrate how row tables can be used for reference data and can be replicated to each node in the cluster. 
 - **OLAP, OLTP operations**: We run analytic class SQL queries (full scan with aggregations) on column tables and fully distributed join queries and observe the space requirements as well as the performance of these queries. For OLTP, we run simple update queries - you can note the Spark API extensions to support mutations in Spark. 
 - **AQP**: We run the same analytic queries by creating adjunct stratified samples to note the performance difference - can we get close to interactive query performance speeds?
 - **Streaming with SQL**: We ingest twitter streams into both a probabilistic data structure for TopK time series analytics and the entire stream (full data set) into a row table. We run both ad-hoc queries on these streams (modeled as tables) as well as showcase our first preview for continuous querying support. What SnappyData demonstrates here is simpler, SQL centric abstractions on top of Spark streaming. And, of course, ingestion into the built-in store.
@@ -119,32 +119,20 @@ Details of about the architecture can be found here:
 
 [Architecture](./docs/architecture.md) 
 
-SnappyData also has multiple deployment options which can be found 
+SnappyData also has multiple deployment options which can be found here:
 
 [Deployment Options](./docs/deployment.md).
 
 #### Step 1 - Start the SnappyData cluster 
 
-Configure SNAPPY_HOME in your environment. 
+The first step is to configure SNAPPY_HOME in your environment:
+
 ``` export SNAPPY_HOME=<product root directory> ```
 
-> ##### Note
-> The U.S. Department of Transportation's (DOT) Bureau of Transportation Statistics (BTS) tracks the on-time performance of domestic flights operated by large air carriers. 
-Summary information on the number of on-time, delayed, canceled and diverted flights is available for the last 20 years. We use this data set in the examples below. You can learn more on this schema [here](http://www.transtats.bts.gov/Fields.asp?Table_ID=236).
-> Default airline data shipped with product is of 15 MB compressed size. If you are interested in studying Approximate query processing we recommend downloading the full data set run this command (from quickstart/scripts directory):
->> $ ./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data 
+The remainder of "Getting Started" is based on a set of [airline data](http://www.transtats.bts.gov/Fields.asp?Table_ID=236) we run different queries on. That data is packaged with SnappyData, however, it is only a portion of the full dataset. To download the full dataset, from ````snappy/quickstart/scripts```` run ````./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data````. This is recomended for the approximate query processing portion of "Getting Started," but not necessary.
 
-##### Do we need this? seems to work with default cluster ...
->In case you are running Getting Started with full dataset, configure snappy to start two servers with max heap size as 4G each. 
-```bash
-$ cat conf/servers
-# Two servers with total of 8G.
-yourhostName -J-Xmx4g
-yourhostName -J-Xmx4g 
-```
-
->##### Passwordless ssh
->The quick start scripts use ssh to start up various processes. By default, this requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable passwordless ssh.
+##### Passwordless ssh
+The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with ````sudo apt-get install ssh````. By default, ssh requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable [passwordless ssh](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2). Otherwise, set up ssh for localhost with ````ssh localhost````
 
 
 The following script starts up a minimal set of essential components to form the cluster - A locator, one data server and one lead node. All nodes are started locally. To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
