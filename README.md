@@ -30,7 +30,7 @@
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
     * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming-conceptual)
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-conceptual-1)
-    * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k-1)
+    * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
     * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
