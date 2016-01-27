@@ -105,8 +105,17 @@ function startComponent() {
   # For stop and status mode, don't pass any parameters other than directory
   if echo $"${@// /\\ }" | grep -wq "start"; then
     # Set a default locator if not already set.
-    if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" -a "${componentType}" != "locator"  ]; then
-      args="${args} -locators="$(hostname)"[10334]"
+    if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" ]; then
+      if [ "${componentType}" != "locator"  ]; then
+        args="${args} -locators="$(hostname)"[10334]"
+      fi
+      # Set low discovery and join timeouts for quick startup when locator is local.
+      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.discoveryTimeout=')" ]; then
+        args="${args} -J-Dp2p.discoveryTimeout=1000"
+      fi
+      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.joinTimeout=')" ]; then
+        args="${args} -J-Dp2p.joinTimeout=2000"
+      fi
     fi
     # Set MaxPermSize if not already set.
     if [ -z "$(echo  $args $"${@// /\\ }" | grep 'XX:MaxPermSize=')" -a "${componentType}" != "locator"  ]; then
@@ -141,13 +150,13 @@ if [ -n "${HOSTLIST}" ]; then
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
     args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
-    startComponent $@
-    index=$[index +1]
+    startComponent "$@"
+    ((index++))
   done < $HOSTLIST
 else
     host="localhost"
     args=""
-    startComponent $@
+    startComponent "$@"
 fi
 wait
 
