@@ -1,0 +1,11 @@
+
+# This utility moves markdown files to the docs folder for 
+# generating documentation and then call the mkdocs utility 
+# with the passed arguments.  
+
+# Copy md files to the docs folder 
+cp -R featureDocs/ ./docs/
+cp README.md ./docs/index.md
+
+# call the mkdocs utility
+mkdocs "$@"
