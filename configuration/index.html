@@ -97,9 +97,6 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#table-of-contents">Table of Contents</a></li>
-                
-            
                 <li class="toctree-l3"><a href="#configuration">Configuration</a></li>
                 
                     <li><a class="toctree-l4" href="#configuration-files">Configuration files</a></li>
@@ -207,19 +204,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="table-of-contents">Table of Contents</h2>
-<ul>
-<li><a href="#configuration&quot;">Configuration</a></li>
-<li><a href="#configuration-files">Configuration files</a></li>
-<li><a href="#snappydata-specific-properties">SnappyData specific properties</a></li>
-<li><a href="#spark-specific-properties">Spark specific properties</a></li>
-<li><a href="#example-configuration">Example Configuration</a></li>
-<li><a href="#environment-settings">Environment settings</a></li>
-<li><a href="#per-component-configuration">Per Component Configuration</a></li>
-<li><a href="#snappy-shell-command-line-utility">snappy-shell Command Line Utility</a></li>
-<li><a href="#logging&quot;">Logging</a></li>
-</ul>
-<h2 id="configuration">Configuration</h2>
+                <h2 id="configuration">Configuration</h2>
 <p>SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Lead node embeds a Spark driver and Server node embeds a Spark Executor. Server node also embeds a snappy store. As discussed in <a href="..">Getting Started</a>, SnappyData cluster can be started with default configurations using script sbin/snappy-start-all.sh. This script starts up a locator, one data server and one lead node. However, SnappyData can be configured to start multiple components on different nodes. Also, each component can be configured individually using configuration files. In this document, we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData. </p>
 <h3 id="configuration-files">Configuration files</h3>
 <p>Configuration files for locator, lead and server should be created in SNAPPY_HOME with names as conf/locators, conf/leads and conf/servers respectively. These files contain the hostnames of the nodes (one per line) where you intend to start the member. You can specify the properties to configure individual members. </p>

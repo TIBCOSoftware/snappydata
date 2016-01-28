@@ -233,7 +233,8 @@
   // dataDF.schema provides the schema for table
   snc.createTable(&quot;COLUMN_TABLE&quot;, &quot;column&quot;, dataDF.schema, props1)
   // insert the data in append mode
-  dataDF.write.format(&quot;column&quot;).mode(org.apache.spark.sql.SaveMode.Append).options(props1).saveAsTable(&quot;COLUMN_TABLE&quot;)
+  dataDF.write.format(&quot;column&quot;).mode(org.apache.spark.sql.SaveMode.Append)
+  .options(props1).saveAsTable(&quot;COLUMN_TABLE&quot;)
 
   val results1 = snc.sql(&quot;SELECT * FROM COLUMN_TABLE&quot;)
   println(&quot;contents of column table are:&quot;)
@@ -251,7 +252,8 @@
   snc.createTable(&quot;ROW_TABLE&quot;, &quot;row&quot;, dataDF.schema, props2)
 
   // insert the data in append mode
-  dataDF.write.format(&quot;row&quot;).mode(org.apache.spark.sql.SaveMode.Append).options(props2).saveAsTable(&quot;ROW_TABLE&quot;)
+  dataDF.write.format(&quot;row&quot;).mode(org.apache.spark.sql.SaveMode.Append)
+  .options(props2).saveAsTable(&quot;ROW_TABLE&quot;)
 
   val results2 = snc.sql(&quot;select * from ROW_TABLE&quot;)
   println(&quot;contents of row table are:&quot;)

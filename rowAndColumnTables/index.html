@@ -219,8 +219,8 @@ BUCKETS  'NumPartitions', // Default 113
 REDUNDANCY        '1' ,
 RECOVER_DELAY     '-1',
 MAX_PART_SIZE      '50',
-EVICTION_BY  ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
-PERSISTENT   ‘DISKSTORE_NAME ASYNCHRONOUS |  SYNCHRONOUS’, // Empty string will map to default disk store.
+EVICTION_BY ‘LRUMEMSIZE 200 | LRUCOUNT 200 | LRUHEAPPERCENT,
+PERSISTENT  ‘DISKSTORE_NAME ASYNCHRONOUS | SYNCHRONOUS’, //empty string will map to default diskstore
 OFFHEAP ‘true | false’ ,
 EXPIRE ‘TIMETOLIVE in seconds',
 )
@@ -229,7 +229,8 @@ EXPIRE ‘TIMETOLIVE in seconds',
 DROP TABLE [IF EXISTS] table_name
 </code></pre>
 <p>For row format tables column definition can take underlying GemFire XD syntax to create a table.e.g.note the PRIMARY KEY clause below.</p>
-<pre><code>snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT) USING row options(BUCKETS '5')" )
+<pre><code>snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
+         USING row options(BUCKETS '5')" )
 </code></pre>
 <p>But for column table its restricted to Spark syntax for column definition e.g.</p>
 <pre><code>snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
@@ -240,7 +241,7 @@ DROP TABLE [IF EXISTS] table_name
 <pre><code>val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
 </code></pre>
 <p>Create a SnappyStore table using Spark APIs</p>
-<pre><code>val props = Map('BUCKETS','5')  // This map should contain required DDL extensions, described in next section
+<pre><code>val props = Map('BUCKETS','5') //This map should contain required DDL extensions, see next section
 case class Data(col1: Int, col2: Int, col3: Int)
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
 val rdd = sc.parallelize(data, data.length).map(s =&gt; new Data(s(0), s(1), s(2)))
@@ -288,17 +289,20 @@ def insert(tableName: String, rows: Row*): Int .
 
 // Only for row tables
 def put(tableName: String, rows: Row*): Int
-def update(tableName: String, filterExpr: String, newColumnValues: Row, updateColumns: String*): Int
+def update(tableName: String, filterExpr: String, newColumnValues: Row, 
+           updateColumns: String*): Int
 def delete(tableName: String, filterExpr: String): Int
 </code></pre>
 <p>Usage SnappyConytext.insert(): Insert one or more [[org.apache.spark.sql.Row]] into an existing table</p>
-<pre><code>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7), Seq(1,100,200))
+<pre><code>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+               Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =&gt;
   snappyContext.insert("tableName", Row.fromSeq(r))
 }
 </code></pre>
 <p>Usage SnappyConytext.put(): Upsert one or more [[org.apache.spark.sql.Row]] into an existing table</p>
-<pre><code>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7), Seq(1,100,200))
+<pre><code>val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3),
+               Seq(5, 6, 7), Seq(1,100,200))
 data.map { r =&gt;
   snc.put(tableName, Row.fromSeq(r))
 }
