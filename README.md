@@ -202,15 +202,15 @@ From the SnappyData base directory, /snappy/, run:
 
 Connect to the cluster with
 
-````connect client 'localhost:1527';````
+````snappy> connect client 'localhost:1527';````
 
 You can view connections with
 
-````show connections;````
+````snappy> show connections;````
 
 And check member status with:
 
-````show members;````
+````snappy> show members;````
 
 #### Column and Row tables (explanation)
 
@@ -236,15 +236,15 @@ The below SQL scripts create and populate the tables we need to continue. The di
 
 To create and load a column table:
 ```
-run './quickstart/scripts/create_and_load_column_table.sql';
+snappy> run './quickstart/scripts/create_and_load_column_table.sql';
 ```
 To create and load a row table:
 ```
- run './quickstart/scripts/create_and_load_row_table.sql';
+snappy> run './quickstart/scripts/create_and_load_row_table.sql';
 ```
 To see the status of the system:
 ```
-run './quickstart/scripts/status_queries.sql'
+snappy> run './quickstart/scripts/status_queries.sql'
 ```
 You can see the memory consumed in the [Spark Console](http://localhost:4040/storage/). 
 
@@ -272,7 +272,7 @@ Spark SQL can cache DataFrames as temporary tables and the data set is immutable
 
 The OLAP query we're executing is asking "which airlines arrive on schedule?" which requires a join to a reference table. You have the option to run the packaged query script or paste one query at a time. To run the script, in the snappy-shell paste:
 ```
-run './quickstart/scripts/olap_queries.sql';
+snappy> run './quickstart/scripts/olap_queries.sql';
 ```
 To paste the actual query, paste:
 ```sql
@@ -286,7 +286,7 @@ Each query is executed as one or more Jobs and each Job executed in one or more 
 
 The OLTP query we're executing is updating "Delta Airlines" to "Delta America." Paste the following command:
 ```sql
-run './quickstart/scripts/oltp_queries.sql';
+snappy> run './quickstart/scripts/oltp_queries.sql';
 ```
 You can now re-run olap_queries.sql to see the updated join result set.
 
@@ -334,11 +334,11 @@ snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_
 
 Like Step 3, we need to first create and load the sample table. The following script will sample the Airline table:
 ```
-run './quickstart/scripts/create_and_load_sample_table.sql';
+snappy> run './quickstart/scripts/create_and_load_sample_table.sql';
 ```
 You can now re-run the previous OLAP queries with an error constraint and compare the results. The following script will run the previous queries with an error constraint:
 ```
-run './quickstart/scripts/olap_approx_queries.sql';
+snappy> run './quickstart/scripts/olap_approx_queries.sql';
 ```
 You should notice a 10X or larger difference in query execution latency while the results remain nearly as accurate. As a reminder, we recommend downloading the larger data set for this exercise.
 
@@ -401,7 +401,7 @@ You can use the scripts that simulates the twitter stream by copying pre-loaded 
 
 Create a file stream table that listens on a folder and then start the streaming context. In the snappy-shell, paste:
 ```sql
-run './quickstart/scripts/create_and_start_file_streaming.sql';
+snappy> run './quickstart/scripts/create_and_start_file_streaming.sql';
 ```
 Run the following utility in another terminal that simulates a twitter stream by copying tweets in the folder on which file stream table is listening.
 ```bash 
