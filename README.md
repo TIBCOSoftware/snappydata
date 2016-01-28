@@ -46,9 +46,7 @@ You can download the latest version of SnappyData here:
 
 * [SnappyData Preview 0.1 download link](1)
 
-SnappyData has been tested on Linux (mention kernel version) and Mac OSX. If not already installed, you will need to download scala 2.10 and [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
-
-[Skip to Getting Started](#getting-started)
+SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
 ## Community Support
 
@@ -145,7 +143,7 @@ Navigate to the /snappy/ root directory. The start script starts up a minimal se
 ./sbin/snappy-start-all.sh
 ````
 
-It should roughly take up to a minute and look like this (logs are in the 'work' sub-directory):
+This may take 30 seconds or more to bootstrap the entire cluster on your local machine (logs are in the 'work' sub-directory). The output should look something like this …
 
 ````
 $ sbin/snappy-start-all.sh 
@@ -167,7 +165,6 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
 
 [Custom Configuration](./docs/configuration.md)
-
 
 
 At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
