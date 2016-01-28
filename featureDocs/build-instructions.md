@@ -7,6 +7,11 @@ project:
 2. cd snappydata
 3. ./gradlew clean assemble
 ````
+Note that this compiles, but does not fully build the product. To get a final build paste:
+```
+./gradlew product
+```
+
 ## Repository layout
 
 There were few proposals about how to manage the various repositories mentioned in [this document](https://docs.google.com/document/d/1jC8z-WPzK0B8J6p3jverumK4gcbprmFiciXYKd2JUVE/edit#). Based on few discussions, we shortlisted Proposal 4 in the document.
