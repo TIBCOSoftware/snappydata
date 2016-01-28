@@ -11,7 +11,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/build-instructions/</loc>
+     <loc>http://www.snappydata.io/featureDocs/build-instructions/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -19,7 +19,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/snappyIntroduction/</loc>
+     <loc>http://www.snappydata.io/featureDocs/snappyIntroduction/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -27,7 +27,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/features/</loc>
+     <loc>http://www.snappydata.io/featureDocs/features/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -35,7 +35,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/architecture/</loc>
+     <loc>http://www.snappydata.io/featureDocs/architecture/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -43,7 +43,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/configuration/</loc>
+     <loc>http://www.snappydata.io/featureDocs/configuration/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -51,7 +51,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/connectingToCluster/</loc>
+     <loc>http://www.snappydata.io/featureDocs/connectingToCluster/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -59,7 +59,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/jobs/</loc>
+     <loc>http://www.snappydata.io/featureDocs/jobs/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -67,7 +67,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/rowAndColumnTables/</loc>
+     <loc>http://www.snappydata.io/featureDocs/rowAndColumnTables/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -75,7 +75,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/aqp/</loc>
+     <loc>http://www.snappydata.io/featureDocs/aqp/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -83,7 +83,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/streamingWithSQL/</loc>
+     <loc>http://www.snappydata.io/featureDocs/streamingWithSQL/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -91,7 +91,7 @@
 
     
     <url>
-     <loc>http://www.snappydata.io/deployment/</loc>
+     <loc>http://www.snappydata.io/featureDocs/deployment/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
@@ -100,7 +100,7 @@
     
         
     <url>
-     <loc>http://www.snappydata.io/LICENSE/</loc>
+     <loc>http://www.snappydata.io/featureDocs/LICENSE/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>
     </url>

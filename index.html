@@ -62,6 +62,9 @@
         
             <ul>
             
+                <li class="toctree-l3"><a href="#table-of-contents">Table of Contents</a></li>
+                
+            
                 <li class="toctree-l3"><a href="#introduction">Introduction</a></li>
                 
             
@@ -77,6 +80,9 @@
                 <li class="toctree-l3"><a href="#working-with-snappydata-source-code">Working with SnappyData Source Code</a></li>
                 
                     <li><a class="toctree-l4" href="#building-snappydata-from-source">Building SnappyData from source</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#click-here-for-quick-start">Click here for Quick Start</a></li>
                 
             
                 <li class="toctree-l3"><a href="#key-features">Key Features</a></li>
@@ -102,77 +108,77 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="build-instructions/">Building from source, project layout</a>
+        <a class="" href="featureDocs/build-instructions/">Building from source, project layout</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="snappyIntroduction/">Overview</a>
+        <a class="" href="featureDocs/snappyIntroduction/">Overview</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="features/">Key features</a>
+        <a class="" href="featureDocs/features/">Key features</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="architecture/">Architecture</a>
+        <a class="" href="featureDocs/architecture/">Architecture</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="configuration/">Configuring the cluster</a>
+        <a class="" href="featureDocs/configuration/">Configuring the cluster</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="connectingToCluster/">Connecting using JDBC, Spark</a>
+        <a class="" href="featureDocs/connectingToCluster/">Connecting using JDBC, Spark</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="jobs/">Developing Apps using the Spark API</a>
+        <a class="" href="featureDocs/jobs/">Developing Apps using the Spark API</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="rowAndColumnTables/">Row and Column tables</a>
+        <a class="" href="featureDocs/rowAndColumnTables/">Row and Column tables</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="aqp/">Approximate query processing</a>
+        <a class="" href="featureDocs/aqp/">Approximate query processing</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="streamingWithSQL/">Stream processing using SQL</a>
+        <a class="" href="featureDocs/streamingWithSQL/">Stream processing using SQL</a>
         
     </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="deployment/">Deployment topologies</a>
+        <a class="" href="featureDocs/deployment/">Deployment topologies</a>
         
     </li>
 <li>
@@ -184,7 +190,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="LICENSE/">License</a>
+        <a class="" href="featureDocs/LICENSE/">License</a>
         
     </li>
 
@@ -228,7 +234,54 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="introduction">Introduction</h2>
+                <h2 id="table-of-contents">Table of Contents</h2>
+<ul>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#download-binary-distribution">Download binary distribution</a></li>
+<li><a href="#community-support">Community Support</a></li>
+<li><a href="#link-with-snappydata-distribution">Link with SnappyData distribution</a></li>
+<li><a href="#working-with-snappydata-source-code">Working with SnappyData Source Code</a><ul>
+<li><a href="#building-snappydata-from-source">Building SnappyData from source</a></li>
+</ul>
+</li>
+<li><a href="featureDocs/quickstart.md">5 Minute QuickStart</a></li>
+<li><a href="#key-features">Key Features</a></li>
+<li><a href="#getting-started">Getting started</a></li>
+<li><a href="#objectives">Objectives</a></li>
+<li><a href="#snappydata-cluster-conceptual">SnappyData Cluster</a><ul>
+<li><a href="#step-1---start-the-snappydata-cluster">Step 1 - Start the SnappyData cluster</a></li>
+</ul>
+</li>
+<li><a href="#interacting-with-snappydata-conceptual">Interacting with SnappyData</a></li>
+<li><a href="#getting-started-with-sql">Getting Started with SQL</a><ul>
+<li><a href="#column-and-row-tables-conceptual">Column and Row tables</a></li>
+<li><a href="#step-2---create-column-table-row-table-and-load-data">Step 2 - Create column table, row table and load data</a></li>
+<li><a href="#olap-and-oltp-queries-conceptual">OLAP and OLTP queries</a></li>
+<li><a href="#step-3---run-olap-and-oltp-queries">Step 3 - Run OLAP and OLTP queries</a></li>
+<li><a href="#approximate-query-processing-aqp-conceptual">Approximate query processing (AQP)</a></li>
+<li><a href="#step-4---create-load-and-query-sample-table">Step 4 - Create, Load and Query Sample Table</a></li>
+<li><a href="#stream-analytics-using-sql-and-spark-streaming-conceptual">Stream analytics using SQL and Spark Streaming</a></li>
+<li><a href="#top-k-elements-in-a-stream-conceptual">Top-K Elements in a Stream</a></li>
+<li><a href="#step-5---create-and-query-stream-table-and-top-k-declaratively">Step 5 - Create and Query Stream Table and Top-K Declaratively</a></li>
+</ul>
+</li>
+<li><a href="#getting-started-with-spark-api">Getting Started with Spark API</a><ul>
+<li><a href="#column-and-row-tables-conceptual-1">Column and Row tables</a></li>
+<li><a href="#step-2---create-column-table-row-table-and-load-data-1">Step 2 - Create column table, row table and load data</a></li>
+<li><a href="#olap-and-oltp-store-conceptual">OLAP and OLTP Store</a></li>
+<li><a href="#step-3---run-olap-and-oltp-queries-1">Step 3 - Run OLAP and OLTP queries</a></li>
+<li><a href="#approximate-query-processing-aqp-conceptual-1">Approximate query processing (AQP)</a></li>
+<li><a href="#step-4---create-load-and-query-sample-table-1">Step 4 - Create, Load and Query Sample Table</a></li>
+<li><a href="#stream-analytics-using-spark-streaming-conceptual">Stream analytics using Spark Streaming</a></li>
+<li><a href="#top-k-elements-in-a-stream-conceptual-1">Top-K Elements in a Stream</a></li>
+<li><a href="#step-5---create-and-query-stream-table-and-top-k">Step 5 - Create and Query Stream Table and Top-K</a></li>
+<li><a href="#working-with-spark-shell-and-spark-submit">Working with Spark shell and spark-submit</a></li>
+<li><a href="#step-6---submit-a-spark-app-that-interacts-with-snappydata">Step 6 - Submit a Spark App that interacts with SnappyData</a></li>
+</ul>
+</li>
+<li><a href="#final-step---stop-the-snappydata-cluster">Final Step - Stop the SnappyData Cluster</a></li>
+</ul>
+<h2 id="introduction">Introduction</h2>
 <p>SnappyData is a <strong>distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster</strong>. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics). </p>
 <p><img alt="SnappyDataOverview" src="https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png" /></p>
 <h2 id="download-binary-distribution">Download binary distribution</h2>
@@ -236,8 +289,7 @@
 <ul>
 <li><a href="./1">SnappyData Preview 0.1 download link</a></li>
 </ul>
-<p>SnappyData has been tested on Linux (mention kernel version) and Mac OSX. If not already installed, you will need to download scala 2.10 and <a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html">Java 8</a>. </p>
-<p><a href="#getting-started">Skip to Getting Started</a></p>
+<p>SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download <a href="http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html">Java 8</a>. </p>
 <h2 id="community-support">Community Support</h2>
 <p>We monitor channels listed below for comments/questions.</p>
 <p><a href="http://stackoverflow.com/questions/tagged/snappydata">Stackoverflow</a> <img alt="Stackoverflow" src="http://i.imgur.com/LPIdp12.png" />    <a href="http://snappydata-slackin.herokuapp.com/">Slack</a><img alt="Slack" src="http://i.imgur.com/h3sc6GM.png" />        Gitter <img alt="Gitter" src="http://i.imgur.com/jNAJeOn.jpg" />          <a href="http://webchat.freenode.net/?randomnick=1&amp;channels=%23snappydata&amp;uio=d4">IRC</a> <img alt="IRC" src="http://i.imgur.com/vbH3Zdx.png" />             <a href="https://www.reddit.com/r/snappydata">Reddit</a> <img alt="Reddit" src="http://i.imgur.com/AB3cVtj.png" />          JIRA <img alt="JIRA" src="http://i.imgur.com/E92zntA.png" /></p>
@@ -260,12 +312,14 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
 <h4 id="building-snappydata-from-source">Building SnappyData from source</h4>
 <p>You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc here:</p>
 <ul>
-<li><a href="build-instructions/">SnappyData Build Instructions</a></li>
+<li><a href="featureDocs/build-instructions/">SnappyData Build Instructions</a></li>
 </ul>
 <blockquote>
 <p>NOTE:
 SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  </p>
 </blockquote>
+<p>You can try our quick start or keep reading to understand some of the concepts and features as you try out the product. </p>
+<h2 id="click-here-for-quick-start"><a href="featureDocs/quickstart.md">Click here for Quick Start</a></h2>
 <h2 id="key-features">Key Features</h2>
 <ul>
 <li><strong>100% compatible with Spark</strong>: Use SnappyData as a database as well as use any of the Spark APIs - ML, Graph, etc. on the same data</li>
@@ -278,7 +332,7 @@ SnappyData is built using Spark 1.6 (build xx) which is packaged as part of Snap
 <li><strong>High availability not just Fault tolerance</strong>: Data is instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications with continuous HA.</li>
 <li><strong>Durability and recovery:</strong> Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. </li>
 </ul>
-<p>Read SnappyData <a href="https://github.com/SnappyDataInc/snappydata/tree/master/docs">docs</a> for a more detailed list of all features and semantics. </p>
+<p>Read SnappyData <a href="./featureDocs">docs</a> for a more detailed list of all features and semantics. </p>
 <h2 id="getting-started">Getting started</h2>
 <p>Each header under "Getting Started" that contains conceptual information meant to orient you will append a "(conceptual)". Each header that contains actual steps for executing the "Getting Started" will prepend "Step".</p>
 <h3 id="objectives">Objectives</h3>
@@ -296,11 +350,11 @@ SnappyData is built using Spark 1.6 (build xx) which is packaged as part of Snap
 <li><strong>Lead Node</strong>: Acts as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.</li>
 <li><strong>Data Servers</strong>: Hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.</li>
 </ul>
-<p><img alt="ClusterArchitecture" src="./GettingStarted_Architecture.png" /></p>
+<p><img alt="ClusterArchitecture" src="./featureDocs/GettingStarted_Architecture.png" /></p>
 <p>Details of about the architecture can be found here:</p>
-<p><a href="architecture/">Architecture</a> </p>
+<p><a href="featureDocs/architecture/">Architecture</a> </p>
 <p>SnappyData also has multiple deployment options which can be found here:</p>
-<p><a href="deployment/">Deployment Options</a>.</p>
+<p><a href="featureDocs/deployment/">Deployment Options</a>.</p>
 <h4 id="step-1-start-the-snappydata-cluster">Step 1 - Start the SnappyData cluster</h4>
 <p>The first step is to configure SNAPPY_HOME in your environment:</p>
 <p><code>export SNAPPY_HOME=/path/to/snappy/root</code></p>
@@ -311,7 +365,7 @@ SnappyData is built using Spark 1.6 (build xx) which is packaged as part of Snap
 <pre><code>./sbin/snappy-start-all.sh
 </code></pre>
 
-<p>It should roughly take up to a minute and look like this (logs are in the 'work' sub-directory):</p>
+<p>This may take 30 seconds or more to bootstrap the entire cluster on your local machine (logs are in the 'work' sub-directory). The output should look something like this …</p>
 <pre><code>$ sbin/snappy-start-all.sh 
 localhost: Starting SnappyData Locator using peer discovery on: 0.0.0.0[10334]
 ...
@@ -330,10 +384,10 @@ localhost:   Other members: jramnara-mbpro(56703:locator)&lt;v0&gt;:54414, jramn
 </code></pre>
 
 <p>To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:</p>
-<p><a href="configuration/">Custom Configuration</a></p>
+<p><a href="featureDocs/configuration/">Custom Configuration</a></p>
 <p>At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC. You can <a href="http://localhost:4040">monitor the Spark cluster at port 4040</a>. Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.</p>
-<p><img src="ExternalBlockStoreSize.png" width="800"></p>
-<p><img src="queryPlan.png" height="800"></p>
+<p><img src="featureDocs/ExternalBlockStoreSize.png" width="800"></p>
+<p><img src="featureDocs/queryPlan.png" height="800"></p>
 <h3 id="interacting-with-snappydata-conceptual">Interacting with SnappyData (conceptual)</h3>
 <blockquote>
 <p>For the section on the Spark API, we assume some familiarity with <a href="http://spark.apache.org/docs/latest/">core Spark, Spark SQL and Spark Streaming concepts</a>. 
@@ -345,7 +399,7 @@ listed in the Spark guides will work in SnappyData also. For the section on SQL,
 <ol>
 <li><strong>Long running executors</strong>: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. </li>
 <li><strong>Driver runs in HA configuration</strong>: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the <a href="https://github.com/spark-jobserver/spark-jobserver">Spark JobServer</a> to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
-Read our <a href="./docs">docs</a> for details on the architecture.</li>
+Read our <a href="./featureDocs">docs</a> for details on the architecture.</li>
 </ol>
 <p>In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the Spark API section:</p>
 <p><a href="#getting-started-with-spark-api"><strong>Getting Started with Spark API</strong></a>.</p>
@@ -373,7 +427,7 @@ CREATE TABLE AIRLINE (&lt;column definitions&gt;) USING column OPTIONS(buckets '
 CREATE TABLE AIRLINEREF (&lt;column definitions&gt;) USING row OPTIONS() ;
 </code></pre>
 
-<p>Read our preliminary <a href="rowAndColumnTables/">row &amp; column table docs</a> for the details.</p>
+<p>Read our preliminary <a href="featureDocs/rowAndColumnTables/">row &amp; column table docs</a> for the details.</p>
 <h4 id="step-2-create-column-table-row-table-and-load-data">Step 2 - Create column table, row table and load data</h4>
 <blockquote>
 <p>If you downloaded the full airline data set in <a href="#step-1---start-the-snappydata-cluster">Step 1</a>, edit the 'create_and_load_column_table.sql' script which is in <code>quickstart/scripts</code> to point to <code>airlineParquetData_2007-15</code> directory. Run <code>./download_full_airlinedata.sh ../data</code> first. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.</p>
@@ -433,7 +487,7 @@ UPDATE AIRLINEREF SET DESCRIPTION='Delta America' WHERE CAST(CODE AS VARCHAR(25)
 In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
 You can execute transactions using commands <em>autocommit off</em> and <em>commit</em>.  </p>
 </blockquote>
-<h4 id="approximate-query-processing-aqp-conceptual">Approximate Query Processing (AQP) (conceptual)</h4>
+<h4 id="approximate-query-processing-aqp-conceptual">Approximate query processing (AQP) (conceptual)</h4>
 <p>OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated <a href="https://en.wikipedia.org/wiki/Stratified_sampling">stratified samples</a> on large tables. </p>
 <blockquote>
@@ -507,7 +561,7 @@ snappy&gt; SELECT hashtag, count(*) as tagcount
 <p>Later, in the Spark API section we further enhance this concept to showcase <a href="https://github.com/SnappyDataInc/snappydata/blob/master/README.md#stream-analytics-using-spark-streaming">"continuous queries" (CQ)</a>. Dynamic registration of CQs (from remote clients) will be available in the next release.</p>
 <h4 id="top-k-elements-in-a-stream-conceptual">Top-K Elements in a Stream (conceptual)</h4>
 <p>Finding the <em>k</em> most popular elements in a data stream is a common analytic query. For instance, the top-100 pages on a popular website in the last 10 mins, the top-10 sales regions in the last week, etc. As you can see, if the query is on an arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events in use cases in the Internet of Things, for example. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found here:</p>
-<p><a href="aqp/">Detailed AQP Documentation</a></p>
+<p><a href="featureDocs/aqp/">Detailed AQP Documentation</a></p>
 <p>SnappyData provides DDL extensions to create Top-k structures. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as data arrives. The Top-k structures can be queried using regular SQL queries. </p>
 <pre><code class="sql">--- Create a topk table from a stream table
 CREATE TOPK TABLE filestream_topktable ON HASHTAG_FILESTREAMTABLE OPTIONS
@@ -566,7 +620,7 @@ snappy&gt; STREAMING STOP;
 </code></pre>
 
 <p>The implementation of the <em>runJob</em> function from SnappySQLJob uses a SnappyContext to interact with the SnappyData store to process and store tables. The implementation of runJob from SnappyStreamingJob uses a SnappyStreamingContext to create streams and manage the streaming context. The jobs are submitted to the lead node of SnappyData over REST API using a <em>spark-submit</em> like utility. See more details about jobs here:</p>
-<p><a href="jobs/">SnappyData Jobs</a></p>
+<p><a href="featureDocs/jobs/">SnappyData Jobs</a></p>
 <h4 id="column-and-row-tables-conceptual_1">Column and Row tables (conceptual)</h4>
 <p>Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.</p>
 <pre><code class="scala">// creating a column table in Snappy job
@@ -579,14 +633,14 @@ snappyContext.createTable(&quot;AIRLINE&quot;, &quot;column&quot;, schema, Map(&
 val airlineCodeDF = snappyContext.createTable(&quot;AIRLINEREF&quot;, &quot;row&quot;, schema, Map())
 </code></pre>
 
-<p>Read our preliminary <a href="rowAndColumnTables/">row &amp; column table docs</a> for the details</p>
+<p>Read our preliminary <a href="featureDocs/rowAndColumnTables/">row &amp; column table docs</a> for the details</p>
 <h4 id="step-2-create-column-table-row-table-and-load-data_1">Step 2 - Create column table, row table and load data</h4>
 <blockquote>
 <p>If you downloaded the full airline data set in <a href="#step-1---start-the-snappydata-cluster">Step 1</a>, set the following config parameter to point at the data set.
 <code>export APP_PROPS="airline_file=full_dataset_folder"</code></p>
 </blockquote>
 <p>Submit <code>CreateAndLoadAirlineDataJob</code> over the REST API to create row and column tables. See more details about jobs and job submission here:</p>
-<p><a href="jobs/">SnappyData jobs &amp; job submission</a>. </p>
+<p><a href="featureDocs/jobs/">SnappyData jobs &amp; job submission</a>. </p>
 <pre><code class="bash">$ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 {&quot;status&quot;: &quot;STARTED&quot;,
   &quot;result&quot;: {
@@ -646,7 +700,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
 </code></pre>
 
 <p>The output of the job can be found in <code>AirlineDataJob.out</code> in the lead directory which by default is <code>SNAPPY_HOME/work/localhost-lead-*/</code>. You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostNameOfLead:4040.</p>
-<h4 id="approximate-query-processing-aqp-conceptual_1">Approximate Query Processing (AQP) (conceptual)</h4>
+<h4 id="approximate-query-processing-aqp-conceptual_1">Approximate query processing (AQP) (conceptual)</h4>
 <p>OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second, the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs to specify one or more curated <a href="https://en.wikipedia.org/wiki/Stratified_sampling">stratified samples</a> on large tables. </p>
 <blockquote>
@@ -705,7 +759,7 @@ retweetStream.foreachDataFrame(df =&gt; {
 
 <h4 id="top-k-elements-in-a-stream-conceptual_1">Top-K Elements in a Stream (conceptual)</h4>
 <p>Continuously finding the <em>k</em> most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures. More details about SnappyData's implementation of top-k can be found here:</p>
-<p><a href="aqp/">SnappyData's AQP Docs</a></p>
+<p><a href="featureDocs/aqp/">SnappyData's AQP Docs</a></p>
 <p>SnappyData provides an API in the SnappyContext to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. </p>
 <pre><code class="scala">--- Create a topk table from a stream table
 snappyContext.createApproxTSTopK(&quot;topktable&quot;, &quot;hashtag&quot;,
@@ -784,7 +838,7 @@ localhost: The SnappyData Locator has stopped.
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="build-instructions/" class="btn btn-neutral float-right" title="Building from source, project layout">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="featureDocs/build-instructions/" class="btn btn-neutral float-right" title="Building from source, project layout">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
     </div>
@@ -816,7 +870,7 @@ localhost: The SnappyData Locator has stopped.
       
       
       
-        <span style="margin-left: 15px"><a href="build-instructions/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="featureDocs/build-instructions/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
@@ -826,5 +880,5 @@ localhost: The SnappyData Locator has stopped.
 
 <!--
 MkDocs version : 0.15.0
-Build Date UTC : 2016-01-28 09:17:16.559486
+Build Date UTC : 2016-01-28 10:44:51.685716
 -->
