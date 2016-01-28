@@ -1,12 +1,10 @@
 ## Quick start  
 
-This 5 minute tutorial provides a quick introduction SnappyData. It exposes you to the cluster runtime and running OLAP and OLTP SQL.
+This 5 minute tutorial provides a quick introduction to SnappyData. It exposes you to the cluster runtime and running OLAP, OLTP SQL.
 
 The following script starts up a minimal set of essential components to form a SnappyData cluster - A locator, one data server 
 and one lead node. All nodes are started on localhost.
-The locator is primarily responsible to make all the nodesaware of each other and providing a consistent membership view to 
-each node even in the presence of failures (a distributed system membership service). The Lead node hosts the Spark Context and driver 
-and orchestrates execution of Spark Jobs. 
+The locator is primarily responsible to make all the nodes aware of each other, allows the cluster to expand or shrink dynamically and provides a consistent membership view to each node even in the presence of failures (a distributed system membership service). The Lead node hosts the Spark Context and driver and orchestrates execution of Spark Jobs. 
 The Data server is the work horse - manages all in-memory data, OLTP execution engine and Spark executors. 
 
 See the  [‘Getting Started’](#getting-started) section for more details. 
