@@ -33,23 +33,20 @@ import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
 
+import org.apache.spark.Logging
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedDialect, JdbcExtendedUtils, ParentRelation}
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
-import org.apache.spark.{Logging, Partition, TaskContext}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -618,67 +615,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     } else {
       false
     }
-  }
-
-  def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean): Unit = {
-    val isLoner = Utils.isLoner(context.sparkContext)
-
-    val rdd = new DummyRDD(context) {
-      override def compute(split: Partition,
-          taskContext: TaskContext): Iterator[InternalRow] = {
-        DriverRegistry.register(externalStore.connProperties.driver)
-        JdbcDialects.get(externalStore.connProperties.url) match {
-          case d: JdbcExtendedDialect =>
-            val extraProps = d.extraDriverProperties(isLoner).propertyNames
-            while (extraProps.hasMoreElements) {
-              val p = extraProps.nextElement()
-              if (externalStore.connProperties.connProps.get(p) != null) {
-                sys.error(s"Master specific property $p " +
-                    "shouldn't exist here in Executors")
-              }
-            }
-          case _ =>
-        }
-
-        val conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url,
-          externalStore.connProperties.connProps, driverDialect = null, isLoner = false)
-        conn.close()
-        Iterator.empty
-      }
-
-      override protected def getPartitions: Array[Partition] = {
-        //TODO : Find a cleaner way of starting all executors.
-        val partitions = new Array[Partition](100)
-        for (p <- 0 until 100) {
-          partitions(p) = new ExecutorLocalPartition(p, null)
-        }
-        partitions
-      }
-    }
-
-    rdd.collect()
-
-    //val tableName = processTableIdentifier(tableIdent)
-    val connProps = externalStore.connProperties.connProps
-    val dialect = JdbcDialects.get(externalStore.connProperties.url)
-    dialect match {
-      case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraDriverProperties(isLoner))
-    }
-
-    externalStore.tryExecute(tableName, {
-      case conn =>
-        if (dropIfExists) {
-          JdbcExtendedUtils.dropTable(conn, tableName, dialect, context,
-            ifExists = true)
-        }
-        JdbcExtendedUtils.executeUpdate(tableStr, conn)
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(tableName,
-            conf.caseSensitiveAnalysis, conn)
-        }
-    })
   }
 
   override def getTables(dbIdent: Option[String]): Seq[(String, Boolean)] = {
