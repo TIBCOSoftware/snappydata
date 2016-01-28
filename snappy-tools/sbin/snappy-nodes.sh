@@ -116,6 +116,9 @@ function startComponent() {
       if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.joinTimeout=')" ]; then
         args="${args} -J-Dp2p.joinTimeout=2000"
       fi
+      if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dgemfirexd.SKIP_SPS_PRECOMPILE')" ]; then
+        args="${args} -J-Dgemfirexd.SKIP_SPS_PRECOMPILE=true"
+      fi
     fi
     # Set MaxPermSize if not already set.
     if [ -z "$(echo  $args $"${@// /\\ }" | grep 'XX:MaxPermSize=')" -a "${componentType}" != "locator"  ]; then
