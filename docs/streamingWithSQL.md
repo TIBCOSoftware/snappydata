@@ -1,10 +1,10 @@
 SnappyData’s streaming functionality builds on top of Spark Streaming and primarily is aimed at making it simpler to build streaming applications and integration with the built-in store. 
-Here is a brief overview of [Spark streaming](Spark streaming) from the Spark Streaming guide. 
+Here is a brief overview of [Spark streaming](http://spark.apache.org/docs/latest/streaming-programming-guide.html) from the Spark Streaming guide. 
 
 ## Spark Streaming Overview
 Spark Streaming is an extension of the core Spark API that enables scalable, high-throughput, fault-tolerant stream processing of live data streams. Data can be ingested from many sources like Kafka, Flume, Twitter, ZeroMQ, Kinesis, or TCP sockets, and can be processed using complex algorithms expressed with high-level functions like `map`, `reduce`, `join` and `window`.
 
-Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](mllib-guide.html) and [graph processing](graphx-programming-guide.html) algorithms on data streams.  
+Finally, processed data can be pushed out to filesystems, databases, and live dashboards. In fact, you can apply Spark's [machine learning](http://spark.apache.org/docs/latest/mllib-guide.html) and [graph processing](http://spark.apache.org/docs/latest/graphx-programming-guide.html) algorithms on data streams.  
 
 <p style="text-align: center;">
   <img
