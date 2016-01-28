@@ -102,7 +102,8 @@ localhost: Starting SnappyData Locator using peer discovery on: 0.0.0.0[10334]
 ...
 localhost: SnappyData Locator pid: 56703 status: running
 
-localhost: Starting SnappyData Server using locators for peer discovery: jramnara-mbpro[10334]   (port used for members to form a p2p cluster)
+localhost: Starting SnappyData Server using locators for peer discovery: jramnara-mbpro[10334]
+          (port used for members to form a p2p cluster)
 localhost: SnappyData Server pid: 56819 status: running
 localhost:   Distributed system now has 2 members.
 
@@ -110,7 +111,8 @@ localhost: Starting SnappyData Leader using locators for peer discovery: jramnar
 localhost: SnappyData Leader pid: 56932 status: running
 localhost:   Distributed system now has 3 members.
 
-localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mbpro(56819:datastore)<v1>:39737
+localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, 
+                            jramnara-mbpro(56819:datastore)<v1>:39737
 
 ``` 
 
@@ -202,8 +204,8 @@ snappy> select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrie
 For low latency OLTP queries, the engine won't route it to the lead and instead execute it immediately without any scheduling overhead. Quite often, this may mean simply fetching a row by hashing a key (in microseconds).
  
 ```sql
---- Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself as 'Delta America'
---- the airline code can be updated in the row table
+--- Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself 
+--- as 'Delta America' the airline code can be updated in the row table
 UPDATE AIRLINEREF SET DESCRIPTION='Delta America' WHERE CAST(CODE AS VARCHAR(25))='DL';
 ```
 Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/index.html#reference/sql-language-reference.html).  As we show later, any table in Snappy is also visible as Spark DataFrame. 
@@ -211,7 +213,8 @@ Spark SQL can cache DataFrames as temporary tables and the data set is immutable
 #### Step 3 - Run OLAP and OLTP queries
  
 ```sql
--- Simply run the script or copy/paste one query at a time if you want to explore the query execution on the Spark console. 
+-- Simply run the script or copy/paste one query at a time if you want to explore the 
+--- query execution on the Spark console. 
 snappy> run './quickstart/scripts/olap_queries.sql';
 
 ---- Which Airlines Arrive On Schedule? JOIN with reference table ----
@@ -248,7 +251,8 @@ The following DDL creates a sample that is 3% of the full data set and stratifie
 CREATE SAMPLE TABLE AIRLINE_SAMPLE
    OPTIONS(
     buckets '5',                          -- Number of partitions 
-    qcs 'UniqueCarrier, Year_, Month_',   -- QueryColumnSet(qcs): The strata - 3% of each combination of Carrier, 
+    qcs 'UniqueCarrier, Year_, Month_',   -- QueryColumnSet(qcs): The strata 
+                                          -- 3% of each combination of Carrier, 
                                           -- Year and Month are stored as sample
     fraction '0.03',                      -- How big should the sample be
     strataReservoirSize '50',             -- Reservoir sampling to support streaming inserts
@@ -262,7 +266,8 @@ snappy> select avg(ArrDelay), Month_ from Airline where ArrDelay >0
     group by Month_
     with error .05 ;
 -- The above query will consult the sample and return an answer if the estimated answer 
--- is at least 95% accurate (here, by default we use a 95% confidence interval). Read [docs](docs) for more details.
+-- is at least 95% accurate (here, by default we use a 95% confidence interval). 
+-- Read [docs](docs) for more details.
 
 -- You can also access the error using built-in functions. 
 snappy> select avg(ArrDelay) avgDelay, absolute_error(avgDelay), Month_ 
@@ -299,7 +304,8 @@ snappy> CREATE STREAM TABLE HASHTAG_FILESTREAMTABLE
               rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow',
               directory '/tmp/copiedtwitterdata')
 -- A file_stream data source monitors the directory and as files arrives they are ingested 
---   into the streaming pipeline. First converted into Rows using 'TweetToHashtagRow' then visible as table
+--- into the streaming pipeline. 
+--- First converted into Rows using 'TweetToHashtagRow' then visible as table
 --- Start streaming context 
 snappy> STREAMING START
 --- Adhoc sql on the stream table to query the current batch
@@ -399,15 +405,19 @@ val airlineCodeDF = snappyContext.createTable("AIRLINEREF", "row", schema, Map()
 Submit CreateAndLoadAirlineDataJob over REST API to create row and column tables. See more details about jobs and job submission [here.](./docs/jobs.md). 
 
 ```bash
-$ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp 
+--class  io.snappydata.examples.CreateAndLoadAirlineDataJob 
+--app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 {"status": "STARTED",
   "result": {
     "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
     "context": "snappyContext1452598154529305363"
   } }
 
-# A JSON with jobId of the submitted job is returned. Use job ID can be used to query the status of the running job. 
-$ bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
+# A JSON with jobId of the submitted job is returned. 
+# Use job ID can be used to query the status of the running job. 
+$ bin/snappy-job.sh status --lead hostNameOfLead:8090 
+--job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 { "duration": "17.53 secs",
   "classPath": "io.snappydata.examples.CreateAndLoadAirlineDataJob",
   "startTime": "2016-01-12T16:59:14.746+05:30",
@@ -431,7 +441,8 @@ val resultDF = airlineDF.join(airlineCodeDF,
 ```
 For low latency OLTP queries in jobs, SnappyData won't schedule these queries instead execute them immediately on SnappyData servers without any scheduling overhead. Quite often, this may mean simply fetching or updating a row by hashing a key (in nanoseconds). 
 ```scala
-// Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself as 'Delta America'. Update the row table.
+// Suppose a particular Airline company say 'Delta Air Lines Inc.' re-brands itself as
+// 'Delta America'. Update the row table.
 val filterExpr: String = " CODE ='DL'"
 val newColumnValues: Row = Row("Delta America")
 val updateColumns = "DESCRIPTION"
@@ -516,8 +527,8 @@ snsc.sql("CREATE STREAM TABLE RETWEETTABLE (retweetId long, " +
     "directory '/tmp/copiedtwitterdata')");
 
 // Register a continous query on the stream table with window and slide parameters
-val retweetStream: SchemaDStream = snsc.registerCQ("SELECT retweetId, retweetCnt FROM RETWEETTABLE " +
-    "window (duration '2' seconds, slide '2' seconds)")
+val retweetStream: SchemaDStream = snsc.registerCQ("SELECT retweetId, retweetCnt FROM" +
+    " RETWEETTABLE window (duration '2' seconds, slide '2' seconds)")
 
 // Create a row table to hold the retweets based on their id 
 snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId bigint PRIMARY KEY, " +
@@ -557,11 +568,15 @@ Ideally, we would like you to try this example using live twitter stream. For th
 ```bash
 # Set the keys and secrets to fetch live twitter stream
 # Note: Currently, we do not encrypt the keys. 
-$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
+$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,
+                    accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
 
-# submit the TwitterPopularTagsJob that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
+# submit the TwitterPopularTagsJob that declares a stream table, creates and populates
+# a topk -structure, registers CQ on it and stores the result in a snappy store table 
 # This job runs streaming for two minutes. 
-$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob
+  --class io.snappydata.examples.TwitterPopularTagsJob 
+  --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 ```
 
@@ -571,7 +586,9 @@ Submit the TwitterPopularTagsJob that declares a stream table, creates and popul
  
 ```bash
 # Submit the TwitterPopularTagsJob 
-$ ./bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ ./bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob 
+--class io.snappydata.examples.TwitterPopularTagsJob 
+--app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
@@ -602,7 +619,10 @@ scala> val airlineDF = sqlContext.table("airline").show
 # Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp 
+--master spark://masterhost:7077 
+--conf snappydata.store.locators=locatorhost:port 
+--conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 
 # The results can be seen on the command line. 
 ```

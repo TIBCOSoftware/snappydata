@@ -40,7 +40,10 @@ Gradle builds have been arranged in a way so that all of snappy projects includi
     - add webupd8 java repository: ````sudo add-apt-repository ppa:webupd8team/java````
     - install and set jdk7 as default: ````sudo aptitude install oracle-java7-set-default````
     - you can also install oracle-java7-unlimited-jce-policy package for enhanced JCE encryption
-    - this will set java to point to JDK7 version and also set JAVA_HOME, so start a new shell for the changes to take effect; also run ````source /etc/profile.d/jdk.sh```` to update JAVA_HOME (or else you will need to logoff and login again for the JAVA_HOME setting to get applied)
+    - this will set java to point to JDK7 version and also set JAVA_HOME, 
+    - so start a new shell for the changes to take effect; 
+    - also run ````source /etc/profile.d/jdk.sh```` to update JAVA_HOME (or else you will 
+    - need to logoff and login again for the JAVA_HOME setting to get applied)
 
   * Ensure that snappy-spark repository has been moved/cloned inside snappy-commons by "snappy-spark" name. Similarly move the GemFireXD (snappy-store branch) repository inside snappy-commons by "snappy-store" name. The integrated build depends on its name and presence inside else it will use the local artifacts as mentioned before. *DO NOT JUST SYMLINK THE DIRECTORIES* -- that is known to cause trouble with IDE though command-line build may go through.
   * Update both repos (snappy-commons and snappy-spark) to latest version and the GemFireXD repository in snappy-store to latest snappy-store branch. Then test the build with: ````./gradlew clean```` && ````./gradlew assemble````

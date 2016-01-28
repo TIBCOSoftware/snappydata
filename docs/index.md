@@ -256,7 +256,7 @@ You can now re-run olap_queries.sql to see the updated join result set.
 > In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
 > You can execute transactions using commands _autocommit off_ and _commit_.  
 
-#### Approximate query processing (AQP) (conceptual)
+#### Approximate Query Processing (AQP) (conceptual)
 OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
@@ -504,7 +504,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
 ```
 The output of the job can be found in `AirlineDataJob.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostNameOfLead:4040.
 
-#### Approximate query processing (AQP) (conceptual)
+#### Approximate Query Processing (AQP) (conceptual)
 OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second, the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
