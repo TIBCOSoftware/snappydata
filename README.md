@@ -9,28 +9,28 @@
 * [Key Features](#key-features)
 * [Getting started](#getting-started)
   * [Objectives](#objectives)
-  * [SnappyData Cluster](#snappydata-cluster-conceptual)
+  * [SnappyData Cluster](#snappydata-cluster-explanation)
     * [Step 1 - Start the SnappyData cluster](#step-1---start-the-snappydata-cluster)
-  * [Interacting with SnappyData](#interacting-with-snappydata-conceptual)
+  * [Interacting with SnappyData](#interacting-with-snappydata-explanation)
   * [Getting Started with SQL](#getting-started-with-sql)
-    * [Column and Row tables](#column-and-row-tables-conceptual)
+    * [Column and Row tables](#column-and-row-tables-explanation)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data)
-    * [OLAP and OLTP queries](#olap-and-oltp-queries-conceptual)
+    * [OLAP and OLTP queries](#olap-and-oltp-queries-explanation)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-conceptual)
+    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-explanation)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table)
-    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming-conceptual)
-    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-conceptual)
+    * [Stream analytics using SQL and Spark Streaming](#stream-analytics-using-sql-and-spark-streaming-explanation)
+    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation)
     * [Step 5 - Create and Query Stream Table and Top-K Declaratively](#step-5---create-and-query-stream-table-and-top-k-declaratively)
   * [Getting Started with Spark API](#getting-started-with-spark-api)
-    * [Column and Row tables](#column-and-row-tables-conceptual-1)
+    * [Column and Row tables](#column-and-row-tables-explanation-1)
     * [Step 2 - Create column table, row table and load data](#step-2---create-column-table-row-table-and-load-data-1)
-    * [OLAP and OLTP Store](#olap-and-oltp-store-conceptual)
+    * [OLAP and OLTP Store](#olap-and-oltp-store-explanation)
     * [Step 3 - Run OLAP and OLTP queries](#step-3---run-olap-and-oltp-queries-1)
-    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-conceptual-1)
+    * [Approximate query processing (AQP)](#approximate-query-processing-aqp-explanation-1)
     * [Step 4 - Create, Load and Query Sample Table](#step-4---create-load-and-query-sample-table-1)
-    * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming-conceptual)
-    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-conceptual-1)
+    * [Stream analytics using Spark Streaming](#stream-analytics-using-spark-streaming-explanation)
+    * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation-1)
     * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
     * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
@@ -99,7 +99,7 @@ Read SnappyData [docs](./featureDocs) for a more detailed list of all features a
 
 ## Getting started
 
-Each header under "Getting Started" that contains conceptual information meant to orient you will append a "(conceptual)". Each header that contains actual steps for executing the "Getting Started" will prepend "Step".
+Each header under "Getting Started" that contains a conceptual explanation meant to orient you will append an "(explanation)". Each header that contains actual steps for executing the "Getting Started" will prepend "Step".
 
 ###Objectives
 
@@ -110,7 +110,7 @@ Each header under "Getting Started" that contains conceptual information meant t
 
 In this document, we discuss the features mentioned above and ask you to take steps to run the scripts that demonstrate these features. 
 
-### SnappyData Cluster (conceptual)
+### SnappyData Cluster (explanation)
 SnappyData, a database server cluster, has three main components - Locator, Server and Lead. 
 
 - **Locator**: Provides discovery service for the cluster. Informs a new member joining the group about other existing members. A cluster usually has more than one locator for high availability reasons.
@@ -173,7 +173,7 @@ At this point, the SnappyData cluster is up and running and is ready to accept j
 
 <img src="featureDocs/queryPlan.png" height="800">
 
-### Interacting with SnappyData (conceptual)
+### Interacting with SnappyData (explanation)
 
 > For the section on the Spark API, we assume some familiarity with [core Spark, Spark SQL and Spark Streaming concepts](http://spark.apache.org/docs/latest/). 
 > And, you can try out the Spark [Quick Start](http://spark.apache.org/docs/latest/quick-start.html). All the commands and programs
@@ -212,7 +212,7 @@ And check member status with:
 
 ````show members;````
 
-#### Column and Row tables (conceptual)
+#### Column and Row tables (explanation)
 
 Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 ```sql
@@ -248,7 +248,7 @@ run './quickstart/scripts/status_queries.sql'
 ```
 You can see the memory consumed in the [Spark Console](http://localhost:4040/storage/). 
 
-#### OLAP and OLTP queries (conceptual)
+#### OLAP and OLTP queries (explanation)
 SQL client connections (via JDBC or ODBC) are routed to the appropriate data server via the locator (Physical connections are automatically created in the driver and are transparently swizzled in case of failures also). When queries are executed they are parsed initially by the SnappyData server to determine if the query is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP.  Such queries are routed to the __lead__ node where a __Spark SQLContext__ is managed for each connection. The query is planned using Spark's Catalyst engine and scheduled to be executed on the data servers. The number of partitions determine the number of concurrent tasks used across the data servers to run the query in parallel. In this case, our column table was created using _5 partitions (buckets)_ and hence will use 5 concurrent tasks. 
 
 ```sql
@@ -294,7 +294,7 @@ You can now re-run olap_queries.sql to see the updated join result set.
 > In the current implementation we only support appending to Column tables. Future releases will support all DML operations. 
 > You can execute transactions using commands _autocommit off_ and _commit_.  
 
-#### Approximate query processing (AQP) (conceptual)
+#### Approximate query processing (AQP) (explanation)
 OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
@@ -342,7 +342,7 @@ run './quickstart/scripts/olap_approx_queries.sql';
 ```
 You should notice a 10X or larger difference in query execution latency while the results remain nearly as accurate. As a reminder, we recommend downloading the larger data set for this exercise.
 
-#### Stream analytics using SQL and Spark Streaming (conceptual)
+#### Stream analytics using SQL and Spark Streaming (explanation)
 
 SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and you can analyze these streams using SQL. You can also dynamically run SQL queries on these streams. There is no need to learn Spark streaming APIs or statically define all the rules to be executed on these streams.
 
@@ -374,7 +374,7 @@ snappy> SELECT hashtag, count(*) as tagcount
 ```
 Later, in the Spark API section we further enhance this concept to showcase ["continuous queries" (CQ)](https://github.com/SnappyDataInc/snappydata/blob/master/README.md#stream-analytics-using-spark-streaming). Dynamic registration of CQs (from remote clients) will be available in the next release.
 
-#### Top-K Elements in a Stream (conceptual)
+#### Top-K Elements in a Stream (explanation)
 
 Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, the top-100 pages on a popular website in the last 10 mins, the top-10 sales regions in the last week, etc. As you can see, if the query is on an arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events in use cases in the Internet of Things, for example. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found here:
 
@@ -451,7 +451,7 @@ The implementation of the _runJob_ function from SnappySQLJob uses a SnappyConte
 
 [SnappyData Jobs](./featureDocs/jobs.md)
 
-#### Column and Row tables (conceptual)
+#### Column and Row tables (explanation)
 
 Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
@@ -499,7 +499,7 @@ $ bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4
 ```
 The output of the job can be found in `CreateAndLoadAirlineDataJob.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. You can see the size of the column tables on Spark UI which by default can be seen at http://hostNameOfLead:4040. 
 
-#### OLAP and OLTP Store (conceptual)
+#### OLAP and OLTP Store (explanation)
 
 SnappyContext extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
 ```scala
@@ -542,7 +542,7 @@ $ bin/snappy-job.sh status --lead localhost:8090  --job-id 1b0d2e50-42da-4fdd-9e
 ```
 The output of the job can be found in `AirlineDataJob.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. You can explore the Spark SQL query plan on Spark UI which by default can be seen at http://hostNameOfLead:4040.
 
-#### Approximate query processing (AQP) (conceptual)
+#### Approximate query processing (AQP) (explanation)
 OLAP jobs are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory jobs above executed in less than a second, the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
 
@@ -580,7 +580,7 @@ airlineDF.groupBy(airlineDF("Month_"))
 
 `CreateAndLoadAirlineDataJob` and `AirlineDataJob` executed in the previous sections created the sample tables and executed OLAP queries over them.
 
-#### Stream analytics using Spark Streaming (conceptual)
+#### Stream analytics using Spark Streaming (explanation)
 
 SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and streams can be analyzed using SQL. Also, SnappyData introduces "continuous queries" (CQ) on the stream. One can define a continous query as a SQL query on the stream with window and slide extensions which is returned as SchemaDStream i.e. DStream with schema. SnappyData's extensions provide functionality to insert a SchemaDStream into the SnappyData store. 
 
@@ -607,7 +607,7 @@ retweetStream.foreachDataFrame(df => {
     df.write.mode(SaveMode.Append).saveAsTable(tableName)
 })
 ```
-#### Top-K Elements in a Stream (conceptual)
+#### Top-K Elements in a Stream (explanation)
 
 Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures. More details about SnappyData's implementation of top-k can be found here:
 
