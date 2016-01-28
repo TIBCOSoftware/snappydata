@@ -5,6 +5,7 @@
 * [Link with SnappyData distribution](#link-with-snappydata-distribution)
 * [Working with SnappyData Source Code](#working-with-snappydata-source-code)
     * [Building SnappyData from source](#building-snappydata-from-source)
+* [5 Minute QuickStart](docs/quickstart.md)
 * [Key Features](#key-features)
 * [Getting started](#getting-started)
   * [Objectives](#objectives)
