@@ -241,8 +241,8 @@ subprojects {
     from sourceSets.main.allSource
   }
   task packageDocs(type: Jar, dependsOn: javadoc) {
-    classifier = 'sources'
-    from javadoc.destinationDir
+    classifier = 'javadoc'
+    from javadoc
   }
   /*
   artifacts {
@@ -576,5 +576,4 @@ task checkAll {
 }
 task precheckin {
   dependsOn cleanAll, product, buildAll, checkAll, runQuickstart, ":snappy-tools_${scalaBinaryVersion}:docs"
-
 }
