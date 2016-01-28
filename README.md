@@ -353,7 +353,7 @@ The commands below consume tweets, then they filter out just the hashtags and th
 ```sql
 --- Inits the Streaming Context with the batch interval of 2 seconds.
 --- i.e. the stream is processed once every 2 seconds.
-snappy> STREAMING INIT 2
+snappy> STREAMING INIT 2;
 --- Create a stream table just containing the hashtags.
 --- /tmp/copiedtwitterdata is the directory that Streaming will use to find and read new text files.
 --- We use quickstart/scripts/simulateTwitterStream script in below example to simulate a twitter stream by
@@ -412,9 +412,12 @@ $ quickstart/scripts/simulateTwitterStream
 ```
 Now query the current batch of the stream using the following script. 
 ```sql
+--- Run this command multiple times to query current batch at different times 
 run './quickstart/scripts/file_streaming_query.sql';
+--- Stop the streaming 
+snappy> STREAMING STOP;
 ```
-This also creates Topk structures. simulateTwitterStream script runs for only for a minute or so. Since our script is querying the current window, it will return no results after the streaming is over. 
+This also creates Topk structures. simulateTwitterStream script runs for only for a minute or so.
 
 ##### Steps to work with live Twitter stream
 
@@ -424,10 +427,14 @@ To work with the live twitter stream, you will have to generate authorization ke
 --- Note: Currently, we do not encrypt the keys. 
 -- This also creates Topk structures
 snappy> run './quickstart/scripts/create_and_start_twitter_streaming.sql';
-
-snappy> run './quickstart/scripts/twitter_streaming_query.sql';
 ```
-
+Now query the current batch of the stream using the following script. 
+```sql
+--- Run this command multiple times to query current batch at different times 
+snappy> run './quickstart/scripts/twitter_streaming_query.sql';
+--- Stop the streaming 
+snappy> STREAMING STOP;
+```
 ### Getting Started with Spark API 
 
 SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, SnappyStreamingContext is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
@@ -629,19 +636,6 @@ val topKDF = snappyContext.queryApproxTSTopK("topktable",
 
 Ideally, we would like you to try this example using live twitter stream. For that, you would have to generate authorization keys and secrets on twitter apps. Alternatively, you can use use file stream scripts that simulate the twitter stream by copying pre-loaded tweets in a tmp folder.
 
-##### Steps to work with live Twitter stream
-
-```bash
-# Set the keys and secrets to fetch the live twitter stream
-# Note: Currently, we do not encrypt the keys. 
-$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
-
-# submit the TwitterPopularTagsJob that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
-# This job runs streaming for two minutes. 
-$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
-
-```
-
 ##### Steps to work with simulated Twitter stream
 
 Submit the `TwitterPopularTagsJob` that declares a stream table, creates and populates a topk-structure, registers a CQ on it and stores the result in the Snappy-store. It starts streaming and waits for two minutes. 
@@ -652,6 +646,18 @@ $ ./bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopula
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
+
+```
+##### Steps to work with live Twitter stream
+
+```bash
+# Set the keys and secrets to fetch the live twitter stream
+# Note: Currently, we do not encrypt the keys. 
+$ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
+
+# submit the TwitterPopularTagsJob that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
+# This job runs streaming for two minutes. 
+$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 ```
 The output of the job can be found in `TwitterPopularTagsJob_timestamp.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. 
