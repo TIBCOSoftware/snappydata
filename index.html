@@ -62,9 +62,6 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#table-of-contents">Table of Contents</a></li>
-                
-            
                 <li class="toctree-l3"><a href="#introduction">Introduction</a></li>
                 
             
@@ -109,6 +106,13 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="featureDocs/build-instructions/">Building from source, project layout</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="featureDocs/quickstart/">Quickstart</a>
         
     </li>
 <li>
@@ -234,54 +238,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="table-of-contents">Table of Contents</h2>
-<ul>
-<li><a href="#introduction">Introduction</a></li>
-<li><a href="#download-binary-distribution">Download binary distribution</a></li>
-<li><a href="#community-support">Community Support</a></li>
-<li><a href="#link-with-snappydata-distribution">Link with SnappyData distribution</a></li>
-<li><a href="#working-with-snappydata-source-code">Working with SnappyData Source Code</a><ul>
-<li><a href="#building-snappydata-from-source">Building SnappyData from source</a></li>
-</ul>
-</li>
-<li><a href="featureDocs/quickstart.md">5 Minute QuickStart</a></li>
-<li><a href="#key-features">Key Features</a></li>
-<li><a href="#getting-started">Getting started</a></li>
-<li><a href="#objectives">Objectives</a></li>
-<li><a href="#snappydata-cluster-conceptual">SnappyData Cluster</a><ul>
-<li><a href="#step-1---start-the-snappydata-cluster">Step 1 - Start the SnappyData cluster</a></li>
-</ul>
-</li>
-<li><a href="#interacting-with-snappydata-conceptual">Interacting with SnappyData</a></li>
-<li><a href="#getting-started-with-sql">Getting Started with SQL</a><ul>
-<li><a href="#column-and-row-tables-conceptual">Column and Row tables</a></li>
-<li><a href="#step-2---create-column-table-row-table-and-load-data">Step 2 - Create column table, row table and load data</a></li>
-<li><a href="#olap-and-oltp-queries-conceptual">OLAP and OLTP queries</a></li>
-<li><a href="#step-3---run-olap-and-oltp-queries">Step 3 - Run OLAP and OLTP queries</a></li>
-<li><a href="#approximate-query-processing-aqp-conceptual">Approximate query processing (AQP)</a></li>
-<li><a href="#step-4---create-load-and-query-sample-table">Step 4 - Create, Load and Query Sample Table</a></li>
-<li><a href="#stream-analytics-using-sql-and-spark-streaming-conceptual">Stream analytics using SQL and Spark Streaming</a></li>
-<li><a href="#top-k-elements-in-a-stream-conceptual">Top-K Elements in a Stream</a></li>
-<li><a href="#step-5---create-and-query-stream-table-and-top-k-declaratively">Step 5 - Create and Query Stream Table and Top-K Declaratively</a></li>
-</ul>
-</li>
-<li><a href="#getting-started-with-spark-api">Getting Started with Spark API</a><ul>
-<li><a href="#column-and-row-tables-conceptual-1">Column and Row tables</a></li>
-<li><a href="#step-2---create-column-table-row-table-and-load-data-1">Step 2 - Create column table, row table and load data</a></li>
-<li><a href="#olap-and-oltp-store-conceptual">OLAP and OLTP Store</a></li>
-<li><a href="#step-3---run-olap-and-oltp-queries-1">Step 3 - Run OLAP and OLTP queries</a></li>
-<li><a href="#approximate-query-processing-aqp-conceptual-1">Approximate query processing (AQP)</a></li>
-<li><a href="#step-4---create-load-and-query-sample-table-1">Step 4 - Create, Load and Query Sample Table</a></li>
-<li><a href="#stream-analytics-using-spark-streaming-conceptual">Stream analytics using Spark Streaming</a></li>
-<li><a href="#top-k-elements-in-a-stream-conceptual-1">Top-K Elements in a Stream</a></li>
-<li><a href="#step-5---create-and-query-stream-table-and-top-k">Step 5 - Create and Query Stream Table and Top-K</a></li>
-<li><a href="#working-with-spark-shell-and-spark-submit">Working with Spark shell and spark-submit</a></li>
-<li><a href="#step-6---submit-a-spark-app-that-interacts-with-snappydata">Step 6 - Submit a Spark App that interacts with SnappyData</a></li>
-</ul>
-</li>
-<li><a href="#final-step---stop-the-snappydata-cluster">Final Step - Stop the SnappyData Cluster</a></li>
-</ul>
-<h2 id="introduction">Introduction</h2>
+                <h2 id="introduction">Introduction</h2>
 <p>SnappyData is a <strong>distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster</strong>. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics). </p>
 <p><img alt="SnappyDataOverview" src="https://prismic-io.s3.amazonaws.com/snappyblog/c6658eccdaf158546930376296cd7c3d33cff544_jags_resize.png" /></p>
 <h2 id="download-binary-distribution">Download binary distribution</h2>
@@ -319,7 +276,7 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
 SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  </p>
 </blockquote>
 <p>You can try our quick start or keep reading to understand some of the concepts and features as you try out the product. </p>
-<h2 id="click-here-for-quick-start"><a href="featureDocs/quickstart.md">Click here for Quick Start</a></h2>
+<h2 id="click-here-for-quick-start"><a href="featureDocs/quickstart/">Click here for Quick Start</a></h2>
 <h2 id="key-features">Key Features</h2>
 <ul>
 <li><strong>100% compatible with Spark</strong>: Use SnappyData as a database as well as use any of the Spark APIs - ML, Graph, etc. on the same data</li>
@@ -880,5 +837,5 @@ localhost: The SnappyData Locator has stopped.
 
 <!--
 MkDocs version : 0.15.0
-Build Date UTC : 2016-01-28 10:44:51.685716
+Build Date UTC : 2016-01-28 15:20:16.054981
 -->

@@ -7,5 +7,9 @@ h2 {
 }
 
 p {
-      font-size: 110%;
-} 
+      font-size: 120%;
+}
+
+ul li:before {
+     font-size: 300%; /* or whatever */
+}

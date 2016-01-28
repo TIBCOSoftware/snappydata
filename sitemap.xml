@@ -19,6 +19,14 @@
 
     
     <url>
+     <loc>http://www.snappydata.io/featureDocs/quickstart/</loc>
+     <lastmod>2016-01-28</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
      <loc>http://www.snappydata.io/featureDocs/snappyIntroduction/</loc>
      <lastmod>2016-01-28</lastmod>
      <changefreq>daily</changefreq>

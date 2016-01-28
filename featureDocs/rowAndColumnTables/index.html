@@ -72,6 +72,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../quickstart/">Quickstart</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../snappyIntroduction/">Overview</a>
         
     </li>
@@ -279,6 +286,7 @@ snc.createTable("row_table", "row", dataDF.schema, props)
 INSERT INTO TABLE tablename1 select_statement1 FROM from_statement;
 INSERT INTO TABLE tablename1 VALUES (value1, value2 ..) ;
 UPDATE tablename SET column = value [, column = value ...] [WHERE expression]
+PUT INTO tableName (column, ...) VALUES (value, ...)
 DELETE FROM tablename1 [WHERE expression]
 TRUNCATE TABLE tablename1;
 </code></pre>
@@ -313,7 +321,17 @@ data.map { r =&gt;
 <p>Usage SnappyConytext.delete(): Delete all rows in table that match passed filter expression</p>
 <pre><code>snc.delete(tableName, "ITEMREF = 3")
 </code></pre>
-<p>Explain the delta row buffer and how queries are executed</p>
+<h5 id="row-buffers-for-column-tables">Row Buffers for column tables</h5>
+<p>Generally, the Column table is used for analytical purpose. To this end, most of the
+operations (read or write) on it are bulk operations. Taking advantage of this fact
+the rows are compressed column wise and stored.</p>
+<p>In SnappyData, the column table consists of two components, delta row buffer and
+column store. We try to support individual insert of single row, we store them in
+a delta row buffer which is write optimized and highly available.
+Once the size of buffer reaches the COLUMN_BATCH_SIZE set by user, the delta row
+buffer is compressed column wise and stored in the column store.</p>
+<p>Any query on column table, also takes into account the row cached buffer. By doing
+this, we ensure that the query doesn't miss any data.</p>
 <h5 id="catalog-in-snappystore">Catalog in SnappyStore</h5>
 <p>We use a persistent Hive catalog for all our metadata storage. All table, schema definition are stored here in a reliable manner. As we intend be able to quickly recover from driver failover, we chose GemFireXd itself to store meta information. This gives us ability to query underlying GemFireXD to reconstruct the metastore incase of a driver failover. </p>
 <p>There are pending work towards unifying DRDA &amp; Spark layer catalog, which will part of future releases. </p>
