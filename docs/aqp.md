@@ -48,7 +48,9 @@ Time is used as an attribute in creating the TopK structures. Time can be an att
 Here is an example of a time based query on the TopK structure which returns the most popular hashtags in the time interval queried. The SnappyData AQP module provides two attributes startTime and endTime which can be used to run queries on arbitrary time intervals.
 	
 	
-	select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where startTime='2016-01-26 10:07:26.121' and endTime='2016-01-26 11:14:06.121' order by EstimatedValue desc
+	select hashtag, EstimatedValue, ErrorBoundsInfo from MostPopularTweets where 
+        startTime='2016-01-26 10:07:26.121' and endTime='2016-01-26 11:14:06.121' 
+        order by EstimatedValue desc
 	  
 	
 If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the time stamp. 
@@ -124,7 +126,8 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
      
 Here is an example of a query that can be run after the sample table has been created.  
 
-	SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error 0.10 confidence 0.95
+	SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order
+        by Month_  with error 0.10 confidence 0.95
 	  
 Note how the query specifies the acceptable error fraction and expected confidence interval. The table specified in the query is the base table, however the SnappyData AQP engine figures out that there are one or more appropriate sample tables that can be used to satisfy this query and transparently uses the sample table to satisfy the query.  
 
@@ -144,7 +147,8 @@ In additiion to this, SnappyData supports error functions that can be specified 
 The query below depicts an example of using error functions in query projections 
  
 ````
-select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay) , Year_   from airline   group by Year_   order by Year_   with error 0.10 confidence 0.95;
+select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay),
+Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95;
 ````
 Some of the error rates on queries can be high enough to render the query result meaningless. To deal with this, SnappyData offers the ability to set a configuration parameter that governs whether the query fails when the error rate condition cannot be met or whether it should still return the results in such conditions. In the future we expect to change this behavior to allow the user to further specifiy whether the query should be transparently run against the full data set if available.
 
