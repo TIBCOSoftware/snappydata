@@ -131,6 +131,11 @@ task cleanDUnit << {
   file(workingDir).mkdirs()
 }
 
+task publish_docs(type:Exec) {
+  //on linux
+  commandLine './publish-site.sh'
+}
+
 subprojects {
   // the run task for a selected sub-project
   task run(type:JavaExec) {

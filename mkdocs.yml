@@ -11,6 +11,7 @@ pages:
 #
 - Getting Started: index.md
 - Building from source, project layout: featureDocs/build-instructions.md
+- Quickstart: featureDocs/quickstart.md
 - Overview: featureDocs/snappyIntroduction.md
 - Key features: featureDocs/features.md
 - Architecture: featureDocs/architecture.md
