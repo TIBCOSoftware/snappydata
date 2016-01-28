@@ -42,30 +42,30 @@ manage the schema and run interactive queries.
 
 From product install directory run: 
 ````
-./bin/snappy-shell
+$ ./bin/snappy-shell
 ````
 Now, you are ready to try connecting and running SQL on SnappyData. 
 On the `snappy-shell` prompt  …
 
 Connect to the cluster with
 
-````connect client 'localhost:1527';````
+````snappy> connect client 'localhost:1527';````
 
 And check member status with:
 
-````show members;````
+````snappy> show members;````
 
 Now, lets create one column and one row table and load some data. Simply copy/paste to the shell. 
-```
-run './quickstart/scripts/create_and_load_column_table.sql';
-run './quickstart/scripts/create_and_load_row_table.sql';
+```sql
+snappy> run './quickstart/scripts/create_and_load_column_table.sql';
+snappy> run './quickstart/scripts/create_and_load_row_table.sql';
 ```
 
 Now, you can run analytical queries or execute execute transactions on this data. OLAP queries are automatically executed 
 through Spark driver and executors. 
 
-```
-run './quickstart/scripts/olap_queries.sql';
+```sql
+snappy> run './quickstart/scripts/olap_queries.sql';
 ```
 
 You can study the memory consumption, query execution plan, etc from the [Spark console](http://localhost:4040).
