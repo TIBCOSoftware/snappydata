@@ -68,13 +68,13 @@ through Spark driver and executors.
 snappy> run './quickstart/scripts/olap_queries.sql';
 ```
 
-You can study the memory consumption, query execution plan, etc from the [Spark console](http://localhost:4040).
+You can study the memory consumption, query execution plan, etc. from the [Spark console](http://localhost:4040).
 
 Congratulations! 
 
 ## Where to go next?
 
-Next, we recommend going through ore in-depth examples in [Getting Started](#getting-started). Here you will find more details on the 
+Next, we recommend going through more in-depth examples in [Getting Started](#getting-started). Here you will find more details on the 
 concepts and experience SnappyData’s AQP, Stream analytics functionality both using SQL and Spark API.
 You can also go through our very preliminary [docs](docs) and provide us your comments. 
 

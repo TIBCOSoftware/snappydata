@@ -1,14 +1,3 @@
-## Table of Contents
-* [Configuration](#configuration")
-* [Configuration files](#configuration-files)
-  * [SnappyData specific properties](#snappydata-specific-properties)
-  * [Spark specific properties](#spark-specific-properties)
-  * [Example Configuration](#example-configuration)
-  * [Environment settings](#environment-settings)
-  * [Per Component Configuration](#per-component-configuration)
-* [snappy-shell Command Line Utility](#snappy-shell-command-line-utility)
-* [Logging](#logging")
-
 ## Configuration
 
 SnappyData, a database server cluster, has three main components - Locator, Server and Lead. Lead node embeds a Spark driver and Server node embeds a Spark Executor. Server node also embeds a snappy store. As discussed in [Getting Started](index.md), SnappyData cluster can be started with default configurations using script sbin/snappy-start-all.sh. This script starts up a locator, one data server and one lead node. However, SnappyData can be configured to start multiple components on different nodes. Also, each component can be configured individually using configuration files. In this document, we discuss how the components can be individually configured. We also discuss various other configurations of SnappyData. 

@@ -446,7 +446,7 @@ private[sql] object ExternalStoreUtils extends Logging {
   }
 
   final def cachedBatchesToRows(
-      cacheBatches: Iterator[CachedBatch],
+      cachedBatches: Iterator[CachedBatch],
       requestedColumns: Array[String],
       schema: StructType): Iterator[InternalRow] = {
     /* TODO: (native code gen does not work for some reason)
@@ -470,8 +470,17 @@ private[sql] object ExternalStoreUtils extends Logging {
     val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
       schema.getFieldIndex(a).get -> schema(a).dataType
     }.unzip
+    cachedBatchesToRows(cachedBatches, requestedColumnIndices,
+      requestedColumnDataTypes, schema)
+  }
+
+  final def cachedBatchesToRows(
+      cachedBatches: Iterator[CachedBatch],
+      requestedColumnIndices: IndexedSeq[Int],
+      requestedColumnDataTypes: IndexedSeq[DataType],
+      schema: StructType): Iterator[InternalRow] = {
     val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-    val rows = cacheBatches.flatMap { cachedBatch =>
+    val rows = cachedBatches.flatMap { cachedBatch =>
       // Build column accessors
       val columnAccessors = requestedColumnIndices.zipWithIndex.map {
         case (schemaIndex, bufferIndex) =>
@@ -488,7 +497,7 @@ private[sql] object ExternalStoreUtils extends Logging {
             columnAccessors(i).extractTo(nextRow, i)
             i += 1
           }
-          if (requestedColumns.isEmpty) InternalRow.empty else nextRow
+          if (requestedColumnIndices.isEmpty) InternalRow.empty else nextRow
         }
 
         override def hasNext: Boolean = columnAccessors.head.hasNext
@@ -521,8 +530,8 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
       rowCount += 1
     }
     if (rowCount % batchSize == 0 || flush) {
-      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(toScala(_).asInstanceOf[Row]),
-        schema, nullTypes, batchSize)
+      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(
+        toScala(_).asInstanceOf[Row]), schema, nullTypes, batchSize)
       buff = new ArrayBuffer[InternalRow]()
       rowCount = 0
     }
