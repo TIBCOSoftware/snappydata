@@ -43,6 +43,8 @@ object Constant {
   val DEFAULT_SCHEMA = "APP"
 
   val DEFAULT_CONFIDENCE: Double = 0.95
+
+  val COLUMN_MIN_BATCH_SIZE: Int = 200
 }
 
 /**

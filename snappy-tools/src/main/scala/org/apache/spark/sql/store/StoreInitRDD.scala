@@ -21,6 +21,7 @@ import scala.collection.concurrent.TrieMap
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
@@ -56,7 +57,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
-  GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
+  GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
+    Constant.COLUMN_MIN_BATCH_SIZE)
   val rddId = StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext)
 
   override def compute(split: Partition, context: TaskContext): Iterator[(InternalDistributedMember, BlockManagerId)] = {
@@ -87,7 +89,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     }
     val conn = JdbcUtils.createConnection(connProperties.url, connProperties.connProps)
     conn.close()
-    GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
+    GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
+      Constant.COLUMN_MIN_BATCH_SIZE)
     Seq(Misc.getGemFireCache.getMyId ->
         SparkEnv.get.blockManager.blockManagerId).iterator
   }
