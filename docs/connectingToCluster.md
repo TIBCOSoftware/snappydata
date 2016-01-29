@@ -28,9 +28,6 @@ snappy> run 'create_and_load_column_table.sql';
 
 //Run a sql script. This particular script creates and loads a row table in the default schema  
 snappy> run 'create_and_load_row_table.sql';
-
-//Start pulse to monitor the SnappyData cluster  
-snappy> start pulse;
 ```
 
 The complete list of commands available through _snappy_shell_ can be found [here](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html)
