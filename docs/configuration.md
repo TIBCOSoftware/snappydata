@@ -18,7 +18,7 @@ The following are the few important SnappyData properties that you would like to
 6. **_-heap-size_**: Set a fixed heap size and for the Java VM. 
 7. **_-J_**: Use this to configure any JVM specific property. For e.g. -J-XX:MaxPermSize=512m. 
 
-For a detail list of SnappyData configurations for Leads and Servers, you can consult [this](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/reference/gfxd_commands/gfxd-server.html). For a detail list of SnappyData configurations for Locators, you can consult [this](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/reference/gfxd_commands/gfxd-locator.html).
+For a detail list of SnappyData configurations for Leads and Servers, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-server.html). For a detail list of SnappyData configurations for Locators, you can consult [this](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-locator.html).
 
 #### Spark specific properties 
 
