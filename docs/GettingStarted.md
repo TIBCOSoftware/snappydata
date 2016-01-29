@@ -74,14 +74,14 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
 #### Building SnappyData from source
 You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc here:
 
-* [SnappyData Build Instructions](docs/build-instructions.md)
+* [SnappyData Build Instructions](build-instructions.md)
 
 >  NOTE:
 > SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
 
 You can try our quick start or keep reading to understand some of the concepts and features as you try out the product. 
 
-## [Click here for Quick Start](docs/quickstart.md)
+## [Click here for Quick Start](quickstart.md)
 
 ## Key Features
 - **100% compatible with Spark**: Use SnappyData as a database as well as use any of the Spark APIs - ML, Graph, etc. on the same data
@@ -94,7 +94,7 @@ You can try our quick start or keep reading to understand some of the concepts a
 - **High availability not just Fault tolerance**: Data is instantly replicated (one at a time or batch at a time) to other nodes in the cluster and is deeply integrated with a membership based distributed system to detect and handle failures instantaneously providing applications with continuous HA.
 - **Durability and recovery:** Data can also be managed on disk and automatically recovered. Utilities for backup and restore are bundled. 
 
-Read SnappyData [docs](./docs) for a more detailed list of all features and semantics. 
+Read SnappyData [docs](.) for a more detailed list of all features and semantics. 
 
 ## Getting started
 
@@ -116,15 +116,15 @@ SnappyData, a database server cluster, has three main components - Locator, Serv
 - **Lead Node**: Acts as a Spark driver by maintaining a singleton SparkContext. There is one primary lead node at any given instance but there can be multiple secondary lead node instances on standby for fault tolerance. The lead node hosts a REST server to accept and run applications. The lead node also executes SQL queries routed to it by “data server” members.
 - **Data Servers**: Hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than Spark. Data servers use intelligent query routing to either execute the query directly on the node, or pass it to the lead node for execution by Spark SQL.
 
-![ClusterArchitecture](docs/GettingStarted_Architecture.png)
+![ClusterArchitecture](GettingStarted_Architecture.png)
 
 Details of about the architecture can be found here:
 
-[Architecture](./docs/architecture.md) 
+[Architecture](./architecture.md) 
 
 SnappyData also has multiple deployment options which can be found here:
 
-[Deployment Options](./docs/deployment.md).
+[Deployment Options](./deployment.md).
 
 #### Step 1 - Start the SnappyData cluster
 
@@ -163,14 +163,14 @@ localhost:   Other members: jramnara-mbpro(56703:locator)<v0>:54414, jramnara-mb
 ````
 To spin up remote nodes simply rename/copy the files without the template suffix and add the hostnames. View custom configuration and startup options here:
 
-[Custom Configuration](./docs/configuration.md)
+[Custom Configuration](./configuration.md)
 
 
 At this point, the SnappyData cluster is up and running and is ready to accept jobs and SQL requests via JDBC/ODBC. You can [monitor the Spark cluster at port 4040](http://localhost:4040). Once you load data and run queries, you can analyze the Spark SQL query plan, the job execution stages and storage details of column tables.
 
-<img src="docs/ExternalBlockStoreSize.png" width="800">
+<img src="ExternalBlockStoreSize.png" width="800">
 
-<img src="docs/queryPlan.png" height="800">
+<img src="queryPlan.png" height="800">
 
 ### Interacting with SnappyData (explanation)
 
@@ -184,7 +184,7 @@ Unlike Apache Spark, which is primarily a computational engine, the SnappyData c
 
 1. __Long running executors__: Executors are running within the SnappyData store JVMs and form a p2p cluster.  Unlike Spark, the application Job is decoupled from the executors - submission of a job does not trigger launching of new executors. 
 2. __Driver runs in HA configuration__: Assignment of tasks to these executors are managed by the Spark Driver.  When a driver fails, this can result in the executors getting shutdown, taking down all cached state with it. Instead, we leverage the [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver) to manage Jobs and queries within a "lead" node.  Multiple such leads can be started and provide HA (they automatically participate in the SnappyData cluster enabling HA). 
-Read our [docs](docs) for details on the architecture.
+Read our [docs](.) for details on the architecture.
  
 In this document, we showcase mostly the same set of features via the Spark API or using SQL. If you are familiar with Scala and understand Spark concepts you may choose to skip the SQL part go directly to the Spark API section:
 
@@ -225,7 +225,7 @@ _create table_ DDL for Row and Column tables allows tables to be partitioned on 
 CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
 ```
 
-Read our preliminary [row & column table docs](./docs/rowAndColumnTables.md) for the details.
+Read our preliminary [row & column table docs](./rowAndColumnTables.md) for the details.
 
 #### Step 2 - Create column table, row table and load data
 
@@ -377,7 +377,7 @@ Later, in the Spark API section we further enhance this concept to showcase ["co
 
 Finding the _k_ most popular elements in a data stream is a common analytic query. For instance, the top-100 pages on a popular website in the last 10 mins, the top-10 sales regions in the last week, etc. As you can see, if the query is on an arbitrary time interval in the past, this will most likely mandate storing the entire stream. And, this could easily be millions to billions of events in use cases in the Internet of Things, for example. SnappyData provides SQL extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures and enables transparent querying using Spark SQL. More details about SnappyData's implementation of top-k can be found here:
 
-[Detailed AQP Documentation](./docs/aqp.md)
+[Detailed AQP Documentation](./aqp.md)
 
 SnappyData provides DDL extensions to create Top-k structures. And, if a stream table is specified as base table, the Top-k structure is automatically populated from it as data arrives. The Top-k structures can be queried using regular SQL queries. 
 
@@ -448,7 +448,7 @@ class SnappySampleJob implements SnappySQLJob {
 ```
 The implementation of the _runJob_ function from SnappySQLJob uses a SnappyContext to interact with the SnappyData store to process and store tables. The implementation of runJob from SnappyStreamingJob uses a SnappyStreamingContext to create streams and manage the streaming context. The jobs are submitted to the lead node of SnappyData over REST API using a _spark-submit_ like utility. See more details about jobs here:
 
-[SnappyData Jobs](./docs/jobs.md)
+[SnappyData Jobs](./jobs.md)
 
 #### Column and Row tables (explanation)
 
@@ -465,7 +465,7 @@ _create table_ DDL for Row and Column tables allows tables to be partitioned on 
 val airlineCodeDF = snappyContext.createTable("AIRLINEREF", "row", schema, Map())
 ```
 
-Read our preliminary [row & column table docs](./docs/rowAndColumnTables.md) for the details
+Read our preliminary [row & column table docs](./rowAndColumnTables.md) for the details
 
 #### Step 2 - Create column table, row table and load data
 
@@ -474,7 +474,7 @@ Read our preliminary [row & column table docs](./docs/rowAndColumnTables.md) for
 
 Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column tables. See more details about jobs and job submission here:
 
-[SnappyData jobs & job submission](./docs/jobs.md). 
+[SnappyData jobs & job submission](./jobs.md). 
 
 ```bash
 # Submit a job to Lead node on port 8090 
@@ -611,7 +611,7 @@ retweetStream.foreachDataFrame(df => {
 
 Continuously finding the _k_ most popular elements in a data stream is a common analytic query. SnappyData provides extensions to Spark to maintain top-k approximate structures on streams. Also, SnappyData adds a temporal component (i.e. data can be queried based on a time interval) to these structures. More details about SnappyData's implementation of top-k can be found here:
 
-[SnappyData's AQP Docs](./docs/aqp.md)
+[SnappyData's AQP Docs](./aqp.md)
 
 SnappyData provides an API in the SnappyContext to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
 
