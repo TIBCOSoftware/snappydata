@@ -21,7 +21,7 @@ buildscript {
   }
   dependencies {
     classpath "com.github.maiflai:gradle-scalatest:0.10"
-    classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.7.2"
+    classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2"
     classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
   }
 }
@@ -106,11 +106,22 @@ def getStackTrace(def t) {
   return sw.toString()
 }
 
-// Configure scalaStyle for only non spark related modules
-configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/)}) {
+// Skip snappy-spark, snappy-aqp and spark-jobserver that have their own
+// scalaStyle configuration. Skip snappy-store that will not use it.
+configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/ ||
+      it.name ==~ /snappy-store.*/ ||
+      it.name ==~ /snappy-aqp.*/ ||
+      it.name ==~ /spark-jobserver.*/)}) {
   scalaStyle {
-    configLocation = "scalastyle-config.xml"
-    source = "src/main/scala"
+    configLocation = "${rootProject.projectDir}/scalastyle-config.xml"
+    inputEncoding = 'UTF-8'
+    outputEncoding = 'UTF-8'
+    outputFile = "${buildDir}/scalastyle-output.xml"
+    includeTestSourceDirectory = false
+    source = 'src/main/scala'
+    testSource = 'src/test/scala'
+    failOnViolation = true
+    failOnWarning = false
   }
 }
 
@@ -318,6 +329,7 @@ task generateSources {
 }
 
 task product {
+  dependsOn ':snappy-spark:scalaStyle'
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
   dependsOn ':snappy-examples:jar'
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
