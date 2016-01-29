@@ -26,12 +26,12 @@ $ bin/snappy-shell server start  -dir=/node-b/server1  -locators:localhost:10334
 ```
 
 Spark applications are coordinated by a SparkContext instance that runs in the Application's main program called the 'Driver'. The driver coordinates the execution by running parallel tasks on executors and is responsible for delivering results to the application when 'Jobs'(i.e. actions like print() ) are executed. 
-When executing in this unified cluster mode there can only be a single Spark Context (a single coordinator if you may) for the cluster. To support multiple concurrent Jobs or applications Snappydata manages a singleton SparkContext created and running in the 'Lead' node. i.e. the Spark context is fully managed by Snappydata. Applications simply submit [Jobs](jobs) and don't have to be concerned about HA for the context or the driver program. 
-The rationale for our design is further explored [here](architecture). 
+When executing in this unified cluster mode there can only be a single Spark Context (a single coordinator if you may) for the cluster. To support multiple concurrent Jobs or applications Snappydata manages a singleton SparkContext created and running in the 'Lead' node. i.e. the Spark context is fully managed by Snappydata. Applications simply submit [Jobs](jobs.md) and don't have to be concerned about HA for the context or the driver program. 
+The rationale for our design is further explored [here](architecture.md). 
  
 ### Fully managed Spark driver and context
 
-Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or manage the Spark context. Applications implement the _SnappySQLJob_ or the _SnappyStreamingJob_ trait as describing in the ['Building Spark Apps'](BuildingSparkApps) section.
+Programs can connect to the lead node and submit Jobs. The Driver is managed by the Snappy cluster in the lead node and the application doesn’t create or manage the Spark context. Applications implement the _SnappySQLJob_ or the _SnappyStreamingJob_ trait as described in the [Building Snappy applications using Spark API](jobs.md) section.
 
 
 ### Application managed Spark driver and context
