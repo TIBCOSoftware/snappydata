@@ -50,7 +50,7 @@ If a user does not want to deal with submodules and only work on snappydata proj
 
 If working on all the separate projects integrated inside the top-level snappydata clone, the gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The snappy-spark and snappy-store submodules can also be built and published independently.
 
-Some build targets:
+Useful build targets:
 ```
 ./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
