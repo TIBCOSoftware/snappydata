@@ -1,4 +1,14 @@
 
+## Table of Contents
+* [Introduction](#introduction)
+* [Download](#download-binary-distribution)
+* [Community Support](#community-support)
+* [Link with SnappyData Distribution](#link-with-snappydata-distribution)
+* [Building SnappyData from Source](#building-snappydata-from-source)
+ * [Build Instructions](docs/build-instructions.md)   
+* [Quick Start with SQL](#quick-start-with-sql)
+* [Quick Start with Scala/Spark/Snappy Programming](#quick-start-with-scalasparksnappy-programming)
+
 ## Introduction
 SnappyData is a **distributed in-memory data store for real-time operational analytics, delivering stream analytics, OLTP (online transaction processing) and OLAP (online analytical processing) in a single integrated cluster**. We realize this platform through a seamless integration of Apache Spark (as a big data computational engine) with GemFire XD (as an in-memory transactional store with scale-out SQL semantics). 
 
@@ -47,18 +57,18 @@ You can try our quick start or go directly to Getting Started to understand some
 
 * [Getting Started](docs/GettingStarted.md)
 
-## Quick start  
+## Quick start with SQL  
 
-This 5 minute tutorial provides a quick introduction to SnappyData. It exposes you to the cluster runtime and running OLAP, OLTP SQL.
+This 5 minute tutorial provides a quick introduction to SnappyData. It exposes you to the cluster runtime and running OLAP and OLTP SQL.
 
 The following script starts up a minimal set of essential components to form a SnappyData cluster - A locator, one data server 
 and one lead node. All nodes are started on localhost.
-The locator is primarily responsible to make all the nodes aware of each other, allows the cluster to expand or shrink dynamically and provides a consistent membership view to each node even in the presence of failures (a distributed system membership service). The Lead node hosts the Spark Context and driver and orchestrates execution of Spark Jobs. 
-The Data server is the work horse - manages all in-memory data, OLTP execution engine and Spark executors. 
+The locator is primarily responsible for making all the nodes aware of each other, it allows the cluster to expand or shrink dynamically and provides a consistent membership view to each node even in the presence of failures (a distributed system membership service). The Lead node hosts the Spark Context and driver and orchestrates execution of Spark Jobs. 
+The Data server is the work horse - manages all in-memory data, the OLTP execution engine and Spark executors. 
 
 See the  [‘Getting Started’](docs/GettingStarted.md) section for more details. 
 
-From the product install directory run this script ..
+From the product install directory run this script:
 
 ````shell
 ./sbin/snappy-start-all.sh
@@ -94,7 +104,7 @@ From product install directory run:
 $ ./bin/snappy-shell
 ````
 Now, you are ready to try connecting and running SQL on SnappyData. 
-On the `snappy-shell` prompt  …
+On the `snappy-shell` prompt:
 
 Connect to the cluster with
 
@@ -127,7 +137,113 @@ Next, we recommend going through more in-depth examples in [Getting Started](doc
 concepts and experience SnappyData’s AQP, Stream analytics functionality both using SQL and Spark API.
 You can also go through our very preliminary [docs](http://snappydatainc.github.io/snappydata/) and provide us your comments. 
 
+If you're interested in the Scala/Spark side of things, go through the [programming quick start below](#quick-start-with-scalasparksnappy-programming).
+
 If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/support/contributors) for ways in which you can help. 
 
+## Quick start with Scala/Spark/Snappy Programming
 
+SnappyData provides the same [Spark/Scala REPL session](http://spark.apache.org/docs/latest/quick-start.html) that any Spark user is familiar with. You simply start it with a special configuration to have access to SnappyData extensions. Remember as you follow this guide that paste mode can always be entered in the REPL using `:paste` and you exit paste mode with `ctrl+d`.
+
+First, make sure you have started the SnappyData servers as described [above](https://github.com/SnappyDataInc/snappydata/blob/master/README.md#quick-start-with-sql) (entered from the root directory):
+
+````
+./sbin/snappy-start-all.sh
+````
+
+To start the Spark/Scala REPL session enter the following command from the root, /snappy/ directory:
+
+````
+./bin/spark-shell  --master local[*] --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
+````
+
+From here, all the classic [Spark transformations](http://spark.apache.org/docs/latest/programming-guide.html#transformations) are possible. For example, the well-known as example from [Spark’s basic programming intro](http://spark.apache.org/docs/latest/quick-start.html#basics):
+
+````
+scala> val textFile = sc.textFile("RELEASE")
+textFile: org.apache.spark.rdd.RDD[String]
+
+scala> textFile.count()
+res1: Long = 2
+
+scala> val linesWithThree = textFile.filter(line => line.contains("3"))
+linesWithThree: org.apache.spark.rdd.RDD[String]
+
+scala> linesWithThree.collect()
+res14: Array[String] = Array(Snappy Spark 0.1.0-SNAPSHOT 3a85dca6b4e039dd5a1be43f1f52bcb2034bfc03 built for Hadoop 2.4.1)
+````
+**But what about SnappyData extensions?** To use SnappyData extensions, we must either import or create a new SnappyContext object, which gets passed the existing SparkContext (sc):
+
+````
+val snc: SnappyContext = org.apache.spark.sql.SnappyContext(sc)
+````
+Let’s create a new column table (the table optimized for OLAP querying):
+````
+case class Data(COL1: Int, COL2: Int, COL3: Int)
+val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+
+val dataDF = snc.createDataFrame(rdd)
+````
+Here we’ve defined some data which we’ve placed into a case class and parallelized into rdd’s. classic Spark programming. Next, we create a DataFrame, but we use the previously defined SnappyContext, this allows us to use all the SnappyData extensions on the DataFrame.
+
+Now, let’s create a column table using what we’ve already defined:
+
+````
+val props1 = Map(“Buckets” -> “2”)
+snc.createTable(“COLUMN_TABLE”, “column”, dataDF.schema, props1)
+````
+`props1` allows us to define the optional `“Buckets”` attribute which specifies the smallest unit that can be moved around in the SnappyStore when data migrates. Within `createTable`, we’ve defined the table’s name, the type of table, the table’s schema, and provided the Buckets information contained in `props1`.
+
+Now, let’s insert the data in append-mode:
+
+````
+dataDF.write.format("column").mode(org.apache.spark.sql.SaveMode.Append)
+  .options(props1).saveAsTable("COLUMN_TABLE")
+```
+
+Here we’ve written the data contained in dataDF to our newly created column table using Append mode. Let’s print the table using SQL and see what’s inside:
+
+````
+val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
+  results1.foreach(println)
+````
+
+Easy enough. But how do we create a **row table** out of the same data, i.e. a table that can be **mutated and updated**?
+
+First, let’s create the actual table using the `createTable` method. `”Buckets”` is not used this time.
+
+````
+val props2 = Map.empty[String, String]
+  snc.createTable("ROW_TABLE", "row", dataDF.schema, props2)
+````
+
+Let’s insert the dataDF data as we did before, in append mode:
+
+````
+dataDF.write.format("row").mode(org.apache.spark.sql.SaveMode.Append)
+  .options(props2).saveAsTable("ROW_TABLE")
+````
+
+Now, let’s check our results before we mutate some data to compare the difference:
+
+````
+ val results2 = snc.sql("SELECT * from ROW_TABLE")
+  results2.foreach(println)
+````
+
+Okay, there’s our row table. Now let’s do some mutation:
+
+````
+  snc.update("ROW_TABLE", "COL3 = 3", org.apache.spark.sql.Row(99), "COL3" )
+````
+
+Here we’re updating all the values in ROW_TABLE in column 3 that equal 3 to the value 99. Let’s print our mutated table and make sure it worked:
+
+````
+val results3 = snc.sql("SELECT * FROM ROW_TABLE")
+ results3.foreach(println)
+````
+
+And voila! Mutations in Spark. This is a very simple, abbreviated example of what SnappyData can do. It becomes much more interesting when working on streaming data, joining streams with reference data, using approximate query processing and more. To learn more about these advanced use cases, check out our [Getting Started with the Spark API](https://github.com/SnappyDataInc/snappydata/blob/master/docs/GettingStarted.md#getting-started-with-spark-api) and [Developing apps using the Spark API](http://snappydatainc.github.io/snappydata/jobs/). To read more specifically about the SnappyContext check out our [SnappyContext Documentation](http://snappydatainc.github.io/snappydata/jobs/#snappycontext).
 
