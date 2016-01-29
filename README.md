@@ -125,9 +125,9 @@ Congratulations!
 
 Next, we recommend going through more in-depth examples in [Getting Started](docs/GettingStarted.md). Here you will find more details on the 
 concepts and experience SnappyData’s AQP, Stream analytics functionality both using SQL and Spark API.
-You can also go through our very preliminary [docs](../) and provide us your comments. 
+You can also go through our very preliminary [docs](http://snappydatainc.github.io/snappydata/) and provide us your comments. 
 
-If you are interested in contributing please visit the [contributor page](contribution) for ways in which you can help. 
+If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/support/contributors) for ways in which you can help. 
 
 
 
