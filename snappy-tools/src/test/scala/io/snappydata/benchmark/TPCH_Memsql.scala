@@ -1,24 +1,11 @@
-/*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
 package io.snappydata.benchmark
 
 import java.io.{File, FileOutputStream, PrintStream}
 import java.sql.{ResultSet, Statement}
 
+/**
+ * Created by kishor on 27/10/15.
+ */
 object TPCH_Memsql {
 
   var fOutStream = new FileOutputStream(new File(s"Performance.out"))
@@ -37,7 +24,6 @@ object TPCH_Memsql {
     }
 
     var resultFormat = queryNumber match {
-      case "q" => getResultString()
       case "q1" => getResultString1()
       case "q2" => getResultString2()
       case "q3" => getResultString3()
@@ -111,7 +97,7 @@ object TPCH_Memsql {
             stmt.execute("drop view revenue")
           }
         }
-        ps.println(s"Average time taken for last 2 iterations,${totalTimeForLast5Iterations/2}")
+        ps.println(s"Average time taken for last 2 iterations,${totalTimeForLast5Iterations / 2}")
       }
       println(s"Finished executing $queryNumber")
 
@@ -136,146 +122,76 @@ object TPCH_Memsql {
 
     val rs : ResultSet = queryNumber match {
       case "q1" => {
-
         stmt.executeQuery(getQuery1())
-        //snappyContext.sql(getQuery1()).collect()
       }
       case "q2" => {
         stmt.executeQuery(getQuery2())
-//        val result = snappyContext.sql(getTempQuery2(isSnappy))
-//        result.registerTempTable("ViewQ2")
-//        snappyContext.sql(getQuery2(isSnappy)).collect()
       }
       case "q3" => {
         stmt.executeQuery(getQuery3())
-        //snappyContext.sql(getQuery3()).collect()
       }
       case "q4" => {
         stmt.executeQuery(getQuery4())
-        //snappyContext.sql(getQuery4()).collect()
       }
       case "q5" => {
         stmt.executeQuery(getQuery5())
-        //snappyContext.sql(getQuery5(isSnappy)).collect()
       }
       case "q6" => {
         stmt.executeQuery(getQuery6())
-        //snappyContext.sql(getQuery6()).collect()
       }
       case "q7" => {
         stmt.executeQuery(getQuery7())
-        //snappyContext.sql(getQuery7(isSnappy)).collect()
       }
       case "q8" => {
         stmt.executeQuery(getQuery8())
-        //snappyContext.sql(getQuery8(isSnappy)).collect()
       }
       case "q9" => {
         stmt.executeQuery(getQuery9())
-        //snappyContext.sql(getQuery9(isSnappy)).collect()
       }
       case "q10" => {
         stmt.executeQuery(getQuery10())
-        //snappyContext.sql(getQuery10(isSnappy)).collect()
       }
       case "q11" => {
         stmt.executeQuery(getQuery11())
-//        val result = snappyContext.sql(getTempQuery11(isSnappy))
-//        val res = result.collect()
-//        assert(res.length == 1)
-//        if(isSnappy) {
-//          snappyContext.sql(getQuery11(res(0).getDecimal(0), isSnappy)).collect()
-//        }else{
-//          snappyContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0)), isSnappy)).collect()
-//        }
       }
       case "q12" => {
         stmt.executeQuery(getQuery12())
-        //snappyContext.sql(getQuery12()).collect()
       }
       case "q13" => {
-        //var query = s"create view ViewQ13 as ${getTempQuery13()}"
         stmt.execute(getTempQuery13())
         stmt.executeQuery(getQuery13())
-
-
-//        val result = snappyContext.sql(getTempQuery13())
-//        result.registerTempTable("ViewQ13")
-//        snappyContext.sql(getQuery13()).collect()
       }
       case "q14" => {
         stmt.executeQuery(getQuery14())
-
-        //snappyContext.sql(getQuery14(isSnappy)).collect()
       }
       case "q15" => {
         stmt.execute(getTempQuery15())
         stmt.executeQuery(getQuery15())
-//        var result = snappyContext.sql(getTempQuery15_1())
-//        result.registerTempTable("revenue")
-//
-//        result = snappyContext.sql(getTempQuery15_2())
-//        result.registerTempTable("ViewQ15")
-//
-//        snappyContext.sql(getQuery15(isSnappy)).collect()
       }
       case "q16" => {
         stmt.executeQuery(getQuery16())
-        //snappyContext.sql(getQuery16(isSnappy)).collect()
       }
       case "q17" => {
         stmt.executeQuery(getQuery17())
-
-//        val result = snappyContext.sql(getTempQuery17())
-//        result.registerTempTable("ViewQ17")
-//
-//        snappyContext.sql(getQuery17(isSnappy)).collect()
       }
       case "q18" => {
         stmt.executeQuery(getQuery18())
-        //snappyContext.sql(getQuery18()).collect()
       }
       case "q19" => {
         stmt.executeQuery(getQuery19())
-
-        //snappyContext.sql(getQuery19(isSnappy)).collect()
       }
       case "q20" => {
         stmt.executeQuery(getQuery20())
-
-//        val result = snappyContext.sql(getTempQuery20())
-//        result.registerTempTable("ViewQ20")
-//        snappyContext.sql(getQuery20(isSnappy)).collect()
       }
       case "q21" => {
         stmt.executeQuery(getQuery21())
-        //snappyContext.sql(getQuery21(isSnappy)).collect()
       }
       case "q22" => {
         stmt.executeQuery(getQuery22())
-//        val result = snappyContext.sql(getTempQuery22())
-//        val res = result.collect()
-//        assert(res.length == 1)
-//        if(isSnappy) {
-//          snappyContext.sql(getQuery22(res(0).getDecimal(0).toString)).collect()
-//        }else{
-//          snappyContext.sql(getQuery22(res(0).getDouble(0).toString)).collect()
-//        }
       }
     }
     rs
 
-  }
-
-  def getQuery(): String = {
-    //      "select distinct(L_SHIPDATE) from LINEITEM ORDER BY L_SHIPDATE"
-    //      "select L_SHIPDATE from LINEITEM WHERE L_SHIPDATE <= DATE_SUB('1998-12-01',INTERVAL 60 DAY)"
-    //      "select L_SHIPDATE from LINEITEM WHERE L_SHIPDATE = DATE('1996-09-22')"
-    ""
-  }
-
-  def getResultString(): String = {
-    ""
   }
 
   def getQuery1(): String = {
@@ -294,7 +210,7 @@ object TPCH_Memsql {
         " from" +
         "     LINEITEM" +
         " where" +
-        "     l_shipdate <= '1998-12-01' - interval '90' day" +
+        "     l_shipdate <= '1997-12-31' - interval '90' day" +
         " group by" +
         "     l_returnflag," +
         "     l_linestatus" +
@@ -330,11 +246,11 @@ object TPCH_Memsql {
         " where" +
         "     P_PARTKEY = PS_PARTKEY" +
         "     and S_SUPPKEY = PS_SUPPKEY" +
-        "     and P_SIZE = 15" +
-        "     and P_TYPE like '%BRASS'" +
+        "     and P_SIZE = 24" +
+        "     and P_TYPE like '%STEEL'" +
         "     and S_NATIONKEY = N_NATIONKEY" +
         "     and N_REGIONKEY = R_REGIONKEY" +
-        "     and R_NAME = 'EUROPE'" +
+        "     and R_NAME = 'ASIA'" +
         "     and PS_SUPPLYCOST = (" +
         "         select" +
         "             min(PS_SUPPLYCOST)" +
@@ -346,13 +262,14 @@ object TPCH_Memsql {
         "             and S_SUPPKEY = PS_SUPPKEY" +
         "             and S_NATIONKEY = N_NATIONKEY" +
         "             and N_REGIONKEY = R_REGIONKEY" +
-        "             and R_NAME = 'EUROPE'" +
+        "             and R_NAME = 'ASIA'" +
         "            )" +
         " order by" +
         "     S_ACCTBAL desc," +
         "     N_NAME," +
         "     S_NAME," +
         "     P_PARTKEY"
+
   }
 
   def getResultString2(): String = {
@@ -513,6 +430,7 @@ object TPCH_Memsql {
         "         supp_nation," +
         "         cust_nation," +
         "         l_year"
+
   }
 
   def getResultString7(): String = {
@@ -561,6 +479,7 @@ object TPCH_Memsql {
         "         o_year" +
         " order by" +
         "         o_year"
+
   }
 
   def getResultString8(): String = {
@@ -640,6 +559,7 @@ object TPCH_Memsql {
         "         C_COMMENT" +
         " order by" +
         "         revenue desc"
+
   }
 
   def getResultString10(): String = {
@@ -717,6 +637,7 @@ object TPCH_Memsql {
         "         l_shipmode" +
         " order by" +
         "         l_shipmode"
+
   }
 
   def getResultString12(): String = {
@@ -749,6 +670,7 @@ object TPCH_Memsql {
         " order by" +
         "         custdist desc," +
         "         c_count desc"
+
   }
 
 //  def getQuery13(): String = {
@@ -795,6 +717,7 @@ object TPCH_Memsql {
         "         l_partkey = P_PARTKEY" +
         "         and l_shipdate >= '1995-09-01'" +
         "         and l_shipdate < '1995-09-01'+ interval '1' month"
+
   }
 
   def getResultString14(): String = {
@@ -911,6 +834,7 @@ object TPCH_Memsql {
         "                         l_partkey = P_PARTKEY" +
         "         )"
         //" )"
+
   }
 
   def getResultString17(): String = {
@@ -1046,6 +970,7 @@ object TPCH_Memsql {
         "         and N_NAME = 'CANADA'" +
         " order by" +
         "         S_NAME"
+
   }
 
   def getResultString20(): String = {
@@ -1148,235 +1073,4 @@ object TPCH_Memsql {
   def getResultString22(): String = {
     "CNTRYCODE NUMCUST TOTACCTBAL"
   }
-
-
-  //    var q1= " select" +
-  //        " l_returnflag," +
-  //        " l_linestatus," +
-  //        " sum(l_quantity) as sum_qty," +
-  //        " sum(l_extendedprice) as sum_base_price," +
-  //        " sum(l_extendedprice*(1-l_discount)) as sum_disc_price," +
-  //        " sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge," +
-  //        " avg(l_quantity) as avg_qty," +
-  //        " avg(l_extendedprice) as avg_price," +
-  //        " avg(l_discount) as avg_disc," +
-  //        " count(*) as count_order" +
-  //        " from" +
-  //        " LINEITEM" +
-  //        " where" +
-  //        " l_shipdate <= DATE_SUB('1998-12-01',INTERVAL 60 DAY)" +
-  //        " group by" +
-  //        " l_returnflag," +
-  //        " l_linestatus" +
-  //        " order by" +
-  //        " l_returnflag," +
-  //        " l_linestatus"
-  //
-  //        var rs = stmt.executeQuery(q1)
-  //        println("l_returnflag  l_linestatus  sum_qty  sum_base_price  sum_disc_price    sum_charge  avg_qty  avg_price  avg_disc   count_order");
-  //        while (rs.next()) {
-  //          println(s"${rs.getString(1)}  ${rs.getString(2)}  ${rs.getString(3)}  ${rs.getString(4)}  ${rs.getString(5)}  ${rs.getString(6)}  ${rs.getString(7)}" +
-  //              s"  ${rs.getString(8)}  ${rs.getString(9)}  ${rs.getString(10)}");
-  //        }
-
-  //    var q2="select" +
-  //        " s_acctbal," +
-  //        " s_name," +
-  //        " n_name," +
-  //        " p_partkey," +
-  //        " p_mfgr," +
-  //        " s_address," +
-  //        " s_phone," +
-  //        " s_comment" +
-  //        " from" +
-  //        " PART," +
-  //        " SUPPLIER," +
-  //        " PARTSUPP," +
-  //        " NATION," +
-  //        " REGION" +
-  //        " where" +
-  //        " p_partkey = ps_partkey" +
-  //        " and s_suppkey = ps_suppkey" +
-  //        " and p_size = 15" +
-  //        " and p_type like '%BRASS'" +
-  //        " and s_nationkey = n_nationkey" +
-  //        " and n_regionkey = r_regionkey" +
-  //        " and r_name = 'EUROPE'" +
-  //        " and ps_supplycost = (" +
-  //        " select" +
-  //        " min(ps_supplycost)" +
-  //        " from" +
-  //        " PARTSUPP, SUPPLIER," +
-  //        " NATION, REGION" +
-  //        " where" +
-  //        " p_partkey = ps_partkey" +
-  //        " and s_suppkey = ps_suppkey" +
-  //        " and s_nationkey = n_nationkey" +
-  //        " and n_regionkey = r_regionkey" +
-  //        " and r_name = 'EUROPE'" +
-  //        " )" +
-  //        " order by" +
-  //        " s_acctbal desc," +
-  //        " n_name," +
-  //        " s_name," +
-  //        " p_partkey"
-  //
-  //    var rs = stmt.executeQuery(q2)
-  //    println("s_acctbal  s_name  n_name  p_partkey  p_mfgr  s_address  s_phone  s_comment" )
-  //    while (rs.next()) {
-  //      println(s"${rs.getString(1)}  ${rs.getString(2)}  ${rs.getString(3)}  ${rs.getString(4)}  ${rs.getString(5)}  ${rs.getString(6)}  ${rs.getString(7)}" +
-  //          s"  ${rs.getString(8)}}");
-  //    }
-
-  //
-  //    var q3 = "select" +
-  //        " l_orderkey," +
-  //        " sum(l_extendedprice*(1-l_discount)) as revenue," +
-  //        " o_orderdate," +
-  //        " o_shippriority" +
-  //        " from" +
-  //        " CUSTOMER," +
-  //        " ORDERS," +
-  //        " LINEITEM" +
-  //        " where" +
-  //        " c_mktsegment = 'BUILDING'" +
-  //        " and c_custkey = o_custkey" +
-  //        " and l_orderkey = o_orderkey" +
-  //        " and o_orderdate < date ('1995-03-15')" +
-  //        " and l_shipdate > date ('1995-03-15')" +
-  //        " group by" +
-  //        " l_orderkey," +
-  //        " o_orderdate," +
-  //        " o_shippriority" +
-  //        " order by" +
-  //        " revenue desc," +
-  //        " o_orderdate;"
-  //
-  //    var rs = stmt.executeQuery(q3)
-  //    println("l_orderkey  revenue  o_orderdate  o_shippriority")
-  //    while (rs.next()) {
-  //      println(s"${rs.getString(1)}  ${rs.getString(2)}  ${rs.getString(3)}  ${rs.getString(4)}");
-  //    }
-
-  //    var q4="select" +
-  //        " o_orderpriority," +
-  //        " count(*) as order_count" +
-  //        " from" +
-  //        " ORDERS" +
-  //        " where" +
-  //        " o_orderdate >= date ('1993-07-01')" +
-  //        " and o_orderdate < date ('1993-07-01') + interval '3' month" +
-  //        " and exists (" +
-  //        " select" +
-  //        " *" +
-  //        " from" +
-  //        " LINEITEM" +
-  //        " where" +
-  //        " l_orderkey = o_orderkey" +
-  //        " and l_commitdate < l_receiptdate" +
-  //        " )" +
-  //        " group by" +
-  //        " o_orderpriority" +
-  //        " order by" +
-  //        " o_orderpriority"
-  //
-  //    var rs = stmt.executeQuery(q4)
-  //    println("o_orderpriority  order_count ")
-  //    while (rs.next()) {
-  //      println(s"${rs.getString(1)}  ${rs.getString(2)} ");
-  //    }
-
-
-  //    var q5="select" +
-  //        " n_name," +
-  //        " sum(l_extendedprice * (1 - l_discount)) as revenue" +
-  //        " from" +
-  //        " CUSTOMER," +
-  //        " ORDERS," +
-  //        " LINEITEM," +
-  //        " SUPPLIER," +
-  //        " NATION," +
-  //        " REGION" +
-  //        " where" +
-  //        " c_custkey = o_custkey" +
-  //        " and l_orderkey = o_orderkey" +
-  //        " and l_suppkey = s_suppkey" +
-  //        " and c_nationkey = s_nationkey" +
-  //        " and s_nationkey = n_nationkey" +
-  //        " and n_regionkey = r_regionkey" +
-  //        " and r_name = 'ASIA'" +
-  //        " and o_orderdate >= date ('1994-01-01')" +
-  //        " and o_orderdate < date ('1994-01-01') + interval '1' year" +
-  //        " group by" +
-  //        " n_name" +
-  //        " order by" +
-  //        " revenue desc"
-  //
-  //        var rs = stmt.executeQuery(q5)
-  //        println("n_name  revenue ")
-  //        while (rs.next()) {
-  //          println(s"${rs.getString(1)}  ${rs.getString(2)} ");
-  //        }
-
-  //    var q6="select" +
-  //        " sum(l_extendedprice*l_discount) as revenue" +
-  //        " from" +
-  //        " LINEITEM" +
-  //        " where" +
-  //        " l_shipdate >= date ('1994-01-01')" +
-  //        " and l_shipdate < date ('1994-01-01') + interval '1' year" +
-  //        " and l_discount between 0.06 - 0.01 and 0.06 + 0.01" +
-  //        " and l_quantity < 24"
-  //
-  //    var rs = stmt.executeQuery(q6)
-  //    println("revenue ")
-  //    while (rs.next()) {
-  //      println(s"${rs.getString(1)} ");
-  //    }
-
-  //    var q7="select" +
-  //        " supp_nation," +
-  //        " cust_nation," +
-  //        " l_year, sum(volume) as revenue" +
-  //        " from (" +
-  //        " select" +
-  //        " n1.n_name as supp_nation," +
-  //        " n2.n_name as cust_nation," +
-  //        " extract(year from l_shipdate) as l_year," +
-  //        " l_extendedprice * (1 - l_discount) as volume" +
-  //        " from" +
-  //        " SUPPLIER," +
-  //        " LINEITEM," +
-  //        " ORDERS," +
-  //        " CUSTOMER," +
-  //        " NATION n1," +
-  //        " NATION n2" +
-  //        " where" +
-  //        " s_suppkey = l_suppkey" +
-  //        " and o_orderkey = l_orderkey" +
-  //        " and c_custkey = o_custkey" +
-  //        " and s_nationkey = n1.n_nationkey" +
-  //        " and c_nationkey = n2.n_nationkey" +
-  //        " and (" +
-  //        " (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')" +
-  //        " or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')" +
-  //        " )" +
-  //        " and l_shipdate between date ('1995-01-01') and date ('1996-12-31')" +
-  //        " ) as shipping" +
-  //        " group by" +
-  //        " supp_nation," +
-  //        " cust_nation," +
-  //        " l_year" +
-  //        " order by" +
-  //        " supp_nation," +
-  //        " cust_nation," +
-  //        " l_year"
-  //
-  //    var rs = stmt.executeQuery(q7)
-  //    println("supp_nation  cust_nation  l_year  revenue")
-  //    while (rs.next()) {
-  //      println(s"${rs.getString(1)}  ${rs.getString(2)}   ${rs.getString(3)}  ${rs.getString(4)}");
-  //    }
-
-
 }
