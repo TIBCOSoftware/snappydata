@@ -30,5 +30,4 @@ theme: readthedocs
 
 extra_css: [extra.css]
 
-copyright: Copyright &copy; 2016 <a href="http://snappydata.io</a>.
-#google_analytics: ['UA-64703291-1', 'snappydata.io']
+copyright: Copyright &copy; 2016 SnappyData Inc.
