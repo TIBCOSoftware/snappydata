@@ -367,7 +367,7 @@ snappy> SELECT hashtag, count(*) as tagcount
         GROUP BY hashtag
         ORDER BY tagcount DESC limit 10;
 ```
-Later, in the Spark API section we further enhance this concept to showcase ["continuous queries" (CQ)](https://github.com/SnappyDataInc/snappydata/blob/master/README.md#stream-analytics-using-spark-streaming). Dynamic registration of CQs (from remote clients) will be available in the next release.
+Later, in the Spark API section we further enhance this concept to showcase ["continuous queries" (CQ)](#stream-analytics-using-spark-streaming-explanation). Dynamic registration of CQs (from remote clients) will be available in the next release.
 
 #### Top-K Elements in a Stream (explanation)
 
