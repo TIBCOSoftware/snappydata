@@ -1,6 +1,7 @@
 import groovy.json.JsonSlurper
 
 apply plugin: 'wrapper'
+apply plugin: 'distribution'
 
 //if(JavaVersion.current() != JavaVersion.VERSION_1_7){
 //    throw new GradleException("==== This build must be run with java 7 ====")
@@ -60,6 +61,13 @@ allprojects {
   compileJava.options.encoding = 'UTF-8'
   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
   javadoc.options.charSet = 'UTF-8'
+
+  gradle.taskGraph.whenReady( { graph ->
+    tasks.withType(Tar).each { tar ->
+      tar.compression = Compression.GZIP
+      tar.extension = 'tar.gz'
+    }
+  })
 
   ext {
     scalaBinaryVersion = '2.10'
@@ -343,7 +351,7 @@ task product {
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def examplesProject = project(':snappy-examples')
-    def baseName = 'snappy-spark-assembly'
+    def baseName = 'snappydata-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     def exampleArchiveName = "quickstart-${version}.jar"
     copy {
@@ -412,6 +420,21 @@ task product {
     }
   }
 }
+
+// TODO: right now just copying over the product contents.
+// Can flip it around and let distribution do all the work.
+
+distributions {
+  main {
+    baseName = 'snappydata'
+    contents {
+      from { snappyProductDir }
+    }
+  }
+}
+distTar.dependsOn product
+distZip.dependsOn product
+
 
 def copyTestsCommonResources(def bdir) {
   def outdir = "${bdir}/resources/test"
