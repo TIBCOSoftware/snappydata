@@ -54,7 +54,7 @@ and one lead node. All nodes are started on localhost.
 The locator is primarily responsible to make all the nodes aware of each other, allows the cluster to expand or shrink dynamically and provides a consistent membership view to each node even in the presence of failures (a distributed system membership service). The Lead node hosts the Spark Context and driver and orchestrates execution of Spark Jobs. 
 The Data server is the work horse - manages all in-memory data, OLTP execution engine and Spark executors. 
 
-See the  [‘Getting Started’](../index.md) section for more details. 
+See the  [‘Getting Started’](GettingStarted.md) section for more details. 
 
 From the product install directory run this script ..
 
@@ -121,7 +121,7 @@ Congratulations!
 
 ## Where to go next?
 
-Next, we recommend going through more in-depth examples in [Getting Started](../index.md). Here you will find more details on the 
+Next, we recommend going through more in-depth examples in [Getting Started](GettingStarted.md). Here you will find more details on the 
 concepts and experience SnappyData’s AQP, Stream analytics functionality both using SQL and Spark API.
 You can also go through our very preliminary [docs](../) and provide us your comments. 
 
