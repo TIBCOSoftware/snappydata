@@ -4,7 +4,7 @@
 # generating documentation and then call the mkdocs utility 
 # with the passed arguments.  
 
-# In place replace GettingStarted.md with index.md in all the md files in featureDocs
+# In place replace GettingStarted.md with index.md in all the md files in docs
 FDIR="./docs"
 for f in `find ${FDIR} -name "*.md"`
 do
@@ -35,12 +35,11 @@ if [ -z ${MKDOCS_EXISTS} ]; then
   exit 1
 fi
 
-#echo $@
-#mkdocs $@
+# echo $@
+# mkdocs $@
 mkdocs build --clean
-#mkdocs gh-deploy
+mkdocs gh-deploy
 
 # remove extra files added to docs
-#rm -rf ./docs/featureDocs
-#rm ./docs/index.md
-mkdocs serve &
+rm ./docs/index.md
+#mkdocs serve
