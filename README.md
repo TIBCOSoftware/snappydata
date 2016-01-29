@@ -133,7 +133,7 @@ The first step is to configure SNAPPY_HOME in your environment:
 
 ``` export SNAPPY_HOME=/path/to/snappy/root ```
 
-The remainder of "Getting Started" is based on a set of [airline data](http://www.transtats.bts.gov/Fields.asp?Table_ID=236) we run different queries on. That data is packaged with SnappyData, however, it is only a portion of the full dataset. To download the full dataset, from ````/snappy/```` run ````./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data````. This is recomended for the approximate query processing portion of "Getting Started," but not necessary.
+The remainder of "Getting Started" is based on a set of [airline data](http://www.transtats.bts.gov/Fields.asp?Table_ID=236) we run different queries on. That data is packaged with SnappyData, however, it is only a portion of the full dataset. To download the full dataset, from ````/snappy/```` run ````./quickstart/scripts/download_full_airlinedata.sh ./quickstart/data````. This is recomended for the approximate query processing portion of "Getting Started," but not necessary. Note that to run the above script, you need curl installed. [Here](http://askubuntu.com/questions/259681/the-program-curl-is-currently-not-installed) is one way to install it on ubuntu.
 
 ##### Passwordless ssh
 The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with ````sudo apt-get install ssh````. By default, ssh requires a password. To be able to log on to the localhost and run the script without being prompted for the password, please enable [passwordless ssh](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2). Otherwise, set up ssh for localhost with ````ssh localhost````
