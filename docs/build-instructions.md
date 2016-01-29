@@ -56,6 +56,10 @@ Some build targets:
 ./gradlew testClasses   -  build all the tests
 ./gradlew product       -  build and place the product distribution
                            (in build-artifacts/scala_2.10/snappy)
+./gradlew distTar       -  create a tar.gz archive of product distribution
+                           (in build-artifacts/scala_2.10/distributions)
+./gradlew distZip       -  create a zip archive of product distribution
+                           (in build-artifacts/scala_2.10/distributions)
 ./gradlew precheckin    -  run the snappydata testsuite
 ./gradlew clean         -  clean all build and test output
 ```
