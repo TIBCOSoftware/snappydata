@@ -11,29 +11,29 @@
   <title>Architecture - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../../favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
   
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
-  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../extra.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
     // Current page data
     var mkdocs_page_name = "Architecture";
-    var mkdocs_page_input_path = "featureDocs/architecture.md";
-    var mkdocs_page_url = "/featureDocs/architecture/";
+    var mkdocs_page_input_path = "architecture.md";
+    var mkdocs_page_url = "/architecture/";
   </script>
   
-  <script src="../../js/jquery-2.1.1.min.js"></script>
-  <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
 
   
 </head>
@@ -45,9 +45,9 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
         <div role="search">
-  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
   </form>
 </div>
@@ -58,7 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../..">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -66,13 +66,6 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../build-instructions/">Building from source, project layout</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../quickstart/">Quickstart</a>
         
     </li>
 <li>
@@ -187,7 +180,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Docs - Preview release</a>
       </nav>
 
       
@@ -195,7 +188,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="../..">Docs</a> &raquo;</li>
+    <li><a href="..">Docs</a> &raquo;</li>
     
       
     
@@ -219,8 +212,8 @@
 <p>Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
 <!--  <img alt="Core components" src="CoreComponents.png=100x100" /> --></p>
 <p><img src="CoreComponents.png" alt="Core Components" width="400" height="300"></p>
-<p>The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See <a href="../row_column_tables">Row/Column table</a> section for details on the syntax and available features. </p>
-<p>We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and is supports the Spark SQL dialect with several extensions to make the language compatible to the SQL standard. One could perceive SnappyData as a SQL database that uses Spark API as its language for stored procedures.Our <a href="../snappyStreams">stream processing</a> is primarily through Spark Streaming, but it is integrated and runs in-situ with our store .</p>
+<p>The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See <a href="../rowAndColumnTables/">Row/Column table</a> section for details on the syntax and available features. </p>
+<p>We support two primary programming models — SQL and Spark’s API. SQL access is through JDBC/ODBC and is supports the Spark SQL dialect with several extensions to make the language compatible to the SQL standard. One could perceive SnappyData as a SQL database that uses Spark API as its language for stored procedures.Our <a href="../streamingWithSQL/">stream processing</a> is primarily through Spark Streaming, but it is integrated and runs in-situ with our store .</p>
 <p>The OLAP scheduler and job server coordinate all OLAP and Spark jobs and are capable of working with external cluster managers, such as YARN or Mesos(not yet supported). We route all OLTP operations immediately to appropriate data partitions without incurring any scheduling overhead.</p>
 <p>To support replica consistency, fast point updates, and instantaneous detection of failure conditions in the cluster, we use a P2P (peer-to-peer) cluster membership service that en- sures view consistency and virtual synchrony in the cluster. Any of the in-memory tables can be synchronously replicated using this P2P cluster.</p>
 <p>In addition to the “exact” dataset, data can also be summarized using probabilistic data structures, such as stratified samples and other forms of synopses. Using our API, applications can choose to trade accuracy for performance. SnappyData’s query engine has built-in support for approximate query processing (AQP) and will exploit appropriate probabilistic data structures to meet the user’s requested level of accuracy or performance.</p>

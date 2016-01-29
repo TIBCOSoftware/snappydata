@@ -4,103 +4,95 @@
     
     <url>
      <loc>http://www.snappydata.io/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/build-instructions/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/build-instructions/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/quickstart/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/snappyIntroduction/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/snappyIntroduction/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/features/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/features/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/architecture/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/architecture/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/configuration/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/configuration/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/connectingToCluster/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/connectingToCluster/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/jobs/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/jobs/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/rowAndColumnTables/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/rowAndColumnTables/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/aqp/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/aqp/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/streamingWithSQL/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
     <url>
-     <loc>http://www.snappydata.io/featureDocs/streamingWithSQL/</loc>
-     <lastmod>2016-01-28</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-    
-
-    
-    <url>
-     <loc>http://www.snappydata.io/featureDocs/deployment/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/deployment/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -108,8 +100,8 @@
     
         
     <url>
-     <loc>http://www.snappydata.io/featureDocs/LICENSE/</loc>
-     <lastmod>2016-01-28</lastmod>
+     <loc>http://www.snappydata.io/LICENSE/</loc>
+     <lastmod>2016-01-29</lastmod>
      <changefreq>daily</changefreq>
     </url>
         

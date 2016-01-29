@@ -11,29 +11,29 @@
   <title>Connecting using JDBC, Spark - SnappyData Docs - Preview release</title>
   
 
-  <link rel="shortcut icon" href="../../favicon.ico">
+  <link rel="shortcut icon" href="../favicon.ico">
   
 
   
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
-  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/highlight.css">
-  <link href="../../extra.css" rel="stylesheet">
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../extra.css" rel="stylesheet">
 
   
   <script>
     // Current page data
     var mkdocs_page_name = "Connecting using JDBC, Spark";
-    var mkdocs_page_input_path = "featureDocs/connectingToCluster.md";
-    var mkdocs_page_url = "/featureDocs/connectingToCluster/";
+    var mkdocs_page_input_path = "connectingToCluster.md";
+    var mkdocs_page_url = "/connectingToCluster/";
   </script>
   
-  <script src="../../js/jquery-2.1.1.min.js"></script>
-  <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script>
-  <script src="../../js/theme.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script>
+  <script src="../js/theme.js"></script> 
 
   
 </head>
@@ -45,9 +45,9 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Docs - Preview release</a>
+        <a href=".." class="icon icon-home"> SnappyData Docs - Preview release</a>
         <div role="search">
-  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" />
   </form>
 </div>
@@ -58,7 +58,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../..">Getting Started</a>
+        <a class="" href="..">Getting Started</a>
         
     </li>
 <li>
@@ -66,13 +66,6 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../build-instructions/">Building from source, project layout</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../quickstart/">Quickstart</a>
         
     </li>
 <li>
@@ -112,6 +105,9 @@
             <ul>
             
                 <li class="toctree-l3"><a href="#using-the-snappydata-sql-shell">Using the SnappyData SQL Shell</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#using-the-spark-shell-and-spark-submit">Using the Spark Shell and spark-submit</a></li>
                 
             
                 <li class="toctree-l3"><a href="#using-jdbc-with-snappydata">Using JDBC with SnappyData</a></li>
@@ -185,7 +181,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Docs - Preview release</a>
+        <a href="..">SnappyData Docs - Preview release</a>
       </nav>
 
       
@@ -193,7 +189,7 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="../..">Docs</a> &raquo;</li>
+    <li><a href="..">Docs</a> &raquo;</li>
     
       
     
@@ -245,6 +241,27 @@ snappy&gt; start pulse;
 </code></pre>
 
 <p>The complete list of commands available through <em>snappy_shell</em> can be found <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html">here</a></p>
+<h2 id="using-the-spark-shell-and-spark-submit">Using the Spark Shell and spark-submit</h2>
+<p>SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store snappydata.store.locators property needs to be provided while starting the spark-shell. when spark-shell is started with this property it provides SnappyContext as SQLContext and thus enabling the user to run all SnappyData functionalities.</p>
+<pre><code class="bash">// from the SnappyData base directory  
+# Start the spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
+# Change the UI port because the default port 4040 is being used by Snappy’s lead. 
+$ bin/spark-shell  --master local[*] --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
+scala&gt;
+#Try few commands on the spark-shell. Following command shows the tables created using the snappy-shell
+scala&gt; val airlineDF = sqlContext.table(&quot;airline&quot;).show
+scala&gt; val resultset = sqlContext.sql(&quot;select * from airline&quot;)
+</code></pre>
+
+<p>Any spark application can also use the SnappyData as store and spark as computational engine by providing an extra snappydata.store.locators property in the conf.</p>
+<pre><code class="bash"># Start the Spark standalone cluster from SnappyData base directory 
+$ sbin/start-all.sh 
+# Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+
+# The results can be seen on the command line.
+</code></pre>
+
 <h2 id="using-jdbc-with-snappydata">Using JDBC with SnappyData</h2>
 <p>SnappyData ships with a few JDBC drivers. 
 The connection URL typically points to one of the Locators. Underneath the covers the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically swizzling underlying physical connections in case servers were to fail. </p>

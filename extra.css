@@ -9,7 +9,3 @@ h2 {
 p {
       font-size: 120%;
 }
-
-ul li:before {
-     font-size: 300%; /* or whatever */
-}
