@@ -43,7 +43,9 @@ You will find the instructions for building, layout of the code, integration wit
 >  NOTE:
 > SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
 
-You can try our quick start or keep reading to understand some of the concepts and features as you try out the product. 
+You can try our quick start or go directly to Getting Started to understand some of the concepts and features as you try out the product. 
+
+* [Getting Started](docs/GettingStarted.md)
 
 ## Quick start  
 

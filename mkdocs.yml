@@ -10,22 +10,21 @@ pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
 - Getting Started: index.md
-- Building from source, project layout: featureDocs/build-instructions.md
-- Quickstart: featureDocs/quickstart.md
-- Overview: featureDocs/snappyIntroduction.md
-- Key features: featureDocs/features.md
-- Architecture: featureDocs/architecture.md
-- Configuring the cluster: featureDocs/configuration.md
-- Connecting using JDBC, Spark: featureDocs/connectingToCluster.md
-- Developing Apps using the Spark API: featureDocs/jobs.md
-- Row and Column tables: featureDocs/rowAndColumnTables.md
-- Approximate query processing: featureDocs/aqp.md
-- Stream processing using SQL: featureDocs/streamingWithSQL.md
-- Deployment topologies: featureDocs/deployment.md
+- Building from source, project layout: build-instructions.md
+- Overview: snappyIntroduction.md
+- Key features: features.md
+- Architecture: architecture.md
+- Configuring the cluster: configuration.md
+- Connecting using JDBC, Spark: connectingToCluster.md
+- Developing Apps using the Spark API: jobs.md
+- Row and Column tables: rowAndColumnTables.md
+- Approximate query processing: aqp.md
+- Stream processing using SQL: streamingWithSQL.md
+- Deployment topologies: deployment.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md
-    - License: featureDocs/LICENSE.md
+    - License: LICENSE.md
 
 theme: readthedocs
 
