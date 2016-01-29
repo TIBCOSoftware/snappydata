@@ -38,8 +38,8 @@ fi
 # echo $@
 # mkdocs $@
 mkdocs build --clean
-mkdocs gh-deploy
+#mkdocs gh-deploy
 
 # remove extra files added to docs
-rm ./docs/index.md
-#mkdocs serve
+#rm ./docs/index.md
+mkdocs serve
