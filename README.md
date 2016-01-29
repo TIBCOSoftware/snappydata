@@ -1,4 +1,6 @@
 ## Table of Contents
+
+[![Join the chat at https://gitter.im/SnappyDataInc/snappydata](https://badges.gitter.im/SnappyDataInc/snappydata.svg)](https://gitter.im/SnappyDataInc/snappydata?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 * [Introduction](#introduction)
 * [Download binary distribution](#download-binary-distribution)
 * [Community Support](#community-support)
