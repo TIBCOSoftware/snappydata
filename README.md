@@ -478,7 +478,8 @@ Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column 
 [SnappyData jobs & job submission](./featureDocs/jobs.md). 
 
 ```bash
-$ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+# Submit a job to Lead node on port 8090 
+$ bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 {"status": "STARTED",
   "result": {
     "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
@@ -486,7 +487,7 @@ $ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp --cl
   } }
 
 # A JSON with jobId of the submitted job is returned. Use job ID can be used to query the status of the running job. 
-$ bin/snappy-job.sh status --lead hostNameOfLead:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
+$ bin/snappy-job.sh status --lead localhost:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
 { "duration": "17.53 secs",
   "classPath": "io.snappydata.examples.CreateAndLoadAirlineDataJob",
   "startTime": "2016-01-12T16:59:14.746+05:30",
@@ -522,8 +523,8 @@ snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
 `AirlineDataJob.scala` runs OLAP and OLTP queries on SnappyData tables. Also, it caches the same airline data in the Spark cache and runs the same OLAP query on the Spark cache. With the airline data set, we have seen both the Spark cache and the SnappyData store to have more and less the same performance.  
 
 ```bash
-# Submit AirlineDataJob to SnappyData
-$ bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+# Submit AirlineDataJob to SnappyData's Lead node on port 8090 
+$ bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 { "status": "STARTED",
   "result": {
     "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2",
@@ -638,8 +639,8 @@ Ideally, we would like you to try this example using live twitter stream. For th
 Submit the `TwitterPopularTagsJob` that declares a stream table, creates and populates a topk-structure, registers a CQ on it and stores the result in the Snappy-store. It starts streaming and waits for two minutes. 
  
 ```bash
-# Submit the TwitterPopularTagsJob 
-$ ./bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+# Submit the TwitterPopularTagsJob to SnappyData's Lead node on port 8090 
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
@@ -652,9 +653,9 @@ $ quickstart/scripts/simulateTwitterStream
 # Note: Currently, we do not encrypt the keys. 
 $ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,accessToken=<accessToken>,accessTokenSecret=<accessTokenSecret>"
 
-# submit the TwitterPopularTagsJob that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
+# submit the TwitterPopularTagsJob Lead node on port 8090 that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
 # This job runs streaming for two minutes. 
-$ /bin/snappy-job.sh submit --lead hostNameOfLead:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ /bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
 
 ```
 The output of the job can be found in `TwitterPopularTagsJob_timestamp.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. 
@@ -666,7 +667,7 @@ SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store 
 ```bash
 # Start the spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
-$ bin/spark-shell  --master local[*] --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041
+$ bin/spark-shell  --master local[*] --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041
 scala>
 Try few commands on the spark-shell 
 
@@ -682,7 +683,7 @@ scala> val airlineDF = sqlContext.table("airline").show
 # Start the Spark standalone cluster.
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
 
 # The results can be seen on the command line. 
 ```
