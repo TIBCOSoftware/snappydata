@@ -39,8 +39,8 @@ object ToolsCallbackImpl extends ToolsCallback {
     val properties = new Properties()
     sc.getConf.getOption(Property.locators).map { locator =>
       if (!Utils.LocatorURLPattern.matcher(locator).matches()) {
-        throw new AnalysisException(
-          "locator info should be provided in the format host[port]", null)
+        throw new AnalysisException(s"locators property '$locator' should " +
+            "be provided in the format host[port] or host:port", null)
       }
       properties.setProperty("locators", locator)
       sc.getConf.getOption(Property.mcastPort).map(

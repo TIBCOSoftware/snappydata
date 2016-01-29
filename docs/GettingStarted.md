@@ -261,7 +261,7 @@ For low latency OLTP queries, the engine won't route it to the lead and instead 
 --- the airline code can be updated in the row table
 UPDATE AIRLINEREF SET DESCRIPTION='Delta America' WHERE CAST(CODE AS VARCHAR(25))='DL';
 ```
-Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/1.3.0/userguide/index.html#reference/sql-language-reference.html).  As we show later, any table in SnappyData is also visible as a Spark DataFrame. 
+Spark SQL can cache DataFrames as temporary tables and the data set is immutable. SnappyData SQL is compatible with the SQL standard with support for transactions and DML (insert, update, delete) on tables. [Link to Snappy Store SQL reference](http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/sql-language-reference.html).  As we show later, any table in SnappyData is also visible as a Spark DataFrame. 
 
 #### Step 3 - Run OLAP and OLTP queries
 
