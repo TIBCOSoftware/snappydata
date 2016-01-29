@@ -38,7 +38,7 @@ git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
 #### Building SnappyData from source
 You will find the instructions for building, layout of the code, integration with IDEs using Gradle, etc here:
 
-* [SnappyData Build Instructions](featureDocs/build-instructions.md)
+* [SnappyData Build Instructions](docs/build-instructions.md)
 
 >  NOTE:
 > SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
