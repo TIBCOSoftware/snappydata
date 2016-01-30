@@ -188,6 +188,8 @@ In this document, we showcase mostly the same set of features via the Spark API 
 
 ### Getting Started with SQL
 
+> If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), edit the `'create_and_load_column_table.sql'` script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.
+
 For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer (a JDBC connection to the cluster).
 
 From the SnappyData base directory, /snappy/, run: 
@@ -224,8 +226,6 @@ CREATE TABLE AIRLINEREF (<column definitions>) USING row OPTIONS() ;
 Read our preliminary [row & column table docs](./rowAndColumnTables.md) for the details.
 
 #### Step 2 - Create column table, row table and load data
-
-> If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), edit the 'create_and_load_column_table.sql' script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. Run `./download_full_airlinedata.sh ../data` first. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.
 
 The below SQL scripts create and populate the tables we need to continue. The displayed command assumes you started the snappy-shell the base directory, /snappy/. If you started the snappy-shell from /bin/, for example, you need to prepend the filepath with /..
 
