@@ -60,9 +60,10 @@ You can try our quick starts or go directly to Getting Started to understand som
 
 ## Before the Quick starts: passwordless ssh
 
-The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with sudo apt-get install ssh. ssh comes packaged with Mac OSX. Enabling passwordless ssh is the easiest way to work with SnappyData. 
+The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with `sudo apt-get install ssh`. ssh comes packaged with Mac OSX. Enabling passwordless ssh is the easiest way to work with SnappyData. 
 
-On OSX:
+**On OSX:**
+
 First, make sure ssh is enabled by going to:
 
 `System Preferences -> Sharing` and enabling `Remote Login`
@@ -78,6 +79,8 @@ Finally, copy your key to authorized keys:
 `cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
 
 More detail on passwordless ssh can be found [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2) and [here](http://stackoverflow.com/questions/7134535/setup-passphraseless-ssh-to-localhost-on-os-x)
+
+**On Linux:**
 
 ## Quick start with SQL  
 
