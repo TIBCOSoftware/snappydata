@@ -208,6 +208,11 @@ subprojects {
   }
 
   gradle.taskGraph.whenReady({ graph ->
+    tasks.withType(Jar).each { pack ->
+      if (pack.name == 'packageTests') {
+        pack.from(pack.project.sourceSets.test.output.classesDir)
+      }
+    }
     tasks.withType(Test).each { test ->
       test.configure {
         onlyIf { !Boolean.getBoolean('skip.tests') }
@@ -276,8 +281,8 @@ subprojects {
     */
   }
 
-  task packageTests(type: Jar) {
-    from sourceSets.test.output.classesDir
+  task packageTests(type: Jar, dependsOn: testClasses) {
+    description 'Assembles a jar archive of test classes.'
     classifier = 'tests'
   }
   artifacts {
@@ -395,7 +400,6 @@ task generateSources {
 }
 
 task product {
-  dependsOn ':snappy-spark:scalaStyle'
   dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
   dependsOn ':snappy-examples:jar'
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
@@ -595,6 +599,7 @@ def runSubmitQuery(def jobName, def appName) {
 }
 
 task runQuickstart(dependsOn: product) {
+  mustRunAfter 'buildAll'
   def exampleArchiveName = "quickstart-${version}.jar"
   doLast {
     try {
@@ -662,6 +667,7 @@ task cleanAll {
 task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
+  dependsOn product
   mustRunAfter cleanAll
 }
 task checkAll {
@@ -672,9 +678,9 @@ task checkAll {
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
-  mustRunAfter product
   mustRunAfter buildAll
 }
 task precheckin {
-  dependsOn cleanAll, product, buildAll, checkAll, runQuickstart, ":snappy-tools_${scalaBinaryVersion}:docs"
+  dependsOn cleanAll, buildAll, checkAll, runQuickstart
+  dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
 }
