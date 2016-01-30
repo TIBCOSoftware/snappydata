@@ -2,13 +2,12 @@
 DROP TABLE IF EXISTS AIRLINE_SAMPLE ;
 
 --- CREATE SAMPLE TABLE ---
-CREATE SAMPLE TABLE AIRLINE_SAMPLE 
+CREATE SAMPLE TABLE AIRLINE_SAMPLE ON AIRLINE
   OPTIONS(
-    buckets '5',
+    buckets '7',
     qcs 'UniqueCarrier, Year_, Month_',
     fraction '0.03',
-    strataReservoirSize '50',
-    basetable 'Airline') 
+    strataReservoirSize '50')
   AS (
     SELECT Year_, Month_ , DayOfMonth,
       DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
