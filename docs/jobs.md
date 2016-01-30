@@ -37,9 +37,8 @@ Create columnar tables using API. Other than `create`, `drop` table rest is all 
   // "column" is the table format (that is row or column)
   // dataDF.schema provides the schema for table
   snc.createTable("COLUMN_TABLE", "column", dataDF.schema, props1)
-  // insert the data in append mode
-  dataDF.write.format("column").mode(org.apache.spark.sql.SaveMode.Append)
-  .options(props1).saveAsTable("COLUMN_TABLE")
+  // append dataDF into the table
+  dataDF.write.insertInto("COLUMN_TABLE")
 
   val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
   println("contents of column table are:")
@@ -59,9 +58,8 @@ Create row tables using API, update the contents of row table
   val props2 = Map.empty[String, String]
   snc.createTable("ROW_TABLE", "row", dataDF.schema, props2)
 
-  // insert the data in append mode
-  dataDF.write.format("row").mode(org.apache.spark.sql.SaveMode.Append)
-  .options(props2).saveAsTable("ROW_TABLE")
+  // append dataDF into the data
+  dataDF.write.insertInto("ROW_TABLE")
 
   val results2 = snc.sql("select * from ROW_TABLE")
   println("contents of row table are:")

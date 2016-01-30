@@ -667,7 +667,7 @@ task cleanAll {
 task buildAll {
   dependsOn getTasksByName('assemble', true).collect { it.path }
   dependsOn getTasksByName('testClasses', true).collect { it.path }
-  dependsOn product
+  dependsOn distTar, distZip
   mustRunAfter cleanAll
 }
 task checkAll {

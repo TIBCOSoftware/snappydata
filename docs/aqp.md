@@ -122,7 +122,7 @@ This is where stratified sampling comes in. Stratified sampling divides the popu
           "strataReservoirSize" -> "50",
           "basetable" -> baseTable
         ))
-        snc.table(baseTable).write.mode(SaveMode.Append).saveAsTable(sampleTable)
+        snc.table(baseTable).write.insertInto(sampleTable)
      
 Here is an example of a query that can be run after the sample table has been created.  
 

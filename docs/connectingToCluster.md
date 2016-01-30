@@ -101,13 +101,6 @@ When running a native spark program, you can access SnappyData purely as a DataS
     "password" -> "app"
     )
 
-  // Save some application dataframe into a SnappyData row table
+  // Save some application dataframe into a JDBC DataSource
   myAppDataFrame.write.format("jdbc").options(props).saveAsTable("MutableTable")
 ```
-
-
-
-
-
-
-
