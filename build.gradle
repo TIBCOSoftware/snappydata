@@ -150,7 +150,7 @@ task cleanDUnit << {
   file(workingDir).mkdirs()
 }
 
-task publish_docs(type:Exec) {
+task publishDocs(type:Exec) {
   //on linux
   commandLine './publish-site.sh'
 }
@@ -255,21 +255,6 @@ subprojects {
     }
   }
 
-  task packageSources(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-  }
-  task packageDocs(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc
-  }
-  /*
-  artifacts {
-    archives packageSources
-    archives packageDocs
-  }
-  */
-
   configurations {
     provided {
       description 'a dependency that is provided externally at runtime'
@@ -292,7 +277,7 @@ subprojects {
   }
 
   task packageTests(type: Jar) {
-    from sourceSets.test.output
+    from sourceSets.test.output.classesDir
     classifier = 'tests'
   }
   artifacts {
@@ -322,6 +307,87 @@ subprojects {
     testCompile "junit:junit:${junitVersion}"
   }
 }
+
+// maven publish tasks
+subprojects {
+
+  apply plugin: 'signing'
+
+  task packageSources(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+  task packageDocs(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc
+  }
+  if (rootProject.hasProperty('enablePublish')) {
+    signing {
+      sign configurations.archives
+    }
+
+    uploadArchives {
+      repositories {
+        mavenDeployer {
+          beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+          repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+            authentication(userName: ossrhUsername, password: ossrhPassword)
+          }
+          snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+            authentication(userName: ossrhUsername, password: ossrhPassword)
+          }
+
+          pom.project {
+            name 'SnappyData'
+            packaging 'jar'
+            // optionally artifactId can be defined here
+            description 'SnappyData distributed data store and execution engine'
+            url 'http://www.snappydata.io'
+
+            scm {
+              connection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
+              developerConnection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
+              url 'https://github.com/SnappyDataInc/snappydata'
+            }
+
+            licenses {
+              license {
+                name 'The Apache License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+              }
+            }
+
+            developers {
+              developer {
+                id 'smenon'
+                name 'Sudhir Menon'
+                email 'smenon@snappydata.io'
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+task publishLocal {
+  dependsOn subprojects.findAll { p -> p.name != 'native' &&
+    p.name != 'prebuild' && p.name != 'gemfirexd' &&
+    p.name != 'tests-sql' && p.name != 'snappy-aqp' }.collect {
+    it.getTasksByName('install', false).collect { it.path }
+  }
+}
+
+task publishMaven {
+  dependsOn subprojects.findAll { p -> p.name != 'native' &&
+    p.name != 'prebuild' && p.name != 'snappy-store' && p.name != 'gemfirexd' &&
+    p.name != 'tests-sql' && p.name != 'snappy-aqp' }.collect {
+    it.getTasksByName('uploadArchives', false).collect { it.path }
+  }
+}
+
 
 task generateSources {
   dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':generateAvroJava'

@@ -40,6 +40,16 @@ dependencies {
   }
 }
 
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }

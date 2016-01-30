@@ -52,12 +52,22 @@ dependencies {
   testRuntime 'org.pegdown:pegdown:1.1.0'
 }
 
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
 }
 
 task deleteDocsDir(type: Delete) {
-      delete "${rootProject.buildDir}/docs"
+  delete "${rootProject.buildDir}/docs"
 }
 
 task docs(type: ScalaDoc) {
