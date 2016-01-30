@@ -600,7 +600,7 @@ snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId bigint PRIMARY KEY, 
 
 // Iterate over the stream and insert it into snappy store
 retweetStream.foreachDataFrame(df => {
-    df.write.mode(SaveMode.Append).saveAsTable(tableName)
+    df.write.insertInto(tableName)
 })
 ```
 #### Top-K Elements in a Stream (explanation)
