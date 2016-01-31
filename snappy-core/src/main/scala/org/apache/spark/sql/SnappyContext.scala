@@ -987,22 +987,19 @@ object SnappyContext extends Logging {
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
     } else if (ToolsCallbackInit.toolsCallback != null) {
       val conf = sc.conf
-      val local = Utils.isLoner(sc)
       val embedded = conf.getOption(Property.embedded).exists(_.toBoolean)
       conf.getOption(Property.locators).collectFirst {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
-          if (local) LocalMode(sc, url)
-          else if (embedded) ExternalEmbeddedMode(sc, url)
+          if (embedded) ExternalEmbeddedMode(sc, url)
           else SnappyShellMode(sc, url)
       }.orElse(conf.getOption(Property.mcastPort).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
-          if (local) LocalMode(sc, url)
-          else if (embedded) ExternalEmbeddedMode(sc, url)
+          if (embedded) ExternalEmbeddedMode(sc, url)
           else SnappyShellMode(sc, url)
       }).getOrElse {
-        if (local) LocalMode(sc, "mcast-port=0")
+        if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
       }
     } else {
@@ -1090,18 +1087,39 @@ abstract class ClusterMode {
   val url: String
 }
 
+/**
+ * The regular snappy cluster where each node is both a Spark executor
+ * as well as GemFireXD data store. There is a "lead node" which is the
+ * Spark driver that also hosts a job-server and GemFireXD accessor.
+ */
 case class SnappyEmbeddedMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
+/**
+ * This is for the two cluster mode: one is the normal snappy cluster, and
+ * this one is a separate local/Spark/Yarn/Mesos cluster fetching data from
+ * the snappy cluster on demand that just remains like an external datastore.
+ */
 case class SnappyShellMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
+/**
+ * This is for the "old-way" of starting GemFireXD inside an existing
+ * Spark/Yarn cluster where cluster nodes themselves boot up as GemXD cluster.
+ */
 case class ExternalEmbeddedMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
+/**
+ * The local mode which hosts the data, executor, driver
+ * (and optionally even jobserver) all in the same node.
+ */
 case class LocalMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
+/**
+ * A regular Spark/Yarn/Mesos or any other non-snappy cluster.
+ */
 case class ExternalClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 

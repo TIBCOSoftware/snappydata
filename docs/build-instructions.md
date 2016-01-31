@@ -4,14 +4,14 @@ Quickstart to build all components of snappydata project:
 ```sh
 > git clone git@github.com:SnappyDataInc/snappydata.git --recursive
 > cd snappydata
-> ./gradlew clean assemble
+> ./gradlew assemble
 ```
 
 If you want to build only the top-level snappydata project but pull in jars for other projects (_snappy-spark_, _snappy-store_, _spark-jobserver_):
 ```sh
 > git clone git@github.com:SnappyDataInc/snappydata.git
 > cd snappydata
-> ./gradlew clean assemble
+> ./gradlew assemble
 ```
 
 
@@ -60,9 +60,9 @@ Useful build and test targets:
                            (in build-artifacts/scala_2.10/distributions)
 ./gradlew buildAll      -  build all sources, tests, product, packages (all targets above)
 ./gradlew checkAll      -  run testsuites of snappydata components
-./gradlew clean         -  clean all build and test output
+./gradlew cleanAll      -  clean all build and test output
 ./gradlew runQuickstart -  run the quickstart suite (the "Getting Started" section of docs)
-./gradlew precheckin    -  clean, buildAll, scalaStyle, build docs,
+./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
                            and run full snappydata testsuite including quickstart
 ```
 

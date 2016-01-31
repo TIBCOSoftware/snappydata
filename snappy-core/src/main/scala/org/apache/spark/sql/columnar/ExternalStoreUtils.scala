@@ -172,13 +172,6 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isExternalShellMode(sparkContext: SparkContext): Boolean = {
-    SnappyContext.getClusterMode(sparkContext) match {
-      case SnappyShellMode(_, _) => true
-      case _ => false
-    }
-  }
-
   def isShellOrLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
       case SnappyShellMode(_, _) | LocalMode(_, _) => true
