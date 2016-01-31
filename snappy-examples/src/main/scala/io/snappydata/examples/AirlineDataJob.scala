@@ -29,7 +29,7 @@ object AirlineDataJob extends SnappySQLJob {
     // scalastyle:off println
     val pw = new PrintWriter("AirlineDataJob.out")
     Try {
-      snc.sql("set spark.sql.shuffle.partitions=8")
+      snc.sql("set spark.sql.shuffle.partitions=6")
       // Get the already created tables
       val airlineDF: DataFrame = snc.table(colTable)
       val airlineCodeDF: DataFrame = snc.table(rowTable)

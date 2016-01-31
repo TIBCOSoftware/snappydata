@@ -17,7 +17,7 @@ object AirlineDataSparkApp {
 
     val sc = new SparkContext(conf)
     val snc = SnappyContext(sc)
-    snc.sql("set spark.sql.shuffle.partitions=8")
+    snc.sql("set spark.sql.shuffle.partitions=6")
 
     val colTableName = "airline"
     val rowTableName = "airlineref"
