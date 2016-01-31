@@ -183,7 +183,7 @@ To start the Spark/Scala REPL session enter the following command from the root,
 
 From here, all the classic [Spark transformations](http://spark.apache.org/docs/latest/programming-guide.html#transformations) are possible. For example, the well-known as example from [Spark’s basic programming intro](http://spark.apache.org/docs/latest/quick-start.html#basics):
 
-````
+````scala
 scala> val textFile = sc.textFile("RELEASE")
 textFile: org.apache.spark.rdd.RDD[String]
 
@@ -198,11 +198,11 @@ res14: Array[String] = Array(Snappy Spark 0.1.0-SNAPSHOT 3a85dca6b4e039dd5a1be43
 ````
 **But what about SnappyData extensions?** To use SnappyData extensions, we must either import or create a new SnappyContext object, which gets passed the existing SparkContext (sc):
 
-````
-val snc: SnappyContext = org.apache.spark.sql.SnappyContext(sc)
+````scala
+val snc = org.apache.spark.sql.SnappyContext(sc)
 ````
 Let’s create a new column table (the table optimized for OLAP querying):
-````
+````scala
 case class Data(COL1: Int, COL2: Int, COL3: Int)
 val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
 val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
@@ -213,7 +213,7 @@ Here we’ve defined some data which we’ve placed into a case class and parall
 
 Now, let’s create a column table using what we’ve already defined:
 
-````
+````scala
 val props1 = Map(“Buckets” -> “2”)
 snc.createTable(“COLUMN_TABLE”, “column”, dataDF.schema, props1)
 ````
@@ -221,14 +221,14 @@ snc.createTable(“COLUMN_TABLE”, “column”, dataDF.schema, props1)
 
 Now, let’s insert the data in append-mode:
 
-````
+````scala
 dataDF.write.format("column").mode(org.apache.spark.sql.SaveMode.Append)
   .options(props1).saveAsTable("COLUMN_TABLE")
 ```
 
 Here we’ve written the data contained in dataDF to our newly created column table using Append mode. Let’s print the table using SQL and see what’s inside:
 
-````
+````scala
 val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
   results1.foreach(println)
 ````
@@ -237,34 +237,34 @@ Easy enough. But how do we create a **row table** out of the same data, i.e. a t
 
 First, let’s create the actual table using the `createTable` method. `”Buckets”` is not used this time.
 
-````
+````scala
 val props2 = Map.empty[String, String]
   snc.createTable("ROW_TABLE", "row", dataDF.schema, props2)
 ````
 
 Let’s insert the dataDF data as we did before, in append mode:
 
-````
+````scala
 dataDF.write.format("row").mode(org.apache.spark.sql.SaveMode.Append)
   .options(props2).saveAsTable("ROW_TABLE")
 ````
 
 Now, let’s check our results before we mutate some data to compare the difference:
 
-````
+````scala
  val results2 = snc.sql("SELECT * from ROW_TABLE")
   results2.foreach(println)
 ````
 
 Okay, there’s our row table. Now let’s do some mutation:
 
-````
+````scala
   snc.update("ROW_TABLE", "COL3 = 3", org.apache.spark.sql.Row(99), "COL3" )
 ````
 
 Here we’re updating all the values in ROW_TABLE in column 3 that equal 3 to the value 99. Let’s print our mutated table and make sure it worked:
 
-````
+````scala
 val results3 = snc.sql("SELECT * FROM ROW_TABLE")
  results3.foreach(println)
 ````
