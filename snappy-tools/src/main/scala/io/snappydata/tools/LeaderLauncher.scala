@@ -82,6 +82,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
     super.run(initStartupArgs(ArrayBuffer(args: _*)))
   }
 
+  override protected def setDefaultHeapSize(): Boolean = false
+
   @throws(classOf[Exception])
   override protected def startServerVM(props: Properties) : Unit = {
     val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
