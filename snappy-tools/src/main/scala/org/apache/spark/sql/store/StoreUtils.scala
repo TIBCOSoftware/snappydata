@@ -216,8 +216,9 @@ object StoreUtils extends Logging {
 
     // if OVERFLOW has been provided, then use HEAPPERCENT as the default
     // eviction policy (unless overridden explicitly)
-    val defaultEviction = if (parameters.contains(OVERFLOW)) GEM_HEAPPERCENT
-    else EMPTY_STRING
+    val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
+        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
+    val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
           .getOrElse(defaultEviction))
@@ -245,7 +246,10 @@ object StoreUtils extends Logging {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
         .getOrElse(EMPTY_STRING))
-    parameters.remove(OVERFLOW).foreach(v => sb.append(s"$GEM_OVERFLOW "))
+    if (hasOverflow) {
+      parameters.remove(OVERFLOW)
+      sb.append(s"$GEM_OVERFLOW ")
+    }
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
