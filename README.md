@@ -6,7 +6,7 @@
 * [Link with SnappyData Distribution](#link-with-snappydata-distribution)
 * [Building SnappyData from Source](#building-snappydata-from-source)
  * [Build Instructions](docs/build-instructions.md)
-* [Before the Quick Starts: passwordless ssh](#before-the-quick-starts-passwordless-ssh)
+* [Setting up passwordless SSH](#setting-up-passwordless-SSH)
 * [Quick Start with SQL](#quick-start-with-sql)
 * [Quick Start with Scala/Spark/Snappy Programming](#quick-start-with-scalasparksnappy-programming)
 
