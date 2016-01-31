@@ -58,9 +58,9 @@ You can try our quick starts or go directly to Getting Started to understand som
 
 * [Getting Started](docs/GettingStarted.md)
 
-## Before the Quick starts: passwordless ssh
+## Setting up passwordless SSH
 
-The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with `sudo apt-get install ssh`. ssh comes packaged with Mac OSX. Enabling passwordless ssh is the easiest way to work with SnappyData. 
+The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with `sudo apt-get install ssh`. ssh comes packaged with Mac OSX. Enabling passwordless ssh is the easiest way to work with SnappyData and prevents you from having to put in your ssh password multiple times. 
 
 **On OSX:**
 
