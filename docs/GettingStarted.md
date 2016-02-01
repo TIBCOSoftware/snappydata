@@ -5,6 +5,7 @@
 * [Link with SnappyData distribution](#link-with-snappydata-distribution)
 * [Working with SnappyData Source Code](#working-with-snappydata-source-code)
     * [Building SnappyData from source](#building-snappydata-from-source)
+    * [Setting up passwordless SSH](#setting-up-passwordless-ssh)
 * [Key Features](#key-features)
 * [Getting started](#getting-started)
   * [Objectives](#objectives)
@@ -78,6 +79,22 @@ You will find the instructions for building, layout of the code, integration wit
 
 >  NOTE:
 > SnappyData is built using Spark 1.6 (build xx) which is packaged as part of SnappyData. While you can build your application using Apache Spark 1.5, you will need to link to Snappy-spark to make  use of the SnappyData extensions. Gradle build tasks are packaged.  
+
+#### Setting up passwordless SSH
+
+The quick start scripts use ssh to start up various processes. You can install ssh on ubuntu with `sudo apt-get install ssh`. ssh comes packaged with Mac OSX, however, make sure ssh is enabled by going to `System Preferences -> Sharing` and enabling `Remote Login`. Enabling passwordless ssh is the easiest way to work with SnappyData and prevents you from having to put in your ssh password multiple times. 
+
+Generate an RSA key with 
+
+`ssh-keygen -t rsa`
+
+This will spawn some prompts. If you want truly passwordless ssh, just press enter instead of entering a password.
+
+Finally, copy your key to authorized keys:
+
+`cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys`
+
+More detail on passwordless ssh can be found [here](https://www.digitalocean.com/community/tutorials/how-to-set-up-ssh-keys--2) and [here](http://stackoverflow.com/questions/7134535/setup-passphraseless-ssh-to-localhost-on-os-x).
 
 ## Key Features
 - **100% compatible with Spark**: Use SnappyData as a database as well as use any of the Spark APIs - ML, Graph, etc. on the same data
