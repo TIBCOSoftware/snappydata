@@ -205,7 +205,7 @@ In this document, we showcase mostly the same set of features via the Spark API 
 
 ### Getting Started with SQL
 
-> If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), edit the `'create_and_load_column_table.sql'` script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline.
+
 
 For SQL, the SnappyData SQL Shell (_snappy-shell_) provides a simple way to inspect the catalog,  run admin operations,  manage the schema and run interactive queries. You can also use your favorite SQL tool like SquirrelSQL or DBVisualizer (a JDBC connection to the cluster).
 
@@ -307,12 +307,11 @@ You can now re-run olap_queries.sql to see the updated join result set.
 > You can execute transactions using commands _autocommit off_ and _commit_.  
 
 #### Approximate query processing (AQP) (explanation)
+
+> If you downloaded the full airline data (52 million records) set in [Step 1](#step-1---start-the-snappydata-cluster), edit the `'create_and_load_column_table.sql'` script which is in `quickstart/scripts` to point to `airlineParquetData_2007-15` directory. Make sure you copy + paste the starting quote mark to the end after you change `airlineParquetData` to enclose the statement. If you enter a quote mark directly from your keyboard it may break the script.  This script loads parquet formatted data into a temporary spark table then saves it in column table called Airline. You need to load the table again using `run './quickstart/scripts/create_and_load_column_table.sql';` Ideally, you'd re-run the olap queries script as well to see the speedup between non-AQP and AQP. 
+
 OLAP queries are expensive as they require traversing through large data sets and shuffling data across nodes. While the in-memory queries above executed in less than a second the response times typically would be much higher with very large data sets. On top of this, concurrent execution for multiple users would also slow things down. Achieving interactive query speed in most analytic environments requires drastic new approaches like AQP.
 Similar to how indexes provide performance benefits in traditional databases, SnappyData provides APIs and DDL to specify one or more curated [stratified samples](https://en.wikipedia.org/wiki/Stratified_sampling) on large tables. 
-
-> #### Note
-> We recommend downloading the full dataset mentioned in [Step 1](#step-1---start-the-snappydata-cluster) which is about 52 million records. With the above data set (1 million rows) only about a third of the time is spent in query execution engine and  sampling is unlikely to show much of any difference in speed.
-
 
 The following DDL creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ clauses make up the _Query Column Set_ (strata columns). Multiple samples can be created and queries that are executed on the base table are analyzed for appropriate sample selection. 
 
