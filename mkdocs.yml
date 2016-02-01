@@ -21,6 +21,7 @@ pages:
 - Approximate query processing: aqp.md
 - Stream processing using SQL: streamingWithSQL.md
 - Deployment topologies: deployment.md
+- API: apidocsintro.md
 - About:
 #   - Release Notes: about/release-notes.md
 #   - Contributing: about/contributing.md

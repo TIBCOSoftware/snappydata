@@ -38,6 +38,13 @@ fi
 # echo $@
 # mkdocs $@
 mkdocs build --clean
+
+# Generate scala docs 
+./gradlew :snappy-tools:docs 
+
+# Copy the generated scala docs inside the site folder. 
+mkdir site/apidocs
+cp -R build-artifacts/scala-2.10/docs/* site/apidocs/
 #mkdocs gh-deploy
 
 # remove extra files added to docs
