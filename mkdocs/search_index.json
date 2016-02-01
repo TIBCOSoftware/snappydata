@@ -627,12 +627,12 @@
         }, 
         {
             "location": "/apidocsintro/", 
-            "text": "API Documentation\n\n\nAPI reference for SnappyData's extension to Spark API can be found \nhere\n.", 
+            "text": "API Documentation\n\n\nAPI reference for SnappyData can be found \nhere\n.", 
             "title": "API"
         }, 
         {
             "location": "/apidocsintro/#api-documentation", 
-            "text": "API reference for SnappyData's extension to Spark API can be found  here .", 
+            "text": "API reference for SnappyData can be found  here .", 
             "title": "API Documentation"
         }, 
         {
