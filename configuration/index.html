@@ -154,6 +154,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
 
@@ -219,7 +226,7 @@
 <li><strong><em>-heap-size</em></strong>: Set a fixed heap size and for the Java VM. </li>
 <li><strong><em>-J</em></strong>: Use this to configure any JVM specific property. For e.g. -J-XX:MaxPermSize=512m. </li>
 </ol>
-<p>For a detail list of SnappyData configurations for Leads and Servers, you can consult <a href="http://gemfirexd.docs.pivotal.io/1.3.0/userguide/reference/gfxd_commands/gfxd-server.html">this</a>. For a detail list of SnappyData configurations for Locators, you can consult <a href="http://gemfirexd.docs.pivotal.io/1.3.0/userguide/reference/gfxd_commands/gfxd-locator.html">this</a>.</p>
+<p>For a detail list of SnappyData configurations for Leads and Servers, you can consult <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-server.html">this</a>. For a detail list of SnappyData configurations for Locators, you can consult <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-locator.html">this</a>.</p>
 <h4 id="spark-specific-properties">Spark specific properties</h4>
 <p>Since SnappyData embeds Spark components, <a href="http://spark.apache.org/docs/latest/configuration.html#runtime-environment">Spark Runtime environment properties</a> (like  spark.driver.memory, spark.executor.memory, spark.driver.extraJavaOptions, spark.executorEnv) do not take effect. They have to be specified using SnappyData configuration properties. Apart from these properties, other Spark properties can be specified in the configuration file of the Lead nodes. You have to prepend them with a <em>hyphen(-)</em>. The Spark properties that are specified on the Lead node are sent to the Server nodes. Any Spark property that is specified in the conf/servers or conf/locators file is ignored. </p>
 <blockquote>
@@ -288,7 +295,7 @@ log4j.rootCategory=DEBUG, file
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
     
   </div>
 

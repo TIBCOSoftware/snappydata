@@ -157,6 +157,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
 
@@ -235,9 +242,6 @@ snappy&gt; run 'create_and_load_column_table.sql';
 
 //Run a sql script. This particular script creates and loads a row table in the default schema  
 snappy&gt; run 'create_and_load_row_table.sql';
-
-//Start pulse to monitor the SnappyData cluster  
-snappy&gt; start pulse;
 </code></pre>
 
 <p>The complete list of commands available through <em>snappy_shell</em> can be found <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html">here</a></p>
@@ -298,7 +302,7 @@ When the spark program connects to the cluster using a SnappyContext (extends SQ
     &quot;password&quot; -&gt; &quot;app&quot;
     )
 
-  // Save some application dataframe into a SnappyData row table
+  // Save some application dataframe into a JDBC DataSource
   myAppDataFrame.write.format(&quot;jdbc&quot;).options(props).saveAsTable(&quot;MutableTable&quot;)
 </code></pre>
               
@@ -321,7 +325,7 @@ When the spark program connects to the cluster using a SnappyContext (extends SQ
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
     
   </div>
 

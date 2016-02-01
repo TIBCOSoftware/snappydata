@@ -1,0 +1,1954 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html>
+        <head>
+          <title>SparkILoopInterpreter - snappy-tools_2.10 0.1.0-SNAPSHOT API - org.apache.spark.repl.SparkILoop.SparkILoopInterpreter</title>
+          <meta name="description" content="SparkILoopInterpreter - snappy - tools 2.10 0.1.0 - SNAPSHOT API - org.apache.spark.repl.SparkILoop.SparkILoopInterpreter" />
+          <meta name="keywords" content="SparkILoopInterpreter snappy tools 2.10 0.1.0 SNAPSHOT API org.apache.spark.repl.SparkILoop.SparkILoopInterpreter" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'org.apache.spark.repl.SparkILoop$SparkILoopInterpreter';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img src="../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.repl">repl</a>.<a href="SparkILoop.html" class="extype" name="org.apache.spark.repl.SparkILoop">SparkILoop</a></p>
+        <h1>SparkILoopInterpreter</h1>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SparkILoopInterpreter</span><span class="result"> extends <a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter">SparkILoopInterpreter</a></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a>, <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <span class="extype" name="org.apache.spark.repl.SparkImports">SparkImports</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter"><span>SparkILoopInterpreter</span></li><li class="in" name="org.apache.spark.repl.SparkIMain"><span>SparkIMain</span></li><li class="in" name="org.apache.spark.Logging"><span>Logging</span></li><li class="in" name="org.apache.spark.repl.SparkImports"><span>SparkImports</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show all</span></li>
+            </ol>
+            <a href="http://docs.scala-lang.org/overviews/scaladoc/usage.html#members" target="_blank">Learn more about member selection</a>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;():SparkILoop.this.SparkILoopInterpreter"></a>
+      <a id="&lt;init&gt;:SparkILoopInterpreter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SparkILoopInterpreter</span><span class="params">()</span>
+      </span>
+      </h4>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.repl.SparkIMain.ReadEvalPrint" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReadEvalPrintextendsAnyRef"></a>
+      <a id="ReadEvalPrint:ReadEvalPrint"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkIMain$ReadEvalPrint.html"><span class="name">ReadEvalPrint</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Here is where we:</p>
+    </li><li name="org.apache.spark.repl.SparkIMain.Request" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RequestextendsAnyRef"></a>
+      <a id="Request:Request"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkIMain$Request.html"><span class="name">Request</span></a><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">One line of code submitted by the user for interpretation</p>
+    </li><li name="org.apache.spark.repl.SparkImports.SparkComputedImports" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SparkComputedImportsextendsProductwithSerializable"></a>
+      <a id="SparkComputedImports:SparkIMain.SparkComputedImports"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SparkComputedImports</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Compute imports that allow definitions from previous
+ requests to be visible in a new request.</p><div class="fullcomment"><div class="comment cmt"><p>Compute imports that allow definitions from previous
+ requests to be visible in a new request.  Returns
+ three pieces of related code:</p><ol class="decimal"><li>An initial code fragment that should go before
+ the code of the new request.</li></ol><p> 2. A code fragment that should go after the code
+ of the new request.</p><p> 3. An access path which can be traversed to access
+ any bindings inside code wrapped by #1 and #2 .</p><p>The argument is a set of Names that need to be imported.</p><p>Limitations: This method is not as precise as it could be.
+(1) It does not process wildcard imports to see what exactly
+they import.
+(2) If it imports any names from a request, it imports all
+of them, which is not really necessary.
+(3) It imports multiple same-named implicits, but only the
+last one imported is actually usable.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:AnyRef):Boolean"></a>
+      <a id="!=(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:AnyRef):Boolean"></a>
+      <a id="==(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.Any#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain.FixedSessionNames" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FixedSessionNames"></a>
+      <a id="FixedSessionNames:FixedSessionNames"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SparkIMain$FixedSessionNames$.html"><span class="name">FixedSessionNames</span></a>
+      </span>
+      </h4>
+      <p class="comment cmt">Captures the session names (which are set by system properties) once, instead of for each line.</p>
+    </li><li name="org.apache.spark.repl.SparkIMain#addImports" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addImports(ids:String*):tools.nsc.interpreter.IR.Result"></a>
+      <a id="addImports(String*):scala.tools.nsc.interpreter.Results.Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addImports</span><span class="params">(<span name="ids">ids: <span class="extype" name="scala.Predef.String">String</span>*</span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.Results.Result">scala.tools.nsc.interpreter.Results.Result</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Executes an import statement per &quot;id&quot; provided
+</p><div class="fullcomment"><div class="comment cmt"><p>Executes an import statement per &quot;id&quot; provided
+</p></div><dl class="paramcmts block"><dt class="param">ids</dt><dd class="cmt"><p>The series of &quot;id&quot; strings used for import statements
+</p></dd><dt>returns</dt><dd class="cmt"><p>The results of importing the series of &quot;id&quot; strings
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><div class="block">Example:
+               <ol><li class="cmt"><p>addImports(&quot;org.apache.spark.SparkContext&quot;)
+</p></li></ol>
+            </div></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#addUrlsToClassPath" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="addUrlsToClassPath(urls:java.net.URL*):Unit"></a>
+      <a id="addUrlsToClassPath(URL*):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addUrlsToClassPath</span><span class="params">(<span name="urls">urls: <span class="extype" name="java.net.URL">URL</span>*</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Adds any specified jars to the compile and runtime classpaths.</p><div class="fullcomment"><div class="comment cmt"><p>Adds any specified jars to the compile and runtime classpaths.
+</p></div><dl class="paramcmts block"><dt class="param">urls</dt><dd class="cmt"><p>The list of items to add to the compile and runtime classpaths
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Currently only supports jars, not directories</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#allDefinedNames" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allDefinedNames:List[SparkIMain.this.global.Name]"></a>
+      <a id="allDefinedNames:List[scala.tools.nsc.Global.Name]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allDefinedNames</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves all simple names contained in the current instance.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves all simple names contained in the current instance.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>A list of sorted names
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#allImportedNames" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="allImportedNames:List[SparkImports.this.memberHandlers.intp.global.Name]"></a>
+      <a id="allImportedNames:List[scala.tools.nsc.Global.Name]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">allImportedNames</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#beQuietDuring" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="beQuietDuring[T](body:=&gt;T):T"></a>
+      <a id="beQuietDuring[T](⇒T):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">beQuietDuring</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="body">body: ⇒ <span class="extype" name="org.apache.spark.repl.SparkIMain.beQuietDuring.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.repl.SparkIMain.beQuietDuring.T">T</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Suppresses overwriting print results during the operation.</p><div class="fullcomment"><div class="comment cmt"><p>Suppresses overwriting print results during the operation.
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>The return type of the block
+</p></dd><dt class="param">body</dt><dd class="cmt"><p>The block to execute</p></dd><dt>returns</dt><dd class="cmt"><p>The result from executing the block
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#beSilentDuring" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="beSilentDuring[T](operation:=&gt;T):T"></a>
+      <a id="beSilentDuring[T](⇒T):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">beSilentDuring</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="operation">operation: ⇒ <span class="extype" name="org.apache.spark.repl.SparkIMain.beSilentDuring.T">T</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.repl.SparkIMain.beSilentDuring.T">T</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Completely masks all output during the operation (minus JVM standard
+out and error).</p><div class="fullcomment"><div class="comment cmt"><p>Completely masks all output during the operation (minus JVM standard
+out and error).
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>The return type of the block
+</p></dd><dt class="param">operation</dt><dd class="cmt"><p>The block to execute</p></dd><dt>returns</dt><dd class="cmt"><p>The result from executing the block
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#bind" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="bind(name:String,boundType:String,value:Any,modifiers:List[String]):tools.nsc.interpreter.IR.Result"></a>
+      <a id="bind(String,String,Any,List[String]):scala.tools.nsc.interpreter.Results.Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bind</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="boundType">boundType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="value">value: <span class="extype" name="scala.Any">Any</span></span>, <span name="modifiers">modifiers: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.Results.Result">scala.tools.nsc.interpreter.Results.Result</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Bind a specified name to a specified value.</p><div class="fullcomment"><div class="comment cmt"><p>Bind a specified name to a specified value.  The name may
+later be used by expressions passed to interpret.
+</p></div><dl class="paramcmts block"><dt class="param">name</dt><dd class="cmt"><p>The variable name to bind</p></dd><dt class="param">boundType</dt><dd class="cmt"><p>The type of the variable, as a string</p></dd><dt class="param">value</dt><dd class="cmt"><p>The object value to bind to it
+</p></dd><dt>returns</dt><dd class="cmt"><p>An indication of whether the binding succeeded or failed
+        using interpreter results
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This binds via compilation and interpretation
+</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#classOfTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="classOfTerm(id:String):Option[tools.nsc.interpreter.JClass]"></a>
+      <a id="classOfTerm(String):Option[JClass]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">classOfTerm</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../scala/tools/nsc/interpreter/package.html#JClass=Class[_]" class="extmbr" name="scala.tools.nsc.interpreter.JClass">JClass</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the class representing the id (variable name, method name,
+class name, etc) provided.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the class representing the id (variable name, method name,
+class name, etc) provided.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>The id (variable name, method name, class name, etc) whose
+          associated class to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>Some containing term name (id) class if exists, else None
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#classServerUri" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="classServerUri:String"></a>
+      <a id="classServerUri:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">classServerUri</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">URI of the class server used to feed REPL compiled classes.</p><div class="fullcomment"><div class="comment cmt"><p>URI of the class server used to feed REPL compiled classes.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The string representing the class server uri
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#classSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="classSymbols:List[SparkIMain.this.global.ClassSymbol]"></a>
+      <a id="classSymbols:List[scala.tools.nsc.Global.ClassSymbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">classSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.ClassSymbol">scala.tools.nsc.Global.ClassSymbol</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the Symbols representing classes in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the Symbols representing classes in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of matching ClassSymbol instances
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#clearExecutionWrapper" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clearExecutionWrapper():Unit"></a>
+      <a id="clearExecutionWrapper():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearExecutionWrapper</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Clears the code used as a wrapper around all code executed by
+this instance.</p><div class="fullcomment"><div class="comment cmt"><p>Clears the code used as a wrapper around all code executed by
+this instance.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#close" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="close():Unit"></a>
+      <a id="close():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">close</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Stops the underlying REPL class server and flushes the reporter used
+for compiler output.</p><div class="fullcomment"><div class="comment cmt"><p>Stops the underlying REPL class server and flushes the reporter used
+for compiler output.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#compileSources" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compileSources(sources:scala.reflect.internal.util.SourceFile*):Boolean"></a>
+      <a id="compileSources(SourceFile*):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compileSources</span><span class="params">(<span name="sources">sources: <span class="extype" name="scala.reflect.internal.util.SourceFile">SourceFile</span>*</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Compiles specified source files.</p><div class="fullcomment"><div class="comment cmt"><p>Compiles specified source files.
+</p></div><dl class="paramcmts block"><dt class="param">sources</dt><dd class="cmt"><p>The sequence of source files to compile
+</p></dd><dt>returns</dt><dd class="cmt"><p>True if successful, otherwise false
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#compileString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="compileString(code:String):Boolean"></a>
+      <a id="compileString(String):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">compileString</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Compiles a string of code.</p><div class="fullcomment"><div class="comment cmt"><p>Compiles a string of code.
+</p></div><dl class="paramcmts block"><dt class="param">code</dt><dd class="cmt"><p>The string of code to compile
+</p></dd><dt>returns</dt><dd class="cmt"><p>True if successful, otherwise false
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#definedSymbolList" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="definedSymbolList:List[SparkIMain.this.memberHandlers.intp.global.Symbol]"></a>
+      <a id="definedSymbolList:List[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">definedSymbolList</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the list of public symbols in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the list of public symbols in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of public Symbol instances
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#definedSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="definedSymbols:scala.collection.immutable.Set[SparkIMain.this.global.Symbol]"></a>
+      <a id="definedSymbols:Set[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">definedSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.Set">Set</span>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the defined symbols in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the defined symbols in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The set of matching Symbol instances
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#definedTerms" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="definedTerms:List[SparkIMain.this.global.TermName]"></a>
+      <a id="definedTerms:List[scala.tools.nsc.Global.TermName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">definedTerms</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TermName">scala.tools.nsc.Global.TermName</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the defined, public names in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the defined, public names in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of matching &quot;term&quot; names
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#definedTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="definedTypes:List[SparkIMain.this.global.TypeName]"></a>
+      <a id="definedTypes:List[scala.tools.nsc.Global.TypeName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">definedTypes</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TypeName">scala.tools.nsc.Global.TypeName</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the defined type names in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the defined type names in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of matching type names
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#definitionForName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="definitionForName(name:SparkIMain.this.global.Name):Option[SparkIMain.this.memberHandlers.MemberHandler]"></a>
+      <a id="definitionForName(scala.tools.nsc.Global.Name):Option[(memberHandlers)#MemberHandler]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">definitionForName</span><span class="params">(<span name="name">name: <span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<span class="extype" name="org.apache.spark.repl.SparkIMain.memberHandlers">memberHandlers</span>)#<span class="extype" name="org.apache.spark.repl.SparkMemberHandlers.MemberHandler">MemberHandler</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#directBind" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="directBind(name:String,boundType:String,value:Any):tools.nsc.interpreter.IR.Result"></a>
+      <a id="directBind(String,String,Any):scala.tools.nsc.interpreter.Results.Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">directBind</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="boundType">boundType: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="value">value: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.Results.Result">scala.tools.nsc.interpreter.Results.Result</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Bind a specified name to a specified value directly.</p><div class="fullcomment"><div class="comment cmt"><p>Bind a specified name to a specified value directly.
+</p></div><dl class="paramcmts block"><dt class="param">name</dt><dd class="cmt"><p>The variable name to bind</p></dd><dt class="param">boundType</dt><dd class="cmt"><p>The type of the variable, as a string</p></dd><dt class="param">value</dt><dd class="cmt"><p>The object value to bind to it
+</p></dd><dt>returns</dt><dd class="cmt"><p>An indication of whether the binding succeeded or failed
+        using interpreter results
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This updates internal bound names directly
+</p></span></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#executionWrapper" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="executionWrapper:String"></a>
+      <a id="executionWrapper:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executionWrapper</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Contains the code (in string form) representing a wrapper around all
+code executed by this instance.</p><div class="fullcomment"><div class="comment cmt"><p>Contains the code (in string form) representing a wrapper around all
+code executed by this instance.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The wrapper code as a string
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#fallback" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="fallback:Boolean"></a>
+      <a id="fallback:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fallback</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#generatedName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="generatedName(simpleName:String):Option[String]"></a>
+      <a id="generatedName(String):Option[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">generatedName</span><span class="params">(<span name="simpleName">simpleName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns the real name of a class based on its repl-defined name.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the real name of a class based on its repl-defined name.</p><h4>Example</h4><p>Given a simple repl-defined name, returns the real name of
+the class representing it, e.g. for &quot;Bippy&quot; it may return</p><pre>$line19.$read$$iw$$iw$$iw$$iw$$iw$$iw$$iw$$iw$Bippy</pre></div><dl class="paramcmts block"><dt class="param">simpleName</dt><dd class="cmt"><p>The repl-defined name whose real name to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>Some real name if the simple name exists, else None
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#getClassOutputDirectory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClassOutputDirectory:java.io.File"></a>
+      <a id="getClassOutputDirectory:File"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClassOutputDirectory</span><span class="result">: <span class="extype" name="java.io.File">File</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns the path to the output directory containing all generated
+class files that will be served by the REPL class server.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the path to the output directory containing all generated
+class files that will be served by the REPL class server.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#global" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="global:scala.tools.nsc.Global"></a>
+      <a id="global:Global"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">global</span><span class="result">: <span class="extype" name="scala.tools.nsc.Global">Global</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">The underlying compiler used to generate ASTs and execute code.</p><div class="fullcomment"><div class="comment cmt"><p>The underlying compiler used to generate ASTs and execute code.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#implicitSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="implicitSymbols:List[SparkImports.this.global.Symbol]"></a>
+      <a id="implicitSymbols:List[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">implicitSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#implicitSymbolsBySource" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="implicitSymbolsBySource:List[(SparkImports.this.global.Symbol,List[SparkImports.this.global.Symbol])]"></a>
+      <a id="implicitSymbolsBySource:List[(scala.tools.nsc.Global.Symbol,List[scala.tools.nsc.Global.Symbol])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">implicitSymbolsBySource</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[(<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>, <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>])]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedSymbols:List[SparkImports.this.global.Symbol]"></a>
+      <a id="importedSymbols:List[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedSymbolsBySource" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedSymbolsBySource:List[(SparkImports.this.global.Symbol,List[SparkImports.this.global.Symbol])]"></a>
+      <a id="importedSymbolsBySource:List[(scala.tools.nsc.Global.Symbol,List[scala.tools.nsc.Global.Symbol])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedSymbolsBySource</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[(<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>, <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>])]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Tuples of (source, imported symbols) in the order they were imported.</p><div class="fullcomment"><div class="comment cmt"><p>Tuples of (source, imported symbols) in the order they were imported.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedTermNamed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedTermNamed(name:String):SparkImports.this.global.Symbol"></a>
+      <a id="importedTermNamed(String):scala.tools.nsc.Global.Symbol"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedTermNamed</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedTermSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedTermSymbols:List[SparkImports.this.global.TermSymbol]"></a>
+      <a id="importedTermSymbols:List[scala.tools.nsc.Global.TermSymbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedTermSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.TermSymbol">scala.tools.nsc.Global.TermSymbol</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedTerms" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedTerms:List[SparkImports.this.global.TermName]"></a>
+      <a id="importedTerms:List[scala.tools.nsc.Global.TermName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedTerms</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TermName">scala.tools.nsc.Global.TermName</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedTypeSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedTypeSymbols:List[SparkImports.this.global.TypeSymbol]"></a>
+      <a id="importedTypeSymbols:List[scala.tools.nsc.Global.TypeSymbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedTypeSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.TypeSymbol">scala.tools.nsc.Global.TypeSymbol</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importedTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importedTypes:List[SparkImports.this.global.TypeName]"></a>
+      <a id="importedTypes:List[scala.tools.nsc.Global.TypeName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importedTypes</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TypeName">scala.tools.nsc.Global.TypeName</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#importsCode" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="importsCode(wanted:Set[SparkImports.this.global.Name],definedClass:Boolean):SparkImports.this.SparkComputedImports"></a>
+      <a id="importsCode(Set[scala.tools.nsc.Global.Name],Boolean):SparkComputedImports"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">importsCode</span><span class="params">(<span name="wanted">wanted: <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span>]</span>, <span name="definedClass">definedClass: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <a href="#SparkComputedImportsextendsProductwithSerializable" class="extmbr" name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter.SparkComputedImports">SparkComputedImports</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#initializeSynchronous" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeSynchronous():Unit"></a>
+      <a id="initializeSynchronous():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeSynchronous</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Initializes the underlying compiler/interpreter in a blocking fashion.</p><div class="fullcomment"><div class="comment cmt"><p>Initializes the underlying compiler/interpreter in a blocking fashion.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>Must be executed before using SparkIMain!
+</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#interpret" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="interpret(line:String):tools.nsc.interpreter.IR.Result"></a>
+      <a id="interpret(String):scala.tools.nsc.interpreter.Results.Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">interpret</span><span class="params">(<span name="line">line: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.Results.Result">scala.tools.nsc.interpreter.Results.Result</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Interpret one line of input.</p><div class="fullcomment"><div class="comment cmt"><p>Interpret one line of input. All feedback, including parse errors
+and evaluation results, are printed via the supplied compiler's
+reporter. Values defined are available for future interpreted strings.
+</p></div><dl class="paramcmts block"><dt class="param">line</dt><dd class="cmt"><p>The line representing the code to interpret
+</p></dd><dt>returns</dt><dd class="cmt"><p>Whether the line was interpreted successfully, or failed due to
+        incomplete code, compilation error, or runtime error
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This assigns variables with user name structure like &quot;res0&quot;
+</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#interpretSynthetic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="interpretSynthetic(line:String):tools.nsc.interpreter.IR.Result"></a>
+      <a id="interpretSynthetic(String):scala.tools.nsc.interpreter.Results.Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">interpretSynthetic</span><span class="params">(<span name="line">line: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.Results.Result">scala.tools.nsc.interpreter.Results.Result</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Interpret one line of input.</p><div class="fullcomment"><div class="comment cmt"><p>Interpret one line of input. All feedback, including parse errors
+and evaluation results, are printed via the supplied compiler's
+reporter. Values defined are available for future interpreted strings.
+</p></div><dl class="paramcmts block"><dt class="param">line</dt><dd class="cmt"><p>The line representing the code to interpret
+</p></dd><dt>returns</dt><dd class="cmt"><p>Whether the line was interpreted successfully, or failed due to
+        incomplete code, compilation error, or runtime error
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This assigns variables with synthetic (generated) name structure
+      like &quot;$ires0&quot;
+</p></span></dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#isNoImports" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isNoImports:Boolean"></a>
+      <a id="isNoImports:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNoImports</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#isNoPredef" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isNoPredef:Boolean"></a>
+      <a id="isNoPredef:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNoPredef</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#isReportingErrors" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isReportingErrors:Boolean"></a>
+      <a id="isReportingErrors:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isReportingErrors</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Determines if errors were reported (typically during compilation).</p><div class="fullcomment"><div class="comment cmt"><p>Determines if errors were reported (typically during compilation).
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>True if had errors, otherwise false
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>This is not for runtime errors
+</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#languageSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="languageSymbols:List[SparkImports.this.global.Symbol]"></a>
+      <a id="languageSymbols:List[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">languageSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#languageWildcardHandlers" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="languageWildcardHandlers:List[SparkImports.this.memberHandlers.ImportHandler]"></a>
+      <a id="languageWildcardHandlers:List[(memberHandlers)#ImportHandler]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">languageWildcardHandlers</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[(<span class="extype" name="org.apache.spark.repl.SparkIMain.memberHandlers">memberHandlers</span>)#<span class="extype" name="org.apache.spark.repl.SparkMemberHandlers.ImportHandler">ImportHandler</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#languageWildcardSyms" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="languageWildcardSyms:List[SparkImports.this.global.Symbol]"></a>
+      <a id="languageWildcardSyms:List[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">languageWildcardSyms</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Symbols whose contents are language-defined to be imported.</p><div class="fullcomment"><div class="comment cmt"><p>Symbols whose contents are language-defined to be imported.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#languageWildcards" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="languageWildcards:List[SparkImports.this.global.Type]"></a>
+      <a id="languageWildcards:List[scala.tools.nsc.Global.Type]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">languageWildcards</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#lastWarnings" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="lastWarnings:List[(SparkIMain.this.global.Position,String)]"></a>
+      <a id="lastWarnings:List[(scala.tools.nsc.Global.Position,String)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lastWarnings</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[(<span class="extype" name="scala.reflect.internal.Positions.Position">scala.tools.nsc.Global.Position</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns a list of recent warnings from compiler execution.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a list of recent warnings from compiler execution.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of tuples (compiler position, warning)
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log:org.slf4j.Logger"></a>
+      <a id="log:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logDebug(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String):Unit"></a>
+      <a id="logDebug(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logError(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String):Unit"></a>
+      <a id="logError(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logInfo(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String):Unit"></a>
+      <a id="logInfo(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logName:String"></a>
+      <a id="logName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logTrace(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String):Unit"></a>
+      <a id="logTrace(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logWarning(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String):Unit"></a>
+      <a id="logWarning(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#methodSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="methodSymbols:List[SparkIMain.this.global.MethodSymbol]"></a>
+      <a id="methodSymbols:List[scala.tools.nsc.Global.MethodSymbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">methodSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.MethodSymbol">scala.tools.nsc.Global.MethodSymbol</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the Symbols representing methods in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the Symbols representing methods in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of matching MethodSymbol instances
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#mostRecentVar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mostRecentVar:String"></a>
+      <a id="mostRecentVar:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mostRecentVar</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Returns the name of the most recent interpreter result.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the name of the most recent interpreter result. Useful for
+for extracting information regarding the previous result.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The simple name of the result (such as res0)
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#namedDefinedTerms" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="namedDefinedTerms:List[SparkIMain.this.global.TermName]"></a>
+      <a id="namedDefinedTerms:List[scala.tools.nsc.Global.TermName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">namedDefinedTerms</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TermName">scala.tools.nsc.Global.TermName</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves defined, public names that are not res0 or the result of a direct bind.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves defined, public names that are not res0 or the result of a direct bind.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of matching &quot;term&quot; names
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#newCompiler" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="newCompiler(settings:scala.tools.nsc.Settings,reporter:scala.tools.nsc.reporters.Reporter):scala.tools.nsc.interpreter.ReplGlobal"></a>
+      <a id="newCompiler(Settings,Reporter):ReplGlobal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">newCompiler</span><span class="params">(<span name="settings">settings: <span class="extype" name="scala.tools.nsc.Settings">Settings</span></span>, <span name="reporter">reporter: <span class="extype" name="scala.tools.nsc.reporters.Reporter">Reporter</span></span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.ReplGlobal">ReplGlobal</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Instantiates a new compiler used by SparkIMain.</p><div class="fullcomment"><div class="comment cmt"><p>Instantiates a new compiler used by SparkIMain. Overridable to provide
+own instance of a compiler.
+</p></div><dl class="paramcmts block"><dt class="param">settings</dt><dd class="cmt"><p>The settings to provide the compiler</p></dd><dt class="param">reporter</dt><dd class="cmt"><p>The reporter to use for compiler output
+</p></dd><dt>returns</dt><dd class="cmt"><p>The compiler as a Global
+</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#onlyTerms" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="onlyTerms(xs:List[SparkIMain.this.global.Name]):List[SparkIMain.this.global.TermName]"></a>
+      <a id="onlyTerms(List[scala.tools.nsc.Global.Name]):List[scala.tools.nsc.Global.TermName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">onlyTerms</span><span class="params">(<span name="xs">xs: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span>]</span>)</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TermName">scala.tools.nsc.Global.TermName</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#onlyTypes" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="onlyTypes(xs:List[SparkIMain.this.global.Name]):List[SparkIMain.this.global.TypeName]"></a>
+      <a id="onlyTypes(List[scala.tools.nsc.Global.Name]):List[scala.tools.nsc.Global.TypeName]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">onlyTypes</span><span class="params">(<span name="xs">xs: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span>]</span>)</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Names.TypeName">scala.tools.nsc.Global.TypeName</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#out" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="out:tools.nsc.interpreter.JPrintWriter"></a>
+      <a id="out:JPrintWriter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">out</span><span class="result">: <a href="../../../../scala/tools/nsc/interpreter/package.html#JPrintWriter=java.io.PrintWriter" class="extmbr" name="scala.tools.nsc.interpreter.JPrintWriter">JPrintWriter</a></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter#parentClassLoader" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parentClassLoader:ClassLoader"></a>
+      <a id="parentClassLoader:ClassLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parentClassLoader</span><span class="result">: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Represents the parent classloader used by this instance.</p><div class="fullcomment"><div class="comment cmt"><p>Represents the parent classloader used by this instance. Can be
+overridden to provide alternative classloader.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The classloader used as the parent loader of this instance
+</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter">SparkILoopInterpreter</a> → <a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#parse" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parse(line:String):Option[List[SparkIMain.this.global.Tree]]"></a>
+      <a id="parse(String):Option[List[scala.tools.nsc.Global.Tree]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parse</span><span class="params">(<span name="line">line: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Trees.Tree">scala.tools.nsc.Global.Tree</span>]]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Constructs a list of abstract syntax trees representing the provided code.</p><div class="fullcomment"><div class="comment cmt"><p>Constructs a list of abstract syntax trees representing the provided code.
+</p></div><dl class="paramcmts block"><dt class="param">line</dt><dd class="cmt"><p>The line of code to parse and construct into ASTs
+</p></dd><dt>returns</dt><dd class="cmt"><p>Some list of ASTs if the line is valid, else None
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#pathToName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="pathToName(name:SparkIMain.this.global.Name):String"></a>
+      <a id="pathToName(scala.tools.nsc.Global.Name):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">pathToName</span><span class="params">(<span name="name">name: <span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the full code path to access the specified simple name
+content.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the full code path to access the specified simple name
+content.
+</p></div><dl class="paramcmts block"><dt class="param">name</dt><dd class="cmt"><p>The simple name of the target whose path to determine
+</p></dd><dt>returns</dt><dd class="cmt"><p>The full path used to access the specified target (name)
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#rebind" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="rebind(p:scala.tools.nsc.interpreter.NamedParam):tools.nsc.interpreter.IR.Result"></a>
+      <a id="rebind(NamedParam):scala.tools.nsc.interpreter.Results.Result"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rebind</span><span class="params">(<span name="p">p: <span class="extype" name="scala.tools.nsc.interpreter.NamedParam">NamedParam</span></span>)</span><span class="result">: <span class="extype" name="scala.tools.nsc.interpreter.Results.Result">scala.tools.nsc.interpreter.Results.Result</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Overwrites previously-bound val with a new instance.</p><div class="fullcomment"><div class="comment cmt"><p>Overwrites previously-bound val with a new instance.
+</p></div><dl class="paramcmts block"><dt class="param">p</dt><dd class="cmt"><p>The named parameters used to provide the name, value, and type
+</p></dd><dt>returns</dt><dd class="cmt"><p>The results of rebinding the named val
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#requestForIdent" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requestForIdent(line:String):Option[SparkIMain.this.Request]"></a>
+      <a id="requestForIdent(String):Option[Request]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requestForIdent</span><span class="params">(<span name="line">line: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="#RequestextendsAnyRef" class="extmbr" name="org.apache.spark.repl.SparkIMain.Request">Request</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#requestForName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requestForName(name:SparkIMain.this.global.Name):Option[SparkIMain.this.Request]"></a>
+      <a id="requestForName(scala.tools.nsc.Global.Name):Option[Request]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requestForName</span><span class="params">(<span name="name">name: <span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="#RequestextendsAnyRef" class="extmbr" name="org.apache.spark.repl.SparkIMain.Request">Request</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#requestForReqId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requestForReqId(id:Int):Option[SparkIMain.this.Request]"></a>
+      <a id="requestForReqId(Int):Option[Request]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requestForReqId</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="#RequestextendsAnyRef" class="extmbr" name="org.apache.spark.repl.SparkIMain.Request">Request</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#requestHistoryForName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="requestHistoryForName(name:SparkIMain.this.global.Name):List[SparkIMain.this.Request]"></a>
+      <a id="requestHistoryForName(scala.tools.nsc.Global.Name):List[Request]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">requestHistoryForName</span><span class="params">(<span name="name">name: <span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span></span>)</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<a href="#RequestextendsAnyRef" class="extmbr" name="org.apache.spark.repl.SparkIMain.Request">Request</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#reset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reset():Unit"></a>
+      <a id="reset():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reset</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Reset this interpreter, forgetting all user-specified requests.</p><div class="fullcomment"><div class="comment cmt"><p>Reset this interpreter, forgetting all user-specified requests.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#runtimeClassAndTypeOfTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="runtimeClassAndTypeOfTerm(id:String):Option[(tools.nsc.interpreter.JClass,SparkIMain.this.global.Type)]"></a>
+      <a id="runtimeClassAndTypeOfTerm(String):Option[(JClass,scala.tools.nsc.Global.Type)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">runtimeClassAndTypeOfTerm</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[(<a href="../../../../scala/tools/nsc/interpreter/package.html#JClass=Class[_]" class="extmbr" name="scala.tools.nsc.interpreter.JClass">JClass</a>, <span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span>)]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the runtime class and type representing the id (variable name,
+method name, class name, etc) provided.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the runtime class and type representing the id (variable name,
+method name, class name, etc) provided.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>The id (variable name, method name, class name, etc) whose
+          associated runtime class and type to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>Some runtime class and Type information as a tuple for the
+        provided term name if it exists, else None
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#runtimeTypeOfTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="runtimeTypeOfTerm(id:String):SparkIMain.this.global.Type"></a>
+      <a id="runtimeTypeOfTerm(String):scala.tools.nsc.Global.Type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">runtimeTypeOfTerm</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the runtime type representing the id (variable name,
+method name, class name, etc) provided.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the runtime type representing the id (variable name,
+method name, class name, etc) provided.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>The id (variable name, method name, class name, etc) whose
+          associated runtime type to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>The runtime Type information about the term name (id) provided
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#sessionImportedSymbols" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sessionImportedSymbols:List[SparkImports.this.memberHandlers.intp.global.Symbol]"></a>
+      <a id="sessionImportedSymbols:List[scala.tools.nsc.Global.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sessionImportedSymbols</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#sessionWildcards" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="sessionWildcards:List[SparkImports.this.global.Type]"></a>
+      <a id="sessionWildcards:List[scala.tools.nsc.Global.Type]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sessionWildcards</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Types which have been wildcard imported, such as:
+   val x = &quot;abc&quot; ; import x.</p><div class="fullcomment"><div class="comment cmt"><p>Types which have been wildcard imported, such as:
+   val x = &quot;abc&quot; ; import x._  // type java.lang.String
+   import java.lang.String._   // object java.lang.String</p><p> Used by tab completion.</p><p> XXX right now this gets import x._ and import java.lang.String._,
+ but doesn't figure out import String._.  There's a lot of ad hoc
+ scope twiddling which should be swept away in favor of digging
+ into the compiler scopes.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#setExecutionWrapper" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="setExecutionWrapper(code:String):Unit"></a>
+      <a id="setExecutionWrapper(String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setExecutionWrapper</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Sets the code to use as a wrapper around all code executed by this
+instance.</p><div class="fullcomment"><div class="comment cmt"><p>Sets the code to use as a wrapper around all code executed by this
+instance.
+</p></div><dl class="paramcmts block"><dt class="param">code</dt><dd class="cmt"><p>The wrapper code as a string
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#symbolOfLine" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="symbolOfLine(code:String):SparkIMain.this.global.Symbol"></a>
+      <a id="symbolOfLine(String):scala.tools.nsc.Global.Symbol"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">symbolOfLine</span><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Constructs a Symbol representing the final result of the expression
+provided or representing the definition provided.</p><div class="fullcomment"><div class="comment cmt"><p>Constructs a Symbol representing the final result of the expression
+provided or representing the definition provided.
+</p></div><dl class="paramcmts block"><dt class="param">code</dt><dd class="cmt"><p>The line of code
+</p></dd><dt>returns</dt><dd class="cmt"><p>The Symbol or NoSymbol (found under scala.reflect.internal)
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#symbolOfTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="symbolOfTerm(id:String):SparkIMain.this.global.Symbol"></a>
+      <a id="symbolOfTerm(String):scala.tools.nsc.Global.Symbol"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">symbolOfTerm</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.reflect.internal.Symbols.Symbol">scala.tools.nsc.Global.Symbol</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the symbol representing the id (variable name, method name,
+class name, etc) provided.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the symbol representing the id (variable name, method name,
+class name, etc) provided.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>The id (variable name, method name, class name, etc) whose
+          associated symbol to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>The Symbol information about the term name (id) provided
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#treesForRequestId" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="treesForRequestId(id:Int):List[SparkIMain.this.global.Tree]"></a>
+      <a id="treesForRequestId(Int):List[scala.tools.nsc.Global.Tree]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">treesForRequestId</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Trees.Tree">scala.tools.nsc.Global.Tree</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#typeOfExpression" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="typeOfExpression(expr:String,silent:Boolean):SparkIMain.this.global.Type"></a>
+      <a id="typeOfExpression(String,Boolean):scala.tools.nsc.Global.Type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">typeOfExpression</span><span class="params">(<span name="expr">expr: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="silent">silent: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Constucts type information based on the provided expression's final
+result or the definition provided.</p><div class="fullcomment"><div class="comment cmt"><p>Constucts type information based on the provided expression's final
+result or the definition provided.
+</p></div><dl class="paramcmts block"><dt class="param">expr</dt><dd class="cmt"><p>The expression or definition
+</p></dd><dt class="param">silent</dt><dd class="cmt"><p>Whether to output information while constructing the type
+</p></dd><dt>returns</dt><dd class="cmt"><p>The type information or an error
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#typeOfTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="typeOfTerm(id:String):SparkIMain.this.global.Type"></a>
+      <a id="typeOfTerm(String):scala.tools.nsc.Global.Type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">typeOfTerm</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span></span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the type representing the id (variable name, method name,
+class name, etc) provided.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the type representing the id (variable name, method name,
+class name, etc) provided.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>The id (variable name, method name, class name, etc) whose
+          associated type to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>The Type information about the term name (id) provided
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#valueOfTerm" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valueOfTerm(id:String):Option[AnyRef]"></a>
+      <a id="valueOfTerm(String):Option[AnyRef]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valueOfTerm</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves the object representing the id (variable name, method name,
+class name, etc) provided.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves the object representing the id (variable name, method name,
+class name, etc) provided.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>The id (variable name, method name, class name, etc) whose
+          associated content to retrieve
+</p></dd><dt>returns</dt><dd class="cmt"><p>Some containing term name (id) representation if exists, else None
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkIMain#visibleTermNames" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="visibleTermNames:List[SparkIMain.this.global.Name]"></a>
+      <a id="visibleTermNames:List[scala.tools.nsc.Global.Name]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">visibleTermNames</span><span class="result">: <a href="../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.reflect.internal.Names.Name">scala.tools.nsc.Global.Name</span>]</span>
+      </span>
+      </h4>
+      <p class="shortcomment cmt">Retrieves a list of unique defined and imported names in the compiler.</p><div class="fullcomment"><div class="comment cmt"><p>Retrieves a list of unique defined and imported names in the compiler.
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>The list of &quot;term&quot; names
+</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.repl.SparkImports#wildcardTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wildcardTypes:List[SparkImports.this.global.Type]"></a>
+      <a id="wildcardTypes:List[scala.tools.nsc.Global.Type]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wildcardTypes</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.reflect.internal.Types.Type">scala.tools.nsc.Global.Type</span>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>SparkImports</dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.spark.repl.SparkIMain">
+              <h3>Inherited from <a href="SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a></h3>
+            </div><div class="parent" name="org.apache.spark.Logging">
+              <h3>Inherited from <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></h3>
+            </div><div class="parent" name="org.apache.spark.repl.SparkImports">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.repl.SparkImports">SparkImports</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+      <script defer="defer" type="text/javascript" id="jquery-js" src="../../../../lib/jquery.js"></script><script defer="defer" type="text/javascript" id="jquery-ui-js" src="../../../../lib/jquery-ui.js"></script><script defer="defer" type="text/javascript" id="tools-tooltip-js" src="../../../../lib/tools.tooltip.js"></script><script defer="defer" type="text/javascript" id="template-js" src="../../../../lib/template.js"></script>
+    </body>
+      </html>

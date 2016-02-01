@@ -152,6 +152,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
 
@@ -232,9 +239,8 @@
   // &quot;column&quot; is the table format (that is row or column)
   // dataDF.schema provides the schema for table
   snc.createTable(&quot;COLUMN_TABLE&quot;, &quot;column&quot;, dataDF.schema, props1)
-  // insert the data in append mode
-  dataDF.write.format(&quot;column&quot;).mode(org.apache.spark.sql.SaveMode.Append)
-  .options(props1).saveAsTable(&quot;COLUMN_TABLE&quot;)
+  // append dataDF into the table
+  dataDF.write.insertInto(&quot;COLUMN_TABLE&quot;)
 
   val results1 = snc.sql(&quot;SELECT * FROM COLUMN_TABLE&quot;)
   println(&quot;contents of column table are:&quot;)
@@ -251,9 +257,8 @@
   val props2 = Map.empty[String, String]
   snc.createTable(&quot;ROW_TABLE&quot;, &quot;row&quot;, dataDF.schema, props2)
 
-  // insert the data in append mode
-  dataDF.write.format(&quot;row&quot;).mode(org.apache.spark.sql.SaveMode.Append)
-  .options(props2).saveAsTable(&quot;ROW_TABLE&quot;)
+  // append dataDF into the data
+  dataDF.write.insertInto(&quot;ROW_TABLE&quot;)
 
   val results2 = snc.sql(&quot;select * from ROW_TABLE&quot;)
   println(&quot;contents of row table are:&quot;)
@@ -385,7 +390,7 @@
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
     
   </div>
 

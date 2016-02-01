@@ -159,6 +159,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../apidocsintro/">API</a>
+        
+    </li>
+<li>
+          
+            <li>
     <ul class="subnav">
     <li><span>About</span></li>
 
@@ -213,13 +220,13 @@
 <p>Quickstart to build all components of snappydata project:</p>
 <pre><code class="sh">&gt; git clone git@github.com:SnappyDataInc/snappydata.git --recursive
 &gt; cd snappydata
-&gt; ./gradlew clean assemble
+&gt; ./gradlew assemble
 </code></pre>
 
-<p>If you want to build only the top-level snappydata project but pull in jars for other projects (snappy-spark, snappy-store, spark-jobserver):</p>
+<p>If you want to build only the top-level snappydata project but pull in jars for other projects (<em>snappy-spark</em>, <em>snappy-store</em>, <em>spark-jobserver</em>):</p>
 <pre><code class="sh">&gt; git clone git@github.com:SnappyDataInc/snappydata.git
 &gt; cd snappydata
-&gt; ./gradlew clean assemble
+&gt; ./gradlew assemble
 </code></pre>
 
 <h2 id="repository-layout">Repository layout</h2>
@@ -228,67 +235,74 @@
 <p><strong>snappy-core</strong> - Extensions to Apache Spark that should not be dependent on GemFireXD, job server etc. For example: SnappyContext, external cluster manager etc.</p>
 </li>
 <li>
-<p><strong>snappy-tools</strong> - Primarily the bridge between snappy-spark and GemFireXD. It contains the implementations of cluster manager embedding GemFireXD, query routing, job server initialization etc.</p>
+<p><strong>snappy-tools</strong> - Primarily the bridge between <em>snappy-spark</em> and <em>snappy-store</em> (GemFireXD). It contains the implementations of cluster manager embedding GemFireXD, query routing, job server initialization etc.</p>
 </li>
 </ul>
-<p>This is the only component that depends directly on GemFireXD. Code in snappy-tools depends on snappy-core but not the other way round.</p>
+<p>This is the only component that depends directly on <em>snappy-store</em>. Code in <em>snappy-tools</em> depends on <em>snappy-core</em> but not the other way round.</p>
 <ul>
-<li><strong>snappy-spark</strong> - Apache Spark code with SnappyData enhancements.</li>
-</ul>
-<p>Similarly the GemfireXD repository can be copied or moved inside snappy-commons by name <em>snappy-store</em> for an integrated build with GemFireXD.</p>
-<ul>
+<li>
+<p><strong>snappy-spark</strong> - <em>Apache Spark</em> code with SnappyData enhancements.</p>
+</li>
 <li>
 <p><strong>snappy-store</strong> - Fork of gemfirexd-oss with SnappyData additions on the snappy/master branch.</p>
 </li>
 <li>
-<p><strong>spark-jobserver</strong> - Fork of spark-jobserver project with some additions to integrate with SnappyData.</p>
+<p><strong>spark-jobserver</strong> - Fork of <em>spark-jobserver</em> project with some additions to integrate with SnappyData.</p>
 </li>
 </ul>
-<p>The snappy-spark, snappy-store and spark-jobserver are required to be clones of the respective SnappyData repositories, and are integrated in the top-level snappydata project as git submodules. When working with submodules, updating the repositories follows the normal git submodules procedure (https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push like:</p>
+<p>The <em>snappy-spark</em>, <em>snappy-store</em> and <em>spark-jobserver</em> directories are required to be clones of the respective SnappyData repositories, and are integrated in the top-level snappydata project as git submodules. When working with submodules, updating the repositories follows the normal <a href="https://git-scm.com/book/en/v2/Git-Tools-Submodules">git submodules</a>. One can add some aliases in gitconfig to aid pull/push like:</p>
 <pre><code>[alias]
   spull = !git pull &amp;&amp; git submodule sync --recursive &amp;&amp; git submodule update --init --recursive
   spush = push --recurse-submodules=on-demand
 </code></pre>
 
-<p>The above aliases can serve as useful shortcuts to pull and push all projects from top-level <code>snappydata</code> repository.</p>
+<p>The above aliases can serve as useful shortcuts to pull and push all projects from top-level <em>snappydata</em> repository.</p>
 <h2 id="building">Building</h2>
-<p>Gradle is the build tool used for all the SnappyData projects. Changes to Apache Spark and spark-jobserver forks include addition of gradle build scripts to allow building them independently as well as a subproject of snappydata. The only requirement for the build is a JDK 7+ installation. Currently most of the testing has been with JDK 7. The gradlew wrapper script will download all the other build dependencies as required.</p>
+<p>Gradle is the build tool used for all the SnappyData projects. Changes to <em>Apache Spark</em> and <em>spark-jobserver</em> forks include addition of gradle build scripts to allow building them independently as well as a subproject of snappydata. The only requirement for the build is a JDK 7+ installation. Currently most of the testing has been with JDK 7. The gradlew wrapper script will download all the other build dependencies as required.</p>
 <p>If a user does not want to deal with submodules and only work on snappydata project, then can clone only the snappydata repository (without the --recursive option) and the build will pull those SnappyData project jar dependencies from maven central.</p>
-<p>If working on all the separate projects integrated inside the top-level snappydata clone, the gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The snappy-spark and snappy-store submodules can also be built and published independently.</p>
-<p>Some build targets:</p>
+<p>If working on all the separate projects integrated inside the top-level snappydata clone, the gradle build will recognize the same and build those projects too and include the same in the top-level product distribution jar. The <em>snappy-spark</em> and <em>snappy-store</em> submodules can also be built and published independently.</p>
+<p>Useful build and test targets:</p>
 <pre><code>./gradlew assemble      -  build all the sources
 ./gradlew testClasses   -  build all the tests
 ./gradlew product       -  build and place the product distribution
                            (in build-artifacts/scala_2.10/snappy)
-./gradlew precheckin    -  run the snappydata testsuite
-./gradlew clean         -  clean all build and test output
+./gradlew distTar       -  create a tar.gz archive of product distribution
+                           (in build-artifacts/scala_2.10/distributions)
+./gradlew distZip       -  create a zip archive of product distribution
+                           (in build-artifacts/scala_2.10/distributions)
+./gradlew buildAll      -  build all sources, tests, product, packages (all targets above)
+./gradlew checkAll      -  run testsuites of snappydata components
+./gradlew cleanAll      -  clean all build and test output
+./gradlew runQuickstart -  run the quickstart suite (the &quot;Getting Started&quot; section of docs)
+./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
+                           and run full snappydata testsuite including quickstart
 </code></pre>
 
-<p>The usual gradle test run targets (<code>test</code>, <code>check</code>) work as expected for junit tests. Separate targets have been provided for running scala tests (<code>scalaTest</code>) while the <code>check</code> target will run both the junit and scalatests. One can run a single scala test suite class with <code>singleSuite</code> option while running a single test within some suite works with the <code>--tests</code> option:</p>
+<p>The usual gradle test run targets (<em>test</em>, <em>check</em>) work as expected for junit tests. Separate targets have been provided for running scala tests (<em>scalaTest</em>) while the <em>check</em> target will run both the junit and scalatests. One can run a single scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <em>--tests</em> option:</p>
 <pre><code class="sh">&gt; ./gradlew snappy-tools:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
 &gt; ./gradlew snappy-tools:scalaTest \
 &gt;    --tests &quot;Test the creation/dropping of table using SQL&quot;  # run a single test (use full name)
 </code></pre>
 
-<p>Running individual tests within some suite works using the <code>--tests</code> argument.</p>
+<p>Running individual tests within some suite works using the <em>--tests</em> argument.</p>
 <h2 id="setting-up-intellij-with-gradle">Setting up Intellij with gradle</h2>
 <p>Intellij is the IDE commonly used by the snappydata developers. Those who really prefer Eclipse can try the scala-IDE and gradle support, but has been seen to not work as well (e.g. gradle support is not integrated with scala plugin etc).  To import into Intellij:</p>
 <ul>
-<li>Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in snappy-spark.</li>
-<li>Select import project, then point to the snappydata directory. Use external Gradle import. When using JDK 7, add <code>-XX:MaxPermSize=350m</code> to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore "Gradle location is unknown warning". Ensure that a JDK 7/8 installation has been selected. Ignore and dismiss the "Unindexed remote maven repositories found" warning message, if seen.</li>
-<li>Once import finishes, go to <code>File-&gt;Settings-&gt;Editor-&gt;Code Style-&gt;Scala</code>. Set the scheme as <code>Project</code>. Check that the same has been set in Java''s Code Style too. Then OK to close it. Next copy <code>codeStyleSettings.xml</code> in snappydata top-level directory to .idea directory created by Intellij. Check that settings are now applied in <code>File-&gt;Settings-&gt;Editor-&gt;Code Style-&gt;Java</code> which should show Indent as 2 and continuation indent as 4 (same for Scala).</li>
+<li>Update Intellij to the latest 14.x (or 15.x) version, including the latest Scala plugin. Older versions have trouble dealing with scala code particularly some of the code in <em>snappy-spark</em>.</li>
+<li>Select import project, then point to the snappydata directory. Use external Gradle import. When using JDK 7, add <em>-XX:MaxPermSize=350m</em> to VM options in global Gradle settings. Select defaults, next, next ... finish. Ignore <em>"Gradle location is unknown warning"</em>. Ensure that a JDK 7/8 installation has been selected. Ignore and dismiss the <em>"Unindexed remote maven repositories found"</em> warning message, if seen.</li>
+<li>Once import finishes, go to <em>File-&gt;Settings-&gt;Editor-&gt;Code Style-&gt;Scala</em>. Set the scheme as <em>Project</em>. Check that the same has been set in Java Code Style too. Then OK to close it. Next copy <em>codeStyleSettings.xml</em> in snappydata top-level directory to .idea directory created by Intellij. Check that settings are now applied in <em>File-&gt;Settings-&gt;Editor-&gt;Code Style-&gt;Java</em> which should show Indent as 2 and continuation indent as 4 (same for Scala).</li>
 <li>If the Gradle tab is not visible immediately, then select it from window list popup at the left-bottom corner of IDE. If you click on that window list icon, then the tabs will appear permanently.</li>
-<li>Generate avro and GemFireXD required sources by expanding: <code>snappydata_2.10-&gt;Tasks-&gt;other</code>. Right click on <code>generateSources</code> and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if <code>./gradlew clean</code> has been run, or you have made changes to <code>javacc/avro/messages.xml</code> source files. <em>If you get unexpected "Database not found" or NPE errors in GemFireXD layer, then first thing to try is to run the <code>generateSources</code> target again.</em></li>
-<li>Increase the compiler heap sizes or else the build can take quite long especially with integrated snappy-spark and snappy-store. In <code>File-&gt;Settings-&gt;Build, Execution, Deployment-&gt;Compiler increase</code>, <code>Build process heap size</code> to say 1536 or 2048. Similarly increase JVM maximum heap size in <code>Languages &amp; Frameworks-&gt;Scala Compiler Server</code> to 1536 or 2048.</li>
+<li>Generate avro and GemFireXD required sources by expanding: <em>snappydata_2.10-&gt;Tasks-&gt;other</em>. Right click on <em>generateSources</em> and run it. The Run item may not be available if indexing is still in progress, so wait for it to finish. The first run may take a while as it downloads jars etc. This step has to be done the first time, or if <em>./gradlew clean</em> has been run, or you have made changes to <em>javacc/avro/messages.xml</em> source files. <em>If you get unexpected <em>"Database not found"</em> or <em>NullPointerException</em> errors in GemFireXD layer, then first thing to try is to run the <em>generateSources</em> target again.</em></li>
+<li>Increase the compiler heap sizes or else the build can take quite long especially with integrated <em>snappy-spark</em> and <em>snappy-store</em>. In <em>File-&gt;Settings-&gt;Build, Execution, Deployment-&gt;Compiler increase </em>, <em>Build process heap size</em> to say 1536 or 2048. Similarly increase JVM maximum heap size in <em>Languages &amp; Frameworks-&gt;Scala Compiler Server</em> to 1536 or 2048.</li>
 <li>Test the full build.</li>
-<li>For JDK 7: <code>Open Run-&gt;Edit Configurations</code>. Expand Defaults, and select Application. Add <code>-XX:MaxPermSize=350m</code> in VM options. Similarly add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.</li>
-<li>For JUnit configuration also append <code>/build-artifacts</code> to the working directory i.e. the directory should be <code>$MODULE_DIR$/build-artifacts</code>. Likewise change working directory for ScalaTest to be inside build-artifacts otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.</li>
+<li>For JDK 7: <em>Open Run-&gt;Edit Configurations</em>. Expand Defaults, and select Application. Add <em>-XX:MaxPermSize=350m</em> in VM options. Similarly add it to VM parameters for ScalaTest and JUnit. Most of unit tests will have trouble without this option.</li>
+<li>For JUnit configuration also append <em>/build-artifacts</em> to the working directory i.e. the directory should be <em>\$MODULE_DIR\$/build-artifacts</em>. Likewise change working directory for ScalaTest to be inside <em>build-artifacts</em> otherwise all intermediate log and other files (especially created by GemFireXD) will pollute the source tree and may need to cleaned manually.</li>
 </ul>
 <h3 id="running-a-scalatestjunit">Running a scalatest/junit</h3>
-<p>Running scala/junit tests from Intellij should be straightforward -- just ensure that MaxPermSize has been increased as mentioned above especially for Spark/Snappy tests.
-- When selecting a run configuration for junit/scalatest, avoid selecting the gradle one (green round icon) otherwise that will launch an external gradle process that can start building the project again and won''t be cleanly integrated with Intellij. Use the normal junit (red+green arrows icon) or scalatest (junit like with red overlay).
-- For JUnit tests, ensure that working directory is <code>$MODULE_DIR$/build-artifacts</code> as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in tests. They will also pollute the checkouts with log files etc, so this will allow those to go into build-artifacts that is easier to clean. For that reason is may be preferable to do the same for scalatests.
-- Some of the tests use data files from the <code>tests-common</code> directory. For such tests, run the gradle task <code>snappydata_2.10-&gt;Tasks-&gt;other-&gt;copyResourcesAll</code> to copy the resources in build area where Intellij runs can find it.</p>
+<p>Running scala/junit tests from Intellij should be straightforward -- just ensure that MaxPermSize has been increased when using JDK 7 as mentioned above especially for Spark/Snappy tests.
+- When selecting a run configuration for junit/scalatest, avoid selecting the gradle one (green round icon) otherwise that will launch an external gradle process that can start building the project again and won't be cleanly integrated with Intellij. Use the normal junit (red+green arrows icon) or scalatest (junit like with red overlay).
+- For JUnit tests, ensure that working directory is <em>\$MODULE_DIR\$/build-artifacts</em> as mentioned before. Otherwise many GemFireXD tests will fail to find the resource files required in tests. They will also pollute the checkouts with log files etc, so this will allow those to go into build-artifacts that is easier to clean. For that reason is may be preferable to do the same for scalatests.
+- Some of the tests use data files from the <em>tests-common</em> directory. For such tests, run the gradle task <em>snappydata_2.10-&gt;Tasks-&gt;other-&gt;copyResourcesAll</em> to copy the resources in build area where Intellij runs can find it.</p>
               
             </div>
           </div>
@@ -309,7 +323,7 @@
   <div role="contentinfo">
     <!-- Copyright etc -->
     
-      <p>Copyright &copy; 2016 <a href="http://snappydata.io</a>.</p>
+      <p>Copyright &copy; 2016 SnappyData Inc.</p>
     
   </div>
 
