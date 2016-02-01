@@ -233,6 +233,11 @@ object StoreUtils extends Logging {
       }).getOrElse(defaultEviction))
     }
 
+    if (hasOverflow) {
+      parameters.remove(OVERFLOW)
+      sb.append(s"$GEM_OVERFLOW ")
+    }
+
     parameters.remove(PERSISTENT).foreach { v =>
       if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("true")) {
         sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
@@ -246,10 +251,7 @@ object StoreUtils extends Logging {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
         .getOrElse(EMPTY_STRING))
-    if (hasOverflow) {
-      parameters.remove(OVERFLOW)
-      sb.append(s"$GEM_OVERFLOW ")
-    }
+
 
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
