@@ -23,27 +23,35 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
   } else {
-    compile 'org.apache.spark:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'org.apache.spark:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'org.apache.spark:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'org.apache.spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
+    compile('io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion) {
+      exclude(group: 'org.apache.spark', module: 'spark-core')
+    }
+    compile('io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion) {
+      exclude(group: 'org.apache.spark', module: 'spark-core')
+    }
+    compile('io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion) {
+      exclude(group: 'org.apache.spark', module: 'spark-core')
+    }
+    compile('io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion) {
+      exclude(group: 'org.apache.spark', module: 'spark-core')
+    }
   }
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     compile project(':snappy-store:gemfirexd:client')
     compile project(':snappy-store:gemfirexd:core')
     compile project(':snappy-store:gemfirexd:tools')
-
     testCompile project(path: ':snappy-store:gemfirexd:tools', configuration: 'testOutput')
   } else {
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
+    compile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
   }
 
   if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
     compile project(':spark-jobserver')
   } else {
-    compile files("${rootDir.getAbsolutePath()}/local-repo/spark-jobserver-1.6.0-SNAPSHOT.jar")
+    compile group: 'io.snappydata', name: 'spark-jobserver', version: '0.6.0-SNAPSHOT'
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
