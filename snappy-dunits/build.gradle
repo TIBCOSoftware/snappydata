@@ -19,12 +19,15 @@ dependencies {
     compile project(':snappy-store:gemfirexd:tools')
     testCompile project(path: ':snappy-store:gemfirexd:tools', configuration: 'testOutput')
   } else {
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
+    compile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
   }
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     compile project(':snappy-aqp')
+  } else {
+    compile "io.snappydata:snappy-aqp:${version}"
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')

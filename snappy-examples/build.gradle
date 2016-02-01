@@ -10,6 +10,8 @@ dependencies {
   compile project(':snappy-tools_' + scalaBinaryVersion)
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     testRuntime project(':snappy-aqp')
+  } else {
+    testRuntime "io.snappydata:snappy-aqp:${version}"
   }
 }
 

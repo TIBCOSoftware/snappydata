@@ -32,8 +32,9 @@ allprojects {
   gradle.startParameter.continueOnFailure = true
 
   repositories {
-    //maven { url "http://dl.bintray.com/spark-jobserver/maven" }
     jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url "http://52.34.95.228:8089/repository/snapshots" }
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "https://repo.eclipse.org/content/repositories/paho-releases" }
@@ -77,7 +78,7 @@ allprojects {
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    gemfireXDVersion = '2.0-Beta'
+    gemfireXDVersion = '2.0-SNAPSHOT'
     buildFlags = ''
   }
 
