@@ -42,7 +42,7 @@ Master development branch
 git clone https://github.com/SnappyDataInc/snappydata.git
 
 ###### 0.1 preview release branch with stability fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview
 ```
 
 #### Building SnappyData from source
