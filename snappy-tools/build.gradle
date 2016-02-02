@@ -168,13 +168,18 @@ shadowJar {
   }
   */
 
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = "SnappyData Build Team"
+  } else {
+    createdBy = System.getProperty("user.name")
+  }
   manifest {
     attributes(
       "Manifest-Version"  : "1.0",
-      "Created-By"        : System.getProperty("user.name"),
+      "Created-By"        : createdBy,
       "Title"             : rootProject.name,
       "Version"           : version,
-      "Vendor"            : "Snappy Data, Inc."
+      "Vendor"            : "SnappyData, Inc."
     )
   }
 }
