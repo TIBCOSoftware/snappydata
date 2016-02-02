@@ -34,7 +34,7 @@ allprojects {
   repositories {
     jcenter()
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    maven { url "http://52.34.95.228:8089/repository/snapshots" }
+    maven { url "http://repository.snappydata.io:8089/repository/snapshots" }
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "https://repo.eclipse.org/content/repositories/paho-releases" }
@@ -80,6 +80,7 @@ allprojects {
     hadoopVersion = '2.4.1'
     gemfireXDVersion = '2.0-BETA'
     buildFlags = ''
+    createdBy = System.getProperty("user.name")
   }
 
   if (!buildRoot.isEmpty()) {
@@ -249,14 +250,17 @@ subprojects {
   check.dependsOn test, scalaTest
 
   // apply default manifest
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = "SnappyData Build Team"
+  }
   jar {
     manifest {
       attributes(
         "Manifest-Version"  : "1.0",
-        "Created-By"        : System.getProperty("user.name"),
+        "Created-By"        : createdBy,
         "Title"             : rootProject.name,
         "Version"           : version,
-        "Vendor"            : "Snappy Data, Inc."
+        "Vendor"            : "SnappyData, Inc."
       )
     }
   }
