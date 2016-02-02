@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>aggregate - snappy-tools_2.10 0.1.0-SNAPSHOT API - org.apache.spark.sql.execution.aggregate</title>
-          <meta name="description" content="aggregate - snappy - tools 2.10 0.1.0 - SNAPSHOT API - org.apache.spark.sql.execution.aggregate" />
-          <meta name="keywords" content="aggregate snappy tools 2.10 0.1.0 SNAPSHOT API org.apache.spark.sql.execution.aggregate" />
+          <title>aggregate - snappy-tools_2.10 0.1.0-PREVIEW API - org.apache.spark.sql.execution.aggregate</title>
+          <meta name="description" content="aggregate - snappy - tools 2.10 0.1.0 - PREVIEW API - org.apache.spark.sql.execution.aggregate" />
+          <meta name="keywords" content="aggregate snappy tools 2.10 0.1.0 PREVIEW API org.apache.spark.sql.execution.aggregate" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -85,6 +85,32 @@
       </h4>
       <p class="comment cmt">A helper trait used to create specialized setter and getter for types supported by
 <a href="../UnsafeFixedWidthAggregationMap.html" class="extype" name="org.apache.spark.sql.execution.UnsafeFixedWidthAggregationMap">org.apache.spark.sql.execution.UnsafeFixedWidthAggregationMap</a>'s buffer.</p>
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappyAggregationIterator" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SnappyAggregationIteratorextendsIterator[org.apache.spark.sql.catalyst.InternalRow]withLogging"></a>
+      <a id="SnappyAggregationIterator:SnappyAggregationIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAggregationIterator.html"><span class="name">SnappyAggregationIterator</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="../../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>] with <a href="../../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The base class of <a href="SortBasedAggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SortBasedAggregationIterator">SortBasedAggregationIterator</a> and <span class="extype" name="UnsafeHybridAggregationIterator">UnsafeHybridAggregationIterator</span>.</p>
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappySortBasedAggregationIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySortBasedAggregationIteratorextendsSnappyAggregationIterator"></a>
+      <a id="SnappySortBasedAggregationIterator:SnappySortBasedAggregationIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySortBasedAggregationIterator.html"><span class="name">SnappySortBasedAggregationIterator</span></a><span class="result"> extends <a href="SnappyAggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyAggregationIterator">SnappyAggregationIterator</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">An iterator used to evaluate <span class="extype" name="AggregateFunction2">AggregateFunction2</span>.</p>
     </li><li name="org.apache.spark.sql.execution.aggregate.SortBasedAggregate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SortBasedAggregateextendsSparkPlanwithUnaryNodewithProductwithSerializable"></a>
       <a id="SortBasedAggregate:SortBasedAggregate"></a>
@@ -144,7 +170,33 @@
 
         <div id="values" class="values members">
               <h3>Value Members</h3>
-              <ol><li name="org.apache.spark.sql.execution.aggregate.TungstenAggregate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+              <ol><li name="org.apache.spark.sql.execution.aggregate.SnappyAggregationIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAggregationIterator"></a>
+      <a id="SnappyAggregationIterator:SnappyAggregationIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAggregationIterator$.html"><span class="name">SnappyAggregationIterator</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.execution.aggregate.SnappySortBasedAggregationIterator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappySortBasedAggregationIterator"></a>
+      <a id="SnappySortBasedAggregationIterator:SnappySortBasedAggregationIterator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySortBasedAggregationIterator$.html"><span class="name">SnappySortBasedAggregationIterator</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.execution.aggregate.TungstenAggregate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="TungstenAggregate"></a>
       <a id="TungstenAggregate:TungstenAggregate"></a>
       <h4 class="signature">

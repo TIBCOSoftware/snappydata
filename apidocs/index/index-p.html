@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>snappy-tools_2.10 0.1.0-SNAPSHOT API</title>
-          <meta name="description" content="snappy - tools 2.10 0.1.0 - SNAPSHOT API" />
-          <meta name="keywords" content="snappy tools 2.10 0.1.0 SNAPSHOT API" />
+          <title>snappy-tools_2.10 0.1.0-PREVIEW API</title>
+          <meta name="description" content="snappy - tools 2.10 0.1.0 - PREVIEW API" />
+          <meta name="keywords" content="snappy tools 2.10 0.1.0 PREVIEW API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -29,6 +29,9 @@
     </div><div class="entry">
       <div class="name">PRIMARY_KEY</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/store/StoreUtils$.html" class="extype" name="org.apache.spark.sql.store.StoreUtils">StoreUtils</a> </div>
+    </div><div class="entry">
+      <div class="name">PRIME_MODULUS</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/cms/CountMinSketch$.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> </div>
     </div><div class="entry">
       <div class="name">PROCESS_LOCAL</div>
       <div class="occurrences"><a href="../org/apache/spark/scheduler/TaskLocality$.html" class="extype" name="org.apache.spark.scheduler.TaskLocality">TaskLocality</a> </div>
@@ -162,6 +165,9 @@
       <div class="name">Pmod</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a> </div>
     </div><div class="entry">
+      <div class="name">Poisson</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
       <div class="name">PoissonGenerator</div>
       <div class="occurrences"><a href="../org/apache/spark/mllib/random/package.html" class="extype" name="org.apache.spark.mllib.random">random</a> </div>
     </div><div class="entry">
@@ -255,6 +261,9 @@
       <div class="name">PromoteStrings</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/analysis/HiveTypeCoercion$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.HiveTypeCoercion">HiveTypeCoercion</a> </div>
     </div><div class="entry">
+      <div class="name">PropagateBootstrap</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
       <div class="name">PropagateTypes</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/analysis/HiveTypeCoercion$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.HiveTypeCoercion">HiveTypeCoercion</a> </div>
     </div><div class="entry">
@@ -263,6 +272,15 @@
     </div><div class="entry">
       <div class="name">ProtocolOverrides</div>
       <div class="occurrences"><a href="../io/snappydata/package.html" class="extype" name="io.snappydata">snappydata</a> </div>
+    </div><div class="entry">
+      <div class="name">PruneColumns</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">PruneFilters</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">PruneProjects</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
     </div><div class="entry">
       <div class="name">PrunedFilteredScan</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/sources/package.html" class="extype" name="org.apache.spark.sql.sources">sources</a> </div>
@@ -276,6 +294,12 @@
       <div class="name">PullOutNondeterministic</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> </div>
     </div><div class="entry">
+      <div class="name">PushDownFilter</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">PushDownPartialAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
       <div class="name">PushPredicateThroughAggregate</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/optimizer/package.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer">optimizer</a> </div>
     </div><div class="entry">
@@ -287,6 +311,12 @@
     </div><div class="entry">
       <div class="name">PushPredicateThroughProject</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/optimizer/package.html" class="extype" name="org.apache.spark.sql.catalyst.optimizer">optimizer</a> </div>
+    </div><div class="entry">
+      <div class="name">PushUpResample</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">PushUpSeed</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
     </div><div class="entry">
       <div class="name">PythonRunner</div>
       <div class="occurrences"><a href="../org/apache/spark/deploy/package.html" class="extype" name="org.apache.spark.deploy">deploy</a> </div>
@@ -346,7 +376,7 @@
       <div class="occurrences"><a href="../org/apache/spark/ml/param/Params.html" class="extype" name="org.apache.spark.ml.param.Params">Params</a> </div>
     </div><div class="entry">
       <div class="name">parent</div>
-      <div class="occurrences"><a href="../org/apache/spark/ml/Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a> <a href="../org/apache/spark/ml/param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/ml/Model.html" class="extype" name="org.apache.spark.ml.Model">Model</a> <a href="../org/apache/spark/ml/param/Param.html" class="extype" name="org.apache.spark.ml.param.Param">Param</a> <a href="../org/apache/spark/rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a> <a href="../org/apache/spark/sql/execution/SamplePartition.html" class="extype" name="org.apache.spark.sql.execution.SamplePartition">SamplePartition</a> </div>
     </div><div class="entry">
       <div class="name">parentClassLoader</div>
       <div class="occurrences"><a href="../org/apache/spark/repl/SparkILoop$SparkILoopInterpreter.html" class="extype" name="org.apache.spark.repl.SparkILoop.SparkILoopInterpreter">SparkILoopInterpreter</a> <a href="../org/apache/spark/repl/SparkIMain.html" class="extype" name="org.apache.spark.repl.SparkIMain">SparkIMain</a> </div>
@@ -393,6 +423,9 @@
       <div class="name">parseMovie</div>
       <div class="occurrences"><a href="../org/apache/spark/examples/ml/MovieLensALS$$Movie$.html" class="extype" name="org.apache.spark.examples.ml.MovieLensALS.Movie">Movie</a> </div>
     </div><div class="entry">
+      <div class="name">parseOptions</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler$.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> </div>
+    </div><div class="entry">
       <div class="name">parsePoint</div>
       <div class="occurrences"><a href="../org/apache/spark/examples/LocalFileLR$.html" class="extype" name="org.apache.spark.examples.LocalFileLR">LocalFileLR</a> <a href="../org/apache/spark/examples/SparkHdfsLR$.html" class="extype" name="org.apache.spark.examples.SparkHdfsLR">SparkHdfsLR</a> <a href="../org/apache/spark/examples/SparkTachyonHdfsLR$.html" class="extype" name="org.apache.spark.examples.SparkTachyonHdfsLR">SparkTachyonHdfsLR</a> </div>
     </div><div class="entry">
@@ -418,7 +451,7 @@
       <div class="occurrences"><a href="../org/apache/spark/examples/SparkKMeans$.html" class="extype" name="org.apache.spark.examples.SparkKMeans">SparkKMeans</a> </div>
     </div><div class="entry">
       <div class="name">partial</div>
-      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> <a href="../org/apache/spark/sql/execution/Aggregate.html" class="extype" name="org.apache.spark.sql.execution.Aggregate">Aggregate</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> <a href="../org/apache/spark/sql/execution/Aggregate.html" class="extype" name="org.apache.spark.sql.execution.Aggregate">Aggregate</a> <a href="../org/apache/spark/sql/execution/bootstrap/AggregateWith2Inputs.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.AggregateWith2Inputs">AggregateWith2Inputs</a> <a href="../org/apache/spark/sql/execution/bootstrap/AggregateWith2Inputs2Outputs.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.AggregateWith2Inputs2Outputs">AggregateWith2Inputs2Outputs</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapAggregate.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapAggregate">BootstrapAggregate</a> <a href="../org/apache/spark/sql/execution/bootstrap/BootstrapSortedAggregate.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootstrapSortedAggregate">BootstrapSortedAggregate</a> <a href="../org/apache/spark/sql/execution/bootstrap/DelegatedAggregate.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DelegatedAggregate">DelegatedAggregate</a> <a href="../org/apache/spark/sql/execution/bootstrap/SortedAggregateWith2Inputs2Outputs.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SortedAggregateWith2Inputs2Outputs">SortedAggregateWith2Inputs2Outputs</a> <a href="../org/apache/spark/sql/sources/ErrorStatsFunction.html" class="extype" name="org.apache.spark.sql.sources.ErrorStatsFunction">ErrorStatsFunction</a> <a href="../org/apache/spark/sql/sources/ErrorStatsFunctionCF.html" class="extype" name="org.apache.spark.sql.sources.ErrorStatsFunctionCF">ErrorStatsFunctionCF</a> </div>
     </div><div class="entry">
       <div class="name">partialEvaluations</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/SplitEvaluation.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SplitEvaluation">SplitEvaluation</a> </div>
@@ -489,11 +522,17 @@
       <div class="name">peek</div>
       <div class="occurrences"><a href="../io/snappydata/util/com/clearspring/analytics/stream/ITopK.html" class="extype" name="io.snappydata.util.com.clearspring.analytics.stream.ITopK">ITopK</a> <a href="../io/snappydata/util/com/clearspring/analytics/stream/StreamSummary.html" class="extype" name="io.snappydata.util.com.clearspring.analytics.stream.StreamSummary">StreamSummary</a> </div>
     </div><div class="entry">
+      <div class="name">pendingBatch</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> </div>
+    </div><div class="entry">
       <div class="name">pendingStages</div>
       <div class="occurrences"><a href="../org/apache/spark/ui/jobs/JobProgressListener.html" class="extype" name="org.apache.spark.ui.jobs.JobProgressListener">JobProgressListener</a> </div>
     </div><div class="entry">
       <div class="name">pendingTimes</div>
       <div class="occurrences"><a href="../org/apache/spark/streaming/Checkpoint.html" class="extype" name="org.apache.spark.streaming.Checkpoint">Checkpoint</a> </div>
+    </div><div class="entry">
+      <div class="name">perPartition</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/GrowthMode.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.GrowthMode">GrowthMode</a> </div>
     </div><div class="entry">
       <div class="name">percentRank</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a> </div>
@@ -564,6 +603,9 @@
       <div class="name">pointerSize</div>
       <div class="occurrences"><a href="../org/apache/spark/util/SizeEstimator$.html" class="extype" name="org.apache.spark.util.SizeEstimator">SizeEstimator</a> </div>
     </div><div class="entry">
+      <div class="name">poisson</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/SetSeedAndPoisson.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.SetSeedAndPoisson">SetSeedAndPoisson</a> </div>
+    </div><div class="entry">
       <div class="name">poissonJavaRDD</div>
       <div class="occurrences"><a href="../org/apache/spark/mllib/random/RandomRDDs$.html" class="extype" name="org.apache.spark.mllib.random.RandomRDDs">RandomRDDs</a> </div>
     </div><div class="entry">
@@ -584,6 +626,9 @@
     </div><div class="entry">
       <div class="name">poolToActiveStages</div>
       <div class="occurrences"><a href="../org/apache/spark/ui/jobs/JobProgressListener.html" class="extype" name="org.apache.spark.ui.jobs.JobProgressListener">JobProgressListener</a> </div>
+    </div><div class="entry">
+      <div class="name">populateTopK</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/approximate/TopKUtil$.html" class="extype" name="org.apache.spark.sql.approximate.TopKUtil">TopKUtil</a> </div>
     </div><div class="entry">
       <div class="name">port</div>
       <div class="occurrences"><a href="../org/apache/spark/network/netty/NettyBlockTransferService.html" class="extype" name="org.apache.spark.network.netty.NettyBlockTransferService">NettyBlockTransferService</a> <a href="../org/apache/spark/sql/streaming/SocketStreamRelation.html" class="extype" name="org.apache.spark.sql.streaming.SocketStreamRelation">SocketStreamRelation</a> <a href="../org/apache/spark/storage/BlockManagerId.html" class="extype" name="org.apache.spark.storage.BlockManagerId">BlockManagerId</a> <a href="../org/apache/spark/streaming/kafka/Broker.html" class="extype" name="org.apache.spark.streaming.kafka.Broker">Broker</a> </div>
@@ -608,6 +653,9 @@
     </div><div class="entry">
       <div class="name">postfixOps</div>
       <div class="occurrences"><a href="../scala/tools/nsc/interpreter/package.html" class="extype" name="scala.tools.nsc.interpreter">interpreter</a> </div>
+    </div><div class="entry">
+      <div class="name">postprocess</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/IdentifyUncertainTuples$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.IdentifyUncertainTuples">IdentifyUncertainTuples</a> <a href="../org/apache/spark/sql/execution/bootstrap/PropagateBootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.PropagateBootstrap">PropagateBootstrap</a> </div>
     </div><div class="entry">
       <div class="name">pow</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a> </div>
@@ -691,7 +739,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> <a href="../org/apache/spark/sql/execution/local/LocalNode.html" class="extype" name="org.apache.spark.sql.execution.local.LocalNode">LocalNode</a> </div>
     </div><div class="entry">
       <div class="name">prepareForExecution</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a> <a href="../org/apache/spark/sql/execution/QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a> <a href="../org/apache/spark/sql/execution/QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a> <a href="../org/apache/spark/sql/execution/SnappyQueryExecution.html" class="extype" name="org.apache.spark.sql.execution.SnappyQueryExecution">SnappyQueryExecution</a> </div>
     </div><div class="entry">
       <div class="name">prepareInputParameters</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnresolvedWindowFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnresolvedWindowFunction">UnresolvedWindowFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/WindowFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.WindowFunction">WindowFunction</a> </div>
@@ -713,6 +761,9 @@
     </div><div class="entry">
       <div class="name">prev</div>
       <div class="occurrences"><a href="../org/apache/spark/rdd/ShuffledRDD.html" class="extype" name="org.apache.spark.rdd.ShuffledRDD">ShuffledRDD</a> <a href="../org/apache/spark/sql/execution/ShuffledRowRDD.html" class="extype" name="org.apache.spark.sql.execution.ShuffledRowRDD">ShuffledRowRDD</a> </div>
+    </div><div class="entry">
+      <div class="name">prevLink</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/IntervalTracker$IntervalLink.html" class="extype" name="org.apache.spark.sql.execution.IntervalTracker.IntervalLink">IntervalLink</a> </div>
     </div><div class="entry">
       <div class="name">primary</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SqlParserBase.html" class="extype" name="org.apache.spark.sql.catalyst.SqlParserBase">SqlParserBase</a> </div>
@@ -768,17 +819,20 @@
       <div class="name">probabilityCol</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/classification/BinaryLogisticRegressionSummary.html" class="extype" name="org.apache.spark.ml.classification.BinaryLogisticRegressionSummary">BinaryLogisticRegressionSummary</a> <a href="../org/apache/spark/ml/classification/LogisticRegressionSummary.html" class="extype" name="org.apache.spark.ml.classification.LogisticRegressionSummary">LogisticRegressionSummary</a> </div>
     </div><div class="entry">
+      <div class="name">probabilityWithinBounds</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a> </div>
+    </div><div class="entry">
       <div class="name">process</div>
       <div class="occurrences"><a href="../org/apache/spark/repl/SparkILoop.html" class="extype" name="org.apache.spark.repl.SparkILoop">SparkILoop</a> <a href="../org/apache/spark/streaming/flume/sink/SparkSink.html" class="extype" name="org.apache.spark.streaming.flume.sink.SparkSink">SparkSink</a> </div>
     </div><div class="entry">
       <div class="name">processCurrentSortedGroup</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/SortBasedAggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SortBasedAggregationIterator">SortBasedAggregationIterator</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/SnappySortBasedAggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappySortBasedAggregationIterator">SnappySortBasedAggregationIterator</a> <a href="../org/apache/spark/sql/execution/aggregate/SortBasedAggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SortBasedAggregationIterator">SortBasedAggregationIterator</a> </div>
     </div><div class="entry">
       <div class="name">processIdent</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyLexical.html" class="extype" name="org.apache.spark.sql.SnappyLexical">SnappyLexical</a> <a href="../org/apache/spark/sql/catalyst/SqlLexical.html" class="extype" name="org.apache.spark.sql.catalyst.SqlLexical">SqlLexical</a> </div>
     </div><div class="entry">
       <div class="name">processRow</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/AggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.AggregationIterator">AggregationIterator</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/aggregate/AggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.AggregationIterator">AggregationIterator</a> <a href="../org/apache/spark/sql/execution/aggregate/SnappyAggregationIterator.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyAggregationIterator">SnappyAggregationIterator</a> </div>
     </div><div class="entry">
       <div class="name">processTableIdentifier</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/hive/SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a> </div>
@@ -808,7 +862,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/collection/Utils$.html" class="extype" name="org.apache.spark.sql.collection.Utils">Utils</a> </div>
     </div><div class="entry">
       <div class="name">projectList</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/plans/logical/Project.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Project">Project</a> <a href="../org/apache/spark/sql/catalyst/plans/logical/Window.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Window">Window</a> <a href="../org/apache/spark/sql/execution/Project.html" class="extype" name="org.apache.spark.sql.execution.Project">Project</a> <a href="../org/apache/spark/sql/execution/TakeOrderedAndProject.html" class="extype" name="org.apache.spark.sql.execution.TakeOrderedAndProject">TakeOrderedAndProject</a> <a href="../org/apache/spark/sql/execution/TungstenProject.html" class="extype" name="org.apache.spark.sql.execution.TungstenProject">TungstenProject</a> <a href="../org/apache/spark/sql/execution/Window.html" class="extype" name="org.apache.spark.sql.execution.Window">Window</a> <a href="../org/apache/spark/sql/execution/local/ProjectNode.html" class="extype" name="org.apache.spark.sql.execution.local.ProjectNode">ProjectNode</a> <a href="../org/apache/spark/sql/execution/local/TakeOrderedAndProjectNode.html" class="extype" name="org.apache.spark.sql.execution.local.TakeOrderedAndProjectNode">TakeOrderedAndProjectNode</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/plans/logical/Project.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Project">Project</a> <a href="../org/apache/spark/sql/catalyst/plans/logical/Window.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Window">Window</a> <a href="../org/apache/spark/sql/execution/Project.html" class="extype" name="org.apache.spark.sql.execution.Project">Project</a> <a href="../org/apache/spark/sql/execution/TakeOrderedAndProject.html" class="extype" name="org.apache.spark.sql.execution.TakeOrderedAndProject">TakeOrderedAndProject</a> <a href="../org/apache/spark/sql/execution/TungstenProject.html" class="extype" name="org.apache.spark.sql.execution.TungstenProject">TungstenProject</a> <a href="../org/apache/spark/sql/execution/Window.html" class="extype" name="org.apache.spark.sql.execution.Window">Window</a> <a href="../org/apache/spark/sql/execution/bootstrap/Collect.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Collect">Collect</a> <a href="../org/apache/spark/sql/execution/bootstrap/CollectPlaceholder.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.CollectPlaceholder">CollectPlaceholder</a> <a href="../org/apache/spark/sql/execution/bootstrap/OnlineProject.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.OnlineProject">OnlineProject</a> <a href="../org/apache/spark/sql/execution/local/ProjectNode.html" class="extype" name="org.apache.spark.sql.execution.local.ProjectNode">ProjectNode</a> <a href="../org/apache/spark/sql/execution/local/TakeOrderedAndProjectNode.html" class="extype" name="org.apache.spark.sql.execution.local.TakeOrderedAndProjectNode">TakeOrderedAndProjectNode</a> </div>
     </div><div class="entry">
       <div class="name">projection</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SqlParserBase.html" class="extype" name="org.apache.spark.sql.catalyst.SqlParserBase">SqlParserBase</a> </div>

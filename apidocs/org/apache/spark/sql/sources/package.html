@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>sources - snappy-tools_2.10 0.1.0-SNAPSHOT API - org.apache.spark.sql.sources</title>
-          <meta name="description" content="sources - snappy - tools 2.10 0.1.0 - SNAPSHOT API - org.apache.spark.sql.sources" />
-          <meta name="keywords" content="sources snappy tools 2.10 0.1.0 SNAPSHOT API org.apache.spark.sql.sources" />
+          <title>sources - snappy-tools_2.10 0.1.0-PREVIEW API - org.apache.spark.sql.sources</title>
+          <meta name="description" content="sources - snappy - tools 2.10 0.1.0 - PREVIEW API - org.apache.spark.sql.sources" />
+          <meta name="keywords" content="sources snappy tools 2.10 0.1.0 PREVIEW API org.apache.spark.sql.sources" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -149,6 +149,45 @@ Represents a collection of tuples with a known schema.</p>
       </h4>
       <p class="comment cmt">::Experimental::
 An interface for experimenting with a more direct connection to the query planner.</p>
+    </li><li name="org.apache.spark.sql.sources.ClosedFormErrorEstimate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ClosedFormErrorEstimateextendsUnaryExpressionwithPartialAggregate1withProductwithSerializable"></a>
+      <a id="ClosedFormErrorEstimate:ClosedFormErrorEstimate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ClosedFormErrorEstimate.html"><span class="name">ClosedFormErrorEstimate</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="ratioExpr">ratioExpr: <a href="MapColumnToWeight.html" class="extype" name="org.apache.spark.sql.sources.MapColumnToWeight">MapColumnToWeight</a></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="aggregateType">aggregateType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../catalyst/expressions/PartialAggregate1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PartialAggregate1">PartialAggregate1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.CoalesceDisparateTypes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CoalesceDisparateTypesextendsExpressionwithUnevaluablewithProductwithSerializable"></a>
+      <a id="CoalesceDisparateTypes:CoalesceDisparateTypes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CoalesceDisparateTypes.html"><span class="name">CoalesceDisparateTypes</span></a><span class="params">(<span name="children">children: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../catalyst/expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.Confidence" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConfidenceextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="Confidence:Confidence"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Confidence.html"><span class="name">Confidence</span></a><span class="params">(<span name="confidenceExpr">confidenceExpr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="child">child: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.sources.CreatableRelationProvider" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="CreatableRelationProviderextendsAnyRef"></a>
       <a id="CreatableRelationProvider:CreatableRelationProvider"></a>
@@ -248,6 +287,162 @@ Data sources should implement this trait so that they can register an alias to t
       </h4>
       <p class="comment cmt">A filter that evaluates to <code>true</code> iff the attribute evaluates to a value
 equal to <code>value</code>.</p>
+    </li><li name="org.apache.spark.sql.sources.Error" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="Error:Error"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Error.html"><span class="name">Error</span></a><span class="params">(<span name="errorExpr">errorExpr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="child">child: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorAndConfidence" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorAndConfidenceextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="ErrorAndConfidence:ErrorAndConfidence"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorAndConfidence.html"><span class="name">ErrorAndConfidence</span></a><span class="params">(<span name="error">error: <span class="extype" name="scala.Double">Double</span></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="errorFunctions">errorFunctions: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>, <span class="extype" name="scala.Int">Int</span>)]]</span>, <span name="child">child: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="sampleRatioAttribute">sampleRatioAttribute: <a href="MapColumnToWeight.html" class="extype" name="org.apache.spark.sql.sources.MapColumnToWeight">MapColumnToWeight</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorEstimateAggregate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorEstimateAggregateextendsUnaryExpressionwithPartialAggregate1withProductwithSerializable"></a>
+      <a id="ErrorEstimateAggregate:ErrorEstimateAggregate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorEstimateAggregate.html"><span class="name">ErrorEstimateAggregate</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="ratioExpr">ratioExpr: <a href="MapColumnToWeight.html" class="extype" name="org.apache.spark.sql.sources.MapColumnToWeight">MapColumnToWeight</a></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="aggregateType">aggregateType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../catalyst/expressions/PartialAggregate1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PartialAggregate1">PartialAggregate1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorLimitExceededException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorLimitExceededExceptionextendsException"></a>
+      <a id="ErrorLimitExceededException:ErrorLimitExceededException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorLimitExceededException.html"><span class="name">ErrorLimitExceededException</span></a><span class="result"> extends <a href="../../../../../scala/package.html#Exception=Exception" class="extmbr" name="scala.Exception">Exception</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">The exception thrown when error percent is more than specified.</p>
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsFunctionextendsAggregateFunction1withCastDoublewithProductwithSerializable"></a>
+      <a id="ErrorStatsFunction:ErrorStatsFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsFunction.html"><span class="name">ErrorStatsFunction</span></a><span class="params">(<span name="expr">expr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="ratioExpr">ratioExpr: <a href="MapColumnToWeight.html" class="extype" name="org.apache.spark.sql.sources.MapColumnToWeight">MapColumnToWeight</a></span>, <span name="base">base: <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>, <span name="partial">partial: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/AggregateFunction1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateFunction1">AggregateFunction1</a> with <a href="CastDouble.html" class="extype" name="org.apache.spark.sql.sources.CastDouble">CastDouble</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsFunctionCF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsFunctionCFextendsAggregateFunction1withCastDoublewithProductwithSerializable"></a>
+      <a id="ErrorStatsFunctionCF:ErrorStatsFunctionCF"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsFunctionCF.html"><span class="name">ErrorStatsFunctionCF</span></a><span class="params">(<span name="expr">expr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="ratioExpr">ratioExpr: <a href="MapColumnToWeight.html" class="extype" name="org.apache.spark.sql.sources.MapColumnToWeight">MapColumnToWeight</a></span>, <span name="base">base: <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>, <span name="partial">partial: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/AggregateFunction1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateFunction1">AggregateFunction1</a> with <a href="CastDouble.html" class="extype" name="org.apache.spark.sql.sources.CastDouble">CastDouble</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsMerge" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsMergeextendsUnaryExpressionwithAggregateExpression1withProductwithSerializable"></a>
+      <a id="ErrorStatsMerge:ErrorStatsMerge"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsMerge.html"><span class="name">ErrorStatsMerge</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsMergeCF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsMergeCFextendsUnaryExpressionwithAggregateExpression1withProductwithSerializable"></a>
+      <a id="ErrorStatsMergeCF:ErrorStatsMergeCF"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsMergeCF.html"><span class="name">ErrorStatsMergeCF</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsMergeFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsMergeFunctionextendsAggregateFunction1withProductwithSerializable"></a>
+      <a id="ErrorStatsMergeFunction:ErrorStatsMergeFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsMergeFunction.html"><span class="name">ErrorStatsMergeFunction</span></a><span class="params">(<span name="expr">expr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="base">base: <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/AggregateFunction1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateFunction1">AggregateFunction1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsMergeFunctionCF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsMergeFunctionCFextendsAggregateFunction1withProductwithSerializable"></a>
+      <a id="ErrorStatsMergeFunctionCF:ErrorStatsMergeFunctionCF"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsMergeFunctionCF.html"><span class="name">ErrorStatsMergeFunctionCF</span></a><span class="params">(<span name="expr">expr: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="base">base: <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/AggregateFunction1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateFunction1">AggregateFunction1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsPartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsPartitionextendsExpressionwithAggregateExpression1withProductwithSerializable"></a>
+      <a id="ErrorStatsPartition:ErrorStatsPartition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsPartition.html"><span class="name">ErrorStatsPartition</span></a><span class="params">(<span name="children">children: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorStatsPartitionCF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorStatsPartitionCFextendsExpressionwithAggregateExpression1withProductwithSerializable"></a>
+      <a id="ErrorStatsPartitionCF:ErrorStatsPartitionCF"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorStatsPartitionCF.html"><span class="name">ErrorStatsPartitionCF</span></a><span class="params">(<span name="children">children: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="isDefault">isDefault: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="confFactor">confFactor: <span class="extype" name="scala.Double">Double</span></span>, <span name="aggType">aggType: <a href="ErrorAggregate$.html#Type=org.apache.spark.sql.sources.ErrorAggregate.Value" class="extmbr" name="org.apache.spark.sql.sources.ErrorAggregate.Type">Type</a></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result"> extends <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../catalyst/expressions/AggregateExpression1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateExpression1">AggregateExpression1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.sources.ExternalSchemaRelationProvider" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="ExternalSchemaRelationProviderextendsAnyRef"></a>
       <a id="ExternalSchemaRelationProvider:ExternalSchemaRelationProvider"></a>
@@ -444,6 +639,32 @@ less than <code>value</code>.</p>
       </h4>
       <p class="comment cmt">A filter that evaluates to <code>true</code> iff the attribute evaluates to a value
 less than or equal to <code>value</code>.</p>
+    </li><li name="org.apache.spark.sql.sources.MapColumnToWeight" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MapColumnToWeightextendsUnaryExpressionwithProductwithSerializable"></a>
+      <a id="MapColumnToWeight:MapColumnToWeight"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MapColumnToWeight.html"><span class="name">MapColumnToWeight</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.Masquerader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MasqueraderextendsAnyRef"></a>
+      <a id="Masquerader:Masquerader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Masquerader.html"><span class="name">Masquerader</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.sources.MutableRelationProvider" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="MutableRelationProviderextendsExternalSchemaRelationProviderwithSchemaRelationProviderwithRelationProviderwithCreatableRelationProvider"></a>
       <a id="MutableRelationProvider:MutableRelationProvider"></a>
@@ -570,6 +791,19 @@ containing all of its tuples as Row objects.</p>
       </h4>
       <p class="comment cmt">::DeveloperApi::
 Implemented by objects that produce relations for a specific kind of data source.</p>
+    </li><li name="org.apache.spark.sql.sources.ReplaceWithSampleTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReplaceWithSampleTableextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withProductwithSerializable"></a>
+      <a id="ReplaceWithSampleTable:ReplaceWithSampleTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ReplaceWithSampleTable.html"><span class="name">ReplaceWithSampleTable</span></a><span class="params">(<span name="catalog">catalog: <a href="../hive/SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></span>, <span name="closedFormEstimates">closedFormEstimates: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.sources.RowInsertableRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="RowInsertableRelationextendsSingleRowInsertableRelation"></a>
       <a id="RowInsertableRelation:RowInsertableRelation"></a>
@@ -596,6 +830,19 @@ Implemented by objects that produce relations for a specific kind of data source
       </span>
       <span class="symbol">
         <a href="RowPutRelation.html"><span class="name">RowPutRelation</span></a><span class="result"> extends <a href="SingleRowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.SingleRowInsertableRelation">SingleRowInsertableRelation</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.SampleTableQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampleTableQueryextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="SampleTableQuery:SampleTableQuery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampleTableQuery.html"><span class="name">SampleTableQuery</span></a><span class="params">(<span name="bootstrapDebugQE">bootstrapDebugQE: <span class="extype" name="scala.Option">Option</span>[<a href="../execution/SnappyQueryExecution.html" class="extype" name="org.apache.spark.sql.execution.SnappyQueryExecution">SnappyQueryExecution</a>]</span>, <span name="child">child: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="error">error: <span class="extype" name="scala.Double">Double</span></span>, <span name="confidence">confidence: <span class="extype" name="scala.Double">Double</span></span>, <span name="errorEstimates">errorEstimates: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<a href="../catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>, <span class="extype" name="scala.Int">Int</span>)]]</span>, <span name="sampleRatioAttribute">sampleRatioAttribute: <a href="Masquerader.html" class="extype" name="org.apache.spark.sql.sources.Masquerader">Masquerader</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -672,6 +919,20 @@ with a given schema.</p>
       </span>
       </h4>
       
+    </li><li name="org.apache.spark.sql.sources.StatCounterWithFullCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StatCounterWithFullCountextendsInternalRowwithBaseGenericInternalRowwithStatVarianceCounterwithSerializable"></a>
+      <a id="StatCounterWithFullCount:StatCounterWithFullCount"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StatCounterWithFullCount.html"><span class="name">StatCounterWithFullCount</span></a><span class="result"> extends <a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> with <a href="../catalyst/expressions/BaseGenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow">BaseGenericInternalRow</a> with <a href="StatVarianceCounter.html" class="extype" name="org.apache.spark.sql.sources.StatVarianceCounter">StatVarianceCounter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">A class for tracking the statistics of a set of numbers (count, mean,
+variance and weightedCount) in a numerically robust way.</p>
     </li><li name="org.apache.spark.sql.sources.StatVarianceCounter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
       <a id="StatVarianceCounterextendsSerializable"></a>
       <a id="StatVarianceCounter:StatVarianceCounter"></a>
@@ -758,6 +1019,58 @@ A BaseRelation that can produce all of its tuples as an RDD of Row objects.</p>
                 <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.WeightedAverage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightedAverageextendsAverage"></a>
+      <a id="WeightedAverage:WeightedAverage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightedAverage.html"><span class="name">WeightedAverage</span></a><span class="result"> extends <a href="../catalyst/expressions/Average.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Average">Average</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.WeightedCount" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightedCountextendsUnaryExpressionwithPartialAggregate1withProductwithSerializable"></a>
+      <a id="WeightedCount:WeightedCount"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightedCount.html"><span class="name">WeightedCount</span></a><span class="params">(<span name="child">child: <a href="../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="../catalyst/expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../catalyst/expressions/PartialAggregate1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PartialAggregate1">PartialAggregate1</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.WeightedCountFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightedCountFunctionextendsCountFunction"></a>
+      <a id="WeightedCountFunction:WeightedCountFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightedCountFunction.html"><span class="name">WeightedCountFunction</span></a><span class="result"> extends <a href="../catalyst/expressions/CountFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CountFunction">CountFunction</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.WeightedSum" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightedSumextendsSum"></a>
+      <a id="WeightedSum:WeightedSum"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightedSum.html"><span class="name">WeightedSum</span></a><span class="result"> extends <a href="../catalyst/expressions/Sum.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Sum">Sum</a></span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 
@@ -778,6 +1091,22 @@ A BaseRelation that can produce all of its tuples as an RDD of Row objects.</p>
       </span>
       </h4>
       
+    </li><li name="org.apache.spark.sql.sources.ClosedFormErrorEstimateRule" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ClosedFormErrorEstimateRule"></a>
+      <a id="ClosedFormErrorEstimateRule:ClosedFormErrorEstimateRule"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ClosedFormErrorEstimateRule$.html"><span class="name">ClosedFormErrorEstimateRule</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@transient</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.DependencyCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="DependencyCatalog"></a>
       <a id="DependencyCatalog:DependencyCatalog"></a>
@@ -792,6 +1121,48 @@ A BaseRelation that can produce all of its tuples as an RDD of Row objects.</p>
       </h4>
       <p class="comment cmt">Tracks the child <code>DependentRelation</code>s for all
 <code>ParentRelation</code>s.</code></code></p>
+    </li><li name="org.apache.spark.sql.sources.EnableTungsten" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EnableTungsten"></a>
+      <a id="EnableTungsten:EnableTungsten"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EnableTungsten$.html"><span class="name">EnableTungsten</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ErrorAggregate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ErrorAggregate"></a>
+      <a id="ErrorAggregate:ErrorAggregate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ErrorAggregate$.html"><span class="name">ErrorAggregate</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.GetErrorBounds" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetErrorBounds"></a>
+      <a id="GetErrorBounds:GetErrorBounds"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GetErrorBounds$.html"><span class="name">GetErrorBounds</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@transient</span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="JdbcExtendedUtils"></a>
       <a id="JdbcExtendedUtils:JdbcExtendedUtils"></a>
@@ -802,6 +1173,32 @@ A BaseRelation that can produce all of its tuples as an RDD of Row objects.</p>
       </span>
       <span class="symbol">
         <a href="JdbcExtendedUtils$.html"><span class="name">JdbcExtendedUtils</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.ReplaceWithSampleTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ReplaceWithSampleTable"></a>
+      <a id="ReplaceWithSampleTable:ReplaceWithSampleTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ReplaceWithSampleTable$.html"><span class="name">ReplaceWithSampleTable</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.SampleTableQuery" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampleTableQuery"></a>
+      <a id="SampleTableQuery:SampleTableQuery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SampleTableQuery$.html"><span class="name">SampleTableQuery</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -818,6 +1215,45 @@ A BaseRelation that can produce all of its tuples as an RDD of Row objects.</p>
       </span>
       </h4>
       <p class="comment cmt">Support for DML and other operations on external tables.</p>
+    </li><li name="org.apache.spark.sql.sources.WeightageRule" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightageRule"></a>
+      <a id="WeightageRule:WeightageRule"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightageRule$.html"><span class="name">WeightageRule</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.WeightedAverage" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightedAverage"></a>
+      <a id="WeightedAverage:WeightedAverage"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightedAverage$.html"><span class="name">WeightedAverage</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.sources.WeightedSum" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WeightedSum"></a>
+      <a id="WeightedSum:WeightedSum"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WeightedSum$.html"><span class="name">WeightedSum</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
     </li></ol>
             </div>
 

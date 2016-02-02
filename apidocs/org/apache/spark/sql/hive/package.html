@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>hive - snappy-tools_2.10 0.1.0-SNAPSHOT API - org.apache.spark.sql.hive</title>
-          <meta name="description" content="hive - snappy - tools 2.10 0.1.0 - SNAPSHOT API - org.apache.spark.sql.hive" />
-          <meta name="keywords" content="hive snappy tools 2.10 0.1.0 SNAPSHOT API org.apache.spark.sql.hive" />
+          <title>hive - snappy-tools_2.10 0.1.0-PREVIEW API - org.apache.spark.sql.hive</title>
+          <meta name="description" content="hive - snappy - tools 2.10 0.1.0 - PREVIEW API - org.apache.spark.sql.hive" />
+          <meta name="keywords" content="hive snappy tools 2.10 0.1.0 PREVIEW API org.apache.spark.sql.hive" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -110,6 +110,32 @@ existing Hive installation).  Supported Hive features include:</p><ul><li>Using 
       </span>
       </h4>
       <p class="comment cmt">A fully qualified identifier for a table (i.</p>
+    </li><li name="org.apache.spark.sql.hive.SampledRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampledRelationextendsSparkPlanwithUnaryNodewithProductwithSerializable"></a>
+      <a id="SampledRelation:SampledRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampledRelation.html"><span class="name">SampledRelation</span></a><span class="params">(<span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <span class="extype" name="org.apache.spark.sql.execution.UnaryNode">UnaryNode</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyStoreAQPHiveCatalogextendsSnappyStoreHiveCatalog"></a>
+      <a id="SnappyStoreAQPHiveCatalog:SnappyStoreAQPHiveCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStoreAQPHiveCatalog.html"><span class="name">SnappyStoreAQPHiveCatalog</span></a><span class="result"> extends <a href="SnappyStoreHiveCatalog.html" class="extype" name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog">SnappyStoreHiveCatalog</a></span>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.hive.SnappyStoreHiveCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyStoreHiveCatalogextendsCatalogwithLogging"></a>
       <a id="SnappyStoreHiveCatalog:SnappyStoreHiveCatalog"></a>
@@ -141,6 +167,32 @@ stream/topK tables and returning LogicalPlan to materialize these entities.</p>
       </span>
       <span class="symbol">
         <a href="ExternalTableType$.html"><span class="name">ExternalTableType</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.hive.IdentifySampledRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IdentifySampledRelation"></a>
+      <a id="IdentifySampledRelation:IdentifySampledRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="IdentifySampledRelation$.html"><span class="name">IdentifySampledRelation</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyStoreAQPHiveCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyStoreAQPHiveCatalog"></a>
+      <a id="SnappyStoreAQPHiveCatalog:SnappyStoreAQPHiveCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStoreAQPHiveCatalog$.html"><span class="name">SnappyStoreAQPHiveCatalog</span></a>
       </span>
       </h4>
       

@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>snappy-tools_2.10 0.1.0-SNAPSHOT API</title>
-          <meta name="description" content="snappy - tools 2.10 0.1.0 - SNAPSHOT API" />
-          <meta name="keywords" content="snappy tools 2.10 0.1.0 SNAPSHOT API" />
+          <title>snappy-tools_2.10 0.1.0-PREVIEW API</title>
+          <meta name="description" content="snappy - tools 2.10 0.1.0 - PREVIEW API" />
+          <meta name="keywords" content="snappy tools 2.10 0.1.0 PREVIEW API" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../lib/ref-index.css" media="screen" type="text/css" rel="stylesheet" />
@@ -26,6 +26,9 @@
     </div><div class="entry">
       <div class="name">BUCKETS</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/store/StoreUtils$.html" class="extype" name="org.apache.spark.sql.store.StoreUtils">StoreUtils</a> </div>
+    </div><div class="entry">
+      <div class="name">BUFSIZE</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSampler$.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSampler">StratifiedSampler</a> </div>
     </div><div class="entry">
       <div class="name">BY</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SqlParserBase.html" class="extype" name="org.apache.spark.sql.catalyst.SqlParserBase">SqlParserBase</a> </div>
@@ -189,11 +192,29 @@
       <div class="name">BoostingStrategy</div>
       <div class="occurrences"><a href="../org/apache/spark/mllib/tree/configuration/package.html" class="extype" name="org.apache.spark.mllib.tree.configuration">configuration</a> </div>
     </div><div class="entry">
+      <div class="name">BootStrapUtils</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">Bootstrap</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">BootstrapAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">BootstrapSortedAggregate</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
       <div class="name">Both</div>
       <div class="occurrences"><a href="../org/apache/spark/graphx/EdgeDirection$.html" class="extype" name="org.apache.spark.graphx.EdgeDirection">EdgeDirection</a> </div>
     </div><div class="entry">
+      <div class="name">Bound</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
       <div class="name">BoundReference</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a> </div>
+    </div><div class="entry">
+      <div class="name">BoundType</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> <a href="../org/apache/spark/sql/execution/bootstrap/BoundType$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BoundType">BoundType</a> </div>
     </div><div class="entry">
       <div class="name">BoundedDouble</div>
       <div class="occurrences"><a href="../org/apache/spark/partial/package.html" class="extype" name="org.apache.spark.partial">partial</a> </div>
@@ -270,6 +291,12 @@
       <div class="name">ByteBufferHelper</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/columnar/package.html" class="extype" name="org.apache.spark.sql.columnar">columnar</a> </div>
     </div><div class="entry">
+      <div class="name">ByteMultiply</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">ByteNonZero</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/package.html" class="extype" name="org.apache.spark.sql.execution.bootstrap">bootstrap</a> </div>
+    </div><div class="entry">
       <div class="name">ByteType</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/types/package.html" class="extype" name="org.apache.spark.sql.types">types</a> </div>
     </div><div class="entry">
@@ -286,7 +313,7 @@
       <div class="occurrences"><a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> </div>
     </div><div class="entry">
       <div class="name">base</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/AggregateFunction1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateFunction1">AggregateFunction1</a> <a href="../org/apache/spark/sql/catalyst/expressions/ApproxCountDistinctMergeFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ApproxCountDistinctMergeFunction">ApproxCountDistinctMergeFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/ApproxCountDistinctPartitionFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ApproxCountDistinctPartitionFunction">ApproxCountDistinctPartitionFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/AverageFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AverageFunction">AverageFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CollectHashSetFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CollectHashSetFunction">CollectHashSetFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CombineSetsAndCountFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CombineSetsAndCountFunction">CombineSetsAndCountFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CombineSetsAndSum.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CombineSetsAndSum">CombineSetsAndSum</a> <a href="../org/apache/spark/sql/catalyst/expressions/CombineSetsAndSumFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CombineSetsAndSumFunction">CombineSetsAndSumFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/ComputePartialStdFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ComputePartialStdFunction">ComputePartialStdFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CountDistinctFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CountDistinctFunction">CountDistinctFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CountFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CountFunction">CountFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/FirstFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.FirstFunction">FirstFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/LastFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LastFunction">LastFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/MaxFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MaxFunction">MaxFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/MergePartialStdFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MergePartialStdFunction">MergePartialStdFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/MinFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MinFunction">MinFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/SortArray.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortArray">SortArray</a> <a href="../org/apache/spark/sql/catalyst/expressions/StddevFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.StddevFunction">StddevFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/SumDistinctFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SumDistinctFunction">SumDistinctFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/SumFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SumFunction">SumFunction</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/AggregateFunction1.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AggregateFunction1">AggregateFunction1</a> <a href="../org/apache/spark/sql/catalyst/expressions/ApproxCountDistinctMergeFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ApproxCountDistinctMergeFunction">ApproxCountDistinctMergeFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/ApproxCountDistinctPartitionFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ApproxCountDistinctPartitionFunction">ApproxCountDistinctPartitionFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/AverageFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AverageFunction">AverageFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CollectHashSetFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CollectHashSetFunction">CollectHashSetFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CombineSetsAndCountFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CombineSetsAndCountFunction">CombineSetsAndCountFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CombineSetsAndSum.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CombineSetsAndSum">CombineSetsAndSum</a> <a href="../org/apache/spark/sql/catalyst/expressions/CombineSetsAndSumFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CombineSetsAndSumFunction">CombineSetsAndSumFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/ComputePartialStdFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ComputePartialStdFunction">ComputePartialStdFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CountDistinctFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CountDistinctFunction">CountDistinctFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/CountFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CountFunction">CountFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/FirstFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.FirstFunction">FirstFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/LastFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LastFunction">LastFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/MaxFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MaxFunction">MaxFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/MergePartialStdFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MergePartialStdFunction">MergePartialStdFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/MinFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MinFunction">MinFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/SortArray.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortArray">SortArray</a> <a href="../org/apache/spark/sql/catalyst/expressions/StddevFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.StddevFunction">StddevFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/SumDistinctFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SumDistinctFunction">SumDistinctFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/SumFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SumFunction">SumFunction</a> <a href="../org/apache/spark/sql/execution/bootstrap/Count01Function.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Count01Function">Count01Function</a> <a href="../org/apache/spark/sql/execution/bootstrap/DelegateCount01Function.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DelegateCount01Function">DelegateCount01Function</a> <a href="../org/apache/spark/sql/execution/bootstrap/DelegateCountFunction.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DelegateCountFunction">DelegateCountFunction</a> <a href="../org/apache/spark/sql/execution/bootstrap/DelegateSumFunction.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DelegateSumFunction">DelegateSumFunction</a> <a href="../org/apache/spark/sql/execution/bootstrap/DelegateSumFunctionDouble.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DelegateSumFunctionDouble">DelegateSumFunctionDouble</a> <a href="../org/apache/spark/sql/execution/bootstrap/DelegateSumFunctionLong.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.DelegateSumFunctionLong">DelegateSumFunctionLong</a> <a href="../org/apache/spark/sql/execution/bootstrap/Delegatee.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Delegatee">Delegatee</a> <a href="../org/apache/spark/sql/sources/ErrorStatsFunction.html" class="extype" name="org.apache.spark.sql.sources.ErrorStatsFunction">ErrorStatsFunction</a> <a href="../org/apache/spark/sql/sources/ErrorStatsFunctionCF.html" class="extype" name="org.apache.spark.sql.sources.ErrorStatsFunctionCF">ErrorStatsFunctionCF</a> <a href="../org/apache/spark/sql/sources/ErrorStatsMergeFunction.html" class="extype" name="org.apache.spark.sql.sources.ErrorStatsMergeFunction">ErrorStatsMergeFunction</a> <a href="../org/apache/spark/sql/sources/ErrorStatsMergeFunctionCF.html" class="extype" name="org.apache.spark.sql.sources.ErrorStatsMergeFunctionCF">ErrorStatsMergeFunctionCF</a> </div>
     </div><div class="entry">
       <div class="name">base64</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a> </div>
@@ -300,8 +327,14 @@
       <div class="name">baseOn</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/tuning/ParamGridBuilder.html" class="extype" name="org.apache.spark.ml.tuning.ParamGridBuilder">ParamGridBuilder</a> </div>
     </div><div class="entry">
+      <div class="name">baseRelation</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> </div>
+    </div><div class="entry">
       <div class="name">baseRelationToDataFrame</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a> </div>
+    </div><div class="entry">
+      <div class="name">baseSchema</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> </div>
     </div><div class="entry">
       <div class="name">baseScope</div>
       <div class="occurrences"><a href="../org/apache/spark/streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a> <a href="../org/apache/spark/streaming/dstream/InputDStream.html" class="extype" name="org.apache.spark.streaming.dstream.InputDStream">InputDStream</a> </div>
@@ -310,7 +343,16 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/AttributeSet.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.AttributeSet">AttributeSet</a> </div>
     </div><div class="entry">
       <div class="name">baseTable</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratifiedSample.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSample">StratifiedSample</a> <a href="../org/apache/spark/sql/execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a> <a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> <a href="../org/apache/spark/sql/sources/DependentRelation.html" class="extype" name="org.apache.spark.sql.sources.DependentRelation">DependentRelation</a> <a href="../org/apache/spark/sql/topk/TopKRelation.html" class="extype" name="org.apache.spark.sql.topk.TopKRelation">TopKRelation</a> </div>
+    </div><div class="entry">
+      <div class="name">baseTableSchema</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a> <a href="../org/apache/spark/sql/topk/TopKRelation.html" class="extype" name="org.apache.spark.sql.topk.TopKRelation">TopKRelation</a> </div>
+    </div><div class="entry">
+      <div class="name">basicMerge</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/cms/CountMinSketch$.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> </div>
+    </div><div class="entry">
+      <div class="name">basicQuery</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/Hokusai$TimeAndItemAggregation.html" class="extype" name="org.apache.spark.sql.execution.Hokusai.TimeAndItemAggregation">TimeAndItemAggregation</a> </div>
     </div><div class="entry">
       <div class="name">batchDur</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/streaming/SnappyStreamingContext.html" class="extype" name="org.apache.spark.sql.streaming.SnappyStreamingContext">SnappyStreamingContext</a> </div>
@@ -323,6 +365,9 @@
     </div><div class="entry">
       <div class="name">batchTime</div>
       <div class="occurrences"><a href="../org/apache/spark/streaming/scheduler/BatchInfo.html" class="extype" name="org.apache.spark.streaming.scheduler.BatchInfo">BatchInfo</a> <a href="../org/apache/spark/streaming/scheduler/OutputOperationInfo.html" class="extype" name="org.apache.spark.streaming.scheduler.OutputOperationInfo">OutputOperationInfo</a> </div>
+    </div><div class="entry">
+      <div class="name">batchTotalSize</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/StratumReservoir.html" class="extype" name="org.apache.spark.sql.execution.StratumReservoir">StratumReservoir</a> </div>
     </div><div class="entry">
       <div class="name">batchUpdate</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/UnresolvedWindowFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnresolvedWindowFunction">UnresolvedWindowFunction</a> <a href="../org/apache/spark/sql/catalyst/expressions/WindowFunction.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.WindowFunction">WindowFunction</a> </div>
@@ -406,7 +451,7 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/Column.html" class="extype" name="org.apache.spark.sql.Column">Column</a> </div>
     </div><div class="entry">
       <div class="name">blockId</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/collection/ExecutorLocalPartition.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalPartition">ExecutorLocalPartition</a> <a href="../org/apache/spark/storage/BlockUpdatedInfo.html" class="extype" name="org.apache.spark.storage.BlockUpdatedInfo">BlockUpdatedInfo</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SamplePartition.html" class="extype" name="org.apache.spark.sql.SamplePartition">SamplePartition</a> <a href="../org/apache/spark/sql/collection/ExecutorLocalPartition.html" class="extype" name="org.apache.spark.sql.collection.ExecutorLocalPartition">ExecutorLocalPartition</a> <a href="../org/apache/spark/sql/execution/SamplePartition.html" class="extype" name="org.apache.spark.sql.execution.SamplePartition">SamplePartition</a> <a href="../org/apache/spark/storage/BlockUpdatedInfo.html" class="extype" name="org.apache.spark.storage.BlockUpdatedInfo">BlockUpdatedInfo</a> </div>
     </div><div class="entry">
       <div class="name">blockIds</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/collection/MultiExecutorLocalPartition.html" class="extype" name="org.apache.spark.sql.collection.MultiExecutorLocalPartition">MultiExecutorLocalPartition</a> </div>
@@ -438,8 +483,14 @@
       <div class="name">bmAddress</div>
       <div class="occurrences"><a href="../org/apache/spark/FetchFailed.html" class="extype" name="org.apache.spark.FetchFailed">FetchFailed</a> </div>
     </div><div class="entry">
+      <div class="name">boolFalse</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootStrapUtils$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootStrapUtils">BootStrapUtils</a> <a href="../org/apache/spark/sql/execution/bootstrap/OnlinePlannerUtil$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.OnlinePlannerUtil">OnlinePlannerUtil</a> <a href="../org/apache/spark/sql/execution/bootstrap/PropagateBootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.PropagateBootstrap">PropagateBootstrap</a> </div>
+    </div><div class="entry">
       <div class="name"><strike>boolToBoolWritable</strike></div>
       <div class="occurrences"><strike><a href="../org/apache/spark/SparkContext$.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></strike> </div>
+    </div><div class="entry">
+      <div class="name">boolTrue</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootStrapUtils$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootStrapUtils">BootStrapUtils</a> <a href="../org/apache/spark/sql/execution/bootstrap/OnlinePlannerUtil$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.OnlinePlannerUtil">OnlinePlannerUtil</a> <a href="../org/apache/spark/sql/execution/bootstrap/PropagateBootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.PropagateBootstrap">PropagateBootstrap</a> </div>
     </div><div class="entry">
       <div class="name">boolean</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/ColumnName.html" class="extype" name="org.apache.spark.sql.ColumnName">ColumnName</a> <a href="../org/apache/spark/sql/catalyst/dsl/package$$ExpressionConversions$ImplicitAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.dsl.ExpressionConversions.ImplicitAttribute">ImplicitAttribute</a> </div>
@@ -456,8 +507,26 @@
       <div class="name">booleanWritableFactory</div>
       <div class="occurrences"><a href="../org/apache/spark/WritableFactory$.html" class="extype" name="org.apache.spark.WritableFactory">WritableFactory</a> </div>
     </div><div class="entry">
+      <div class="name">bootstrap</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/package.html" class="extype" name="org.apache.spark.sql.execution">execution</a> </div>
+    </div><div class="entry">
+      <div class="name">bootstrapDebugQE</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SnappyContextAQPFunctions.html" class="extype" name="org.apache.spark.sql.execution.SnappyContextAQPFunctions">SnappyContextAQPFunctions</a> <a href="../org/apache/spark/sql/sources/SampleTableQuery.html" class="extype" name="org.apache.spark.sql.sources.SampleTableQuery">SampleTableQuery</a> </div>
+    </div><div class="entry">
+      <div class="name">bound</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/LazyAggrBound.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.LazyAggrBound">LazyAggrBound</a> </div>
+    </div><div class="entry">
+      <div class="name">boundAttributes</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/Bound.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Bound">Bound</a> </div>
+    </div><div class="entry">
       <div class="name">boundGenerator</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/Generate.html" class="extype" name="org.apache.spark.sql.execution.Generate">Generate</a> </div>
+    </div><div class="entry">
+      <div class="name">boundReference</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/sources/WeightedCountFunction.html" class="extype" name="org.apache.spark.sql.sources.WeightedCountFunction">WeightedCountFunction</a> </div>
+    </div><div class="entry">
+      <div class="name">boundType</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/Bound.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Bound">Bound</a> </div>
     </div><div class="entry">
       <div class="name">boundaries</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/regression/IsotonicRegressionModel.html" class="extype" name="org.apache.spark.ml.regression.IsotonicRegressionModel">IsotonicRegressionModel</a> <a href="../org/apache/spark/mllib/regression/IsotonicRegressionModel.html" class="extype" name="org.apache.spark.mllib.regression.IsotonicRegressionModel">IsotonicRegressionModel</a> </div>
@@ -474,6 +543,9 @@
       <div class="name">broadcast</div>
       <div class="occurrences"><a href="../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> <a href="../org/apache/spark/api/java/JavaSparkContext.html" class="extype" name="org.apache.spark.api.java.JavaSparkContext">JavaSparkContext</a> <a href="../org/apache/spark/package.html" class="extype" name="org.apache.spark">spark</a> <a href="../org/apache/spark/sql/execution/joins/LeftSemiJoinBNL.html" class="extype" name="org.apache.spark.sql.execution.joins.LeftSemiJoinBNL">LeftSemiJoinBNL</a> <a href="../org/apache/spark/sql/functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a> </div>
     </div><div class="entry">
+      <div class="name">broadcastExpressions</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/LineageRelay.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.LineageRelay">LineageRelay</a> </div>
+    </div><div class="entry">
       <div class="name">broadcastId</div>
       <div class="occurrences"><a href="../org/apache/spark/storage/BroadcastBlockId.html" class="extype" name="org.apache.spark.storage.BroadcastBlockId">BroadcastBlockId</a> </div>
     </div><div class="entry">
@@ -488,6 +560,9 @@
     </div><div class="entry">
       <div class="name">build</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/tuning/ParamGridBuilder.html" class="extype" name="org.apache.spark.ml.tuning.ParamGridBuilder">ParamGridBuilder</a> <strike><a href="../org/apache/spark/mllib/tree/model/Node.html" class="extype" name="org.apache.spark.mllib.tree.model.Node">Node</a></strike> <a href="../org/apache/spark/sql/types/MetadataBuilder.html" class="extype" name="org.apache.spark.sql.types.MetadataBuilder">MetadataBuilder</a> </div>
+    </div><div class="entry">
+      <div class="name">buildBackward</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/IntervalTracker$IntervalLink.html" class="extype" name="org.apache.spark.sql.execution.IntervalTracker.IntervalLink">IntervalLink</a> </div>
     </div><div class="entry">
       <div class="name">buildDict</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/expressions/StringTranslate$.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.StringTranslate">StringTranslate</a> </div>
@@ -520,10 +595,16 @@
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/joins/HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a> <a href="../org/apache/spark/sql/execution/joins/HashOuterJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashOuterJoin">HashOuterJoin</a> </div>
     </div><div class="entry">
       <div class="name">buildProjection</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/Project.html" class="extype" name="org.apache.spark.sql.execution.Project">Project</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/Project.html" class="extype" name="org.apache.spark.sql.execution.Project">Project</a> <a href="../org/apache/spark/sql/execution/bootstrap/Collect.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Collect">Collect</a> <a href="../org/apache/spark/sql/execution/bootstrap/OnlineProject.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.OnlineProject">OnlineProject</a> </div>
+    </div><div class="entry">
+      <div class="name">buildRelayFilter</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/Relay.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Relay">Relay</a> </div>
+    </div><div class="entry">
+      <div class="name">buildRelayProjection</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/Relay.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.Relay">Relay</a> </div>
     </div><div class="entry">
       <div class="name">buildScan</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/columnar/JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> <a href="../org/apache/spark/sql/columntable/ColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.columntable.ColumnFormatRelation">ColumnFormatRelation</a> <a href="../org/apache/spark/sql/row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> <a href="../org/apache/spark/sql/rowtable/RowFormatRelation.html" class="extype" name="org.apache.spark.sql.rowtable.RowFormatRelation">RowFormatRelation</a> <a href="../org/apache/spark/sql/sources/CatalystScan.html" class="extype" name="org.apache.spark.sql.sources.CatalystScan">CatalystScan</a> <a href="../org/apache/spark/sql/sources/HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.sources.HadoopFsRelation">HadoopFsRelation</a> <a href="../org/apache/spark/sql/sources/PrunedFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedFilteredScan">PrunedFilteredScan</a> <a href="../org/apache/spark/sql/sources/PrunedScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedScan">PrunedScan</a> <a href="../org/apache/spark/sql/sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> <a href="../org/apache/spark/sql/streaming/StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/columnar/JDBCAppendableRelation.html" class="extype" name="org.apache.spark.sql.columnar.JDBCAppendableRelation">JDBCAppendableRelation</a> <a href="../org/apache/spark/sql/columntable/ColumnFormatRelation.html" class="extype" name="org.apache.spark.sql.columntable.ColumnFormatRelation">ColumnFormatRelation</a> <a href="../org/apache/spark/sql/row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> <a href="../org/apache/spark/sql/rowtable/RowFormatRelation.html" class="extype" name="org.apache.spark.sql.rowtable.RowFormatRelation">RowFormatRelation</a> <a href="../org/apache/spark/sql/sampling/ColumnFormatSamplingRelation.html" class="extype" name="org.apache.spark.sql.sampling.ColumnFormatSamplingRelation">ColumnFormatSamplingRelation</a> <a href="../org/apache/spark/sql/sources/CatalystScan.html" class="extype" name="org.apache.spark.sql.sources.CatalystScan">CatalystScan</a> <a href="../org/apache/spark/sql/sources/HadoopFsRelation.html" class="extype" name="org.apache.spark.sql.sources.HadoopFsRelation">HadoopFsRelation</a> <a href="../org/apache/spark/sql/sources/PrunedFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedFilteredScan">PrunedFilteredScan</a> <a href="../org/apache/spark/sql/sources/PrunedScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedScan">PrunedScan</a> <a href="../org/apache/spark/sql/sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> <a href="../org/apache/spark/sql/streaming/StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> <a href="../org/apache/spark/sql/topk/TopKRelation.html" class="extype" name="org.apache.spark.sql.topk.TopKRelation">TopKRelation</a> </div>
     </div><div class="entry">
       <div class="name">buildSide</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/joins/BroadcastHashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.BroadcastHashJoin">BroadcastHashJoin</a> <a href="../org/apache/spark/sql/execution/joins/BroadcastNestedLoopJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.BroadcastNestedLoopJoin">BroadcastNestedLoopJoin</a> <a href="../org/apache/spark/sql/execution/joins/HashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.HashJoin">HashJoin</a> <a href="../org/apache/spark/sql/execution/joins/LocalJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.LocalJoin">LocalJoin</a> <a href="../org/apache/spark/sql/execution/joins/ShuffledHashJoin.html" class="extype" name="org.apache.spark.sql.execution.joins.ShuffledHashJoin">ShuffledHashJoin</a> <a href="../org/apache/spark/sql/execution/local/BinaryHashJoinNode.html" class="extype" name="org.apache.spark.sql.execution.local.BinaryHashJoinNode">BinaryHashJoinNode</a> <a href="../org/apache/spark/sql/execution/local/BroadcastHashJoinNode.html" class="extype" name="org.apache.spark.sql.execution.local.BroadcastHashJoinNode">BroadcastHashJoinNode</a> <a href="../org/apache/spark/sql/execution/local/HashJoinNode.html" class="extype" name="org.apache.spark.sql.execution.local.HashJoinNode">HashJoinNode</a> <a href="../org/apache/spark/sql/execution/local/NestedLoopJoinNode.html" class="extype" name="org.apache.spark.sql.execution.local.NestedLoopJoinNode">NestedLoopJoinNode</a> </div>
@@ -539,6 +620,12 @@
     </div><div class="entry">
       <div class="name">byte</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/ColumnName.html" class="extype" name="org.apache.spark.sql.ColumnName">ColumnName</a> <a href="../org/apache/spark/sql/catalyst/dsl/package$$ExpressionConversions$ImplicitAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.dsl.ExpressionConversions.ImplicitAttribute">ImplicitAttribute</a> </div>
+    </div><div class="entry">
+      <div class="name">byte0</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootStrapUtils$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootStrapUtils">BootStrapUtils</a> <a href="../org/apache/spark/sql/execution/bootstrap/OnlinePlannerUtil$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.OnlinePlannerUtil">OnlinePlannerUtil</a> <a href="../org/apache/spark/sql/execution/bootstrap/PropagateBootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.PropagateBootstrap">PropagateBootstrap</a> </div>
+    </div><div class="entry">
+      <div class="name">byte1</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/bootstrap/BootStrapUtils$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.BootStrapUtils">BootStrapUtils</a> <a href="../org/apache/spark/sql/execution/bootstrap/OnlinePlannerUtil$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.OnlinePlannerUtil">OnlinePlannerUtil</a> <a href="../org/apache/spark/sql/execution/bootstrap/PropagateBootstrap$.html" class="extype" name="org.apache.spark.sql.execution.bootstrap.PropagateBootstrap">PropagateBootstrap</a> </div>
     </div><div class="entry">
       <div class="name">byteToLiteral</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/dsl/package$$ExpressionConversions.html" class="extype" name="org.apache.spark.sql.catalyst.dsl.ExpressionConversions">ExpressionConversions</a> </div>

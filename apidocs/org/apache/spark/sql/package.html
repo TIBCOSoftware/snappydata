@@ -2,9 +2,9 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html>
         <head>
-          <title>sql - snappy-tools_2.10 0.1.0-SNAPSHOT API - org.apache.spark.sql</title>
-          <meta name="description" content="sql - snappy - tools 2.10 0.1.0 - SNAPSHOT API - org.apache.spark.sql" />
-          <meta name="keywords" content="sql snappy tools 2.10 0.1.0 SNAPSHOT API org.apache.spark.sql" />
+          <title>sql - snappy-tools_2.10 0.1.0-PREVIEW API - org.apache.spark.sql</title>
+          <meta name="description" content="sql - snappy - tools 2.10 0.1.0 - PREVIEW API - org.apache.spark.sql" />
+          <meta name="keywords" content="sql snappy tools 2.10 0.1.0 PREVIEW API org.apache.spark.sql" />
           <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
           
       <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
@@ -433,6 +433,45 @@ A set of methods for aggregations on a <a href="DataFrame.html" class="extype" n
       </span>
       </h4>
       
+    </li><li name="org.apache.spark.sql.SampleDataFrameContractImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampleDataFrameContractImplextendsSampleDataFrameContractwithProductwithSerializable"></a>
+      <a id="SampleDataFrameContractImpl:SampleDataFrameContractImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampleDataFrameContractImpl.html"><span class="name">SampleDataFrameContractImpl</span></a><span class="params">(<span name="sqlContext">sqlContext: <a href="SnappyContext.html" class="extype" name="org.apache.spark.sql.SnappyContext">SnappyContext</a></span>, <span name="frame">frame: <a href="SampleDataFrame.html" class="extype" name="org.apache.spark.sql.SampleDataFrame">SampleDataFrame</a></span>, <span name="logicalPlan">logicalPlan: <a href="execution/StratifiedSample.html" class="extype" name="org.apache.spark.sql.execution.StratifiedSample">StratifiedSample</a></span>)</span><span class="result"> extends <a href="SampleDataFrameContract.html" class="extype" name="org.apache.spark.sql.SampleDataFrameContract">SampleDataFrameContract</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Encapsulates a DataFrame created after stratified sampling.</p>
+    </li><li name="org.apache.spark.sql.SamplePartition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SamplePartitionextendsPartition"></a>
+      <a id="SamplePartition:SamplePartition"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SamplePartition.html"><span class="name">SamplePartition</span></a><span class="result"> extends <a href="../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.SampledCachedRDD" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampledCachedRDDextendsRDD[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="SampledCachedRDD:SampledCachedRDD"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampledCachedRDD.html"><span class="name">SampledCachedRDD</span></a><span class="result"> extends <a href="../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[<a href="catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+      </span>
+      </h4>
+      <p class="comment cmt">Encapsulates an RDD over all the cached samples for a sampled table.</p>
     </li><li name="org.apache.spark.sql.SaveMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SaveModeextendsEnum[org.apache.spark.sql.SaveMode]"></a>
       <a id="SaveMode:SaveMode"></a>
@@ -446,6 +485,19 @@ A set of methods for aggregations on a <a href="DataFrame.html" class="extype" n
       </span>
       </h4>
       
+    </li><li name="org.apache.spark.sql.SnappyAQPParserBase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAQPParserBaseextendsSnappyParserBase"></a>
+      <a id="SnappyAQPParserBase:SnappyAQPParserBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAQPParserBase.html"><span class="name">SnappyAQPParserBase</span></a><span class="result"> extends <a href="SnappyParserBase.html" class="extype" name="org.apache.spark.sql.SnappyParserBase">SnappyParserBase</a></span>
+      </span>
+      </h4>
+      <p class="comment cmt">Snappy SQL extensions.</p>
     </li><li name="org.apache.spark.sql.SnappyContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyContextextendsSQLContextwithSerializablewithLogging"></a>
       <a id="SnappyContext:SnappyContext"></a>
@@ -714,6 +766,32 @@ or to get the created SQLContext instance.</p>
       </span>
       </h4>
       
+    </li><li name="org.apache.spark.sql.SnappyAQPParser" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAQPParser"></a>
+      <a id="SnappyAQPParser:SnappyAQPParser"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAQPParser$.html"><span class="name">SnappyAQPParser</span></a><span class="result"> extends <a href="SnappyAQPParserBase.html" class="extype" name="org.apache.spark.sql.SnappyAQPParserBase">SnappyAQPParserBase</a></span>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.SnappyAQPParserCaseSensitive" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAQPParserCaseSensitive"></a>
+      <a id="SnappyAQPParserCaseSensitive:SnappyAQPParserCaseSensitive"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAQPParserCaseSensitive$.html"><span class="name">SnappyAQPParserCaseSensitive</span></a><span class="result"> extends <a href="SnappyAQPParserBase.html" class="extype" name="org.apache.spark.sql.SnappyAQPParserBase">SnappyAQPParserBase</a></span>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.SnappyContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyContext"></a>
       <a id="SnappyContext:SnappyContext"></a>
@@ -792,6 +870,19 @@ or to get the created SQLContext instance.</p>
       </span>
       </h4>
       <p class="comment cmt">Contains API classes that are specific to a single language (i.</p>
+    </li><li name="org.apache.spark.sql.approximate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="approximate"></a>
+      <a id="approximate:approximate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="approximate/package.html"><span class="name">approximate</span></a>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.aqp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="aqp"></a>
       <a id="aqp:aqp"></a>
@@ -950,6 +1041,19 @@ existing Hive installation).</p>
       </span>
       </h4>
       
+    </li><li name="org.apache.spark.sql.sampling" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sampling"></a>
+      <a id="sampling:sampling"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="sampling/package.html"><span class="name">sampling</span></a>
+      </span>
+      </h4>
+      
     </li><li name="org.apache.spark.sql.snappy" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="snappy"></a>
       <a id="snappy:snappy"></a>
@@ -999,6 +1103,19 @@ existing Hive installation).</p>
       </span>
       <span class="symbol">
         <a href="streaming/package.html"><span class="name">streaming</span></a>
+      </span>
+      </h4>
+      
+    </li><li name="org.apache.spark.sql.topk" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="topk"></a>
+      <a id="topk:topk"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="topk/package.html"><span class="name">topk</span></a>
       </span>
       </h4>
       
