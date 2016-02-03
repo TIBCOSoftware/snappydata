@@ -483,7 +483,7 @@ Read our preliminary [row & column table docs](./rowAndColumnTables.md) for the 
 #### Step 2 - Create column table, row table and load data
 
 > If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), set the following config parameter to point at the data set.
-> `export APP_PROPS="airline_file=full_dataset_folder"`
+> `export APP_PROPS="airline_file=<fullyQualifedPathOfFullAirlineDataset>"`
 
 Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column tables. See more details about jobs and job submission here:
 
@@ -491,7 +491,7 @@ Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column 
 
 ```bash
 # Submit a job to Lead node on port 8090 
-$ bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar
 {"status": "STARTED",
   "result": {
     "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
@@ -536,7 +536,7 @@ snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
 
 ```bash
 # Submit AirlineDataJob to SnappyData's Lead node on port 8090 
-$ bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar
 { "status": "STARTED",
   "result": {
     "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2",
@@ -652,7 +652,7 @@ Submit the `TwitterPopularTagsJob` that declares a stream table, creates and pop
  
 ```bash
 # Submit the TwitterPopularTagsJob to SnappyData's Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
@@ -667,7 +667,7 @@ $ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,ac
 
 # submit the TwitterPopularTagsJob Lead node on port 8090 that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
 # This job runs streaming for two minutes. 
-$ /bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar --stream
 
 ```
 The output of the job can be found in `TwitterPopularTagsJob_timestamp.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. 
