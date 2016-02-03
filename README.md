@@ -159,6 +159,9 @@ If you are interested in contributing please visit the [contributor page](http:/
 
 ## Quick start with Scala/Spark/Snappy Programming
 
+Click the screenshot below to watch the screencast that goes along with this section:
+[![Screencast](http://i.imgur.com/ZbMltwl.png)](https://www.youtube.com/watch?v=S297Wd-2UTs)
+
 SnappyData provides the same [Spark/Scala REPL session](http://spark.apache.org/docs/latest/quick-start.html) that any Spark user is familiar with. You simply start it with a special configuration to have access to SnappyData extensions. Remember as you follow this guide that paste mode can always be entered in the REPL using `:paste` and you exit paste mode with `ctrl+d`.
 
 First, make sure you have started the SnappyData servers as described [above](https://github.com/SnappyDataInc/snappydata/blob/master/README.md#quick-start-with-sql) (entered from the root directory):
@@ -206,8 +209,8 @@ Here we’ve defined some data which we’ve placed into a case class and parall
 Now, let’s create a column table using what we’ve already defined:
 
 ````scala
-val props1 = Map(“Buckets” -> “2”)
-snc.createTable(“COLUMN_TABLE”, “column”, dataDF.schema, props1)
+val props1 = Map("Buckets" -> "2")
+snc.createTable("COLUMN_TABLE", "column", dataDF.schema, props1)
 ````
 `props1` allows us to define the optional `“Buckets”` attribute which specifies the smallest unit that can be moved around in the SnappyStore when data migrates. Within `createTable`, we’ve defined the table’s name, the type of table, the table’s schema, and provided the Buckets information contained in `props1`.
 
