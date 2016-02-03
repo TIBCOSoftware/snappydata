@@ -446,7 +446,7 @@ snappy> STREAMING STOP;
 ```
 ### Getting Started with Spark API 
 
-SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, SnappyStreamingContext is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
+[SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
 
 Applications typically submit Jobs to SnappyData and do not explicitly create a SnappyContext or SnappyStreamingContext. These jobs are the primary mechanism to interact with SnappyData using the Spark API. A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. 
 
@@ -514,7 +514,7 @@ The output of the job can be found in `CreateAndLoadAirlineDataJob.out` in the l
 
 #### OLAP and OLTP Store (explanation)
 
-SnappyContext extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
+[SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
 ```scala
 val resultDF = airlineDF.join(airlineCodeDF,
         airlineDF.col("UniqueCarrier").equalTo(airlineCodeDF("CODE"))).
@@ -626,7 +626,7 @@ Continuously finding the _k_ most popular elements in a data stream is a common 
 
 [SnappyData's AQP Docs](./aqp.md)
 
-SnappyData provides an API in the SnappyContext to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
+SnappyData provides an API in the [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
 
 ```scala
 --- Create a topk table from a stream table
