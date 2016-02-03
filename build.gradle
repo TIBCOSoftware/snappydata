@@ -152,6 +152,7 @@ task cleanDUnit << {
 }
 
 task publishDocs(type:Exec) {
+  dependsOn ':snappy-tools_' + scalaBinaryVersion + ':docs'
   //on linux
   commandLine './publish-site.sh'
 }
