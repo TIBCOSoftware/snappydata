@@ -39,7 +39,7 @@ But for column table its restricted to Spark syntax for column definition e.g.
 Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. 
 ##### Spark API for managing tables
 
-Get a reference to SnappyContext
+Get a reference to [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)
 
     val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
 
@@ -90,7 +90,7 @@ The below mentioned DDL extensions are required to configure a table based on us
     TRUNCATE TABLE tablename1;
 
 ##### API extensions provided in SnappyContext
-We have added several APIs in SnappyContext to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
+We have added several APIs in [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.
 
     //  Applicable for both row & column tables
     def insert(tableName: String, rows: Row*): Int .

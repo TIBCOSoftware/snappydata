@@ -31,7 +31,7 @@ import org.apache.spark.streaming.{Duration, Time}
   * It is similar to SchemaRDD, which offers the similar functions
   * Internally, RDD of each batch duration is treated as a small
   * table and CQs are evaluated on those small tables
-  * Some of the code and idea is borrowed from the project:
+  * Some of the abstraction and code is borrowed from the project:
   * https://github.com/Intel-bigdata/spark-streamingsql
   * @param snsc
   * @param queryExecution
@@ -121,19 +121,6 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     val streams = traverse(queryExecution.executedPlan)
     streams
   }
-
-//  def explain(): Unit = explain(extended = false)
-//
-//  /**
-//    * Explain the query to get logical plan as well as physical plan.
-//    */
-//  def explain(extended: Boolean): Unit = {
-//    val explain = ExplainCommand(queryExecution.logical, extended = extended)
-//    val sds = new SchemaDStream(snsc, explain)
-//    sds.queryExecution.executedPlan.executeCollect().foreach {
-//      r => println(r.getString(0)) // scalastyle:ignore
-//    }
-//  }
 
   /**
     * Returns all column names as an array.

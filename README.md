@@ -17,7 +17,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* [SnappyData Preview 0.1 download link](https://github.com/SnappyDataInc/snappydata/releases)
+* SnappyData Preview 0.1 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.1-preview/snappydata-0.1.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.1-preview/snappydata-0.1.0-PREVIEW-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -31,18 +31,18 @@ We monitor channels listed below for comments/questions.
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 ```
 groupId: io.snappydata
-artifactId: snappydata_2.10
-version: 0.1_preview
+artifactId: snappy-tools_2.10
+version: 0.1.0-PREVIEW
 ```
 
 ## Working with SnappyData Source Code
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
 Master development branch
-git clone https://github.com/SnappyDataInc/snappydata.git
+git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 
 ###### 0.1 preview release branch with stability fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview --recursive
 ```
 
 #### Building SnappyData from source

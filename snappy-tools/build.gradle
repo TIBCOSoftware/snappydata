@@ -23,18 +23,10 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
   } else {
-    compile('io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
+    compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
   }
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     compile project(':snappy-store:gemfirexd:client')
@@ -51,7 +43,7 @@ dependencies {
   if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
     compile project(':spark-jobserver')
   } else {
-    compile group: 'io.snappydata', name: 'spark-jobserver', version: '0.6.0-SNAPSHOT'
+    compile group: 'io.snappydata', name: 'spark-jobserver', version: '0.6.0'
   }
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
@@ -168,13 +160,18 @@ shadowJar {
   }
   */
 
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = "SnappyData Build Team"
+  } else {
+    createdBy = System.getProperty("user.name")
+  }
   manifest {
     attributes(
       "Manifest-Version"  : "1.0",
-      "Created-By"        : System.getProperty("user.name"),
+      "Created-By"        : createdBy,
       "Title"             : rootProject.name,
       "Version"           : version,
-      "Vendor"            : "Snappy Data, Inc."
+      "Vendor"            : "SnappyData, Inc."
     )
   }
 }
