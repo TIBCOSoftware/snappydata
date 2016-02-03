@@ -141,6 +141,11 @@ SnappyData also has multiple deployment options which can be found here:
 
 #### Step 1 - Start the SnappyData cluster
 
+Click the screenshot below to view the screencast that goes along with "Getting Started with SQL"
+
+[![Screencast](http://i.imgur.com/uiJ9zzm.png)](https://www.youtube.com/watch?v=iOGQF1wCNes)
+
+
 The first step is to configure SNAPPY_HOME in your environment:
 
 ``` export SNAPPY_HOME=/path/to/snappy/root ```
