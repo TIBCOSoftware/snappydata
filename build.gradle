@@ -3,9 +3,6 @@ import groovy.json.JsonSlurper
 apply plugin: 'wrapper'
 apply plugin: 'distribution'
 
-//if(JavaVersion.current() != JavaVersion.VERSION_1_7){
-//    throw new GradleException("==== This build must be run with java 7 ====")
-//}
 if (JavaVersion.current().isJava8Compatible()) {
   allprojects {
     tasks.withType(Javadoc) {
@@ -34,7 +31,7 @@ allprojects {
   repositories {
     jcenter()
     maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    maven { url "http://repository.snappydata.io:8089/repository/snapshots" }
+    maven { url "http://repository.snappydata.io:8089/repository/internal" }
     maven { url "https://repository.apache.org/content/repositories/releases" }
     maven { url "https://repository.jboss.org/nexus/content/repositories/releases" }
     maven { url "https://repo.eclipse.org/content/repositories/paho-releases" }
@@ -417,20 +414,6 @@ task product {
     file("${snappyProductDir}/lib").mkdirs()
   }
   doLast {
-    // copy datanucleus jars specifically since they don't work as part of fat jar
-    def datanucleusJars = project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
-      it.getName().contains('datanucleus')
-    }
-    copy {
-      from datanucleusJars
-      into "${snappyProductDir}/lib"
-    }
-    // copy GemFireXD shared libraries for optimized JNI calls
-    copy {
-      from "${project(':snappy-store:gemfirexd:core').projectDir}/lib"
-      into "${snappyProductDir}/lib"
-    }
-
     // create the RELEASE file
     def release = file("${snappyProductDir}/RELEASE")
     def gitCommitId = "git rev-parse HEAD".execute().text.trim()
@@ -448,6 +431,74 @@ task product {
       include "${toolsProject.shadowJar.archiveName}"
       rename { filename -> archiveName }
     }
+    // copy datanucleus jars specifically since they don't work as part of fat jar
+    // copy bin, sbin, data etc from spark
+    if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
+      copy {
+        from project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
+          it.getName().contains('datanucleus')
+        }
+        into "${snappyProductDir}/lib"
+      }
+      copy {
+        from "${project(':snappy-spark').projectDir}/bin"
+        into "${snappyProductDir}/bin"
+      }
+      copy {
+        from "${project(':snappy-spark').projectDir}/sbin"
+        into "${snappyProductDir}/sbin"
+      }
+      copy {
+        from "${project(':snappy-spark').projectDir}/conf"
+        into "${snappyProductDir}/conf"
+      }
+      copy {
+        from "${project(':snappy-spark').projectDir}/python"
+        into "${snappyProductDir}/python"
+      }
+      copy {
+        from "${project(':snappy-spark').projectDir}/data"
+        into "${snappyProductDir}/data"
+      }
+
+      def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
+      if (file(sparkR).exists()) {
+        copy {
+          from sparkR
+          into "${snappyProductDir}/R/lib"
+        }
+      }
+    } else {
+      copy {
+        from project(':snappy-examples').configurations.testRuntime.filter {
+          it.getName().contains('datanucleus')
+        }
+        into "${snappyProductDir}/lib"
+      }
+      def snappySparkJar = project(':snappy-examples').configurations.testRuntime.findResult {
+        it.getName().startsWith("snappy-spark-${sparkVersion}") ? it.getPath() : null
+      }
+      if (snappySparkJar != null) {
+        copy {
+          from zipTree(snappySparkJar)
+          into snappyProductDir
+          include 'bin/**'
+          include 'sbin/**'
+          include 'conf/**'
+          include 'python/**'
+          include 'data/**'
+          include 'R/**'
+        }
+      }
+    }
+    // copy GemFireXD shared libraries for optimized JNI calls
+    if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+      copy {
+        from "${project(':snappy-store:gemfirexd:core').projectDir}/lib"
+        into "${snappyProductDir}/lib"
+      }
+    }
+    // copy AQP jar
     if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
       def aqpProject = project(':snappy-aqp')
       copy {
@@ -455,32 +506,19 @@ task product {
         into "${snappyProductDir}/lib"
         include "${aqpProject.jar.archiveName}"
       }
+    } else {
+      copy {
+        from project(':snappy-examples').configurations.testRuntime.filter {
+          it.getName().contains('snappy-aqp')
+        }
+        into "${snappyProductDir}/lib"
+      }
     }
     copy {
       from "${examplesProject.buildDir}/libs"
       into "${snappyProductDir}/lib"
       include "${examplesProject.jar.archiveName}"
       rename { filename -> exampleArchiveName }
-    }
-    copy {
-      from "${project(':snappy-spark').projectDir}/bin"
-      into "${snappyProductDir}/bin"
-    }
-    copy {
-      from "${project(':snappy-spark').projectDir}/sbin"
-      into "${snappyProductDir}/sbin"
-    }
-    copy {
-      from "${project(':snappy-spark').projectDir}/conf"
-      into "${snappyProductDir}/conf"
-    }
-    copy {
-      from "${project(':snappy-spark').projectDir}/python"
-      into "${snappyProductDir}/python"
-    }
-    copy {
-      from "${project(':snappy-spark').projectDir}/data"
-      into "${snappyProductDir}/data"
     }
     copy {
       from("${toolsProject.projectDir}/bin")
@@ -497,14 +535,6 @@ task product {
     copy {
       from("${examplesProject.projectDir}/quickstart")
       into "${snappyProductDir}/quickstart"
-    }
-
-    def sparkR = "${project(':snappy-spark').projectDir}/R/lib/SparkR"
-    if (file(sparkR).exists()) {
-      copy {
-        from sparkR
-        into "${snappyProductDir}/R/lib"
-      }
     }
   }
 }
