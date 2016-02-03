@@ -17,27 +17,13 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion)
   } else {
-    compile('io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-streaming-kafka_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
-    compile('io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-core')
-    }
+    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-kafka_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
   }
 
   compile 'org.apache.tomcat:tomcat-jdbc:8.0.28'

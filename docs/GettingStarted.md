@@ -44,7 +44,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* [SnappyData Preview 0.1 download link](1)
+* SnappyData Preview 0.1 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.1-preview/snappydata-0.1.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.1-preview/snappydata-0.1.0-PREVIEW-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -58,18 +58,18 @@ We monitor channels listed below for comments/questions.
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 ```
 groupId: io.snappydata
-artifactId: snappydata_2.10
-version: 0.1_preview
+artifactId: snappy-tools_2.10
+version: 0.1.0-PREVIEW
 ```
 
 ## Working with SnappyData Source Code
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
 Master development branch
-git clone https://github.com/SnappyDataInc/snappydata.git
+git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 
 ###### 0.1 preview release branch with stability fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b 0.1_preview
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview --recursive
 ```
 
 #### Building SnappyData from source
@@ -450,7 +450,7 @@ snappy> STREAMING STOP;
 ```
 ### Getting Started with Spark API 
 
-SnappyContext is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, SnappyStreamingContext is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
+[SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
 
 Applications typically submit Jobs to SnappyData and do not explicitly create a SnappyContext or SnappyStreamingContext. These jobs are the primary mechanism to interact with SnappyData using the Spark API. A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. 
 
@@ -487,7 +487,7 @@ Read our preliminary [row & column table docs](./rowAndColumnTables.md) for the 
 #### Step 2 - Create column table, row table and load data
 
 > If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), set the following config parameter to point at the data set.
-> `export APP_PROPS="airline_file=full_dataset_folder"`
+> `export APP_PROPS="airline_file=/path/to/full/airline/dataset"`
 
 Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column tables. See more details about jobs and job submission here:
 
@@ -495,7 +495,7 @@ Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column 
 
 ```bash
 # Submit a job to Lead node on port 8090 
-$ bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp --class  io.snappydata.examples.CreateAndLoadAirlineDataJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar
 {"status": "STARTED",
   "result": {
     "jobId": "321e5136-4a18-4c4f-b8ab-f3c8f04f0b48",
@@ -518,7 +518,7 @@ The output of the job can be found in `CreateAndLoadAirlineDataJob.out` in the l
 
 #### OLAP and OLTP Store (explanation)
 
-SnappyContext extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
+[SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) extends SQLContext and adds functionality to work with row and column tables. When queries inside jobs are executed they are parsed initially by the SnappyData server to determine if it is an OLAP class or an OLTP class query.  Currently, all column table queries are considered OLAP. Such queries are planned using Spark's Catalyst engine and scheduled to be executed on the data servers. 
 ```scala
 val resultDF = airlineDF.join(airlineCodeDF,
         airlineDF.col("UniqueCarrier").equalTo(airlineCodeDF("CODE"))).
@@ -540,7 +540,7 @@ snappyContext.update(rowTableName, filterExpr, newColumnValues, updateColumns)
 
 ```bash
 # Submit AirlineDataJob to SnappyData's Lead node on port 8090 
-$ bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name airlineApp  --class  io.snappydata.examples.AirlineDataJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar
 { "status": "STARTED",
   "result": {
     "jobId": "1b0d2e50-42da-4fdd-9ea2-69e29ab92de2",
@@ -630,7 +630,7 @@ Continuously finding the _k_ most popular elements in a data stream is a common 
 
 [SnappyData's AQP Docs](./aqp.md)
 
-SnappyData provides an API in the SnappyContext to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
+SnappyData provides an API in the [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) to create a Top-k structure. And, if a stream table is specified as the base table, the Top-k structure is automatically populated from it as the data arrives. The Top-k structures can be queried using another API. 
 
 ```scala
 --- Create a topk table from a stream table
@@ -656,7 +656,7 @@ Submit the `TwitterPopularTagsJob` that declares a stream table, creates and pop
  
 ```bash
 # Submit the TwitterPopularTagsJob to SnappyData's Lead node on port 8090 
-$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar --stream
 
 # Run the following utility in another terminal to simulate a twitter stream by copying tweets in the folder on which file stream table is listening.
 $ quickstart/scripts/simulateTwitterStream 
@@ -671,7 +671,7 @@ $ export APP_PROPS="consumerKey=<consumerKey>,consumerSecret=<consumerSecret>,ac
 
 # submit the TwitterPopularTagsJob Lead node on port 8090 that declares a stream table, creates and populates a topk -structure, registers CQ on it and stores the result in a snappy store table 
 # This job runs streaming for two minutes. 
-$ /bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar $SNAPPY_HOME/lib/quickstart-0.1.0-SNAPSHOT.jar --stream
+$ ./bin/snappy-job.sh submit --lead localhost:8090 --app-name TwitterPopularTagsJob --class io.snappydata.examples.TwitterPopularTagsJob --app-jar ./lib/quickstart-0.1.0-PREVIEW.jar --stream
 
 ```
 The output of the job can be found in `TwitterPopularTagsJob_timestamp.out` in the lead directory which by default is `SNAPPY_HOME/work/localhost-lead-*/`. 
