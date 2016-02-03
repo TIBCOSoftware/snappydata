@@ -129,6 +129,7 @@ Start a SnappyData cluster and connect through snappy-shell :
 
 ## SchemaDStream
 SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL query on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as table.
+Some of these ideas (especially naming our abstractions) were borrowed from Intel's Streaming SQL project - https://github.com/Intel-bigdata/spark-streamingsql
 
 ## Registering Continuous queries
 ```scala
