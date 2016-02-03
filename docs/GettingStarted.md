@@ -483,7 +483,7 @@ Read our preliminary [row & column table docs](./rowAndColumnTables.md) for the 
 #### Step 2 - Create column table, row table and load data
 
 > If you downloaded the full airline data set in [Step 1](#step-1---start-the-snappydata-cluster), set the following config parameter to point at the data set.
-> `export APP_PROPS="airline_file=<fullyQualifedPathOfFullAirlineDataset>"`
+> `export APP_PROPS="airline_file=/path/to/full/airline/dataset"`
 
 Submit `CreateAndLoadAirlineDataJob` over the REST API to create row and column tables. See more details about jobs and job submission here:
 
