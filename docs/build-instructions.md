@@ -1,6 +1,6 @@
 ## Build Quickstart
 
-Quickstart to build all components of snappydata project:
+Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). Quickstart to build all components of snappydata:
 
 Preview branch
 ```sh
