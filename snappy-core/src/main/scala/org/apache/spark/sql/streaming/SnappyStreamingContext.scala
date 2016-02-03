@@ -28,12 +28,18 @@ import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, DataFrame, SnappyContext, Row}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SnappyContext}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext, StreamingContextState}
 
 /**
-  * Provides an ability to manipulate SQL like query on DStream
+  * Main entry point for SnappyData extensions to Spark Streaming.
+  * A SnappyStreamingContext extends Spark's [[org.apache.spark.streaming.StreamingContext]]
+  * to provides an ability to manipulate SQL like query on
+  * [[org.apache.spark.streaming.dstream.DStream]]. You can apply schema and
+  * register continuous SQL queries(CQ) over the data streams.
+  * A single shared SnappyStreamingContext makes it possible to re-use Executors
+  * across client connections or applications.
   */
 class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
     val batchDur: Duration)
@@ -162,7 +168,6 @@ object SnappyStreamingContext extends Logging {
       case Some(snsc) =>
         snsc.stop(stopSparkContext, stopGracefully)
         snsc.snappyContext.clearCache()
-        // SnappyContext.stop()
         setActiveContext(null)
       case None =>
     }
