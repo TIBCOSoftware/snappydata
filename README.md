@@ -39,10 +39,10 @@ version: 0.1.0-PREVIEW
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
 Master development branch
-git clone https://github.com/SnappyDataInc/snappydata.git
+git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 
 ###### 0.1 preview release branch with stability fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview --recursive
 ```
 
 #### Building SnappyData from source

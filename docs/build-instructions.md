@@ -1,17 +1,35 @@
 ## Build Quickstart
 
 Quickstart to build all components of snappydata project:
+
+Preview branch
 ```sh
-> git clone git@github.com:SnappyDataInc/snappydata.git --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview --recursive
 > cd snappydata
-> ./gradlew assemble
+> ./gradlew product
+```
+
+Master
+```sh
+> git clone https://github.com/SnappyDataInc/snappydata.git --recursive
+> cd snappydata
+> ./gradlew product
 ```
 
 If you want to build only the top-level snappydata project but pull in jars for other projects (_snappy-spark_, _snappy-store_, _spark-jobserver_):
+
+Preview branch
 ```sh
-> git clone git@github.com:SnappyDataInc/snappydata.git
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview
 > cd snappydata
-> ./gradlew assemble
+> ./gradlew product
+```
+
+Master
+```sh
+> git clone https://github.com/SnappyDataInc/snappydata.git
+> cd snappydata
+> ./gradlew product
 ```
 
 
