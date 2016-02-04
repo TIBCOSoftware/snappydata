@@ -48,7 +48,7 @@ SnappyData supports creation of stream tables from Twitter, Kafka, Files, Socket
 
     // DDL for creating a stream table
     CREATE STREAM TABLE [IF NOT EXISTS] table_name
-    (COLUMN_DEFININTION)
+    (COLUMN_DEFINITION)
     USING 'kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream'
     OPTIONS (
      // multiple stream source specific options
