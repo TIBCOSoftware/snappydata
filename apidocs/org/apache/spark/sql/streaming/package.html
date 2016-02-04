@@ -206,7 +206,7 @@ This class offers the ability to manipulate SQL query on DStreams
 It is similar to SchemaRDD, which offers the similar functions
 Internally, RDD of each batch duration is treated as a small
 table and CQs are evaluated on those small tables
-Some of the code and idea is borrowed from the project:
+Some of the abstraction and code is borrowed from the project:
 https://github.</p>
     </li><li name="org.apache.spark.sql.streaming.SnappyStreamingContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyStreamingContextextendsStreamingContextwithSerializable"></a>
@@ -220,8 +220,7 @@ https://github.</p>
         <a href="SnappyStreamingContext.html"><span class="name">SnappyStreamingContext</span></a><span class="result"> extends <a href="../../streaming/StreamingContext.html" class="extype" name="org.apache.spark.streaming.StreamingContext">StreamingContext</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
-      <p class="comment cmt">Provides an ability to manipulate SQL like query on DStream
-</p>
+      <p class="comment cmt">Main entry point for SnappyData extensions to Spark Streaming.</p>
     </li><li name="org.apache.spark.sql.streaming.SnappyStreamingContextFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="SnappyStreamingContextFactoryextendsSparkContextFactory"></a>
       <a id="SnappyStreamingContextFactory:SnappyStreamingContextFactory"></a>

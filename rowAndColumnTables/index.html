@@ -244,7 +244,7 @@ DROP TABLE [IF EXISTS] table_name
 </code></pre>
 <p>Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. </p>
 <h5 id="spark-api-for-managing-tables">Spark API for managing tables</h5>
-<p>Get a reference to SnappyContext</p>
+<p>Get a reference to <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext">SnappyContext</a></p>
 <pre><code>val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
 </code></pre>
 <p>Create a SnappyStore table using Spark APIs</p>
@@ -291,7 +291,7 @@ DELETE FROM tablename1 [WHERE expression]
 TRUNCATE TABLE tablename1;
 </code></pre>
 <h5 id="api-extensions-provided-in-snappycontext">API extensions provided in SnappyContext</h5>
-<p>We have added several APIs in SnappyContext to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.</p>
+<p>We have added several APIs in <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext">SnappyContext</a> to manipulate data stored in row and column format. Apart from SQL these APIs can be used to manipulate tables.</p>
 <pre><code>//  Applicable for both row &amp; column tables
 def insert(tableName: String, rows: Row*): Int .
 

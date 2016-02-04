@@ -39,7 +39,13 @@
       </span>
       </h4>
       
-          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Provides an ability to manipulate SQL like query on DStream
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Main entry point for SnappyData extensions to Spark Streaming.
+A SnappyStreamingContext extends Spark's <a href="../../streaming/StreamingContext.html" class="extype" name="org.apache.spark.streaming.StreamingContext">org.apache.spark.streaming.StreamingContext</a>
+to provides an ability to manipulate SQL like query on
+<a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">org.apache.spark.streaming.dstream.DStream</a>. You can apply schema and
+register continuous SQL queries(CQ) over the data streams.
+A single shared SnappyStreamingContext makes it possible to re-use Executors
+across client connections or applications.
 </p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.sql.streaming.SnappyStreamingContext">SnappyStreamingContext</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
           <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../streaming/StreamingContext.html" class="extype" name="org.apache.spark.streaming.StreamingContext">StreamingContext</a>, <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>

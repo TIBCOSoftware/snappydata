@@ -246,7 +246,7 @@ snappy&gt; run 'create_and_load_row_table.sql';
 
 <p>The complete list of commands available through <em>snappy_shell</em> can be found <a href="http://gemfirexd.docs.pivotal.io/docs-gemfirexd/reference/gfxd_commands/gfxd-launcher.html">here</a></p>
 <h2 id="using-the-spark-shell-and-spark-submit">Using the Spark Shell and spark-submit</h2>
-<p>SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store snappydata.store.locators property needs to be provided while starting the spark-shell. when spark-shell is started with this property it provides SnappyContext as SQLContext and thus enabling the user to run all SnappyData functionalities.</p>
+<p>SnappyData, out-of-the-box, collocates Spark executors and the SnappyData store for efficient data intensive computations. But it may be desirable to isolate the computational cluster for other reasons, for instance, a  computationally intensive Map-reduce machine learning algorithm that needs to iterate over a cached data set repeatedly. To support such scenarios it is also possible to run native Spark jobs that access a SnappyData cluster as a storage layer in a parallel fashion. To connect to the SnappyData store snappydata.store.locators property needs to be provided while starting the spark-shell. When spark-shell is started with this property it provides <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext">SnappyContext</a> as SQLContext and thus enabling the user to run all SnappyData functionalities.</p>
 <pre><code class="bash">// from the SnappyData base directory  
 # Start the spark shell in local mode. Pass SnappyData's locators host:port as a conf parameter.
 # Change the UI port because the default port 4040 is being used by Snappy’s lead. 
@@ -279,7 +279,7 @@ Connection c = DriverManager.getConnection (&quot;jdbc:snappydata://locatorHostN
 <h2 id="accessing-snappydata-tables-from-spark-code">Accessing SnappyData Tables from Spark code</h2>
 <p>Spark applications access the SnappyStore using the new <a href="http://spark.apache.org/docs/latest/sql-programming-guide.html#jdbc-to-other-databases">Spark Data Source API</a>. </p>
 <p>By default, SnappyData servers runs the Spark Executors collocated with the data store. And, the default store provider is SnappyData. 
-When the spark program connects to the cluster using a SnappyContext (extends SQLContext), there is no need to configure the database URL and other options.  </p>
+When the spark program connects to the cluster using a <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext">SnappyContext</a> (extends SQLContext), there is no need to configure the database URL and other options.  </p>
 <pre><code class="scala">// Here is an Scala example 
   val sc = new org.apache.spark.SparkContext(conf)
   val snContext = org.apache.spark.sql.SnappyContext(sc)
