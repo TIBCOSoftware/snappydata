@@ -1,6 +1,6 @@
 ## Build Quickstart
 
-Quickstart to build all components of snappydata project:
+Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). Quickstart to build all components of snappydata:
 
 Preview branch
 ```sh
@@ -15,6 +15,8 @@ Master
 > cd snappydata
 > ./gradlew product
 ```
+
+The product will be in _build-artifacts/scala-2.10/snappy_
 
 If you want to build only the top-level snappydata project but pull in jars for other projects (_snappy-spark_, _snappy-store_, _spark-jobserver_):
 
@@ -83,6 +85,8 @@ Useful build and test targets:
 ./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
                            and run full snappydata testsuite including quickstart
 ```
+
+The default build directory is _build-artifacts/scala-2.10_ for projects. Exception is _snappy-store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.
 
 The usual gradle test run targets (_test_, _check_) work as expected for junit tests. Separate targets have been provided for running scala tests (_scalaTest_) while the _check_ target will run both the junit and scalatests. One can run a single scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
 
