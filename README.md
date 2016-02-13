@@ -35,6 +35,16 @@ artifactId: snappy-tools_2.10
 version: 0.1.0-PREVIEW
 ```
 
+If you are using sbt, add this line to your build.sbt for core snappy artifacts:
+
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.1.0-PREVIEW"`
+
+Make sure to also add the conjars resolver to resolve the `org.pentaho#pentaho-aggdesigner-algorithm;5.1.5-jhyde` dependency by adding this line to your build.sbt:
+
+`resolvers ++= Seq("conjars.org" at "http://conjars.org/repo")`
+
+Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
+
 ## Working with SnappyData Source Code
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
 ```
