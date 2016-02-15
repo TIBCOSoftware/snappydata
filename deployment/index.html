@@ -139,7 +139,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#deployment-toplogies">Deployment toplogies</a></li>
+                <li class="toctree-l3"><a href="#deployment-topologies">Deployment topologies</a></li>
                 
                     <li><a class="toctree-l4" href="#unified-cluster-mode-aka-embedded-store-mode">Unified cluster mode (aka 'Embedded store' mode)</a></li>
                 
@@ -211,7 +211,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="deployment-toplogies">Deployment toplogies</h1>
+                <h1 id="deployment-topologies">Deployment topologies</h1>
 <p>This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 
 There are three deployment modes available in snappydata. </p>
 <table>
@@ -269,7 +269,7 @@ For computational intensive workloads or batch processing workloads where extens
 <h2 id="split-cluster-mode">Split cluster mode</h2>
 <p>In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. </p>
 <p>Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.</p>
-<p>The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the <em>locator</em> host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog meta data is used to locate the store servers managing data partitions and would be accessed in parallel. 
+<p>The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the <em>locator</em> host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog metadata is used to locate the store servers managing data partitions and would be accessed in parallel. 
 Read the <a href="http://spark.apache.org/docs/latest/cluster-overview.html">Spark cluster overview</a> for more details on the native Spark architecture. </p>
 <pre><code class="scala">val conf = new SparkConf().
               // Here the spark context connects with Spark's master running on 7077. 

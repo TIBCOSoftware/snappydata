@@ -150,7 +150,7 @@
                 <li class="toctree-l3"><a href="#registering-continuous-queries">Registering Continuous queries</a></li>
                 
             
-                <li class="toctree-l3"><a href="#dynamicad-hoc-conitnous-queries">Dynamic(ad-hoc) Conitnous queries</a></li>
+                <li class="toctree-l3"><a href="#dynamicad-hoc-continuous-queries">Dynamic(ad-hoc) Continuous queries</a></li>
                 
             
                 <li class="toctree-l3"><a href="#what-is-currently-out-of-scope">What is currently out-of-scope?</a></li>
@@ -275,7 +275,7 @@ Here is a brief overview of <a href="http://spark.apache.org/docs/latest/streami
 <p>SnappyData supports creation of stream tables from Twitter, Kafka, Files, Sockets sources.</p>
 <pre><code>// DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
-(COLUMN_DEFININTION)
+(COLUMN_DEFINITION)
 USING 'kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream'
 OPTIONS (
  // multiple stream source specific options
@@ -353,7 +353,7 @@ snappy&gt; drop table streamTable;
 snappy&gt; streaming stop;
 </code></pre>
 <h2 id="schemadstream">SchemaDStream</h2>
-<p>SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL query on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as table.
+<p>SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as a table.
 Some of these ideas (especially naming our abstractions) were borrowed from Intel's Streaming SQL project - https://github.com/Intel-bigdata/spark-streamingsql</p>
 <h2 id="registering-continuous-queries">Registering Continuous queries</h2>
 <pre><code class="scala">    //You can join two stream tables and produce a result stream. 
@@ -364,10 +364,10 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
     dStream.foreachDataFrame(_.write.insertInto(&quot;yourTableName&quot;))
 </code></pre>
 
-<h2 id="dynamicad-hoc-conitnous-queries">Dynamic(ad-hoc) Conitnous queries</h2>
-<p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is continous query in this case) before the start of StreamingContext. The CQs can be registered even after the <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext">SnappyStreamingContext</a> has started.</p>
+<h2 id="dynamicad-hoc-continuous-queries">Dynamic(ad-hoc) Continuous queries</h2>
+<p>Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The CQs can be registered even after the <a href="http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext">SnappyStreamingContext</a> has started.</p>
 <h2 id="what-is-currently-out-of-scope">What is currently out-of-scope?</h2>
-<p>Continous Queries through command line(Snappy-Shell) </p>
+<p>Continuous Queries through command line(Snappy-Shell) </p>
               
             </div>
           </div>
