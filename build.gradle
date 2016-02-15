@@ -52,10 +52,6 @@ allprojects {
   group = 'io.snappydata'
   version = '0.1.0-PREVIEW'
 
-  // apply compiler options
-  sourceCompatibility = 1.7
-  targetCompatibility = 1.7
-
   compileJava.options.encoding = 'UTF-8'
   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
   javadoc.options.charSet = 'UTF-8'
