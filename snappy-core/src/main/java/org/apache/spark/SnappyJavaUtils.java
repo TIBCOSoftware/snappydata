@@ -16,8 +16,11 @@
  */
 package org.apache.spark;
 
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.DataFrameJavaFunctions;
+import org.apache.spark.sql.DataFrameWriter;
+import org.apache.spark.sql.DataFrameWriterJavaFunctions;
 
 
 public class SnappyJavaUtils {
@@ -29,6 +32,24 @@ public class SnappyJavaUtils {
    */
   public static DataFrameJavaFunctions snappyApis(DataFrame dataFrame) {
     return new DataFrameJavaFunctions(dataFrame);
+  }
+
+  /**
+   *
+   * A static factory method to create a {@link org.apache.spark.sql.DataFrameWriterJavaFunctions} based on an existing {@link
+   * DataFrameWriter} instance.
+   */
+  public static DataFrameWriterJavaFunctions snappyApis(DataFrameWriter dataFrameWriter) {
+    return new DataFrameWriterJavaFunctions(dataFrameWriter);
+  }
+
+  /**
+   *
+   * A static factory method to create a {@link org.apache.spark.RDDJavaFunctions} based on an existing {@link
+   * JavaRDD} instance.
+   */
+  public static <T> RDDJavaFunctions<T> snappyApis(JavaRDD<T> rdd){
+    return new RDDJavaFunctions(rdd);
   }
 
 }
