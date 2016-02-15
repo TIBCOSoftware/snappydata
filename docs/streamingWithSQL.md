@@ -128,7 +128,7 @@ Start a SnappyData cluster and connect through snappy-shell :
     snappy> streaming stop;
 
 ## SchemaDStream
-SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL query on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as table.
+SchemaDStream is SQL based DStream with support for schema/Product. It offers the ability to manipulate SQL queries on DStreams. It is similar to SchemaRDD, which offers the similar functions. Internally, RDD of each batch duration is treated as a small table and CQs are evaluated on those small tables. Similar to foreachRDD in DStream, SchemaDStream provide foreachDataFrame API.SchemaDStream can be registered as a table.
 Some of these ideas (especially naming our abstractions) were borrowed from Intel's Streaming SQL project - https://github.com/Intel-bigdata/spark-streamingsql
 
 ## Registering Continuous queries
@@ -141,7 +141,8 @@ Some of these ideas (especially naming our abstractions) were borrowed from Inte
     dStream.foreachDataFrame(_.write.insertInto("yourTableName"))
 ```
 
-## Dynamic(ad-hoc) Conitnous queries
-Unlike Spark streaming, you do not need to register all your stream output transformations (which is continous query in this case) before the start of StreamingContext. The CQs can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) has started.
+## Dynamic(ad-hoc) Continuous queries
+Unlike Spark streaming, you do not need to register all your stream output transformations (which is a continuous query in this case) before the start of StreamingContext. The CQs can be registered even after the [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) has started.
+
 ## What is currently out-of-scope?
-Continous Queries through command line(Snappy-Shell) 
+Continuous Queries through command line(Snappy-Shell) 

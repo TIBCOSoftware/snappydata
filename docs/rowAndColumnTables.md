@@ -1,5 +1,5 @@
 ### Row and column tables
-Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
+Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
 Row tables, unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.
 
@@ -33,7 +33,7 @@ For row format tables column definition can take underlying GemFire XD syntax to
     snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
              USING row options(BUCKETS '5')" )
 
-But for column table its restricted to Spark syntax for column definition e.g.
+But for column table it's restricted to Spark syntax for column definition e.g.
 
     snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
 Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. 
@@ -73,7 +73,7 @@ The below mentioned DDL extensions are required to configure a table based on us
    10.  EXPIRE: You can use the EXPIRE clause with tables to control SnappyStore memory usage. It will expire the rows after configured TTL.
 
 ##### Restrictions on column tables in the preview release
-1. Column tables can not specify any primary key, unique key constarints.
+1. Column tables can not specify any primary key, unique key constraints.
 2. Index on column table is not supported.
 2. Option EXPIRE is not applicable for column tables.
 3. Option EVICTION_BY with value LRUCOUNT is not applicable for column tables. 
