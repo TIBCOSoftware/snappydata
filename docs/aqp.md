@@ -4,7 +4,7 @@ Data volumes from transactional and non transactional sources have been growing 
 
 Approximate query processing offers an exponential solution to the data volume problem. The basic idea behind approximate query processing is that one can use statistical sampling techniques and probabilistic data structures to answer aggregate class queries without needing to store or operate over the entire data set. The approach trades off query accuracy for quicker response times, allowing for queries to be run on large data sets with meaningful and accurate error information. A real world example here would be the use of political polls run by Gallup and others where a small sample is used to estimate support for a candidate within a small margin of error. 
 
-Its important to note that not all SQL queries can be answered through AQP, but by moving a subset of queries hitting the database to the AQP module, the system as a whole becomes more responsive and usable.
+It's important to note that not all SQL queries can be answered through AQP, but by moving a subset of queries hitting the database to the AQP module, the system as a whole becomes more responsive and usable.
 ### Approximations Technique 1: Synopses
 Synopses data structures are typically much smaller than the base data sets that they represent. They use very little space and provide fast, approximate answers to queries. A [BloomFilter](https://en.wikipedia.org/wiki/Bloom_filter) is a commonly used example of a synopsis data structure. Another example of a synopsis structure is a [Count-Min-Sketch](https://en.wikipedia.org/wiki/Count%E2%80%93min_sketch) which serves as a frequency table of events in a stream of data. The ability to use Time as a dimension for querying makes synopses structures very interesting. As streams are ingested, all relevant synopses are updated incrementally and can be queried using SQL or the Scala API.
 
@@ -53,7 +53,7 @@ Here is an example of a time based query on the TopK structure which returns the
         order by EstimatedValue desc
 	  
 	
-If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the time stamp. 
+If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp. 
 *SQL API for creating a TopK table in SnappyData specifying timestampColumn* 
  In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
@@ -137,7 +137,7 @@ Here is the scala API for running the same query
 	  
 The withError method takes in both the error fraction and the expected confidence interval for the returned result.
 
-In additiion to this, SnappyData supports error functions that can be specified in the query projection. Currently these error functions are supported for the SUM and AVG aggregates in the projection. The following four methods are available to be used in query projection when running approximate queries, and their definitions are self explanatory
+In addition to this, SnappyData supports error functions that can be specified in the query projection. Currently these error functions are supported for the SUM and AVG aggregates in the projection. The following four methods are available to be used in query projection when running approximate queries, and their definitions are self explanatory
 
 1. absolute_error(\<Aggregate field used in query>)
 2. relative_error(\<Aggregate field used in query>)
@@ -150,7 +150,7 @@ The query below depicts an example of using error functions in query projections
 select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay),
 Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95;
 ````
-Some of the error rates on queries can be high enough to render the query result meaningless. To deal with this, SnappyData offers the ability to set a configuration parameter that governs whether the query fails when the error rate condition cannot be met or whether it should still return the results in such conditions. In the future we expect to change this behavior to allow the user to further specifiy whether the query should be transparently run against the full data set if available.
+Some of the error rates on queries can be high enough to render the query result meaningless. To deal with this, SnappyData offers the ability to set a configuration parameter that governs whether the query fails when the error rate condition cannot be met or whether it should still return the results in such conditions. In the future we expect to change this behavior to allow the user to further specify whether the query should be transparently run against the full data set if available.
 
 #### Using AQP	
 Approximate query processing offers the potential for order of magnitude improvements in big data query processing but it is by no means a panacea to all big data queries. The use of AQP is predicated on proper strata selection for sample generation and that in turn is a function of the queries that the system is expected to handle. Using regions or states as strata for queries involving customers offers the potential for providing manageable subgroups (50 states) with the potential for enough sample data in each subgroup to allow sampling to work. Using customer id as the strata in the same scenario would simply not be feasible. 

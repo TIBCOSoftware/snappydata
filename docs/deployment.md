@@ -1,4 +1,4 @@
-# Deployment toplogies
+# Deployment topologies
 
 This section provides a short overview of the different runtime deployment architectures available and recommendations on when to choose one over the other. 
 There are three deployment modes available in snappydata. 
@@ -53,7 +53,7 @@ In this mode, Spark applications run as independent sets of processes on a clust
 
 Specifically, to run on a cluster, the SparkContext can connect to several types of cluster managers (either Spark’s own standalone cluster manager, Mesos or YARN), which allocate resources across applications. Once connected, Spark acquires executors on nodes in the cluster, which are processes that run computations and store data for your application. Next, it sends your application code (defined by JAR or Python files passed to SparkContext) to the executors. Finally, SparkContext sends tasks to the executors to run.
 
-The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the _locator_ host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog meta data is used to locate the store servers managing data partitions and would be accessed in parallel. 
+The driver program managing the SparkContext also participate as a peer member in the SnappyData distributed system and gets access to the store catalog information. To enable this, you must set the _locator_ host/port in the configuration (see example below). When executors running the spark cluster access these tables the catalog metadata is used to locate the store servers managing data partitions and would be accessed in parallel. 
 Read the [Spark cluster overview](http://spark.apache.org/docs/latest/cluster-overview.html) for more details on the native Spark architecture. 
 
 ```scala
