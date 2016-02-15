@@ -53,7 +53,7 @@ Here is an example of a time based query on the TopK structure which returns the
         order by EstimatedValue desc
 	  
 	
-If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp. 
+If time is an attribute in the incoming data set, it can be used instead of the system generated time. In order to do this, the TopK table creation is provided the name of the column containing the timestamp.
 *SQL API for creating a TopK table in SnappyData specifying timestampColumn* 
  In the example below tweetTime is a field in the incoming dataset which carries the timestamp of the tweet.
  
