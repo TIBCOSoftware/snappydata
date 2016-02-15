@@ -50,6 +50,7 @@ public class TestThrift {
     String hostName = InetAddress.getLocalHost().getCanonicalHostName();
     int pid = NativeCalls.getInstance().getProcessId();
 
+    // search only for servers using TCompactProtocol without SSL
     Set<ServerType> serverType = Collections.singleton(ServerType.THRIFT_GFXD_CP);
     TSocket socket = new TSocket(locatorHost, locatorPort);
     TCompactProtocol inProtocol = new TCompactProtocol(socket);
