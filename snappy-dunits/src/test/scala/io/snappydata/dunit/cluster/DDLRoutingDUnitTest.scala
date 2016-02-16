@@ -3,7 +3,7 @@ package io.snappydata.dunit.cluster
 import java.sql.{Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
-import dunit.{SerializableRunnable, AvailablePortHelper}
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 

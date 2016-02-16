@@ -4,8 +4,8 @@ import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import dunit.AvailablePortHelper
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.AvailablePortHelper
 import io.snappydata.{Property, ServiceManager}
 
 import org.apache.spark.sql.collection.ReusableRow
