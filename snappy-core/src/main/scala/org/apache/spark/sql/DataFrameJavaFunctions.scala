@@ -23,9 +23,6 @@ import scala.collection.JavaConversions._
 import io.snappydata.Constant
 
 import org.apache.spark.SnappyJavaHelperUtils._
-import org.apache.spark.sql.collection.MultiColumnOpenHashMap
-import org.apache.spark.sql.sources.StatCounter
-
 
 class DataFrameJavaFunctions(val df: DataFrame) {
 
@@ -62,7 +59,7 @@ class DataFrameJavaFunctions(val df: DataFrame) {
       groupBy: java.util.Set[String] = Collections.emptySet()): MultiColumnOpenHashMap[StatCounter] =
     snappy.samplingOperationsOnDataFrame(df).errorStats(columnName, groupBy.toSet)
 */
-  def errorEstimateAverage(columnName: String, confidence: Double,
+  def errorEstimateAverage(columnName: String, confidence: JDouble,
       groupByColumns: java.util.Set[String]): java.util.Map[Row, Tuple4[JDouble, JDouble, JDouble, JDouble]] = {
     val groupedColumns =
        if (groupByColumns == null)
