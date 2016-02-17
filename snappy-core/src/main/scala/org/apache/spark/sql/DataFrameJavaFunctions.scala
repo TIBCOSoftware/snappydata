@@ -16,9 +16,19 @@
  */
 package org.apache.spark.sql
 
+import java.util.Collections
+
 import scala.collection.JavaConversions._
 
+import io.snappydata.Constant
+
+import org.apache.spark.SnappyJavaHelperUtils._
+import org.apache.spark.sql.collection.MultiColumnOpenHashMap
+import org.apache.spark.sql.sources.StatCounter
+
+
 class DataFrameJavaFunctions(val df: DataFrame) {
+
 
   /**
    * Creates stratified sampled data from given DataFrame
@@ -47,5 +57,30 @@ class DataFrameJavaFunctions(val df: DataFrame) {
   def appendToTempTableCache(tableName: String): Unit =
     snappy.snappyOperationsOnDataFrame(df).appendToTempTableCache(tableName)
 
+
+ /* def errorStats(columnName: String,
+      groupBy: java.util.Set[String] = Collections.emptySet()): MultiColumnOpenHashMap[StatCounter] =
+    snappy.samplingOperationsOnDataFrame(df).errorStats(columnName, groupBy.toSet)
+*/
+  def errorEstimateAverage(columnName: String, confidence: Double,
+      groupByColumns: java.util.Set[String]): java.util.Map[Row, Tuple4[JDouble, JDouble, JDouble, JDouble]] = {
+    val groupedColumns =
+       if (groupByColumns == null)
+          Collections.emptySet()
+       else
+         groupByColumns
+
+    val result = snappy.samplingOperationsOnDataFrame(df)
+        .errorEstimateAverage(columnName, confidence, groupedColumns.toSet)
+
+    result.mapValues(toJDouble(_))
+  }
+
+
+  def withError(error: JDouble,
+      confidence: JDouble = Constant.DEFAULT_CONFIDENCE): DataFrame =
+    snappy.convertToAQPFrame(df).withError(error, confidence)
+
 }
+
 
