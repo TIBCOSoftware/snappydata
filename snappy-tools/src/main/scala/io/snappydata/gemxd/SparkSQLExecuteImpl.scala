@@ -38,7 +38,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.{SparkContext, Logging, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -428,7 +428,7 @@ object SnappyContextPerConnection {
   def getSnappyContextForConnection(connectionID: Long): SnappyContext = {
     var context = connectionIdMap.get(connectionID)
     if (context == null) {
-      context = SnappyContext.getOrCreate(null).newSession()
+      context = SnappyContext.getOrCreate(null : SparkContext).newSession()
       connectionIdMap.put(connectionID, context)
     }
     context
