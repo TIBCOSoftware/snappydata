@@ -13,10 +13,10 @@ The command-line SnappyData store locators and servers accept _-thrift-server-ad
 
 Add to conf/locators:
 ```
-host1      -thrift-server-host=host1 -thrift-server-port=1530 -run-netserver=false
+host1      -thrift-server-address=host1 -thrift-server-port=1530 -run-netserver=false
 ```
 
-Provide appropriate values to _host1_ and the port 1530 above. This also adds _run-netserver=false_ to inhibit starting the DRDA server or one can skip this to also start the default DRDA server. If starting on localhost, then the _thrift-server-host_ parameter can be skipped:
+Provide appropriate values to _host1_ and the port 1530 above. This also adds _run-netserver=false_ to inhibit starting the DRDA server or one can skip this to also start the default DRDA server. If starting on localhost, then the _thrift-server-address_ parameter can be skipped:
 
 ```
 localhost  -thrift-server-port=1530 -run-netserver=false
@@ -24,7 +24,7 @@ localhost  -thrift-server-port=1530 -run-netserver=false
 
 Similarly add to conf/servers:
 ```
-host2      -thrift-server-host=host2 -thrift-server-port=1531 -run-netserver=false
+host2      -thrift-server-address=host2 -thrift-server-port=1531 -run-netserver=false
 ```
 
 Other optional startup Thrift properties include:
