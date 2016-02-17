@@ -4,8 +4,8 @@ import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import dunit.SerializableCallable
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.SerializableCallable
 
 import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}

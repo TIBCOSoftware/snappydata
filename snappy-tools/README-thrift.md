@@ -111,7 +111,7 @@ Like the JDBC/ODBC, the Thrift API allows "preparing" a statement having placeho
 ```java
   PrepareResult pstmt = conn.prepareStatement(connId,
       "insert into foo values (?)", null, null, token);
-  Row params = new Row(pstmt..getParameterMetaData());
+  Row params = new Row(pstmt.getParameterMetaData());
   int count;
 
   for (int bar = 1; bar <= 10; bar++) {
