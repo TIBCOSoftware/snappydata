@@ -8,9 +8,9 @@ import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.Random
 
-import dunit.AvailablePortHelper
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
-import util.TestException
+import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.util.TestException
 
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}

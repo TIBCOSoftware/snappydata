@@ -2,8 +2,8 @@ package io.snappydata.dunit.streaming
 
 import java.sql.{Connection, DriverManager}
 
-import dunit.AvailablePortHelper
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.streaming.SnappyStreamingContext

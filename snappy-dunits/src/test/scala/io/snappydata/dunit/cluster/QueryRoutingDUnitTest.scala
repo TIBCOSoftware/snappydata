@@ -1,13 +1,13 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{DatabaseMetaData, Statement, SQLException, Connection, DriverManager}
+import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Statement}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import dunit.{SerializableRunnable, AvailablePortHelper}
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
 import org.apache.spark.sql.columntable.ColumnFormatRelation
-import org.apache.spark.sql.{SnappyContext, SaveMode}
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
  * Tests for query routing from JDBC client driver.
