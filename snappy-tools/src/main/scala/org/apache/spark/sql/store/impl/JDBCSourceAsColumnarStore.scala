@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SparkShellRDDHelper
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, CachedBatch, ConnectionProperties, ConnectionType}
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatch, ConnectionProperties, ConnectionType}
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore, StoreUtils}
