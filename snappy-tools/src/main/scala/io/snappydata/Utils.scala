@@ -35,7 +35,7 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorLocalShellPartition
-import org.apache.spark.sql.columnar.ConnectionProperties
+import org.apache.spark.sql.execution.columnar.ConnectionProperties
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect

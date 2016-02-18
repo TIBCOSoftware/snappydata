@@ -27,7 +27,7 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, ConnectionProperties}
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ConnectionProperties}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCRDD}
 import org.apache.spark.sql.jdbc.JdbcDialects

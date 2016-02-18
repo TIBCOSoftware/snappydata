@@ -32,7 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnAccessor, ColumnBuilder, ColumnType}
+import org.apache.spark.sql.execution.columnar.{CachedBatch, CachedBatchHolder, ColumnAccessor, ColumnBuilder, ColumnType}
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._

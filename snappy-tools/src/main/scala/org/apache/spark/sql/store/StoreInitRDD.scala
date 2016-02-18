@@ -26,7 +26,7 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.ConnectionProperties
+import org.apache.spark.sql.execution.columnar.ConnectionProperties
 import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.jdbc.JdbcDialects

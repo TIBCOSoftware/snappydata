@@ -29,7 +29,7 @@ import scala.util.Random
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ConnectionProperties, ExternalStoreUtils}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.storage.{BlockId, BlockStatus, RDDBlockId, StorageLevel}

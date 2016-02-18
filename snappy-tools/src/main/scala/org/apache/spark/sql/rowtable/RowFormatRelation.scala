@@ -27,8 +27,8 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog

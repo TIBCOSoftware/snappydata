@@ -28,8 +28,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog

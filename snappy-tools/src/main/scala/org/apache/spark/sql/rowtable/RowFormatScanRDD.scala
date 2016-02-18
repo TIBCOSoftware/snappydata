@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiExecutorLocalPartition
-import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{ConnectionProperties, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
