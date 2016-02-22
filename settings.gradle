@@ -3,6 +3,7 @@ rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-tools_' + scalaBinaryVersion
+include 'dunit'
 include 'snappy-dunits'
 include 'snappy-examples'
 
@@ -80,21 +81,27 @@ if (new File(rootDir, "snappy-store/build.gradle").exists()) {
   include ':snappy-store:gemfire-core'
   include ':snappy-store:gemfire-web'
   include ':snappy-store:gemfire-examples'
-  include ':snappy-store:gemfirexd:shared'
-  include ':snappy-store:gemfirexd:prebuild'
-  include ':snappy-store:gemfirexd:core'
-  include ':snappy-store:gemfirexd:client'
-  include ':snappy-store:gemfirexd:native'
+  include ':snappy-store:gemfirexd-shared'
+  include ':snappy-store:gemfirexd-prebuild'
+  include ':snappy-store:gemfirexd-core'
+  include ':snappy-store:gemfirexd-client'
+  include ':snappy-store:gemfirexd-native'
   include ':snappy-store:gemfirexd-hibernate'
-  include ':snappy-store:gemfirexd:tools'
-  include ':snappy-store:tests-core'
-  include ':snappy-store:tests-sql'
+  include ':snappy-store:gemfirexd-tools'
+  include ':snappy-store:gemfire-tests'
+  include ':snappy-store:gemfirexd-tests'
 
   project(':snappy-store:gemfire-jgroups').projectDir = "$rootDir/snappy-store/lgpl/gemfire-jgroups" as File
   project(':snappy-store:gemfire-trove').projectDir = "$rootDir/snappy-store/lgpl/gemfire-trove" as File
+  project(':snappy-store:gemfirexd-shared').projectDir = "$rootDir/snappy-store/gemfirexd/shared" as File
+  project(':snappy-store:gemfirexd-prebuild').projectDir = "$rootDir/snappy-store/gemfirexd/prebuild" as File
+  project(':snappy-store:gemfirexd-core').projectDir = "$rootDir/snappy-store/gemfirexd/core" as File
+  project(':snappy-store:gemfirexd-client').projectDir = "$rootDir/snappy-store/gemfirexd/client" as File
+  project(':snappy-store:gemfirexd-native').projectDir = "$rootDir/snappy-store/gemfirexd/native" as File
   project(':snappy-store:gemfirexd-hibernate').projectDir = "$rootDir/snappy-store/lgpl/gemfirexd-hibernate" as File
-  project(':snappy-store:tests-core').projectDir = "$rootDir/snappy-store/tests/core" as File
-  project(':snappy-store:tests-sql').projectDir = "$rootDir/snappy-store/tests/sql" as File
+  project(':snappy-store:gemfirexd-tools').projectDir = "$rootDir/snappy-store/gemfirexd/tools" as File
+  project(':snappy-store:gemfire-tests').projectDir = "$rootDir/snappy-store/tests/core" as File
+  project(':snappy-store:gemfirexd-tests').projectDir = "$rootDir/snappy-store/tests/sql" as File
 }
 
 if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
