@@ -78,7 +78,8 @@ public class DUnitLauncher {
   private static final Map<Object, Object> blackboard = new HashMap<>();
   private static final Semaphore sharedLock = new Semaphore(1);
 
-  private static final int NUM_VMS = 4;
+  private static final int NUM_VMS = Integer.getInteger(
+      "gemfire.DUnitLauncher.NUM_VMS", 4);
   private static final int DEBUGGING_VM_NUM = -1;
   private static final int LOCATOR_VM_NUM = -2;
 
@@ -93,7 +94,7 @@ public class DUnitLauncher {
 
   static final String MASTER_PARAM = "DUNIT_MASTER";
   static final String RMI_PORT_PARAM = "gemfire.DUnitLauncher.RMI_PORT";
-  static final String VM_NUM_PARAM = "gemfire.DUnitLauncher.VM_NUM";
+  public static final String VM_NUM_PARAM = "gemfire.DUnitLauncher.VM_NUM";
 
   private static final String LAUNCHED_PROPERTY = "gemfire.DUnitLauncher.LAUNCHED";
 

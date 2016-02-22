@@ -92,7 +92,7 @@ allprojects {
 
 def getProcessId() {
   def name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
-  return name[0..name.indexOf("@")-1]
+  return name[0..name.indexOf("@") - 1]
 }
 
 def getStackTrace(def t) {
@@ -226,7 +226,11 @@ subprojects {
         }
         onOutput { desc, event ->
           def output = new File(workingDir, "output.txt")
-          output  << event.message
+          def msg = event.message
+          if (event.destination.toString() == 'StdErr') {
+            msg = msg.replace("\n", "\n[error]  ")
+          }
+          output << msg
         }
         afterTest { desc, result ->
           def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')

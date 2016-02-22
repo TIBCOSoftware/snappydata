@@ -84,9 +84,10 @@ public class ProcessManager {
   }
 
   public static File getVMDir(int vmNum) {
-    return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum);
+    return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum +
+        '_' + getProcessId());
   }
-  
+
   public synchronized void killVMs() {
     for(ProcessHolder process : processes.values()) {
       if(process != null) {
@@ -135,6 +136,11 @@ public class ProcessManager {
     ioTransport.start();
   }
 
+  public static String getProcessId() {
+    String name = ManagementFactory.getRuntimeMXBean().getName();
+    return name.substring(0, name.indexOf('@'));
+  }
+
   private String[] buildJavaCommand(int vmNum, int namingPort) {
     String cmd = System.getProperty( "java.home" ) + File.separator + "bin" + File.separator + "java";
     String classPath = System.getProperty("java.class.path");
@@ -150,6 +156,7 @@ public class ProcessManager {
       "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
       "-Xmx512m",
+      "-Xms512m",
       "-XX:MaxPermSize=256M",
       "-Dgemfire.DEFAULT_MAX_OPLOG_SIZE=10",
       "-Dgemfire.disallowMcastDefaults=true",
