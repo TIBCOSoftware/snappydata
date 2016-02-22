@@ -1,5 +1,7 @@
 
 ## Table of Contents
+
+[![Join the chat at https://gitter.im/SnappyDataInc/snappydata](https://badges.gitter.im/SnappyDataInc/snappydata.svg)](https://gitter.im/SnappyDataInc/snappydata?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 * [Introduction](#introduction)
 * [Download](#download-binary-distribution)
 * [Community Support](#community-support)
@@ -34,6 +36,16 @@ groupId: io.snappydata
 artifactId: snappy-tools_2.10
 version: 0.1.0-PREVIEW
 ```
+
+If you are using sbt, add this line to your build.sbt for core snappy artifacts:
+
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.1.0-PREVIEW"`
+
+Make sure to also add the conjars resolver to resolve the `org.pentaho#pentaho-aggdesigner-algorithm;5.1.5-jhyde` dependency by adding this line to your build.sbt:
+
+`resolvers ++= Seq("conjars.org" at "http://conjars.org/repo")`
+
+Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
 ## Working with SnappyData Source Code
 If you are interested in working with the latest code or contributing to SnappyData development, you can also check out the master branch from Git:
@@ -155,7 +167,7 @@ You can also go through our very preliminary [docs](http://snappydatainc.github.
 
 If you're interested in the Scala/Spark side of things, go through the [programming quick start below](#quick-start-with-scalasparksnappy-programming).
 
-If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/support/contributors) for ways in which you can help. 
+If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
 
 ## Quick start with Scala/Spark/Snappy Programming
 

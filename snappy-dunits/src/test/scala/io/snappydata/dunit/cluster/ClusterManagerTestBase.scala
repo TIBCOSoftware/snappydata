@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import dunit.{DistributedTestBase, Host, SerializableRunnable}
+import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory

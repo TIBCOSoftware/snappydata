@@ -54,9 +54,6 @@ allprojects {
   version = '0.1.0-SNAPSHOT'
 
   // apply compiler options
-  sourceCompatibility = 1.7
-  targetCompatibility = 1.7
-
   compileJava.options.encoding = 'UTF-8'
   compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
   javadoc.options.charSet = 'UTF-8'
@@ -382,17 +379,17 @@ subprojects {
 }
 
 task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'native' &&
-    p.name != 'prebuild' && p.name != 'gemfirexd' &&
-    p.name != 'tests-sql' }.collect {
+  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+    p.name != 'gemfirexd-prebuild' && p.name != 'gemfirexd' &&
+    p.name != 'gemfirexd-tests' }.collect {
     it.getTasksByName('install', false).collect { it.path }
   }
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'native' &&
-    p.name != 'prebuild' && p.name != 'snappy-store' && p.name != 'gemfirexd' &&
-    p.name != 'tests-sql' }.collect {
+  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
+    p.name != 'gemfirexd-prebuild' && p.name != 'snappy-store' &&
+    p.name != 'gemfirexd' && p.name != 'gemfirexd-tests' }.collect {
     it.getTasksByName('uploadArchives', false).collect { it.path }
   }
 }
@@ -495,7 +492,7 @@ task product {
     // copy GemFireXD shared libraries for optimized JNI calls
     if (new File(rootDir, "snappy-store/build.gradle").exists()) {
       copy {
-        from "${project(':snappy-store:gemfirexd:core').projectDir}/lib"
+        from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
         into "${snappyProductDir}/lib"
       }
     }
