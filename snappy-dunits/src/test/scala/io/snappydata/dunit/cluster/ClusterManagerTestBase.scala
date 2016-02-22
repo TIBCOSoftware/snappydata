@@ -107,7 +107,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     }
     assert(ServiceManager.currentFabricServiceInstance.status ==
         FabricService.State.RUNNING)
-    logger.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
+    getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
         testName + "\n\n")
   }
 
