@@ -19,7 +19,7 @@ buildscript {
   dependencies {
     classpath "com.github.maiflai:gradle-scalatest:0.10"
     classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2"
-    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
   }
 }
 
@@ -270,6 +270,12 @@ subprojects {
       visible true
     }
 
+    nospark {
+      description 'a dependency for creating jar without spark dependencies'
+      visible true
+      transitive true
+    }
+
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
@@ -418,8 +424,20 @@ task product {
     // create the RELEASE file
     def release = file("${snappyProductDir}/RELEASE")
     def gitCommitId = "git rev-parse HEAD".execute().text.trim()
-    release << "Snappy Spark ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
+    release << "SnappyData ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
     release << "Build flags: ${buildFlags}\n"
+
+    // copy LICENSE, README.md and doc files
+    copy {
+      from projectDir
+      into snappyProductDir
+      include 'LICENSE'
+      include 'README.md'
+    }
+    copy {
+      from "${projectDir}/docs"
+      into "${snappyProductDir}/docs"
+    }
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def examplesProject = project(':snappy-examples')
