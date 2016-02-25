@@ -6,7 +6,7 @@ import io.snappydata.dunit.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.streaming.SnappyStreamingContext
+import org.apache.spark.streaming.SnappyStreamingContext
 
 class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
@@ -105,7 +105,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         s"key 'hashtag', " +
         "timeInterval '10000ms', size '10')")
 
-    val tweetsStream = SnappyStreamingContext.getActive.get
+    val tweetsStream = SnappyStreamingContext.getInstance().get
         .getSchemaDStream("tweetsTable")
     tweetsStream.foreachDataFrame { df =>
       // println("SW: inserting into fullTweetsTable rows: " + df.collect().mkString("\n"))
