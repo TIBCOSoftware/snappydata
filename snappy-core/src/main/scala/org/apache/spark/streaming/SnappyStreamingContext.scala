@@ -19,7 +19,6 @@ package org.apache.spark.streaming
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.language.implicitConversions
-import scala.reflect.ClassTag
 import scala.reflect.runtime.universe.TypeTag
 
 import org.apache.hadoop.conf.Configuration
@@ -29,8 +28,7 @@ import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlAdapter}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
-import org.apache.spark.streaming.dstream.{PairDStreamFunctions, DStream}
-import org.apache.spark.util.ShutdownHookManager
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -50,6 +48,19 @@ class SnappyStreamingContext protected[spark](
 
   self =>
 
+
+  if (sc_ == null && cp_ == null) {
+    throw new Exception("Snappy Streaming cannot be initialized with " +
+        "both SparkContext and checkpoint as null")
+  }
+
+  val snappyContext = SnappyContext.getOrCreate(sc_)
+
+  super.remember(Milliseconds(300 * 1000)) // Why needed . check with Yogesh
+
+
+  SnappyStreamingContext.setInstanceContext(self)
+
   /**
    * Create a SnappyStreamingContext using an existing SparkContext.
    * @param sparkContext existing SparkContext
@@ -57,6 +68,15 @@ class SnappyStreamingContext protected[spark](
    */
   def this(sparkContext: SparkContext, batchDuration: Duration) = {
     this(sparkContext, null, batchDuration)
+  }
+
+  /**
+   * Create a StreamingContext by providing the configuration necessary for a new SparkContext.
+   * @param conf a org.apache.spark.SparkConf object specifying Spark parameters
+   * @param batchDuration the time interval at which streaming data will be divided into batches
+   */
+  def this(conf: SparkConf, batchDuration: Duration) = {
+    this(StreamingContext.createNewSparkContext(conf), null, batchDuration)
   }
 
 
@@ -87,15 +107,6 @@ class SnappyStreamingContext protected[spark](
       null)
   }
 
-
-  if (sc_ == null && cp_ == null) {
-    throw new Exception("Spark Streaming cannot be initialized with " +
-        "both SparkContext and checkpoint as null")
-  }
-
-  val snappyContext = SnappyContext.getOrCreate(sc_)
-
-  remember(Milliseconds(300 * 1000)) // Why needed . check with Yogesh
 
   /**
    * Start the execution of the streams.
@@ -163,7 +174,7 @@ class SnappyStreamingContext protected[spark](
     StreamSqlAdapter.createSchemaDStream(self, rowStream, schema)
   }
 
-  SnappyStreamingContext.setInstanceContext(self)
+
 
 }
 
