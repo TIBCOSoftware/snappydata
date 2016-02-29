@@ -38,17 +38,18 @@ object ToolsCallbackImpl extends ToolsCallback {
       hostData: Boolean): Unit = {
     val properties = new Properties()
     sc.getConf.getAll.filter(
-      p => p._1.startsWith(Constant.STORE_PROPERTY_PREFIX)).
-        foreach(p => p._1 match {
+      confProperty => confProperty._1.startsWith(Constant.STORE_PROPERTY_PREFIX)).
+        foreach(storeProperty => storeProperty._1 match {
           case Property.locators =>
-            if (!Utils.LocatorURLPattern.matcher(p._2).matches()) {
-              throw new AnalysisException(s"locators property " + p._2 + " should " +
+            if (!Utils.LocatorURLPattern.matcher(storeProperty._2).matches()) {
+              throw new AnalysisException(s"locators property " + storeProperty._2 + " should " +
                   "be provided in the format host[port] or host:port", null)
             }
-            properties.setProperty("locators", p._2)
+            properties.setProperty("locators", storeProperty._2)
 
           case _ =>
-            properties.setProperty(p._1.trim.replaceFirst(Constant.STORE_PROPERTY_PREFIX, ""), p._2)
+            properties.setProperty(storeProperty._1.trim.replaceFirst
+            (Constant.STORE_PROPERTY_PREFIX, ""), storeProperty._2)
         }
         )
     // overriding the host-data property based on the provided flag
