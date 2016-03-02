@@ -5,6 +5,7 @@ include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-tools_' + scalaBinaryVersion
 include 'dunit'
 include 'snappy-dunits'
+include 'snappy-dtests'
 include 'snappy-examples'
 
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/snappy-core" as File
@@ -111,3 +112,5 @@ if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
 if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
   include ':snappy-aqp'
 }
+include 'snappy-dtests'
+
