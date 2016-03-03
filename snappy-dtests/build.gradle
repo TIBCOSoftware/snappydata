@@ -25,6 +25,7 @@ repositories {
 
 ext {
     subprojectBase = ':snappy-store:'
+    osName = org.gradle.internal.os.OperatingSystem.current()
 }
 
 dependencies {
@@ -96,3 +97,13 @@ testClasses.doLast {
     copyTestsCommonResources(buildDir)
 }
 
+copy {
+    def osDir = osName.getFamilyName().replace(" ", "").toLowerCase()
+    from (rootDir.getAbsolutePath() + '/snappy-dtests/src/test/java') {
+        include '**/*.bt'
+        include '**/*.conf'
+        include '**/*.inc'
+        include '**/*.sql'
+    }
+    into rootDir.getAbsolutePath() + '/snappy-store/tests/core/build-artifacts/' + osDir + '/classes/main'
+}
