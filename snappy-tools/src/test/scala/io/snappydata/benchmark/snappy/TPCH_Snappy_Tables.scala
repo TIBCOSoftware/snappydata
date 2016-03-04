@@ -4,7 +4,6 @@ import java.io.File
 
 import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHReplicatedTable, TPCHRowPartitionedTable, TPCHColumnPartitionedTable}
-import io.snappydata.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCHRowPartitionedTable}
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.sql.SnappySQLJob
