@@ -1,7 +1,8 @@
+#!/usr/bin/env bash
 source PerfRun.conf
 
 #run table creating program
-scala -cp "../TPCH.jar:mysql-connector-java-5.0.8-bin.jar" io.snappydata.memsql.TPCH_Memsql_Tables $aggregator
+scala -cp "../TPCH.jar:mysql-connector-java-5.0.8-bin.jar" io.snappydata.benchmark.memsql.TPCH_Memsql_Tables $aggregator
 
 #change data size as per requirment. e.g. from 100GB to 10GB
 sed -i "s|\"file:.*|\"file:$dataDir\/customer.tbl\"|" memsqlloader/customer.json

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 source PerfRun.conf
 
 #start memsql-ops on aggregator

@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 source PerfRun.conf
 
 rm -rf $SnappyData/build-artifacts/scala-2.10/snappy/work/*
