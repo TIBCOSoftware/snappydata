@@ -1,7 +1,6 @@
 package io.snappydata.benchmark.snappy
 
 import io.snappydata.benchmark.{TPCHReplicatedTable, TPCHRowPartitionedTable, TPCHColumnPartitionedTable}
-import io.snappydata.{TPCHReplicatedTable, TPCHRowPartitionedTable, TPCHColumnPartitionedTable}
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkConf, SparkContext}
@@ -9,7 +8,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Created by kishor on 19/10/15.
  */
-object PCH_Snappy_Old {
+object TPCH_Snappy_Old {
 
   def main (args: Array[String]) {
     val conf = new SparkConf().setAppName("TPCH_Snappy")/*.set("snappydata.store.locators","localhost:10334")*/
