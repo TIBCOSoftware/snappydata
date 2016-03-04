@@ -6,8 +6,19 @@ compileScala.options.encoding = 'UTF-8'
 sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
 
+
+
+repositories {
+  mavenCentral()
+  maven { url 'https://clojars.org/repo' }
+}
+
 dependencies {
   compile project(":snappy-tools_${scalaBinaryVersion}")
+  compile 'com.miguno:kafka-avro-codec_2.10:0.1.1-SNAPSHOT'
+  compile 'com.twitter:algebird-core_2.10:0.1.11'
+  compile 'org.apache.avro:avro-tools:1.7.0'
+
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     testRuntime project(':snappy-aqp')
   } else {

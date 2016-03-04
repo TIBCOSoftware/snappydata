@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "ImpressionLog",
+  "namespace": "io.snappydata.aggr",
+  "fields": [ {
+    "name": "timestamp",
+    "type": "long",
+    "doc": "timestamp"
+  }, {
+    "name": "publisher",
+    "type": "string",
+    "doc": "publisher"
+  }, {
+    "name": "advertiser",
+    "type": "string",
+    "doc": "advertiser"
+  }, {
+    "name": "website",
+     "type": "string",
+     "doc": "website"
+  }, {
+      "name": "geo",
+      "type": "string",
+      "doc": "geo"
+    }, {
+      "name": "bid",
+      "type": "double",
+      "doc": "bid"
+    }, {
+      "name": "cookie",
+       "type": "string",
+       "doc": "cookie"
+  } ],
+  "doc": "A basic schema for storing ImpressionLog messages"
+}
