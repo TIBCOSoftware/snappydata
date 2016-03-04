@@ -1,23 +1,32 @@
-apply plugin: 'scala'
 
+
+plugins {
+  id "com.commercehub.gradle.plugin.avro" version "0.5.0"
+
+}
+
+
+apply plugin: 'scala'
+apply plugin: "com.commercehub.gradle.plugin.avro"
 compileScala.options.encoding = 'UTF-8'
 
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
 
-
-
 repositories {
   mavenCentral()
   maven { url 'https://clojars.org/repo' }
+
 }
 
 dependencies {
+
   compile project(":snappy-tools_${scalaBinaryVersion}")
   compile 'com.miguno:kafka-avro-codec_2.10:0.1.1-SNAPSHOT'
   compile 'com.twitter:algebird-core_2.10:0.1.11'
-  compile 'org.apache.avro:avro-tools:1.7.0'
+  //compile 'org.apache.avro:avro-tools:1.7.0'
+
 
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     testRuntime project(':snappy-aqp')
@@ -44,6 +53,13 @@ if (rootProject.hasProperty('enablePublish')) {
   }
 }
 
+task generateAvro(type: com.commercehub.gradle.plugin.avro.GenerateAvroJavaTask) {
+  source("src/avro")
+  outputDir = file("src/main/java")
+}
+
+compileJava.source(generateAvro.outputs)
+
 task productExamples(dependsOn: 'jar') << {
   def productDir = file("${rootProject.buildDir}/snappy")
   productDir.mkdirs()
@@ -55,3 +71,4 @@ task productExamples(dependsOn: 'jar') << {
     rename { filename -> exampleArchiveName }
   }
 }
+avro.stringType = "charSequence"
