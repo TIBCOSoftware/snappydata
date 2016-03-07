@@ -2,7 +2,6 @@
 
 plugins {
   id "com.commercehub.gradle.plugin.avro" version "0.5.0"
-
 }
 
 
@@ -17,14 +16,13 @@ sourceSets.main.java.srcDirs = []
 repositories {
   mavenCentral()
   maven { url 'https://clojars.org/repo' }
-
 }
 
 dependencies {
 
   compile project(":snappy-tools_${scalaBinaryVersion}")
   compile 'com.miguno:kafka-avro-codec_2.10:0.1.1-SNAPSHOT'
-  compile 'com.twitter:algebird-core_2.10:0.1.11'
+  // compile 'com.twitter:algebird-core_2.10:0.1.11'
   //compile 'org.apache.avro:avro-tools:1.7.0'
 
 

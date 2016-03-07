@@ -31,7 +31,6 @@ object RandomLogKafkaProducer extends App {
     val cookie = s"cookie_${random.nextInt(Constants.NumCookies)}"
     val geo = Geos(random.nextInt(Geos.size))
     val bid = math.abs(random.nextDouble()) % 1
-    println(s" ImpressionLog $timestamp + $publisher + $advertiser + $website + $cookie + $geo + $bid ") // scalastyle:ignore
     val log = new ImpressionLog()
     log.setTimestamp(timestamp)
     log.setPublisher(publisher)
@@ -41,7 +40,6 @@ object RandomLogKafkaProducer extends App {
     log.setBid(bid)
     log.setCookie(cookie)
 
-    // val log = ImpressionLog(timestamp, publisher, advertiser, website, geo, bid, cookie)
     producer.send(new KeyedMessage[String, ImpressionLog](Constants.KafkaTopic, log))
     i = i + 1
     if (i % 10000 == 0) {
