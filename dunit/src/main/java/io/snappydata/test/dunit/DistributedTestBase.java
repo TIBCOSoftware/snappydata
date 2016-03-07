@@ -123,10 +123,6 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     }
   }
 
-  static {
-    InitializeRun.setUp();
-  }
-
   ///////////////////////  Utility Methods  ///////////////////////
 
   /**
@@ -674,6 +670,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    */
   @Override
   public void setUp() throws Exception {
+    InitializeRun.setUp();
     logTestHistory();
     testName = getName();
 
