@@ -51,6 +51,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   def sc: SparkContext = SnappyContext.globalSparkContext
 
   override def setUp(): Unit = {
+    super.setUp()
     val testName = getName
     val testClass = getClass
     // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
@@ -112,6 +113,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   }
 
   override def tearDown2(): Unit = {
+    super.tearDown2();
     GemFireXDUtils.IS_TEST_MODE = false
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
