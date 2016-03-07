@@ -47,10 +47,12 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import com.gemstone.gemfire.internal.SocketCreator;
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
+import com.gemstone.gemfire.internal.shared.NativeCalls;
 import io.snappydata.test.dunit.standalone.DUnitBB;
 import io.snappydata.test.dunit.standalone.DUnitLauncher;
 import io.snappydata.test.util.TestException;
 import junit.framework.TestCase;
+import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -87,16 +89,43 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   public static final boolean logPerTest = Boolean.getBoolean("dunitLogPerTest");
     /** the system line separator */
 
-    public static final String lineSeparator = java.security.AccessController
-        .doPrivileged(new PrivilegedAction<String>() {
-          @Override
-          public String run() {
-            return System.getProperty("line.separator");
-          }
-        });
+  public static final String lineSeparator = java.security.AccessController
+      .doPrivileged(new PrivilegedAction<String>() {
+        @Override
+        public String run() {
+          return System.getProperty("line.separator");
+        }
+      });
 
   public static InternalDistributedSystem system;
   private static Class lastSystemCreatedInTest;
+
+  // common static initialization (currently changes working directory)
+  public static final class InitializeRun {
+    static {
+      // skip for ChildVM's in dunits
+      if (System.getProperty(DUnitLauncher.VM_NUM_PARAM) == null) {
+        // change current working directory to this base directory
+        File baseDirFile = new File(getBaseDir());
+        //noinspection ResultOfMethodCallIgnored
+        baseDirFile.mkdirs();
+        NativeCalls.getInstance().setCurrentWorkingDirectory(
+            baseDirFile.getAbsolutePath());
+      }
+    }
+
+    public static void setUp() {
+      // nothing; actual setup done in static initializer
+    }
+
+    public static String getBaseDir() {
+      return "vm_" + NativeCalls.getInstance().getProcessId();
+    }
+  }
+
+  static {
+    InitializeRun.setUp();
+  }
 
   ///////////////////////  Utility Methods  ///////////////////////
 
@@ -573,8 +602,35 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     return clazz;
   }
 
+  private static Level getLevel(String gemfireLogLevel) {
+    switch (gemfireLogLevel) {
+      case "config":
+      case "info":
+        return Level.INFO;
+      case "fine":
+        return Level.DEBUG;
+      case "finer":
+      case "finest":
+        return Level.TRACE;
+      case "warning":
+        return Level.WARN;
+      case "error":
+        return Level.ERROR;
+      case "severe":
+        return Level.FATAL;
+      case "all":
+        return Level.ALL;
+      case "none":
+        return Level.OFF;
+      default:
+        return Level.INFO;
+    }
+  }
+
   private static Logger newGlobalLogger() {
-    return LogManager.getLogger(Host.BASE_LOGGER_NAME);
+    Logger logger = LogManager.getLogger(Host.BASE_LOGGER_NAME);
+    logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
+    return logger;
   }
 
   public static Logger getGlobalLogger() {
@@ -586,7 +642,9 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   }
 
   private Logger newLogWriter() {
-    return LogManager.getLogger(getClass());
+    Logger logger = LogManager.getLogger(getClass());
+    logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
+    return logger;
   }
 
   public final Logger getLogWriter() {
@@ -603,7 +661,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    * @return the dunit log-level setting
    */
   public String getLogLevel() {
-    return getLogWriter().getLevel().toString();
+    return DUnitLauncher.LOG_LEVEL;
   }
 
   private String getDefaultDiskStoreName() {

@@ -60,7 +60,7 @@ public class ProcessManager {
     
     String[] cmd = buildJavaCommand(vmNum, namingPort);
     System.out.println("Executing " + Arrays.asList(cmd));
-    File workingDir = getVMDir(vmNum);
+    File workingDir = getVMDir(vmNum, true);
     try {
       FileUtil.delete(workingDir);
     } catch(IOException e) {
@@ -77,15 +77,25 @@ public class ProcessManager {
     //TODO - delete directory contents, preferably with commons io FileUtils
     Process process = Runtime.getRuntime().exec(cmd, null, workingDir);
     pendingVMs++;
-    ProcessHolder holder = new ProcessHolder(process);
+    ProcessHolder holder = new ProcessHolder(process,
+        workingDir.getAbsoluteFile());
     processes.put(vmNum, holder);
     linkStreams(vmNum, holder, process.getErrorStream(), System.err);
     linkStreams(vmNum, holder, process.getInputStream(), System.out);
   }
 
-  public static File getVMDir(int vmNum) {
-    return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum +
-        '_' + getProcessId());
+  public File getVMDir(int vmNum, boolean launch) {
+    if (launch) {
+      return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum +
+          '_' + getProcessId());
+    } else {
+      ProcessHolder holder = this.processes.get(vmNum);
+      if (holder != null) {
+        return holder.getWorkingDir();
+      } else {
+        throw new IllegalArgumentException("No VM " + vmNum + " found.");
+      }
+    }
   }
 
   public synchronized void killVMs() {
@@ -157,10 +167,13 @@ public class ProcessManager {
       "-XX:+HeapDumpOnOutOfMemoryError",
       "-Xmx512m",
       "-Xms512m",
-      "-XX:MaxPermSize=256M",
+      "-XX:MaxPermSize=256m",
+      "-XX:+UseParNewGC",
+      "-XX:+UseConcMarkSweepGC",
+      "-XX:CMSInitiatingOccupancyFraction=50",
+      "-XX:+CMSClassUnloadingEnabled",
       "-Dgemfire.DEFAULT_MAX_OPLOG_SIZE=10",
       "-Dgemfire.disallowMcastDefaults=true",
-      "-XX:MaxPermSize=256M",
       "-Djava.net.preferIPv4Stack=true",
       "-ea",
       agent,
@@ -210,10 +223,12 @@ public class ProcessManager {
   
   private static class ProcessHolder {
     private final Process process;
+    private final File workingDir;
     private volatile boolean killed = false;
-    
-    public ProcessHolder(Process process) {
+
+    public ProcessHolder(Process process, File workingDir) {
       this.process = process;
+      this.workingDir = workingDir;
     }
 
     public void kill() {
@@ -224,6 +239,10 @@ public class ProcessManager {
 
     public Process getProcess() {
       return process;
+    }
+
+    public File getWorkingDir() {
+      return this.workingDir;
     }
 
     public boolean isKilled() {

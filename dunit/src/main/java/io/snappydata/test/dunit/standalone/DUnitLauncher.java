@@ -73,6 +73,7 @@ import org.junit.Assert;
 public class DUnitLauncher {
 
   static int locatorPort;
+  static ProcessManager processManager;
 
   private static MasterRemote masterRemote;
   private static final Map<Object, Object> blackboard = new HashMap<>();
@@ -158,7 +159,7 @@ public class DUnitLauncher {
     int namingPort = AvailablePortHelper.getRandomAvailableTCPPort();
     Registry registry = LocateRegistry.createRegistry(namingPort);
 
-    final ProcessManager processManager = new ProcessManager(namingPort, registry);
+    processManager = new ProcessManager(namingPort, registry);
     Master master = new Master(registry, processManager);
     registry.bind(MASTER_PARAM, master);
 
