@@ -194,7 +194,7 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=384m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     workingDir = "${testResultsBase}/junit"

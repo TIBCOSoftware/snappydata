@@ -50,6 +50,8 @@ test {
   minHeapSize '128m'
   maxHeapSize '1g'
 
+  jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m', '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC', '-XX:CMSInitiatingOccupancyFraction=50', '-XX:+CMSClassUnloadingEnabled', '-ea']
+
   include '**/*DUnitTest.class'
 
   workingDir = "${testResultsBase}/dunit"
@@ -58,5 +60,6 @@ test {
   reports.html.destination = file("${workingDir}/html")
   reports.junitXml.destination = file(workingDir)
 
-  systemProperties 'java.net.preferIPv4Stack': 'true'
+  systemProperties 'java.net.preferIPv4Stack': 'true',
+                   'SNAPPY_HOME': snappyProductDir
 }
