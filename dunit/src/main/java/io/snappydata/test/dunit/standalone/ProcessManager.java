@@ -16,12 +16,12 @@
  */
 package io.snappydata.test.dunit.standalone;
 
-import com.gemstone.gemfire.internal.FileUtil;
-import io.snappydata.test.dunit.RemoteDUnitVMIF;
-import io.snappydata.test.dunit.logging.log4j.ConfigLocator;
-import org.apache.commons.io.FileUtils;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.rmi.AccessException;
@@ -31,6 +31,12 @@ import java.rmi.registry.Registry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.gemstone.gemfire.internal.FileUtil;
+import com.gemstone.gemfire.internal.shared.NativeCalls;
+import io.snappydata.test.dunit.RemoteDUnitVMIF;
+import io.snappydata.test.dunit.logging.log4j.ConfigLocator;
+import org.apache.commons.io.FileUtils;
 
 /**
  * @author dsmith
@@ -87,7 +93,7 @@ public class ProcessManager {
   public File getVMDir(int vmNum, boolean launch) {
     if (launch) {
       return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum +
-          '_' + getProcessId());
+          '_' + NativeCalls.getInstance().getProcessId());
     } else {
       ProcessHolder holder = this.processes.get(vmNum);
       if (holder != null) {
@@ -144,11 +150,6 @@ public class ProcessManager {
 
     ioTransport.setDaemon(true);
     ioTransport.start();
-  }
-
-  public static String getProcessId() {
-    String name = ManagementFactory.getRuntimeMXBean().getName();
-    return name.substring(0, name.indexOf('@'));
   }
 
   private String[] buildJavaCommand(int vmNum, int namingPort) {
