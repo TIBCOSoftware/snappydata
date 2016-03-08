@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source PerfRun.conf
+source PerfRun.conf.template
 
 echo "*****************Stop locator, server, lead***********************"
 sh $SnappyData/build-artifacts/scala-2.10/snappy/sbin/snappy-stop-all.sh

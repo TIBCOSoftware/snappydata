@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source PerfRun.conf
+source PerfRun.conf.template
 
 rm -rf $SnappyData/build-artifacts/scala-2.10/snappy/work/$leads-lead-1/*.out
 #> $SnappyData/build-artifacts/scala-2.10/snappy/work/$leads-lead-1/Average.out

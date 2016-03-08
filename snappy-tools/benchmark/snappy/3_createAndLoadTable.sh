@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-source PerfRun.conf
+source PerfRun.conf.template
 
-export APP_PROPS="dataLocation=$dataDir"
+export APP_PROPS="dataLocation=$dataDir,Buckets=$NoOfBuckets"
 
 echo "******************start Creating Table******************"
 . $SnappyData/build-artifacts/scala-2.10/snappy/bin/snappy-job.sh submit --lead $leads:8090 --app-name myapp --class io.snappydata.benchmark.snappy.TPCH_Snappy_Tables --app-jar $TPCHJar

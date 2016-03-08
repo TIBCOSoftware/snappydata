@@ -67,14 +67,17 @@ object TPCHColumnPartitionedTable  {
 //    }
 //  }
 
-  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
+  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val orderData = sc.textFile(s"$path/orders.tbl")
     val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
     val orderDF = sqlContext.createDataFrame(orderReadings)
+    println("KBKBKBKB: Buckets : " + buckets)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("ORDERS", ifExists = true)
       //snappyContext.dropExternalTable("ORDERS", ifExists = true)
@@ -165,14 +168,14 @@ object TPCHColumnPartitionedTable  {
 //    }
 //  }
 
-  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean): Unit = {
+  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
     val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
+      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       //snappyContext.dropExternalTable("LINEITEM", ifExists = true)

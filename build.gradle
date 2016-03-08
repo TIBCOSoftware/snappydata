@@ -535,6 +535,10 @@ task product {
       from("${examplesProject.projectDir}/quickstart")
       into "${snappyProductDir}/quickstart"
     }
+    copy {
+      from("${toolsProject.projectDir}/benchmark")
+      into "${snappyProductDir}/benchmark"
+    }
   }
 }
 
