@@ -39,9 +39,10 @@ object TPCH_Snappy_Old {
     val path = args(2)
     val sc = new SparkContext(conf)
     val snc = new SQLContext(sc)
+    val buckets="113"
 
-    TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, path, isSnappy)
-    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, path, isSnappy)
+    TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, path, isSnappy, buckets)
+    TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, path, isSnappy, buckets)
     TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, path, isSnappy)
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, path, isSnappy)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, path, isSnappy)

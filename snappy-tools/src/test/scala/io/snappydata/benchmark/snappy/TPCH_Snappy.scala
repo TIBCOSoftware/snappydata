@@ -1599,32 +1599,32 @@ object TPCH_Snappy {
            " where" +
            "         (" +
            "                 P_PARTKEY = l_partkey" +
-           "                 and P_BRAND = ‘Brand#12’" +
-           "                 and P_CONTAINER in ( ‘SM CASE’, ‘SM BOX’, ‘SM PACK’, ‘SM PKG’)" +
+           "                 and P_BRAND = \"Brand#1\"" +
+           "                 and P_CONTAINER in ( \"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
            "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
            "                 and P_SIZE between 1 and 5" +
-           "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-           "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+           "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+           "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
            "         )" +
            "         or" +
            "         (" +
            "                 P_PARTKEY = l_partkey" +
-           "                 and P_BRAND = ‘Brand#23’" +
-           "                 and P_CONTAINER in (‘MED BAG’, ‘MED BOX’, ‘MED PKG’, ‘MED PACK’)" +
+           "                 and P_BRAND = \"Brand#23\"" +
+           "                 and P_CONTAINER in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
            "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
            "                 and P_SIZE between 1 and 10" +
-           "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-           "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+           "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+           "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
            "         )" +
            "         or" +
            "         (" +
            "                 P_PARTKEY = l_partkey" +
-           "                 and P_BRAND = ‘Brand#34’" +
-           "                 and P_CONTAINER in ( ‘LG CASE’, ‘LG BOX’, ‘LG PACK’, ‘LG PKG’)" +
+           "                 and P_BRAND = \"Brand#34\"" +
+           "                 and P_CONTAINER in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
            "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
            "                 and P_SIZE between 1 and 15" +
-           "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-           "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+           "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+           "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
            "         )"
      }else{
        "select" +
@@ -1635,32 +1635,32 @@ object TPCH_Snappy {
            " where" +
            "         (" +
            "                 p_partkey = l_partkey" +
-           "                 and p_brand = ‘Brand#12’" +
-           "                 and p_container in ( ‘SM CASE’, ‘SM BOX’, ‘SM PACK’, ‘SM PKG’)" +
+           "                 and p_brand = \"Brand#12\"" +
+           "                 and p_container in (\"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
            "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
            "                 and p_size between 1 and 5" +
-           "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-           "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+           "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+           "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
            "         )" +
            "         or" +
            "         (" +
            "                 p_partkey = l_partkey" +
-           "                 and p_brand = ‘Brand#23’" +
-           "                 and p_container in (‘MED BAG’, ‘MED BOX’, ‘MED PKG’, ‘MED PACK’)" +
+           "                 and p_brand = \"Brand#23\"" +
+           "                 and p_container in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
            "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
            "                 and p_size between 1 and 10" +
-           "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-           "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+           "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+           "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
            "         )" +
            "         or" +
            "         (" +
            "                 p_partkey = l_partkey" +
            "                 and p_brand = ‘Brand#34’" +
-           "                 and p_container in ( ‘LG CASE’, ‘LG BOX’, ‘LG PACK’, ‘LG PKG’)" +
+           "                 and p_container in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
            "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
            "                 and p_size between 1 and 15" +
-           "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-           "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+           "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+           "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
            "         )"
      }
    }
@@ -1766,7 +1766,7 @@ object TPCH_Snappy {
            " where" +
            "         S_SUPPKEY = l1.l_suppkey" +
            "         and o_orderkey = l1.l_orderkey" +
-           "         and o_orderstatus = 'F'" +
+           "         and o_orderstatus = \"F\"" +
            "         and l1.l_receiptdate > l1.l_commitdate" +
            "         and exists (" +
            "                 select" +
@@ -1788,7 +1788,7 @@ object TPCH_Snappy {
            "                         and l3.l_receiptdate > l3.l_commitdate" +
            "         )" +
            "         and S_NATIONKEY = N_NATIONKEY" +
-           "         and N_NAME = 'SAUDI ARABIA'" +
+           "         and N_NAME = \"SAUDI ARABIA\"" +
            " group by" +
            "         S_NAME" +
            " order by" +
@@ -1806,7 +1806,7 @@ object TPCH_Snappy {
            " where" +
            "         s_suppkey = l1.l_suppkey" +
            "         and o_orderkey = l1.l_orderkey" +
-           "         and o_orderstatus = 'F'" +
+           "         and o_orderstatus = \"F\"" +
            "         and l1.l_receiptdate > l1.l_commitdate" +
            "         and exists (" +
            "                 select" +
@@ -1828,7 +1828,7 @@ object TPCH_Snappy {
            "                         and l3.l_receiptdate > l3.l_commitdate" +
            "         )" +
            "         and s_nationkey = n_nationkey" +
-           "         and n_name = 'SAUDI ARABIA'" +
+           "         and n_name = \"SAUDI ARABIA\"" +
            " group by" +
            "         s_name" +
            " order by" +

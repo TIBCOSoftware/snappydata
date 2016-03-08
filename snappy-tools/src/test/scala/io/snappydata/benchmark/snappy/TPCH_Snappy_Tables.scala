@@ -14,6 +14,7 @@ import org.apache.spark.sql.SnappySQLJob
 object TPCH_Snappy_Tables extends SnappySQLJob{
 
    var tpchDataPath: String = _
+   var buckets: String = _
 
    override def runJob(snc: C, jobConfig: Config): Any = {
      val props : Map[String, String] = null
@@ -24,8 +25,9 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
            USING row
            OPTIONS ()"""
 
-     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy)
-     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy)
+     println("KBKBKB: Bucets : " + buckets)
+     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy, buckets)
+     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy, buckets)
      TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
@@ -43,10 +45,17 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
        "/QASNAPPY/TPCH/DATA/1"
      }
 
+     buckets = if (config.hasPath("Buckets")) {
+       config.getString("Buckets")
+     } else {
+       "15"
+     }
+
      if (!(new File(tpchDataPath)).exists()) {
        return new SparkJobInvalid("Incorrect tpch data path. " +
            "Specify correct location")
      }
+
 
      SparkJobValid
    }

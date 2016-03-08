@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source PerfRun.conf
+source PerfRun.conf.template
 
 #start memsql-ops on aggregator
 ssh $aggregator sudo memsql-ops start
