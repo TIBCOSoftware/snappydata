@@ -32,6 +32,8 @@ import io.snappydata.LocalizedMessages
  */
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
+  GfxdUtilLauncher.snappyStore = true
+
   import SnappyUtilLauncher._
 
   protected override def getTypes(): java.util.Map[String, CommandEntry] = {
