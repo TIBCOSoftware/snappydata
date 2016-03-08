@@ -19,7 +19,7 @@ buildscript {
   dependencies {
     classpath "com.github.maiflai:gradle-scalatest:0.10"
     classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2"
-    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
   }
 }
 
@@ -93,7 +93,7 @@ allprojects {
 
 def getProcessId() {
   def name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
-  return name[0..name.indexOf("@")-1]
+  return name[0..name.indexOf("@") - 1]
 }
 
 def getStackTrace(def t) {
@@ -195,7 +195,7 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=384m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     workingDir = "${testResultsBase}/junit"
@@ -227,7 +227,11 @@ subprojects {
         }
         onOutput { desc, event ->
           def output = new File(workingDir, "output.txt")
-          output  << event.message
+          def msg = event.message
+          if (event.destination.toString() == 'StdErr') {
+            msg = msg.replace("\n", "\n[error]  ")
+          }
+          output << msg
         }
         afterTest { desc, result ->
           def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
@@ -265,6 +269,12 @@ subprojects {
     provided {
       description 'a dependency that is provided externally at runtime'
       visible true
+    }
+
+    nospark {
+      description 'a dependency for creating jar without spark dependencies'
+      visible true
+      transitive true
     }
 
     testOutput {
@@ -416,8 +426,20 @@ task product {
     // create the RELEASE file
     def release = file("${snappyProductDir}/RELEASE")
     def gitCommitId = "git rev-parse HEAD".execute().text.trim()
-    release << "Snappy Spark ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
+    release << "SnappyData ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
     release << "Build flags: ${buildFlags}\n"
+
+    // copy LICENSE, README.md and doc files
+    copy {
+      from projectDir
+      into snappyProductDir
+      include 'LICENSE'
+      include 'README.md'
+    }
+    copy {
+      from "${projectDir}/docs"
+      into "${snappyProductDir}/docs"
+    }
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def examplesProject = project(':snappy-examples')
