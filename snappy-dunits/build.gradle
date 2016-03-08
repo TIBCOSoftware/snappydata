@@ -46,7 +46,7 @@ testClasses.doLast {
 test {
   dependsOn ':cleanDUnit'
   dependsOn ':product'
-  maxParallelForks = 1
+  maxParallelForks = Math.max((int)Math.sqrt(Runtime.getRuntime().availableProcessors() + 1), 2)
   minHeapSize '128m'
   maxHeapSize '1g'
 
