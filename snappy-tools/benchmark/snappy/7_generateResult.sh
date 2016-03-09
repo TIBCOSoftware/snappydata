@@ -1,25 +1,33 @@
 #!/usr/bin/env bash
-source PerfRun.conf.template
+source PerfRun.conf
 
 directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries
 mkdir $directory
 
 cp $SnappyData/build-artifacts/scala-2.10/snappy/work/$leads-lead-1/*.out $directory/
 
-echo snappyData = $(git -C $SnappyData rev-parse HEAD)_$(git -C $SnappyData log -1 --format=%cd) > latestProp.out
-echo snappy-spark = $(git -C $SnappyData/snappy-spark rev-parse HEAD)_$(git -C $SnappyData/snappy-spark log -1 --format=%cd) >> latestProp.out
-echo snappy-store = $(git -C $SnappyData/snappy-store rev-parse HEAD)_$(git -C $SnappyData/snappy-store log -1 --format=%cd) >> latestProp.out
-echo snappy-aqp = $(git -C $SnappyData/snappy-aqp rev-parse HEAD)_$(git -C $SnappyData/snappy-aqp log -1 --format=%cd) >> latestProp.out
-echo spark-jobserver = $(git -C $SnappyData/spark-jobserver rev-parse HEAD)_$(git -C $SnappyData/spark-jobserver log -1 --format=%cd) >> latestProp.out
+latestProp=$SnappyData/build-artifacts/scala-2.10/snappy/benchmark/snappy/latestProp.out
 
-echo SPARK_PROPERTIES = $sparkProperties >> latestProp.out
-echo SPARK_SQL_PROPERTIES = $sparkSqlProperties >> latestProp.out
-echo DATASIZE = $dataSize >> latestProp.out
+cd $SnappyData
+echo snappyData = $(git rev-parse HEAD)_$(git log -1 --format=%cd) > $latestProp
+cd snappy-spark
+echo snappy-spark = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
+cd ../snappy-store
+echo snappy-store = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
+cd ../snappy-aqp
+echo snappy-aqp = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
+cd ../spark-jobserver
+echo spark-jobserver = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
+cd ../build-artifacts/scala-2.10/snappy/benchmark/snappy/
+
+echo SPARK_PROPERTIES = $sparkProperties >> $latestProp
+echo SPARK_SQL_PROPERTIES = $sparkSqlProperties >> $latestProp
+echo DATASIZE = $dataSize >> $latestProp
 
 
 for i in $directory/*.out
 do 
-   cat latestProp.out >> $i
+   cat $latestProp >> $i
 done
 
  

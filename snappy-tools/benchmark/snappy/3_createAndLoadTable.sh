@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source PerfRun.conf.template
+source PerfRun.conf
 
 export APP_PROPS="dataLocation=$dataDir,Buckets=$NoOfBuckets"
 

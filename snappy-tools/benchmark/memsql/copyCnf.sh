@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source PerfRun.conf.template
+source PerfRun.conf
 
 #stop cluster
 ssh $aggregator memsql-ops cluster-stop

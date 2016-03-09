@@ -43,12 +43,12 @@ object TPCH_Snappy_Old {
 
     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, path, isSnappy, buckets)
     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, path, isSnappy, buckets)
-    TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, path, isSnappy)
+    TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, path, isSnappy, buckets)
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, path, isSnappy)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, path, isSnappy)
     TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, path, isSnappy)
-    TPCHRowPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, path, isSnappy)
-    TPCHRowPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, path, isSnappy)
+    TPCHRowPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, path, isSnappy, buckets)
+    TPCHRowPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, path, isSnappy, buckets)
 
 //    TPCH_Snappy_Query.execute("q1s", sc, isResultCollection, isSnappy)
 //    TPCH_Snappy_Query.execute("q3s", sc, isResultCollection, isSnappy)
