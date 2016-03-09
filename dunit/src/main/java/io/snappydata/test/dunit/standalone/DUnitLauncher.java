@@ -73,12 +73,14 @@ import org.junit.Assert;
 public class DUnitLauncher {
 
   static int locatorPort;
+  static ProcessManager processManager;
 
   private static MasterRemote masterRemote;
   private static final Map<Object, Object> blackboard = new HashMap<>();
   private static final Semaphore sharedLock = new Semaphore(1);
 
-  private static final int NUM_VMS = 4;
+  private static final int NUM_VMS = Integer.getInteger(
+      "gemfire.DUnitLauncher.NUM_VMS", 4);
   private static final int DEBUGGING_VM_NUM = -1;
   private static final int LOCATOR_VM_NUM = -2;
 
@@ -93,7 +95,7 @@ public class DUnitLauncher {
 
   static final String MASTER_PARAM = "DUNIT_MASTER";
   static final String RMI_PORT_PARAM = "gemfire.DUnitLauncher.RMI_PORT";
-  static final String VM_NUM_PARAM = "gemfire.DUnitLauncher.VM_NUM";
+  public static final String VM_NUM_PARAM = "gemfire.DUnitLauncher.VM_NUM";
 
   private static final String LAUNCHED_PROPERTY = "gemfire.DUnitLauncher.LAUNCHED";
 
@@ -157,7 +159,7 @@ public class DUnitLauncher {
     int namingPort = AvailablePortHelper.getRandomAvailableTCPPort();
     Registry registry = LocateRegistry.createRegistry(namingPort);
 
-    final ProcessManager processManager = new ProcessManager(namingPort, registry);
+    processManager = new ProcessManager(namingPort, registry);
     Master master = new Master(registry, processManager);
     registry.bind(MASTER_PARAM, master);
 

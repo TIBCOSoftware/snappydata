@@ -1,27 +1,10 @@
-/*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
-
 package io.snappydata.benchmark
 
 import java.sql.{Date, Statement}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
 
 
 /**
@@ -84,15 +67,18 @@ object TPCHColumnPartitionedTable  {
 //    }
 //  }
 
-  def createAndPopulateOrderTable(props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val orderData = sc.textFile(s"$path/orders.tbl")
     val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
-    val orderDF = snappyContext.createDataFrame(orderReadings)
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    println("KBKBKBKB: Buckets : " + buckets)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
 
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("ORDERS", ifExists = true)
       //snappyContext.dropExternalTable("ORDERS", ifExists = true)
       //snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
@@ -102,8 +88,8 @@ object TPCHColumnPartitionedTable  {
       println("Created Table ORDERS")
     } else {
       orderDF.registerTempTable("ORDERS")
-      snappyContext.cacheTable("ORDERS")
-      val cnts = snappyContext.sql("select count(*) from ORDERS").collect()
+      sqlContext.cacheTable("ORDERS")
+      val cnts = sqlContext.sql("select count(*) from ORDERS").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -182,15 +168,16 @@ object TPCHColumnPartitionedTable  {
 //    }
 //  }
 
-  def createAndPopulateLineItemTable(props: Map[String, String], snappyContext: SnappyContext, path:String, isSnappy:Boolean): Unit = {
+  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
-    val lineOrderDF = snappyContext.createDataFrame(lineItemReadings)
+    val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
+      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
 
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       //snappyContext.dropExternalTable("LINEITEM", ifExists = true)
       snappyContext.dropTable("LINEITEM", ifExists = true)
       //snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
@@ -200,8 +187,8 @@ object TPCHColumnPartitionedTable  {
       println("Created Table LINEITEM")
     } else {
       lineOrderDF.registerTempTable("LINEITEM")
-      snappyContext.cacheTable("LINEITEM")
-      var cnts = snappyContext.sql("select count(*) from LINEITEM").collect()
+      sqlContext.cacheTable("LINEITEM")
+      var cnts = sqlContext.sql("select count(*) from LINEITEM").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)

@@ -68,7 +68,7 @@ public class StandAloneDUnitEnv extends DUnitEnv {
 
   @Override
   public File getWorkingDirectory(int pid) {
-    return ProcessManager.getVMDir(pid);
+    return DUnitLauncher.processManager.getVMDir(pid, false);
   }
 
 }

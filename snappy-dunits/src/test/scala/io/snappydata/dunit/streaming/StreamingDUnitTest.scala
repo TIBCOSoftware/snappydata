@@ -108,7 +108,6 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val tweetsStream = SnappyStreamingContext.getActive.get
         .getSchemaDStream("tweetsTable")
     tweetsStream.foreachDataFrame { df =>
-      // println("SW: inserting into fullTweetsTable rows: " + df.collect().mkString("\n"))
       df.write.insertInto("fullTweetsTable")
     }
 

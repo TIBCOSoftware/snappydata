@@ -1,25 +1,8 @@
-/*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
-
 package io.snappydata.benchmark
 
 import java.sql.Statement
 
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
 
 /**
  * Created by kishor on 19/10/15.
@@ -58,13 +41,14 @@ object TPCHReplicatedTable {
     println("Created Table SUPPLIER")
   }
 
-  def createPopulateRegionTable(usingOptionString: String, props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulateRegionTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val regionData = sc.textFile(s"$path/region.tbl")
     val regionReadings = regionData.map(s => s.split('|')).map(s => parseRegionRow(s))
-    val regionDF = snappyContext.createDataFrame(regionReadings)
+    val regionDF = sqlContext.createDataFrame(regionReadings)
     if (isSnappy) {
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
         """CREATE TABLE REGION (
             R_REGIONKEY INTEGER NOT NULL PRIMARY KEY,
@@ -76,8 +60,8 @@ object TPCHReplicatedTable {
       regionDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("REGION")
     } else {
       regionDF.registerTempTable("REGION")
-      snappyContext.cacheTable("REGION")
-      val cnts = snappyContext.sql("select count(*) from REGION").collect()
+      sqlContext.cacheTable("REGION")
+      val cnts = sqlContext.sql("select count(*) from REGION").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -85,13 +69,14 @@ object TPCHReplicatedTable {
     }
   }
 
-  def createPopulateNationTable(usingOptionString: String, props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulateNationTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val nationData = sc.textFile(s"$path/nation.tbl")
     val nationReadings = nationData.map(s => s.split('|')).map(s => parseNationRow(s))
-    val nationDF = snappyContext.createDataFrame(nationReadings)
+    val nationDF = sqlContext.createDataFrame(nationReadings)
     if (isSnappy) {
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
         """CREATE TABLE NATION (
             N_NATIONKEY INTEGER NOT NULL PRIMARY KEY,
@@ -104,8 +89,8 @@ object TPCHReplicatedTable {
       nationDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("NATION")
     } else {
       nationDF.registerTempTable("NATION")
-      snappyContext.cacheTable("NATION")
-      val cnts = snappyContext.sql("select count(*) from NATION").collect()
+      sqlContext.cacheTable("NATION")
+      val cnts = sqlContext.sql("select count(*) from NATION").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -113,13 +98,14 @@ object TPCHReplicatedTable {
     }
   }
 
-  def createPopulateSupplierTable(usingOptionString: String, props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulateSupplierTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val supplierData = sc.textFile(s"$path/supplier.tbl")
     val supplierReadings = supplierData.map(s => s.split('|')).map(s => parseSupplierRow(s))
-    val supplierDF = snappyContext.createDataFrame(supplierReadings)
+    val supplierDF = sqlContext.createDataFrame(supplierReadings)
     if (isSnappy) {
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
         """CREATE TABLE SUPPLIER (
             S_SUPPKEY INTEGER NOT NULL PRIMARY KEY,
@@ -135,8 +121,8 @@ object TPCHReplicatedTable {
       supplierDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("SUPPLIER")
     } else {
       supplierDF.registerTempTable("SUPPLIER")
-      snappyContext.cacheTable("SUPPLIER")
-      val cnts = snappyContext.sql("select count(*) from SUPPLIER").collect()
+      sqlContext.cacheTable("SUPPLIER")
+      val cnts = sqlContext.sql("select count(*) from SUPPLIER").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
