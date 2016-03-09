@@ -55,7 +55,6 @@ class SnappyContextTests(ReusedPySparkTestCase):
     tablename = "TESTTABLE"
 
     def test_get_or_create(self):
-        print " running test get or create"
         sqlcontext = SnappyContext.getOrCreate(self.sc)
         self.assertTrue(SnappyContext.getOrCreate(self.sc) is sqlcontext)
 
