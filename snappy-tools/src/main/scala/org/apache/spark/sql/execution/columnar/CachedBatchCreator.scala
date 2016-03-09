@@ -14,9 +14,8 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columntable
+package org.apache.spark.sql.execution.columnar
 
-import java.nio.ByteBuffer
 import java.util.UUID
 
 import scala.collection.mutable
@@ -27,13 +26,11 @@ import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
 
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.columnar.{CachedBatch, CachedBatchHolder, ColumnAccessor, ColumnBuilder, ColumnType}
-import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String

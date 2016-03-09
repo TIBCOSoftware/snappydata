@@ -87,7 +87,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
           }
         }
     }
-    val conn = JdbcUtils.createConnection(connProperties.url, connProperties.connProps)
+    val conn = JdbcUtils.createConnectionFactory(connProperties.url,
+      connProperties.connProps)()
     conn.close()
     GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
       Constant.COLUMN_MIN_BATCH_SIZE)

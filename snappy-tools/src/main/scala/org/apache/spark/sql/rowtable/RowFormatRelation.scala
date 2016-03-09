@@ -90,7 +90,8 @@ class RowFormatRelation(
           filters,
           parts,
           blockMap,
-          connProperties
+          connProperties,
+          url
         ).asInstanceOf[RDD[Row]]
 
       case _ =>

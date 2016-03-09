@@ -168,7 +168,7 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     Map.empty[InternalDistributedMember, BlockManagerId],
     properties: Properties = new Properties())
     extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns,
-      connectionProperties, filters, partitions, blockMap, properties) {
+      connectionProperties, filters, partitions, blockMap, properties, connectionProperties.url) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {

@@ -56,9 +56,10 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     partitions: Array[Partition] = Array.empty[Partition],
     blockMap: Map[InternalDistributedMember, BlockManagerId] =
     Map.empty[InternalDistributedMember, BlockManagerId],
-    properties: Properties = new Properties())
+    properties: Properties = new Properties(),
+    url : String)
     extends JDBCRDD(sc, getConnection, schema, tableName, columns,
-      filters, partitions, properties) {
+      filters, partitions, url, properties) {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
