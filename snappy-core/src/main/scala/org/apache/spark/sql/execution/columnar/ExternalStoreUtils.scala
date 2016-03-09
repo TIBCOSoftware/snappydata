@@ -300,6 +300,26 @@ private[sql] object ExternalStoreUtils extends Logging {
     })
   }
 
+
+  def columnIndicesAndDataTypes(requestedSchema: StructType,
+      schema : StructType): (Seq[Int], Seq[DataType]) = {
+
+    if (requestedSchema.isEmpty) {
+
+      val (narrowestOrdinal, narrowestDataType) =
+        schema.fields.zipWithIndex.map { case (a, ordinal) =>
+          ordinal -> a.dataType
+        } minBy { case (_, dataType) =>
+          ColumnType(dataType).defaultSize
+        }
+      Seq(narrowestOrdinal) -> Seq(narrowestDataType)
+    } else {
+      requestedSchema.map { a =>
+        schema.fieldIndex(a.fieldName) -> a.dataType
+      }.unzip
+    }
+  }
+
   def getInsertString(table: String, userSchema: StructType) = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
     sb.append(table).append(" VALUES (")
@@ -498,6 +518,7 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
     rows
   }
+
 }
 
 object ConnectionType extends Enumeration {
