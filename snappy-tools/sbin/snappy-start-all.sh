@@ -18,7 +18,7 @@
 #
 
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
-# conf/locators, conf/leads and conf/servers files repsectively
+# conf/locators, conf/leads and conf/servers files respectively
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
@@ -27,11 +27,19 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
 
+if [ "$1" == "rowstore" ]; then
+    args="-row-store=true"
+else
+    args=
+fi
+
 # Start Locators
-"$sbin"/snappy-locators.sh start
+"$sbin"/snappy-locators.sh start $args
 
 # Start Servers
-"$sbin"/snappy-servers.sh start
+"$sbin"/snappy-servers.sh start $args
 
 # Start Leads
-"$sbin"/snappy-leads.sh start
+if [ "$1" != "rowstore" ]; then
+    "$sbin"/snappy-leads.sh start
+fi
