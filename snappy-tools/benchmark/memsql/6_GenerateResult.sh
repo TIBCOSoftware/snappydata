@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-source PerfRun.conf.template
+source PerfRun.conf
 
 
 directory=$outputLocation/$(date "+%Y.%m.%d-%H.%M.%S")_$dataSize$queries

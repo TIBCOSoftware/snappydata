@@ -72,7 +72,7 @@ object TPCHRowPartitionedTable {
     println("Created Table CUSTOMER")
   }
 
-  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val partData = sc.textFile(s"$path/part.tbl")
@@ -82,7 +82,7 @@ object TPCHRowPartitionedTable {
     if (isSnappy) {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
-        """CREATE TABLE PART (
+        s"""CREATE TABLE PART (
                 P_PARTKEY INTEGER NOT NULL PRIMARY KEY,
                 P_NAME VARCHAR(55) NOT NULL,
                 P_MFGR VARCHAR(25) NOT NULL,
@@ -93,6 +93,7 @@ object TPCHRowPartitionedTable {
                 P_RETAILPRICE DECIMAL(15,2) NOT NULL,
                 P_COMMENT VARCHAR(23) NOT NULL
              ) PARTITION BY COLUMN (P_PARTKEY)
+             BUCKETS $buckets
         """ + usingOptionString
       )
       println("Created Table PART")
@@ -108,7 +109,7 @@ object TPCHRowPartitionedTable {
     }
   }
 
-  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, bukcets:String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val partSuppData = sc.textFile(s"$path/partsupp.tbl")
@@ -118,7 +119,7 @@ object TPCHRowPartitionedTable {
     if (isSnappy) {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
-        """CREATE TABLE PARTSUPP (
+        s"""CREATE TABLE PARTSUPP (
                 PS_PARTKEY INTEGER NOT NULL,
                 PS_SUPPKEY INTEGER NOT NULL,
                 PS_AVAILQTY INTEGER NOT NULL,
@@ -126,6 +127,7 @@ object TPCHRowPartitionedTable {
                 PS_COMMENT VARCHAR(199) NOT NULL,
                 PRIMARY KEY (PS_PARTKEY, PS_SUPPKEY)
              ) PARTITION BY COLUMN (PS_PARTKEY) COLOCATE WITH (PART)
+             BUCKETS $bukcets
         """ + usingOptionString
       )
       println("Created Table PARTSUPP")
@@ -174,7 +176,7 @@ object TPCHRowPartitionedTable {
 //    }
 //  }
 
-  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
     //val snappyContext = snappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
     val customerData = sc.textFile(s"$path/customer.tbl")
@@ -184,7 +186,7 @@ object TPCHRowPartitionedTable {
     if (isSnappy) {
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
-        """CREATE TABLE CUSTOMER (
+        s"""CREATE TABLE CUSTOMER (
                 C_CUSTKEY INTEGER NOT NULL PRIMARY KEY,
                 C_NAME VARCHAR(25) NOT NULL,
                 C_ADDRESS VARCHAR(40) NOT NULL,
@@ -194,6 +196,7 @@ object TPCHRowPartitionedTable {
                 C_MKTSEGMENT VARCHAR(10) NOT NULL,
                 C_COMMENT VARCHAR(117) NOT NULL
              ) PARTITION BY COLUMN (C_CUSTKEY)
+             BUCKETS $buckets
         """ + usingOptionString
       )
       println("Created Table CUSTOMER")
