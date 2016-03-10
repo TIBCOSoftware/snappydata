@@ -87,7 +87,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1007)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   // changing the test to such that batches are created
@@ -136,7 +136,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
 
@@ -158,7 +158,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 0)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -200,7 +200,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob3(): Unit = {
@@ -244,7 +244,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob4(): Unit = {
@@ -296,7 +296,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob5(): Unit = {
@@ -354,7 +354,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(shadowRegion.size() > 0)
 
     snc.dropTable(tableNameWithPartition, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob6(): Unit = {
@@ -411,7 +411,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(shadowRegion.size() > 0)
 
     snc.dropTable("COLUMNTABLE4", ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob7(): Unit = {
@@ -469,7 +469,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(shadowRegion.size() > 0)
 
     snc.dropTable("COLUMNTABLE4", ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 }
 
