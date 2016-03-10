@@ -1,25 +1,8 @@
-/*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
-
 package io.snappydata.benchmark
 
 import java.sql.Statement
 
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
 
 
 /**
@@ -89,16 +72,17 @@ object TPCHRowPartitionedTable {
     println("Created Table CUSTOMER")
   }
 
-  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val partData = sc.textFile(s"$path/part.tbl")
     val partReadings = partData.map(s => s.split('|')).map(s => parsePartRow(s))
-    val partDF = snappyContext.createDataFrame(partReadings)
+    val partDF = sqlContext.createDataFrame(partReadings)
 
     if (isSnappy) {
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
-        """CREATE TABLE PART (
+        s"""CREATE TABLE PART (
                 P_PARTKEY INTEGER NOT NULL PRIMARY KEY,
                 P_NAME VARCHAR(55) NOT NULL,
                 P_MFGR VARCHAR(25) NOT NULL,
@@ -109,14 +93,15 @@ object TPCHRowPartitionedTable {
                 P_RETAILPRICE DECIMAL(15,2) NOT NULL,
                 P_COMMENT VARCHAR(23) NOT NULL
              ) PARTITION BY COLUMN (P_PARTKEY)
+             BUCKETS $buckets
         """ + usingOptionString
       )
       println("Created Table PART")
       partDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("PART")
     } else {
       partDF.registerTempTable("PART")
-      snappyContext.cacheTable("PART")
-      val cnts = snappyContext.sql("select count(*) from PART").collect()
+      sqlContext.cacheTable("PART")
+      val cnts = sqlContext.sql("select count(*) from PART").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -124,16 +109,17 @@ object TPCHRowPartitionedTable {
     }
   }
 
-  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, bukcets:String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val partSuppData = sc.textFile(s"$path/partsupp.tbl")
     val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => parsePartSuppRow(s))
-    val partSuppDF = snappyContext.createDataFrame(partSuppReadings)
+    val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
 
     if (isSnappy) {
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
-        """CREATE TABLE PARTSUPP (
+        s"""CREATE TABLE PARTSUPP (
                 PS_PARTKEY INTEGER NOT NULL,
                 PS_SUPPKEY INTEGER NOT NULL,
                 PS_AVAILQTY INTEGER NOT NULL,
@@ -141,14 +127,15 @@ object TPCHRowPartitionedTable {
                 PS_COMMENT VARCHAR(199) NOT NULL,
                 PRIMARY KEY (PS_PARTKEY, PS_SUPPKEY)
              ) PARTITION BY COLUMN (PS_PARTKEY) COLOCATE WITH (PART)
+             BUCKETS $bukcets
         """ + usingOptionString
       )
       println("Created Table PARTSUPP")
       partSuppDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("PARTSUPP")
     } else {
       partSuppDF.registerTempTable("PARTSUPP")
-      snappyContext.cacheTable("PARTSUPP")
-      val cnts = snappyContext.sql("select count(*) from PARTSUPP").collect()
+      sqlContext.cacheTable("PARTSUPP")
+      val cnts = sqlContext.sql("select count(*) from PARTSUPP").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -189,16 +176,17 @@ object TPCHRowPartitionedTable {
 //    }
 //  }
 
-  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
     //val snappyContext = snappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val customerData = sc.textFile(s"$path/customer.tbl")
     val customerReadings = customerData.map(s => s.split('|')).map(s => parseCustomerRow(s))
-    val customerDF = snappyContext.createDataFrame(customerReadings)
+    val customerDF = sqlContext.createDataFrame(customerReadings)
 
     if (isSnappy) {
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.sql(
-        """CREATE TABLE CUSTOMER (
+        s"""CREATE TABLE CUSTOMER (
                 C_CUSTKEY INTEGER NOT NULL PRIMARY KEY,
                 C_NAME VARCHAR(25) NOT NULL,
                 C_ADDRESS VARCHAR(40) NOT NULL,
@@ -208,14 +196,15 @@ object TPCHRowPartitionedTable {
                 C_MKTSEGMENT VARCHAR(10) NOT NULL,
                 C_COMMENT VARCHAR(117) NOT NULL
              ) PARTITION BY COLUMN (C_CUSTKEY)
+             BUCKETS $buckets
         """ + usingOptionString
       )
       println("Created Table CUSTOMER")
       customerDF.write.format("row").mode(SaveMode.Append)/*.options(props)*/.saveAsTable("CUSTOMER")
     } else {
       customerDF.registerTempTable("CUSTOMER")
-      snappyContext.cacheTable("CUSTOMER")
-      val cnts = snappyContext.sql("select count(*) from CUSTOMER").collect()
+      sqlContext.cacheTable("CUSTOMER")
+      val cnts = sqlContext.sql("select count(*) from CUSTOMER").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
