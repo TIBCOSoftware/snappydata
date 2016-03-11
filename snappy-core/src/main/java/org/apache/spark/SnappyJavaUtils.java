@@ -30,7 +30,7 @@ public class SnappyJavaUtils {
    * A static factory method to create a {@link org.apache.spark.sql.DataFrameJavaFunctions} based on an existing {@link
    * DataFrame} instance.
    */
-  public static DataFrameJavaFunctions snappyApis(DataFrame dataFrame) {
+  public static DataFrameJavaFunctions snappyJavaUtil(DataFrame dataFrame) {
     return new DataFrameJavaFunctions(dataFrame);
   }
 
@@ -39,7 +39,7 @@ public class SnappyJavaUtils {
    * A static factory method to create a {@link org.apache.spark.sql.DataFrameWriterJavaFunctions} based on an existing {@link
    * DataFrameWriter} instance.
    */
-  public static DataFrameWriterJavaFunctions snappyApis(DataFrameWriter dataFrameWriter) {
+  public static DataFrameWriterJavaFunctions snappyJavaUtil(DataFrameWriter dataFrameWriter) {
     return new DataFrameWriterJavaFunctions(dataFrameWriter);
   }
 
@@ -48,7 +48,7 @@ public class SnappyJavaUtils {
    * A static factory method to create a {@link org.apache.spark.RDDJavaFunctions} based on an existing {@link
    * JavaRDD} instance.
    */
-  public static <T> RDDJavaFunctions<T> snappyApis(JavaRDD<T> rdd){
+  public static <T> RDDJavaFunctions<T> snappyJavaUtil(JavaRDD<T> rdd){
     return new RDDJavaFunctions(rdd);
   }
 
