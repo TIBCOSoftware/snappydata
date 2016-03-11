@@ -151,8 +151,11 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 
   override def hasNext: Boolean = _hasNext
 
+  val numCols = requiredColumns.length
+  val colBuffers = new Array[Array[Byte]](numCols)
+
   override def next() = {
-    val result = getCachedBatchFromRow(requiredColumns, rs)
+    val result = getCachedBatchFromRow(rs)
     _hasNext = moveNext()
     result
   }
@@ -171,11 +174,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     }
   }
 
-  private def getCachedBatchFromRow(requiredColumns: Array[String],
-      rs: ResultSet): CachedBatch = {
-    // it will be having the information of the columns to fetch
-    val numCols = requiredColumns.length
-    val colBuffers = new Array[Array[Byte]](numCols)
+  private def getCachedBatchFromRow(rs: ResultSet): CachedBatch = {
     var i = 0
     while (i < numCols) {
       colBuffers(i) = rs.getBytes(i + 1)
