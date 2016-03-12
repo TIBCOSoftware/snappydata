@@ -72,3 +72,4 @@ test {
   maxHeapSize '2g'
   dependsOn ':cleanJUnit'
 }
+check.dependsOn test, scalaTest
