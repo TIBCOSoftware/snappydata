@@ -50,7 +50,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.1.0-PREVIEW'
+  version = '0.1.1-PREVIEW'
 
   // apply compiler options
   compileJava.options.encoding = 'UTF-8'
