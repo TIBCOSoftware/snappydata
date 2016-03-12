@@ -5,6 +5,7 @@ import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Stat
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import org.junit.Assert
 
 import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
@@ -142,7 +143,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-  def testSNAP193(): Unit = {
+  def testSNAP193_608(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -151,7 +152,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val stmt = conn.createStatement()
 
     val numExpectedRows = 188894
-    val rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
+    var rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
     assert(rs.next())
     assert(rs.getInt(1) == numExpectedRows, "got rows=" + rs.getInt(1))
     assert(!rs.next())
@@ -161,6 +162,20 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         md.getColumnName(1) + " tableName=" + md.getTableName(1))
     assert(md.getColumnCount == 1)
     assert(md.getColumnName(1) == "_c0", "columnName=" + md.getColumnName(1))
+
+    // check no hang with decent number of runs (SNAP-608)
+    rs.close()
+    for (i <- 0 until 20) {
+      rs = stmt.executeQuery("select YEARI, MONTHI, DAYOFMONTH, DAYOFWEEK, " +
+          "DEPTIME, CRSDEPTIME, UNIQUECARRIER " +
+          "from AIRLINE limit 2")
+      var nrows = 0
+      while (rs.next()) {
+        nrows += 1
+      }
+      rs.close()
+      Assert.assertEquals(2, nrows)
+    }
 
     // below hangs in CREATE TABLE for some reason; need to check
     /*
@@ -177,7 +192,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     while (rs.next()) {
       cnt += 1
     }
-    assert(cnt == 10000, "got cnt=" + cnt)
+    rs.close()
+    Assert.assertEquals(10000, cnt)
     */
 
     conn.close()

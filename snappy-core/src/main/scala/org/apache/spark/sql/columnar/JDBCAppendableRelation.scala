@@ -29,7 +29,6 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
@@ -61,7 +60,7 @@ case class JDBCAppendableRelation(
 
   override val needConversion: Boolean = false
 
-  val driver = DriverRegistry.getDriverClassName(externalStore.connProperties.url)
+  val driver = Utils.registerDriverUrl(externalStore.connProperties.url)
 
   final val dialect = JdbcDialects.get(externalStore.connProperties.url)
 
