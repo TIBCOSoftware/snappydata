@@ -143,7 +143,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-  def testSNAP193_608(): Unit = {
+  def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -163,6 +163,18 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     assert(md.getColumnCount == 1)
     assert(md.getColumnName(1) == "_c0", "columnName=" + md.getColumnName(1))
 
+    // check successful run with larger number (>8) of columns (SNAP-607)
+    rs.close()
+    rs = stmt.executeQuery("select YEARI, MONTHI, DAYOFMONTH, DAYOFWEEK, " +
+        "DEPTIME, CRSDEPTIME, ARRTIME, CRSARRTIME, UNIQUECARRIER " +
+        "from AIRLINE limit 10")
+    var nrows = 0
+    while (rs.next()) {
+      nrows += 1
+    }
+    rs.close()
+    Assert.assertEquals(10, nrows)
+
     // check no hang with decent number of runs (SNAP-608)
     rs.close()
     for (i <- 0 until 20) {
@@ -177,8 +189,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
       Assert.assertEquals(2, nrows)
     }
 
-    // below hangs in CREATE TABLE for some reason; need to check
-    /*
+    // below hangs in CREATE TABLE (SNAP-609)
     stmt.execute("CREATE TABLE airline2 USING column AS " +
         "(select * from airline limit 10000)")
     rs = stmt.executeQuery("select count(*) from Airline2")
@@ -194,7 +205,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     rs.close()
     Assert.assertEquals(10000, cnt)
-    */
 
     conn.close()
   }
