@@ -246,7 +246,6 @@ subprojects {
       }
     }
   })
-  check.dependsOn test, scalaTest
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
@@ -732,6 +731,9 @@ task checkAll {
   }
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+  }
+  if (project.hasProperty('store')) {
+    dependsOn ':snappy-store:checkAll'
   }
   mustRunAfter buildAll
 }
