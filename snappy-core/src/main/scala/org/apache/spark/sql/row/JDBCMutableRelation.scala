@@ -58,7 +58,7 @@ class JDBCMutableRelation(
 
   override val needConversion: Boolean = false
 
-  val driver = DriverRegistry.getDriverClassName(url)
+  val driver = Utils.registerDriverUrl(url)
 
   final val dialect = JdbcDialects.get(url)
 
@@ -177,7 +177,7 @@ class JDBCMutableRelation(
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.insert: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
@@ -203,7 +203,7 @@ class JDBCMutableRelation(
   }
 
   override def executeUpdate(sql: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
@@ -233,7 +233,7 @@ class JDBCMutableRelation(
               s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
     }
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
@@ -252,7 +252,7 @@ class JDBCMutableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val whereStr =

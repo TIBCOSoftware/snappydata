@@ -41,35 +41,45 @@ import org.apache.spark.{Logging, SparkContext}
 /**
  * Utility methods used by external storage layers.
  */
-private[sql] object ExternalStoreUtils extends Logging {
+object ExternalStoreUtils extends Logging {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS = "53"
   final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "11"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
 
+  private def addProperty(props: Map[String, String], key: String,
+      default: String): Map[String, String] = {
+    if (props.contains(key)) props
+    else props + (key -> default)
+  }
+
+  private def defaultMaxExternalPoolSize: String =
+    String.valueOf(math.max(32, Runtime.getRuntime.availableProcessors() * 4))
+
+  private def defaultMaxEmbeddedPoolSize: String =
+    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 6))
+
   def getAllPoolProperties(url: String, driver: String,
-      poolProps: Map[String, String], hikariCP: Boolean) = {
-    val urlProp = if (hikariCP) "jdbcUrl" else "url"
-    val driverClassProp = "driverClassName"
-    val props = {
-      if (driver == null || driver.isEmpty) {
-        if (poolProps.isEmpty) {
-          Map(urlProp -> url)
-        } else {
-          poolProps + (urlProp -> url)
-        }
-      } else if (poolProps.isEmpty) {
-        Map(urlProp -> url, driverClassProp -> driver)
-      } else {
-        poolProps + (urlProp -> url) + (driverClassProp -> driver)
-      }
+      poolProps: Map[String, String], hikariCP: Boolean,
+      isEmbedded: Boolean): Map[String, String] = {
+    // setup default pool properties
+    var props = poolProps
+    if (driver != null && !driver.isEmpty) {
+      props = addProperty(props, "driverClassName", driver)
     }
+    val defaultMaxPoolSize = if (isEmbedded) defaultMaxEmbeddedPoolSize
+    else defaultMaxExternalPoolSize
     if (hikariCP) {
-      props + ("minimumIdle" -> "4")
+      props = props + ("jdbcUrl" -> url)
+      props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
+      props = addProperty(props, "minimumIdle", "4")
     } else {
-      props + ("initialSize" -> "4")
+      props = props + ("url" -> url)
+      props = addProperty(props, "maxActive", defaultMaxPoolSize)
+      props = addProperty(props, "initialSize", "4")
     }
+    props
   }
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
@@ -179,8 +189,8 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def validateAndGetAllProps(sc : SparkContext,
-      parameters: mutable.Map[String, String]) :ConnectionProperties = {
+  def validateAndGetAllProps(sc: SparkContext,
+      parameters: mutable.Map[String, String]): ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
@@ -199,7 +209,7 @@ private[sql] object ExternalStoreUtils extends Logging {
         throw new IllegalArgumentException("ExternalStoreUtils: " +
             s"unsupported pool implementation '$p' " +
             s"(supported values: tomcat, hikari)")
-      case None => false
+      case None => Constant.DEFAULT_USE_HIKARICP
     }
     val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
       val eqIndex = s.indexOf('=')
@@ -214,13 +224,15 @@ private[sql] object ExternalStoreUtils extends Logging {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    dialect match {
+    val isEmbedded = dialect match {
+      case GemFireXDDialect => true
       case GemFireXDClientDialect =>
         connProps.setProperty("route-query", "false")
-      case _ =>
+        false
+      case _ => false
     }
     val allPoolProps = getAllPoolProperties(url, driver,
-      poolProps, hikariCP)
+      poolProps, hikariCP, isEmbedded)
     new ConnectionProperties(url, driver, allPoolProps, connProps, hikariCP)
   }
 
@@ -244,11 +256,11 @@ private[sql] object ExternalStoreUtils extends Logging {
       poolProps: Map[String, String], connProps: Properties,
       hikariCP: Boolean): () => Connection = {
     () => {
-      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
-        poolProps, connProps, hikariCP)
+      registerDriver(driver)
+      ConnectionPool.getPoolConnection(id, dialect, poolProps,
+        connProps, hikariCP)
     }
   }
-
 
   def getConnectionType(url: String) = {
     JdbcDialects.get(url) match {
@@ -543,4 +555,6 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
   }
 }
-case class ConnectionProperties(url:String , driver:String, poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
+
+case class ConnectionProperties(url: String, driver: String,
+    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
