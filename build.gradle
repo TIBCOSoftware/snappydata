@@ -736,7 +736,7 @@ task checkAll {
     dependsOn ':snappy-aqp:check'
   }
   if (project.hasProperty('spark')) {
-    dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+    dependsOn ':snappy-spark:check'
   }
   if (project.hasProperty('store')) {
     dependsOn ':snappy-store:checkAll'
