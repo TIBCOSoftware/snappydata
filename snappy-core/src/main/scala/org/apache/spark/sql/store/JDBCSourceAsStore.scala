@@ -207,10 +207,10 @@ final class CachedBatchIteratorOnRS(conn: Connection,
     stmt: Statement, rs: ResultSet, context: TaskContext)
     extends ResultSetIterator[CachedBatch](conn, stmt, rs, context) {
 
+  private val numCols = requiredColumns.length
+  private val colBuffers = new Array[Array[Byte]](numCols)
+
   protected override def getNextValue(rs: ResultSet): CachedBatch = {
-    // it will be having the information of the columns to fetch
-    val numCols = requiredColumns.length
-    val colBuffers = new Array[Array[Byte]](numCols)
     var i = 0
     while (i < numCols) {
       colBuffers(i) = rs.getBytes(i + 1)
