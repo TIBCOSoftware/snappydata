@@ -20,7 +20,6 @@ import java.sql.{Connection, ResultSet, Statement}
 import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
@@ -34,11 +33,11 @@ import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{ResultSetIterator, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
+import org.apache.spark.{Partition, SparkContext, TaskContext}
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -199,178 +198,109 @@ class RowFormatScanRDD(@transient sc: SparkContext,
 }
 
 final class InternalRowIteratorOnRS(conn: Connection,
-    stmt: Statement, rs: ResultSet, context: TaskContext,
-    schema: StructType) extends Iterator[InternalRow] with Logging {
+    stmt: Statement, rs: ResultSet, context: TaskContext, schema: StructType)
+    extends ResultSetIterator[InternalRow](conn, stmt, rs, context) {
 
   private[this] val types = schema.fields.map(_.dataType)
   private[this] val mutableRow = new SpecificMutableRow(types)
 
-  private[this] var hasNextValue = true
-  private[this] var nextValue: InternalRow = _
-
-  context.addTaskCompletionListener { context => close() }
-
-  def getNext: InternalRow = {
-    if (rs.next() /* rs.lightWeightNext() */) {
-      var i = 0
-      while (i < types.length) {
-        val pos = i + 1
-        types(i) match {
-          case StringType =>
-            // TODO: can use direct bytes from CompactExecRows
-            mutableRow.update(i, UTF8String.fromString(rs.getString(pos)))
-          case IntegerType =>
-            val iv = rs.getInt(pos)
-            if (iv != 0 || !rs.wasNull()) {
-              mutableRow.setInt(i, iv)
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          case LongType =>
-            if (schema.fields(i).metadata.contains("binarylong")) {
-              val bytes = rs.getBytes(pos)
-              if (bytes ne null) {
-                var lv = 0L
-                var j = 0
-                while (j < bytes.size) {
-                  lv = 256 * lv + (255 & bytes(j))
-                  j = j + 1
-                }
-                mutableRow.setLong(i, lv)
-              } else {
-                mutableRow.setNullAt(i)
-              }
-            } else {
-              val lv = rs.getLong(pos)
-              if (lv != 0L || !rs.wasNull()) {
-                mutableRow.setLong(i, lv)
-              } else {
-                mutableRow.setNullAt(i)
-              }
-            }
-          case DoubleType =>
-            val dv = rs.getDouble(pos)
-            if (!rs.wasNull()) {
-              mutableRow.setDouble(i, dv)
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          case FloatType =>
-            val fv = rs.getFloat(pos)
-            if (!rs.wasNull()) {
-              mutableRow.setFloat(i, fv)
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          case BooleanType =>
-            val bv = rs.getBoolean(pos)
-            if (bv || !rs.wasNull()) {
-              mutableRow.setBoolean(i, bv)
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          // When connecting with Oracle DB through JDBC, the precision and
-          // scale of BigDecimal object returned by ResultSet.getBigDecimal
-          // is not correctly matched to the table schema reported by
-          // ResultSetMetaData.getPrecision and ResultSetMetaData.getScale.
-          // If inserting values like 19999 into a column with NUMBER(12, 2)
-          // type, you get through a BigDecimal object with scale as 0.
-          // But the dataframe schema has correct type as DecimalType(12, 2).
-          // Thus, after saving the dataframe into parquet file and then
-          // retrieve it, you will get wrong result 199.99.
-          // So it is needed to set precision and scale for Decimal
-          // based on JDBC metadata.
-          case DecimalType.Fixed(p, s) =>
-            val decimalVal = rs.getBigDecimal(pos)
-            if (decimalVal ne null) {
-              mutableRow.update(i, Decimal(decimalVal, p, s))
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          case TimestampType =>
-            val t = rs.getTimestamp(pos)
-            if (t ne null) {
-              mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(t))
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          case DateType =>
-            // DateTimeUtils.fromJavaDate does not handle null value, so we need to check it.
-            val dateVal = rs.getDate(pos)
-            if (dateVal ne null) {
-              mutableRow.setInt(i, DateTimeUtils.fromJavaDate(dateVal))
-            } else {
-              mutableRow.setNullAt(i)
-            }
-          case BinaryType => mutableRow.update(i, rs.getBytes(pos))
-          case _ => throw new IllegalArgumentException(
-            s"Unsupported field ${schema.fields(i)}")
-        }
-        i = i + 1
-      }
-      mutableRow
-    } else {
-      null.asInstanceOf[InternalRow]
-    }
-  }
-
-  def close() {
-    if (!hasNextValue) return
-
-    try {
-      // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
-      // rs.lightWeightClose()
-      rs.close()
-    } catch {
-      case e: Exception => logWarning("Exception closing resultSet", e)
-    }
-    try {
-      stmt.close()
-    } catch {
-      case e: Exception => logWarning("Exception closing statement", e)
-    }
-    try {
-      conn.close()
-      logDebug("closed connection for task " + context.partitionId())
-    } catch {
-      case e: Exception => logWarning("Exception closing connection", e)
-    }
-    hasNextValue = false
-  }
-
-  override def hasNext: Boolean = {
-    if (hasNextValue) {
-      if (nextValue eq null) {
-        try {
-          nextValue = getNext
-        } catch {
-          case NonFatal(e) =>
-            logWarning("Exception iterating resultSet", e)
-        } finally {
-          if (nextValue eq null) {
-            close()
+  override def getNextValue(rs: ResultSet): InternalRow = {
+    var i = 0
+    while (i < types.length) {
+      val pos = i + 1
+      types(i) match {
+        case StringType =>
+          // TODO: can use direct bytes from CompactExecRows
+          mutableRow.update(i, UTF8String.fromString(rs.getString(pos)))
+        case IntegerType =>
+          val iv = rs.getInt(pos)
+          if (iv != 0 || !rs.wasNull()) {
+            mutableRow.setInt(i, iv)
+          } else {
+            mutableRow.setNullAt(i)
           }
-        }
-        hasNextValue
-      } else {
-        true
+        case LongType =>
+          if (schema.fields(i).metadata.contains("binarylong")) {
+            val bytes = rs.getBytes(pos)
+            if (bytes ne null) {
+              var lv = 0L
+              var j = 0
+              while (j < bytes.size) {
+                lv = 256 * lv + (255 & bytes(j))
+                j = j + 1
+              }
+              mutableRow.setLong(i, lv)
+            } else {
+              mutableRow.setNullAt(i)
+            }
+          } else {
+            val lv = rs.getLong(pos)
+            if (lv != 0L || !rs.wasNull()) {
+              mutableRow.setLong(i, lv)
+            } else {
+              mutableRow.setNullAt(i)
+            }
+          }
+        case DoubleType =>
+          val dv = rs.getDouble(pos)
+          if (!rs.wasNull()) {
+            mutableRow.setDouble(i, dv)
+          } else {
+            mutableRow.setNullAt(i)
+          }
+        case FloatType =>
+          val fv = rs.getFloat(pos)
+          if (!rs.wasNull()) {
+            mutableRow.setFloat(i, fv)
+          } else {
+            mutableRow.setNullAt(i)
+          }
+        case BooleanType =>
+          val bv = rs.getBoolean(pos)
+          if (bv || !rs.wasNull()) {
+            mutableRow.setBoolean(i, bv)
+          } else {
+            mutableRow.setNullAt(i)
+          }
+        // When connecting with Oracle DB through JDBC, the precision and
+        // scale of BigDecimal object returned by ResultSet.getBigDecimal
+        // is not correctly matched to the table schema reported by
+        // ResultSetMetaData.getPrecision and ResultSetMetaData.getScale.
+        // If inserting values like 19999 into a column with NUMBER(12, 2)
+        // type, you get through a BigDecimal object with scale as 0.
+        // But the dataframe schema has correct type as DecimalType(12, 2).
+        // Thus, after saving the dataframe into parquet file and then
+        // retrieve it, you will get wrong result 199.99.
+        // So it is needed to set precision and scale for Decimal
+        // based on JDBC metadata.
+        case DecimalType.Fixed(p, s) =>
+          val decimalVal = rs.getBigDecimal(pos)
+          if (decimalVal ne null) {
+            mutableRow.update(i, Decimal(decimalVal, p, s))
+          } else {
+            mutableRow.setNullAt(i)
+          }
+        case TimestampType =>
+          val t = rs.getTimestamp(pos)
+          if (t ne null) {
+            mutableRow.setLong(i, DateTimeUtils.fromJavaTimestamp(t))
+          } else {
+            mutableRow.setNullAt(i)
+          }
+        case DateType =>
+          // DateTimeUtils.fromJavaDate does not handle null value, so we need to check it.
+          val dateVal = rs.getDate(pos)
+          if (dateVal ne null) {
+            mutableRow.setInt(i, DateTimeUtils.fromJavaDate(dateVal))
+          } else {
+            mutableRow.setNullAt(i)
+          }
+        case BinaryType => mutableRow.update(i, rs.getBytes(pos))
+        case _ => throw new IllegalArgumentException(
+          s"Unsupported field ${schema.fields(i)}")
       }
-    } else {
-      false
+      i += 1
     }
-  }
-
-  override def next(): InternalRow = {
-    val v = nextValue
-    if (v ne null) {
-      nextValue = null
-      v
-    } else if (hasNext) {
-      val v = nextValue
-      nextValue = null
-      v
-    } else {
-      throw new NoSuchElementException("End of stream")
-    }
+    mutableRow
   }
 }

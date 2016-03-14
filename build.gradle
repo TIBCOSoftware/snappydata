@@ -51,7 +51,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.1.0-SNAPSHOT'
+  version = '0.1-SNAPSHOT'
 
   // apply compiler options
   compileJava.options.encoding = 'UTF-8'
@@ -247,7 +247,6 @@ subprojects {
       }
     }
   })
-  check.dependsOn test, scalaTest
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
@@ -738,6 +737,9 @@ task checkAll {
   }
   if (project.hasProperty('spark')) {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+  }
+  if (project.hasProperty('store')) {
+    dependsOn ':snappy-store:checkAll'
   }
   mustRunAfter buildAll
 }
