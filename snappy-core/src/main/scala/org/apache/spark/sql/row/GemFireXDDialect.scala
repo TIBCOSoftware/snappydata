@@ -19,11 +19,10 @@ package org.apache.spark.sql.row
 import java.sql.{Connection, Types}
 import java.util.Properties
 
-import scala.util.control.NonFatal
+import io.snappydata.Constant
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.jdbc.{JdbcDialects, JdbcType}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
@@ -122,27 +121,18 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
    * ever merged we can remove this method here.
    */
   override def getJDBCType(dt: DataType, md: Metadata): Option[JdbcType] = dt match {
-    case StringType => {
+    case StringType =>
       if (md.contains("maxlength")) {
-        Some(JdbcType(s"VARCHAR(${md.getLong("maxlength")})", java.sql.Types.VARCHAR))
+        Some(JdbcType(s"VARCHAR(${md.getLong("maxlength")})",
+          java.sql.Types.VARCHAR))
       } else {
         Some(JdbcType("CLOB", java.sql.Types.CLOB))
       }
-    }
     case _ => getJDBCType(dt)
   }
 
-  override def getCurrentSchema(conn: Connection): String = {
-    try {
-      val stmt = conn.createStatement()
-      val rs = stmt.executeQuery("VALUES CURRENT SCHEMA")
-      val result = if (rs.next()) rs.getString(1) else null
-      rs.close()
-      stmt.close()
-      result
-    } catch {
-      case NonFatal(e) => null
-    }
+  override def createSchema(schemaName: String, conn: Connection): Unit = {
+    JdbcExtendedUtils.executeUpdate("CREATE SCHEMA " + schemaName, conn)
   }
 
   override def dropTable(tableName: String, conn: Connection,
@@ -156,22 +146,23 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
 
   override def initializeTable(tableName: String, caseSensitive: Boolean,
       conn: Connection): Unit = {
+    val dotIndex = tableName.indexOf('.')
+    val (schema, table) = if(dotIndex > 0){
+      (tableName.substring(0, dotIndex), tableName.substring(dotIndex + 1))
+    } else {
+      (Constant.DEFAULT_SCHEMA, tableName)
+    }
     val stmt = conn.createStatement()
-    // TODO: need to use quoted names with caseSensitive=true in create & query
-    /*
-    val table = if (caseSensitive) tableName
-    else Utils.normalizeIdUpperCase(tableName)
-    */
-    val table = Utils.normalizeIdUpperCase(tableName)
     val rs = stmt.executeQuery("select datapolicy from sys.systables where " +
-        s"tablename='$table'")
+        s"tableName='$table' and tableschemaname='$schema'")
     val result = if (rs.next()) rs.getString(1) else null
     rs.close()
     stmt.close()
     if ("PARTITION".equalsIgnoreCase(result) ||
         "PERSISTENT_PARTITION".equalsIgnoreCase(result)) {
+
       JdbcExtendedUtils.executeUpdate(
-        s"call sys.CREATE_ALL_BUCKETS('$table')", conn)
+        s"call sys.CREATE_ALL_BUCKETS('$tableName')", conn)
     }
   }
 }

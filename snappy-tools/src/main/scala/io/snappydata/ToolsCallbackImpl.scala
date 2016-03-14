@@ -19,7 +19,7 @@ package io.snappydata
 
 import java.util.Properties
 
-import scala.collection.JavaConversions._
+import scala.collection.JavaConverters._
 
 import com.gemstone.gemfire.distributed.DistributedMember
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
@@ -28,9 +28,6 @@ import io.snappydata.impl.LeadImpl
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.AnalysisException
 
-/**
-  * Created by soubhikc on 11/11/15.
-  */
 object ToolsCallbackImpl extends ToolsCallback {
 
   override def invokeLeadStartAddonService(sc: SparkContext): Unit = {
@@ -40,16 +37,22 @@ object ToolsCallbackImpl extends ToolsCallback {
   override def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
     val properties = new Properties()
-    sc.getConf.getOption(Property.locators).map { locator =>
-      if (!Utils.LocatorURLPattern.matcher(locator).matches()) {
-        throw new AnalysisException(
-          "locator info should be provided in the format host[port]", null)
-      }
-      properties.setProperty("locators", locator)
-      sc.getConf.getOption(Property.mcastPort).map(
-        properties.setProperty("mcast-port", _))
-    }.getOrElse(properties.setProperty("mcast-port",
-      sc.getConf.get(Property.mcastPort)))
+    sc.getConf.getAll.filter(
+      confProperty => confProperty._1.startsWith(Constant.STORE_PROPERTY_PREFIX)).
+        foreach(storeProperty => storeProperty._1 match {
+          case Property.locators =>
+            if (!Utils.LocatorURLPattern.matcher(storeProperty._2).matches()) {
+              throw new AnalysisException(s"locators property " + storeProperty._2 + " should " +
+                  "be provided in the format host[port] or host:port", null)
+            }
+            properties.setProperty("locators", storeProperty._2)
+
+          case _ =>
+            properties.setProperty(storeProperty._1.trim.replaceFirst
+            (Constant.STORE_PROPERTY_PREFIX, ""), storeProperty._2)
+        }
+        )
+    // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")
       // no DataDictionary persistence for non-embedded mode
@@ -66,7 +69,8 @@ object ToolsCallbackImpl extends ToolsCallback {
     val advisor = GemFireXDUtils.getGfxdAdvisor
     val locators = advisor.adviseLocators(null)
     val locatorServers = collection.mutable.HashMap[DistributedMember , String]()
-    locators.foreach(locator => locatorServers.put(locator, advisor.getDRDAServers(locator)))
+    locators.asScala.foreach(locator =>
+      locatorServers.put(locator, advisor.getDRDAServers(locator)))
     locatorServers
   }
 

@@ -19,27 +19,30 @@ package org.apache.spark.sql.collection
 import java.io.{IOException, ObjectOutputStream}
 
 import scala.collection.mutable.ArrayBuffer
-
-import _root_.io.snappydata.ToolsCallback
-
-import scala.collection.generic.{CanBuildFrom, MutableMapFactory}
-import scala.collection.{Map => SMap, Traversable, mutable}
+import scala.collection.{Map => SMap}
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
+import _root_.io.snappydata.ToolsCallback
 import org.apache.commons.math3.distribution.NormalDistribution
 
+import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalBackend
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.catalyst.expressions.GenericRow
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.execution.datasources.DDLException
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark._
 
-object Utils extends MutableMapFactory[mutable.HashMap] {
+object Utils {
 
   final val WEIGHTAGE_COLUMN_NAME = "STRATIFIED_SAMPLER_WEIGHTAGE"
 
@@ -49,7 +52,7 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   final val Z95Squared = Z95Percent * Z95Percent
 
   implicit class StringExtensions(val s: String) extends AnyVal {
-    def normalize = normalizeId(s)
+    def normalize = toLowerCase(s)
   }
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
@@ -61,9 +64,10 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   }
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
-    val colT = normalizeId(col.trim)
+    val colT = toUpperCase(col.trim)
     cols.indices.collectFirst {
-      case index if colT == normalizeId(cols(index)) => index
+      case index if col == cols(index) => index
+      case index if colT == toUpperCase(cols(index)) => index
     }.getOrElse {
       throw new AnalysisException(
         s"""$module: Cannot resolve column name "$col" among
@@ -74,9 +78,9 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   def getFields(cols: Array[String], schema: StructType,
       module: String) = {
     cols.map { col =>
-      val colT = normalizeId(col.trim)
+      val colT = toUpperCase(col.trim)
       schema.fields.collectFirst {
-        case field if colT == normalizeId(field.name) => field
+        case field if colT == toUpperCase(field.name) => field
       }.getOrElse {
         throw new AnalysisException(
           s"""$module: Cannot resolve column name "$col" among
@@ -98,16 +102,16 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
   def ERROR_NO_QCS(module: String) = s"$module: QCS is empty"
 
   def qcsOf(qa: Array[String], cols: Array[String],
-      module: String): Array[Int] = {
+      module: String): (Array[Int], Array[String]) = {
     val colIndexes = qa.map(columnIndex(_, cols, module))
     Sorting.quickSort(colIndexes)
-    colIndexes
+    (colIndexes, colIndexes.map(cols))
   }
 
   def resolveQCS(qcsV: Option[Any], fieldNames: Array[String],
-      module: String): Array[Int] = {
+      module: String): (Array[Int], Array[String]) = {
     qcsV.map {
-      case qi: Array[Int] => qi
+      case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
         if (qs.isEmpty) throw new AnalysisException(ERROR_NO_QCS(module))
         else qcsOf(qs.split(","), fieldNames, module)
@@ -119,16 +123,16 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
 
   def matchOption(optName: String,
       options: SMap[String, Any]): Option[(String, Any)] = {
-    val optionName = normalizeId(optName)
+    val optionName = toLowerCase(optName)
     options.get(optionName).map((optionName, _)).orElse {
       options.collectFirst { case (key, value)
-        if normalizeId(key) == optionName => (key, value)
+        if toLowerCase(key) == optionName => (key, value)
       }
     }
   }
 
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
-      module: String): Array[Int] = {
+      module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
   }
 
@@ -255,10 +259,25 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
               s"unexpected regex match 'unit'=$unit")
           }
         case _ => throw new AnalysisException(
-          s"$module: Cannot parse 'timeInterval'=$tis")
+          s"$module: Cannot parse 'timeInterval': $tis")
       }
       case _ => throw new AnalysisException(
-        s"$module: Cannot parse 'timeInterval'=$optV")
+        s"$module: Cannot parse 'timeInterval': $optV")
+    }
+  }
+
+  def parseTimestamp(ts: String, module: String, col: String): Long = {
+    try {
+      ts.toLong
+    } catch {
+      case nfe: NumberFormatException =>
+        try {
+          CastLongTime.getMillis(java.sql.Timestamp.valueOf(ts))
+        } catch {
+          case iae: IllegalArgumentException =>
+            throw new AnalysisException(
+              s"$module: Cannot parse timestamp '$col'=$ts")
+        }
     }
   }
 
@@ -285,18 +304,19 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
 
   def getInternalType(dataType: DataType): Class[_] = {
     dataType match {
-      case ByteType => classOf[scala.Byte]
-      case IntegerType => classOf[scala.Int]
-      case DoubleType => classOf[scala.Double]
-      //case "numeric" => org.apache.spark.sql.types.DoubleType
-      //case "character" => org.apache.spark.sql.types.StringType
+      case ByteType => classOf[Byte]
+      case IntegerType => classOf[Int]
+      case LongType => classOf[Long]
+      case FloatType => classOf[Float]
+      case DoubleType => classOf[Double]
       case StringType => classOf[String]
+      case DateType => classOf[Int]
+      case TimestampType => classOf[Long]
+      case d: DecimalType => classOf[Decimal]
       //case "binary" => org.apache.spark.sql.types.BinaryType
       //case "raw" => org.apache.spark.sql.types.BinaryType
       //case "logical" => org.apache.spark.sql.types.BooleanType
       //case "boolean" => org.apache.spark.sql.types.BooleanType
-      //case "timestamp" => org.apache.spark.sql.types.TimestampType
-      //case "date" => org.apache.spark.sql.types.DateType
       case _ => throw new IllegalArgumentException(s"Invalid type $dataType")
     }
   }
@@ -313,12 +333,10 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     }
   }
 
-  def isLoner(sc: SparkContext): Boolean = sc.schedulerBackend match {
-    case lb: LocalBackend => true
-    case _ => false
-  }
+  final def isLoner(sc: SparkContext): Boolean =
+    sc.schedulerBackend.isInstanceOf[LocalBackend]
 
-  def normalizeId(k: String): String = {
+  def toLowerCase(k: String): String = {
     var index = 0
     val len = k.length
     while (index < len) {
@@ -330,7 +348,19 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     k
   }
 
-  def normalizeIdUpperCase(k: String): String = {
+  def hasLowerCase(k: String): Boolean = {
+    var index = 0
+    val len = k.length
+    while (index < len) {
+      if (Character.isLowerCase(k.charAt(index))) {
+        return true
+      }
+      index += 1
+    }
+    false
+  }
+
+  def toUpperCase(k: String): String = {
     var index = 0
     val len = k.length
     while (index < len) {
@@ -342,35 +372,168 @@ object Utils extends MutableMapFactory[mutable.HashMap] {
     k
   }
 
-  def normalizeOptions[T](opts: Map[String, Any])
-      (implicit bf: CanBuildFrom[Map[String, Any], (String, Any), T]): T =
-    opts.map[(String, Any), T] {
-      case (k, v) => (normalizeId(k), v)
-    }(bf)
-
-  // for mapping any tuple traversable to a mutable map
-
-  def empty[A, B]: mutable.HashMap[A, B] = new mutable.HashMap[A, B]
-
-  implicit def canBuildFrom[A, B] = new CanBuildFrom[Traversable[(A, B)],
-      (A, B), mutable.HashMap[A, B]] {
-
-    override def apply(from: Traversable[(A, B)]) = empty[A, B]
-
-    override def apply() = empty
+  def schemaFields(schema : StructType): Map[String, StructField] = {
+    Map(schema.fields.flatMap { f =>
+      val name = if (f.metadata.contains("name")) f.metadata.getString("name")
+      else f.name
+      Iterator((name, f))
+    }: _*)
   }
 
-  def schemaFields(schema : StructType) = {
-    Map(schema.fields.flatMap { f =>
-      val name =
-        if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
-      val nname = Utils.normalizeId(name)
-      if (name != nname) {
-        Iterator((name, f), (Utils.normalizeId(name), f))
-      } else {
-        Iterator((name, f))
+  /**
+   * Get the result schema given an optional explicit schema and base table.
+   * In case both are specified, then check compatibility between the two.
+   */
+  def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
+      baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
+      asSelect: Boolean, table: String,
+      tableType: String): (StructType, Option[LogicalPlan]) = {
+    schemaOpt match {
+      case Some(s) => baseTableOpt match {
+        case Some(baseTableName) =>
+          // if both baseTable and schema have been specified, then both
+          // should have matching schema
+          try {
+            val tablePlan = catalog.lookupRelation(
+              catalog.newQualifiedTableName(baseTableName))
+            val tableSchema = tablePlan.schema
+            if (catalog.compatibleSchema(tableSchema, s)) {
+              (s, Some(tablePlan))
+            } else if (asSelect) {
+              throw new DDLException(s"CREATE $tableType TABLE AS SELECT:" +
+                  " mismatch of schema with that of base table." +
+                  "\n  Base table schema: " + tableSchema +
+                  "\n  AS SELECT schema: " + s)
+            } else {
+              throw new DDLException(s"CREATE $tableType TABLE:" +
+                  " mismatch of specified schema with that of base table." +
+                  "\n  Base table schema: " + tableSchema +
+                  "\n  Specified schema: " + s)
+            }
+          } catch {
+            // continue with specified schema if base table fails to load
+            case e@(_: AnalysisException | _: DDLException) => (s, None)
+          }
+        case None => (s, None)
       }
-    }: _*)
+      case None => baseTableOpt match {
+        case Some(baseTable) =>
+          try {
+            // parquet and other such external tables may have different
+            // schema representation so normalize the schema
+            val tablePlan = catalog.lookupRelation(
+              catalog.newQualifiedTableName(baseTable))
+            (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
+          } catch {
+            case e@(_: AnalysisException | _: DDLException) =>
+              throw new AnalysisException(s"Base table $baseTable " +
+                  s"not found for $tableType TABLE $table", e)
+          }
+        case None =>
+          throw new DDLException(s"CREATE $tableType TABLE must provide " +
+              "either column definition or baseTable option.")
+      }
+    }
+  }
+
+  def dataTypeStringBuilder(dataType: DataType,
+      result: StringBuilder): Any => Unit = value => {
+    dataType match {
+      case utype: UserDefinedType[_] =>
+        // check if serialized
+        if (value != null && !utype.userClass.isInstance(value)) {
+          result.append(utype.deserialize(value))
+        } else {
+          result.append(value)
+        }
+      case atype: ArrayType => value match {
+        case data: ArrayData =>
+          result.append('[')
+          val etype = atype.elementType
+          val len = data.numElements()
+          if (len > 0) {
+            val ebuilder = dataTypeStringBuilder(etype, result)
+            ebuilder(data.get(0, etype))
+            var index = 1
+            while (index < len) {
+              result.append(',')
+              ebuilder(data.get(index, etype))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case mtype: MapType => value match {
+        case data: MapData =>
+          result.append('[')
+          val ktype = mtype.keyType
+          val vtype = mtype.valueType
+          val len = data.numElements()
+          if (len > 0) {
+            val kbuilder = dataTypeStringBuilder(ktype, result)
+            val vbuilder = dataTypeStringBuilder(vtype, result)
+            val keys = data.keyArray()
+            val values = data.valueArray()
+            kbuilder(keys.get(0, ktype))
+            result.append('=')
+            vbuilder(values.get(0, ktype))
+            var index = 1
+            while (index < len) {
+              result.append(',')
+              kbuilder(keys.get(index, ktype))
+              result.append('=')
+              vbuilder(values.get(index, ktype))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case stype: StructType => value match {
+        case data: InternalRow =>
+          result.append('[')
+          val len = data.numFields
+          if (len > 0) {
+            val etype = stype.fields(0).dataType
+            dataTypeStringBuilder(etype, result)(data.get(0, etype))
+            var index = 1
+            while (index < len) {
+              result.append(',')
+              val etype = stype.fields(index).dataType
+              dataTypeStringBuilder(etype, result)(data.get(index, etype))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case _ => result.append(value)
+    }
+  }
+
+  /**
+   * Register given driver class with Spark's loader.
+   */
+  def registerDriver(driver: String): Unit = {
+    try {
+      DriverRegistry.register(driver)
+    } catch {
+      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
+        s"Couldn't find driver class $driver", cnfe)
+    }
+  }
+
+  /**
+   * Register driver for given JDBC URL and return the driver class name.
+   */
+  def registerDriverUrl(url: String): String = {
+    val driver = DriverRegistry.getDriverClassName(url)
+    registerDriver(driver)
+    driver
   }
 }
 
@@ -402,7 +565,8 @@ class ExecutorLocalRDD[T: ClassTag](
   override def compute(split: Partition, context: TaskContext): Iterator[T] = {
     val part = split.asInstanceOf[ExecutorLocalPartition]
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
-    if (part.blockId != thisBlockId) {
+    if (part.blockId.host != thisBlockId.host ||
+        part.blockId.executorId != thisBlockId.executorId) {
       throw new IllegalStateException(
         s"Unexpected execution of $part on $thisBlockId")
     }

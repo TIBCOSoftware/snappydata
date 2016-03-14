@@ -49,12 +49,14 @@ class TimeEpoch(val windowSize: Long, val epoch0: Long, var t: Long) {
     }else {
       (ts - epoch0)/windowSize + 1
     }*/
-      val interval = (ts - epoch0) / windowSize + 1
-      /*if(interval > t) {
-        Some(t.asInstanceOf[Int])
-      }else {*/
-      Some(interval.asInstanceOf[Int])
-      //}
+      val interval = (ts - epoch0) / windowSize + 1l
+
+      if(interval > Int.MaxValue) {
+        Some(Int.MaxValue)
+      }else {
+        Some(interval.toInt)
+      }
+
 
     }
 

@@ -16,14 +16,13 @@
  */
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 
-final class FileStreamSource extends SchemaRelationProvider {
+final class FileStreamSource extends StreamPlanProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
@@ -32,7 +31,8 @@ final class FileStreamSource extends SchemaRelationProvider {
   }
 }
 
-case class FileStreamRelation(@transient val sqlContext: SQLContext,
+final class FileStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options) {
@@ -61,30 +61,6 @@ case class FileStreamRelation(@transient val sqlContext: SQLContext,
   val directory = options(DIRECTORY)
 
   // TODO: Yogesh, add support for other types of files streams
-  FileStreamRelation.LOCK.synchronized {
-    if (FileStreamRelation.getRowStream() == null) {
-      rowStream = {
-        context.textFileStream(directory).flatMap(rowConverter.toRows)
-      }
-      FileStreamRelation.setRowStream(rowStream)
-      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-      rowStream.foreachRDD { rdd => rdd }
-    } else {
-      rowStream = FileStreamRelation.getRowStream()
-    }
-  }
-}
-
-object FileStreamRelation extends Logging {
-  private var rStream: DStream[InternalRow] = null
-
-  private val LOCK = new Object()
-
-  private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    rStream = stream
-  }
-
-  private def getRowStream(): DStream[InternalRow] = {
-    rStream
-  }
+  override protected def createRowStream(): DStream[InternalRow] =
+    context.textFileStream(directory).flatMap(rowConverter.toRows)
 }

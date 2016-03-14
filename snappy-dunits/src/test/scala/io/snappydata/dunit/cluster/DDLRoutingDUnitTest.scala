@@ -3,11 +3,8 @@ package io.snappydata.dunit.cluster
 import java.sql.{Connection, DriverManager}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
-import dunit.{SerializableRunnable, AvailablePortHelper}
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 
-/**
- * Created by vbhaskar on 16/11/15.
- */
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   private def getANetConnection(netPort: Int): Connection = {
@@ -39,6 +36,10 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     insertDataXD(conn, tableName)
     queryData(tableName)
 
+    truncateTableXD(conn, tableName)
+    insertDataXD(conn, tableName)
+    queryData(tableName)
+
     createTempTableXD(conn)
 
     queryDataXD(conn, tableName)
@@ -67,6 +68,10 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     insertDataXD(conn, tableName)
     queryData(tableName)
 
+    truncateTableXD(conn, tableName)
+    insertDataXD(conn, tableName)
+    queryData(tableName)
+    
     createTempTableXD(conn)
 
     queryDataXD(conn, tableName)
@@ -101,14 +106,14 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   def createTableXD(conn: Connection, tableName: String, usingStr: String): Unit = {
     val s = conn.createStatement()
     val options = ""
-    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + " USING " + usingStr +
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 STRING) " + " USING " + usingStr +
         " " + options)
   }
 
   def createTableByDefaultXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("set spark.sql.shuffle.partitions=5")
-    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) ")
+    s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 STRING) ")
   }
 
   def Snap319(conn: Connection): Unit = {
@@ -170,13 +175,19 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   def insertDataXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
-    s.execute("insert into " + tableName + " values(10, 200, 3) ")
-    s.execute("insert into " + tableName + " values(70, 800, 9),(90, 200, 3),(40, 200, 3),(50, 600, 7) ")
+    s.execute("insert into " + tableName + " values(10, 200, '3') ")
+    s.execute("insert into " + tableName
+        + " values(70, 800, '9'),(90, 200, '3'),(40, 200, '3'),(50, 600, '7') ")
   }
 
   def dropTableXD(conn: Connection, tableName: String): Unit = {
     val s = conn.createStatement()
     s.execute("drop table " + tableName)
+  }
+
+  def truncateTableXD(conn: Connection, tableName: String): Unit = {
+    val s = conn.createStatement()
+    s.execute("truncate table " + tableName)
   }
 
   def createTempTableXD(conn : Connection): Unit = {

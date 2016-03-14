@@ -16,17 +16,10 @@
  */
 package io.snappydata.app.streaming.kafka
 
-/**
- * Created by ymahajan on 28/10/15.
- */
-
 import org.apache.spark._
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.streaming.SnappyStreamingContext
-import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.streaming._
-
 
 object KafkaConsumer {
 
@@ -68,11 +61,11 @@ object KafkaConsumer {
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
 
 
-    ssnc.snappyContext.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
+    ssnc.snappyContext.createSampleTable("tweetstreamtable_sampled", None, Map(
       "qcs" -> "hashtag",
       "fraction" -> "0.05",
       "strataReservoirSize" -> "300",
-      "timeInterval" -> "3m"), Some("tweetstreamtable"))
+      "timeInterval" -> "3m", "baseTable" -> "tweetstreamtable"))
 
     ssnc.snappyContext.saveStream(tableStream, Seq("tweetstreamtable_sampled"), None)
 
@@ -118,7 +111,7 @@ object KafkaConsumer {
                 //SnappyContext.createTopKRDD()
                 //df.show
                 //df.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("kafkaExtTable")
-                //ssnc.appendToCacheRDD(rdd, streamTable, resultSet.schema)
+                //ssnc.appendToTempTableCache(rdd, streamTable, resultSet.schema)
               }
               }")
         )
@@ -127,7 +120,7 @@ object KafkaConsumer {
     ssnc.sql("STREAMING START")
 
     ssnc.awaitTerminationOrTimeout(1800* 1000)
-    ssnc.sql( "select count(*) from rawStreamColumnTable").show
+    ssnc.sql( "select count(*) from rawStreamColumnTable").show()
 
     ssnc.sql("STREAMING STOP")
   }

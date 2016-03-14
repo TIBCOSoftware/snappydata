@@ -34,8 +34,6 @@ import scala.collection.mutable.ArrayBuffer
 /**
   * Extending server launcher to init Jobserver as part of lead
   * node startup. This node won't start DRDA network server.
-  *
-  * Created by soubhikc on 30/09/15.
   */
 class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
@@ -83,6 +81,8 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
   override protected def run(args: Array[String]): Unit = {
     super.run(initStartupArgs(ArrayBuffer(args: _*)))
   }
+
+  override protected def setDefaultHeapSize(): Boolean = false
 
   @throws(classOf[Exception])
   override protected def startServerVM(props: Properties) : Unit = {

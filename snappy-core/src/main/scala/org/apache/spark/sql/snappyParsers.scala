@@ -19,21 +19,23 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{ParserDialect, SqlParserBase, TableIdentifier}
+import org.apache.spark.sql.catalyst.{DefaultParserDialect, SqlLexical, SqlParserBase, TableIdentifier}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources._
-import org.apache.spark.sql.hive.ExternalTableType
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
-import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds}
 
 
-class SnappyParserBase extends SqlParserBase {
+class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
 
+  protected val PUT = Keyword("PUT")
   protected val DELETE = Keyword("DELETE")
   protected val UPDATE = Keyword("UPDATE")
   // Added for streaming window CQs
@@ -44,11 +46,21 @@ class SnappyParserBase extends SqlParserBase {
   protected val SECONDS = Keyword("SECONDS")
   protected val MINUTES = Keyword("MINUTES")
 
+  override val lexical = new SnappyLexical(caseSensitive)
+
   override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
-      cte | dmlForExternalTable
+      put | cte | dmlForExternalTable
+
+  protected lazy val put: Parser[LogicalPlan] =
+    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~
+        select ^^ {
+      case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]],
+        s, o, ifNotExists = false)
+    }
 
   protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~ wholeInput ^^ {
+    (INSERT ~> INTO | PUT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~
+        wholeInput ^^ {
       case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
     }
 
@@ -84,39 +96,90 @@ class SnappyParserBase extends SqlParserBase {
       }.getOrElse(Subquery(alias, child))
     })
 
+  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
+    (ident <~ ".").? ~ ident ^^ {
+      case maybeSchemaName ~ tableName =>
+        new QualifiedTableName(maybeSchemaName, tableName)
+    }
+
   override def parseExpression(input: String): Expression = synchronized {
     // Initialize the Keywords.
     initLexical
     phrase(projection)(new lexical.Scanner(input)) match {
       case Success(plan, _) => plan
-      //case failureOrError => sys.error(failureOrError.toString)
-      case failureOrError => throw new SQLException(failureOrError.toString, "42X01")
+      // case failureOrError => sys.error(failureOrError.toString)
+      case failureOrError =>
+        throw new SQLException(failureOrError.toString, "42X01")
     }
   }
 
+  override def parse(input: String): LogicalPlan = synchronized {
+    // Initialize the Keywords.
+    initLexical
+    phrase(start)(new lexical.Scanner(input)) match {
+      case Success(plan, _) => plan
+      case failureOrError =>
+        throw new SQLException(failureOrError.toString, "42X01")
+    }
+  }
 }
 
-object SnappyParser extends SnappyParserBase{
+final class SnappyLexical(caseSensitive: Boolean) extends SqlLexical {
 
+  protected override def processIdent(name: String) = {
+    val token = normalizeKeyword(name)
+    if (reserved contains token) Keyword(token)
+    else if (caseSensitive) {
+      Identifier(name)
+    } else {
+      Identifier(Utils.toUpperCase(name))
+    }
+  }
 }
+
+object SnappyParser extends SnappyParserBase(false)
+
+object SnappyParserCaseSensitive extends SnappyParserBase(true)
 
 /** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
-private[sql] class SnappyParserDialect extends ParserDialect {
+private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
+    extends DefaultParserDialect {
 
-  override def parse(sqlText: String): LogicalPlan = {
-    SnappyParser.parse(sqlText)
-  }
+  @transient protected override val sqlParser =
+    if (caseSensitive) SnappyParserCaseSensitive else SnappyParser
 }
 
 /**
  * Snappy DDL extensions for streaming and sampling.
  */
-private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
-    extends DDLParser(parseQuery) {
+private[sql] class SnappyDDLParser(caseSensitive: Boolean,
+    parseQuery: String => LogicalPlan) extends DDLParser(parseQuery) {
+
+  override val lexical = new SnappyLexical(caseSensitive)
+
+  override def parse(input: String): LogicalPlan = synchronized {
+    // Initialize the Keywords.
+    initLexical
+    phrase(start)(new lexical.Scanner(input)) match {
+      case Success(plan, _) => plan
+      case failureOrError =>
+        throw new SQLException(failureOrError.toString, "42X01")
+    }
+  }
+
+  override def parse(input: String, exceptionOnError: Boolean): LogicalPlan = {
+    try {
+      parse(input)
+    } catch {
+      case ddlException: DDLException => throw ddlException
+      case t: SQLException if !exceptionOnError =>
+        parseQuery(input)
+    }
+  }
 
   override protected lazy val ddl: Parser[LogicalPlan] =
     createTable | describeTable | refreshTable | dropTable |
-        createStream  | strmctxt | truncateTable | createIndex | dropIndex
+        createStream  | streamContext | truncateTable | createIndex | dropIndex
 
   protected val STREAM = Keyword("STREAM")
   protected val STREAMING = Keyword("STREAMING")
@@ -129,6 +192,14 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   protected val INDEX = Keyword("INDEX")
   protected val ON = Keyword("ON")
 
+  protected override lazy val className: Parser[String] =
+    repsep(ident, ".") ^^ { case s =>
+      // A workaround to address lack of case information at this point.
+      // If value is all CAPS then convert to lowercase else preserve case.
+      if (s.exists(Utils.hasLowerCase)) s.mkString(".")
+      else s.map(Utils.toLowerCase).mkString(".")
+    }
+
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
       s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)
 
@@ -140,7 +211,8 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           providerName ~ opts ~ query =>
 
         val options = opts.getOrElse(Map.empty[String, String])
-        val provider = SnappyContext.getProvider(providerName.getOrElse(SnappyContext.DEFAULT_SOURCE))
+        val provider = SnappyContext.getProvider(providerName.getOrElse(
+          SnappyContext.DEFAULT_SOURCE), onlyBuiltin = false)
         if (query.isDefined) {
           if (schemaString.length > 0) {
             throw new DDLException("CREATE TABLE AS SELECT statement " +
@@ -156,7 +228,7 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
             CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
               Array.empty[String], mode, options, queryPlan)
           } else {
-            CreateExternalTableUsingSelect(tableIdent, provider,
+            CreateMetastoreTableUsingSelect(tableIdent, provider,
               Array.empty[String], mode, options, queryPlan)
           }
         } else {
@@ -174,8 +246,10 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
           val userSpecifiedSchema = if (hasExternalSchema) None
           else {
             phrase(tableCols.?)(new lexical.Scanner(schemaString)) match {
-              case Success(columns, _) => columns.flatMap(fields => Some(StructType(fields)))
-              case failure => throw new DDLException(failure.toString)
+              case Success(columns, _) =>
+                columns.flatMap(fields => Some(StructType(fields)))
+              case failure =>
+                throw new DDLException(failure.toString)
             }
           }
           val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
@@ -185,46 +259,83 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
               temporary = true, options, allowExisting.isDefined,
               managedIfNoPath = false)
           } else {
-            CreateExternalTableUsing(tableIdent, userSpecifiedSchema,
+            CreateMetastoreTableUsing(tableIdent, userSpecifiedSchema,
               schemaDDL, provider, allowExisting.isDefined, options)
           }
         }
     }
 
+  // This is the same as tableIdentifier in SnappyParser.
+  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
+    (ident <~ ".").? ~ ident ^^ {
+      case maybeSchemaName ~ tableName =>
+        new QualifiedTableName(maybeSchemaName, tableName)
+    }
+
+  protected override lazy val primitiveType: Parser[DataType] =
+    "(?i)(?:string|clob)".r ^^^ StringType |
+    "(?i)(?:int|integer)".r ^^^ IntegerType |
+    "(?i)(?:bigint|long)".r ^^^ LongType |
+    fixedDecimalType |
+    "(?i)(?:decimal|numeric)".r ^^^ DecimalType.USER_DEFAULT |
+    "(?i)double".r ^^^ DoubleType |
+    "(?i)(?:float|real)".r ^^^ FloatType |
+    "(?i)(?:binary|blob)".r ^^^ BinaryType |
+    "(?i)date".r ^^^ DateType |
+    "(?i)timestamp".r ^^^ TimestampType |
+    "(?i)(?:smallint|short)".r ^^^ ShortType |
+    "(?i)(?:tinyint|byte)".r ^^^ ByteType |
+    "(?i)boolean".r ^^^ BooleanType |
+    varchar
+
+  protected override lazy val fixedDecimalType: Parser[DataType] =
+    ("(?i)(?:decimal|numeric)".r ~> "(" ~> numericLit) ~ ("," ~> numericLit <~ ")") ^^ {
+      case precision ~ scale =>
+        DecimalType(precision.toInt, scale.toInt)
+    }
+
   protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> INDEX ~> ident) ~ (ON ~> ident) ~ wholeInput ^^ {
+    (CREATE ~> INDEX ~> tableIdentifier) ~ (ON ~> tableIdentifier) ~ wholeInput ^^ {
       case indexName ~ tableName ~ sql =>
         CreateIndex(tableName, sql)
     }
 
   protected lazy val dropIndex: Parser[LogicalPlan] =
-    (DROP ~> INDEX ~> ident) ~ wholeInput ^^ {
+    (DROP ~> INDEX ~> tableIdentifier) ~ wholeInput ^^ {
       case indexName ~ sql =>
         DropIndex(sql)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
-    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ ident ^^ {
+    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ tableIdentifier ^^ {
       case temporary ~ allowExisting ~ tableName =>
         DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
     }
 
   protected lazy val truncateTable: Parser[LogicalPlan] =
-    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ ident ^^ {
+    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ tableIdentifier ^^ {
       case temporary ~ tableName =>
         TruncateTable(tableName, temporary.isDefined)
     }
 
   protected lazy val createStream: Parser[LogicalPlan] =
-    (CREATE ~> STREAM ~> TABLE ~> ident) ~
+    (CREATE ~> STREAM ~> TABLE ~> tableIdentifier) ~ (IF ~> NOT <~ EXISTS).? ~
         tableCols.? ~ (USING ~> className) ~ (OPTIONS ~> options) ^^ {
-      case streamname ~ cols ~ providerName ~ opts =>
-        val userColumns = cols.flatMap(fields => Some(StructType(fields)))
-        val provider = SnappyContext.getProvider(providerName)
-        CreateStreamTable(streamname, userColumns, provider, opts)
+      case streamName ~ allowExisting ~ cols ~ providerName ~ opts =>
+        val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
+        val provider = SnappyContext.getProvider(providerName,
+          onlyBuiltin = false)
+        // check that the provider is a stream relation
+        val clazz = ResolvedDataSource.lookupDataSource(provider)
+        if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
+          throw new AnalysisException(s"CREATE STREAM provider $providerName" +
+              " does not implement StreamPlanProvider")
+        }
+        CreateMetastoreTableUsing(streamName, specifiedSchema, None,
+          provider, allowExisting.isDefined, opts, onlyExternal = false)
     }
 
-  protected lazy val strmctxt: Parser[LogicalPlan] =
+  protected lazy val streamContext: Parser[LogicalPlan] =
     (STREAMING ~>
         (INIT ^^^ 0 | START ^^^ 1 | STOP ^^^ 2) ~ numericLit.?) ^^ {
       case action ~ batchInterval =>
@@ -235,12 +346,6 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
         }
     }
 
-  protected override lazy val tableIdentifier: Parser[TableIdentifier] =
-    (ident <~ ".").? ~ (ident <~ ".").? ~ ident ^^ {
-      case maybeDbName ~ maybeSchemaName ~ tableName =>
-        val schemaPrefix = maybeSchemaName.map(_ + '.').getOrElse("")
-        TableIdentifier(schemaPrefix + tableName, maybeDbName)
-    }
 
   protected lazy val externalTableInput: Parser[String] = new Parser[String] {
     def apply(in: Input): ParseResult[String] = {
@@ -262,74 +367,76 @@ private[sql] class SnappyDDLParser(parseQuery: String => LogicalPlan)
   }
 }
 
-private[sql] case class CreateExternalTableUsing(
+private[sql] case class CreateMetastoreTableUsing(
     tableIdent: TableIdentifier,
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     allowExisting: Boolean,
-    options: Map[String, String]) extends RunnableCommand {
+    options: Map[String, String],
+    onlyExternal: Boolean = false) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
-      userSpecifiedSchema, schemaDDL, mode, options)
+      userSpecifiedSchema, schemaDDL, mode, options,
+      onlyBuiltIn = false, onlyExternal)
     Seq.empty
   }
 }
 
-private[sql] case class CreateExternalTableUsingSelect(
+private[sql] case class CreateMetastoreTableUsingSelect(
     tableIdent: TableIdentifier,
     provider: String,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
-    query: LogicalPlan) extends RunnableCommand {
+    query: LogicalPlan,
+    onlyExternal: Boolean = false) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val catalog = snc.catalog
-    snc.createTable(catalog.newQualifiedTableName(tableIdent), provider,
-      partitionColumns, mode, options, query)
+    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
+    snc.createTable(qualifiedName, provider, partitionColumns, mode,
+      options, query, onlyBuiltIn = false, onlyExternal)
     // refresh cache of the table in catalog
-    catalog.invalidateTable(tableIdent)
+    catalog.invalidateTable(qualifiedName)
     Seq.empty
   }
 }
 
 private[sql] case class DropTable(
-    tableName: String,
+    tableIdent: QualifiedTableName,
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    if (temporary) snc.dropTempTable(tableName, ifExists)
-    else snc.dropTable(tableName, ifExists)
+    snc.dropTable(tableIdent, ifExists)
     Seq.empty
   }
 }
 
 private[sql] case class TruncateTable(
-    tableName: String,
+    tableIdent: QualifiedTableName,
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    if (temporary) snc.truncateTable(tableName)
-    else snc.truncateExternalTable(tableName)
+    snc.truncateTable(tableIdent)
     Seq.empty
   }
 }
 
 private[sql] case class CreateIndex(
-    tableName: String,
+    tableIdent: QualifiedTableName,
     sql: String) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc =sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnTable(tableName, sql)
+    val snc = sqlContext.asInstanceOf[SnappyContext]
+    snc.createIndexOnTable(tableIdent, sql)
     Seq.empty
   }
 }
@@ -339,13 +446,13 @@ private[sql] case class DropIndex(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndexOnTable(sql)
+    snc.dropIndexOfTable(sql)
     Seq.empty
   }
 }
 
 case class DMLExternalTable(
-    tableName: TableIdentifier,
+    tableName: QualifiedTableName,
     child: LogicalPlan,
     command: String)
     extends LogicalPlan with Command {
@@ -354,21 +461,6 @@ case class DMLExternalTable(
 
   override def output: Seq[Attribute] = child.output
 }
-
-
-private[sql] case class CreateStreamTable(streamName: String,
-    userColumns: Option[StructType],
-    provider: String,
-    options: Map[String, String])
-    extends LogicalPlan with Command {
-
-  override def output: Seq[Attribute] = Seq.empty
-
-  /** Returns a Seq of the children of this node */
-  override def children: Seq[LogicalPlan] = Seq.empty
-}
-
-
 
 private[sql] case class StreamOperationsLogicalPlan(action: Int,
     batchInterval: Option[Int])
@@ -380,37 +472,8 @@ private[sql] case class StreamOperationsLogicalPlan(action: Int,
   override def children: Seq[LogicalPlan] = Seq.empty
 }
 
-private[sql] case class CreateStreamTableCmd(streamIdent: String,
-    userColumns: Option[StructType],
-    provider: String,
-    options: Map[String, String])
-    extends RunnableCommand {
-
-  def run(sqlContext: SQLContext): Seq[Row] = {
-    val resolved = ResolvedDataSource(sqlContext, userColumns,
-      Array.empty[String], provider, options)
-    val plan = LogicalRelation(resolved.relation)
-    val snc = sqlContext.asInstanceOf[SnappyContext]
-    val catalog = snc.catalog
-    val streamTable = catalog.newQualifiedTableName(new TableIdentifier(streamIdent))
-
-    // add the stream to the tables in the catalog
-    catalog.tables.get(streamTable) match {
-      case None => catalog.tables.put(streamTable, plan)
-      case Some(x) => throw new IllegalStateException(
-        s"Stream table name $streamTable already defined")
-    }
-    catalog.registerExternalTable(streamTable, userColumns,
-      Array.empty[String], provider, options,
-      ExternalTableType.getTableType(resolved.relation))
-
-    Seq.empty
-  }
-}
-
 private[sql] case class SnappyStreamingActionsCommand(action: Int,
-    batchInterval: Option[Int],
-    sampleTablePopulation: Option[(SQLContext) => Unit])
+    batchInterval: Option[Int])
     extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
@@ -418,19 +481,9 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
       case 0 =>
         SnappyStreamingContext(sqlContext.asInstanceOf[SnappyContext],
           Seconds(batchInterval.get))
-      case 1 =>
-        // Register sampling of all the streams
-        sampleTablePopulation match {
-          case Some(func) => func(sqlContext)
-          case None => // do nothing
-        }
-        // start the streaming
-        SnappyStreamingContext.getActive().get.start()
-      case 2 => SnappyStreamingContext.getActive().get.stop()
+      case 1 => SnappyStreamingContext.start()
+      case 2 => SnappyStreamingContext.stop()
     }
     Seq.empty[Row]
   }
 }
-
-
-

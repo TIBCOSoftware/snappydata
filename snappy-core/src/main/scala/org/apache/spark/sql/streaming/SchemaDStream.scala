@@ -21,7 +21,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.hive.ExternalTableType
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Duration, Time}
@@ -32,7 +31,7 @@ import org.apache.spark.streaming.{Duration, Time}
   * It is similar to SchemaRDD, which offers the similar functions
   * Internally, RDD of each batch duration is treated as a small
   * table and CQs are evaluated on those small tables
-  * Some of the code and idea is borrowed from the project:
+  * Some of the abstraction and code is borrowed from the project:
   * https://github.com/Intel-bigdata/spark-streamingsql
   * @param snsc
   * @param queryExecution
@@ -82,9 +81,9 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
       catalog.newQualifiedTableName(tableName),
       logicalPlan)
 
-    catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
+    /* catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
       Array.empty[String], "stream", Map.empty[String, String],
-      ExternalTableType.Stream)
+      ExternalTableType.Stream) */
   }
 
   /** Returns the schema of this SchemaDStream (represented by
@@ -95,7 +94,9 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   override def dependencies: List[DStream[InternalRow]] = parentStreams.toList
 
   /** Time interval after which the DStream generates a RDD */
-  override def slideDuration: Duration = parentStreams.head.slideDuration
+  override def slideDuration: Duration = {
+    parentStreams.head.slideDuration
+  }
 
   @transient val logicalPlan: LogicalPlan = queryExecution.logical
   match {
@@ -107,7 +108,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Method that generates a RDD for the given time */
   override def compute(validTime: Time): Option[RDD[Row]] = {
-    StreamHelper.setValidTime(validTime)
+    StreamBaseRelation.setValidTime(validTime)
     val converter = CatalystTypeConverters.createToScalaConverter(schema)
     Some(queryExecution.executedPlan.execute().map(converter(_).asInstanceOf[Row]))
   }
@@ -115,23 +116,10 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   @transient private lazy val parentStreams = {
     def traverse(plan: SparkPlan): Seq[DStream[InternalRow]] = plan match {
       case x: StreamPlan => x.rowStream :: Nil
-      case _ => plan.children.flatMap(traverse(_))
+      case _ => plan.children.flatMap(traverse)
     }
     val streams = traverse(queryExecution.executedPlan)
     streams
-  }
-
-  def explain(): Unit = explain(extended = false)
-
-  /**
-    * Explain the query to get logical plan as well as physical plan.
-    */
-  def explain(extended: Boolean): Unit = {
-    val explain = ExplainCommand(queryExecution.logical, extended = extended)
-    val sds = new SchemaDStream(snsc, explain)
-    sds.queryExecution.executedPlan.executeCollect().map {
-      r => println(r.getString(0)) // scalastyle:ignore
-    }
   }
 
   /**

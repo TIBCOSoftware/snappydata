@@ -16,17 +16,20 @@
  */
 package org.apache.spark.sql.streaming
 
-import kafka.serializer.StringDecoder
+import scala.reflect.ClassTag
+
+import kafka.serializer.Decoder
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.kafka.KafkaUtils
+import org.apache.spark.util.Utils
 
-class DirectKafkaStreamSource extends SchemaRelationProvider {
+class DirectKafkaStreamSource extends StreamPlanProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
@@ -35,10 +38,12 @@ class DirectKafkaStreamSource extends SchemaRelationProvider {
   }
 }
 
-case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
+final class DirectKafkaStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options) with Logging with StreamPlan with Serializable {
+    extends StreamBaseRelation(options)
+    with Logging with StreamPlan with Serializable {
 
   val topicsSet = options("topics").split(",").toSet
   val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
@@ -48,32 +53,17 @@ case class DirectKafkaStreamRelation(@transient val sqlContext: SQLContext,
     }.toMap
   }.getOrElse(Map())
 
-  DirectKafkaStreamRelation.LOCK.synchronized {
-    if (DirectKafkaStreamRelation.getRowStream() == null) {
-      rowStream = {
-        KafkaUtils
-            .createDirectStream[String, String, StringDecoder, StringDecoder](
-          context, kafkaParams, topicsSet).map(_._2).flatMap(rowConverter.toRows)
-      }
-      DirectKafkaStreamRelation.setRowStream(rowStream)
-      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-      rowStream.foreachRDD { rdd => rdd }
-    } else {
-      rowStream = DirectKafkaStreamRelation.getRowStream()
+  val K = options.get("K").getOrElse("java.lang.String")
+  val V = options.get("V").getOrElse("java.lang.String")
+  val KD = options.get("KD").getOrElse("kafka.serializer.StringDecoder")
+  val VD = options.get("VD").getOrElse("kafka.serializer.StringDecoder")
+
+  override protected def createRowStream(): DStream[InternalRow] = {
+      val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
+      val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
+      val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
+      val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
+      KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
+        kafkaParams, topicsSet)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
     }
-  }
-}
-
-object DirectKafkaStreamRelation extends Logging {
-  private var rStream: DStream[InternalRow] = null
-
-  private val LOCK = new Object()
-
-  private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    rStream = stream
-  }
-
-  private def getRowStream(): DStream[InternalRow] = {
-    rStream
-  }
 }

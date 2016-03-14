@@ -30,8 +30,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 /**
   * BDD style tests
-  *
-  * Created by soubhikc on 7/10/15.
   */
 class LeaderLauncherSpec extends WordSpec with Matchers {
 

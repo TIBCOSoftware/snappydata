@@ -16,6 +16,9 @@
  */
 package org.apache.spark.sql.store
 
+import java.sql.{Connection, PreparedStatement}
+import java.util.Properties
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
@@ -24,10 +27,12 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.ConnectionProperties
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, ConnectionProperties}
 import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, SQLContext}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCRDD}
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
@@ -35,12 +40,9 @@ import org.apache.spark.{Logging, Partition, SparkContext}
   */
 object StoreUtils extends Logging {
 
-  val ddlOptions = Seq(PARTITION_BY, BUCKETS, COLOCATE_WITH, REDUNDANCY,
-    RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
-    PERSISTENT, SERVER_GROUPS, OFFHEAP, GEM_EXPIRE)
-
-  val PARTITION_BY = "PARTITION_BY"
-  val BUCKETS = "BUCKETS"
+  val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
+  val REPLICATE = ExternalStoreUtils.REPLICATE
+  val BUCKETS = ExternalStoreUtils.BUCKETS
   val COLOCATE_WITH = "COLOCATE_WITH"
   val REDUNDANCY = "REDUNDANCY"
   val RECOVERYDELAY = "RECOVERYDELAY"
@@ -50,11 +52,13 @@ object StoreUtils extends Logging {
   val SERVER_GROUPS = "SERVER_GROUPS"
   val OFFHEAP = "OFFHEAP"
   val EXPIRE = "EXPIRE"
+  val OVERFLOW = "OVERFLOW"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
   val GEM_COLOCATE_WITH = "COLOCATE WITH"
   val GEM_REDUNDANCY = "REDUNDANCY"
+  val GEM_REPLICATE = "REPLICATE"
   val GEM_RECOVERYDELAY = "RECOVERYDELAY"
   val GEM_MAXPARTSIZE = "MAXPARTSIZE"
   val GEM_EVICTION_BY = "EVICTION BY"
@@ -62,8 +66,14 @@ object StoreUtils extends Logging {
   val GEM_SERVER_GROUPS = "SERVER GROUPS"
   val GEM_OFFHEAP = "OFFHEAP"
   val GEM_EXPIRE = "EXPIRE"
+  val GEM_OVERFLOW = "EVICTACTION OVERFLOW"
+  val GEM_HEAPPERCENT = "EVICTION BY LRUHEAPPERCENT "
   val PRIMARY_KEY = "PRIMARY KEY"
   val LRUCOUNT = "LRUCOUNT"
+
+  val ddlOptions = Seq(PARTITION_BY, REPLICATE, BUCKETS, COLOCATE_WITH,
+    REDUNDANCY, RECOVERYDELAY, MAXPARTSIZE, EVICTION_BY,
+    PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW)
 
   val EMPTY_STRING = ""
 
@@ -77,7 +87,7 @@ object StoreUtils extends Logging {
       if (tableName.indexOf('.') <= 0) {
         schema + '.' + tableName
       } else tableName
-    }.toUpperCase
+    }
     lookupName
   }
 
@@ -189,6 +199,11 @@ object StoreUtils extends Logging {
           .getOrElse(EMPTY_STRING))
     }
 
+    parameters.remove(REPLICATE).foreach(v =>
+      if (v.toBoolean) sb.append(GEM_REPLICATE).append(' ')
+      else if (!parameters.contains(BUCKETS))
+        sb.append(GEM_BUCKETS).append(' ').append(
+          ExternalStoreUtils.DEFAULT_TABLE_BUCKETS).append(' '))
     sb.append(parameters.remove(BUCKETS).map(v => s"$GEM_BUCKETS $v ")
         .getOrElse(EMPTY_STRING))
 
@@ -198,34 +213,52 @@ object StoreUtils extends Logging {
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(MAXPARTSIZE).map(v => s"$GEM_MAXPARTSIZE $v ")
         .getOrElse(EMPTY_STRING))
+
+    // if OVERFLOW has been provided, then use HEAPPERCENT as the default
+    // eviction policy (unless overridden explicitly)
+    val hasOverflow = parameters.get(OVERFLOW).map(_.toBoolean)
+        .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
+    val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     if (!isShadowTable) {
       sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
-          .getOrElse(EMPTY_STRING))
+          .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
         v.contains(LRUCOUNT) match {
-          case true => throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+          case true => throw new DDLException(
+            "Column table cannot take LRUCOUNT as Evcition Attributes")
           case _ =>
         }
         s"$GEM_EVICTION_BY $v "
-      }).getOrElse(EMPTY_STRING))
+      }).getOrElse(defaultEviction))
     }
 
+    if (hasOverflow) {
+      parameters.remove(OVERFLOW)
+      sb.append(s"$GEM_OVERFLOW ")
+    }
 
-    sb.append(parameters.remove(PERSISTENT).map(v => s"$GEM_PERSISTENT $v ")
-        .getOrElse(EMPTY_STRING))
+    parameters.remove(PERSISTENT).foreach { v =>
+      if (v.equalsIgnoreCase("async") || v.equalsIgnoreCase("true")) {
+        sb.append(s"$GEM_PERSISTENT ASYNCHRONOUS ")
+      } else if (v.equalsIgnoreCase("sync")) {
+        sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
+      } else if (!v.equalsIgnoreCase("false")) {
+        sb.append(s"$GEM_PERSISTENT $v ")
+      }
+    }
     sb.append(parameters.remove(SERVER_GROUPS).map(v => s"$GEM_SERVER_GROUPS $v ")
         .getOrElse(EMPTY_STRING))
     sb.append(parameters.remove(OFFHEAP).map(v => s"$GEM_OFFHEAP $v ")
         .getOrElse(EMPTY_STRING))
 
+
     sb.append(parameters.remove(EXPIRE).map(v => {
       if (!isRowTable) {
-        throw new DDLException("Column table cannot take LRUCOUNT as Evcition Attributes")
+        throw new DDLException("Expiry for Column table is not supported")
       }
       s"$GEM_EXPIRE ENTRY WITH TIMETOLIVE $v ACTION DESTROY"
-    })
-        .getOrElse(EMPTY_STRING))
+    }).getOrElse(EMPTY_STRING))
 
     sb.toString()
   }
@@ -246,4 +279,158 @@ object StoreUtils extends Logging {
     })
   }
 
+  /**
+   * Returns a PreparedStatement that inserts a row into table via conn.
+   */
+  def insertStatement(conn: Connection, table: String, rddSchema: StructType,
+      upsert: Boolean): PreparedStatement = {
+    val sql = if (!upsert) {
+      new StringBuilder(s"INSERT INTO $table (")
+    }
+    else {
+      new StringBuilder(s"PUT INTO $table (")
+    }
+    var fieldsLeft = rddSchema.fields.length
+    rddSchema.fields map { field =>
+      sql.append(field.name)
+      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
+      fieldsLeft = fieldsLeft - 1
+    }
+    sql.append("VALUES (")
+    fieldsLeft = rddSchema.fields.length
+    while (fieldsLeft > 0) {
+      sql.append("?")
+      if (fieldsLeft > 1) sql.append(", ") else sql.append(")")
+      fieldsLeft = fieldsLeft - 1
+    }
+    conn.prepareStatement(sql.toString())
+  }
+
+  /**
+   * Saves the RDD to the database in a single transaction.
+   */
+  def saveTable(
+      df: DataFrame,
+      url: String,
+      table: String,
+      properties: Properties = new Properties(),
+      upsert: Boolean = false) {
+    val dialect = JdbcDialects.get(url)
+    val nullTypes: Array[Int] = df.schema.fields.map { field =>
+      dialect.getJDBCType(field.dataType).map(_.jdbcNullType).getOrElse(
+        field.dataType match {
+          case IntegerType => java.sql.Types.INTEGER
+          case LongType => java.sql.Types.BIGINT
+          case DoubleType => java.sql.Types.DOUBLE
+          case FloatType => java.sql.Types.REAL
+          case ShortType => java.sql.Types.INTEGER
+          case ByteType => java.sql.Types.INTEGER
+          case BooleanType => java.sql.Types.BIT
+          case StringType => java.sql.Types.CLOB
+          case BinaryType => java.sql.Types.BLOB
+          case TimestampType => java.sql.Types.TIMESTAMP
+          case DateType => java.sql.Types.DATE
+          case t: DecimalType => java.sql.Types.DECIMAL
+          case _ => throw new IllegalArgumentException(
+            s"Can't translate null value for field $field")
+        })
+    }
+
+    val rddSchema = df.schema
+    val driver: String = DriverRegistry.getDriverClassName(url)
+    val getConnection: () => Connection = JDBCRDD.getConnector(driver, url, properties)
+    val batchSize = properties.getProperty("batchsize", "1000").toInt
+    df.foreachPartition { iterator =>
+      savePartition(getConnection, table, iterator, rddSchema, nullTypes, batchSize, upsert)
+    }
+  }
+
+  /**
+   * Saves a partition of a DataFrame to the JDBC database.  This is done in
+   * a single database transaction in order to avoid repeatedly inserting
+   * data as much as possible.
+   *
+   * It is still theoretically possible for rows in a DataFrame to be
+   * inserted into the database more than once if a stage somehow fails after
+   * the commit occurs but before the stage can return successfully.
+   *
+   * This is not a closure inside saveTable() because apparently cosmetic
+   * implementation changes elsewhere might easily render such a closure
+   * non-Serializable.  Instead, we explicitly close over all variables that
+   * are used.
+   */
+  def savePartition(
+      getConnection: () => Connection,
+      table: String,
+      iterator: Iterator[Row],
+      rddSchema: StructType,
+      nullTypes: Array[Int],
+      batchSize: Int,
+      upsert: Boolean): Iterator[Byte] = {
+    val conn = getConnection()
+    var committed = false
+    try {
+      val stmt = insertStatement(conn, table, rddSchema, upsert)
+      try {
+        var rowCount = 0
+        while (iterator.hasNext) {
+          val row = iterator.next()
+          val numFields = rddSchema.fields.length
+          var i = 0
+          while (i < numFields) {
+            if (row.isNullAt(i)) {
+              stmt.setNull(i + 1, nullTypes(i))
+            } else {
+              rddSchema.fields(i).dataType match {
+                case IntegerType => stmt.setInt(i + 1, row.getInt(i))
+                case LongType => stmt.setLong(i + 1, row.getLong(i))
+                case DoubleType => stmt.setDouble(i + 1, row.getDouble(i))
+                case FloatType => stmt.setFloat(i + 1, row.getFloat(i))
+                case ShortType => stmt.setInt(i + 1, row.getShort(i))
+                case ByteType => stmt.setInt(i + 1, row.getByte(i))
+                case BooleanType => stmt.setBoolean(i + 1, row.getBoolean(i))
+                case StringType => stmt.setString(i + 1, row.getString(i))
+                case BinaryType => stmt.setBytes(i + 1, row.getAs[Array[Byte]](i))
+                case TimestampType => stmt.setTimestamp(i + 1, row.getAs[java.sql.Timestamp](i))
+                case DateType => stmt.setDate(i + 1, row.getAs[java.sql.Date](i))
+                case t: DecimalType => stmt.setBigDecimal(i + 1, row.getDecimal(i))
+                case _ => throw new IllegalArgumentException(
+                  s"Can't translate non-null value for field $i")
+              }
+            }
+            i = i + 1
+          }
+          stmt.addBatch()
+          rowCount += 1
+          if (rowCount % batchSize == 0) {
+            stmt.executeBatch()
+            rowCount = 0
+          }
+        }
+        if (rowCount > 0) {
+          stmt.executeBatch()
+        }
+      } finally {
+        stmt.close()
+      }
+      conn.commit()
+      committed = true
+    } finally {
+      if (!committed) {
+        // The stage must fail.  We got here through an exception path, so
+        // let the exception through unless rollback() or close() want to
+        // tell the user about another problem.
+        conn.rollback()
+        conn.close()
+      } else {
+        // The stage must succeed.  We cannot propagate any exception close() might throw.
+        try {
+          conn.close()
+        } catch {
+          case e: Exception => logWarning("Transaction succeeded, but closing failed", e)
+        }
+      }
+    }
+    Array[Byte]().iterator
+  }
 }

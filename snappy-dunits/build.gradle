@@ -7,21 +7,35 @@ sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
 
 dependencies {
-  compile project(':snappy-tools_' + scalaBinaryVersion)
-  compile 'org.apache.logging.log4j:log4j-api:2.1'
-  compile 'org.apache.logging.log4j:log4j-core:2.1'
-  compile 'commons-io:commons-io:2.4'
-  compile "junit:junit:${junitVersion}"
-
+  testCompile project(':dunit')
+  testCompile project(':snappy-tools_' + scalaBinaryVersion)
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
-    compile project(':snappy-store:gemfirexd:client')
-    compile project(':snappy-store:gemfirexd:core')
-    compile project(':snappy-store:gemfirexd:tools')
-    testCompile project(path: ':snappy-store:gemfirexd:tools', configuration: 'testOutput')
+    testCompile project(':snappy-store:gemfirexd-client')
+    testCompile project(':snappy-store:gemfirexd-core')
+    testCompile project(':snappy-store:gemfirexd-tools')
+    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
   } else {
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-client-${gemfireXDVersion}.jar")
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-${gemfireXDVersion}.jar")
-    compile files("${rootDir.getAbsolutePath()}/local-repo/gemfirexd-tools-${gemfireXDVersion}.jar")
+    testCompile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
+  }
+  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
+    testCompile project(':snappy-aqp')
+  } else {
+    testCompile "io.snappydata:snappy-aqp:${version}"
+  }
+
+  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
   }
 }
 
@@ -32,9 +46,11 @@ testClasses.doLast {
 test {
   dependsOn ':cleanDUnit'
   dependsOn ':product'
-  maxParallelForks = 1
+  maxParallelForks = Math.max((int)Math.sqrt(Runtime.getRuntime().availableProcessors() + 1), 2)
   minHeapSize '128m'
   maxHeapSize '1g'
+
+  jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m', '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC', '-XX:CMSInitiatingOccupancyFraction=50', '-XX:+CMSClassUnloadingEnabled', '-ea']
 
   include '**/*DUnitTest.class'
 
@@ -44,5 +60,6 @@ test {
   reports.html.destination = file("${workingDir}/html")
   reports.junitXml.destination = file(workingDir)
 
-  systemProperties 'java.net.preferIPv4Stack': 'true'
+  systemProperties 'java.net.preferIPv4Stack': 'true',
+                   'SNAPPY_HOME': snappyProductDir
 }

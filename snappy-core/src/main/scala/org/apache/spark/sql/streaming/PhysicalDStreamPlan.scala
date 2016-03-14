@@ -23,6 +23,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.streaming.dstream.DStream
+import StreamBaseRelation._
 
 /**
   * A PhysicalPlan wrapper of SchemaDStream, inject the validTime and
@@ -38,7 +39,6 @@ case class PhysicalDStreamPlan(output: Seq[Attribute],
   def children: immutable.Nil.type = Nil
 
   override def doExecute(): RDD[InternalRow] = {
-    import StreamHelper._
     assert(validTime != null)
     rowStream.getOrCompute(validTime)
         .getOrElse(new EmptyRDD[InternalRow](sparkContext))

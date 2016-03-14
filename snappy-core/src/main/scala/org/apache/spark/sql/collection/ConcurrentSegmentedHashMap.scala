@@ -38,8 +38,10 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
    * A default constructor creates a concurrent hash map with initial size `32`
    * and concurrency `16`.
    */
-  def this(segmentCreator: (Int, Double) => M, hasher: K => Int) =
-    this(32, SegmentMap.DEFAULT_LOAD_FACTOR, 16, segmentCreator, hasher)
+  def this(concurrency: Int, segmentCreator: (Int, Double) => M,
+      hasher: K => Int) =
+    this(32, SegmentMap.DEFAULT_LOAD_FACTOR, concurrency,
+      segmentCreator, hasher)
 
   require(initialSize > 0,
     s"ConcurrentSegmentedHashMap: unexpected initialSize=$initialSize")
@@ -243,6 +245,11 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
 
   def foldSegments[U](init: U)(f: (U, M) => U): U = _segments.foldLeft(init)(f)
 
+  def foldSegments[U](start: Int, end: Int, init: U)(f: (U, M) => U): U = {
+    val segments = _segments
+    (start until end).foldLeft(init)((itr, i) => f(itr, segments(i)))
+  }
+
   /**
    * No synchronization in this method so use with care.
    * Use it only if you know what you are doing.
@@ -267,24 +274,7 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     }
   }
 
-  def readLock[U](f: Array[M] => U): U = {
-    val segments = _segments
-    val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
-    try {
-      for (seg <- segments) {
-        val lock = seg.readLock()
-        lock.lock()
-        locksObtained += lock
-      }
-      f(segments)
-    } finally {
-      for (lock <- locksObtained) {
-        lock.unlock()
-      }
-    }
-  }
-
-  def writeLock[U](f: Array[M] => U): U = {
+  def writeLockAllSegments[U](f: Array[M] => U): U = {
     val segments = _segments
     val locksObtained = new mutable.ArrayBuffer[Lock](segments.length)
     try {
@@ -301,9 +291,9 @@ private[sql] class ConcurrentSegmentedHashMap[K, V, M <: SegmentMap[K, V] : Clas
     }
   }
 
-  def clear(): Unit = writeLock { segs =>
-    segs.indices.foreach(segs(_) =
-        segmentCreator(initSegmentCapacity(segs.length), loadFactor))
+  def clear(): Unit = writeLockAllSegments { segments =>
+    segments.indices.foreach(segments(_) =
+        segmentCreator(initSegmentCapacity(segments.length), loadFactor))
   }
 
   final def size = _size.get

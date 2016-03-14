@@ -18,49 +18,46 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-
-import com.google.common.cache.{CacheBuilder, CacheLoader}
-import io.snappydata.{Constant, Property}
-import org.apache.hadoop.hive.conf.HiveConf
-import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-import org.apache.spark.rdd.RDD
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.Catalog
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
-import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.{ConnectionType, ExternalStoreUtils, JDBCAppendableRelation}
-import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, LogicalRelation, ResolvedDataSource}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
-import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.jdbc.JdbcDialects
-import org.apache.spark.sql.row.JDBCMutableRelation
-import org.apache.spark.sql.sources.{JdbcExtendedUtils, JdbcExtendedDialect, BaseRelation}
-import org.apache.spark.sql.store.ExternalStore
-import org.apache.spark.sql.types.{DataType, StructType}
-import org.apache.spark.sql.streaming._
-import org.apache.spark.{Logging, Partition, TaskContext}
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
+import scala.util.control.NonFatal
+
+import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.util.concurrent.UncheckedExecutionException
+import io.snappydata.{Constant, Property}
+import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+
+import org.apache.spark.Logging
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
+import org.apache.spark.sql.catalyst.analysis.Catalog
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
+import org.apache.spark.sql.hive.client._
+import org.apache.spark.sql.row.JDBCMutableRelation
+import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
+import org.apache.spark.sql.streaming.StreamPlan
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
  * stream/topK tables and returning LogicalPlan to materialize these entities.
- *
- * Created by Sumedh on 7/27/15.
  */
 class SnappyStoreHiveCatalog(context: SnappyContext)
     extends Catalog with Logging {
 
   override val conf = context.conf
 
-  val tables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
-
-
+  val tempTables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
 
   /**
    * The version of the hive client that will be used to communicate
@@ -124,6 +121,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   private def newClient(): ClientInterface = {
 
+
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
     // We instantiate a HiveConf here to read in the hive-site.xml file and
@@ -146,7 +144,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
         dbDriver)
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_USER_NAME,
-        "HIVE_METASTORE")
+        HIVE_METASTORE)
     } else if (dbURL != null) {
       logInfo(s"Using specified metastore database, dbURL = $dbURL")
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, dbURL)
@@ -263,9 +261,9 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  protected[sql] val cachedDataSourceTables = {
-    val cacheLoader = new CacheLoader[QualifiedTableName, LogicalPlan]() {
-      override def load(in: QualifiedTableName): LogicalPlan = {
+  private val cachedDataSourceTables = {
+    val cacheLoader = new CacheLoader[QualifiedTableName, LogicalRelation]() {
+      override def load(in: QualifiedTableName): LogicalRelation = {
         logDebug(s"Creating new cached data source for $in")
         val table = in.getTable(client)
 
@@ -316,18 +314,81 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     CacheBuilder.newBuilder().maximumSize(1000).build(cacheLoader)
   }
 
+  private var relationDestroyVersion = 0
+
+  private def getCachedHiveTable(table: QualifiedTableName): LogicalRelation = {
+    val sync = SnappyStoreHiveCatalog.relationDestroyLock.readLock()
+    sync.lock()
+    try {
+      // if a relation has been destroyed (e.g. by another instance of catalog),
+      // then the cached ones can be stale, so check and clear entire cache
+      val globalVersion = SnappyStoreHiveCatalog.getRelationDestroyVersion
+      if (globalVersion != this.relationDestroyVersion) {
+        cachedDataSourceTables.invalidateAll()
+        this.relationDestroyVersion = globalVersion
+      }
+
+      cachedDataSourceTables(table)
+    } catch {
+      case e@(_: UncheckedExecutionException | _: ExecutionException) =>
+        throw e.getCause
+    } finally {
+      sync.unlock()
+    }
+  }
+
+  private def registerRelationDestroy(): Unit = {
+    val globalVersion = SnappyStoreHiveCatalog.registerRelationDestroy()
+    if (globalVersion != this.relationDestroyVersion) {
+      cachedDataSourceTables.invalidateAll()
+    }
+    this.relationDestroyVersion = globalVersion + 1
+  }
+
   def processTableIdentifier(tableIdentifier: String): String = {
     SnappyStoreHiveCatalog.processTableIdentifier(tableIdentifier, conf)
   }
 
-  def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName =
-    new QualifiedTableName(tableIdent.database,
-      SnappyStoreHiveCatalog.processTableIdentifier(tableIdent.table, conf))
+  def normalizeSchema(schema: StructType): StructType = {
+    if (conf.caseSensitiveAnalysis) {
+      schema
+    } else {
+      val fields = schema.fields
+      if (fields.exists(f => Utils.hasLowerCase(f.fieldName))) {
+        StructType(fields.map { f =>
+          val name = Utils.toUpperCase(f.fieldName)
+          val metadata = if (f.metadata.contains("name")) {
+            new Metadata(f.metadata.map + ("name" -> name))
+          } else {
+            f.metadata
+          }
+          f.copy(name = name, metadata = metadata)
+        })
+      } else {
+        schema
+      }
+    }
+  }
+
+  def compatibleSchema(schema1: StructType, schema2: StructType): Boolean = {
+    schema1.fields.length == schema2.fields.length &&
+        !schema1.zip(schema2).exists { case (f1, f2) =>
+          !f1.dataType.sameType(f2.dataType)
+        }
+  }
+
+  def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName = {
+    tableIdent match {
+      case q: QualifiedTableName => q
+      case _ => new QualifiedTableName(tableIdent.database.map(
+        processTableIdentifier), processTableIdentifier(tableIdent.table))
+    }
+  }
 
   def newQualifiedTableName(tableIdent: String): QualifiedTableName = {
     val tableName = processTableIdentifier(tableIdent)
     val dotIndex = tableName.indexOf('.')
-    if (dotIndex > 0 && tableName.indexOf('.', dotIndex + 1) > 0) {
+    if (dotIndex > 0) {
       new QualifiedTableName(Some(tableName.substring(0, dotIndex)),
         tableName.substring(dotIndex + 1))
     } else {
@@ -340,15 +401,15 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     // the cache. it is better at here to invalidate the cache to avoid
     // confusing warning logs from the cache loader (e.g. cannot find data
     // source provider, which is only defined for data source table).
-    invalidateTable(tableIdent)
+    invalidateTable(newQualifiedTableName(tableIdent))
   }
 
-  def invalidateTable(tableIdent: TableIdentifier): Unit = {
-    cachedDataSourceTables.invalidate(newQualifiedTableName(tableIdent))
+  def invalidateTable(tableIdent: QualifiedTableName): Unit = {
+    cachedDataSourceTables.invalidate(tableIdent)
   }
 
   override def unregisterAllTables(): Unit = {
-    tables.clear()
+    tempTables.clear()
   }
 
   override def unregisterTable(tableIdentifier: TableIdentifier): Unit = {
@@ -356,19 +417,18 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = {
-    if (tables.contains(tableIdent)) {
-      context.truncateTable(tableIdent.table)
-      tables -= tableIdent
+    if (tempTables.contains(tableIdent)) {
+      context.truncateTable(tableIdent)
+      tempTables -= tableIdent
     }
   }
 
-  def lookupRelation(tableIdent: QualifiedTableName,
-      alias: Option[String]): LogicalPlan = {
-    val plan = tables.getOrElse(tableIdent,
+  final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {
+    tempTables.getOrElse(tableIdent,
       tableIdent.getTableOption(client) match {
         case Some(table) =>
           if (table.properties.contains(HIVE_PROVIDER)) {
-            cachedDataSourceTables(tableIdent)
+            getCachedHiveTable(tableIdent)
           } else if (table.tableType == VirtualView) {
             val viewText = table.viewText
                 .getOrElse(sys.error("Invalid view without text."))
@@ -379,20 +439,16 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
           }
 
         case None =>
-          throw new AnalysisException(s"Table Not Found: $tableIdent")
+          throw new TableNotFoundException(s"Table Not Found: $tableIdent")
       })
+  }
+
+  override def lookupRelation(tableIdent: TableIdentifier,
+      alias: Option[String]): LogicalPlan = {
     // If an alias was specified by the lookup, wrap the plan in a
     // sub-query so that attributes are properly qualified with this alias
-    Subquery(alias.getOrElse(tableIdent.table), plan)
-  }
-
-  def lookupRelation(tableIdentifier: String): LogicalPlan = {
-    lookupRelation(newQualifiedTableName(tableIdentifier), None)
-  }
-
-  override def lookupRelation(tableIdentifier: TableIdentifier,
-      alias: Option[String]): LogicalPlan = {
-    lookupRelation(newQualifiedTableName(tableIdentifier), alias)
+    Subquery(alias.getOrElse(tableIdent.table),
+      lookupRelation(newQualifiedTableName(tableIdent)))
   }
 
   override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
@@ -404,29 +460,43 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def tableExists(tableName: QualifiedTableName): Boolean = {
-    tables.contains(tableName) ||
+    tempTables.contains(tableName) ||
         tableName.getTableOption(client).isDefined
   }
 
   override def registerTable(tableIdentifier: TableIdentifier,
       plan: LogicalPlan): Unit = {
-    tables += (newQualifiedTableName(tableIdentifier) -> plan)
+    tempTables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
   def registerTable(tableName: QualifiedTableName, plan: LogicalPlan): Unit = {
-    tables += (tableName -> plan)
+    tempTables += (tableName -> plan)
   }
 
-  def registerExternalTable(tableName: QualifiedTableName,
-      userSpecifiedSchema: Option[StructType],
-      partitionColumns: Array[String], provider: String,
-      options: Map[String, String],
-      tableType: ExternalTableType.Type): Unit = {
-    createDataSourceTable(tableName, tableType,
-      userSpecifiedSchema, partitionColumns, provider, options)
-  }
+  /**
+   * Drops a data source table from Hive's meta-store.
+   */
+  def unregisterDataSourceTable(tableIdent: QualifiedTableName,
+      relation: Option[BaseRelation]): Unit = {
+    // remove from parent relation, if any
+    relation.foreach {
+      case dep: DependentRelation => dep.baseTable.foreach { t =>
+        try {
+          lookupRelation(newQualifiedTableName(t)) match {
+            case LogicalRelation(p: ParentRelation, _) =>
+              p.removeDependent(dep, this)
+            case _ => // ignore
+          }
+        } catch {
+          case NonFatal(_) => // ignore at this point
+        }
+      }
+      case _ => // nothing for others
+    }
 
-  def unregisterExternalTable(tableIdent: QualifiedTableName): Unit = {
+    cachedDataSourceTables.invalidate(tableIdent)
+    registerRelationDestroy()
+
     val dbName = tableIdent.getDatabase(client)
     try {
       client.dropTable(dbName, tableIdent.table)
@@ -440,18 +510,16 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   /**
-   * Creates a data source table (a table created with USING clause) in Hive's
-   * meta-store. Returns true when the table has been created else false.
-   *
-   * @param tableType the type of external table: ROW, COLUMN, SAMPLE etc
+   * Creates a data source table (a table created with USING clause)
+   * in Hive's meta-store.
    */
-  def createDataSourceTable(
+  def registerDataSourceTable(
       tableIdent: QualifiedTableName,
-      tableType: ExternalTableType.Type,
       userSpecifiedSchema: Option[StructType],
       partitionColumns: Array[String],
       provider: String,
-      options: Map[String, String]): Unit = {
+      options: Map[String, String],
+      relation: BaseRelation): Unit = {
     val tableProperties = new mutable.HashMap[String, String]
     tableProperties.put(HIVE_PROVIDER, provider)
 
@@ -494,10 +562,33 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       Seq.empty[HiveColumn]
     }
 
-    tableProperties.put("EXTERNAL", tableType.toString)
+    // get the tableType
+    val tableType = getTableType(relation)
+    tableProperties.put(JdbcExtendedUtils.TABLETYPE_PROPERTY, tableType.toString)
+    // add baseTable property if required
+    relation match {
+      case dep: DependentRelation => dep.baseTable.foreach { t =>
+        lookupRelation(newQualifiedTableName(t)) match {
+          case LogicalRelation(p: ParentRelation, _) =>
+            p.addDependent(dep, this)
+          case _ => // ignore
+        }
+        tableProperties.put(JdbcExtendedUtils.BASETABLE_PROPERTY, t)
+      }
+      case _ => // ignore baseTable for others
+    }
+
+    val dataBase = tableIdent.getDatabase(client)
+    val dbInHive = client.getDatabaseOption(dataBase)
+    dbInHive match {
+      case Some(x) => // We are all good
+      case None => client.createDatabase(new HiveDatabase(dataBase, ""))
+      // Path is empty String for now @TODO for parquet & hadoop relation
+      // handle path correctly
+    }
 
     val hiveTable = HiveTable(
-      specifiedDatabase = Option(tableIdent.getDatabase(client)),
+      specifiedDatabase = Option(dataBase),
       name = tableIdent.table,
       schema = Seq.empty,
       partitionColumns = metastorePartitionColumns,
@@ -526,143 +617,55 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     }
   }
 
-  def registerSampleTable(table: String, schema: StructType,
-      samplingOptions: Map[String, Any], df: Option[SampleDataFrame] = None,
-      streamTable: Option[QualifiedTableName] = None,
-      jdbcSource: Option[Map[String, String]] = None): SampleDataFrame = {
-    throw new UnsupportedOperationException("missing AQP jar")
-  }
-
-  /*def registerTopK(tableIdent: String,
-      schema: StructType, topkOptions: Map[String, Any], rdd: RDD[(Int, TopK)]): Unit = {
-    throw new UnsupportedOperationException("missing AQP jar")
-  }*/
-
-  // TODO: The JDBC source is currently reading a property jdbcStore
-  // to find out the type of the jdbc store. This is a
-  // temporary arrangement.
-  def getExternalTable(jdbcSource: Map[String, String]): ExternalStore = {
-    val options = new CaseInsensitiveMap(jdbcSource)
-    val externalSource = options.get("jdbcstore") match {
-      case Some(x) => x
-      case None => "org.apache.spark.sql.store.JDBCSourceAsStore"
-    }
-    val constructor = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-        .loadClass(externalSource).getConstructor(classOf[Map[String, String]])
-    constructor.newInstance(options).asInstanceOf[ExternalStore]
-  }
-
-  def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean): Unit = {
-    val isLoner = Utils.isLoner(context.sparkContext)
-
-    val rdd = new DummyRDD(context) {
-      override def compute(split: Partition,
-          taskContext: TaskContext): Iterator[InternalRow] = {
-        DriverRegistry.register(externalStore.connProperties.driver)
-        JdbcDialects.get(externalStore.connProperties.url) match {
-          case d: JdbcExtendedDialect =>
-            val extraProps = d.extraDriverProperties(isLoner).propertyNames
-            while (extraProps.hasMoreElements) {
-              val p = extraProps.nextElement()
-              if (externalStore.connProperties.connProps.get(p) != null) {
-                sys.error(s"Master specific property $p " +
-                    "shouldn't exist here in Executors")
-              }
-            }
-          case _ =>
-        }
-
-        val conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url,
-          externalStore.connProperties.connProps, driverDialect = null, isLoner = false)
-        conn.close()
-        Iterator.empty
-      }
-
-      override protected def getPartitions: Array[Partition] = {
-        //TODO : Find a cleaner way of starting all executors.
-        val partitions = new Array[Partition](100)
-        for (p <- 0 until 100) {
-          partitions(p) = new ExecutorLocalPartition(p, null)
-        }
-        partitions
-      }
-    }
-
-    rdd.collect()
-
-    //val tableName = processTableIdentifier(tableIdent)
-    val connProps = externalStore.connProperties.connProps
-    val dialect = JdbcDialects.get(externalStore.connProperties.url)
-    dialect match {
-      case d: JdbcExtendedDialect =>
-        connProps.putAll(d.extraDriverProperties(isLoner))
-    }
-
-    externalStore.tryExecute(tableName, {
-      case conn =>
-        if (dropIfExists) {
-          JdbcExtendedUtils.dropTable(conn, tableName, dialect, context,
-            ifExists = true)
-        }
-        JdbcExtendedUtils.executeUpdate(tableStr, conn)
-        dialect match {
-          case d: JdbcExtendedDialect => d.initializeTable(tableName,
-            conf.caseSensitiveAnalysis, conn)
-        }
-    })
-  }
-
-  def createExternalTableForCachedBatches(tableName: String,
-      externalStore: ExternalStore): Unit = {
-    require(tableName != null && tableName.length > 0,
-      "registerAndInsertIntoExternalStore: expected non-empty table name")
-
-    //val tableName = processTableIdentifier(tableIdent)
-    val (primarykey, partitionStrategy) = ExternalStoreUtils.getConnectionType(
-      externalStore.connProperties.url) match {
-      case ConnectionType.Embedded =>
-        (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
-            "primary key (uuid, bucketId)", "partition by column (bucketId)")
-      // TODO: [sumedh] Neeraj, the partition clause should come from JdbcDialect or something
-      case _ => ("primary key (uuid)", "partition by primary key")
-    }
-
-    createTable(externalStore, s"create table $tableName (uuid varchar(36) " +
-        s"not null, bucketId integer, cachedBatch Blob not null, $primarykey) " +
-        s"$partitionStrategy", tableName, dropIfExists = true)
-  }
-
-  /** tableName is assumed to be pre-normalized with processTableIdentifier*/
-  private[sql] def getStreamTableSchema(
-      tableIdentifier: String): StructType = {
-    getStreamTableSchema(newQualifiedTableName(tableIdentifier))
-  }
-
-  /** tableName is assumed to be pre-normalized with processTableIdentifier */
-  private[sql] def getStreamTableSchema[T](
-      tableName: QualifiedTableName): StructType = {
-    val plan: LogicalPlan = tables.getOrElse(tableName,
-      throw new IllegalStateException(s"Plan for stream $tableName not found"))
-    plan match {
-      case LogicalRelation(sr: SocketStreamRelation, _) => sr.schema
-      case LogicalRelation(kr: KafkaStreamRelation, _) => kr.schema
-      case LogicalRelation(fr: FileStreamRelation, _) => fr.schema
-      case LogicalRelation(tr: TwitterStreamRelation, _) => tr.schema
-      case LogicalRelation(dkr: DirectKafkaStreamRelation, _) => dkr.schema
-      case _ => throw new IllegalStateException(
-        s"StreamRelation was expected for $tableName but got $plan")
-    }
-  }
-
   override def getTables(dbIdent: Option[String]): Seq[(String, Boolean)] = {
     val client = this.client
     val dbName = dbIdent.map(processTableIdentifier)
         .getOrElse(client.currentDatabase)
-    tables.collect {
-      case (tableIdent, _) if tableIdent.getDatabase(client) == dbName =>
-        (tableIdent.table, true)
-    }.toSeq ++ client.listTables(dbName).map((_, false))
+    tempTables.collect {
+      case (tableIdent, _) if dbIdent.isEmpty || tableIdent.getDatabase(
+        client) == dbName => (tableIdent.table, true)
+    }.toSeq ++
+        client.listTables(if (dbIdent.isEmpty) null else dbName).map { t =>
+          if (dbIdent.isDefined) {
+            (dbName + '.' + processTableIdentifier(t), false)
+          } else {
+            (processTableIdentifier(t), false)
+          }
+        }
+  }
+
+  def getDataSourceTables(tableTypes: Seq[ExternalTableType.Type],
+      baseTable: Option[String] = None): Seq[QualifiedTableName] = {
+    val client = this.client
+    val tables = new ArrayBuffer[QualifiedTableName](4)
+    client.listTables(null).foreach { t =>
+      val tableIdent = newQualifiedTableName(processTableIdentifier(t))
+      val table = tableIdent.getTable(client)
+      if (tableTypes.isEmpty || table.properties.get(JdbcExtendedUtils
+          .TABLETYPE_PROPERTY).exists(tableType => tableTypes.exists(_
+          .toString == tableType))) {
+        if (baseTable.isEmpty || table.properties.get(
+          JdbcExtendedUtils.BASETABLE_PROPERTY).exists(_ == baseTable.get)) {
+          tables += tableIdent
+        }
+      }
+    }
+    tables
+  }
+
+  def getDataSourceRelations[T](tableTypes: Seq[ExternalTableType.Type],
+      baseTable: Option[String] = None): Seq[T] = {
+    getDataSourceTables(tableTypes, baseTable).map(
+      getCachedHiveTable(_).relation.asInstanceOf[T])
+  }
+
+  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
+    relation match {
+      case x: JDBCMutableRelation => ExternalTableType.Row
+      case x: JDBCAppendableRelation => ExternalTableType.Column
+      case x: StreamPlan => ExternalTableType.Stream
+      case _ => ExternalTableType.Row
+    }
   }
 }
 
@@ -682,12 +685,30 @@ object SnappyStoreHiveCatalog {
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
   val HIVE_SCHEMA_OLD = "spark.sql.sources.schema"
+  val HIVE_METASTORE = "HIVE_METASTORE"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
     if (conf.caseSensitiveAnalysis) {
       tableIdentifier
     } else {
-      Utils.normalizeId(tableIdentifier)
+      Utils.toUpperCase(tableIdentifier)
+    }
+  }
+
+  private[this] var relationDestroyVersion = 0
+  private val relationDestroyLock = new ReentrantReadWriteLock()
+
+  private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
+
+  private[sql] def registerRelationDestroy(): Int = {
+    val sync = relationDestroyLock.writeLock()
+    sync.lock()
+    try {
+      val globalVersion = relationDestroyVersion
+      relationDestroyVersion += 1
+      globalVersion
+    } finally {
+      sync.unlock()
     }
   }
 
@@ -711,32 +732,21 @@ final class QualifiedTableName(_database: Option[String], _tableIdent: String)
   }
 
   def getTable(client: ClientInterface) =
-    getTableOption(client).getOrElse(throw new AnalysisException(
+    getTableOption(client).getOrElse(throw new TableNotFoundException(
       s"Table Not Found: $table (in database: ${getDatabase(client)})"))
 
-  override def toString: String =
-    database.map(_ + '.').getOrElse("") + table
+  override def toString: String = {
+    if (database eq None) table
+    else database.get + '.' + table
+  }
 }
 
 object ExternalTableType extends Enumeration {
   type Type = Value
 
   val Row = Value("ROW")
-  val Columnar = Value("COLUMN")
+  val Column = Value("COLUMN")
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
-
-  def getTableType(relation: BaseRelation): ExternalTableType.Type = {
-    relation match {
-      case x: JDBCMutableRelation => ExternalTableType.Row
-      case x: JDBCAppendableRelation => ExternalTableType.Columnar
-      case x: TwitterStreamRelation => ExternalTableType.Stream
-      case x: FileStreamRelation => ExternalTableType.Stream
-      case x: SocketStreamRelation => ExternalTableType.Stream
-      case x: KafkaStreamRelation => ExternalTableType.Stream
-      case x: DirectKafkaStreamRelation => ExternalTableType.Stream
-      case _ => ExternalTableType.Row
-    }
-  }
 }

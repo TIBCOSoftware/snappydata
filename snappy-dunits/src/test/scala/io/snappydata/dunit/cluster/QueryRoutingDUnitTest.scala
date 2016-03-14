@@ -1,17 +1,17 @@
 package io.snappydata.dunit.cluster
 
-import java.sql.{DatabaseMetaData, Statement, SQLException, Connection, DriverManager}
+import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Statement}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import dunit.{SerializableRunnable, AvailablePortHelper}
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import org.junit.Assert
 
-import org.apache.spark.sql.{SnappyContext, SaveMode}
+import org.apache.spark.sql.columntable.ColumnFormatRelation
+import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
  * Tests for query routing from JDBC client driver.
- *
- * Created by kneeraj on 29/10/15.
  */
 class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
@@ -48,8 +48,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     println("metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 1)
-    assert(md.getColumnName(1).equals("col1"))
-    assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
+    assert(md.getColumnName(1).equals("COL1"))
+    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
 
     // 2nd query which compiles in gemxd too but needs to be routed
     s.execute("select * from ColumnTableQR")
@@ -63,12 +63,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     println("2nd metadata col cnt = " + md.getColumnCount + " col name = " +
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 3)
-    assert(md.getColumnName(1).equals("col1"))
-    assert(md.getColumnName(2).equals("col2"))
-    assert(md.getColumnName(3).equals("col3"))
-    assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
-    assert(md.getTableName(2).equalsIgnoreCase("columnTableqr"))
-    assert(md.getTableName(3).equalsIgnoreCase("columnTableqr"))
+    assert(md.getColumnName(1).equals("COL1"))
+    assert(md.getColumnName(2).equals("COL2"))
+    assert(md.getColumnName(3).equals("COL3"))
+    assert(md.getTableName(1).equals("COLUMNTABLEQR"))
+    assert(md.getTableName(2).equals("COLUMNTABLEQR"))
+    assert(md.getTableName(3).equals("COLUMNTABLEQR"))
 
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
@@ -143,7 +143,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-  def testSNAP193(): Unit = {
+  def testSNAP193_607_8_9(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -152,7 +152,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val stmt = conn.createStatement()
 
     val numExpectedRows = 188894
-    val rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
+    var rs = stmt.executeQuery("select count(UniqueCarrier) from Airline")
     assert(rs.next())
     assert(rs.getInt(1) == numExpectedRows, "got rows=" + rs.getInt(1))
     assert(!rs.next())
@@ -163,8 +163,33 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     assert(md.getColumnCount == 1)
     assert(md.getColumnName(1) == "_c0", "columnName=" + md.getColumnName(1))
 
-    // below hangs in CREATE TABLE for some reason; need to check
-    /*
+    // check successful run with larger number (>8) of columns (SNAP-607)
+    rs.close()
+    rs = stmt.executeQuery("select YEARI, MONTHI, DAYOFMONTH, DAYOFWEEK, " +
+        "DEPTIME, CRSDEPTIME, ARRTIME, CRSARRTIME, UNIQUECARRIER " +
+        "from AIRLINE limit 10")
+    var nrows = 0
+    while (rs.next()) {
+      nrows += 1
+    }
+    rs.close()
+    Assert.assertEquals(10, nrows)
+
+    // check no hang with decent number of runs (SNAP-608)
+    rs.close()
+    for (i <- 0 until 20) {
+      rs = stmt.executeQuery("select YEARI, MONTHI, DAYOFMONTH, DAYOFWEEK, " +
+          "DEPTIME, CRSDEPTIME, UNIQUECARRIER " +
+          "from AIRLINE limit 2")
+      var nrows = 0
+      while (rs.next()) {
+        nrows += 1
+      }
+      rs.close()
+      Assert.assertEquals(2, nrows)
+    }
+
+    // below hangs in CREATE TABLE (SNAP-609)
     stmt.execute("CREATE TABLE airline2 USING column AS " +
         "(select * from airline limit 10000)")
     rs = stmt.executeQuery("select count(*) from Airline2")
@@ -178,8 +203,8 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     while (rs.next()) {
       cnt += 1
     }
-    assert(cnt == 10000, "got cnt=" + cnt)
-    */
+    rs.close()
+    Assert.assertEquals(10000, cnt)
 
     conn.close()
   }
@@ -296,11 +321,25 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+
     var foundTable = false
     while (rSet.next()) {
       if (t.equalsIgnoreCase(rSet.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet.getString("TABLE_TYPE").equalsIgnoreCase("COLUMN TABLE"))
+      }
+    }
+    assert(foundTable)
+
+    val rSet2 = dbmd.getTables(null, ColumnFormatRelation.INTERNAL_SCHEMA_NAME, null,
+      Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
+
+    foundTable = false
+    while (rSet2.next()) {
+      if (s"${t + ColumnFormatRelation.SHADOW_TABLE_SUFFIX}".
+          equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
+        foundTable = true
+        assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
       }
     }
     assert(foundTable)

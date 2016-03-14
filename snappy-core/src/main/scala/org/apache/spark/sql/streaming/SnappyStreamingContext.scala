@@ -20,24 +20,57 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
-import scala.reflect.runtime.{universe => u}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{InternalRow, ScalaReflection}
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.RDDConversions
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SnappyContext}
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext}
+import org.apache.spark.streaming.{Duration, Milliseconds, StreamingContext, StreamingContextState}
 
 /**
-  * Provides an ability to manipulate SQL like query on DStream
+  * Main entry point for SnappyData extensions to Spark Streaming.
+  * A SnappyStreamingContext extends Spark's [[org.apache.spark.streaming.StreamingContext]]
+  * to provides an ability to manipulate SQL like query on
+  * [[org.apache.spark.streaming.dstream.DStream]]. You can apply schema and
+  * register continuous SQL queries(CQ) over the data streams.
+  * A single shared SnappyStreamingContext makes it possible to re-use Executors
+  * across client connections or applications.
   */
 class SnappyStreamingContext protected[spark](@transient val snappyContext: SnappyContext,
     val batchDur: Duration)
     extends StreamingContext(snappyContext.sparkContext, batchDur) with Serializable {
 
   self =>
+
+  /**
+   * Start the execution of the streams.
+   * Also registers population of AQP tables from stream tables if present.
+   *
+   * @throws IllegalStateException if the StreamingContext is already stopped
+   */
+  override def start(): Unit = synchronized {
+    if (getState() == StreamingContextState.INITIALIZED) {
+      // register population of AQP tables from stream tables
+      snappyContext.snappyContextFunctions.aqpTablePopulator(snappyContext)
+    }
+    super.start()
+  }
+
+  override def stop(stopSparkContext: Boolean,
+      stopGracefully: Boolean): Unit = {
+    try {
+      super.stop(stopSparkContext, stopGracefully)
+    } finally {
+      // force invalidate all the cached relations to remove any stale streams
+      SnappyStoreHiveCatalog.registerRelationDestroy()
+      StreamBaseRelation.clearStreams()
+    }
+  }
 
   def sql(sqlText: String): DataFrame = {
     snappyContext.sql(sqlText)
@@ -52,11 +85,21 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   def registerCQ(queryStr: String): SchemaDStream = {
     val plan = sql(queryStr).queryExecution.logical
     val dStream = new SchemaDStream(self, plan)
+    // register a dummy task so that the DStream gets started
+    // TODO: need to remove once we add proper registration of registerCQ
+    // streams in catalog and possible AQP structures on top
+    dStream.foreachRDD(rdd => Unit)
     dStream
   }
 
   def getSchemaDStream(tableName: String): SchemaDStream = {
-    new SchemaDStream(self, snappyContext.catalog.lookupRelation(tableName))
+    val catalog = snappyContext.catalog
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+      case LogicalRelation(sr: StreamPlan, _) => new SchemaDStream(self,
+        LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(self))
+      case _ =>
+        throw new AnalysisException(s"Table $tableName not a stream table")
+    }
   }
 
   /**
@@ -65,12 +108,20 @@ class SnappyStreamingContext protected[spark](@transient val snappyContext: Snap
   def createSchemaDStream[A <: Product : TypeTag]
   (stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
-    val attributeSeq = schema.toAttributes
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
     (rdd, schema.map(_.dataType)))
-    new SchemaDStream(self, LogicalDStreamPlan(attributeSeq,
-      rowStream)(self))
+    val logicalPlan = LogicalDStreamPlan(schema.toAttributes, rowStream)(self)
+    new SchemaDStream(self, logicalPlan)
   }
+
+  def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
+    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+    val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
+      rowStream.map(converter(_).asInstanceOf[InternalRow]))(self)
+    new SchemaDStream(self, logicalPlan)
+  }
+
+  SnappyStreamingContext.setActiveContext(self)
 }
 
 object SnappyStreamingContext extends Logging {
@@ -85,7 +136,7 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-  def getActive(): Option[SnappyStreamingContext] = {
+  def getActive: Option[SnappyStreamingContext] = {
     ACTIVATION_LOCK.synchronized {
       Option(activeContext.get())
     }
@@ -93,10 +144,10 @@ object SnappyStreamingContext extends Logging {
 
   def apply(sc: SnappyContext, batchDur: Duration): SnappyStreamingContext = {
     val snsc = activeContext.get()
-    if (snsc != null) snsc
+    if (snsc != null && snsc.getState() != StreamingContextState.STOPPED) snsc
     else ACTIVATION_LOCK.synchronized {
       val snsc = activeContext.get()
-      if (snsc != null) snsc
+      if (snsc != null && snsc.getState() != StreamingContextState.STOPPED) snsc
       else {
         val snsc = new SnappyStreamingContext(sc, batchDur)
         snsc.remember(Milliseconds(300 * 1000))
@@ -106,24 +157,27 @@ object SnappyStreamingContext extends Logging {
     }
   }
 
-  def start(): Unit = {
-    val snsc = getActive().get
-    snsc.start()
+  def start(): Unit = getActive match {
+    case Some(snsc) => snsc.start()
+    case None =>
   }
 
   def stop(stopSparkContext: Boolean = false,
       stopGracefully: Boolean = true): Unit = {
-    val snsc = getActive().get
-    if (snsc != null) {
-      snsc.stop(stopSparkContext, stopGracefully)
-      snsc.snappyContext.clearCache()
-      SnappyContext.stop()
-      setActiveContext(null)
+    getActive match {
+      case Some(snsc) =>
+        snsc.stop(stopSparkContext, stopGracefully)
+        snsc.snappyContext.clearCache()
+        setActiveContext(null)
+      case None =>
     }
   }
 }
 
 trait StreamPlan {
   def rowStream: DStream[InternalRow]
+
+  def schema: StructType
 }
 
+trait StreamPlanProvider extends SchemaRelationProvider

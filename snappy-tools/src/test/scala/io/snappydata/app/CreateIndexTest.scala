@@ -20,9 +20,6 @@ import io.snappydata.SnappyFunSuite
 
 import org.apache.spark.sql.{Row, SaveMode}
 
-/**
- * Created by vivekb on 27/10/15.
- */
 class CreateIndexTest extends SnappyFunSuite {
 
   test("Test create Index on Column Table using Snappy API") {

@@ -30,16 +30,12 @@ import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
  * Tests for column tables in GFXD.
- *
- * Created by Suranjan on 14/10/15.
  */
 class ColumnTableTest
     extends SnappyFunSuite
     with Logging
     with BeforeAndAfter
     with BeforeAndAfterAll {
-
-
 
   after {
     snc.dropTable(tableName, ifExists = true)
@@ -54,6 +50,25 @@ class ColumnTableTest
   val options = "OPTIONS (PARTITION_BY 'col1')"
 
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
+
+
+  test("Test the creation/dropping of column table using Schema") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    snc.sql("Create Table MY_TABLE (a INT, b INT, c INT) using column options()")
+
+
+    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable("MY_TABLE")
+    var result = snc.sql("SELECT * FROM MY_TABLE" )
+    var r = result.collect
+    println(r.length)
+
+    snc.sql("drop table MY_TABLE" )
+
+    println("Successful")
+  }
 
 
   test("Test the creation/dropping of table using Snappy API") {
@@ -234,7 +249,7 @@ class ColumnTableTest
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    snc.truncateExternalTable(tableName)
+    snc.truncateTable(tableName)
 
     var result = snc.sql("SELECT * FROM " + tableName)
     var r = result.collect

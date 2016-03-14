@@ -24,9 +24,6 @@ import org.scalatest.BeforeAndAfter
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
 
-/**
- * Created by skumar on 13/11/15.
- */
 class ColumnTableBatchInsertTest extends SnappyFunSuite
 with Logging
 with BeforeAndAfter {
@@ -133,6 +130,7 @@ with BeforeAndAfter {
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")

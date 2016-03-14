@@ -18,25 +18,25 @@ package io.snappydata.tools
 
 import java.io.{File, IOException}
 
+import com.gemstone.gemfire.internal.GemFireTerminateError
+import com.gemstone.gemfire.internal.GemFireUtilLauncher.CommandEntry
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
-import com.gemstone.gemfire.internal.{GemFireTerminateError, GemFireUtilLauncher}
-import com.pivotal.gemfirexd.internal.iapi.tools.i18n.LocalizedResource
 import com.pivotal.gemfirexd.internal.impl.tools.ij.utilMain
 import com.pivotal.gemfirexd.internal.tools.ij
-import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdDistributionLocator, GfxdUtilLauncher}
-import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools, GfxdServerLauncher}
+import com.pivotal.gemfirexd.tools.internal.{JarTools, MiscTools}
+import com.pivotal.gemfirexd.tools.{GfxdAgentLauncher, GfxdUtilLauncher}
 import io.snappydata.LocalizedMessages
 
 /**
  * Launcher class encompassing snappy processes command lines.
- *
- * Created by soubhikc on 30/09/15.
  */
 class SnappyUtilLauncher extends GfxdUtilLauncher {
 
+  GfxdUtilLauncher.snappyStore = true
+
   import SnappyUtilLauncher._
 
-  protected override def getTypes(): java.util.Map[String, GemFireUtilLauncher#CommandEntry] = {
+  protected override def getTypes(): java.util.Map[String, CommandEntry] = {
     val types = super.getTypes()
 
     types.put("server", new CommandEntry(classOf[ServerLauncher], LocalizedMessages.res.getTextMessage("UTIL_Server_Usage"), false))
