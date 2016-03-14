@@ -25,6 +25,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 import scala.util.Random
+import scala.util.control.NonFatal
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -33,7 +34,7 @@ import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, Externa
 import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.storage.{BlockId, BlockStatus, RDDBlockId, StorageLevel}
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
 
 /*
 Generic class to query column table from Snappy.
@@ -104,7 +105,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   }
 
   override def getConnection(id: String): Connection = {
-    ConnectionPool.getPoolConnection(id, None, dialect, connProperties.poolProps,
+    ConnectionPool.getPoolConnection(id, dialect, connProperties.poolProps,
       connProperties.connProps, connProperties.hikariCP)
   }
 
@@ -143,38 +144,73 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   }
 }
 
-final class CachedBatchIteratorOnRS(conn: Connection,
-    requiredColumns: Array[String],
-    ps: Statement, rs: ResultSet) extends Iterator[CachedBatch] {
+abstract class ResultSetIterator[A](conn: Connection,
+    stmt: Statement, rs: ResultSet, context: TaskContext)
+    extends Iterator[A] with Logging {
 
-  var _hasNext = moveNext()
+  protected final var hasNextValue = true
 
-  override def hasNext: Boolean = _hasNext
+  context.addTaskCompletionListener { context => close() }
+  moveNext()
 
-  val numCols = requiredColumns.length
-  val colBuffers = new Array[Array[Byte]](numCols)
+  override final def hasNext: Boolean = hasNextValue
 
-  override def next() = {
-    val result = getCachedBatchFromRow(rs)
-    _hasNext = moveNext()
-    result
-  }
-
-  private def moveNext(): Boolean = {
+  protected final def moveNext(): Unit = {
     var success = false
     try {
+      // TODO: see if optimization using rs.lightWeightNext
+      // and explicit context pop in close possible (was causing trouble)
       success = rs.next()
-      success
+    } catch {
+      case NonFatal(e) => logWarning("Exception iterating resultSet", e)
     } finally {
       if (!success) {
-        rs.close()
-        ps.close()
-        conn.close()
+        close()
       }
     }
   }
 
-  private def getCachedBatchFromRow(rs: ResultSet): CachedBatch = {
+  protected def getNextValue(rs: ResultSet): A
+
+  final def next(): A = {
+    val result = getNextValue(rs)
+    moveNext()
+    result
+  }
+
+  final def close() {
+    if (!hasNextValue) return
+    try {
+      // GfxdConnectionWrapper.restoreContextStack(stmt, rs)
+      // rs.lightWeightClose()
+      rs.close()
+    } catch {
+      case e: Exception => logWarning("Exception closing resultSet", e)
+    }
+    try {
+      stmt.close()
+    } catch {
+      case e: Exception => logWarning("Exception closing statement", e)
+    }
+    try {
+      conn.close()
+      logDebug("closed connection for task " + context.partitionId())
+    } catch {
+      case e: Exception => logWarning("Exception closing connection", e)
+    }
+    hasNextValue = false
+  }
+}
+
+final class CachedBatchIteratorOnRS(conn: Connection,
+    requiredColumns: Array[String],
+    stmt: Statement, rs: ResultSet, context: TaskContext)
+    extends ResultSetIterator[CachedBatch](conn, stmt, rs, context) {
+
+  private val numCols = requiredColumns.length
+  private val colBuffers = new Array[Array[Byte]](numCols)
+
+  protected override def getNextValue(rs: ResultSet): CachedBatch = {
     var i = 0
     while (i < numCols) {
       colBuffers(i) = rs.getBytes(i + 1)
@@ -207,7 +243,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val query = "select " + requiredColumns.mkString(", ") +
             s", numRows, stats from $resolvedName where bucketid = $par"
         val rs = stmt.executeQuery(query)
-        new CachedBatchIteratorOnRS(conn, requiredColumns, stmt, rs)
+        new CachedBatchIteratorOnRS(conn, requiredColumns, stmt, rs, context)
     }, closeOnSuccess = false)
   }
 

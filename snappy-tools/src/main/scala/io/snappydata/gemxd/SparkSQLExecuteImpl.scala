@@ -226,7 +226,7 @@ object SparkSQLExecuteImpl {
     // columns in each row is divided into sets of 8 columns. Per eight column group a
     // byte will be sent to indicate which all column in that group has a
     // non-null value.
-    while (groupNum < numEightColGroups - 1) {
+    while (groupNum < numEightColGroups) {
       writeAGroup(groupNum, 8, row, schema, hdos)
       groupNum += 1
     }
@@ -299,12 +299,12 @@ object SparkSQLExecuteImpl {
   def readDVDArray(dvds: Array[DataValueDescriptor], types: Array[Int],
       in: ByteArrayDataInput, numEightColGroups: Int,
       numPartialCols: Int): Unit = {
-    var groupNum: Int = 0
+    var groupNum = 0
     // using the gemfirexd way of sending results where in the number of
     // columns in each row is divided into sets of 8 columns. Per eight column
     // group a byte will be sent to indicate which all column in that group
     // has a non-null value.
-    while (groupNum < numEightColGroups - 1) {
+    while (groupNum < numEightColGroups) {
       readAGroup(groupNum, 8, dvds, types, in)
       groupNum += 1
     }
@@ -320,7 +320,7 @@ object SparkSQLExecuteImpl {
       val dvdIndex = (groupNum << 3) + index
       val dvd = dvds(dvdIndex)
       if (ActiveColumnBits.isNormalizedColumnOn(index, activeByteForGroup)) {
-        types(index) match {
+        types(dvdIndex) match {
           case StoredFormatIds.SQL_CLOB_ID =>
             val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {
@@ -387,13 +387,15 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
 
   private[snappydata] def rowIter(itr: Iterator[InternalRow]): Array[Byte] = {
 
-    var (numCols, numEightColGroups, numPartCols) = (-1, -1, -1)
+    var numCols = -1
+    var numEightColGroups = -1
+    var numPartCols = -1
 
     def evalNumColumnGroups(row: InternalRow): Unit = {
       if (row != null) {
         numCols = row.numFields
-        numEightColGroups = (numCols + 7) / 8
-        numPartCols = ((numCols - 1) % 8) + 1
+        numEightColGroups = numCols / 8
+        numPartCols = numCols % 8
       }
     }
     val dos = new GfxdHeapDataOutputStream(
