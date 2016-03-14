@@ -156,7 +156,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val dataDF = snc.createDataFrame(rdd)
 
     val p = Map.empty[String, String]
-    snc.createExternalTable(tableName, "column", dataDF.schema, p)
+    snc.createTable(tableName, "column", dataDF.schema, p)
 
     // we don't expect any increase in put distribution stats
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
@@ -204,7 +204,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 1008)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
 
