@@ -20,7 +20,9 @@ import java.lang.Long
 import java.util
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
+import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks,
   LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
@@ -31,8 +33,6 @@ import org.apache.spark.scheduler.cluster.{SnappyClusterManager, SnappyEmbeddedM
 
 /**
   * Callbacks that are sent by GemXD to Snappy for cluster management
-  *
-  * Created by hemantb on 10/12/15.
   */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
@@ -72,15 +72,18 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def getSQLExecute(sql: String, ctx: LeadNodeExecutionContext,
       v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, v)
 
+  override def readDVDArray(dvds: Array[DataValueDescriptor],
+      types: Array[Int], in: ByteArrayDataInput, numEightColGroups: Int,
+      numPartialCols: Int): Unit = {
+    SparkSQLExecuteImpl.readDVDArray(dvds, types, in, numEightColGroups,
+      numPartialCols)
+  }
+
   override def clearSnappyContextForConnection(connectionId: Long): Unit = {
     SnappyContextPerConnection.removeSnappyContext(connectionId)
   }
 }
 
-
-/**
-  * Created by soubhikc on 19/10/15.
-  */
 trait ClusterCallback {
   CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
 }

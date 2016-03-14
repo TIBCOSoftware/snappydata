@@ -1,0 +1,34 @@
+site_name: SnappyData Docs - Preview release
+site_url: http://www.snappydata.io
+site_description: Project documentation with Markdown.
+site_author: SnappyData development team
+site_favicon: favicon.ico
+
+repo_url: https://github.com/SnappyDataInc/snappydata
+
+pages:
+# this file may just be the [toc] tag .. not sure if that works.
+#
+- Getting Started: index.md
+- Building from source, project layout: build-instructions.md
+- Overview: snappyIntroduction.md
+- Key features: features.md
+- Architecture: architecture.md
+- Configuring the cluster: configuration.md
+- Connecting using JDBC, Spark: connectingToCluster.md
+- Developing Apps using the Spark API: jobs.md
+- Row and Column tables: rowAndColumnTables.md
+- Approximate query processing: aqp.md
+- Stream processing using SQL: streamingWithSQL.md
+- Deployment topologies: deployment.md
+- API: apidocsintro.md
+- About:
+#   - Release Notes: about/release-notes.md
+#   - Contributing: about/contributing.md
+    - License: LICENSE.md
+
+theme: readthedocs
+
+extra_css: [extra.css]
+
+copyright: Copyright &copy; 2016 SnappyData Inc.

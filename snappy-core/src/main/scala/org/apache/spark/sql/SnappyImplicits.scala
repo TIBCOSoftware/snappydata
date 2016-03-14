@@ -16,22 +16,20 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.rdd.RDD
-
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
-import org.apache.spark.{SparkContext, TaskContext}
-
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
+import org.apache.spark.TaskContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Subquery}
+
 /**
  * Implicit conversions used by Snappy.
- *
- * Created by rishim on 7/12/15.
  */
 // scalastyle:off
 object snappy extends Serializable {
-  // scalastyle:on
+// scalastyle:on
 
   implicit def snappyOperationsOnDataFrame(df: DataFrame): SnappyDataFrameOperations = {
     df.sqlContext match {
@@ -41,21 +39,33 @@ object snappy extends Serializable {
     }
   }
 
+  implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
+    df.sqlContext match {
+      case sc: SnappyContext =>
+        val plan = snappy.unwrapSubquery(df.logicalPlan)
+        if (sc.snappyContextFunctions.isStratifiedSample(plan)) {
+          new SampleDataFrame(sc, plan)
+        } else {
+          throw new AnalysisException("Stratified sampling " +
+              "operations require stratifiedSample plan and not " +
+              s"${plan.getClass.getSimpleName}")
+        }
+      case sc => throw new AnalysisException("Extended snappy operations " +
+          s"require SnappyContext and not ${sc.getClass.getSimpleName}")
+    }
+  }
+
+  implicit def convertToAQPFrame(df: DataFrame): AQPDataFrame = {
+    AQPDataFrame(df.sqlContext.asInstanceOf[SnappyContext], df.queryExecution)
+  }
+
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
       case Subquery(_, child) => unwrapSubquery(child)
       case _ => plan
     }
   }
-/*
 
-  implicit class SparkContextOperations(val s: SparkContext) {
-    def getOrCreateStreamingContext(batchInterval: Int = 2): StreamingContext = {
-      StreamingCtxtHolder(s, batchInterval)
-    }
-  }
-
-*/
   implicit class RDDExtensions[T: ClassTag](rdd: RDD[T]) extends Serializable {
 
     /**
@@ -107,10 +117,38 @@ object snappy extends Serializable {
         preservesPartitioning)
     }
   }
+
+  implicit class DataFrameWriterExtensions(dfWriter: DataFrameWriter) extends Serializable {
+
+    /**
+     * Inserts the content of the [[DataFrame]] to the specified table. It requires
+     * that the schema of the [[DataFrame]] is the same as the schema of the table.
+     * If the row is already present then it is updated.
+     *
+     * This ignores all SaveMode
+     *
+     * @since 1.6.0
+     */
+    def putInto(tableName: String): Unit = {
+      val partitions = dfWriter.partitioningColumns.map(_.map(col => col -> (None: Option[String])).toMap)
+      //Suranjan: ignore mode altogether.
+      val overwrite = true
+      val df = dfWriter.df
+      df.sqlContext.executePlan(
+      InsertIntoTable(
+        UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
+        partitions.getOrElse(Map.empty[String, Option[String]]),
+        df.logicalPlan,
+        overwrite,
+        ifNotExists = false)).toRdd
+    }
+  }
+
 }
 
 private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
-                                                  df: DataFrame) {
+    df: DataFrame) {
+
 
   /**
    * Creates stratified sampled data from given DataFrame
@@ -118,24 +156,27 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    *   peopleDf.stratifiedSample(Map("qcs" -> Array(1,2), "fraction" -> 0.01))
    * }}}
    */
-  def stratifiedSample(options: Map[String, Any]): SampleDataFrame = new SampleDataFrame(context,
-    context.aqpContext.convertToStratifiedSample(options, df.logicalPlan) )
-
-
-  def createTopK(ident: String, keyColumnName: String, options: Map[String, Any]): Unit =
-    context.createTopK(ident, keyColumnName, df.schema,  options, false)
+  def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
+    new SampleDataFrame(context, context.snappyContextFunctions.convertToStratifiedSample(
+      options, context, df.logicalPlan))
 
 
   /**
-   * Table must be registered using #registerSampleTable.
+   * Creates a DataFrame for given time instant that will be used when
+   * inserting into top-K structures.
+   *
+   * @param time the time instant of the DataFrame as millis since epoch
+   * @return
    */
-  def insertIntoAQPStructures(aqpStructureNames: String*): Unit =
-    context.saveTable( df, aqpStructureNames)
+  def withTime(time: Long): DataFrameWithTime =
+    new DataFrameWithTime(context, df.logicalPlan, time)
 
 
   /**
    * Append to an existing cache table.
    * Automatically uses #cacheQuery if not done already.
    */
-  def appendToCache(tableName: String): Unit = context.appendToCache(df, tableName)
+  def appendToTempTableCache(tableName: String): Unit =
+    context.appendToTempTableCache(df, tableName)
 }
+

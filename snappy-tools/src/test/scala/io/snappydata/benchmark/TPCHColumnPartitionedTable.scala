@@ -1,27 +1,10 @@
-/*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
 package io.snappydata.benchmark
 
 import java.sql.{Date, Statement}
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.snappy._
-
+import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
 
 
 /**
@@ -42,26 +25,71 @@ object TPCHColumnPartitionedTable  {
         "O_COMMENT        VARCHAR(79) NOT NULL," +
         //"KEY (O_ORDERDATE) USING CLUSTERED COLUMNSTORE," +
         "SHARD KEY(O_ORDERKEY))"
+//    stmt.execute("CREATE TABLE ORDERS  ( " +
+//        "O_ORDERKEY       INTEGER NOT NULL PRIMARY KEY," +
+//        "O_CUSTKEY        INTEGER NOT NULL," +
+//        "O_ORDERSTATUS    CHAR(1) NOT NULL," +
+//        "O_TOTALPRICE     DECIMAL(15,2) NOT NULL," +
+//        "O_ORDERDATE      DATE NOT NULL," +
+//        "O_ORDERPRIORITY  CHAR(15) NOT NULL," +
+//        "O_CLERK          CHAR(15) NOT NULL," +
+//        "O_SHIPPRIORITY   INTEGER NOT NULL," +
+//        "O_COMMENT        VARCHAR(79) NOT NULL," +
+//        //"KEY (O_ORDERDATE) USING CLUSTERED COLUMNSTORE," +
+//        "KEY(O_CUSTKEY))"
     )
     println("Created Table ORDERS")
   }
 
-  def createAndPopulateOrderTable(props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
-    val snappyContext = SnappyContext.getOrCreate(sc)
+//  def createAndPopulateOrderTable(props: Map[String, String], sc: SparkContext, path: String, isSnappy: Boolean): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    val orderData = sc.textFile(s"$path/orders.tbl")
+//    val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
+//    val orderDF = snappyContext.createDataFrame(orderReadings)
+//    if (isSnappy) {
+//      val p1 = Map("PARTITION_BY"-> "o_orderkey")
+//
+//      snappyContext.dropTable("ORDERS", ifExists = true)
+//      //snappyContext.dropExternalTable("ORDERS", ifExists = true)
+//      //snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
+//      snappyContext.createTable("ORDERS", "column", orderDF.schema, p1)
+//      orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS")
+//      //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
+//      println("Created Table ORDERS")
+//    } else {
+//      orderDF.registerTempTable("ORDERS")
+//      snappyContext.cacheTable("ORDERS")
+//      val cnts = snappyContext.sql("select count(*) from ORDERS").collect()
+//      for (s <- cnts) {
+//        var output = s.toString()
+//        println(output)
+//      }
+//    }
+//  }
+
+  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
     val orderData = sc.textFile(s"$path/orders.tbl")
     val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
-    val orderDF = snappyContext.createDataFrame(orderReadings)
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    println("KBKBKBKB: Buckets : " + buckets)
     if (isSnappy) {
-      val p1 = props + (("PARTITION_BY"-> "o_orderkey"))
+      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("ORDERS", ifExists = true)
+      //snappyContext.dropExternalTable("ORDERS", ifExists = true)
+      //snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
       snappyContext.createTable("ORDERS", "column", orderDF.schema, p1)
       orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS")
       //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
       println("Created Table ORDERS")
     } else {
       orderDF.registerTempTable("ORDERS")
-      snappyContext.cacheTable("ORDERS")
-      val cnts = snappyContext.sql("select count(*) from ORDERS").collect()
+      sqlContext.cacheTable("ORDERS")
+      val cnts = sqlContext.sql("select count(*) from ORDERS").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -88,28 +116,79 @@ object TPCHColumnPartitionedTable  {
         "L_COMMENT      VARCHAR(44) NOT NULL,"+
         //"KEY (L_SHIPDATE) USING CLUSTERED COLUMNSTORE,"+
         "SHARD KEY (L_ORDERKEY)) "
+//    stmt.execute("CREATE TABLE LINEITEM ( " +
+//        "L_ORDERKEY    INTEGER NOT NULL,"+
+//        "L_PARTKEY     INTEGER NOT NULL,"+
+//        "L_SUPPKEY     INTEGER NOT NULL,"+
+//        "L_LINENUMBER  INTEGER NOT NULL,"+
+//        "L_QUANTITY    DECIMAL(15,2) NOT NULL,"+
+//        "L_EXTENDEDPRICE  DECIMAL(15,2) NOT NULL,"+
+//        "L_DISCOUNT    DECIMAL(15,2) NOT NULL,"+
+//        "L_TAX         DECIMAL(15,2) NOT NULL,"+
+//        "L_RETURNFLAG  CHAR(1) NOT NULL,"+
+//        "L_LINESTATUS  CHAR(1) NOT NULL,"+
+//        "L_SHIPDATE    DATE NOT NULL,"+
+//        "L_COMMITDATE  DATE NOT NULL,"+
+//        "L_RECEIPTDATE DATE NOT NULL,"+
+//        "L_SHIPINSTRUCT CHAR(25) NOT NULL,"+
+//        "L_SHIPMODE     CHAR(10) NOT NULL,"+
+//        "L_COMMENT      VARCHAR(44) NOT NULL,"+
+//        "PRIMARY KEY (L_ORDERKEY,L_LINENUMBER),"+
+//        "FOREIGN SHARD KEY (L_ORDERKEY) REFERENCES ORDERS (O_ORDERKEY),"+
+//        "KEY (L_PARTKEY),"+
+//        "KEY (L_SUPPKEY))"
     )
 
     println("Created Table LINEITEM")
   }
 
-  def createAndPopulateLineItemTable(props: Map[String, String], sc: SparkContext, path:String, isSnappy:Boolean): Unit = {
-    val snappyContext = SnappyContext.getOrCreate(sc)
+//  def createAndPopulateLineItemTable(props: Map[String, String], sc: SparkContext, path:String, isSnappy:Boolean): Unit = {
+//    val snappyContext = SnappyContext.getOrCreate(sc)
+//    val lineItemData = sc.textFile(s"$path/lineitem.tbl")
+//    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
+//    val lineOrderDF = snappyContext.createDataFrame(lineItemReadings)
+//    if (isSnappy) {
+//      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
+//
+//      //snappyContext.dropExternalTable("LINEITEM", ifExists = true)
+//      snappyContext.dropTable("LINEITEM", ifExists = true)
+//      //snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
+//      snappyContext.createTable("LINEITEM", "column", lineOrderDF.schema, p1)
+//      lineOrderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("LINEITEM")
+//      //    lineOrderDF.registerAndInsertIntoExternalStore("LINEITEM", props)
+//      println("Created Table LINEITEM")
+//    } else {
+//      lineOrderDF.registerTempTable("LINEITEM")
+//      snappyContext.cacheTable("LINEITEM")
+//      var cnts = snappyContext.sql("select count(*) from LINEITEM").collect()
+//      for (s <- cnts) {
+//        var output = s.toString()
+//        println(output)
+//      }
+//    }
+//  }
+
+  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
-    val lineOrderDF = snappyContext.createDataFrame(lineItemReadings)
+    val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
     if (isSnappy) {
-      val p1 = props + (("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
+      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
 
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      //snappyContext.dropExternalTable("LINEITEM", ifExists = true)
       snappyContext.dropTable("LINEITEM", ifExists = true)
+      //snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
       snappyContext.createTable("LINEITEM", "column", lineOrderDF.schema, p1)
       lineOrderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("LINEITEM")
       //    lineOrderDF.registerAndInsertIntoExternalStore("LINEITEM", props)
       println("Created Table LINEITEM")
     } else {
       lineOrderDF.registerTempTable("LINEITEM")
-      snappyContext.cacheTable("LINEITEM")
-      var cnts = snappyContext.sql("select count(*) from LINEITEM").collect()
+      sqlContext.cacheTable("LINEITEM")
+      var cnts = sqlContext.sql("select count(*) from LINEITEM").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)

@@ -20,14 +20,14 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import com.zaxxer.hikari.util.PropertyBeanSetter
+import scala.collection.{JavaConversions, mutable}
+
+import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
-import org.apache.spark.sql.jdbc.JdbcDialect
-import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.tomcat.jdbc.pool.{DataSource => TDataSource, PoolProperties}
 
-import scala.collection.{JavaConversions, mutable}
+import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 
 /**
  * A global way to obtain a pooled DataSource with a given set of
@@ -58,8 +58,6 @@ object ConnectionPool {
   private[this] val pools = mutable.Map[PoolKey,
       (DataSource, mutable.Set[String])]()
 
-  private[this] val EMPTY_PROPS = new Properties()
-
   /**
    * Get a pooled DataSource for a given ID, pool properties and connection
    * properties. Currently two pool implementations are supported namely
@@ -79,8 +77,7 @@ object ConnectionPool {
    *                 implementation; default is false i.e. Tomcat pool
    */
   def getPoolDataSource(id: String, props: Map[String, String],
-      connectionProps: Properties = EMPTY_PROPS,
-      hikariCP: Boolean = false): DataSource = {
+      connectionProps: Properties, hikariCP: Boolean): DataSource = {
     // fast lock-free path first (the usual case)
     val dsKey = idToPoolMap.get(id)
     if (dsKey != null) {
@@ -111,7 +108,7 @@ object ConnectionPool {
               new HDataSource(hconf)
             } else {
               val tconf = new PoolProperties()
-              PropertyBeanSetter.setTargetFromProperties(tconf, poolProps)
+              PropertyElf.setTargetFromProperties(tconf, poolProps)
               if (connectionProps != null) {
                 tconf.setDbProperties(connectionProps)
               }
@@ -132,16 +129,9 @@ object ConnectionPool {
    *
    * @see getPoolDataSource
    */
-  def getPoolConnection(id: String, driver: Option[String],
-      dialect: JdbcDialect, poolProps: Map[String, String],
-      connProps: Properties = EMPTY_PROPS,
-      hikariCP: Boolean = false): Connection = {
-    try {
-      driver.foreach(DriverRegistry.register)
-    } catch {
-      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
-        s"Couldn't find driver class $driver", cnfe)
-    }
+  def getPoolConnection(id: String, dialect: JdbcDialect,
+      poolProps: Map[String, String], connProps: Properties,
+      hikariCP: Boolean): Connection = {
     val ds = getPoolDataSource(id, poolProps, connProps, hikariCP)
     val conn = ds.getConnection
     dialect match {
@@ -162,7 +152,7 @@ object ConnectionPool {
     if (ids.isEmpty) {
       pools -= poolKey
       if (poolKey._3) {
-        dsKey._1.asInstanceOf[HDataSource].shutdown()
+        dsKey._1.asInstanceOf[HDataSource].close()
       } else {
         dsKey._1.asInstanceOf[TDataSource].close(true)
       }

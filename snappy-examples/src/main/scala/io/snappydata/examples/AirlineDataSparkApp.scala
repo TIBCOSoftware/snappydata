@@ -1,9 +1,7 @@
 package io.snappydata.examples
 
-import org.apache.spark.sql.{SnappyContext}
+import org.apache.spark.sql.{Row, SnappyContext, DataFrame}
 import org.apache.spark.{SparkContext, SparkConf}
-import org.apache.spark.sql.{DataFrame}
-import org.apache.spark.sql.functions._
 
 /**
   * This application depicts how a Spark cluster can
@@ -13,13 +11,13 @@ import org.apache.spark.sql.functions._
 object AirlineDataSparkApp {
 
   def main(args: Array[String]) {
-
+    // scalastyle:off println
     val conf = new SparkConf().
       setAppName("Airline Data Application")
 
     val sc = new SparkContext(conf)
     val snc = SnappyContext(sc)
-    snc.sql("set spark.sql.shuffle.partitions=5")
+    snc.sql("set spark.sql.shuffle.partitions=6")
 
     val colTableName = "airline"
     val rowTableName = "airlineref"
@@ -28,43 +26,32 @@ object AirlineDataSparkApp {
     val airlineDF: DataFrame = snc.table(colTableName)
     val airlineCodeDF: DataFrame = snc.table(rowTableName)
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
-    val start = System.currentTimeMillis
+    // Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
     val colResult = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
-      equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("Year_"), airlineDF("Month_"), airlineCodeDF("DESCRIPTION")).
-      agg("ArrDelay" -> "avg", "FlightNum" -> "count")
-
-    println("ARR_DELAY Result:")
+        equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
+    println("Airline arrival schedule")
+    val start = System.currentTimeMillis
     colResult.show
     val totalTimeCol = (System.currentTimeMillis - start)
     println(s"Query time:${totalTimeCol}ms\n")
 
-    // Update the row table
-    // Suppose a particular Airline company say 'Alaska Airlines Inc.'
-    // re-brands itself as 'Alaska Inc.'
-    val startUpd = System.currentTimeMillis
-    val updateVal = udf { (DESCRIPTION: String) =>
-      if (DESCRIPTION == "Alaska Airlines Inc.") "Alaska Inc." else DESCRIPTION
-    }
-    val updateResult = airlineCodeDF.withColumn("DESCRIPTION",
-      updateVal(airlineCodeDF("DESCRIPTION")))
-    println("Updated values:")
-    updateResult.show
-    val totalTimeUpd = (System.currentTimeMillis - startUpd)
-    println(s" Query time:${totalTimeUpd}ms\n")
+    // Suppose a particular Airline company say 'Delta Air Lines Inc.'
+    // re-brands itself as 'Delta America'.Update the row table.
+    val query: String = " CODE ='DL'"
+    val newColumnValues: Row = Row("Delta America")
+    snc.update(rowTableName,query,newColumnValues,"DESCRIPTION")
 
-    // Data Frame query to get average ARR_DELAY for a carrier monthwise from column table
-    // Result of this query qill show
+    // Data Frame query :Which Airlines Arrive On Schedule? JOIN with reference table
+    val colResultAftUpd = airlineDF.join(airlineCodeDF, airlineDF.col("UniqueCarrier").
+        equalTo(airlineCodeDF("CODE"))).groupBy(airlineDF("UniqueCarrier"),
+      airlineCodeDF("DESCRIPTION")).agg("ArrDelay" -> "avg").orderBy("avg(ArrDelay)")
+    println("Airline arrival schedule after Updated values:")
     val startColUpd = System.currentTimeMillis
-    val colResultAftUpd = airlineDF.join(updateResult, airlineDF.col("UniqueCarrier").
-      equalTo(updateResult("CODE"))).groupBy(airlineDF("UniqueCarrier"),
-      airlineDF("Year_"), airlineDF("Month_"), updateResult("DESCRIPTION")).
-      agg("ArrDelay" -> "avg", "FlightNum" -> "count")
-    println("ARR_DELAY after Updated values:")
     colResultAftUpd.show
     val totalTimeColUpd = (System.currentTimeMillis - startColUpd)
     println(s" Query time:${totalTimeColUpd}ms")
+    // scalastyle:on println
   }
 
 }

@@ -20,10 +20,6 @@ import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
 import io.snappydata.impl.{LeadImpl, LocatorImpl, ServerImpl}
 
-
-/**
- * Created by hemantb.
- */
 object ServiceManager {
 
   private[this] val contextLock = new AnyRef

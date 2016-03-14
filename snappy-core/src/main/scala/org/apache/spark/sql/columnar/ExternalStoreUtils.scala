@@ -41,33 +41,45 @@ import org.apache.spark.{Logging, SparkContext}
 /**
  * Utility methods used by external storage layers.
  */
-private[sql] object ExternalStoreUtils extends Logging {
+object ExternalStoreUtils extends Logging {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
-  final val DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE = "7"
+  final val DEFAULT_SAMPLE_TABLE_BUCKETS = "53"
+  final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "11"
+  final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
+
+  private def addProperty(props: Map[String, String], key: String,
+      default: String): Map[String, String] = {
+    if (props.contains(key)) props
+    else props + (key -> default)
+  }
+
+  private def defaultMaxExternalPoolSize: String =
+    String.valueOf(math.max(32, Runtime.getRuntime.availableProcessors() * 4))
+
+  private def defaultMaxEmbeddedPoolSize: String =
+    String.valueOf(math.max(64, Runtime.getRuntime.availableProcessors() * 6))
 
   def getAllPoolProperties(url: String, driver: String,
-      poolProps: Map[String, String], hikariCP: Boolean) = {
-    val urlProp = if (hikariCP) "jdbcUrl" else "url"
-    val driverClassProp = "driverClassName"
-    val props = {
-      if (driver == null || driver.isEmpty) {
-        if (poolProps.isEmpty) {
-          Map(urlProp -> url)
-        } else {
-          poolProps + (urlProp -> url)
-        }
-      } else if (poolProps.isEmpty) {
-        Map(urlProp -> url, driverClassProp -> driver)
-      } else {
-        poolProps + (urlProp -> url) + (driverClassProp -> driver)
-      }
+      poolProps: Map[String, String], hikariCP: Boolean,
+      isEmbedded: Boolean): Map[String, String] = {
+    // setup default pool properties
+    var props = poolProps
+    if (driver != null && !driver.isEmpty) {
+      props = addProperty(props, "driverClassName", driver)
     }
+    val defaultMaxPoolSize = if (isEmbedded) defaultMaxEmbeddedPoolSize
+    else defaultMaxExternalPoolSize
     if (hikariCP) {
-      props + ("minimumIdle" -> "4")
+      props = props + ("jdbcUrl" -> url)
+      props = addProperty(props, "maximumPoolSize", defaultMaxPoolSize)
+      props = addProperty(props, "minimumIdle", "4")
     } else {
-      props + ("initialSize" -> "4")
+      props = props + ("url" -> url)
+      props = addProperty(props, "maxActive", defaultMaxPoolSize)
+      props = addProperty(props, "initialSize", "4")
     }
+    props
   }
 
   def getDriver(url: String, dialect: JdbcDialect): String = {
@@ -78,25 +90,25 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  class CaseInsensitiveMutableHashMap(map: Map[String, String])
-      extends mutable.Map[String, String] with Serializable {
+  class CaseInsensitiveMutableHashMap[T](map: scala.collection.Map[String, T])
+      extends mutable.Map[String, T] with Serializable {
 
-    val baseMap = new mutable.HashMap[String, String]
+    val baseMap = new mutable.HashMap[String, T]
     baseMap ++= map.map(kv => kv.copy(_1 = kv._1.toLowerCase))
 
-    override def get(k: String): Option[String] = baseMap.get(k.toLowerCase)
+    override def get(k: String): Option[T] = baseMap.get(k.toLowerCase)
 
-    override def remove(k: String): Option[String] = baseMap.remove(k.toLowerCase)
+    override def remove(k: String): Option[T] = baseMap.remove(k.toLowerCase)
 
-    override def iterator: Iterator[(String, String)] = baseMap.iterator
+    override def iterator: Iterator[(String, T)] = baseMap.iterator
 
-    override def +=(kv: (String, String)) = {
-      baseMap += kv
+    override def +=(kv: (String, T)) = {
+      baseMap += kv.copy(_1 = kv._1.toLowerCase)
       this
     }
 
     override def -=(key: String) = {
-      baseMap -= key
+      baseMap -= key.toLowerCase
       this
     }
   }
@@ -111,10 +123,10 @@ private[sql] object ExternalStoreUtils extends Logging {
     table
   }
 
-  def removeSamplingOption(parameters: mutable.Map[String, String]): Map[String, String] = {
+  def removeSamplingOptions(parameters: mutable.Map[String, String]): Map[String, String] = {
 
     val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
-      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", " timeInterval")
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", "timeInterval")
 
     val optMap = new mutable.HashMap[String, String]
 
@@ -170,13 +182,6 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def isExternalShellMode(sparkContext: SparkContext): Boolean = {
-    SnappyContext.getClusterMode(sparkContext) match {
-      case SnappyShellMode(_, _) => true
-      case _ => false
-    }
-  }
-
   def isShellOrLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
       case SnappyShellMode(_, _) | LocalMode(_, _) => true
@@ -184,8 +189,8 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
-  def validateAndGetAllProps(sc : SparkContext,
-      parameters: mutable.Map[String, String]) :ConnectionProperties = {
+  def validateAndGetAllProps(sc: SparkContext,
+      parameters: mutable.Map[String, String]): ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(sc))
 
@@ -197,14 +202,14 @@ private[sql] object ExternalStoreUtils extends Logging {
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    val hikariCP = poolImpl.map(Utils.normalizeId) match {
+    val hikariCP = poolImpl.map(Utils.toLowerCase) match {
       case Some("hikari") => true
       case Some("tomcat") => false
       case Some(p) =>
         throw new IllegalArgumentException("ExternalStoreUtils: " +
             s"unsupported pool implementation '$p' " +
             s"(supported values: tomcat, hikari)")
-      case None => false
+      case None => Constant.DEFAULT_USE_HIKARICP
     }
     val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
       val eqIndex = s.indexOf('=')
@@ -219,13 +224,15 @@ private[sql] object ExternalStoreUtils extends Logging {
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
-    dialect match {
+    val isEmbedded = dialect match {
+      case GemFireXDDialect => true
       case GemFireXDClientDialect =>
         connProps.setProperty("route-query", "false")
-      case _ =>
+        false
+      case _ => false
     }
     val allPoolProps = getAllPoolProperties(url, driver,
-      poolProps, hikariCP)
+      poolProps, hikariCP, isEmbedded)
     new ConnectionProperties(url, driver, allPoolProps, connProps, hikariCP)
   }
 
@@ -249,11 +256,11 @@ private[sql] object ExternalStoreUtils extends Logging {
       poolProps: Map[String, String], connProps: Properties,
       hikariCP: Boolean): () => Connection = {
     () => {
-      ConnectionPool.getPoolConnection(id, Some(driver), dialect,
-        poolProps, connProps, hikariCP)
+      registerDriver(driver)
+      ConnectionPool.getPoolConnection(id, dialect, poolProps,
+        connProps, hikariCP)
     }
   }
-
 
   def getConnectionType(url: String) = {
     JdbcDialects.get(url) match {
@@ -298,7 +305,7 @@ private[sql] object ExternalStoreUtils extends Logging {
   def pruneSchema(fieldMap: Map[String, StructField],
       columns: Array[String]): StructType = {
     new StructType(columns.map { col =>
-      fieldMap.getOrElse(col, fieldMap.getOrElse(Utils.normalizeId(col),
+      fieldMap.getOrElse(col, fieldMap.getOrElse(col,
         throw new AnalysisException("JDBCAppendableRelation: Cannot resolve " +
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
@@ -307,6 +314,15 @@ private[sql] object ExternalStoreUtils extends Logging {
 
   def getInsertString(table: String, userSchema: StructType) = {
     val sb = new mutable.StringBuilder("INSERT INTO ")
+    sb.append(table).append(" VALUES (")
+    (1 until userSchema.length).foreach { _ =>
+      sb.append("?,")
+    }
+    sb.append("?)").toString()
+  }
+
+  def getPutString(table: String, userSchema: StructType) = {
+    val sb = new mutable.StringBuilder("PUT INTO ")
     sb.append(table).append(" VALUES (")
     (1 until userSchema.length).foreach { _ =>
       sb.append("?,")
@@ -404,21 +420,72 @@ private[sql] object ExternalStoreUtils extends Logging {
     }
   }
 
+  final val PARTITION_BY = "PARTITION_BY"
+  final val REPLICATE = "REPLICATE"
+  final val BUCKETS = "BUCKETS"
+
   def getTotalPartitions(sc: SparkContext,
-      parameters: mutable.Map[String, String]): Int = {
-    parameters.getOrElse("BUCKETS", SnappyContext.getClusterMode(sc) match {
-      case LocalMode(_, _) => DEFAULT_COLUMN_TABLE_BUCKETS_LOCAL_MODE
-      case _ => DEFAULT_TABLE_BUCKETS
+      parameters: mutable.Map[String, String],
+      forManagedTable: Boolean, forColumnTable: Boolean = true,
+      forSampleTable: Boolean = false): Int = {
+    parameters.getOrElse(BUCKETS, {
+      val partitions = SnappyContext.getClusterMode(sc) match {
+        case LocalMode(_, _) =>
+          if (!forSampleTable) DEFAULT_TABLE_BUCKETS_LOCAL_MODE
+          else DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE
+        case _ =>
+          if (!forSampleTable) DEFAULT_TABLE_BUCKETS
+          else DEFAULT_SAMPLE_TABLE_BUCKETS
+      }
+      if (forManagedTable) {
+        if (forColumnTable) {
+          // column tables are always partitioned
+          parameters += BUCKETS -> partitions
+        } else if (parameters.contains(PARTITION_BY) &&
+            !parameters.contains(REPLICATE)) {
+          parameters += BUCKETS -> partitions
+        }
+      }
+      partitions
     }).toInt
   }
 
-  def cachedBatchesToRows(
-      cacheBatches: Iterator[CachedBatch] ,  requestedColumns:Array[String], schema:StructType): Iterator[InternalRow] = {
+  final def cachedBatchesToRows(
+      cachedBatches: Iterator[CachedBatch],
+      requestedColumns: Array[String],
+      schema: StructType): Iterator[InternalRow] = {
+    /* TODO: (native code gen does not work for some reason)
+    // check and compare with InMemoryColumnarTableScan
+    val numColumns = requestedColumns.length
+    val columnIndices = new Array[Int](numColumns)
+    val columnDataTypes = new Array[DataType](numColumns)
+    for (index <- 0 until numColumns) {
+      val fieldIndex = schema.fieldIndex(requestedColumns(index))
+      columnIndices(index) = fieldIndex
+      schema.fields(fieldIndex).dataType match {
+        case udt: UserDefinedType[_] => columnDataTypes(index) = udt.sqlType
+        case other => columnDataTypes(index) = other
+      }
+    }
+    // TODO: partition pruning like in InMemoryColumnarTableScan?
+    val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
+    columnarIterator.initialize(cacheBatches, columnDataTypes, columnIndices)
+    columnarIterator
+    */
     val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
       schema.getFieldIndex(a).get -> schema(a).dataType
     }.unzip
+    cachedBatchesToRows(cachedBatches, requestedColumnIndices,
+      requestedColumnDataTypes, schema)
+  }
+
+  final def cachedBatchesToRows(
+      cachedBatches: Iterator[CachedBatch],
+      requestedColumnIndices: IndexedSeq[Int],
+      requestedColumnDataTypes: IndexedSeq[DataType],
+      schema: StructType): Iterator[InternalRow] = {
     val nextRow = new SpecificMutableRow(requestedColumnDataTypes)
-    val rows = cacheBatches.flatMap { cachedBatch =>
+    val rows = cachedBatches.flatMap { cachedBatch =>
       // Build column accessors
       val columnAccessors = requestedColumnIndices.zipWithIndex.map {
         case (schemaIndex, bufferIndex) =>
@@ -435,7 +502,7 @@ private[sql] object ExternalStoreUtils extends Logging {
             columnAccessors(i).extractTo(nextRow, i)
             i += 1
           }
-          if (requestedColumns.isEmpty) InternalRow.empty else nextRow
+          if (requestedColumnIndices.isEmpty) InternalRow.empty else nextRow
         }
 
         override def hasNext: Boolean = columnAccessors.head.hasNext
@@ -468,8 +535,8 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
       rowCount += 1
     }
     if (rowCount % batchSize == 0 || flush) {
-      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(toScala(_).asInstanceOf[Row]),
-        schema, nullTypes, batchSize)
+      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(
+        toScala(_).asInstanceOf[Row]), schema, nullTypes, batchSize)
       buff = new ArrayBuffer[InternalRow]()
       rowCount = 0
     }
@@ -488,4 +555,6 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
   }
 }
-case class ConnectionProperties(url:String , driver:String, poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)
+
+case class ConnectionProperties(url: String, driver: String,
+    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)

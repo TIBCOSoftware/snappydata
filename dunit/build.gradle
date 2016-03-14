@@ -1,0 +1,26 @@
+apply plugin: 'java'
+
+group = 'io.snappydata'
+version = '1.0.0'
+
+compileJava.options.encoding = 'UTF-8'
+
+dependencies {
+  compile 'commons-io:commons-io:2.4'
+  compile "junit:junit:${junitVersion}"
+  if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+    compile project(':snappy-store:gemfire-core')
+  } else {
+    compile group: 'io.snappydata', name: 'gemfire-core', version: gemfireXDVersion
+  }
+}
+
+task packageJavaDocs(type: Jar, dependsOn: javadoc) {
+  classifier = 'javadoc'
+  from javadoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageJavaDocs, packageSources
+  }
+}

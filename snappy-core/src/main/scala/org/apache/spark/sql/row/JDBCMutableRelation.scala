@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.row
 
-import java.sql.{Connection, PreparedStatement}
+import java.sql.Connection
 import java.util.Properties
 
 import org.apache.spark.rdd.RDD
@@ -30,8 +30,6 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, Partition}
 
-import scala.collection.mutable
-
 /**
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
@@ -42,7 +40,7 @@ class JDBCMutableRelation(
     val provider: String,
     mode: SaveMode,
     userSpecifiedString: String,
-    parts: Array[Partition],
+    val parts: Array[Partition],
     val poolProperties: Map[String, String],
     val connProperties: Properties,
     val hikariCP: Boolean,
@@ -60,17 +58,17 @@ class JDBCMutableRelation(
 
   override val needConversion: Boolean = false
 
-  val driver = DriverRegistry.getDriverClassName(url)
+  val driver = Utils.registerDriverUrl(url)
 
   final val dialect = JdbcDialects.get(url)
 
   // create table in external store once upfront
-  val tableSchema = createTable(mode)
+  var tableSchema: String = _
 
-  override val schema: StructType =
+  override final lazy val schema: StructType =
     JDBCRDD.resolveTable(url, table, connProperties)
 
-  final val schemaFields = Utils.schemaFields(schema)
+  final lazy val schemaFields = Utils.schemaFields(schema)
 
   def createTable(mode: SaveMode): String = {
     var conn: Connection = null
@@ -154,7 +152,7 @@ class JDBCMutableRelation(
       connProperties).asInstanceOf[RDD[Row]]
   }
 
-  final val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
+  final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
@@ -173,12 +171,13 @@ class JDBCMutableRelation(
   // at least the insert can be split into batches and modelled as an RDD
  // TODO: Suranjan common code in  ColumnFormatRelation too
   override def insert(rows: Seq[Row]): Int = {
+
     val numRows = rows.length
     if (numRows == 0) {
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.insert: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
@@ -204,7 +203,7 @@ class JDBCMutableRelation(
   }
 
   override def executeUpdate(sql: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
@@ -229,12 +228,12 @@ class JDBCMutableRelation(
     // may not have efficient index lookup
     updateColumns.foreach { col =>
       setFields(index) = schemaFields.getOrElse(col, schemaFields.getOrElse(
-        Utils.normalizeId(col), throw new AnalysisException(
+        col, throw new AnalysisException(
           "JDBCUpdatableRelation: Cannot resolve column name " +
               s""""$col" among (${schema.fieldNames.mkString(", ")})""")))
       index += 1
     }
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
@@ -253,7 +252,7 @@ class JDBCMutableRelation(
   }
 
   override def delete(filterExpr: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val whereStr =
@@ -269,18 +268,21 @@ class JDBCMutableRelation(
   }
 
   override def destroy(ifExists: Boolean): Unit = {
-    // clean up the connection pool on executors first
-    Utils.mapExecutors(sqlContext,
-      JDBCMutableRelation.removePool(table)).count()
-    // then on the driver
-    JDBCMutableRelation.removePool(table)
     // drop the external table using a non-pool connection
     val conn = ExternalStoreUtils.getConnection(url, connProperties,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      // clean up the connection pool on executors first
+      Utils.mapExecutors(sqlContext,
+        JDBCMutableRelation.removePool(table)).count()
+      // then on the driver
+      JDBCMutableRelation.removePool(table)
     } finally {
-      conn.close()
+      try {
+        JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
+      } finally {
+        conn.close()
+      }
     }
   }
 
@@ -306,9 +308,8 @@ class JDBCMutableRelation(
       // Create the Index if the table exist.
       if (tableExists) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
-      }
-      else {
-        throw new AnalysisException(s"Table $table do not exists.")
+      } else {
+        throw new AnalysisException(s"Base table $table does not exist.")
       }
     } catch {
       case sqle: java.sql.SQLException =>

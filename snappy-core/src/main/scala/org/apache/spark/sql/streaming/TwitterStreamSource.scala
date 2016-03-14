@@ -19,15 +19,14 @@ package org.apache.spark.sql.streaming
 import twitter4j.auth.{Authorization, OAuthAuthorization}
 import twitter4j.conf.{Configuration, ConfigurationBuilder}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.sources.{BaseRelation, SchemaRelationProvider}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.twitter.TwitterUtils
 
-final class TwitterStreamSource extends SchemaRelationProvider {
+final class TwitterStreamSource extends StreamPlanProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
@@ -36,7 +35,8 @@ final class TwitterStreamSource extends SchemaRelationProvider {
   }
 }
 
-case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
+final class TwitterStreamRelation(
+    @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options) {
@@ -47,7 +47,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
   val accessTokenSecret = options("accessTokenSecret")
 
   //  TODO Yogesh, need to pass this through DDL
-  val filters = Seq(" ")
+  val filters = Seq("e")
 
   private val getTwitterConf: Configuration = {
     val twitterConf = new ConfigurationBuilder()
@@ -64,31 +64,7 @@ case class TwitterStreamRelation(@transient val sqlContext: SQLContext,
     new OAuthAuthorization(getTwitterConf)
   }
 
-  TwitterStreamRelation.LOCK.synchronized {
-    if (TwitterStreamRelation.getRowStream() == null) {
-      rowStream = {
-        TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-          filters, storageLevel).filter(_.getLang == "en").flatMap(rowConverter.toRows)
-      }
-      TwitterStreamRelation.setRowStream(rowStream)
-      // TODO Yogesh, this is required from snappy-shell, need to get rid of this
-      rowStream.foreachRDD { rdd => rdd }
-    } else {
-      rowStream = TwitterStreamRelation.getRowStream()
-    }
-  }
-}
-
-object TwitterStreamRelation extends Logging {
-  private var rStream: DStream[InternalRow] = null
-
-  private val LOCK = new Object()
-
-  private def setRowStream(stream: DStream[InternalRow]): Unit = {
-    rStream = stream
-  }
-
-  private def getRowStream(): DStream[InternalRow] = {
-    rStream
-  }
+  override protected def createRowStream(): DStream[InternalRow] =
+    TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
+      filters, storageLevel).flatMap(rowConverter.toRows)
 }

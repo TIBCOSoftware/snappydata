@@ -27,16 +27,12 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
 
-/**
- * Created by neeraj on 16/7/15.
- */
 trait ExternalStore extends Serializable {
 
-  final val shadowTableNamePrefix = "_shadow_"
   final val columnPrefix = "Col_"
 
   def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
-      batchId: Option[UUID] = None): UUIDRegionKey
+      batchId: Option[UUID] = None, rddId: Int = -1): UUIDRegionKey
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch]

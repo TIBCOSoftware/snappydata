@@ -16,15 +16,15 @@
  */
 package org.apache.spark.sql.store
 
-import java.util.Properties
+import scala.collection.concurrent.TrieMap
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.columntable.StoreCallbacksImpl
@@ -35,7 +35,7 @@ import org.apache.spark.sql.sources.JdbcExtendedDialect
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Accumulator, Partition, SparkEnv, TaskContext}
+import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
 /**
   * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's
@@ -57,7 +57,9 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
-  GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
+  GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
+    Constant.COLUMN_MIN_BATCH_SIZE)
+  val rddId = StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext)
 
   override def compute(split: Partition, context: TaskContext): Iterator[(InternalDistributedMember, BlockManagerId)] = {
     GemFireXDDialect.init()
@@ -69,8 +71,8 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     userSchema match {
       case Some(schema) =>
         val store = new JDBCSourceAsColumnarStore(connProperties,partitions)
-        StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table.toUpperCase,
-          schema, store, columnBatchSize, userCompression)
+        StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table,
+          schema, store, columnBatchSize, userCompression, rddId)
       case None =>
     }
 
@@ -87,9 +89,10 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     }
     val conn = JdbcUtils.createConnection(connProperties.url, connProperties.connProps)
     conn.close()
-    GemFireCacheImpl.setColumnBatchSize(columnBatchSize)
-    Seq((Misc.getGemFireCache.getMyId -> SparkEnv.get.blockManager.blockManagerId)).iterator
-
+    GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
+      Constant.COLUMN_MIN_BATCH_SIZE)
+    Seq(Misc.getGemFireCache.getMyId ->
+        SparkEnv.get.blockManager.blockManagerId).iterator
   }
 
   override def getPartitions: Array[Partition] = {
@@ -115,4 +118,21 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
   def createPartition(index: Int,
       blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
+}
+
+object StoreInitRDD {
+  val tableToIdMap = new TrieMap[String, Int]()
+
+  def getRddIdForTable(table: String, sc: SparkContext): Int = {
+    tableToIdMap.get(table) match {
+      case Some(id) => id
+      case None =>
+        val rddId = sc.newRddId()
+        tableToIdMap.putIfAbsent(table, rddId) match {
+          case None => rddId
+          case Some(oldId) => oldId
+        }
+    }
+  }
+
 }

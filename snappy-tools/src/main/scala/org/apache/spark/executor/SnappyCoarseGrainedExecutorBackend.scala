@@ -23,9 +23,6 @@ import org.apache.spark.SparkEnv
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
 
-/**
- * Created by hemantb on 10/5/15.
- */
 class SnappyCoarseGrainedExecutorBackend(
                                           override val rpcEnv: RpcEnv,
                                           driverUrl: String,

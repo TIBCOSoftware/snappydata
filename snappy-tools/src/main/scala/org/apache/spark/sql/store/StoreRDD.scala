@@ -59,11 +59,11 @@ class StoreRDD(@transient sc: SparkContext,
 
   private val totalNumPartitions = if (partitionColumns.isEmpty) prev.partitions.length
   else {
-    executeWithConnection(getConnection, {
-      case conn => val tableSchema = conn.getSchema
-        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-        region.getTotalNumberOfBuckets
+    executeWithConnection(getConnection, { conn =>
+      val tableSchema = conn.getSchema
+      val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+      region.getTotalNumberOfBuckets
     })
   }
 
@@ -145,19 +145,17 @@ class StoreRDD(@transient sc: SparkContext,
    * be called once, so it is safe to implement a time-consuming computation in it.
    */
   override protected def getPartitions: Array[Partition] = {
-    executeWithConnection(getConnection, {
-      case conn =>
-        val tableSchema = conn.getSchema
-        val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
-        val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-        val partitions = new Array[Partition](totalNumPartitions)
+    executeWithConnection(getConnection, { conn =>
+      val tableSchema = conn.getSchema
+      val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
+      val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+      val partitions = new Array[Partition](totalNumPartitions)
 
-        for (p <- 0 until totalNumPartitions) {
-          val distMember = region.getBucketPrimary(p)
-          partitions(p) = getPartition(p, distMember)
-        }
-        partitions
-
+      for (p <- 0 until totalNumPartitions) {
+        val distMember = region.getBucketPrimary(p)
+        partitions(p) = getPartition(p, distMember)
+      }
+      partitions
     })
   }
 

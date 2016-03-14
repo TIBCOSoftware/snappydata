@@ -25,18 +25,10 @@ import spark.jobserver.{ContextLike, SparkJobBase}
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.{Milliseconds, StreamingContext}
 
-
-/**
-  * Created by soubhikc on 14/12/15.
-  */
 trait SnappyStreamingJob extends SparkJobBase {
   type C = SnappyStreamingContext
 }
 
-
-/**
-  * Created by soubhikc on 14/12/15.
-  */
 class SnappyStreamingContextFactory extends SparkContextFactory {
 
   override type C = SnappyStreamingContext with ContextLike

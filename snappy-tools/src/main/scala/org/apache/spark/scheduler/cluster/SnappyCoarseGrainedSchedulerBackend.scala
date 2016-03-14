@@ -20,10 +20,6 @@ import org.apache.spark.rpc.{RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.TaskSchedulerImpl
 import org.apache.spark.{Logging, SparkEnv}
 
-/**
- * Created by hemantb on 10/5/15.
- *
- */
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {
 

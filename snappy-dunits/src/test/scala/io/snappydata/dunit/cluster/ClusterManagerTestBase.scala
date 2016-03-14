@@ -7,11 +7,11 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import dunit.{DistributedTestBase, Host, SerializableRunnable}
+import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable}
+import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -51,6 +51,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   def sc: SparkContext = SnappyContext.globalSparkContext
 
   override def setUp(): Unit = {
+    super.setUp()
     val testName = getName
     val testClass = getClass
     // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
@@ -107,11 +108,12 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     }
     assert(ServiceManager.currentFabricServiceInstance.status ==
         FabricService.State.RUNNING)
-    logger.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
+    getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
         testName + "\n\n")
   }
 
   override def tearDown2(): Unit = {
+    super.tearDown2();
     GemFireXDUtils.IS_TEST_MODE = false
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
@@ -205,11 +207,7 @@ object ClusterManagerTestBase {
     // cleanup metastore
     val snc = SnappyContext()
     if (snc != null) {
-      snc.catalog.getTables(None).foreach {
-        case (tableName, false) =>
-          snc.dropTable(tableName, ifExists = true)
-        case _ =>
-      }
+      TestUtils.dropAllTables(snc)
     }
     if (testName != null) {
       logger.info("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")

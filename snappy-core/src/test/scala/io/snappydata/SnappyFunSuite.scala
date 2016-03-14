@@ -17,22 +17,18 @@
 package io.snappydata
 
 import java.io.File
-import java.sql.SQLException
 
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+import io.snappydata.util.TestUtils
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
- *
- * Created by soubhikc on 6/10/15.
  */
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore
@@ -98,20 +94,7 @@ abstract class SnappyFunSuite
 
   protected def baseCleanup(): Unit = {
     try {
-      val sc = SnappyContext.globalSparkContext
-      if (sc != null && !sc.isStopped) {
-        val snc = this.snc
-        snc.catalog.getTables(None).foreach {
-          case (tableName, false) =>
-            snc.dropTable(tableName, ifExists = true)
-          case (tableName, true) =>
-            if (tableName.indexOf("_sampled") != -1) {
-              snc.dropSampleTable(tableName, ifExists = true)
-            } else {
-              snc.dropTempTable(tableName, ifExists = true)
-            }
-        }
-      }
+      TestUtils.dropAllTables(this.snc)
     } finally {
       dirCleanup()
     }

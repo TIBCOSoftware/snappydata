@@ -17,8 +17,6 @@
 package io.snappydata
 
 /**
- * Created by soubhikc on 11/11/15.
- *
  * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
  *
@@ -43,6 +41,12 @@ object Constant {
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
   val DEFAULT_SCHEMA = "APP"
+
+  val DEFAULT_CONFIDENCE: Double = 0.95
+
+  val COLUMN_MIN_BATCH_SIZE: Int = 200
+
+  val DEFAULT_USE_HIKARICP = false
 }
 
 /**

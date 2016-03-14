@@ -4,9 +4,6 @@ import io.snappydata.dunit.cluster.ClusterManagerTestBase
 
 import org.apache.spark.sql.SaveMode
 
-/**
- * Created by rishim on 6/11/15.
- */
 class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testTableCreation(): Unit = {
@@ -34,7 +31,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 0)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -54,7 +51,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 5)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 }
 
