@@ -8,7 +8,7 @@ The SnappyData SQL Shell (_snappy-shell_) provides a simple command line interfa
 // from the SnappyData base directory  
 $ cd quickstart/scripts  
 $ ../../bin/snappy-shell  
-Version 2.0-BETA
+Version 1.5.0-BETA
 snappy> 
 
 //Connect to the cluster as a client  
@@ -53,7 +53,7 @@ Any spark application can also use the SnappyData as store and spark as computat
 # Start the Spark standalone cluster from SnappyData base directory 
 $ sbin/start-all.sh 
 # Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.2.0-PREVIEW.jar
+$ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=locatorhost:port --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.2.1-PREVIEW.jar
 
 # The results can be seen on the command line.
 ```

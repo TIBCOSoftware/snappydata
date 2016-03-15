@@ -50,7 +50,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.2.0-PREVIEW'
+  version = '0.2.1-PREVIEW'
 
   // apply compiler options
   compileJava.options.encoding = 'UTF-8'
@@ -72,7 +72,7 @@ allprojects {
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    gemfireXDVersion = '2.0-BETA'
+    gemfireXDVersion = '1.5.0-BETA'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -212,7 +212,6 @@ subprojects {
     }
     tasks.withType(Test).each { test ->
       test.configure {
-        onlyIf { !Boolean.getBoolean('skip.tests') }
         environment 'SNAPPY_HOME': snappyProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
@@ -450,11 +449,15 @@ task product {
       rename { filename -> archiveName }
     }
     // copy datanucleus jars specifically since they don't work as part of fat jar
+    // copy hbase jar as required for GFXD HDFS support (needs to be explicitly added to SPARK_DIST_CLASSPATH)
     // copy bin, sbin, data etc from spark
     if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
       copy {
         from project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
           it.getName().contains('datanucleus')
+        }
+        from project(":snappy-store:gemfire-core").configurations.provided.filter {
+          it.getName().contains('hbase')
         }
         into "${snappyProductDir}/lib"
       }
@@ -568,9 +571,14 @@ distributions {
     }
   }
 }
-distTar.dependsOn product
-distZip.dependsOn product
-
+distTar {
+  dependsOn product
+  classifier 'bin'
+}
+distZip {
+  dependsOn product
+  classifier 'bin'
+}
 
 def copyTestsCommonResources(def bdir) {
   def outdir = "${bdir}/resources/test"
@@ -733,7 +741,7 @@ task checkAll {
     dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
   }
   if (project.hasProperty('store')) {
-    dependsOn ':snappy-store:checkAll'
+    dependsOn ':snappy-store:check'
   }
   mustRunAfter buildAll
 }
