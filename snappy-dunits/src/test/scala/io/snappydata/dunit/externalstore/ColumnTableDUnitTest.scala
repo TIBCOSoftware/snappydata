@@ -169,7 +169,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
           buckets = buckets + x
         }
         val iter = pr.getAppropriateLocalEntriesIterator(
-          JavaConversions.setAsJavaSet(buckets), false, false, true, pr/*, true*/)
+          JavaConversions.setAsJavaSet(buckets), false, false, true, pr, true)
         var count = 0
         while(iter.hasNext) {
           iter.next
@@ -184,7 +184,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       override def call(): AnyRef = {
         val pr: PartitionedRegion = Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
         val iter = pr.getAppropriateLocalEntriesIterator(
-          pr.getDataStore.getAllLocalBucketIds, false, false, true, pr/*, false*/)
+          pr.getDataStore.getAllLocalBucketIds, false, false, true, pr, false)
         var count = 0
         while (iter.hasNext) {
           iter.next
