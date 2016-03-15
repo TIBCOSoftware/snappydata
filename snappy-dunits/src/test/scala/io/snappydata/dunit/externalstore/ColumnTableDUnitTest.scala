@@ -158,15 +158,18 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val p = Map.empty[String, String]
     snc.createTable(tableName, "column", dataDF.schema, p)
 
+    val tName = s"${ColumnFormatRelation.INTERNAL_SCHEMA_NAME}.${
+      tableName.toUpperCase}${ColumnFormatRelation.SHADOW_TABLE_SUFFIX}"
     // we don't expect any increase in put distribution stats
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        val pr: PartitionedRegion = Misc.getRegionForTable("APP.COLUMNTABLE_SHADOW_", true).asInstanceOf[PartitionedRegion]
+        val pr: PartitionedRegion = Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
         var buckets = Set.empty[Integer]
         0 to (pr.getTotalNumberOfBuckets-1) foreach { x =>
           buckets = buckets + x
         }
-        val iter = pr.getAppropriateLocalEntriesIterator(JavaConversions.setAsJavaSet(buckets), false, false, true, pr, true)
+        val iter = pr.getAppropriateLocalEntriesIterator(
+          JavaConversions.setAsJavaSet(buckets), false, false, true, pr/*, true*/)
         var count = 0
         while(iter.hasNext) {
           iter.next
@@ -179,8 +182,9 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val getLocalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {
-        val pr: PartitionedRegion = Misc.getRegionForTable("APP.COLUMNTABLE_SHADOW_", true).asInstanceOf[PartitionedRegion]
-        val iter = pr.getAppropriateLocalEntriesIterator(pr.getDataStore.getAllLocalBucketIds, false, false, true, pr, false)
+        val pr: PartitionedRegion = Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
+        val iter = pr.getAppropriateLocalEntriesIterator(
+          pr.getDataStore.getAllLocalBucketIds, false, false, true, pr/*, false*/)
         var count = 0
         while (iter.hasNext) {
           iter.next
