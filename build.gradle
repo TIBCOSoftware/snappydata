@@ -213,7 +213,6 @@ subprojects {
     }
     tasks.withType(Test).each { test ->
       test.configure {
-        onlyIf { !Boolean.getBoolean('skip.tests') }
         environment 'SNAPPY_HOME': snappyProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
@@ -739,7 +738,7 @@ task checkAll {
     dependsOn ':snappy-spark:check'
   }
   if (project.hasProperty('store')) {
-    dependsOn ':snappy-store:checkAll'
+    dependsOn ':snappy-store:check'
   }
   mustRunAfter buildAll
 }
