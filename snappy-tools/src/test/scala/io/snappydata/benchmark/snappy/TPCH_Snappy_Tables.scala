@@ -3,7 +3,7 @@ package io.snappydata.benchmark.snappy
 import java.io.File
 
 import com.typesafe.config.Config
-import io.snappydata.benchmark.{TPCHReplicatedTable, TPCHRowPartitionedTable, TPCHColumnPartitionedTable}
+import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.sql.SnappySQLJob
@@ -14,7 +14,8 @@ import org.apache.spark.sql.SnappySQLJob
 object TPCH_Snappy_Tables extends SnappySQLJob{
 
    var tpchDataPath: String = _
-   var buckets: String = _
+   var buckets_Order_Lineitem: String = _
+   var buckets_Cust_Part_PartSupp: String = _
 
    override def runJob(snc: C, jobConfig: Config): Any = {
      val props : Map[String, String] = null
@@ -25,15 +26,18 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
            USING row
            OPTIONS ()"""
 
-     println("KBKBKB: Bucets : " + buckets)
-     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy, buckets)
-     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy, buckets)
-     TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
+     TPCHColumnPartitionedTable.createAndPopulateOrderTable(props, snc, tpchDataPath, isSnappy, buckets_Order_Lineitem)
+     TPCHColumnPartitionedTable.createAndPopulateLineItemTable(props, snc, tpchDataPath, isSnappy, buckets_Order_Lineitem)
      TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHReplicatedTable.createPopulateNationTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
      TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, props, snc, tpchDataPath, isSnappy)
-     TPCHRowPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
-     TPCHRowPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
+//     TPCHRowPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
+//     TPCHRowPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
+//     TPCHRowPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets)
+     TPCHColumnPartitionedTable.createPopulateCustomerTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+     TPCHColumnPartitionedTable.createPopulatePartTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+     TPCHColumnPartitionedTable.createPopulatePartSuppTable(usingOptionString, props, snc, tpchDataPath, isSnappy, buckets_Cust_Part_PartSupp)
+
 
    }
 
@@ -45,8 +49,14 @@ object TPCH_Snappy_Tables extends SnappySQLJob{
        "/QASNAPPY/TPCH/DATA/1"
      }
 
-     buckets = if (config.hasPath("Buckets")) {
-       config.getString("Buckets")
+     buckets_Order_Lineitem = if (config.hasPath("Buckets_Order_Lineitem")) {
+       config.getString("Buckets_Order_Lineitem")
+     } else {
+       "15"
+     }
+
+     buckets_Cust_Part_PartSupp = if (config.hasPath("Buckets_Cust_Part_PartSupp")) {
+       config.getString("Buckets_Cust_Part_PartSupp")
      } else {
        "15"
      }

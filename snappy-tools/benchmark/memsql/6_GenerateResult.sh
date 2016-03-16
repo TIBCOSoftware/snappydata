@@ -7,6 +7,19 @@ mkdir $directory
 
 mv *.out $directory/
 
+latestProp=$directory/latestProp.props
+
+echo aggregator = $aggregator >> $latestProp
+echo leafs = $leafs >> $latestProp
+echo SERVERS = $leads >> $latestProp
+echo DATASIZE = $dataSize >> $latestProp
+
+
+for i in $directory/*.out
+do
+   cat $latestProp >> $i
+done
+
 #echo snappyData = $(git -C $SnappyData rev-parse HEAD)_$(git -C $SnappyData log -1 --format=%cd) > latestProp.out
 #echo snappy-spark = $(git -C $SnappyData/snappy-spark rev-parse HEAD)_$(git -C $SnappyData/snappy-spark log -1 --format=%cd) >> latestProp.out
 #echo snappy-store = $(git -C $SnappyData/snappy-store rev-parse HEAD)_$(git -C $SnappyData/snappy-store log -1 --format=%cd) >> latestProp.out
