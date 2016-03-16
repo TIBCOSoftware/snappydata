@@ -146,6 +146,11 @@ task cleanDUnit << {
   delete workingDir
   file(workingDir).mkdirs()
 }
+task cleanAllReports << {
+  def workingDir = "${testResultsBase}/combined-reports"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
 
 task publishDocs(type:Exec) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':docs'
@@ -729,6 +734,7 @@ task copyResourcesAll << {
   }
 }
 
+
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
@@ -751,7 +757,18 @@ task checkAll {
   }
   mustRunAfter buildAll
 }
+task allReports(type: TestReport) {
+  description 'Combines the test reports.'
+  dependsOn cleanAllReports
+  destinationDir = file("${testResultsBase}/combined-reports")
+  mustRunAfter checkAll
+}
+gradle.taskGraph.whenReady({ graph ->
+  tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
+})
+
+
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
 }
