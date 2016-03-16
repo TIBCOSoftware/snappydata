@@ -51,7 +51,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.1-SNAPSHOT'
+  version = '0.2-SNAPSHOT'
 
   // apply compiler options
   compileJava.options.encoding = 'UTF-8'
@@ -146,6 +146,11 @@ task cleanDUnit << {
   delete workingDir
   file(workingDir).mkdirs()
 }
+task cleanAllReports << {
+  def workingDir = "${testResultsBase}/combined-reports"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
 
 task publishDocs(type:Exec) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':docs'
@@ -213,7 +218,6 @@ subprojects {
     }
     tasks.withType(Test).each { test ->
       test.configure {
-        onlyIf { !Boolean.getBoolean('skip.tests') }
         environment 'SNAPPY_HOME': snappyProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
@@ -452,11 +456,15 @@ task product {
       rename { filename -> archiveName }
     }
     // copy datanucleus jars specifically since they don't work as part of fat jar
+    // copy hbase jar as required for GFXD HDFS support (needs to be explicitly added to SPARK_DIST_CLASSPATH)
     // copy bin, sbin, data etc from spark
     if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
       copy {
         from project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
           it.getName().contains('datanucleus')
+        }
+        from project(":snappy-store:gemfire-core").configurations.provided.filter {
+          it.getName().contains('hbase')
         }
         into "${snappyProductDir}/lib"
       }
@@ -574,9 +582,14 @@ distributions {
     }
   }
 }
-distTar.dependsOn product
-distZip.dependsOn product
-
+distTar {
+  dependsOn product
+  classifier 'bin'
+}
+distZip {
+  dependsOn product
+  classifier 'bin'
+}
 
 def copyTestsCommonResources(def bdir) {
   def outdir = "${bdir}/resources/test"
@@ -721,6 +734,7 @@ task copyResourcesAll << {
   }
 }
 
+
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
@@ -736,14 +750,25 @@ task checkAll {
     dependsOn ':snappy-aqp:check'
   }
   if (project.hasProperty('spark')) {
-    dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+    dependsOn ':snappy-spark:check'
   }
   if (project.hasProperty('store')) {
-    dependsOn ':snappy-store:checkAll'
+    dependsOn ':snappy-store:check'
   }
   mustRunAfter buildAll
 }
+task allReports(type: TestReport) {
+  description 'Combines the test reports.'
+  dependsOn cleanAllReports
+  destinationDir = file("${testResultsBase}/combined-reports")
+  mustRunAfter checkAll
+}
+gradle.taskGraph.whenReady({ graph ->
+  tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
+})
+
+
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
 }
