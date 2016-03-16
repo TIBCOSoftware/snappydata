@@ -1,9 +1,9 @@
 ### Row and column tables
 Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.
 
-Row tables, unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.
+Row tables, unlike column tables, are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.
 
-Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.
+Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk, overflow to disk, be replicated for HA, etc.
 
 #### DDL and DML Syntax for tables
 
@@ -36,7 +36,7 @@ For row format tables column definition can take underlying GemFire XD syntax to
 But for column table it's restricted to Spark syntax for column definition e.g.
 
     snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
-Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. 
+Clauses like PRIMARY KEY, NOT NUL etc. are not supported for column definition. 
 ##### Spark API for managing tables
 
 Get a reference to [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)
@@ -59,10 +59,10 @@ Drop a SnappyStore table using Spark APIs
     snc.dropTable(tableName, ifExists = true)
 
 ##### DDL extensions to SnappyStore tables
-The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified default values are attached. See next section for various restrictions. 
+The below mentioned DDL extensions are required to configure a table based on user requirements. One can specify one or more options to create the kind of table one wants. If no option is specified, default values are attached. See next section for various restrictions. 
 
-   1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist
-   2. PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified it will be a replicated table.
+   1. COLOCATE_WITH  : The COLOCATE_WITH clause specifies a partitioned table with which the new partitioned table must be colocated. The referenced table must already exist.
+   2. PARTITION_BY  : Use the PARTITION_BY {COLUMN} clause to provide a set of column names that will determine the partitioning. As a shortcut you can use PARTITION BY PRIMARY KEY to refer to the primary key columns defined for the table . If not specified, it will be a replicated table.
    3. BUCKETS  : The optional BUCKETS attribute specifies the fixed number of "buckets," the smallest unit of data containment for the table that can be moved around. Data in a single bucket resides and moves together. If not specified, the number of buckets defaults to 113.
    4. REDUNDANCY : Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail.
    5. RECOVER_DELAY : Use the RECOVERY_DELAY clause to specify the default time in milliseconds that existing members will wait before satisfying redundancy after a member crashes. The default is -1, which indicates that redundancy is not recovered after a member fails.
