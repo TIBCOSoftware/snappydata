@@ -8,20 +8,18 @@ import java.sql.{ResultSet, Statement}
   */
 object TPCH_Memsql {
 
-  var queryFileStream = new FileOutputStream(new File(s"Q.out"))
-  var queryPrintStream = new PrintStream(queryFileStream)
+  var avgFileStream:FileOutputStream  = new FileOutputStream(new File(s"Average.out"))
+  var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
 
    def close(): Unit ={
-     queryPrintStream.close()
-     queryFileStream.close()
-     TPCH_Memsql_Query.avgPrintStream.close()
-     TPCH_Memsql_Query.avgFileStream.close()
+     avgPrintStream.close()
+     avgFileStream.close()
    }
 
    def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement): Unit = {
 
-     queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
-     queryPrintStream = new PrintStream(queryFileStream)
+     var queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
+     var queryPrintStream = new PrintStream(queryFileStream)
 
 
      var resultFormat = queryNumber match {
@@ -87,7 +85,7 @@ object TPCH_Memsql {
            }
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
-           queryPrintStream.println(s"$i,$iterationTime")
+           queryPrintStream.println(s"$iterationTime")
            if (i > 1) {
              totalTimeForLast5Iterations += iterationTime
            }
@@ -98,8 +96,8 @@ object TPCH_Memsql {
              stmt.execute("drop view revenue")
            }
          }
-         queryPrintStream.println(s"Average time taken for last 2 iterations,${totalTimeForLast5Iterations / 2}")
-         TPCH_Memsql_Query.avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / 2}")
+         queryPrintStream.println(s"${totalTimeForLast5Iterations / 2}")
+         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / 2}")
        }
        println(s"Finished executing $queryNumber")
 
@@ -108,15 +106,15 @@ object TPCH_Memsql {
        case e: Exception => {
          e.printStackTrace()
          e.printStackTrace(queryPrintStream)
-         e.printStackTrace(TPCH_Memsql_Query.avgPrintStream)
+         e.printStackTrace(avgPrintStream)
          println(s" Exception while executing $queryNumber in written to file $queryNumber.txt")
        }
      } finally {
        if(isResultCollection) {
          queryPrintStream.close()
          queryFileStream.close()
-         TPCH_Memsql_Query.avgPrintStream.close()
-         TPCH_Memsql_Query.avgFileStream.close()
+         avgPrintStream.close()
+         avgFileStream.close()
        }
 
      }
@@ -902,31 +900,31 @@ object TPCH_Memsql {
          " where" +
          "         (" +
          "                 P_PARTKEY = l_partkey" +
-         "                 and P_BRAND = ‘Brand#12’" +
-         "                 and P_CONTAINER in ( ‘SM CASE’, ‘SM BOX’, ‘SM PACK’, ‘SM PKG’)" +
+         "                 and P_BRAND = \"Brand#12\"" +
+         "                 and P_CONTAINER in ( \"SM CASE\", \"SM BOX\", \"SM PACK\", \"SM PKG\")" +
          "                 and l_quantity >= 1 and l_quantity <= 1 + 10" +
-         "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-         "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+         "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+         "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
          "                 and P_SIZE between 1 and 5" +
          "         )" +
          "         or" +
          "         (" +
          "                 P_PARTKEY = l_partkey" +
-         "                 and P_BRAND = ‘Brand#23’" +
-         "                 and P_CONTAINER in (‘MED BAG’, ‘MED BOX’, ‘MED PKG’, ‘MED PACK’)" +
+         "                 and P_BRAND = \"Brand#23\"" +
+         "                 and P_CONTAINER in (\"MED BAG\", \"MED BOX\", \"MED PKG\", \"MED PACK\")" +
          "                 and l_quantity >= 10 and l_quantity <= 10 + 10" +
-         "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-         "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+         "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+         "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
          "                 and P_SIZE between 1 and 10" +
          "         )" +
          "         or" +
          "         (" +
          "                 P_PARTKEY = l_partkey" +
-         "                 and P_BRAND = ‘Brand#34’" +
-         "                 and P_CONTAINER in ( ‘LG CASE’, ‘LG BOX’, ‘LG PACK’, ‘LG PKG’)" +
+         "                 and P_BRAND = \"Brand#34\"" +
+         "                 and P_CONTAINER in ( \"LG CASE\", \"LG BOX\", \"LG PACK\", \"LG PKG\")" +
          "                 and l_quantity >= 20 and l_quantity <= 20 + 10" +
-         "                 and l_shipmode in (‘AIR’, ‘AIR REG’)" +
-         "                 and l_shipinstruct = ‘DELIVER IN PERSON’" +
+         "                 and l_shipmode in (\"AIR\", \"AIR REG\")" +
+         "                 and l_shipinstruct = \"DELIVER IN PERSON\"" +
          "                 and P_SIZE between 1 and 15" +
          "         )"
    }
@@ -995,7 +993,7 @@ object TPCH_Memsql {
          " where" +
          "         S_SUPPKEY = l1.l_suppkey" +
          "         and o_orderkey = l1.l_orderkey" +
-         "         and o_orderstatus = 'F'" +
+         "         and o_orderstatus = \"F\"" +
          "         and l1.l_receiptdate > l1.l_commitdate" +
          "         and exists (" +
          "                 select" +
@@ -1017,7 +1015,7 @@ object TPCH_Memsql {
          "                         and l3.l_receiptdate > l3.l_commitdate" +
          "         )" +
          "         and S_NATIONKEY = N_NATIONKEY" +
-         "         and N_NAME = 'SAUDI ARABIA'" +
+         "         and N_NAME = \"SAUDI ARABIA\"" +
          " group by" +
          "         S_NAME" +
          " order by" +
