@@ -99,6 +99,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
+  snappyContextFunctions.registerAQPErrorFunctions(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
