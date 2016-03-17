@@ -146,6 +146,11 @@ task cleanDUnit << {
   delete workingDir
   file(workingDir).mkdirs()
 }
+task cleanAllReports << {
+  def workingDir = "${testResultsBase}/combined-reports"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
 
 task publishDocs(type:Exec) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':docs'
@@ -213,6 +218,18 @@ subprojects {
     }
     tasks.withType(Test).each { test ->
       test.configure {
+
+        def logLevel = System.getProperty('logLevel')
+        if (logLevel != null && logLevel.length() > 0) {
+          systemProperties 'gemfire.log-level'           : logLevel,
+                           'logLevel'                    : logLevel
+        }
+        logLevel = System.getProperty('securityLogLevel')
+        if (logLevel != null && logLevel.length() > 0) {
+          systemProperties 'gemfire.security-log-level'  : logLevel,
+                           'securityLogLevel'            : logLevel
+        }
+
         environment 'SNAPPY_HOME': snappyProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
@@ -405,7 +422,6 @@ task publishMaven {
 
 task generateSources {
   dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':generateAvroJava'
-  dependsOn ':snappy-examples:generateAvro'
   dependsOn ':snappy-store:generateSources'
 }
 
@@ -729,6 +745,7 @@ task copyResourcesAll << {
   }
 }
 
+
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
@@ -751,7 +768,18 @@ task checkAll {
   }
   mustRunAfter buildAll
 }
+task allReports(type: TestReport) {
+  description 'Combines the test reports.'
+  dependsOn cleanAllReports
+  destinationDir = file("${testResultsBase}/combined-reports")
+  mustRunAfter checkAll
+}
+gradle.taskGraph.whenReady({ graph ->
+  tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
+})
+
+
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
 }

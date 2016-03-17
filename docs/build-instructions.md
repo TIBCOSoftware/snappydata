@@ -84,6 +84,9 @@ Useful build and test targets:
 ./gradlew runQuickstart -  run the quickstart suite (the "Getting Started" section of docs)
 ./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
                            and run full snappydata testsuite including quickstart
+./gradlew precheckin -Pstore  -  cleanAll, buildAll, scalaStyle, build docs,
+                           run full snappydata testsuite including quickstart
+                           and also full snappy-store testsuite
 ```
 
 The default build directory is _build-artifacts/scala-2.10_ for projects. Exception is _snappy-store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.

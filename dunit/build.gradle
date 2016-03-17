@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 group = 'io.snappydata'
-version = '1.0.0'
+version = '1.0.1'
 
 compileJava.options.encoding = 'UTF-8'
 
@@ -9,9 +9,9 @@ dependencies {
   compile 'commons-io:commons-io:2.4'
   compile "junit:junit:${junitVersion}"
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
-    compile project(':snappy-store:gemfire-core')
+    compile project(':snappy-store:gemfirexd-core')
   } else {
-    compile group: 'io.snappydata', name: 'gemfire-core', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-core', version: gemfireXDVersion
   }
 }
 
