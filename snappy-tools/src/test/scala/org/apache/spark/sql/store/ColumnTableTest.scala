@@ -26,6 +26,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 import scala.collection.JavaConverters._
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.execution.QueryExecution
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
@@ -52,7 +53,53 @@ class ColumnTableTest
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
 
-  test("Test the creation/dropping of column table using Schema") {
+
+  test("Test preserve partitioning") {
+
+    snc.sql("Create Table MY_TABLE1 (a INT, b INT, c INT) using column " +
+        "options(PARTITION_BY 'a,c', BUCKETS '5', PRESERVE_PARTITION 'true')")
+
+    snc.sql("Create Table MY_TABLE2 (a INT, b INT, c INT) using column " +
+        "options(PARTITION_BY 'a,c', BUCKETS '5', PRESERVE_PARTITION 'true')")
+
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => Data(i, i, (i%10 + 1))), 5)
+    val refDf = snc.createDataFrame(dimension1)
+
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => Data(i, i, (i%5 + 1))), 5)
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+
+    refDf.write.format("column").mode(SaveMode.Append).saveAsTable("MY_TABLE1")
+    dimensionDf.write.format("column").mode(SaveMode.Append).saveAsTable("MY_TABLE2")
+
+    var result = snc.sql("SELECT * FROM MY_TABLE1" )
+    var r = result.collect
+    println(r.length)
+
+    result = snc.sql("SELECT * FROM MY_TABLE2" )
+    r = result.collect
+    println(r.length)
+
+    result = snc.sql("SELECT Y.b FROM MY_TABLE1 X JOIN MY_TABLE2 Y ON Y.a = X.a and Y.c=X.c" )
+    println(result.logicalPlan)
+
+    val qe = new QueryExecution(snc, result.logicalPlan)
+    println(qe.executedPlan)
+    r = result.collect
+    println(r.length)
+
+    snc.sql("drop table MY_TABLE1" )
+    snc.sql("drop table MY_TABLE2" )
+
+    println("Successful")
+  }
+
+
+
+ /* test("Test the creation/dropping of column table using Schema") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -503,5 +550,5 @@ class ColumnTableTest
     }
 
   }
-
+*/
 }

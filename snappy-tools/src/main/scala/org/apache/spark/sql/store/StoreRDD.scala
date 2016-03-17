@@ -26,7 +26,7 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.serializer.Serializer
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.collection.{CoGroupExecutorLocalPartition, NarrowExecutorLocalSplitDep}
 import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.types.StructType
@@ -38,7 +38,7 @@ import org.apache.spark.util.MutablePair
  *
  *
  * @param sc Snappy context
- * @param prev the RDD which we want to save to snappy store
+ * @param df the dataframe which we want to save to snappy store
  * @param tableName the table name to which we want to write
  * @param getConnection function to get connection
  * @param schema schema of the table
@@ -47,7 +47,7 @@ import org.apache.spark.util.MutablePair
  */
 
 class StoreRDD(@transient sc: SparkContext,
-    @transient prev: RDD[Row],
+    @transient df: DataFrame,
     tableName: String,
     getConnection: () => Connection,
     schema: StructType,
@@ -56,16 +56,18 @@ class StoreRDD(@transient sc: SparkContext,
     partitionColumns: Seq[String]
     ) extends RDD[Row](sc, Nil) {
 
+  val inputRDD = df.rdd
 
-  private val totalNumPartitions = if (partitionColumns.isEmpty) prev.partitions.length
-  else {
+  println("incoming rdd partition " + inputRDD.partitions.length)
+
+  private val totalNumPartitions =
     executeWithConnection(getConnection, { conn =>
       val tableSchema = conn.getSchema
       val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
       val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
       region.getTotalNumberOfBuckets
     })
-  }
+
 
   private val part: Partitioner = new ColumnPartitioner(totalNumPartitions)
 
@@ -76,21 +78,21 @@ class StoreRDD(@transient sc: SparkContext,
 
 
   override def getDependencies: Seq[Dependency[_]] = {
-    if (preservePartitioning && prev.partitions.length != totalNumPartitions) {
+    if (preservePartitioning && inputRDD.partitions.length != totalNumPartitions) {
       throw new RuntimeException(s"Preserve partitions" +
           s" can be set if partition of input " +
           s"dataset is equal to partitions of table ")
     }
-    if (prev.partitioner == Some(part) || preservePartitioning || partitionColumns.isEmpty) {
-      logDebug("Adding one-to-one dependency with " + prev)
-      List(new OneToOneDependency(prev))
+    if (inputRDD.partitioner == Some(part) || preservePartitioning || partitionColumns.isEmpty) {
+      logDebug("Adding one-to-one dependency with " + inputRDD)
+      List(new OneToOneDependency(inputRDD))
     } else {
-      logDebug("Adding shuffle dependency with " + prev)
+      logDebug("Adding shuffle dependency with " + inputRDD)
       //TDOD make this code as part of a SparkPlan so that we can map this to batch inserts and also can use Spark's code-gen feature.
       //See Exchange.scala for more details
       val rddWithPartitionIds: RDD[Product2[Int, Row]] = {
 
-        prev.mapPartitions { iter =>
+        inputRDD.mapPartitions { iter =>
           val mutablePair = new MutablePair[Int, Row]()
 
           val ordinals = partitionColumns.map(col => {
@@ -151,7 +153,7 @@ class StoreRDD(@transient sc: SparkContext,
       val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
       val partitions = new Array[Partition](totalNumPartitions)
 
-      for (p <- 0 until totalNumPartitions) {
+      for (p <- 0 until inputRDD.partitions.length) {
         val distMember = region.getBucketPrimary(p)
         partitions(p) = getPartition(p, distMember)
       }
@@ -166,7 +168,7 @@ class StoreRDD(@transient sc: SparkContext,
       case s: ShuffleDependency[_, _, _] =>
         None
       case _ =>
-        Some(new NarrowExecutorLocalSplitDep(prev, index, prev.partitions(index)))
+        Some(new NarrowExecutorLocalSplitDep(inputRDD, index, inputRDD.partitions(index)))
     }
     new CoGroupExecutorLocalPartition(index, prefNode.get, narrowDep)
   }

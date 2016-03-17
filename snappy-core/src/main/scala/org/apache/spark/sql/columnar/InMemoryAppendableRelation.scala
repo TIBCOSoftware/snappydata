@@ -94,7 +94,7 @@ private[sql] class InMemoryAppendableRelation(
   }
 
   def batchAggregate(accumulated: ArrayBuffer[CachedBatch],
-      batch: CachedBatch): ArrayBuffer[CachedBatch] = {
+      batch: CachedBatch, index : Int): ArrayBuffer[CachedBatch] = {
     accumulated += batch
   }
 

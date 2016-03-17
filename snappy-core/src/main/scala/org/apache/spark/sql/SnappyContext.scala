@@ -197,7 +197,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
-    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
+    val cached = df.rdd.mapPartitionsPreserveWithIndex { (index,rowIterator) =>
 
       val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, output)
@@ -205,8 +205,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
 
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
-        .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
+        .foreach(batches.appendRow((), _, index))
+      batches.forceEndOfBatch(index).iterator
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
@@ -239,14 +239,14 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       }
     }
 
-    val cached = rdd.mapPartitionsPreserve { rowIterator =>
+    val cached = rdd.mapPartitionsPreserveWithIndex { (index,rowIterator) =>
 
       val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
+          .foreach(batches.appendRow((), _, index))
+      batches.forceEndOfBatch(index).iterator
 
     }.persist(storageLevel)
 

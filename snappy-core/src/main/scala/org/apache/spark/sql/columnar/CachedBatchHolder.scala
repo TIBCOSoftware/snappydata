@@ -21,7 +21,7 @@ import org.apache.spark.sql.types.StructType
 
 private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int, schema: StructType,
-    val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {
+    val init: T, val batchAggregate: (T, CachedBatch, Int) => T) extends Serializable {
 
   var columnBuilders = getColumnBuilders
   var result = init
@@ -32,7 +32,7 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
    * later it can be shifted to REPLICATED Table in gemfireXD
    */
   private def appendRow_(newBuilders: Boolean, row: InternalRow,
-    flush: Boolean): Unit = {
+    flush: Boolean, index : Int): Unit = {
     val rowLength = if (row == expressions.EmptyRow) 0 else row.numFields
     if (rowLength > 0) {
       // Added for SPARK-6082. This assertion can be useful for scenarios when
@@ -57,22 +57,22 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
         _.columnStats.collectedStatistics).flatMap(_.values))
       // TODO: somehow push into global batchStats
       result = batchAggregate(result,
-        CachedBatch(rowCount, columnBuilders.map(_.build().array()), stats))
+        CachedBatch(rowCount, columnBuilders.map(_.build().array()), stats), index)
       // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
       if (newBuilders) columnBuilders = getColumnBuilders
       rowCount = 0
     }
   }
 
-  def appendRow(u: Unit, row: InternalRow): Unit =
-    appendRow_(newBuilders = true, row, flush = false)
+  def appendRow(u: Unit, row: InternalRow, index : Int): Unit =
+    appendRow_(newBuilders = true, row, flush = false, index)
 
   // empty for now
   def endRows(u: Unit): Unit = {}
 
-  def forceEndOfBatch(): T = {
+  def forceEndOfBatch(index : Int): T = {
     if (rowCount > 0) {
-      appendRow_(newBuilders = false, expressions.EmptyRow, flush = true)
+      appendRow_(newBuilders = false, expressions.EmptyRow, flush = true, index)
     }
     result
   }

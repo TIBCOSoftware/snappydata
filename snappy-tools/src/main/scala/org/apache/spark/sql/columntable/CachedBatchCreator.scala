@@ -118,7 +118,7 @@ class CachedBatchCreator(
       batchID: UUID, bucketID: Int): mutable.HashSet[Any] = {
 
     def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-        batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+        batch: CachedBatch, index : Int): ArrayBuffer[UUIDRegionKey] = {
       var rddId = -1
       StoreCallbacksImpl.stores.get(userTableName) match {
         case Some((_, _, id)) => rddId = id
@@ -148,10 +148,10 @@ class CachedBatchCreator(
     val mutableRow = new SpecificMutableRow(schema.fields.map(x => x.dataType))
     try {
       while (memHeapScanController.fetchNext(row)) {
-        batches.appendRow((), createInternalRow(row, mutableRow))
+        batches.appendRow((), createInternalRow(row, mutableRow), bucketID)
         keySet.add(row.getAllRegionAndKeyInfo.first().getKey)
       }
-      batches.forceEndOfBatch
+      batches.forceEndOfBatch(bucketID)
       keySet
     } finally {
       sc.close()
