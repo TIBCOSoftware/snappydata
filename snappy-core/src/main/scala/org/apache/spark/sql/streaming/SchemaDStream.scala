@@ -23,7 +23,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Duration, Time}
+import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Time}
 
 /**
   * A SQL based DStream with support for schema/Product
