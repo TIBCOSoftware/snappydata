@@ -36,7 +36,7 @@ For row format tables column definition can take underlying GemFire XD syntax to
 But for column table it's restricted to Spark syntax for column definition e.g.
 
     snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
-Clauses like PRIMARY KEY, NOT NUL etc. are not supported for column definition. 
+Clauses like PRIMARY KEY, NOT NULL etc. are not supported for column definition. 
 ##### Spark API for managing tables
 
 Get a reference to [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)
