@@ -25,7 +25,7 @@ import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlAdapter}
+import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
 import org.apache.spark.streaming.dstream.DStream
@@ -132,8 +132,8 @@ class SnappyStreamingContext protected[spark](
     } finally {
       // force invalidate all the cached relations to remove any stale streams
       snappyContext.clearCache()
-      StreamSqlAdapter.registerRelationDestroy() //Not sure why we need this @TODO
-      StreamSqlAdapter.clearStreams()
+      StreamSqlHelper.registerRelationDestroy() //Not sure why we need this @TODO
+      StreamSqlHelper.clearStreams()
 
     }
   }
@@ -159,7 +159,7 @@ class SnappyStreamingContext protected[spark](
   }
 
   def getSchemaDStream(tableName: String): SchemaDStream = {
-    StreamSqlAdapter.getSchemaDStream(self, tableName)
+    StreamSqlHelper.getSchemaDStream(self, tableName)
   }
 
   /**
@@ -167,11 +167,11 @@ class SnappyStreamingContext protected[spark](
    */
   def createSchemaDStream[A <: Product : TypeTag]
   (stream: DStream[A]): SchemaDStream = {
-    StreamSqlAdapter.createSchemaDStream(self, stream)
+    StreamSqlHelper.createSchemaDStream(self, stream)
   }
 
   def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
-    StreamSqlAdapter.createSchemaDStream(self, rowStream, schema)
+    StreamSqlHelper.createSchemaDStream(self, rowStream, schema)
   }
 
 

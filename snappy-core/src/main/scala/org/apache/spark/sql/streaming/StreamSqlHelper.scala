@@ -15,7 +15,7 @@ import org.apache.spark.streaming.dstream.DStream
 /**
  * Created by rishim on 23/2/16.
  */
-object StreamSqlAdapter {
+object StreamSqlHelper {
 
   def registerRelationDestroy(): Unit ={
      SnappyStoreHiveCatalog.registerRelationDestroy()
