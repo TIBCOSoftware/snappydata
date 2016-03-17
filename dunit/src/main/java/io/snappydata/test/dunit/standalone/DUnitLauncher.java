@@ -90,6 +90,8 @@ public class DUnitLauncher {
 
   public static final String DUNIT_DIR = "dunit";
   public static final String LOG_LEVEL = System.getProperty("logLevel", "config");
+  public static final String SECURITY_LOG_LEVEL = System.getProperty(
+      "securityLogLevel", LOG_LEVEL);
   public static final String WORKSPACE_DIR_PARAM = "WORKSPACE_DIR";
   public static final boolean LOCATOR_LOG_TO_DISK = Boolean.getBoolean("locatorLogToDisk");
 
@@ -197,6 +199,7 @@ public class DUnitLauncher {
 //    p.setProperty("enable-cluster-configuration", "false");
 //    p.setProperty("use-cluster-configuration", "false");
     p.setProperty("log-level", LOG_LEVEL);
+    p.setProperty("security-log-level", SECURITY_LOG_LEVEL);
     return p;
   }
 
