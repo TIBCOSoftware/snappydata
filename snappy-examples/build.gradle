@@ -1,5 +1,4 @@
 apply plugin: 'scala'
-
 compileScala.options.encoding = 'UTF-8'
 
 // fix scala+java mix to all use compileScala which uses correct dependency order
@@ -7,7 +6,9 @@ sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
 
 dependencies {
+
   compile project(":snappy-tools_${scalaBinaryVersion}")
+
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     testRuntime project(':snappy-aqp')
   } else {
