@@ -71,7 +71,7 @@ class SnappyStreamingContext protected[spark](
   }
 
   /**
-   * Create a StreamingContext by providing the configuration necessary for a new SparkContext.
+   * Create a SnappyStreamingContext by providing the configuration necessary for a new SparkContext.
    * @param conf a org.apache.spark.SparkConf object specifying Spark parameters
    * @param batchDuration the time interval at which streaming data will be divided into batches
    */
@@ -273,6 +273,21 @@ object SnappyStreamingContext extends Logging {
       getActive().getOrElse { getOrCreate(checkpointPath, creatingFunc, hadoopConf, createOnError) }
     }
   }
+
+  /**
+   * Either recreate a SnappyStreamingContext from checkpoint data or create a new SnappyStreamingContext.
+   * If checkpoint data exists in the provided `checkpointPath`, then SnappyStreamingContext will be
+   * recreated from the checkpoint data. If the data does not exist, then the StreamingContext
+   * will be created by called the provided `creatingFunc`.
+   *
+   * @param checkpointPath Checkpoint directory used in an earlier StreamingContext program
+   * @param creatingFunc   Function to create a new SnappyStreamingContext
+   * @param hadoopConf     Optional Hadoop configuration if necessary for reading from the
+   *                       file system
+   * @param createOnError  Optional, whether to create a new SnappyStreamingContext if there is an
+   *                       error in reading checkpoint data. By default, an exception will be
+   *                       thrown on error.
+   */
 
   def getOrCreate(
       checkpointPath: String,
