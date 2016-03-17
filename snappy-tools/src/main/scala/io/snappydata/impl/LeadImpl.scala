@@ -18,7 +18,6 @@ package io.snappydata.impl
 
 import java.sql.SQLException
 import java.util.Properties
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.JavaConverters._
@@ -28,13 +27,12 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.FabricService.State
-import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata._
 import spark.jobserver.JobServer
 
-import org.apache.spark.scheduler.cluster.SnappyEmbeddedModeClusterManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -158,7 +156,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     storeProps.putAll(filteredProp.toMap.asJava)
 
     logInfo("passing store properties as " + storeProps)
-    super.start(storeProps, ignoreIfStarted = false)
+    super.start(storeProps, false)
 
     status() match {
       case State.RUNNING =>

@@ -4,7 +4,7 @@ Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.or
 
 Preview branch
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.x-preview --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -22,7 +22,7 @@ If you want to build only the top-level snappydata project but pull in jars for 
 
 Preview branch
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.x-preview
 > cd snappydata
 > ./gradlew product
 ```
@@ -84,6 +84,9 @@ Useful build and test targets:
 ./gradlew runQuickstart -  run the quickstart suite (the "Getting Started" section of docs)
 ./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
                            and run full snappydata testsuite including quickstart
+./gradlew precheckin -Pstore  -  cleanAll, buildAll, scalaStyle, build docs,
+                           run full snappydata testsuite including quickstart
+                           and also full snappy-store testsuite
 ```
 
 The default build directory is _build-artifacts/scala-2.10_ for projects. Exception is _snappy-store_ project, where the default build directory is _build-artifacts/&lt;os&gt;_ where _&lt;os&gt;_ is _linux_ on Linux systems, _osx_ on Mac, _windows_ on Windows.

@@ -19,7 +19,7 @@ buildscript {
   dependencies {
     classpath "com.github.maiflai:gradle-scalatest:0.10"
     classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2"
-    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.2'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
   }
 }
 
@@ -51,7 +51,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.1.0-SNAPSHOT'
+  version = '0.2-SNAPSHOT'
 
   // apply compiler options
   compileJava.options.encoding = 'UTF-8'
@@ -93,7 +93,7 @@ allprojects {
 
 def getProcessId() {
   def name = java.lang.management.ManagementFactory.getRuntimeMXBean().getName()
-  return name[0..name.indexOf("@")-1]
+  return name[0..name.indexOf("@") - 1]
 }
 
 def getStackTrace(def t) {
@@ -146,6 +146,11 @@ task cleanDUnit << {
   delete workingDir
   file(workingDir).mkdirs()
 }
+task cleanAllReports << {
+  def workingDir = "${testResultsBase}/combined-reports"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
 
 task publishDocs(type:Exec) {
   dependsOn ':snappy-tools_' + scalaBinaryVersion + ':docs'
@@ -195,7 +200,7 @@ subprojects {
   test {
     maxParallelForks = (2 * Runtime.getRuntime().availableProcessors())
     maxHeapSize '2g'
-    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=512m', '-ea'
+    jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:+CMSClassUnloadingEnabled',  '-XX:MaxPermSize=384m', '-ea'
     testLogging.exceptionFormat = 'full'
 
     workingDir = "${testResultsBase}/junit"
@@ -213,7 +218,6 @@ subprojects {
     }
     tasks.withType(Test).each { test ->
       test.configure {
-        onlyIf { !Boolean.getBoolean('skip.tests') }
         environment 'SNAPPY_HOME': snappyProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
@@ -227,7 +231,11 @@ subprojects {
         }
         onOutput { desc, event ->
           def output = new File(workingDir, "output.txt")
-          output  << event.message
+          def msg = event.message
+          if (event.destination.toString() == 'StdErr') {
+            msg = msg.replace("\n", "\n[error]  ")
+          }
+          output << msg
         }
         afterTest { desc, result ->
           def now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
@@ -243,7 +251,6 @@ subprojects {
       }
     }
   })
-  check.dependsOn test, scalaTest
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
@@ -265,6 +272,12 @@ subprojects {
     provided {
       description 'a dependency that is provided externally at runtime'
       visible true
+    }
+
+    nospark {
+      description 'a dependency for creating jar without spark dependencies'
+      visible true
+      transitive true
     }
 
     testOutput {
@@ -397,6 +410,7 @@ task publishMaven {
 
 task generateSources {
   dependsOn ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion + ':generateAvroJava'
+  dependsOn ':snappy-examples:generateAvro'
   dependsOn ':snappy-store:generateSources'
 }
 
@@ -415,8 +429,20 @@ task product {
     // create the RELEASE file
     def release = file("${snappyProductDir}/RELEASE")
     def gitCommitId = "git rev-parse HEAD".execute().text.trim()
-    release << "Snappy Spark ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
+    release << "SnappyData ${project.version} ${gitCommitId} built for Hadoop $hadoopVersion\n"
     release << "Build flags: ${buildFlags}\n"
+
+    // copy LICENSE, README.md and doc files
+    copy {
+      from projectDir
+      into snappyProductDir
+      include 'LICENSE'
+      include 'README.md'
+    }
+    copy {
+      from "${projectDir}/docs"
+      into "${snappyProductDir}/docs"
+    }
 
     def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
     def examplesProject = project(':snappy-examples')
@@ -430,11 +456,15 @@ task product {
       rename { filename -> archiveName }
     }
     // copy datanucleus jars specifically since they don't work as part of fat jar
+    // copy hbase jar as required for GFXD HDFS support (needs to be explicitly added to SPARK_DIST_CLASSPATH)
     // copy bin, sbin, data etc from spark
     if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
       copy {
         from project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
           it.getName().contains('datanucleus')
+        }
+        from project(":snappy-store:gemfire-core").configurations.provided.filter {
+          it.getName().contains('hbase')
         }
         into "${snappyProductDir}/lib"
       }
@@ -534,6 +564,10 @@ task product {
       from("${examplesProject.projectDir}/quickstart")
       into "${snappyProductDir}/quickstart"
     }
+    copy {
+      from("${toolsProject.projectDir}/benchmark")
+      into "${snappyProductDir}/benchmark"
+    }
   }
 }
 
@@ -548,9 +582,14 @@ distributions {
     }
   }
 }
-distTar.dependsOn product
-distZip.dependsOn product
-
+distTar {
+  dependsOn product
+  classifier 'bin'
+}
+distZip {
+  dependsOn product
+  classifier 'bin'
+}
 
 def copyTestsCommonResources(def bdir) {
   def outdir = "${bdir}/resources/test"
@@ -695,6 +734,7 @@ task copyResourcesAll << {
   }
 }
 
+
 task cleanAll {
   dependsOn getTasksByName('clean', true).collect { it.path }
 }
@@ -710,11 +750,25 @@ task checkAll {
     dependsOn ':snappy-aqp:check'
   }
   if (project.hasProperty('spark')) {
-    dependsOn project(':snappy-spark').getTasksByName('check', true).collect { it.path }
+    dependsOn ':snappy-spark:check'
+  }
+  if (project.hasProperty('store')) {
+    dependsOn ':snappy-store:check'
   }
   mustRunAfter buildAll
 }
+task allReports(type: TestReport) {
+  description 'Combines the test reports.'
+  dependsOn cleanAllReports
+  destinationDir = file("${testResultsBase}/combined-reports")
+  mustRunAfter checkAll
+}
+gradle.taskGraph.whenReady({ graph ->
+  tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
+})
+
+
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
 }

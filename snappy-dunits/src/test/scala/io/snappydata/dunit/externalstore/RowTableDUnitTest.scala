@@ -31,7 +31,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 0)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 
   def startSparkJob2(): Unit = {
@@ -51,7 +51,7 @@ class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(r.length == 5)
 
     snc.dropTable(tableName, ifExists = true)
-    logger.info("Successful")
+    getLogWriter.info("Successful")
   }
 }
 

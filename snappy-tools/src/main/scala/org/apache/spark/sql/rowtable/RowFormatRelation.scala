@@ -157,7 +157,7 @@ class RowFormatRelation(
       throw new IllegalArgumentException(
         "RowFormatRelation.put: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(putStr)

@@ -16,7 +16,9 @@
  */
 package io.snappydata.test.dunit.standalone;
 
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A cyclic barrier for use in synchronizing between dunit VMs. Each
@@ -25,52 +27,57 @@ import java.util.concurrent.TimeoutException;
  */
 public class AnyCyclicBarrier {
 
-  private static final String PARTIES_KEY = "parties";
-  private final int parties;
-  private final DUnitBB bb;
+  private static final String KEY_PREFIX = "DUNIT_CYCLIC_BARRIER_";
 
-  public AnyCyclicBarrier(int parties) {
-    bb = DUnitBB.getBB();
-    bb.put(PARTIES_KEY, parties);
+  private final DUnitBB bb;
+  private final int parties;
+  private final String keyName;
+  private final AtomicInteger awaitRound;
+
+  public AnyCyclicBarrier(int parties, String lockName) {
+    this.bb = DUnitBB.getBB();
     this.parties = parties;
+    this.keyName = KEY_PREFIX + lockName;
+    this.awaitRound = new AtomicInteger(1);
   }
 
-  public void await() throws InterruptedException {
-    if (parties <= 1) {
-      bb.remove(PARTIES_KEY);
-      return;
+  public void await() throws InterruptedException, BrokenBarrierException {
+    try {
+      await(-1L);
+    } catch (TimeoutException te) {
+      throw new AssertionError("unexpected timeout exception", te);
     }
-
-    int remaining = bb.addAndGet(PARTIES_KEY, -1, parties - 1);
-    if (remaining > 0) {
-      Integer waiters;
-      while ((waiters = (Integer)bb.get(PARTIES_KEY)) != null && waiters > 0) {
-        Thread.sleep(10);
-      }
-    }
-    bb.remove(PARTIES_KEY);
   }
 
   public void await(final long timeoutInMillis) throws InterruptedException,
-      TimeoutException {
-    if (parties <= 1) {
-      bb.remove(PARTIES_KEY);
+      BrokenBarrierException, TimeoutException {
+    if (this.parties <= 1) {
       return;
     }
 
     final long start = System.currentTimeMillis();
-    int remaining = bb.addAndGet(PARTIES_KEY, -1, parties - 1);
-    if (remaining > 0) {
-      Integer waiters;
-      while ((waiters = (Integer)bb.get(PARTIES_KEY)) != null && waiters > 0) {
-        if (timeoutInMillis >= 0 &&
-            (System.currentTimeMillis() - start) > timeoutInMillis) {
-          throw new TimeoutException("exceeded timeout of " + timeoutInMillis
-              + "ms waiting on barrier");
-        }
-        Thread.sleep(10);
+    int waiters = this.bb.addAndGet(this.keyName, 1, 1);
+    while (waiters < (this.parties * this.awaitRound.get())) {
+      if (timeoutInMillis >= 0 &&
+          (System.currentTimeMillis() - start) > timeoutInMillis) {
+        throw new TimeoutException("exceeded timeout of " + timeoutInMillis
+            + "ms waiting on barrier");
       }
+      Thread.sleep(10);
+      Object waitersObj = this.bb.get(this.keyName);
+      if (waitersObj == null) {
+        throw new BrokenBarrierException("Barrier broken: object destroyed");
+      }
+      waiters = (Integer)waitersObj;
     }
-    bb.remove(PARTIES_KEY);
+    this.awaitRound.incrementAndGet();
+  }
+
+  public void destroy() {
+    this.bb.remove(this.keyName);
+  }
+
+  public static void destroy(String lockName) {
+    DUnitBB.getBB().remove(KEY_PREFIX + lockName);
   }
 }

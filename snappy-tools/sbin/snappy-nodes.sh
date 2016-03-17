@@ -107,7 +107,7 @@ function startComponent() {
     # Set a default locator if not already set.
     if [ -z "$(echo  $args $"${@// /\\ }" | grep '[-]locators=')" ]; then
       if [ "${componentType}" != "locator"  ]; then
-        args="${args} -locators="$(hostname)"[10334]"
+        args="${args} -locators=\""$(hostname)"[10334]\""
       fi
       # Set low discovery and join timeouts for quick startup when locator is local.
       if [ -z "$(echo  $args $"${@// /\\ }" | grep 'Dp2p.discoveryTimeout=')" ]; then
