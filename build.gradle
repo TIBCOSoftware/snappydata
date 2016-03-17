@@ -218,6 +218,18 @@ subprojects {
     }
     tasks.withType(Test).each { test ->
       test.configure {
+
+        def logLevel = System.getProperty('logLevel')
+        if (logLevel != null && logLevel.length() > 0) {
+          systemProperties 'gemfire.log-level'           : logLevel,
+                           'logLevel'                    : logLevel
+        }
+        logLevel = System.getProperty('securityLogLevel')
+        if (logLevel != null && logLevel.length() > 0) {
+          systemProperties 'gemfire.security-log-level'  : logLevel,
+                           'securityLogLevel'            : logLevel
+        }
+
         environment 'SNAPPY_HOME': snappyProductDir,
           'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
 
