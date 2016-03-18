@@ -26,7 +26,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 import scala.collection.JavaConverters._
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.execution.QueryExecution
+import org.apache.spark.sql.execution.{Exchange, QueryExecution}
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
@@ -87,9 +87,13 @@ class ColumnTableTest
     println(result.logicalPlan)
 
     val qe = new QueryExecution(snc, result.logicalPlan)
+    val lj = qe.executedPlan collect {
+      case ex : Exchange => ex
+    }
     println(qe.executedPlan)
+    assert(lj.length == 0)
     r = result.collect
-    println(r.length)
+    assert(r.length == 500)
 
     snc.sql("drop table MY_TABLE1" )
     snc.sql("drop table MY_TABLE2" )
@@ -99,7 +103,7 @@ class ColumnTableTest
 
 
 
- /* test("Test the creation/dropping of column table using Schema") {
+  test("Test the creation/dropping of column table using Schema") {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
@@ -550,5 +554,5 @@ class ColumnTableTest
     }
 
   }
-*/
+
 }

@@ -159,12 +159,23 @@ class ColumnFormatRelation(
   }
 
   override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-      batch: CachedBatch, index :Int): ArrayBuffer[UUIDRegionKey] = {
+      batch: CachedBatch, index: Int): ArrayBuffer[UUIDRegionKey] = {
 
     //TODO - currently using the length from the part Object but it needs to be handled more generically
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
-      //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
+    //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
+
+    //Change for preserve partition : {
+    // We are inserting a cached batch to column table directly
+    // in case of preserve partition. We are not considering small batches.
+    // We will be simply putting the data as CachedBatches. This will
+    // ensure the query results will be ok even though the storage is suboptimal.
+    // Once we come up with a cleaner solution we can start inserting
+    // residual rows to row buffer
+    // }
+    //
+    def insertCachedBatch(passedIndex: Int): Unit = {
       val id = {
         StoreCallbacksImpl.stores.get(table) match {
           case Some((_, _, rddId)) => rddId
@@ -172,9 +183,22 @@ class ColumnFormatRelation(
         }
       }
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
-          cachedBatchTableName(table), batch, bucketId = index, rddId = id)
+          cachedBatchTableName(table), batch, bucketId = passedIndex, rddId = id)
       accumulated += uuid
+    }
 
+    if (preservePartitionOnInsert) {
+      insertCachedBatch(index)
+    } else if (batch.numRows >= columnBatchSize) {
+      insertCachedBatch(-1)
+    } else {
+      //TODO: can we do it before compressing. Might save a bit
+      val converter = CatalystTypeConverters.createToScalaConverter(schema)
+      val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
+        Iterator(batch), schema.map(_.name).toArray, schema).map(converter)
+      insert(unCachedRows.toSeq.asInstanceOf[Seq[Row]])
+    }
+    accumulated
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
