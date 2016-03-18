@@ -351,6 +351,10 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     }
   }
 
+  protected static void invokeInVM(VM vm, Class c, String method, Object[] methodArgs) {
+    vm.invoke(c, method, methodArgs);
+  }
+
   public static void invokeInVM(VM vm, final String className, final String method,
                                 final Object[] methodArgs) {
     SerializableRunnable run = new SerializableRunnable() {
