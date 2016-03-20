@@ -18,7 +18,7 @@
 #
 
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
-# conf/locators, conf/leads and conf/servers files repsectively
+# conf/locators, conf/leads and conf/servers files respectively
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
