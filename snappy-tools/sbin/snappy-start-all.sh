@@ -23,6 +23,11 @@
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
+MEMBERS_INFO_FILE=members_info
+
+rm -rf $MEMBERS_INFO_FILE 2> /dev/null
+touch $MEMBERS_INFO_FILE
+
 # Load the Spark configuration
 . "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
