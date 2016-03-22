@@ -30,6 +30,8 @@ import org.apache.spark.sql.{execution => sparkexecution, _}
 
 object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
+  override def registerAQPErrorFunctions(context: SnappyContext){}
+
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(context, plan)
