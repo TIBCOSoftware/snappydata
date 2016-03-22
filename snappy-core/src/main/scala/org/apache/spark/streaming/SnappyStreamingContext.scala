@@ -126,7 +126,11 @@ class SnappyStreamingContext protected[spark](
   override def stop(stopSparkContext: Boolean,
       stopGracefully: Boolean): Unit = {
     try {
-      super.stop(stopSparkContext, stopGracefully)
+      super.stop(false, stopGracefully)
+      if(stopSparkContext) {
+        SnappyContext.stop()
+      }
+
       SnappyStreamingContext.setActiveContext(null)
       SnappyStreamingContext.setInstanceContext(null)// A stopped instance can not be restartred. Hence removing
     } finally {
