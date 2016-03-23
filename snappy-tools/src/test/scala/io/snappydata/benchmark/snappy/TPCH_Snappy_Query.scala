@@ -1,7 +1,5 @@
 package io.snappydata.benchmark.snappy
 
-import java.io.{PrintStream, File, FileOutputStream}
-
 import com.typesafe.config.Config
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
@@ -16,15 +14,15 @@ object TPCH_Snappy_Query extends SnappySQLJob{
    var queryPlan : Boolean = false
    var queries:Array[String] = _
 
-  var avgFileStream: FileOutputStream = _
-  var avgPrintStream:PrintStream = _
+//  var avgFileStream: FileOutputStream = _
+//  var avgPrintStream:PrintStream = _
 
    override def runJob(snc: C, jobConfig: Config): Any = {
      val isResultCollection = false
      val isSnappy = true
 
-     avgFileStream = new FileOutputStream(new File(s"Average.out"))
-     avgPrintStream = new PrintStream(avgFileStream)
+//     avgFileStream = new FileOutputStream(new File(s"Average.out"))
+//     avgPrintStream = new PrintStream(avgFileStream)
 
      val usingOptionString = s"""
            USING row
