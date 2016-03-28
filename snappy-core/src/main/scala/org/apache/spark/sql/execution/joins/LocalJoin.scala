@@ -31,8 +31,9 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{BinaryNode, SparkPlan}
+import org.apache.spark.storage.{StorageLevel, RDDBlockId, BroadcastBlockId}
 import org.apache.spark.util.Utils
-import org.apache.spark.{OneToOneDependency, Partition, SparkContext, TaskContext}
+import org.apache.spark.{SparkEnv, OneToOneDependency, Partition, SparkContext, TaskContext}
 
 
 /**
@@ -80,7 +81,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     val streamRDD = streamedPlan.execute()
 
     val sc = buildRDD.sparkContext
-    val hashedRDD = new HashRelationRDD(sc, buildRDD, streamRDD.partitions.length, sc.clean(h1))
+    val hashedRDD = new HashRelationRDD(sc, buildRDD,
+      streamRDD.partitions.length, sc.clean(h1))
 
     narrowPartitions(hashedRDD, streamRDD, true) {
       (hashedIter, streamIter) => {
@@ -98,13 +100,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
   }
 }
 
-object HashRelationRDD {
-  private val computedRDD = new TrieMap[Int, HashedRelation]()
-
-  /*  private val computedRDD = CacheBuilder.newBuilder().maximumSize(1000).build(new CacheLoader[Int, HashedRelation](){
-      override def load(k: Int): HashedRelation = ???
-    })*/
-}
+// Helper object jut to take a global sync across tasks.
+// Furture helper methods can come here
+private[spark] object HashRelationRDD
 
 private[spark] class HashRelationRDD(
     sc: SparkContext,
@@ -114,21 +112,31 @@ private[spark] class HashRelationRDD(
     ) extends RDD[HashedRelation](sc, Seq(new OneToOneDependency(buildRDD))) {
 
   override def compute(s: Partition, context: TaskContext): Iterator[HashedRelation] = {
-    val relationItr = HashRelationRDD.computedRDD.get(this.id).orElse {
-      HashRelationRDD.computedRDD.synchronized {
-        HashRelationRDD.computedRDD.get(this.id).orElse {
-          val hashedRelation = f(buildRDD.iterator(s, context))
-          val rel = hashedRelation.next()
-          HashRelationRDD.computedRDD.putIfAbsent(this.id, rel)
-          Some(rel)
+
+    val blockId = RDDBlockId(this.id, s.index)
+
+    val rel1 = SparkEnv.get.blockManager.getSingle(blockId) match {
+      case Some(x) => x.asInstanceOf[HashedRelation]
+      case None => {
+        HashRelationRDD.synchronized {
+          SparkEnv.get.blockManager.getSingle(blockId) match {
+            case Some(x) => x.asInstanceOf[HashedRelation]
+            case None => {
+              val hashedRelation = f(buildRDD.iterator(s, context))
+              val rel = hashedRelation.next()
+
+              SparkEnv.get.blockManager.putSingle(
+                blockId, rel, StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
+              
+              rel
+            }
+          }
+
         }
       }
+    }
 
-    }
-    if (s.index == maxPartitions) {
-      HashRelationRDD.computedRDD.remove(this.id)
-    }
-    Seq(relationItr.get).iterator
+    Seq(rel1).iterator
     //f(buildRDD.iterator(s, context))
   }
 
