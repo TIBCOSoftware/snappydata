@@ -1,0 +1,103 @@
+package io.snappydata.dunit.aqp
+
+import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Statement}
+
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import org.junit.Assert
+
+import org.apache.spark.sql.columntable.ColumnFormatRelation
+import org.apache.spark.sql.{DataFrame, SaveMode, SnappyContext}
+
+/**
+ * Tests for query routing from JDBC client driver.
+ */
+class AQPErrorEstimateDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
+
+  private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
+
+  val mainTable: String = "airline"
+  val sampleTable: String = "airline_sampled"
+  var sampleDataFrame: DataFrame = _
+  var mainTableDataFrame: DataFrame = _
+  var airLineCodeDataFrame: DataFrame = _
+  //Set up sample & Main table
+  var hfile: String = getClass.getResource("/2015-trimmed.parquet").getPath
+  val codetableFile = getClass.getResource("/airlineCode_Lookup.csv").getPath
+
+  override def tearDown2(): Unit = {
+    //reset the chunk size on lead node
+    setDMLMaxChunkSize(default_chunk_size)
+    super.tearDown2()
+  }
+  private def getANetConnection(netPort: Int): Connection = {
+    val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
+    Class.forName(driver).newInstance //scalastyle:ignore
+    val url = "jdbc:snappydata://localhost:" + netPort + "/"
+    DriverManager.getConnection(url)
+  }
+
+  def testBasicErrorEstimateQuery(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    createTableAndInsertData()
+    val conn = getANetConnection(netPort1)
+    val s = conn.createStatement()
+    val rs = s.executeQuery(s"select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay) rel_err," +
+        s"  UniqueCarrier carrier from $sampleTable   group by UniqueCarrier   order by arrivalDelay")
+    rs.next()
+    rs.getDouble(1)
+    rs.getDouble(2)
+    rs.getString(3)
+    conn.close()
+  }
+
+
+
+
+  def setDMLMaxChunkSize(size: Long): Unit = {
+    GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
+  }
+
+
+  private def createTableAndInsertData(): Unit = {
+    val snc = SnappyContext(sc)
+
+    snc.sql("set spark.sql.shuffle.partitions=3")
+    snc.sql(s"drop table  if exists $mainTable")
+    snc.sql(s"drop table  if exists $sampleTable")
+    snc.sql(s"drop table  if exists airlinestaging")
+    snc.sql(s"drop table  if exists airlinerefstaging")
+    snc.sql(s"drop table  if exists airlineref")
+
+    val stagingDF =  snc.read.load(hfile)
+    snc.createTable("airlinestaging", "column", stagingDF.schema,
+      Map.empty[String, String])
+    stagingDF.write.mode(SaveMode.Ignore).saveAsTable("airlinestaging")
+
+    mainTableDataFrame = snc.createTable(mainTable, "column", stagingDF.schema,
+      Map.empty[String, String])
+    stagingDF.write.mode(SaveMode.Append).saveAsTable(mainTable)
+
+    sampleDataFrame =  snc.createSampleTable(sampleTable, None,
+      Map("qcs" -> "UniqueCarrier,YearI,MonthI", "fraction" -> "0.06",
+        "strataReservoirSize"-> "1000", "baseTable" -> mainTable))
+    mainTableDataFrame.write.mode(SaveMode.Append).saveAsTable(sampleTable)
+    assert(sampleDataFrame.collect().length > 0)
+
+    val codeTabledf = snc.read
+            .format("com.databricks.spark.csv") // CSV to DF package
+            .option("header", "true") // Use first line of all files as header
+            .option("inferSchema", "true") // Automatically infer data types
+            .load(codetableFile)
+
+    airLineCodeDataFrame =  snc.createTable("airlineref", "column",
+      codeTabledf.schema, Map.empty[String, String])
+    codeTabledf.write.mode(SaveMode.Append).saveAsTable("airlineref")
+  }
+}
+
+
