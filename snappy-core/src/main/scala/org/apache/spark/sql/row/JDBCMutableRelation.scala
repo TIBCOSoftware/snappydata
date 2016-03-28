@@ -27,6 +27,7 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.{Logging, Partition}
 
@@ -164,37 +165,25 @@ class JDBCMutableRelation(
   }
 
   def insert(data: DataFrame): Unit = {
-    JdbcUtils.saveTable(data, url, table, connProperties)
+    JdbcExtendedUtils.saveTable(data, url, table, poolProperties,
+      connProperties, hikariCP)
   }
 
   // TODO: SW: should below all be executed from driver or some random executor?
   // at least the insert can be split into batches and modelled as an RDD
- // TODO: Suranjan common code in  ColumnFormatRelation too
   override def insert(rows: Seq[Row]): Int = {
-
     val numRows = rows.length
     if (numRows == 0) {
       throw new IllegalArgumentException(
         "JDBCUpdatableRelation.insert: no rows provided")
     }
+    val batchSize = connProperties.getProperty("batchsize", "1000").toInt
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
-      var result = 0
-      if (numRows > 1) {
-        for (row <- rows) {
-          ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
-            row, dialect)
-          stmt.addBatch()
-        }
-        val insertCounts = stmt.executeBatch()
-        result = insertCounts.length
-      } else {
-        ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
-          rows.head, dialect)
-        result = stmt.executeUpdate()
-      }
+      val result = CodeGeneration.executeUpdate(table, stmt,
+        rows, numRows > 1, batchSize, schema.fields, dialect)
       stmt.close()
       result
     } finally {
@@ -237,13 +226,12 @@ class JDBCMutableRelation(
       poolProperties, connProperties, hikariCP)
     try {
       val setStr = updateColumns.mkString("SET ", "=?, ", "=?")
-      val whereStr =
-        if (filterExpr == null || filterExpr.isEmpty) ""
-        else " WHERE " + filterExpr
-      val stmt = connection.prepareStatement(s"UPDATE $table $setStr$whereStr")
-      ExternalStoreUtils.setStatementParameters(stmt, setFields,
-        newColumnValues, dialect)
-      val result = stmt.executeUpdate()
+      val whereStr = if (filterExpr == null || filterExpr.isEmpty) ""
+      else " WHERE " + filterExpr
+      val updateSql = s"UPDATE $table $setStr$whereStr"
+      val stmt = connection.prepareStatement(updateSql)
+      val result = CodeGeneration.executeUpdate(updateSql, stmt,
+        newColumnValues, setFields, dialect)
       stmt.close()
       result
     } finally {
@@ -272,11 +260,11 @@ class JDBCMutableRelation(
     val conn = ExternalStoreUtils.getConnection(url, connProperties,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      // clean up the connection pool on executors first
+      // clean up the connection pool and caches on executors first
       Utils.mapExecutors(sqlContext,
-        JDBCMutableRelation.removePool(table)).count()
+        ExternalStoreUtils.removeCachedObjects(table)).count()
       // then on the driver
-      JDBCMutableRelation.removePool(table)
+      ExternalStoreUtils.removeCachedObjects(table)
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
@@ -325,14 +313,6 @@ class JDBCMutableRelation(
         conn.close()
       }
     }
-  }
-}
-
-object JDBCMutableRelation extends Logging {
-
-  private def removePool(table: String): () => Iterator[Unit] = () => {
-    ConnectionPool.removePoolReference(table)
-    Iterator.empty
   }
 }
 

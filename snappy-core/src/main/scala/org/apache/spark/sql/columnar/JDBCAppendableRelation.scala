@@ -25,9 +25,8 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -134,7 +133,7 @@ case class JDBCAppendableRelation(
   }
 
   override def insert(df: DataFrame, overwrite: Boolean = true): Unit = {
-    insert(df.rdd, df, overwrite)
+    insert(df.queryExecution.toRdd, df, overwrite)
   }
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
@@ -145,7 +144,7 @@ case class JDBCAppendableRelation(
     accumulated += uuid
   }
 
-  protected def insert(rdd: RDD[Row], df: DataFrame,
+  protected def insert(rdd: RDD[InternalRow], df: DataFrame,
       overwrite: Boolean): Unit = {
 
     assert(df.schema.equals(schema))
@@ -168,12 +167,10 @@ case class JDBCAppendableRelation(
           attribute.name, useCompression)
       }.toArray
 
-      val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize, schema,
-        new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
+      val holder = new CachedBatchHolder(columnBuilders, 0, columnBatchSize,
+        schema, new ArrayBuffer[UUIDRegionKey](1), uuidBatchAggregate)
 
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(holder.appendRow((), _))
+      rowIterator.foreach(holder.appendRow((), _))
       holder.forceEndOfBatch()
       Iterator.empty
     }, preservesPartitioning = true)
@@ -269,11 +266,11 @@ case class JDBCAppendableRelation(
       externalStore.connProperties.url, externalStore.connProperties.connProps,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-    // clean up the connection pool on executors first
-    Utils.mapExecutors(sqlContext,
-      JDBCAppendableRelation.removePool(table)).count()
-    // then on the driver
-    JDBCAppendableRelation.removePool(table)
+      // clean up the connection pool and caches on executors first
+      Utils.mapExecutors(sqlContext,
+        ExternalStoreUtils.removeCachedObjects(table)).count()
+      // then on the driver
+      ExternalStoreUtils.removeCachedObjects(table)
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
@@ -285,13 +282,6 @@ case class JDBCAppendableRelation(
 
   def flushRowBuffer(): Unit = {
     // nothing by default
-  }
-}
-
-object JDBCAppendableRelation extends Logging {
-  private def removePool(table: String): () => Iterator[Unit] = () => {
-    ConnectionPool.removePoolReference(table)
-    Iterator.empty
   }
 }
 

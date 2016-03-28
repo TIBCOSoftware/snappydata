@@ -111,8 +111,11 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     // TODO: check if this should be INTEGER for GemFireXD for below two
     case ByteType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))
     case ShortType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))
-    case DecimalType.Fixed(precision, scale) =>
-      Some(JdbcType(s"DECIMAL($precision,$scale)", java.sql.Types.DECIMAL))
+    case d: DecimalType => Some(JdbcType(s"DECIMAL(${d.precision},${d.scale})",
+      java.sql.Types.DECIMAL))
+    case a: ArrayType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
+    case m: MapType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
+    case s: StructType => Some(JdbcType("BLOB", java.sql.Types.BLOB))
     case _ => None
   }
 

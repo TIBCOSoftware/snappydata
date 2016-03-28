@@ -35,7 +35,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.storage.BlockManagerId
 
 /**
@@ -138,9 +138,9 @@ class RowFormatRelation(
    *
    * @return number of rows upserted
    */
-
   def put(data: DataFrame): Unit = {
-    StoreUtils.saveTable(data, url, table, connProperties, upsert = true)
+    JdbcExtendedUtils.saveTable(data, url, table, poolProperties,
+      connProperties, hikariCP, upsert = true)
   }
 
   /**
@@ -157,24 +157,13 @@ class RowFormatRelation(
       throw new IllegalArgumentException(
         "RowFormatRelation.put: no rows provided")
     }
+    val batchSize = connProperties.getProperty("batchsize", "1000").toInt
     val connection = ConnectionPool.getPoolConnection(table, dialect,
       poolProperties, connProperties, hikariCP)
     try {
       val stmt = connection.prepareStatement(putStr)
-      var result = 0
-      if (numRows > 1) {
-        for (row <- rows) {
-          ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
-            row, dialect)
-          stmt.addBatch()
-        }
-        val putCounts = stmt.executeBatch()
-        result = putCounts.length
-      } else {
-        ExternalStoreUtils.setStatementParameters(stmt, schema.fields,
-          rows.head, dialect)
-        result = stmt.executeUpdate()
-      }
+      val result = CodeGeneration.executeUpdate(table, stmt,
+        rows, numRows > 1, batchSize, schema.fields, dialect)
       stmt.close()
       result
     } finally {

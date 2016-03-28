@@ -26,7 +26,7 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
+import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiExecutorLocalPartition
 import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
@@ -36,6 +36,7 @@ import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.{ResultSetIterator, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
@@ -296,6 +297,22 @@ final class InternalRowIteratorOnRS(conn: Connection,
             mutableRow.setNullAt(i)
           }
         case BinaryType => mutableRow.update(i, rs.getBytes(pos))
+        case a: ArrayType =>
+          val bytes = rs.getBytes(pos)
+          val array = new UnsafeArrayData
+          array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
+          mutableRow.update(i, array)
+        case m: MapType =>
+          val bytes = rs.getBytes(pos)
+          val map = new UnsafeMapData
+          map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
+          mutableRow.update(i, map)
+        case s: StructType =>
+          val bytes = rs.getBytes(pos)
+          val row = new UnsafeRow
+          row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET,
+            s.fields.length, bytes.length)
+          mutableRow.update(i, row)
         case _ => throw new IllegalArgumentException(
           s"Unsupported field ${schema.fields(i)}")
       }
