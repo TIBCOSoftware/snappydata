@@ -30,10 +30,10 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
+import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
@@ -44,6 +44,7 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
@@ -198,57 +199,13 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
-    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
+    val cached = df.queryExecution.toRdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, output)
 
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-        .foreach(batches.appendRow((), _))
+      rowIterator.foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
-    }.persist(storageLevel)
-
-    // trigger an Action to materialize 'cached' batch
-    if (cached.count() > 0) {
-      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
-          .appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-    }
-  }
-
-  /**
-   * @param rdd
-   * @param table
-   * @param schema
-   * @param storageLevel
-   */
-  @DeveloperApi
-  private[sql] def appendToTempTableCache(rdd: RDD[_], table: String,
-      schema: StructType, storageLevel: StorageLevel) {
-    val useCompression = conf.useCompression
-    val columnBatchSize = conf.columnBatchSize
-
-    val tableIdent = catalog.newQualifiedTableName(table)
-    val plan = catalog.lookupRelation(tableIdent, None)
-    val relation = cacheManager.lookupCachedData(plan).getOrElse {
-      cacheManager.cacheQuery(DataFrame(this, plan),
-        Some(tableIdent.table), storageLevel)
-
-      cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableIdent")
-      }
-    }
-
-    val cached = rdd.mapPartitionsPreserve { rowIterator =>
-
-      val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
-
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
@@ -1028,13 +985,15 @@ object SnappyContext extends Logging {
   def stop(): Unit = {
     val sc = globalSparkContext
     if (sc != null && !sc.isStopped) {
-      // clean up the connection pool on executors first
+      // clean up the connection pool and caches on executors first
       Utils.mapExecutors(sc, { (tc, p) =>
         ConnectionPool.clear()
+        CodeGeneration.clearCache()
         Iterator.empty
       }).count()
       // then on the driver
       ConnectionPool.clear()
+      CodeGeneration.clearCache()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isShellOrLocalMode(sc)) {

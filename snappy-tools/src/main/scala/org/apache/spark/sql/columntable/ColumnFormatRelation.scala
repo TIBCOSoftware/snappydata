@@ -26,7 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.SparkListenerUnpersistRDD
-import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
@@ -39,7 +39,7 @@ import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
-import org.apache.spark.sql.store.{ExternalStore, StoreInitRDD, StoreUtils}
+import org.apache.spark.sql.store.{CodeGeneration, ExternalStore, StoreInitRDD, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
@@ -175,10 +175,9 @@ class ColumnFormatRelation(
       accumulated += uuid
     } else {
       //TODO: can we do it before compressing. Might save a bit
-      val converter = CatalystTypeConverters.createToScalaConverter(schema)
       val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
-        Iterator(batch), schema.map(_.name).toArray, schema).map(converter)
-      insert(unCachedRows.toSeq.asInstanceOf[Seq[Row]])
+        Iterator(batch), schema.map(_.name).toArray, schema)
+      insert(unCachedRows)
     }
     accumulated
   }
@@ -194,8 +193,9 @@ class ColumnFormatRelation(
     if (mode == SaveMode.Overwrite) {
       truncate()
     }
-    JdbcUtils.saveTable(data, externalStore.connProperties.url, table,
-      externalStore.connProperties.connProps)
+    val connProps = externalStore.connProperties
+    JdbcExtendedUtils.saveTable(data, connProps.url, table,
+      connProps.poolProps, connProps.connProps, connProps.hikariCP)
   }
 
   /**
@@ -205,38 +205,52 @@ class ColumnFormatRelation(
    *
    * @return number of rows inserted
    */
-  //TODO: Suranjan same code in ROWFormatRelation/JDBCMutableRelation
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
     if (numRows == 0) {
       throw new IllegalArgumentException(
         "ColumnFormatRelation.insert: no rows provided")
     }
+    val props = externalStore.connProperties
+    val connProps = props.connProps
+    val batchSize = connProps.getProperty("batchsize", "1000").toInt
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      externalStore.connProperties.poolProps, externalStore.connProperties.connProps,
-      externalStore.connProperties.hikariCP)
+      props.poolProps, connProps, props.hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
-      var result = 0
-      if (numRows > 1) {
-        for (row <- rows) {
-          ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
-            row, dialect)
-          stmt.addBatch()
-        }
-        val insertCounts = stmt.executeBatch()
-        result = insertCounts.length
-      } else {
-        ExternalStoreUtils.setStatementParameters(stmt, userSchema.fields,
-          rows.head, dialect)
-        result = stmt.executeUpdate()
-      }
-
+      val result = CodeGeneration.executeUpdate(table, stmt,
+        rows, numRows > 1, batchSize, userSchema.fields, dialect)
       stmt.close()
       result
     } finally {
       connection.close()
     }
+  }
+
+  /**
+   * Insert a sequence of rows into the table represented by this relation.
+   *
+   * @param rows the rows to be inserted
+   *
+   * @return number of rows inserted
+   */
+  def insert(rows: Iterator[InternalRow]): Int = {
+    if (rows.hasNext) {
+      val props = externalStore.connProperties
+      val connProps = props.connProps
+      val batchSize = connProps.getProperty("batchsize", "1000").toInt
+      val connection = ConnectionPool.getPoolConnection(table, dialect,
+        props.poolProps, connProps, props.hikariCP)
+      try {
+        val stmt = connection.prepareStatement(rowInsertStr)
+        val result = CodeGeneration.executeUpdate(table, stmt,
+          rows, multipleRows = true, batchSize, userSchema.fields, dialect)
+        stmt.close()
+        result
+      } finally {
+        connection.close()
+      }
+    } else 0
   }
 
   // truncate both actual and shadow table
@@ -267,11 +281,11 @@ class ColumnFormatRelation(
     val conn = JdbcUtils.createConnection(externalStore.connProperties.url,
       externalStore.connProperties.connProps)
     try {
-      // clean up the connection pool on executors first
+      // clean up the connection pool and caches on executors first
       Utils.mapExecutors(sqlContext,
-        ColumnFormatRelation.removePool(table)).count()
+        ExternalStoreUtils.removeCachedObjects(table)).count()
       // then on the driver
-      ColumnFormatRelation.removePool(table)
+      ExternalStoreUtils.removeCachedObjects(table)
       // drop the external table using a non-pool connection
       unregisterRDDInfoForUI()
       StoreInitRDD.tableToIdMap.remove(table)
@@ -458,11 +472,6 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
       StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
-  }
-
-  private def removePool(table: String): () => Iterator[Unit] = () => {
-    ConnectionPool.removePoolReference(table)
-    Iterator.empty
   }
 
   final def cachedBatchTableName(table: String) = {
