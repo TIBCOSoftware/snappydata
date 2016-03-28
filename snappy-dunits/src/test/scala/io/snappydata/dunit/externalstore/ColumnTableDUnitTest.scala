@@ -1,5 +1,6 @@
 package io.snappydata.dunit.externalstore
 
+import scala.collection.JavaConversions
 import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
@@ -130,6 +131,77 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     newCounts.zip(counts).foreach { case (c1, c2) =>
       assert(c1 == c2, s"newCount=$c1 count=$c2")
     }
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect()
+    assert(r.length == 1008)
+
+    snc.dropTable(tableName, ifExists = true)
+    getLogWriter.info("Successful")
+  }
+
+  // changing the test to such that batches are created
+  // and looking for column table stats
+  def testSNAP365_FetchRemoteBucketEntries(): Unit = {
+    val snc = SnappyContext(sc)
+
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt)
+    }
+    val rdd = sc.parallelize(data, 3).map(
+      s => new Data(s(0), s(1), s(2)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val p = Map.empty[String, String]
+    snc.createTable(tableName, "column", dataDF.schema, p)
+
+    val tName = s"${ColumnFormatRelation.INTERNAL_SCHEMA_NAME}.${
+      tableName.toUpperCase}${ColumnFormatRelation.SHADOW_TABLE_SUFFIX}"
+    // we don't expect any increase in put distribution stats
+    val getTotalEntriesCount = new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        val pr: PartitionedRegion = Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
+        var buckets = Set.empty[Integer]
+        0 to (pr.getTotalNumberOfBuckets-1) foreach { x =>
+          buckets = buckets + x
+        }
+        val iter = pr.getAppropriateLocalEntriesIterator(
+          JavaConversions.setAsJavaSet(buckets), false, false, true, pr, true)
+        var count = 0
+        while(iter.hasNext) {
+          iter.next
+          count = count + 1
+        }
+        println("The total count is " + count)
+        Int.box(count)
+      }
+    }
+
+    val getLocalEntriesCount = new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        val pr: PartitionedRegion = Misc.getRegionForTable(tName, true).asInstanceOf[PartitionedRegion]
+        val iter = pr.getAppropriateLocalEntriesIterator(
+          pr.getDataStore.getAllLocalBucketIds, false, false, true, pr, false)
+        var count = 0
+        while (iter.hasNext) {
+          iter.next
+          count = count + 1
+        }
+        Int.box(count)
+      }
+    }
+
+    dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
+    val totalCounts = Array(vm0, vm1, vm2).map(_.invoke(getTotalEntriesCount))
+    assert(totalCounts(0) == totalCounts(1))
+    assert(totalCounts(0) == totalCounts(2))
+
+    val localCounts = Array(vm0, vm1, vm2).map(_.invoke(getLocalEntriesCount).asInstanceOf[Int])
+
+    assert(totalCounts(0) == localCounts.sum)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect()
