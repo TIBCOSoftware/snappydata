@@ -92,7 +92,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   // changing the test to such that batches are created
   // and looking for column table stats
-  def testSNAP205_InsertLocalBucketsNonPartitioning(): Unit = {
+  def testSNAP205_InsertLocalBucketsNonPartitioning(): Unit =   {
     val snc = SnappyContext(sc)
 
     var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
@@ -139,6 +139,45 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     getLogWriter.info("Successful")
   }
 
+
+  def testPreservePartition(): Unit =   {
+    val snc = SnappyContext(sc)
+
+    var data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
+      Seq(4, 2, 3), Seq(5, 6, 7), Seq(2, 8, 3), Seq(3, 9, 0), Seq(3, 9, 3))
+    1 to 1000 foreach { _ =>
+      data = data :+ Seq.fill(3)(Random.nextInt)
+    }
+    val rdd = sc.parallelize(data, 5).map(
+      s => new Data(s(0), s(1), s(2)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val p = Map("PARTITION_BY"->"col1,col3","PRESERVE_PARTITION"->"true","BUCKETS"->"5")
+    snc.createTable(tableName, "column", dataDF.schema, p)
+    val columnTableRegionName = ColumnFormatRelation.
+        cachedBatchTableName(tableName).toUpperCase
+    // we don't expect any increase in put distribution stats
+    val getPRMessageCount = new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        Int.box(Misc.getRegionForTable(columnTableRegionName, true).
+            asInstanceOf[PartitionedRegion].getPrStats.getPartitionMessagesSent)
+      }
+    }
+    val counts = Array(vm0, vm1, vm2).map(_.invoke(getPRMessageCount))
+    dataDF.write.mode(SaveMode.Append).saveAsTable(tableName)
+    val newCounts = Array(vm0, vm1, vm2).map(_.invoke(getPRMessageCount))
+    newCounts.zip(counts).foreach { case (c1, c2) =>
+      assert(c1 == c2, s"newCount=$c1 count=$c2")
+    }
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+    val r = result.collect()
+    assert(r.length == 1008)
+
+    snc.dropTable(tableName, ifExists = true)
+    getLogWriter.info("Successful")
+  }
 
   private val tableName: String = "ColumnTable"
   private val tableNameWithPartition: String = "ColumnTablePartition"

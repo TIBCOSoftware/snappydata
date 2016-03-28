@@ -39,7 +39,7 @@ import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
-import org.apache.spark.sql.store.{ExternalStore, StoreInitRDD, StoreUtils}
+import org.apache.spark.sql.store.{StoreRDD, ExternalStore, StoreInitRDD, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
@@ -73,6 +73,7 @@ class ColumnFormatRelation(
     _externalStore: ExternalStore,
     blockMap: Map[InternalDistributedMember, BlockManagerId],
     partitioningColumns: Seq[String],
+    preservePartitionOnInsert : Boolean =false,
     _context: SQLContext)
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
      _origOptions, _externalStore, _context)
@@ -158,12 +159,23 @@ class ColumnFormatRelation(
   }
 
   override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+      batch: CachedBatch, index: Int): ArrayBuffer[UUIDRegionKey] = {
+
     //TODO - currently using the length from the part Object but it needs to be handled more generically
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
-    if (batch.numRows >= columnBatchSize) {
-      //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
+    //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
+
+    //Change for preserve partition : {
+    // We are inserting a cached batch to column table directly
+    // in case of preserve partition. We are not considering small batches.
+    // We will be simply putting the data as CachedBatches. This will
+    // ensure the query results will be ok even though the storage is suboptimal.
+    // Once we come up with a cleaner solution we can start inserting
+    // residual rows to row buffer
+    // }
+    //
+    def insertCachedBatch(passedIndex: Int): Unit = {
       val id = {
         StoreCallbacksImpl.stores.get(table) match {
           case Some((_, _, rddId)) => rddId
@@ -171,8 +183,14 @@ class ColumnFormatRelation(
         }
       }
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
-          cachedBatchTableName(table), batch, rddId = id)
+          cachedBatchTableName(table), batch, bucketId = passedIndex, rddId = id)
       accumulated += uuid
+    }
+
+    if (preservePartitionOnInsert) {
+      insertCachedBatch(index)
+    } else if (batch.numRows >= columnBatchSize) {
+      insertCachedBatch(-1)
     } else {
       //TODO: can we do it before compressing. Might save a bit
       val converter = CatalystTypeConverters.createToScalaConverter(schema)
@@ -184,8 +202,23 @@ class ColumnFormatRelation(
   }
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
+    if (preservePartitionOnInsert) {
+      val storeRDD = new StoreRDD(
+        sc = sqlContext.sparkContext,
+        df = data,
+        tableName = ColumnFormatRelation.cachedBatchTableName(table),
+        getConnection = connector,
+        schema = userSchema,
+        preservePartitioning = true,
+        blockMap = blockMap,
+        partitionColumns)
+      super.insert(storeRDD, data, overwrite)
+      return
+    }
     partitionColumns match {
-      case Nil => super.insert(data, overwrite)
+      case Nil => {
+        super.insert(data, overwrite)
+      }
       case _ => insert(data, if (overwrite) SaveMode.Overwrite else SaveMode.Append)
     }
   }
@@ -483,6 +516,9 @@ final class DefaultSource extends ColumnarRelationProvider {
       options: Map[String, String], schema: StructType) = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
+    val preservePartitionsOnInsert = parameters.remove("PRESERVE_PARTITION")
+        .getOrElse("false").toBoolean
+
     val table = ExternalStoreUtils.removeInternalProps(parameters)
     val sc = sqlContext.sparkContext
     val partitions = ExternalStoreUtils.getTotalPartitions(sc, parameters,
@@ -536,6 +572,7 @@ final class DefaultSource extends ColumnarRelationProvider {
       externalStore,
       blockMap,
       partitioningColumn,
+      preservePartitionsOnInsert,
       sqlContext)
     try {
       relation.createTable(mode)

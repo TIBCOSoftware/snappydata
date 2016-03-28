@@ -138,7 +138,7 @@ case class JDBCAppendableRelation(
   }
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
-      batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
+      batch: CachedBatch, index :Int): ArrayBuffer[UUIDRegionKey] = {
     //TODO - currently using the length from the part Object but it needs to be handled more generically
     //in order to replace UUID
     val uuid = externalStore.storeCachedBatch(table , batch)
@@ -159,7 +159,7 @@ case class JDBCAppendableRelation(
     val columnBatchSize = sqlContext.conf.columnBatchSize
 
     val output = df.logicalPlan.output
-    val cached = rdd.mapPartitionsPreserve(rowIterator => {
+    val cached = rdd.mapPartitionsPreserveWithIndex((index,rowIterator) => {
 
       def columnBuilders = output.map { attribute =>
         val columnType = ColumnType(attribute.dataType)
@@ -173,8 +173,8 @@ case class JDBCAppendableRelation(
 
       val converter = CatalystTypeConverters.createToCatalystConverter(schema)
       rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(holder.appendRow((), _))
-      holder.forceEndOfBatch()
+          .foreach(holder.appendRow((), _, index))
+      holder.forceEndOfBatch(index)
       Iterator.empty
     }, preservesPartitioning = true)
     // trigger an Action to materialize 'cached' batch
