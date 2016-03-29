@@ -2,7 +2,7 @@ package io.snappydata.benchmark.memsql
 
 import java.sql.DriverManager
 
-import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHRowPartitionedTable, TPCHReplicatedTable}
+import io.snappydata.benchmark.{TPCHRowPartitionedTable, TPCHColumnPartitionedTable, TPCHReplicatedTable}
 
 object TPCH_Memsql_Tables {
 
@@ -34,6 +34,12 @@ object TPCH_Memsql_Tables {
      TPCHRowPartitionedTable.createPartSuppTable_Memsql(stmt)
 
      TPCHRowPartitionedTable.createCustomerTable_Memsql(stmt)
+
+//     TPCHColumnPartitionedTable.createPartTable_Memsql(stmt)
+//
+//     TPCHColumnPartitionedTable.createPartSuppTable_Memsql(stmt)
+//
+//     TPCHColumnPartitionedTable.createCustomerTable_Memsql(stmt)
 
      TPCHColumnPartitionedTable.createOrderTable_Memsql(stmt)
 

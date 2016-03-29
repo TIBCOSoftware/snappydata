@@ -35,6 +35,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.DDLException
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
@@ -512,6 +513,27 @@ object Utils {
       }
       case _ => result.append(value)
     }
+  }
+
+  /**
+   * Register given driver class with Spark's loader.
+   */
+  def registerDriver(driver: String): Unit = {
+    try {
+      DriverRegistry.register(driver)
+    } catch {
+      case cnfe: ClassNotFoundException => throw new IllegalArgumentException(
+        s"Couldn't find driver class $driver", cnfe)
+    }
+  }
+
+  /**
+   * Register driver for given JDBC URL and return the driver class name.
+   */
+  def registerDriverUrl(url: String): String = {
+    val driver = DriverRegistry.getDriverClassName(url)
+    registerDriver(driver)
+    driver
   }
 }
 

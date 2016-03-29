@@ -27,6 +27,7 @@ import scala.util.{Failure, Success, Try}
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
@@ -98,6 +99,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
+  snappyContextFunctions.registerAQPErrorFunctions(this)
 
 
 
@@ -939,6 +941,19 @@ object SnappyContext extends Logging {
       else {
         apply(sc)
       }
+    }
+  }
+
+  /**
+   * Returns an existing SnappyContext or create one if does not exists
+   * @param jsc
+   * @return SnappyContext
+   */
+  def getOrCreate(jsc: JavaSparkContext): SnappyContext = {
+    if (jsc != null) {
+      getOrCreate(jsc.sc)
+    } else {
+      getOrCreate(null: SparkContext)
     }
   }
 

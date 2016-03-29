@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
+source PerfRun.conf
 
-./memsqlloader/memsql-loader ps
+$memsqlLoader/memsql-loader ps

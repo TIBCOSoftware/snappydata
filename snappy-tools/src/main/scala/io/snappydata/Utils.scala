@@ -35,7 +35,9 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorLocalShellPartition
-import org.apache.spark.sql.execution.columnar.ConnectionProperties
+
+import org.apache.spark.sql.execution.columnar.{ConnectionProperties, ExternalStoreUtils}
+
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
@@ -95,13 +97,10 @@ final class SparkShellRDDHelper {
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
-  def createConnection(connProps: ConnectionProperties, hostList: ArrayBuffer[(String, String)])
-  : Connection = {
+  def createConnection(connProps: ConnectionProperties,
+      hostList: ArrayBuffer[(String, String)]): Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
-    // setup pool properties
-    val maxPoolSize = String.valueOf(math.max(
-      32, Runtime.getRuntime.availableProcessors() * 2))
 
     val jdbcUrl = if (useLocatorURL) {
       connProps.url
@@ -111,15 +110,13 @@ final class SparkShellRDDHelper {
       hostList(index)._2
     }
 
-    val props = if (connProps.hikariCP) {
-      connProps.poolProps + ("jdbcUrl" -> jdbcUrl) + ("maximumPoolSize" -> maxPoolSize)
-    } else {
-      connProps.poolProps + ("url" -> jdbcUrl) + ("maxActive" -> maxPoolSize)
-    }
+    // setup pool properties
+    val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
+      connProps.poolProps, connProps.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
-      ConnectionPool.getPoolConnection(jdbcUrl, None,
-        GemFireXDClientDialect, props, connProps.connProps, connProps.hikariCP)
+      ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect,
+        props, connProps.connProps, connProps.hikariCP)
     } catch {
       case sqlException: SQLException =>
         if (hostList.size == 1 || useLocatorURL)

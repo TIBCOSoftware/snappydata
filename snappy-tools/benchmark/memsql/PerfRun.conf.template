@@ -7,8 +7,14 @@ leads=localhost
 
 dataSize=1GB
 
-dataDir=/QASNAPPY/TPCH/DATA/$dataSize
+dataDir=/home/kishor/snappy/TPCH_APP/TPCH_Data/$dataSize
 
-outputLocation=/QASNAPPY/TPCH/Memsql/Output
+outputLocation=/home/kishor/snappy/TPCH_APP/TPCH_OUTPUT/MEMSQL
+
+TPCHJar=/home/kishor/snappy/snappy-commons/snappy-tools/build-artifacts/scala-2.10/libs/snappy-tools_2.10-0.1.0-SNAPSHOT-tests.jar
+
+mysqlConnectorJar=/home/kishor/snappy/Memsql/mysql-connector-java-5.0.8-bin.jar
+
+memsqlLoader=/home/kishor/snappy/Memsql/memsql-loader
 
 queryPlan=false

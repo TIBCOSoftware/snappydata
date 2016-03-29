@@ -16,7 +16,6 @@
  */
 package io.snappydata.test.memscale;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,6 +42,7 @@ import com.gemstone.gemfire.internal.offheap.SimpleMemoryAllocatorImpl;
 import com.gemstone.gemfire.internal.offheap.SimpleMemoryAllocatorImpl.Chunk;
 import com.gemstone.gemfire.internal.offheap.SimpleMemoryAllocatorImpl.DataAsAddress;
 import com.gemstone.gemfire.internal.offheap.SimpleMemoryAllocatorImpl.RefCountChangeInfo;
+import com.pivotal.gemfirexd.internal.engine.store.offheap.OffHeapRowWithLobs;
 import io.snappydata.test.dunit.DistributedTestBase;
 import io.snappydata.test.util.AEQHelper;
 import io.snappydata.test.util.TestException;
@@ -51,100 +51,108 @@ import org.apache.log4j.Logger;
 
 /**
  * @author lynng
- *
  */
 public class OffHeapHelper {
 
-  private final static int _totalNumberOffHeapObjects =0; // index 0
-  private final static int _numberInlineValues = 1 ; // index 1
+  private final static int _totalNumberOffHeapObjects = 0; // index 0
+  private final static int _numberInlineValues = 1; // index 1
   private final static int _numRefCountProblems = 2; // index 2
-  private final static int _lobCount =3; //index 3
-  private final static int _totalNumberOnHeapObjects = 4 ;
+  private final static int _lobCount = 3; //index 3
+  private final static int _totalNumberOnHeapObjects = 4;
 
   protected final static Logger logger =
       LogManager.getLogger(OffHeapHelper.class);
 
-  /** Do consistency checks on off-heap memory. This is non-intrusive of the cache, meaning it is
-   *  written to not rattle anything while the validation occurs, for example it won't cause eviction.
-   * 
-   *  This must be called when the system is quiet.
-   *     * If there are persistent regions you cannot call this while asynchronous recovery of values 
-   *       is running. To make the test run with synchronous recovery of values, set the property 
-   *       gemfire.disk.recoverValuesSync=true.
-   *     * Redundancy recovery for PartitionedRegions must not be running.
-   *  
-   *  This method iterates all keys and values of all regions. If no regions are defined, this still provides 
-   *  consistency checks on off-heap memory as it verifies that there are no objects in off-heap as compared 
-   *  to off-heap stats; this check could indicate a leak if objects are found off-heap when no regions are defined.
-   *  
-   *  Note that this validation trusts the enableOffHeapMemory region attribute in that it will verify
-   *  that off-heap enabled regions have all entries off-heap and that region with off-heap disabled will
-   *  have all entries in heap. To be completely thorough, the test can verify that each region's off-heap
-   *  enabled attribute is correct before calling this method. See OffHeapHelper.verifyRegionsEnabledWithOffHeap(...)
-   *  to verify this attribute on regions.
-   *  
-   *  If no off-heap memory was configured for this member (ie no off-heap memory was specified with
-   *  GemFirePrms.offHeapMemorySize), then this method takes an early return. 
-   *  
-   *  @param checkRefCounts If true, then check that all refCounts are exactly 1. If false skip the
-   *         refCount check. During validation, if any remote member is doing gets on data that lives
-   *         in this member, the refCounts will be changing.
+  /**
+   * Do consistency checks on off-heap memory. This is non-intrusive of the
+   * cache, meaning it is written to not rattle anything while the validation
+   * occurs, for example it won't cause eviction.
+   * <p>
+   * This must be called when the system is quiet.
+   * * If there are persistent regions you cannot call this while asynchronous
+   * recovery of values is running. To make the test run with synchronous
+   * recovery of values, set the property gemfire.disk.recoverValuesSync=true.
+   * * Redundancy recovery for PartitionedRegions must not be running.
+   * <p>
+   * This method iterates all keys and values of all regions. If no regions
+   * are defined, this still provides consistency checks on off-heap memory
+   * as it verifies that there are no objects in off-heap as compared to
+   * off-heap stats; this check could indicate a leak if objects are found
+   * off-heap when no regions are defined.
+   * <p>
+   * Note that this validation trusts the enableOffHeapMemory region attribute
+   * in that it will verify that off-heap enabled regions have all entries
+   * off-heap and that region with off-heap disabled will have all entries
+   * in heap. To be completely thorough, the test can verify that each
+   * region's off-heap enabled attribute is correct before calling this method.
+   * See OffHeapHelper.verifyRegionsEnabledWithOffHeap(...) to verify
+   * this attribute on regions.
+   * <p>
+   * If no off-heap memory was configured for this member, then this
+   * method takes an early return.
+   *
+   * @param checkRefCounts If true, then check that all refCounts are exactly
+   *                       1. If false skip the refCount check. During
+   *                       validation, if any remote member is doing gets on
+   *                       data that lives in this member, the refCounts
+   *                       will be changing.
    */
   public static void verifyOffHeapMemoryConsistency(boolean checkRefCounts) {
     if (!isOffHeapMemoryConfigured()) {
-      logger.info("No off-heap memory configured, skipping off-heap memory consistency checks");
+      logger.info("No off-heap memory configured, " +
+          "skipping off-heap memory consistency checks");
       return;
     }
     Set<Region<?, ?>> allRegions = getAllRegions();
-    if (allRegions == null) { // the cache is null (thus no regions) but proceed with checking what's in off-heap memory
-      allRegions = new HashSet<Region<?, ?>>();
+    if (allRegions == null) {
+      // the cache is null (thus no regions) but proceed with
+      // checking what's in off-heap memory
+      allRegions = new HashSet<>();
     }
     long beginObjectsStat = getOffHeapMemoryStats().getObjects();
-    logger.info("Verifying off-heap memory consistency for " + allRegions.size() + " regions " +
-        ((checkRefCounts) ? "including refCounts " : "NOT including refCounts"));
+    logger.info("Verifying off-heap memory consistency for " +
+        allRegions.size() + " regions " + ((checkRefCounts) ?
+        "including refCounts " : "NOT including refCounts"));
 
     final int MAX_ORPHANS_TO_REPORT = 20;
     final int MAX_REF_COUNT_PROBLEMS_TO_REPORT = 20;
-    StringBuilder errStr = new StringBuilder();
+    StringBuilder err = new StringBuilder();
     StringBuilder refCountErrStr = new StringBuilder();
     long[] statNumbers = new long[5];
-    final long totalNumberOffHeapObjects ; // index 0
-    final long numberInlineValues ; // index 1
-    final long numRefCountProblems ; // index 2
-    final long lobCount ; //index 3
-    final long totalNumberOnHeapObjects ;//index4 
-    List<OffHeapChunkInfo> chunkList = new ArrayList<OffHeapChunkInfo>();
-    List<Chunk> lobChunkList = new ArrayList<Chunk>();
+    final long totalNumberOffHeapObjects; // index 0
+    final long numberInlineValues; // index 1
+    final long numRefCountProblems; // index 2
+    final long lobCount; //index 3
+    final long totalNumberOnHeapObjects;//index4
+    List<OffHeapChunkInfo> chunkList = new ArrayList<>();
+    List<Chunk> lobChunkList = new ArrayList<>();
     for (Region<?, ?> aRegion : allRegions) { // iterate all regions
       String regionName = aRegion.getFullPath();
-      logger.info("Verifying off-heap memory for " + regionName + ", enableOffHeapMemory for this region is " +
+      logger.info("Verifying off-heap memory for " + regionName +
+          ", enableOffHeapMemory for this region is " +
           aRegion.getAttributes().getEnableOffHeapMemory());
-      LocalRegion localReg = (LocalRegion) aRegion;
       PartitionedRegion aPR = null;
       if (aRegion.getAttributes().getDataPolicy().withPartitioning()) {
-        aPR = (PartitionedRegion) aRegion;
+        aPR = (PartitionedRegion)aRegion;
       }
-      Set<Object> offHeapKeys = new HashSet<Object>();
-      Set<Object> onHeapKeys = new HashSet<Object>();
-      Set<String> onHeapValueClasses = new HashSet<String>();
+      Set<Object> offHeapKeys = new HashSet<>();
+      Set<Object> onHeapKeys = new HashSet<>();
+      Set<String> onHeapValueClasses = new HashSet<>();
       if (aPR == null) {
-        anaLyzeLocalRegion((LocalRegion) aRegion, offHeapKeys, onHeapKeys,
-            onHeapValueClasses, statNumbers, chunkList, lobChunkList, checkRefCounts,
-            refCountErrStr, errStr,MAX_ORPHANS_TO_REPORT,
+        analyzeLocalRegion((LocalRegion)aRegion, offHeapKeys, onHeapKeys,
+            onHeapValueClasses, statNumbers, chunkList, lobChunkList,
+            checkRefCounts, refCountErrStr, err,
             MAX_REF_COUNT_PROBLEMS_TO_REPORT);
       } else {
         PartitionedRegionDataStore prs = aPR.getDataStore();
         if (prs != null) {
-          Set<BucketRegion> brs = prs.getAllLocalBucketRegions();
-          if (brs != null) {
-            for (BucketRegion br : brs) {
-              if (br != null) {
-                logger.info("Verifying bucket " + br.getFullPath());
-                anaLyzeLocalRegion(br, offHeapKeys, onHeapKeys,
-                    onHeapValueClasses, statNumbers, chunkList, lobChunkList, checkRefCounts,
-                    refCountErrStr, errStr, MAX_ORPHANS_TO_REPORT,
-                    MAX_REF_COUNT_PROBLEMS_TO_REPORT);
-              }
+          for (BucketRegion br : prs.getAllLocalBucketRegions()) {
+            if (br != null) {
+              logger.info("Verifying bucket " + br.getFullPath());
+              analyzeLocalRegion(br, offHeapKeys, onHeapKeys,
+                  onHeapValueClasses, statNumbers, chunkList, lobChunkList,
+                  checkRefCounts, refCountErrStr, err,
+                  MAX_REF_COUNT_PROBLEMS_TO_REPORT);
             }
           }
         }
@@ -155,14 +163,15 @@ public class OffHeapHelper {
     numRefCountProblems = statNumbers[_numRefCountProblems];
     lobCount = statNumbers[_lobCount];
     totalNumberOnHeapObjects = statNumbers[_totalNumberOnHeapObjects];
-    totalNumberOffHeapObjects = statNumbers[_totalNumberOffHeapObjects] + lobCount;
+    totalNumberOffHeapObjects = statNumbers[_totalNumberOffHeapObjects] +
+        lobCount;
 
     if (refCountErrStr.length() > 0) {
-      errStr.append(refCountErrStr);
+      err.append(refCountErrStr);
       if (numRefCountProblems > MAX_REF_COUNT_PROBLEMS_TO_REPORT) {
-        errStr.append("...<"
-            + (numRefCountProblems - MAX_REF_COUNT_PROBLEMS_TO_REPORT)
-            + " more refCount problems>...\n");
+        err.append("...<").append(numRefCountProblems -
+            MAX_REF_COUNT_PROBLEMS_TO_REPORT).append(
+            " more refCount problems>...\n");
       }
     }
 
@@ -174,10 +183,12 @@ public class OffHeapHelper {
     int objects = getOffHeapMemoryStats().getObjects();
     long numUnreachable = 0;
     if (objects != totalNumberOffHeapObjects) {
-      errStr.append("Total number of off-heap objects reachable via regions is " + totalNumberOffHeapObjects +
-          ((lobCount == 0) ? "" : " (including " + lobCount + " SqlFire Lobs)") +
-          ", but the number of objects stored off-heap according to stats is " + objects + 
-          " (difference of " + Math.abs(objects - totalNumberOffHeapObjects) + ")\n");
+      err.append("Total number of off-heap objects reachable via regions is ")
+          .append(totalNumberOffHeapObjects).append((lobCount == 0) ?
+          "" : " (including " + lobCount + " SqlFire Lobs)").append(
+          ", but the number of objects stored off-heap according to stats is ")
+          .append(objects).append(" (difference of ").append(Math.abs(
+          objects - totalNumberOffHeapObjects)).append(")\n");
       if (objects > totalNumberOffHeapObjects) {
         numUnreachable = objects - totalNumberOffHeapObjects;
       }
@@ -185,27 +196,30 @@ public class OffHeapHelper {
     boolean foundOrphans = (numUnreachable > 0);
 
     // Use the internal free and live lists to look for orphans
-    SimpleMemoryAllocatorImpl offHeapStore = SimpleMemoryAllocatorImpl.getAllocator();
+    SimpleMemoryAllocatorImpl offHeapStore =
+        SimpleMemoryAllocatorImpl.getAllocator();
     if (offHeapStore != null) {
       List<Chunk> orphanedChunks = offHeapStore.getLostChunks();
       orphanedChunks.removeAll(lobChunkList);
       int numOrphanedChunks = orphanedChunks.size();
       if (numOrphanedChunks != numUnreachable) {
-        errStr
-        .append("Number of off-heap values unreachable through regions is "
-            + numUnreachable
-            + " but number of orphaned chunks detected with internal free and live lists is "
-            + numOrphanedChunks + "\n");
+        err.append("Number of off-heap values unreachable through regions is ")
+            .append(numUnreachable).append(" but number of orphaned chunks ")
+            .append("detected with internal free and live lists is ")
+            .append(numOrphanedChunks).append("\n");
       }
       if (numOrphanedChunks > 0) {
         foundOrphans = true;
-        String aStr = numOrphanedChunks + " orphaned chunks detected with internal free and live lists";
+        String aStr = numOrphanedChunks +
+            " orphaned chunks detected with internal free and live lists";
         logger.info(aStr);
-        errStr.append(aStr + "\n");
+        err.append(aStr).append("\n");
         for (int i = 0; i < orphanedChunks.size(); i++) {
           Chunk aChunk = orphanedChunks.get(i);
-          aStr = "orphaned @" + Long.toHexString(aChunk.getMemoryAddress()) + " rc=" + aChunk.getRefCount();
-          List<RefCountChangeInfo> info = SimpleMemoryAllocatorImpl.getRefCountInfo(aChunk.getMemoryAddress());
+          aStr = "orphaned @" + Long.toHexString(aChunk.getMemoryAddress()) +
+              " rc=" + aChunk.getRefCount();
+          List<RefCountChangeInfo> info = SimpleMemoryAllocatorImpl
+              .getRefCountInfo(aChunk.getMemoryAddress());
           String logStr;
           if (info != null) {
             logStr = aStr + " history=" + info;
@@ -214,11 +228,12 @@ public class OffHeapHelper {
           }
           logger.info(logStr);
           if (i < MAX_ORPHANS_TO_REPORT) {
-            errStr.append(aStr + "\n");
+            err.append(aStr).append("\n");
           }
         }
         if (orphanedChunks.size() > MAX_ORPHANS_TO_REPORT) {
-          errStr.append("...<" + (orphanedChunks.size() - MAX_ORPHANS_TO_REPORT) + " more orphans>...\n");
+          err.append("...<").append(orphanedChunks.size() -
+              MAX_ORPHANS_TO_REPORT).append(" more orphans>...\n");
         }
       }
     }
@@ -227,56 +242,61 @@ public class OffHeapHelper {
     }
 
     // verify all chunks reachable through regions
-    errStr.append(verifyChunks(chunkList));
+    err.append(verifyChunks(chunkList));
 
-    if (errStr.length() > 0) {
-      logger.info(errStr.toString());
+    if (err.length() > 0) {
+      logger.info(err.toString());
     }
 
-    long totalVerified = totalNumberOffHeapObjects + totalNumberOnHeapObjects + numberInlineValues;
-    logger.info("Verified a total of " + totalVerified + " objects in " + allRegions.size() + " regions including "
-        + totalNumberOffHeapObjects + " off-heap objects, " + totalNumberOnHeapObjects + " on-heap objects, and "
-        + numberInlineValues + " in-line values");
-    if (errStr.length() > 0) {
-      logger.info(errStr.toString());
+    long totalVerified = totalNumberOffHeapObjects + totalNumberOnHeapObjects +
+        numberInlineValues;
+    logger.info("Verified a total of " + totalVerified + " objects in " +
+        allRegions.size() + " regions including " + totalNumberOffHeapObjects +
+        " off-heap objects, " + totalNumberOnHeapObjects +
+        " on-heap objects, and " + numberInlineValues + " in-line values");
+    if (err.length() > 0) {
+      logger.info(err.toString());
       long finalObjectsStat = getOffHeapMemoryStats().getObjects();
       if (beginObjectsStat != finalObjectsStat) {
-        errStr.insert(0, "Off-heap memory was not stable during off-heap memory validation. " +
-            "Number of off-heap objects at the beginning of validation: " + beginObjectsStat +
-            ", number of off-heap objects at the end of validation: " + finalObjectsStat + "\n");
+        err.insert(0, "Off-heap memory was not stable during off-heap " +
+            "memory validation. Number of off-heap objects at the beginning " +
+            "of validation: " + beginObjectsStat + ", number of off-heap " +
+            "objects at the end of validation: " + finalObjectsStat + "\n");
 
       }
-      throw new TestException(errStr.toString());
+      throw new TestException(err.toString());
     }
   }
 
-  private static void anaLyzeLocalRegion(LocalRegion localReg, 
+  private static void analyzeLocalRegion(LocalRegion localReg,
       Set<Object> offHeapKeys,
-      Set<Object> onHeapKeys, 
+      Set<Object> onHeapKeys,
       Set<String> onHeapValueClasses,
-      long[] statNumbers, 
+      long[] statNumbers,
       List<OffHeapChunkInfo> chunkList,
       List<Chunk> lobChunkList,
-      boolean checkRefCounts, 
+      boolean checkRefCounts,
       StringBuilder refCountErrStr,
       StringBuilder errStr,
-      final int MAX_ORPHANS_TO_REPORT,
       final int MAX_REF_COUNT_PROBLEMS_TO_REPORT) {
     String regionName = localReg.getFullPath();
-    for (Object key: localReg.keySet()) { // iterate all keys/values in the region
+    // iterate all keys/values in the region
+    for (Object key : localReg.keySet()) {
       // get the value for the key
-      Object value = null;
+      Object value;
 
       RegionEntry entry = localReg.getRegionEntry(key);
       if (entry == null) {
-        throw new TestException("For key " + key + " in region " + regionName + ", LocalRegion.getRegionEntry(key) returned " + entry);
+        throw new TestException("For key " + key + " in region " +
+            regionName + ", LocalRegion.getRegionEntry(key) returned null");
       }
       value = entry._getValue();
       if (value instanceof Chunk) { // this value is stored off-heap
         offHeapKeys.add(key);
         statNumbers[_totalNumberOffHeapObjects]++;
         Chunk aChunk = (Chunk)value;
-        OffHeapChunkInfo info = new OffHeapChunkInfo(regionName, key, aChunk.getMemoryAddress(), aChunk.getSize());
+        OffHeapChunkInfo info = new OffHeapChunkInfo(regionName, key,
+            aChunk.getMemoryAddress(), aChunk.getSize());
         chunkList.add(info);
         OffHeapHelperVersionHelper.checkIsAllocated(aChunk);
 
@@ -285,16 +305,23 @@ public class OffHeapHelper {
           int refCount = aChunk.getRefCount();
           if (refCount != 1) {
             statNumbers[_numRefCountProblems]++;
-            if (statNumbers[_numRefCountProblems] <= MAX_REF_COUNT_PROBLEMS_TO_REPORT) {
-              refCountErrStr.append(localReg.getFullPath() + " key " + key + " has off-heap refCount " + refCount + 
-                  " @" + Long.toHexString(aChunk.getMemoryAddress()) + "\n");
+            if (statNumbers[_numRefCountProblems] <=
+                MAX_REF_COUNT_PROBLEMS_TO_REPORT) {
+              refCountErrStr.append(localReg.getFullPath()).append(" key ")
+                  .append(key).append(" has off-heap refCount ")
+                  .append(refCount).append(" @").append(Long.toHexString(
+                  aChunk.getMemoryAddress())).append("\n");
               if (SimpleMemoryAllocatorImpl.trackReferenceCounts()) {
-                List<RefCountChangeInfo> history = SimpleMemoryAllocatorImpl.getRefCountInfo(aChunk.getMemoryAddress());
+                List<RefCountChangeInfo> history = SimpleMemoryAllocatorImpl
+                    .getRefCountInfo(aChunk.getMemoryAddress());
                 if (history != null) {
-                  String logStr = "extraRefs for @" + Long.toHexString(aChunk.getMemoryAddress()) + " rc=" + refCount + " history=" + history;
+                  String logStr = "extraRefs for @" + Long.toHexString(
+                      aChunk.getMemoryAddress()) + " rc=" + refCount +
+                      " history=" + history;
                   logger.info(logStr);
                 } else {
-                  logger.info("No history for @" + Long.toHexString(aChunk.getMemoryAddress()));
+                  logger.info("No history for @" + Long.toHexString(
+                      aChunk.getMemoryAddress()));
                 }
               }
             }
@@ -303,21 +330,30 @@ public class OffHeapHelper {
 
         // in a GemFireXD test, check for lobs in off-heap memory
         List<Chunk> aList = getSqlLobChunks(aChunk, regionName, key);
-        for (Chunk lobChunk: aList) {
-          info = new OffHeapChunkInfo(regionName, key, lobChunk.getMemoryAddress(), lobChunk.getSize());
+        for (Chunk lobChunk : aList) {
+          info = new OffHeapChunkInfo(regionName, key,
+              lobChunk.getMemoryAddress(), lobChunk.getSize());
           chunkList.add(info);
 
-          // we can safely check the ref counts on the lobs always and not consider the value of checkRefCounts
-          // because for a lob the refcount should always be one
+          // we can safely check the ref counts on the lobs always and not
+          // consider the value of checkRefCounts because for a lob the
+          // refcount should always be one
           int refCount = lobChunk.getRefCount();
           if (refCount != 1) {
             statNumbers[_numRefCountProblems]++;
-            if (statNumbers[_numRefCountProblems] <= MAX_REF_COUNT_PROBLEMS_TO_REPORT) {
-              refCountErrStr.append(localReg.getFullPath() + " key " + key + " lob at address " + lobChunk.getMemoryAddress() +
-                  " has off-heap refCount " + refCount + "\n");
-              List<RefCountChangeInfo> history = SimpleMemoryAllocatorImpl.getRefCountInfo(lobChunk.getMemoryAddress());
+            if (statNumbers[_numRefCountProblems] <=
+                MAX_REF_COUNT_PROBLEMS_TO_REPORT) {
+              refCountErrStr.append(localReg.getFullPath()).append(" key ")
+                  .append(key).append(" lob at address ")
+                  .append(lobChunk.getMemoryAddress())
+                  .append(" has off-heap refCount ")
+                  .append(refCount).append("\n");
+              List<RefCountChangeInfo> history = SimpleMemoryAllocatorImpl
+                  .getRefCountInfo(lobChunk.getMemoryAddress());
               if (history != null) {
-                String logStr = "extraRefs for @" + Long.toHexString(lobChunk.getMemoryAddress()) + " rc=" + refCount + " history=" + history;
+                String logStr = "extraRefs for @" + Long.toHexString(
+                    lobChunk.getMemoryAddress()) + " rc=" + refCount +
+                    " history=" + history;
                 logger.info(logStr);
               }
             }
@@ -325,9 +361,12 @@ public class OffHeapHelper {
         }
         lobChunkList.addAll(aList);
         statNumbers[_lobCount] += aList.size();
-      } else if (value instanceof DataAsAddress) { // value is neither on heap nor off heap
+      } else if (value instanceof DataAsAddress) {
+        // value is neither on heap nor off heap
         statNumbers[_numberInlineValues]++;
-      } else if ((value != Token.INVALID) && (value != Token.LOCAL_INVALID) && (value != null)) { // value not invalid, not null; this value is not stored off-heap
+      } else if ((value != Token.INVALID) && (value != Token.LOCAL_INVALID) &&
+          (value != null)) {
+        // value not invalid, not null; this value is not stored off-heap
         onHeapKeys.add(key);
         onHeapValueClasses.add(value.getClass().getName());
       }
@@ -335,80 +374,85 @@ public class OffHeapHelper {
     statNumbers[_totalNumberOnHeapObjects] += onHeapKeys.size();
 
     // verify whether values are off-heap or not
-    if (localReg.getAttributes().getEnableOffHeapMemory()) { // off heap enabled; all values should be off-heap
-      if (onHeapKeys.size() > 0 ) {
-        //check if it is a HDFS region, if so ingore the check
+    if (localReg.getAttributes().getEnableOffHeapMemory()) {
+      // off heap enabled; all values should be off-heap
+      if (onHeapKeys.size() > 0) {
+        //check if it is a HDFS region, if so ignore the check
         Class<? extends LocalRegion> clazz = localReg.getClass();
-        boolean isHDFS = false;
+        boolean isHDFS;
         try {
-          Method isHDFSRegionMethod = clazz.getDeclaredMethod("isHDFSRegion", (Class<?> [])null);
+          Method isHDFSRegionMethod = clazz.getDeclaredMethod("isHDFSRegion",
+              (Class<?>[])null);
           isHDFSRegionMethod.setAccessible(true);
-          isHDFS =  ((Boolean)isHDFSRegionMethod.invoke(localReg, (Object[])null)).booleanValue();
-        }catch(Throwable th) {
-          throw new RuntimeException("Could not determine if it is a HDFS region",th);
+          isHDFS = (Boolean)isHDFSRegionMethod.invoke(localReg);
+        } catch (Throwable th) {
+          throw new RuntimeException("Could not determine if it is a HDFS region", th);
         }
-        if(!isHDFS) {
-          errStr.append(localReg.getFullPath() + " has off-heap enabled, but the following " + onHeapKeys.size() + 
-            " keys had values not found in off-heap memory: " + onHeapKeys + 
-            ", set of value classes for those keys: " + onHeapValueClasses + "\n");
+        if (!isHDFS) {
+          errStr.append(localReg.getFullPath())
+              .append(" has off-heap enabled, but the following ")
+              .append(onHeapKeys.size())
+              .append(" keys had values not found in off-heap memory: ")
+              .append(onHeapKeys)
+              .append(", set of value classes for those keys: ")
+              .append(onHeapValueClasses).append("\n");
         }
       }
     } else { // off heap NOT enabled; no values should be found off-heap
       if (offHeapKeys.size() > 0) {
-        errStr.append(localReg.getFullPath() + " has off-heap disabled, but the following keys had values " +
-            " found in off-heap memory: " + offHeapKeys + "\n");
+        errStr.append(localReg.getFullPath())
+            .append(" has off-heap disabled, but the following keys had values ")
+            .append(" found in off-heap memory: ")
+            .append(offHeapKeys).append("\n");
       }
     }
   }
 
-  /** For a GemFireXD test, get the lob chunks for rows stored in off-heap memory. Lobs are stored as references
-   *  from the base row in GemFireXD.
-   *  We must use reflection for this because GF core test code does not have access to GemFireXD classes (test or product).
-   *  
-   *  @param value The off-heap chunk of an object (the base row in GemFireXD).
-   *  @param regionName The name of the region (table) referencing aChunk.
-   *  @param key The key associated with aChunk.
-   *  @return A List of Chunks where each Chunk is the off-heap momory chunk of aChunk's lobs, or an empty List if none.
+  /**
+   * For a GemFireXD test, get the lob chunks for rows stored in off-heap
+   * memory. Lobs are stored as references from the base row in GemFireXD.
+   * We must use reflection for this because GF core test code does not
+   * have access to GemFireXD classes (test or product).
+   *
+   * @param chunk      The off-heap chunk the base row in GemFireXD.
+   * @param regionName The name of the region (table) referencing aChunk.
+   * @param key        The key associated with aChunk.
+   * @return A List of Chunks where each Chunk is the off-heap momory chunk
+   * of aChunk's lobs, or an empty List if none.
    */
-  private static List<Chunk> getSqlLobChunks(Chunk value, String regionName, Object key) {
-    try {
-      Class sqlHelperClass = Class.forName("sql.sqlutil.SqlOffHeapHelper");
-      Method method = sqlHelperClass.getDeclaredMethod("getLobChunks", new Class[] {Chunk.class, String.class, Object.class});
-      Object returnObj = method.invoke(null,  value, regionName, key);
-      return (List<Chunk>)returnObj;
-    } catch (ClassNotFoundException e) { // class not available for core GemFire tests
-      return new ArrayList();
-    } catch (IllegalArgumentException e) {
-      throw new TestException(DistributedTestBase.getStackTrace(e));
-    } catch (IllegalAccessException e) {
-      throw new TestException(DistributedTestBase.getStackTrace(e));
-    } catch (InvocationTargetException e) {
-      Throwable lastInChain = e;
-      while (lastInChain.getCause() != null) {
-        lastInChain = lastInChain.getCause();
+  private static List<Chunk> getSqlLobChunks(Chunk chunk,
+      String regionName, Object key) {
+    List<Chunk> aList = new ArrayList<>();
+    // for gemfirexd tests, the value in off-heap memory (a row) can refer
+    // to other rows in off-heap memory drill down to those other rows to
+    // consider those values in off-heap memory
+    if (chunk instanceof OffHeapRowWithLobs) {
+      OffHeapRowWithLobs ohbs = (OffHeapRowWithLobs)chunk;
+      int numLobs = ohbs.readNumLobsColumns(false);
+      if (numLobs <= 0) {
+        throw new TestException("For key " + key + " + in region " +
+            regionName + " the off-heap memory byte source " + ohbs +
+            " has lobs " + true + ", but the number of lobs is " + numLobs);
       }
-      if ((lastInChain instanceof ClassNotFoundException) || (lastInChain instanceof NoClassDefFoundError)) { 
-        // if gemfirexd was built but this is a gf core test
-        // that has the test classes (including gemfirexd test classes) on the classpath, but does not have the
-        // gemfirexd product jar on the classpath, then invoking the sql test method will try to load gemfirexd
-        // product classes, thus we can get a ClassNotFoundException here; since this is OK for gf core tests, allow it
-        return new ArrayList();
+      // element 0 is the base row, so start with index 1
+      for (int i = 1; i <= numLobs; i++) {
+        Object byteSrc = ohbs.getGfxdByteSource(i);
+        if (byteSrc instanceof Chunk) {
+          Chunk lobChunk = (Chunk)byteSrc;
+          aList.add(lobChunk);
+        }
       }
-      throw new TestException(DistributedTestBase.getStackTrace(e));
-    } catch (SecurityException e) {
-      throw new TestException(DistributedTestBase.getStackTrace(e));
-    } catch (NoSuchMethodException e) {
-      throw new TestException(DistributedTestBase.getStackTrace(e));
     }
+    return aList;
   }
 
-  /** use internal product calls to determine who the orphans are and log them
-   * 
+  /**
+   * use internal product calls to determine who the orphans are and log them
    */
   public static void dumpOffHeapOrphans() {
     MemoryAllocator store = SimpleMemoryAllocatorImpl.getAllocator();
     if (store == null) {
-      logger.info("Not dumping off-heap orphans, offHeapStore is " + store);
+      logger.info("Not dumping off-heap orphans, offHeapStore is null");
       return;
     }
     MemoryInspector inspector = store.getMemoryInspector();
@@ -418,25 +462,29 @@ public class OffHeapHelper {
     }
   }
 
-  /** Closes all offheap regions in the cache and waits for off-heap memory to be empty (closing
-   *  a region asynchronously releases the off-heap memory it held, so we want to wait
-   *  for that to finish).
-   * 
-   *  This is used to look for off-heap memory leaks. After all the regions are closed
-   *  calling verifyOffHeapMemoryConsistency will detect any objects still in off-heap
-   *  which indicates a leak.
+  /**
+   * Closes all offheap regions in the cache and waits for off-heap memory
+   * to be empty (closing a region asynchronously releases the off-heap memory
+   * it held, so we want to wait for that to finish).
+   * <p>
+   * This is used to look for off-heap memory leaks. After all the regions
+   * are closed calling verifyOffHeapMemoryConsistency will detect any objects
+   * still in off-heap which indicates a leak.
    */
   public static synchronized void closeAllRegions() {
-    closeAllOffHeapRegions(); // leave closeAllRegions in place since many bugs are filed with this as a close task
+    // leave closeAllRegions in place since many bugs are filed
+    // with this as a close task
+    closeAllOffHeapRegions();
   }
 
-  /** Closes all off-heap regions in the cache and waits for off-heap memory to be empty (closing
-   *  a region asynchronously releases the off-heap memory it held, so we want to wait
-   *  for that to finish).
-   * 
-   *  This is used to look for off-heap memory leaks. After all the regions are closed
-   *  calling verifyOffHeapMemoryConsistency will detect any objects still in off-heap
-   *  which indicates a leak.
+  /**
+   * Closes all off-heap regions in the cache and waits for off-heap memory
+   * to be empty (closing a region asynchronously releases the off-heap memor
+   * y it held, so we want to wait for that to finish).
+   * <p>
+   * This is used to look for off-heap memory leaks. After all the regions
+   * are closed calling verifyOffHeapMemoryConsistency will detect any objects
+   * still in off-heap which indicates a leak.
    */
   public static synchronized void closeAllOffHeapRegions() {
     Cache theCache = GemFireCacheImpl.getInstance();
@@ -445,9 +493,8 @@ public class OffHeapHelper {
       return;
     }
     Set<Region<?, ?>> regionSet = getAllRegions();
-    if (regionSet.size() > 0) {
-
-      for (Region aRegion: regionSet) {     
+    if (regionSet != null && regionSet.size() > 0) {
+      for (Region aRegion : regionSet) {
         if (aRegion.getAttributes().getEnableOffHeapMemory()) {
           logger.info("Closing " + aRegion.getFullPath());
           try {
@@ -457,58 +504,72 @@ public class OffHeapHelper {
             logger.info(aRegion.getFullPath() + " was already destroyed");
           }
         } else {
-          logger.info("Not closing " + aRegion.getFullPath() + " because off-heap memory is not enabled for this region");
-
+          logger.info("Not closing " + aRegion.getFullPath() +
+              " because off-heap memory is not enabled for this region");
         }
       }
 
-      //now wait for off-heap memory to empty; objects are removed asynchronously after closing a region
+      // now wait for off-heap memory to empty; objects are removed
+      // asynchronously after closing a region
       if (isOffHeapMemoryConfigured()) {
         long numObjectsInOffHeapMemory = getOffHeapMemoryStats().getObjects();
         int retryCount = 0;
         while (numObjectsInOffHeapMemory != 0 && retryCount < 31) {
-          logger.info("Waiting for off-heap memory to empty, current number of objects is " + numObjectsInOffHeapMemory);
+          logger.info("Waiting for off-heap memory to empty, " +
+              "current number of objects is " + numObjectsInOffHeapMemory);
           DistributedTestBase.sleepForMs(2000);
           retryCount++;
           numObjectsInOffHeapMemory = getOffHeapMemoryStats().getObjects();
         }
         if (numObjectsInOffHeapMemory > 0) {
-          logger.error("Number of objects in off-heap memory: " + numObjectsInOffHeapMemory);
+          logger.error("Number of objects in off-heap memory: " +
+              numObjectsInOffHeapMemory);
         } else {
-          logger.info("Number of objects in off-heap memory: " + numObjectsInOffHeapMemory);
+          logger.info("Number of objects in off-heap memory: " +
+              numObjectsInOffHeapMemory);
         }
       }
     }
   }
 
-  /** Verify the given List of OffHeapChunkInfo instances. 
-   * 
+  /**
+   * Verify the given List of OffHeapChunkInfo instances.
+   *
    * @param chunkList A List of OffHeapChunkInfo instances.
    */
   private static String verifyChunks(List<OffHeapChunkInfo> chunkList) {
     Collections.sort(chunkList);
     logger.info("Verifying " + chunkList.size() + " off-heap memory chunks");
     StringBuilder errStr = new StringBuilder();
-    List<Integer> freeMemoryIndexes = new ArrayList<Integer>(); //index into chunk list of chunks that have a free memory segment following it
+    // index into chunk list of chunks that have a
+    // free memory segment following it
+    List<Integer> freeMemoryIndexes = new ArrayList<>();
     long totalBytesConsumedInChunks = 0;
     for (int i = 0; i < chunkList.size(); i++) {
       OffHeapChunkInfo currentInfo = chunkList.get(i);
       long firstAddress = currentInfo.getFirstMemoryAddress();
       if ((firstAddress & 7) != 0) {
-        errStr.append("Off-heap memory address was not 8 byte aligned: " + currentInfo + "\n");
+        errStr.append("Off-heap memory address was not 8 byte aligned: ")
+            .append(currentInfo).append("\n");
       }
       if (firstAddress < 1024) {
-        throw new IllegalStateException("Off-heap memory address was smaller than expected " + currentInfo + "\n");
+        throw new IllegalStateException(
+            "Off-heap memory address was smaller than expected " +
+                currentInfo + "\n");
       }
       totalBytesConsumedInChunks += currentInfo.getNumberBytes();
       if (i > 0) { // not the first chunk
-        OffHeapChunkInfo previousInfo = chunkList.get(i-1);
+        OffHeapChunkInfo previousInfo = chunkList.get(i - 1);
         if (firstAddress == previousInfo.getFirstMemoryAddress()) {
-          errStr.append("<" + currentInfo + "> is referencing the same off-heap memory address as <" + previousInfo + ">\n");
+          errStr.append("<").append(currentInfo)
+              .append("> is referencing the same off-heap memory address as <")
+              .append(previousInfo).append(">\n");
         } else if (firstAddress <= previousInfo.getLastMemoryAddress()) {
-          errStr.append("<" + currentInfo + "> overlaps off-heap memory with <" + previousInfo + ">\n");
-        } else if (previousInfo.getLastMemoryAddress() + 1 != firstAddress) {  
-          freeMemoryIndexes.add(i-1);
+          errStr.append("<").append(currentInfo)
+              .append("> overlaps off-heap memory with <")
+              .append(previousInfo).append(">\n");
+        } else if (previousInfo.getLastMemoryAddress() + 1 != firstAddress) {
+          freeMemoryIndexes.add(i - 1);
         }
       }
     }
@@ -520,37 +581,51 @@ public class OffHeapHelper {
     for (int i = 0; i < freeMemoryIndexes.size(); i++) {
       int chunkListIndex = freeMemoryIndexes.get(i);
       OffHeapChunkInfo chunkBeforeFreeMemory = chunkList.get(chunkListIndex);
-      OffHeapChunkInfo chunkAfterFreeMemory = chunkList.get(chunkListIndex+1);
-      long memoryAddressOfFreeMemory = chunkBeforeFreeMemory.getLastMemoryAddress() + 1;
-      long freeMemorySizeInBytes = chunkAfterFreeMemory.getFirstMemoryAddress() - memoryAddressOfFreeMemory;
+      OffHeapChunkInfo chunkAfterFreeMemory = chunkList.get(chunkListIndex + 1);
+      long memoryAddressOfFreeMemory = chunkBeforeFreeMemory
+          .getLastMemoryAddress() + 1;
+      long freeMemorySizeInBytes = chunkAfterFreeMemory
+          .getFirstMemoryAddress() - memoryAddressOfFreeMemory;
       totalFreeMemoryInBytes += freeMemorySizeInBytes;
-      minFreeMemorySizeInBytes = Math.min(minFreeMemorySizeInBytes, freeMemorySizeInBytes);
-      maxFreeMemorySizeInBytes = Math.max(maxFreeMemorySizeInBytes, freeMemorySizeInBytes);
-      if (i+1 <= maxChunksToLog) {
-        aStr.append("  " + (i+1) + ": free memory of size " + freeMemorySizeInBytes + " bytes between chunk " + (chunkListIndex) + 
-            " <" + chunkBeforeFreeMemory + "> and next chunk <" + chunkAfterFreeMemory + ">\n");
+      minFreeMemorySizeInBytes = Math.min(minFreeMemorySizeInBytes,
+          freeMemorySizeInBytes);
+      maxFreeMemorySizeInBytes = Math.max(maxFreeMemorySizeInBytes,
+          freeMemorySizeInBytes);
+      if (i + 1 <= maxChunksToLog) {
+        aStr.append("  ").append(i + 1).append(": free memory of size ")
+            .append(freeMemorySizeInBytes).append(" bytes between chunk ")
+            .append(chunkListIndex).append(" <").append(chunkBeforeFreeMemory)
+            .append("> and next chunk <")
+            .append(chunkAfterFreeMemory).append(">\n");
       }
     }
-    logger.info(chunkList.size() + " chunks consumed " + totalBytesConsumedInChunks + " bytes of off-heap memory");
+    logger.info(chunkList.size() + " chunks consumed " +
+        totalBytesConsumedInChunks + " bytes of off-heap memory");
 
     if (minFreeMemorySizeInBytes < 8) {
-      errStr.append("The minimum free memory size is " + minFreeMemorySizeInBytes + ", but expected it to be >= 8\n");
+      errStr.append("The minimum free memory size is ")
+          .append(minFreeMemorySizeInBytes)
+          .append(", but expected it to be >= 8\n");
     }
 
     if (freeMemoryIndexes.size() == 0) {
       logger.info("Found 0 free memory segments between chunks");
     } else {
       double average = totalFreeMemoryInBytes / freeMemoryIndexes.size();
-      logger.info("Found " + freeMemoryIndexes.size() + " free memory segments between chunks; free memory totals " +
-          totalFreeMemoryInBytes + " bytes, min free memory size " + minFreeMemorySizeInBytes + " bytes, max free memory size " +
-          maxFreeMemorySizeInBytes + " bytes, average free memory size " + average + " bytes\nFirst " + maxChunksToLog +
+      logger.info("Found " + freeMemoryIndexes.size() +
+          " free memory segments between chunks; free memory totals " +
+          totalFreeMemoryInBytes + " bytes, min free memory size " +
+          minFreeMemorySizeInBytes + " bytes, max free memory size " +
+          maxFreeMemorySizeInBytes + " bytes, average free memory size " +
+          average + " bytes\nFirst " + maxChunksToLog +
           " free memory chunks:\n" + aStr);
     }
     return errStr.toString();
   }
 
-  /** Return a Set of all regions defined in this member.
-   * 
+  /**
+   * Return a Set of all regions defined in this member.
+   *
    * @return A Set of all regions defined in this member.
    */
   public static Set<Region<?, ?>> getAllRegions() {
@@ -561,67 +636,76 @@ public class OffHeapHelper {
       return null;
     }
     Set<Region<?, ?>> rootRegions = theCache.rootRegions();
-    Set<Region<?, ?>> allRegions = new HashSet<Region<?, ?>>();
+    Set<Region<?, ?>> allRegions = new HashSet<>();
     allRegions.addAll(rootRegions);
-    for (Region<?, ?> aRegion: rootRegions) {
+    for (Region<?, ?> aRegion : rootRegions) {
       allRegions.addAll(aRegion.subregions(true));
     }
     return allRegions;
   }
 
-  /** Verify that the given list of full region path names have off-heap memory enabled
-   * 
-   * @param regionNames A List of full region path names, or null of all regions are
-   *                    expected to have off-heap enabled.
+  /**
+   * Verify that the given list of full region path names have
+   * off-heap memory enabled
+   *
+   * @param regionNames A List of full region path names, or null of all
+   *                    regions are expected to have off-heap enabled.
    */
-  public static void verifyRegionsEnabledWithOffHeap(List<String> regionNames) {
+  public static void verifyRegionsEnabledWithOffHeap(
+      List<String> regionNames) {
     StringBuilder errStr = new StringBuilder();
-    boolean expectOffHeapEnabled = false;
+    boolean expectOffHeapEnabled;
     Set<Region<?, ?>> allRegions = getAllRegions();
-    for (Region aRegion: allRegions) {
-      boolean offHeapEnabled = aRegion.getAttributes().getEnableOffHeapMemory();
-      if (regionNames == null) {
-        expectOffHeapEnabled = true;
-      } else {
-        expectOffHeapEnabled = regionNames.contains(aRegion.getFullPath());
-      }
+    assert allRegions != null;
+    for (Region aRegion : allRegions) {
+      boolean offHeapEnabled = aRegion.getAttributes()
+          .getEnableOffHeapMemory();
+      expectOffHeapEnabled = (regionNames == null ||
+          regionNames.contains(aRegion.getFullPath()));
       if (expectOffHeapEnabled != offHeapEnabled) {
-        errStr.append("Expected attributes for " + aRegion.getFullPath() + " to have enableOffHeapMemory " +
-            expectOffHeapEnabled + ", but it is " + offHeapEnabled + "\n");
+        errStr.append("Expected attributes for ").append(aRegion.getFullPath())
+            .append(" to have enableOffHeapMemory ")
+            .append(expectOffHeapEnabled).append(", but it is ")
+            .append(offHeapEnabled).append("\n");
       }
     }
     if (errStr.length() > 0) {
       throw new TestException(errStr.toString());
     }
   }
-  
-  /** Determines if this member has off-heap memory currently allocated. This returns true
-   *  if off-heap memory is present even if the cache is closed.
-   * 
-   * @return True if this member has off-heap memory currently allocated, false otherwise.
+
+  /**
+   * Determines if this member has off-heap memory currently allocated. This
+   * returns true if off-heap memory is present even if the cache is closed.
+   *
+   * @return True if this member has off-heap memory currently allocated,
+   * false otherwise.
    */
   public static boolean isOffHeapMemoryConfigured() {
     try {
       MemoryAllocator offHeapStore = SimpleMemoryAllocatorImpl.getAllocator();
       return (offHeapStore != null);
-    } catch (CacheClosedException e) { // CacheClosed is thrown if the cache is closed AND no off-heap memory is present
-                                       // but is not thrown if the cache is closed and off-heap memory is present
+    } catch (CacheClosedException e) {
+      // CacheClosed is thrown if the cache is closed AND no off-heap memory
+      // is present but is not thrown if the cache is closed and
+      // off-heap memory is present
       String errStr = e.toString();
       if (errStr.contains("Off Heap memory allocator does not exist")) {
         return false;
-      }
-      else throw e;
+      } else throw e;
     }
   }
 
-  /** Return the off-heap memory stats object for this member
-   * 
+  /**
+   * Return the off-heap memory stats object for this member
+   *
    * @return The off-heap memory stats for this member.
    */
   public static OffHeapMemoryStats getOffHeapMemoryStats() {
     MemoryAllocator offHeapStore = SimpleMemoryAllocatorImpl.getAllocator();
     if (offHeapStore == null) {
-      throw new TestException("Cannot get off-heap memory stats because the offHeapStore is null");
+      throw new TestException(
+          "Cannot get off-heap memory stats because the offHeapStore is null");
     }
     OffHeapMemoryStats offHeapStats = offHeapStore.getStats();
     if (offHeapStats == null) {
@@ -630,8 +714,9 @@ public class OffHeapHelper {
     return offHeapStats;
   }
 
-  /** Wait for all async event queues (including wan queues) in this member to drain. Does not return until
-   *  all wan queues are empty.
+  /**
+   * Wait for all async event queues (including wan queues) in this member
+   * to drain. Does not return until all wan queues are empty.
    */
   public static void waitForWanQueuesToDrain() {
     AEQHelper.waitForAsyncEventQueuesToDrain();

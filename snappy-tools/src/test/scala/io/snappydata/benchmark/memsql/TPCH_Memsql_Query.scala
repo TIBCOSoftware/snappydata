@@ -1,15 +1,11 @@
 package io.snappydata.benchmark.memsql
 
-import java.io.{File, PrintStream, FileOutputStream}
 import java.sql.DriverManager
 
 /**
   * Created by kishor on 9/12/15.
   */
 object TPCH_Memsql_Query {
-
-  var avgFileStream: FileOutputStream = _
-  var avgPrintStream:PrintStream = _
 
    def main(args: Array[String]) {
 
@@ -19,9 +15,6 @@ object TPCH_Memsql_Query {
      val dbName = "TPCH"
      val user = "root"
      val password = ""
-
-     avgFileStream = new FileOutputStream(new File(s"Average.out"))
-     avgPrintStream = new PrintStream(avgFileStream)
 
      Class.forName("com.mysql.jdbc.Driver")
      val dbAddress = "jdbc:mysql://" + host + ":" + port + "/"
@@ -85,6 +78,7 @@ object TPCH_Memsql_Query {
 
 
      stmt.close();
+     TPCH_Memsql.close()
 
    }
  }

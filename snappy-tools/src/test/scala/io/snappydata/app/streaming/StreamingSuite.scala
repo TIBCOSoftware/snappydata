@@ -26,7 +26,7 @@ import twitter4j.{Status, TwitterObjectFactory}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingContext, StreamToRowsConverter}
+import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
 import org.apache.spark.streaming._
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -41,14 +41,19 @@ with BeforeAndAfterAll with BeforeAndAfter {
 
   def batchDuration: Duration = Seconds(1)
 
+  def creatingFunc(): SnappyStreamingContext = {
+    new SnappyStreamingContext(sc, batchDuration)
+  }
+
+
   before {
-    SnappyStreamingContext.stop()
-    ssnc = SnappyStreamingContext(snc, batchDuration)
+    SnappyStreamingContext.getActive().map { _.stop(false, true) }
+    ssnc = SnappyStreamingContext.getActiveOrCreate(creatingFunc)
   }
 
   after {
     baseCleanup()
-    SnappyStreamingContext.stop()
+    SnappyStreamingContext.getActive().map { _.stop(false, true) }
   }
 
   test("SNAP-414") {
@@ -100,8 +105,11 @@ with BeforeAndAfterAll with BeforeAndAfter {
       ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
     }
     // try drop from another streaming context
-    SnappyStreamingContext.stop(stopSparkContext = false, stopGracefully = true)
-    ssnc = SnappyStreamingContext(snc, batchDuration)
+    SnappyStreamingContext.getActive().map {
+      _.stop(stopSparkContext = false, stopGracefully = true)
+    }
+    ssnc = new SnappyStreamingContext(snc.sparkContext, batchDuration)
+
     ssnc.sql("drop table tableStream")
     val thrown = intercept[Exception] {
       ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count
@@ -204,7 +212,7 @@ with BeforeAndAfterAll with BeforeAndAfter {
       // println(rdd) // scalastyle:ignore
     })
 
-    SnappyStreamingContext.start
+    ssnc.start
     ssnc.awaitTerminationOrTimeout(5 * 1000)
   }
 
@@ -264,7 +272,7 @@ with BeforeAndAfterAll with BeforeAndAfter {
           .saveAsTable("gemxdColumnTable")
     })
 
-    SnappyStreamingContext.start
+    ssnc.start
     ssnc.awaitTerminationOrTimeout(20 * 1000)
 
     val result = ssnc.sql("select * from gemxdColumnTable")
@@ -321,7 +329,7 @@ with BeforeAndAfterAll with BeforeAndAfter {
       sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
     df.registerTempTable("tweetTable")
 
-    SnappyStreamingContext.start
+    ssnc.start
 
     val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window" +
         " (duration '4' seconds, slide '4' seconds) " +

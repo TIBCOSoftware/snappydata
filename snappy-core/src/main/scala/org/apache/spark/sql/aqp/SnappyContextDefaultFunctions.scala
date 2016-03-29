@@ -33,6 +33,7 @@ import org.apache.spark.sql.{execution => sparkexecution, _}
 
 object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
+
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
@@ -40,6 +41,9 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
         Batch("Add row converters", Once, EnsureRowFormats)
       )
     }
+
+  override def registerAQPErrorFunctions(context: SnappyContext){}
+
 
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution =

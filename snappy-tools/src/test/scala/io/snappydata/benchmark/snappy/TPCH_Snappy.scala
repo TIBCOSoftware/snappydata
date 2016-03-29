@@ -9,20 +9,22 @@ import org.apache.spark.sql.SQLContext
   */
 object TPCH_Snappy {
 
-   var queryFileStream: FileOutputStream = _
-   var queryPrintStream:PrintStream = _
+//   var queryFileStream: FileOutputStream = _
+//   var queryPrintStream:PrintStream = _
+
+  var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
+  var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
 
    def close(): Unit ={
-     queryPrintStream.close()
-     queryFileStream.close()
-     TPCH_Snappy_Query.avgPrintStream.close()
-     TPCH_Snappy_Query.avgFileStream.close()
+     avgPrintStream.close()
+     avgFileStream.close()
    }
+
    def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean, isSnappy:Boolean, itr : Int): Unit = {
      //val snappyContext = SnappyContext.getOrCreate(sc)
-
-     queryFileStream = new FileOutputStream(new File(s"$queryNumber.out"))
-     queryPrintStream = new PrintStream(queryFileStream)
+    println(s"KBKBKB In execute $queryNumber")
+     var queryFileStream: FileOutputStream = new FileOutputStream(new File(s"$queryNumber.out"))
+     var queryPrintStream:PrintStream = new PrintStream(queryFileStream)
 
      val resultFormat = queryNumber match {
        case "q" => getResultString()
@@ -79,29 +81,31 @@ object TPCH_Snappy {
            }
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
-           queryPrintStream.println(s"$i,$iterationTime")
+           queryPrintStream.println(s"$iterationTime")
            if (i > 1) {
              totalTimeForLast5Iterations += iterationTime
            }
 
          }
-         queryPrintStream.println(s"Average time taken for last 2 iterations,${totalTimeForLast5Iterations / 2}")
-         TPCH_Snappy_Query.avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / 2}")
+         queryPrintStream.println(s"${totalTimeForLast5Iterations / 2}")
+         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / 2}")
        }
        println(s"Finished executing $queryNumber")
      } catch {
        case e: Exception => {
          e.printStackTrace(queryPrintStream)
-         e.printStackTrace(TPCH_Snappy_Query.avgPrintStream)
+         e.printStackTrace(avgPrintStream)
          println(s" Exception while executing $queryNumber in written to file $queryNumber.out")
        }
      } finally {
-       if(isResultCollection) {
          queryPrintStream.close()
          queryFileStream.close()
-         TPCH_Snappy_Query.avgPrintStream.close()
-         TPCH_Snappy_Query.avgFileStream.close()
-       }
+//       if(isResultCollection) {
+//         queryPrintStream.close()
+//         queryFileStream.close()
+//         TPCH_Snappy_Query.avgPrintStream.close()
+//         TPCH_Snappy_Query.avgFileStream.close()
+//       }
      }
    }
 
@@ -168,7 +172,8 @@ object TPCH_Snappy {
          val res = result.collect()
          assert(res.length == 1)
          if(isSnappy) {
-           sqlContext.sql(getQuery11(res(0).getDecimal(0), isSnappy)).collect()
+           //sqlContext.sql(getQuery11(res(0).getDecimal(0), isSnappy)).collect()
+           sqlContext.sql(getQuery11(res(0).getDouble(0), isSnappy)).collect()
          }else{
            sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0)), isSnappy)).collect()
          }
@@ -221,7 +226,8 @@ object TPCH_Snappy {
          val res = result.collect()
          assert(res.length == 1)
          if(isSnappy) {
-           sqlContext.sql(getQuery22(res(0).getDecimal(0).toString)).collect()
+           //sqlContext.sql(getQuery22(res(0).getDecimal(0).toString)).collect()
+           sqlContext.sql(getQuery22(res(0).getDouble(0).toString)).collect()
          }else{
            sqlContext.sql(getQuery22(res(0).getDouble(0).toString)).collect()
          }
@@ -718,9 +724,13 @@ object TPCH_Snappy {
          "     o_orderdate," +
          "     o_shippriority" +
          " from" +
-         "     CUSTOMER," +
-         "     ORDERS," +
-         "     LINEITEM" +
+//         "     CUSTOMER," +
+//         "     ORDERS," +
+//         "     LINEITEM" +
+//Order Changed
+           "    LINEITEM," +
+           "    ORDERS," +
+           "    CUSTOMER" +
          " where" +
          "     upper(trim(C_MKTSEGMENT)) = 'BUILDING'" +
          "     and C_CUSTKEY = o_custkey" +
@@ -778,12 +788,18 @@ object TPCH_Snappy {
            "        N_NAME," +
            "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
            " from" +
-           "        CUSTOMER," +
+//           "        CUSTOMER," +
+//           "        ORDERS," +
+//           "        LINEITEM," +
+//           "        SUPPLIER," +
+//           "        NATION," +
+//           "        REGION" +
            "        ORDERS," +
            "        LINEITEM," +
            "        SUPPLIER," +
            "        NATION," +
-           "        REGION" +
+           "        REGION," +
+           "        CUSTOMER" +
            " where" +
            "        C_CUSTKEY = o_custkey" +
            "        and l_orderkey = o_orderkey" +
@@ -959,14 +975,22 @@ object TPCH_Snappy {
            "                         l_extendedprice * (1-l_discount) as volume," +
            "                         n2.N_NAME as nation" +
            "                 from" +
-           "                         PART," +
-           "                         SUPPLIER," +
+//           "                         PART," +
+//           "                         SUPPLIER," +
+//           "                         LINEITEM," +
+//           "                         ORDERS," +
+//           "                         CUSTOMER," +
+//           "                         NATION n1," +
+//           "                         NATION n2," +
+//           "                         REGION" +
            "                         LINEITEM," +
            "                         ORDERS," +
            "                         CUSTOMER," +
+           "                         SUPPLIER," +
            "                         NATION n1," +
+           "                         REGION," +
            "                         NATION n2," +
-           "                         REGION" +
+           "                         PART" +
            "                 where" +
            "                         P_PARTKEY = l_partkey" +
            "                         and S_SUPPKEY = l_suppkey" +
@@ -1041,12 +1065,18 @@ object TPCH_Snappy {
            "                 year(o_orderdate) as o_year," +
            "                 l_extendedprice * (1 - l_discount) - PS_SUPPLYCOST * l_quantity as amount" +
            "         from" +
-           "                 PART," +
-           "                 SUPPLIER," +
+//           "                 PART," +
+//           "                 SUPPLIER," +
+//           "                 LINEITEM," +
+//           "                 PARTSUPP," +
+//           "                 ORDERS," +
+//           "                 NATION" +
            "                 LINEITEM," +
-           "                 PARTSUPP," +
            "                 ORDERS," +
-           "                 NATION" +
+           "                 SUPPLIER," +
+           "                 NATION," +
+           "                 PART," +
+           "                 PARTSUPP" +
            "         where" +
            "                 S_SUPPKEY = l_suppkey" +
            "                 and PS_SUPPKEY = l_suppkey" +
@@ -1113,9 +1143,13 @@ object TPCH_Snappy {
            "         C_PHONE," +
            "         C_COMMENT" +
            " from" +
-           "         CUSTOMER," +
+//           "         CUSTOMER," +
+//           "         ORDERS," +
+//           "         LINEITEM," +
+//           "         NATION" +
            "         ORDERS," +
            "         LINEITEM," +
+           "         CUSTOMER," +
            "         NATION" +
            " where" +
            "         C_CUSTKEY = o_custkey" +
@@ -1555,9 +1589,12 @@ object TPCH_Snappy {
          "         o_totalprice," +
          "         sum(l_quantity)" +
          " from" +
-         "         CUSTOMER," +
+//         "         CUSTOMER," +
+//         "         ORDERS," +
+//         "         LINEITEM" +
+         "         LINEITEM," +
          "         ORDERS," +
-         "         LINEITEM" +
+         "         CUSTOMER" +
          " where" +
          "         o_orderkey in (" +
          "                 select" +

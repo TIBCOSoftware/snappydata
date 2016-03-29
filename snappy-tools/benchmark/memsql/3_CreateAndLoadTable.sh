@@ -2,30 +2,33 @@
 source PerfRun.conf
 
 #run table creating program
-scala -cp "../TPCH.jar:mysql-connector-java-5.0.8-bin.jar" io.snappydata.benchmark.memsql.TPCH_Memsql_Tables $aggregator
+echo "========================Create Tables======================================"
+scala -cp "$TPCHJar:$mysqlConnectorJar" io.snappydata.benchmark.memsql.TPCH_Memsql_Tables $aggregator
 
 #change data size as per requirment. e.g. from 100GB to 10GB
-sed -i "s|\"file:.*|\"file:$dataDir\/customer.tbl\"|" memsqlloader/customer.json
-sed -i "s|\"file:.*|\"file:$dataDir\/lineitem.tbl\"|" memsqlloader/lineitem.json
-sed -i "s|\"file:.*|\"file:$dataDir\/nation.tbl\"|" memsqlloader/nation.json
-sed -i "s|\"file:.*|\"file:$dataDir\/orders.tbl\"|" memsqlloader/orders.json
-sed -i "s|\"file:.*|\"file:$dataDir\/part.tbl\"|" memsqlloader/part.json
-sed -i "s|\"file:.*|\"file:$dataDir\/partsupp.tbl\"|" memsqlloader/partsupp.json
-sed -i "s|\"file:.*|\"file:$dataDir\/region.tbl\"|" memsqlloader/region.json
-sed -i "s|\"file:.*|\"file:$dataDir\/supplier.tbl\"|" memsqlloader/supplier.json
+echo "=============================Change data size in josn files=========================="
+sed -i "s|\"file:.*|\"file:$dataDir\/customer.tbl\"|" $memsqlLoader/customer.json
+sed -i "s|\"file:.*|\"file:$dataDir\/lineitem.tbl\"|" $memsqlLoader/lineitem.json
+sed -i "s|\"file:.*|\"file:$dataDir\/nation.tbl\"|" $memsqlLoader/nation.json
+sed -i "s|\"file:.*|\"file:$dataDir\/orders.tbl\"|" $memsqlLoader/orders.json
+sed -i "s|\"file:.*|\"file:$dataDir\/part.tbl\"|" $memsqlLoader/part.json
+sed -i "s|\"file:.*|\"file:$dataDir\/partsupp.tbl\"|" $memsqlLoader/partsupp.json
+sed -i "s|\"file:.*|\"file:$dataDir\/region.tbl\"|" $memsqlLoader/region.json
+sed -i "s|\"file:.*|\"file:$dataDir\/supplier.tbl\"|" $memsqlLoader/supplier.json
 
+echo "=============================Change host name in josn files=========================="
+sed -i "s|\"host\": .*|\"host\": \"$aggregator\",|" $memsqlLoader/*.json
 
-sed -i "s|\"host\": .*|\"host\": \"$aggregator\",|" memsqlloader/*.json
-
+echo "=============================load tables=========================="
 #//load data in tables
-./memsqlloader/memsql-loader load --spec memsqlloader/customer.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/lineitem.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/nation.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/orders.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/part.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/partsupp.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/region.json 
-./memsqlloader/memsql-loader load --spec memsqlloader/supplier.json 
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/customer.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/lineitem.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/nation.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/orders.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/part.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/partsupp.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/region.json
+$memsqlLoader/memsql-loader load --spec $memsqlLoader/supplier.json
 
-./memsqlloader/memsql-loader ps
+$memsqlLoader/memsql-loader ps
 

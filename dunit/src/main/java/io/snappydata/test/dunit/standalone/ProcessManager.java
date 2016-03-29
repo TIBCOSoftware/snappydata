@@ -163,6 +163,7 @@ public class ProcessManager {
       "-D" + DUnitLauncher.VM_NUM_PARAM + "=" + vmNum,
       "-D" + DUnitLauncher.WORKSPACE_DIR_PARAM + "=" + new File(".").getAbsolutePath(),
       "-DlogLevel=" + DUnitLauncher.LOG_LEVEL,
+      "-DsecurityLogLevel=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Djava.library.path=" + System.getProperty("java.library.path"),
       "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
