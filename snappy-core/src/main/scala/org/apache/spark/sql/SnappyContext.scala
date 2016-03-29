@@ -107,12 +107,12 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
-
+    /*
     override def unsafeEnabled: Boolean = if(snappyContextFunctions.isTungstenEnabled) {
       super.unsafeEnabled
     }else {
       false
-    }
+    }*/
   }
 
   override def newSession(): SnappyContext = {
