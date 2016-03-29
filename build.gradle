@@ -67,12 +67,12 @@ allprojects {
   ext {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
-    sparkVersion = '1.6.0-BETA~1'
+    sparkVersion = '1.6.0-BETA2'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    gemfireXDVersion = '1.5.0-BETA~1'
+    gemfireXDVersion = '1.5.0-BETA2'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
