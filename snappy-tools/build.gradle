@@ -43,10 +43,10 @@ dependencies {
     testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
   } else {
     compile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
-    compile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-core', version: gemfireXDVersion
     compile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
     nospark group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
-    nospark group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    nospark group: 'io.snappydata', name: 'gemfirexd-core', version: gemfireXDVersion
     nospark group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
     testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
   }
