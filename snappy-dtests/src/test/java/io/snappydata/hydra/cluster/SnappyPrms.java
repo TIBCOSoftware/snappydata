@@ -1,6 +1,7 @@
 package io.snappydata.hydra.cluster;
 
 import java.util.Vector;
+
 import hydra.BasePrms;
 
 
@@ -9,11 +10,32 @@ import hydra.BasePrms;
  */
 public class SnappyPrms extends BasePrms {
     /**
-     * Parameter used to get the user specified script names.
+     * Parameter used to get the user specified script names for INITTASK.
      * (VectosetValuesr of Strings) A list of values for script Names to execute.
      */
     public static Long sqlScriptNamesForInitTask;
+
+    /**
+     * Parameter used to get the user specified script names for TASK.
+     * (VectosetValuesr of Strings) A list of values for script Names to execute.
+     */
     public static Long sqlScriptNamesForTask;
+
+    /**
+     * (boolean) for testing HA
+     */
+    public static Long cycleVms;
+
+    /**
+     * (String) cycleVMTarget - which node to be cycled "store, lead" etc
+     */
+    public static Long cycleVMTarget;
+
+    /**
+     * (int) how long (milliseconds) it should wait before Cycle VMs again
+     */
+    public static Long waitTimeBeforeNextCycleVM;
+
 
     public static Vector getSQLScriptNamesForInitTask() {
         Long key = sqlScriptNamesForInitTask;

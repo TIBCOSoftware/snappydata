@@ -12,16 +12,34 @@ public class SnappyBB extends Blackboard {
 
     public static SnappyBB bbInstance = null;
 
+    /**
+     * Get the SnappyBB
+     */
     public static synchronized SnappyBB getBB() {
-        if (bbInstance == null) {
-            bbInstance = new SnappyBB(SNAPPY_BB_NAME, SNAPPY_BB_TYPE);
-        }
+        if (bbInstance == null)
+            synchronized (SnappyBB.class) {
+                if (bbInstance == null)
+                    bbInstance = new SnappyBB(SNAPPY_BB_NAME, SNAPPY_BB_TYPE);
+            }
         return bbInstance;
     }
 
+    /**
+     * initialize SnappyBB
+     */
+    public static void initialize() {
+        getBB().printSharedCounters();
+    }
+
+    /**
+     * Zero-arg constructor for remote method invocations.
+     */
     public SnappyBB() {
     }
 
+    /**
+     * Creates a sample blackboard using the specified name and transport type.
+     */
     public SnappyBB(String name, String type) {
         super(name, type, SnappyBB.class);
     }
@@ -29,4 +47,5 @@ public class SnappyBB extends Blackboard {
     public static int serversStarted;
     public static int locatorsStarted;
     public static int leadsStarted;
+    public static int stopStartVms;
 }

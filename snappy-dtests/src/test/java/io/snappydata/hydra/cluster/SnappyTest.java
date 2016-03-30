@@ -12,6 +12,7 @@ import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.junit.Assert;
 
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
@@ -26,6 +27,9 @@ import scala.Predef;
 import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.immutable.Map;
+import util.PRObserver;
+import util.StopStartPrms;
+import util.StopStartVMs;
 import util.TestException;
 
 public class SnappyTest implements Serializable {
@@ -41,12 +45,8 @@ public class SnappyTest implements Serializable {
     private static String stagingRowTable = "STAGING_AIRLINEREF";
     private static String snappyPath = null;
     private static String logFile = null;
-    private GemFireDescription gfd; // from distributedSystem
     private static String localHost = null;
 
-    private static int numLocators = 0;
-    private static int numServers = 0;
-    private static int numLeads = 0;
     private static Vector<String> clentNames = TestConfig.getInstance().getClientNames();
     private static Set<String> serversFileContent = new LinkedHashSet<String>();
     private static Set<String> locatorsFileContent = new LinkedHashSet<String>();
@@ -54,7 +54,13 @@ public class SnappyTest implements Serializable {
     private static String locatorsFilePath = null;
     private static String serversFilePath = null;
     private static String leadsFilePath = null;
-
+    protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, true);
+    public static final String LASTCYCLEDTIME = "lastCycledTime"; //used in SnappyBB
+    public static long lastCycledTime = 0;
+    public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
+    public static final int THOUSAND = 1000;
+    public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "store");
+    private static Set active;
 
     public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
@@ -291,7 +297,7 @@ public class SnappyTest implements Serializable {
     protected String getUserScriptLocation(String scriptName) {
         String scriptPath = null;
         try {
-            scriptPath = getSnappyPath() + sep + "quickstart" + sep + "scripts" + sep + scriptName;
+            scriptPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep + "snappy-dtests" + sep + "src" + sep + "resources" + sep + "scripts" + sep + scriptName;
             Log.getLogWriter().info("SS - Inside getUserScriptLocation - scriptPath is ::" + scriptPath);
         } catch (Exception e) {
             throw e;
@@ -302,18 +308,6 @@ public class SnappyTest implements Serializable {
     public static void HydraTask_initializeSnappyTest() {
         if (snappyTest == null) {
             snappyTest = new SnappyTest();
-            Log.getLogWriter().info("ClientNames are " + clentNames.toString());
-            for (String clientName : clentNames) {
-                Log.getLogWriter().info("Client Name is ::" + clientName);
-                if ((clientName.startsWith("locator"))) {
-                    numLocators++;
-                } else if ((clientName.startsWith("snappyStore"))) {
-                    numServers++;
-                } else if ((clientName.startsWith("lead"))) {
-                    numLeads++;
-                }
-            }
-            Log.getLogWriter().info("Total Locators, Servers and Leads in the syatem are ::" + numLocators + "," + numServers + "," + numLeads);
             snappyTest.generateConfig("locators");
             snappyTest.generateConfig("servers");
             snappyTest.generateConfig("leads");
@@ -384,18 +378,24 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "executeSQLScriptsForInitTask.log";
             File logFile = new File(dest);
             ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file);
-            snappyTest.executeProcees(pb,logFile);
+            snappyTest.executeProcess(pb, logFile);
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
-    protected void executeProcees(ProcessBuilder pb, File logFile) {
+    protected void executeProcess(ProcessBuilder pb, File logFile) {
         try {
             Process p = null;
             pb.redirectErrorStream(true);
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
             p = pb.start();
+            Class clazz = Class.forName("java.lang.UNIXProcess");
+            Field pidField = clazz.getDeclaredField("pid");
+            pidField.setAccessible(true);
+            Object value = pidField.get(p);
+            System.out.println("pid = " + value);
+            Log.getLogWriter().info("pid = " + value);
             Log.getLogWriter().info("SS - snappy-shell started successfully");
             assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
             assert pb.redirectOutput().file() == logFile;
@@ -406,6 +406,7 @@ public class SnappyTest implements Serializable {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
+
     /**
      * Executes user scripts for InitTask.
      */
@@ -423,7 +424,7 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "executeSQLScriptsForTask.log";
             File logFile = new File(dest);
             ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file);
-            snappyTest.executeProcees(pb, logFile);
+            snappyTest.executeProcess(pb, logFile);
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
@@ -481,7 +482,7 @@ public class SnappyTest implements Serializable {
         if (this.logFile == null) {
             HostDescription hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
-//            gfd = TestConfig.getInstance().getGemFireDescription("gemfire1");
+            String name = TestConfig.tab().stringAt(ClientPrms.gemfireNames, "gemfire1");
             String dirname = hd.getUserDir() + File.separator
                     + "vm_" + RemoteTestModule.getMyVmid()
                     + "_" + RemoteTestModule.getMyClientName()
@@ -497,7 +498,7 @@ public class SnappyTest implements Serializable {
                 log().info("SS - created the log directory" + dir.getPath());
                 try {
                     RemoteTestModule.Master.recordDir(hd,
-                            "gemfire1", fullname);
+                            name, fullname);
                 } catch (RemoteException e) {
                     String s = "Unable to access master to record directory: " + dir;
                     throw new HydraRuntimeException(s, e);
@@ -555,6 +556,102 @@ public class SnappyTest implements Serializable {
         return myTid;
     }
 
+    public static void HydraTask_cycleStoreVms() {
+        if (cycleVms) snappyTest.cycleStoreVms();
+    }
+
+    protected void cycleStoreVms() {
+        if (!cycleVms) {
+            Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
+            return;
+        }
+        int numToKill = TestConfig.tab().intAt(StopStartPrms.numVMsToStop, 1);
+        List<ClientVmInfo> vms = null;
+        if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms) == 1) {
+            Object vmCycled = SnappyBB.getBB().getSharedMap().get("vmCycled");
+            if (vmCycled == null) {
+
+                while (true) {
+                    try {
+                        vms = stopStartVMs(numToKill);
+                        break;
+                    } catch (TestException te) {
+                    }
+                }
+            } //first time
+            else {
+                //relaxing a little for HA tests
+                //using the BB to track when to kill the next set of vms
+                Long lastCycledTimeFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
+                if (lastCycledTimeFromBB == null) {
+                    int sleepMS = 20000;
+                    Log.getLogWriter().info("allow  " + sleepMS / 1000 + " seconds before killing others");
+                    MasterController.sleepForMs(sleepMS); //no vms has been cycled before
+                } else if (lastCycledTimeFromBB > lastCycledTime) {
+                    lastCycledTime = lastCycledTimeFromBB;
+                    log().info("update last cycled vms is set to " + lastCycledTime);
+                }
+
+                if (lastCycledTime != 0) {
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastCycledTime < waitTimeBeforeNextCycleVM * THOUSAND) {
+                        SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                        return;
+                    } else {
+                        log().info("cycle vms starts at: " + currentTime);
+                    }
+                }
+
+                vms = stopStartVMs(numToKill);
+            }
+            if (vms == null || vms.size() == 0) {
+                Log.getLogWriter().info("no vm being chosen to be stopped"); //choose the same vm has dbsynchronizer
+                SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                return;
+            }
+            long currentTime = System.currentTimeMillis();
+            log().info("cycle vms finishes at: " + currentTime);
+            SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIME, currentTime);
+            SnappyBB.getBB().getSharedMap().put("vmCycled", "true");
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+        }
+    }
+
+    protected List<ClientVmInfo> stopStartVMs(int numToKill) {
+        return stopStartVMs(numToKill, cycleVMTarget);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target) {
+        Object[] tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
+        // get the VMs to stop; vmList and stopModeList are parallel lists
+
+        Object vm1 = SnappyBB.getBB().getSharedMap().get("storeVMTarget1");
+        Object vm2 = SnappyBB.getBB().getSharedMap().get("storeVMTarget2");
+        List<ClientVmInfo> vmList;
+        List<String> stopModeList;
+
+        if (vm1 == null && vm2 == null) {
+            vmList = (List<ClientVmInfo>) (tmpArr[0]);
+            stopModeList = (List<String>) (tmpArr[1]);
+            for (ClientVmInfo client : vmList) {
+                PRObserver.initialize(client.getVmid());
+            } //clear bb info for the vms to be stopped/started
+        } else {
+            vmList = (List<ClientVmInfo>) (tmpArr[0]);
+            stopModeList = (List<String>) (tmpArr[1]);
+            for (int i = 0; i < vmList.size(); i++) {
+                if (vmList.get(i).getVmid().intValue() == ((ClientVmInfo) vm1).getVmid().intValue()
+                        || vmList.get(i).getVmid().intValue() == ((ClientVmInfo) vm2).getVmid().intValue()) {
+                    Log.getLogWriter().info("remove the vm " + vmList.get(i).getVmid() + " from the stop list");
+                    vmList.remove(i);
+                } else PRObserver.initialize(vmList.get(i).getVmid());
+            }//clear bb info for the vms to be stopped/started
+        }
+        if (vmList.size() != 0) StopStartVMs.stopStartVMs(vmList, stopModeList);
+        return vmList;
+    }
+
 
     /**
      * Create and start snappy locator.
@@ -568,10 +665,11 @@ public class SnappyTest implements Serializable {
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
                 File logFile = new File(dest);
-                snappyTest.executeProcees(pb, logFile);
+                snappyTest.executeProcess(pb, logFile);
+
             }
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
@@ -587,10 +685,10 @@ public class SnappyTest implements Serializable {
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
                 File logFile = new File(dest);
-                snappyTest.executeProcees(pb, logFile);
+                snappyTest.executeProcess(pb, logFile);
             }
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
@@ -606,10 +704,10 @@ public class SnappyTest implements Serializable {
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
                 File logFile = new File(dest);
-                snappyTest.executeProcees(pb, logFile);
+                snappyTest.executeProcess(pb, logFile);
             }
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
@@ -622,7 +720,7 @@ public class SnappyTest implements Serializable {
             int rc = pb.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
@@ -635,11 +733,11 @@ public class SnappyTest implements Serializable {
             int rc = pb.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (IOException e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
 
         } catch (Exception e1) {
             e1.printStackTrace();
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
@@ -652,7 +750,7 @@ public class SnappyTest implements Serializable {
             int rc = pb.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
@@ -662,9 +760,10 @@ public class SnappyTest implements Serializable {
             int rc = pb.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getStackTrace());
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
+
 
     protected LogWriter log() {
         return Log.getLogWriter();
