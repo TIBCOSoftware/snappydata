@@ -25,7 +25,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.{Partitioner, SparkContext}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
+import org.apache.spark.sql.execution.columnar.{ConnectionProperties, CachedBatch}
 
 trait ExternalStore extends Serializable {
 

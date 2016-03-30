@@ -26,7 +26,7 @@ import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
 /** Physical plan node for scanning data from an DataSource scan RDD.
   * If user knows that the data is partitioned or replicated across
   * all nodes this SparkPla can be used to avoid expensive shuffle
-  * and Broadcast joins. This plan ovverrides outputPartitioning and
+  * and Broadcast joins. This plan overrides outputPartitioning and
   * make it inline with the partitioning of the underlying DataSource */
 private[sql] case class PartitionedPhysicalRDD(
     output: Seq[Attribute],
