@@ -50,7 +50,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.2.2-PREVIEW'
+  version = '0.2.1-PREVIEW'
 
   // apply compiler options
   compileJava.options.encoding = 'UTF-8'
@@ -67,12 +67,12 @@ allprojects {
   ext {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
-    sparkVersion = '1.6.0-BETA2'
+    sparkVersion = '1.6.0-BETA'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    gemfireXDVersion = '1.5.0-BETA2'
+    gemfireXDVersion = '1.5.0-BETA'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -392,8 +392,8 @@ subprojects {
 
 task publishLocal {
   dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
-    p.name != 'gemfirexd-prebuild' &&
-    p.name != 'gemfirexd' && p.name != 'gemfirexd-tests' }.collect {
+    p.name != 'gemfirexd-prebuild' && p.name != 'gemfirexd' &&
+    p.name != 'gemfirexd-tests' }.collect {
     it.getTasksByName('install', false).collect { it.path }
   }
 }

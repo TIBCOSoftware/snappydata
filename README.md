@@ -17,7 +17,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* SnappyData Preview 0.2.2 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.2.2-preview/snappydata-0.2.2-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.2.2-preview/snappydata-0.2.2-PREVIEW-bin.zip)
+* SnappyData Preview 0.2.1 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.2.1-preview/snappydata-0.2.1-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.2.1-preview/snappydata-0.2.1-PREVIEW-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -32,20 +32,20 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappy-core_2.10
-version: 0.2.2-PREVIEW
+version: 0.2.1-PREVIEW
 
 groupId: io.snappydata
 artifactId: snappy-tools_2.10
-version: 0.2.2-PREVIEW
+version: 0.2.1-PREVIEW
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.2.2-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.2.1-PREVIEW"`
 
 For additions related to snappy-store (column and row store etc), use:
 
-`libraryDependencies += "io.snappydata" % "snappy-tools_2.10" % "0.2.2-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-tools_2.10" % "0.2.1-PREVIEW"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
