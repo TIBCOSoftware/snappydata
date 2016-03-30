@@ -28,6 +28,8 @@ import org.apache.spark.sql.types.StructType
 
 trait SnappyContextFunctions {
 
+  def registerAQPErrorFunctions(context: SnappyContext)
+
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution
 
