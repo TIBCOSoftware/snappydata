@@ -19,10 +19,13 @@ package org.apache.spark.sql.store.impl
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.{Properties, UUID}
 
+import scala.reflect.ClassTag
+
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.SparkShellRDDHelper
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatch, ConnectionProperties, ConnectionType}
@@ -32,8 +35,6 @@ import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCS
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
-
-import scala.reflect.ClassTag
 
 /**
  * Column Store implementation for GemFireXD.
@@ -112,7 +113,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
         val rs = ps.executeQuery()
         ps1.close()
-        new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs)
+        new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs, context)
     }, closeOnSuccess = false)
   }
 
@@ -142,7 +143,7 @@ class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
     val query: String = helper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
       requiredColumns, split.index)
     val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
-    new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs)
+    new CachedBatchIteratorOnRS(conn, requiredColumns, statement, rs, context)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {

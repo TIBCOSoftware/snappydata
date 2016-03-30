@@ -26,7 +26,7 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.Time
+import org.apache.spark.streaming.{SnappyStreamingContext, Time}
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
 import org.apache.spark.util.Utils
 
@@ -34,8 +34,8 @@ abstract class StreamBaseRelation(options: Map[String, String])
     extends ParentRelation with StreamPlan with TableScan
     with DestroyRelation with Serializable with Logging {
 
-  final def context = SnappyStreamingContext.getActive.getOrElse(
-    throw new IllegalStateException("No active streaming context"))
+  final def context = SnappyStreamingContext.getInstance().getOrElse(
+    throw new IllegalStateException("No initialized streaming context"))
 
   @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
 

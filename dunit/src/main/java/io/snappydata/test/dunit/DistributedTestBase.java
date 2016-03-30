@@ -652,8 +652,10 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   }
 
   /**
-   * This finds the log level configured for the test run.  It should be used
-   * when creating a new distributed system if you want to specify a log level.
+   * This returns the log level configured for the test run.
+   * It can be configured globally for dunit tests using
+   * "logLevel" system property.
+   *
    * @return the dunit log-level setting
    */
   public String getLogLevel() {

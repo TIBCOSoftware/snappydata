@@ -215,7 +215,7 @@ class ColumnFormatRelation(
       throw new IllegalArgumentException(
         "ColumnFormatRelation.insert: no rows provided")
     }
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       externalStore.connProperties.poolProps, externalStore.connProperties.connProps,
       externalStore.connProperties.hikariCP)
     try {
@@ -411,7 +411,7 @@ class ColumnFormatRelation(
    * Execute a DML SQL and return the number of rows affected.
    */
   override def executeUpdate(sql: String): Int = {
-    val connection = ConnectionPool.getPoolConnection(table, None, dialect,
+    val connection = ConnectionPool.getPoolConnection(table, dialect,
       externalStore.connProperties.poolProps, externalStore.connProperties.connProps,
       externalStore.connProperties.hikariCP)
     try {
