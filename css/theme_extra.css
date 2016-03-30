@@ -1,7 +1,7 @@
 /*
  * Tweak the overal size to better match RTD.
  */
-html {
+body {
     font-size: 90%;
 }
 

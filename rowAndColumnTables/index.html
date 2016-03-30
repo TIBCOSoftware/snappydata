@@ -210,7 +210,7 @@
             <div class="section">
               
                 <h3 id="row-and-column-tables">Row and column tables</h3>
-<p>Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or a average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.</p>
+<p>Column tables organize and manage data in memory in compressed columnar form such that modern day CPUs can traverse and run computations like a sum or an average really fast (as the values are available in contiguous memory). Column table follows the Spark DataSource access model.</p>
 <p>Row tables, unlike column tables are laid out one row at a time in contiguous memory. Rows are typically accessed using keys and its location determined by a hash function and hence very fast for point lookups or updates.</p>
 <p>Create table DDL for Row and Column tables allows tables to be partitioned on primary keys, custom partitioned, replicated, carry indexes in memory, persist to disk , overflow to disk, be replicated for HA, etc.</p>
 <h4 id="ddl-and-dml-syntax-for-tables">DDL and DML Syntax for tables</h4>
@@ -239,7 +239,7 @@ DROP TABLE [IF EXISTS] table_name
 <pre><code>snc.sql("CREATE TABLE tableName (Col1 INT NOT NULL PRIMARY KEY, Col2 INT, Col3 INT)
          USING row options(BUCKETS '5')" )
 </code></pre>
-<p>But for column table its restricted to Spark syntax for column definition e.g.</p>
+<p>But for column table it's restricted to Spark syntax for column definition e.g.</p>
 <pre><code>snc.sql("CREATE TABLE tableName (Col1 INT ,Col2 INT, Col3 INT) USING column options(BUCKETS '5')" )
 </code></pre>
 <p>Clauses like PRIMARY KEY , NOT NUL etc. are not supported for column definition. </p>
@@ -276,7 +276,7 @@ snc.createTable("row_table", "row", dataDF.schema, props)
 </ol>
 <h5 id="restrictions-on-column-tables-in-the-preview-release">Restrictions on column tables in the preview release</h5>
 <ol>
-<li>Column tables can not specify any primary key, unique key constarints.</li>
+<li>Column tables can not specify any primary key, unique key constraints.</li>
 <li>Index on column table is not supported.</li>
 <li>Option EXPIRE is not applicable for column tables.</li>
 <li>Option EVICTION_BY with value LRUCOUNT is not applicable for column tables. </li>
