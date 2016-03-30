@@ -4,7 +4,7 @@ This section presents a high level overview of SnappyData’s core components, a
 ### Core components
 Figure 1 depicts the core components of SnappyData, where Spark’s original components are highlighted in gray. To simplify, we have omitted standard components, such as security and monitoring.
 
-![Core components](CoreComponents.png = 300x400)
+![Core components](CoreComponents.png)
 
 The storage layer is primarily in-memory and manages data in either row or column formats. The column format is derived from Spark’s RDD caching implementation and allows for compression. Row oriented tables can be indexed on keys or secondary columns, supporting fast reads and writes on index keys. See [Row/Column table](rowAndColumnTables.md) section for details on the syntax and available features. 
 
@@ -25,7 +25,7 @@ The global proliferation of mobile devices has created a growing market for loca
 ### Data ingestion pipeline
 The data pipeline involving analytics while streams are being ingested and subsequent interactive analytics will be the pervasive architecture for real-time applications. The steps to support these tasks are depicted in Figure 2, and explained below.
 
-![Data Ingestion Pipeline](DataIngestionPipeline.png = 200x600 )
+![Data Ingestion Pipeline](DataIngestionPipeline.png)
 
 1. Once the SnappyData cluster is started and before any live streams can be processed, we can ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by SnappyData. Immutable batch sources (e.g., HDFS) can be loaded in parallel into a colum- nar format table with or without compression. Reference data that is often mutating can be managed as row tables.
 
