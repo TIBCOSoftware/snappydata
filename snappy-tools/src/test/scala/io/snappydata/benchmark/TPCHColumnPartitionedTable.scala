@@ -1,27 +1,10 @@
-/*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License"); you
- * may not use this file except in compliance with the License. You
- * may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
- * implied. See the License for the specific language governing
- * permissions and limitations under the License. See accompanying
- * LICENSE file.
- */
-
 package io.snappydata.benchmark
 
 import java.sql.{Date, Statement}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{SaveMode, SnappyContext}
+import org.apache.spark.sql.{SQLContext, SaveMode, SnappyContext}
 
 
 /**
@@ -29,7 +12,72 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
  */
 object TPCHColumnPartitionedTable  {
 
+  def createPartTable_Memsql(stmt:Statement): Unit = {
+    stmt.execute("CREATE TABLE PART  ( " +
+        "P_PARTKEY     INTEGER NOT NULL,"+
+        "P_NAME        VARCHAR(55) NOT NULL,"+
+        "P_MFGR        VARCHAR(25) NOT NULL,"+
+        "P_BRAND       VARCHAR(10) NOT NULL,"+
+        "P_TYPE        VARCHAR(25) NOT NULL,"+
+        "P_SIZE        INTEGER NOT NULL,"+
+        "P_CONTAINER   VARCHAR(10) NOT NULL,"+
+        "P_RETAILPRICE DECIMAL(15,2) NOT NULL,"+
+        "P_COMMENT     VARCHAR(23) NOT NULL," +
+        "KEY (P_PARTKEY) USING CLUSTERED COLUMNSTORE)"
+    )
+    println("Created Table PART")
+  }
+
+
+  def createPartSuppTable_Memsql(stmt:Statement): Unit = {
+    stmt.execute("CREATE TABLE PARTSUPP ( " +
+        "PS_PARTKEY     INTEGER NOT NULL," +
+        "PS_SUPPKEY     INTEGER NOT NULL," +
+        "PS_AVAILQTY    INTEGER NOT NULL," +
+        "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL," +
+        "PS_COMMENT     VARCHAR(199) NOT NULL," +
+        "KEY (PS_PARTKEY) USING CLUSTERED COLUMNSTORE)"
+      //    stmt.execute("CREATE TABLE PARTSUPP ( " +
+      //        "PS_PARTKEY     INTEGER NOT NULL," +
+      //        "PS_SUPPKEY     INTEGER NOT NULL," +
+      //        "PS_AVAILQTY    INTEGER NOT NULL," +
+      //        "PS_SUPPLYCOST  DECIMAL(15,2)  NOT NULL," +
+      //        "PS_COMMENT     VARCHAR(199) NOT NULL," +
+      //        "SHARD KEY(PS_PARTKEY),"+
+      //        "KEY(PS_SUPPKEY),"+
+      //        "PRIMARY KEY (PS_PARTKEY,PS_SUPPKEY))"
+
+    )
+    println("Created Table PARTSUPP")
+  }
+
+  def createCustomerTable_Memsql(stmt:Statement): Unit = {
+    stmt.execute("CREATE TABLE CUSTOMER ( " +
+        "C_CUSTKEY     INTEGER NOT NULL," +
+        "C_NAME        VARCHAR(25) NOT NULL," +
+        "C_ADDRESS     VARCHAR(40) NOT NULL," +
+        "C_NATIONKEY   INTEGER NOT NULL," +
+        "C_PHONE       VARCHAR(15) NOT NULL," +
+        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+        "C_COMMENT     VARCHAR(117) NOT NULL," +
+        "KEY (C_CUSTKEY) USING CLUSTERED COLUMNSTORE)"
+      //    stmt.execute("CREATE TABLE CUSTOMER ( " +
+      //        "C_CUSTKEY     INTEGER NOT NULL PRIMARY KEY," +
+      //        "C_NAME        VARCHAR(25) NOT NULL," +
+      //        "C_ADDRESS     VARCHAR(40) NOT NULL," +
+      //        "C_NATIONKEY   INTEGER NOT NULL," +
+      //        "C_PHONE       VARCHAR(15) NOT NULL," +
+      //        "C_ACCTBAL     DECIMAL(15,2)   NOT NULL," +
+      //        "C_MKTSEGMENT  VARCHAR(10) NOT NULL," +
+      //        "C_COMMENT     VARCHAR(117) NOT NULL,"+
+      //        "KEY(C_NATIONKEY))"
+    )
+    println("Created Table CUSTOMER")
+  }
+
   def createOrderTable_Memsql(stmt: Statement): Unit = {
+
     stmt.execute("CREATE TABLE ORDERS  ( " +
         "O_ORDERKEY       INTEGER NOT NULL," +
         "O_CUSTKEY        INTEGER NOT NULL," +
@@ -40,8 +88,10 @@ object TPCHColumnPartitionedTable  {
         "O_CLERK          CHAR(15) NOT NULL," +
         "O_SHIPPRIORITY   INTEGER NOT NULL," +
         "O_COMMENT        VARCHAR(79) NOT NULL," +
-        //"KEY (O_ORDERDATE) USING CLUSTERED COLUMNSTORE," +
+        "KEY (O_CUSTKEY) USING CLUSTERED COLUMNSTORE,"+
         "SHARD KEY(O_ORDERKEY))"
+//        //"KEY (O_ORDERDATE) USING CLUSTERED COLUMNSTORE," +
+//
 //    stmt.execute("CREATE TABLE ORDERS  ( " +
 //        "O_ORDERKEY       INTEGER NOT NULL PRIMARY KEY," +
 //        "O_CUSTKEY        INTEGER NOT NULL," +
@@ -84,15 +134,18 @@ object TPCHColumnPartitionedTable  {
 //    }
 //  }
 
-  def createAndPopulateOrderTable(props: Map[String, String], snappyContext: SnappyContext, path: String, isSnappy: Boolean): Unit = {
+  def createAndPopulateOrderTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val orderData = sc.textFile(s"$path/orders.tbl")
     val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
-    val orderDF = snappyContext.createDataFrame(orderReadings)
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    println("KBKBKBKB: Buckets : " + buckets)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+      val p1 = Map(("PARTITION_BY"-> "o_orderkey"),("BUCKETS"-> buckets))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
 
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("ORDERS", ifExists = true)
       //snappyContext.dropExternalTable("ORDERS", ifExists = true)
       //snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
@@ -102,8 +155,8 @@ object TPCHColumnPartitionedTable  {
       println("Created Table ORDERS")
     } else {
       orderDF.registerTempTable("ORDERS")
-      snappyContext.cacheTable("ORDERS")
-      val cnts = snappyContext.sql("select count(*) from ORDERS").collect()
+      sqlContext.cacheTable("ORDERS")
+      val cnts = sqlContext.sql("select count(*) from ORDERS").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
@@ -128,8 +181,10 @@ object TPCHColumnPartitionedTable  {
         "L_SHIPINSTRUCT CHAR(25) NOT NULL,"+
         "L_SHIPMODE     CHAR(10) NOT NULL,"+
         "L_COMMENT      VARCHAR(44) NOT NULL,"+
-        //"KEY (L_SHIPDATE) USING CLUSTERED COLUMNSTORE,"+
+        "KEY (L_PARTKEY) USING CLUSTERED COLUMNSTORE,"+
         "SHARD KEY (L_ORDERKEY)) "
+        //"KEY (L_SHIPDATE) USING CLUSTERED COLUMNSTORE,"+
+        //"SHARD KEY (L_ORDERKEY)) "
 //    stmt.execute("CREATE TABLE LINEITEM ( " +
 //        "L_ORDERKEY    INTEGER NOT NULL,"+
 //        "L_PARTKEY     INTEGER NOT NULL,"+
@@ -182,15 +237,16 @@ object TPCHColumnPartitionedTable  {
 //    }
 //  }
 
-  def createAndPopulateLineItemTable(props: Map[String, String], snappyContext: SnappyContext, path:String, isSnappy:Boolean): Unit = {
+  def createAndPopulateLineItemTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
     //val snappyContext = SnappyContext.getOrCreate(sc)
-    val sc = snappyContext.sparkContext
+    val sc = sqlContext.sparkContext
     val lineItemData = sc.textFile(s"$path/lineitem.tbl")
     val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
-    val lineOrderDF = snappyContext.createDataFrame(lineItemReadings)
+    val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"))
+      val p1 = Map(("PARTITION_BY"-> "l_orderkey"),("COLOCATE_WITH"->"ORDERS"),("BUCKETS"->buckets))
 
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       //snappyContext.dropExternalTable("LINEITEM", ifExists = true)
       snappyContext.dropTable("LINEITEM", ifExists = true)
       //snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
@@ -200,14 +256,94 @@ object TPCHColumnPartitionedTable  {
       println("Created Table LINEITEM")
     } else {
       lineOrderDF.registerTempTable("LINEITEM")
-      snappyContext.cacheTable("LINEITEM")
-      var cnts = snappyContext.sql("select count(*) from LINEITEM").collect()
+      sqlContext.cacheTable("LINEITEM")
+      var cnts = sqlContext.sql("select count(*) from LINEITEM").collect()
       for (s <- cnts) {
         var output = s.toString()
         println(output)
       }
     }
   }
+
+  def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
+    //val snappyContext = snappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val customerData = sc.textFile(s"$path/customer.tbl")
+    val customerReadings = customerData.map(s => s.split('|')).map(s => TPCHRowPartitionedTable.parseCustomerRow(s))
+    val customerDF = sqlContext.createDataFrame(customerReadings)
+
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "c_custkey"),("BUCKETS"->buckets))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("CUSTOMER", ifExists = true)
+      snappyContext.createTable("CUSTOMER", "column", customerDF.schema, p1)
+      customerDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("CUSTOMER")
+      println("Created Table CUSTOMER")
+    } else {
+      customerDF.registerTempTable("CUSTOMER")
+      sqlContext.cacheTable("CUSTOMER")
+      val cnts = sqlContext.sql("select count(*) from CUSTOMER").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+
+
+  def createPopulatePartTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val partData = sc.textFile(s"$path/part.tbl")
+    val partReadings = partData.map(s => s.split('|')).map(s => TPCHRowPartitionedTable.parsePartRow(s))
+    val partDF = sqlContext.createDataFrame(partReadings)
+
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "p_partkey"),("BUCKETS"->buckets))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("PART", ifExists = true)
+      snappyContext.createTable("PART", "column", partDF.schema, p1)
+      partDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("PART")
+      println("Created Table PART")
+    } else {
+      partDF.registerTempTable("PART")
+      sqlContext.cacheTable("PART")
+      val cnts = sqlContext.sql("select count(*) from PART").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+
+  def createPopulatePartSuppTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val partSuppData = sc.textFile(s"$path/partsupp.tbl")
+    val partSuppReadings = partSuppData.map(s => s.split('|')).map(s => TPCHRowPartitionedTable.parsePartSuppRow(s))
+    val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
+
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("PARTSUPP", ifExists = true)
+      snappyContext.createTable("PARTSUPP", "column", partSuppDF.schema, p1)
+      partSuppDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("PARTSUPP")
+      println("Created Table PARTSUPP")
+    } else {
+      partSuppDF.registerTempTable("PARTSUPP")
+      sqlContext.cacheTable("PARTSUPP")
+      val cnts = sqlContext.sql("select count(*) from PARTSUPP").collect()
+      for (s <- cnts) {
+        var output = s.toString()
+        println(output)
+      }
+    }
+  }
+
 
   def createAndPopulateOrderSampledTable(props: Map[String, String],
       sc: SparkContext, path: String): Unit = {

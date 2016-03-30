@@ -16,12 +16,12 @@
  */
 package io.snappydata.test.dunit.standalone;
 
-import com.gemstone.gemfire.internal.FileUtil;
-import io.snappydata.test.dunit.RemoteDUnitVMIF;
-import io.snappydata.test.dunit.logging.log4j.ConfigLocator;
-import org.apache.commons.io.FileUtils;
-
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.rmi.AccessException;
@@ -31,6 +31,12 @@ import java.rmi.registry.Registry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.gemstone.gemfire.internal.FileUtil;
+import com.gemstone.gemfire.internal.shared.NativeCalls;
+import io.snappydata.test.dunit.RemoteDUnitVMIF;
+import io.snappydata.test.dunit.logging.log4j.ConfigLocator;
+import org.apache.commons.io.FileUtils;
 
 /**
  * @author dsmith
@@ -60,7 +66,7 @@ public class ProcessManager {
     
     String[] cmd = buildJavaCommand(vmNum, namingPort);
     System.out.println("Executing " + Arrays.asList(cmd));
-    File workingDir = getVMDir(vmNum);
+    File workingDir = getVMDir(vmNum, true);
     try {
       FileUtil.delete(workingDir);
     } catch(IOException e) {
@@ -77,16 +83,27 @@ public class ProcessManager {
     //TODO - delete directory contents, preferably with commons io FileUtils
     Process process = Runtime.getRuntime().exec(cmd, null, workingDir);
     pendingVMs++;
-    ProcessHolder holder = new ProcessHolder(process);
+    ProcessHolder holder = new ProcessHolder(process,
+        workingDir.getAbsoluteFile());
     processes.put(vmNum, holder);
     linkStreams(vmNum, holder, process.getErrorStream(), System.err);
     linkStreams(vmNum, holder, process.getInputStream(), System.out);
   }
 
-  public static File getVMDir(int vmNum) {
-    return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum);
+  public File getVMDir(int vmNum, boolean launch) {
+    if (launch) {
+      return new File(DUnitLauncher.DUNIT_DIR, "vm" + vmNum +
+          '_' + NativeCalls.getInstance().getProcessId());
+    } else {
+      ProcessHolder holder = this.processes.get(vmNum);
+      if (holder != null) {
+        return holder.getWorkingDir();
+      } else {
+        throw new IllegalArgumentException("No VM " + vmNum + " found.");
+      }
+    }
   }
-  
+
   public synchronized void killVMs() {
     for(ProcessHolder process : processes.values()) {
       if(process != null) {
@@ -146,14 +163,19 @@ public class ProcessManager {
       "-D" + DUnitLauncher.VM_NUM_PARAM + "=" + vmNum,
       "-D" + DUnitLauncher.WORKSPACE_DIR_PARAM + "=" + new File(".").getAbsolutePath(),
       "-DlogLevel=" + DUnitLauncher.LOG_LEVEL,
+      "-DsecurityLogLevel=" + DUnitLauncher.SECURITY_LOG_LEVEL,
       "-Djava.library.path=" + System.getProperty("java.library.path"),
       "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
       "-Xmx512m",
-      "-XX:MaxPermSize=256M",
+      "-Xms512m",
+      "-XX:MaxPermSize=256m",
+      "-XX:+UseParNewGC",
+      "-XX:+UseConcMarkSweepGC",
+      "-XX:CMSInitiatingOccupancyFraction=50",
+      "-XX:+CMSClassUnloadingEnabled",
       "-Dgemfire.DEFAULT_MAX_OPLOG_SIZE=10",
       "-Dgemfire.disallowMcastDefaults=true",
-      "-XX:MaxPermSize=256M",
       "-Djava.net.preferIPv4Stack=true",
       "-ea",
       agent,
@@ -203,10 +225,12 @@ public class ProcessManager {
   
   private static class ProcessHolder {
     private final Process process;
+    private final File workingDir;
     private volatile boolean killed = false;
-    
-    public ProcessHolder(Process process) {
+
+    public ProcessHolder(Process process, File workingDir) {
       this.process = process;
+      this.workingDir = workingDir;
     }
 
     public void kill() {
@@ -217,6 +241,10 @@ public class ProcessManager {
 
     public Process getProcess() {
       return process;
+    }
+
+    public File getWorkingDir() {
+      return this.workingDir;
     }
 
     public boolean isKilled() {

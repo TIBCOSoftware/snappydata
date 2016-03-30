@@ -47,10 +47,12 @@ import com.gemstone.gemfire.distributed.internal.DistributionConfig;
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem;
 import com.gemstone.gemfire.internal.SocketCreator;
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl;
+import com.gemstone.gemfire.internal.shared.NativeCalls;
 import io.snappydata.test.dunit.standalone.DUnitBB;
 import io.snappydata.test.dunit.standalone.DUnitLauncher;
 import io.snappydata.test.util.TestException;
 import junit.framework.TestCase;
+import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 
@@ -68,9 +70,8 @@ import org.apache.log4j.Logger;
  */
 @SuppressWarnings("serial")
 public abstract class DistributedTestBase extends TestCase implements java.io.Serializable {
-  public static final Logger globalLogger =
-      LogManager.getLogger(Host.BASE_LOGGER_NAME);
-  public final Logger logger = LogManager.getLogger(getClass());
+  private transient static volatile Logger globalLogger = newGlobalLogger();
+  private transient volatile Logger logger = newLogWriter();
   private static final LinkedHashSet<String> testHistory = new LinkedHashSet<String>();
 
   /** This VM's connection to the distributed system */
@@ -88,16 +89,39 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   public static final boolean logPerTest = Boolean.getBoolean("dunitLogPerTest");
     /** the system line separator */
 
-    public static final String lineSeparator = java.security.AccessController
-        .doPrivileged(new PrivilegedAction<String>() {
-          @Override
-          public String run() {
-            return System.getProperty("line.separator");
-          }
-        });
+  public static final String lineSeparator = java.security.AccessController
+      .doPrivileged(new PrivilegedAction<String>() {
+        @Override
+        public String run() {
+          return System.getProperty("line.separator");
+        }
+      });
 
   public static InternalDistributedSystem system;
   private static Class lastSystemCreatedInTest;
+
+  // common static initialization (currently changes working directory)
+  public static final class InitializeRun {
+    static {
+      // skip for ChildVM's in dunits
+      if (System.getProperty(DUnitLauncher.VM_NUM_PARAM) == null) {
+        // change current working directory to this base directory
+        File baseDirFile = new File(getBaseDir());
+        //noinspection ResultOfMethodCallIgnored
+        baseDirFile.mkdirs();
+        NativeCalls.getInstance().setCurrentWorkingDirectory(
+            baseDirFile.getAbsolutePath());
+      }
+    }
+
+    public static void setUp() {
+      // nothing; actual setup done in static initializer
+    }
+
+    public static String getBaseDir() {
+      return "vm_" + NativeCalls.getInstance().getProcessId();
+    }
+  }
 
   ///////////////////////  Utility Methods  ///////////////////////
 
@@ -194,7 +218,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         Properties newProps = getAllDistributedSystemProperties(props);
         needNewSystem = !newProps.equals(lastSystemProperties);
         if(needNewSystem) {
-          logger.info(
+          getLogWriter().info(
               "Test class has changed and the new DS properties are not an exact match. "
                   + "Forcing DS disconnect. Old props = "
                   + lastSystemProperties + "new props=" + newProps);
@@ -208,7 +232,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
           String value = (String) entry.getValue();
           if (!value.equals(activeProps.getProperty(key))) {
             needNewSystem = true;
-            logger.info("Forcing DS disconnect. For property " + key
+            getLogWriter().info("Forcing DS disconnect. For property " + key
                 + " old value = " + activeProps.getProperty(key)
                 + " new value = " + value);
             break;
@@ -218,7 +242,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       if(needNewSystem) {
         // the current system does not meet our needs to disconnect and
         // call recursively to get a new system.
-        logger.info("Disconnecting from current DS in order to make a new one");
+        getLogWriter().info("Disconnecting from current DS in order to make a new one");
         disconnectFromDS();
         getSystem(props);
       }
@@ -346,7 +370,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
               " found in class " + className);
         } catch (Exception e) {
           String msg = "Failed in " + method + " on " /* TODO: get local VM or pid */;
-          globalLogger.error(msg, e);
+          getGlobalLogger().error(msg, e);
           throw new TestException(msg, e);
         }
       }
@@ -410,7 +434,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    @since 5.0
    */
   public static void dumpStack() {
-    dumpStack(globalLogger);
+    dumpStack(getGlobalLogger());
   }
 
   /** print a stack dump for this vm
@@ -574,13 +598,68 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     return clazz;
   }
 
+  private static Level getLevel(String gemfireLogLevel) {
+    switch (gemfireLogLevel) {
+      case "config":
+      case "info":
+        return Level.INFO;
+      case "fine":
+        return Level.DEBUG;
+      case "finer":
+      case "finest":
+        return Level.TRACE;
+      case "warning":
+        return Level.WARN;
+      case "error":
+        return Level.ERROR;
+      case "severe":
+        return Level.FATAL;
+      case "all":
+        return Level.ALL;
+      case "none":
+        return Level.OFF;
+      default:
+        return Level.INFO;
+    }
+  }
+
+  private static Logger newGlobalLogger() {
+    Logger logger = LogManager.getLogger(Host.BASE_LOGGER_NAME);
+    logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
+    return logger;
+  }
+
+  public static Logger getGlobalLogger() {
+    final Logger logger = globalLogger;
+    if (logger != null) {
+      return logger;
+    }
+    return (globalLogger = newGlobalLogger());
+  }
+
+  private Logger newLogWriter() {
+    Logger logger = LogManager.getLogger(getClass());
+    logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
+    return logger;
+  }
+
+  public final Logger getLogWriter() {
+    final Logger logger = this.logger;
+    if (logger != null) {
+      return logger;
+    }
+    return (this.logger = newLogWriter());
+  }
+
   /**
-   * This finds the log level configured for the test run.  It should be used
-   * when creating a new distributed system if you want to specify a log level.
+   * This returns the log level configured for the test run.
+   * It can be configured globally for dunit tests using
+   * "logLevel" system property.
+   *
    * @return the dunit log-level setting
    */
   public String getLogLevel() {
-    return logger.getLevel().toString();
+    return DUnitLauncher.LOG_LEVEL;
   }
 
   private String getDefaultDiskStoreName() {
@@ -593,6 +672,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    */
   @Override
   public void setUp() throws Exception {
+    InitializeRun.setUp();
     logTestHistory();
     testName = getName();
 
@@ -792,7 +872,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
    */
   public static final void pause(int ms) {
     if (ms > 50) {
-      globalLogger.info("Pausing for " + ms + " ms..."/*, new Exception()*/);
+      getGlobalLogger().info("Pausing for " + ms + " ms..."/*, new Exception()*/);
     }
     final long target = System.currentTimeMillis() + ms;
     try {
@@ -989,7 +1069,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       }
     } // for
     if (logger == null) {
-      logger = globalLogger;
+      logger = getGlobalLogger();
     }
     if (t.isAlive()) {
       logger.info("HUNG THREAD");
@@ -1024,7 +1104,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   }
 
   public static void staticLogString(String msg) {
-    globalLogger.info(msg);
+    getGlobalLogger().info(msg);
   }
 
   /**
@@ -1066,7 +1146,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       } else {
         invokeInEveryVM(DistributedTestBase.class, "staticLogString", new Object[]{s});
       }
-      globalLogger.info(s);
+      getGlobalLogger().info(s);
     }
   }
 
@@ -1118,7 +1198,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     else {
       invokeInEveryVM(DistributedTestBase.class, "staticLogString", new Object[]{add});
     }
-    globalLogger.info(add);
+    getGlobalLogger().info(add);
     expectedExceptions.add(ret);
     return ret;
   }

@@ -10,6 +10,7 @@ dependencies {
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
@@ -18,6 +19,7 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion)
   } else {
     compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + sparkVersion
@@ -26,8 +28,8 @@ dependencies {
     compile 'io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
   }
 
-  compile 'org.apache.tomcat:tomcat-jdbc:8.0.28'
-  compile 'com.zaxxer:HikariCP-java6:2.3.12'
+  compile 'org.apache.tomcat:tomcat-jdbc:8.0.32'
+  compile 'com.zaxxer:HikariCP:2.4.4'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
@@ -72,3 +74,4 @@ test {
   maxHeapSize '2g'
   dependsOn ':cleanJUnit'
 }
+check.dependsOn test, scalaTest

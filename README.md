@@ -19,7 +19,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* SnappyData Preview 0.1 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.1-preview/snappydata-0.1.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.1-preview/snappydata-0.1.0-PREVIEW-bin.zip)
+* SnappyData Preview 0.2.2 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.2.2-preview/snappydata-0.2.2-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.2.2-preview/snappydata-0.2.2-PREVIEW-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -33,17 +33,21 @@ We monitor channels listed below for comments/questions.
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 ```
 groupId: io.snappydata
+artifactId: snappy-core_2.10
+version: 0.2.2-PREVIEW
+
+groupId: io.snappydata
 artifactId: snappy-tools_2.10
-version: 0.1.0-PREVIEW
+version: 0.2.2-PREVIEW
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.1.0-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.2.2-PREVIEW"`
 
-Make sure to also add the conjars resolver to resolve the `org.pentaho#pentaho-aggdesigner-algorithm;5.1.5-jhyde` dependency by adding this line to your build.sbt:
+For additions related to snappy-store (column and row store etc), use:
 
-`resolvers ++= Seq("conjars.org" at "http://conjars.org/repo")`
+`libraryDependencies += "io.snappydata" % "snappy-tools_2.10" % "0.2.2-PREVIEW"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
@@ -53,8 +57,8 @@ If you are interested in working with the latest code or contributing to SnappyD
 Master development branch
 git clone https://github.com/SnappyDataInc/snappydata.git --recursive
 
-###### 0.1 preview release branch with stability fixes ######
-git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.1-preview --recursive
+###### 0.x preview release branch with stability and other fixes ######
+git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.x-preview --recursive
 ```
 
 #### Building SnappyData from source
