@@ -27,9 +27,9 @@ import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, ConnectionProperties}
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ConnectionProperties}
 import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCRDD}
+import org.apache.spark.sql.execution.datasources.jdbc.{JdbcUtils, DriverRegistry, JDBCRDD}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, Row, SQLContext}
@@ -338,7 +338,7 @@ object StoreUtils extends Logging {
 
     val rddSchema = df.schema
     val driver: String = DriverRegistry.getDriverClassName(url)
-    val getConnection: () => Connection = JDBCRDD.getConnector(driver, url, properties)
+    val getConnection: () => Connection = JdbcUtils.createConnectionFactory(url, properties)
     val batchSize = properties.getProperty("batchsize", "1000").toInt
     df.foreachPartition { iterator =>
       savePartition(getConnection, table, iterator, rddSchema, nullTypes, batchSize, upsert)
