@@ -137,7 +137,7 @@ object Utils {
   }
 
   def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
-      convertToScalaRow: Boolean) = {
+      convertToScalaRow: Boolean): GenericRow = {
     val ncols = columnIndices.length
     val newRow = new Array[Any](ncols)
     var index = 0

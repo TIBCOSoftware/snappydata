@@ -18,6 +18,8 @@ package org.apache.spark.sql.streaming
 
 import java.io.InputStream
 
+import scala.io.Codec
+
 trait StreamConverter extends Serializable {
   def convert(inputStream: InputStream): Iterator[Any]
 
@@ -26,7 +28,7 @@ trait StreamConverter extends Serializable {
 
 class MyStreamConverter extends StreamConverter with Serializable {
   override def convert(inputStream: java.io.InputStream): Iterator[Any] = {
-    scala.io.Source.fromInputStream(inputStream, "UTF-8")
+    scala.io.Source.fromInputStream(inputStream)(Codec.UTF8)
   }
 
   override def getTargetType: scala.Predef.Class[_] = classOf[String]

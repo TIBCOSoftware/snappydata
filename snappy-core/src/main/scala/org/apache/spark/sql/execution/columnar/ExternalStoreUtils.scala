@@ -21,27 +21,28 @@ import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.Constant
 
+import org.apache.spark.SparkContext
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
+import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
-import org.apache.spark.{Logging, SparkContext}
 
 /**
  * Utility methods used by external storage layers.
  */
-object ExternalStoreUtils extends Logging {
+object ExternalStoreUtils {
 
   final val DEFAULT_TABLE_BUCKETS = "113"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS = "53"
@@ -140,30 +141,6 @@ object ExternalStoreUtils extends Logging {
     optMap.toMap
   }
 
-  def getNullTypes(url: String, schema: StructType): Array[Int] = {
-    val dialect = JdbcDialects.get(url)
-    val nullTypes: Array[Int] = schema.fields.map { field =>
-      dialect.getJDBCType(field.dataType).map(_.jdbcNullType).getOrElse(
-        field.dataType match {
-          case IntegerType => java.sql.Types.INTEGER
-          case LongType => java.sql.Types.BIGINT
-          case DoubleType => java.sql.Types.DOUBLE
-          case FloatType => java.sql.Types.REAL
-          case ShortType => java.sql.Types.INTEGER
-          case ByteType => java.sql.Types.INTEGER
-          case BooleanType => java.sql.Types.BIT
-          case StringType => java.sql.Types.CLOB
-          case BinaryType => java.sql.Types.BLOB
-          case TimestampType => java.sql.Types.TIMESTAMP
-          case DateType => java.sql.Types.DATE
-          case t: DecimalType => java.sql.Types.DECIMAL
-          case _ => throw new IllegalArgumentException(
-            s"Can't translate null value for field $field")
-        })
-    }
-    nullTypes
-  }
-
   def defaultStoreURL(sc: SparkContext): String = {
     SnappyContext.getClusterMode(sc) match {
       case SnappyEmbeddedMode(_, _) =>
@@ -221,51 +198,51 @@ object ExternalStoreUtils extends Logging {
       }
     }: _*)).getOrElse(Map.empty)
 
+    val isLoner = Utils.isLoner(sc)
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
-    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+    val executorConnProps = new Properties()
+    parameters.foreach { kv =>
+      connProps.setProperty(kv._1, kv._2)
+      executorConnProps.setProperty(kv._1, kv._2)
+    }
+    connProps.remove("poolProperties")
+    executorConnProps.remove("poolProperties")
     val isEmbedded = dialect match {
-      case GemFireXDDialect => true
+      case GemFireXDDialect =>
+        GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
+        true
       case GemFireXDClientDialect =>
+        GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty("route-query", "false")
+        executorConnProps.setProperty("route-query", "false")
+        false
+      case d: JdbcExtendedDialect =>
+        d.addExtraDriverProperties(isLoner, connProps)
         false
       case _ => false
     }
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
-    new ConnectionProperties(url, driver, allPoolProps, connProps, hikariCP)
+    ConnectionProperties(url, driver, dialect, allPoolProps,
+      connProps, executorConnProps, hikariCP)
   }
 
-   def getConnection(url: String, connProperties: Properties,
-      driverDialect: JdbcDialect, isLoner: Boolean) = {
-
-    connProperties.remove("poolProperties")
-    if (driverDialect != null) {
-      // add driver specific properties
-      driverDialect match {
-        // The driver if not a loner should be an accesor only
-        case d: JdbcExtendedDialect =>
-          connProperties.putAll(d.extraDriverProperties(isLoner))
-        case _ =>
-      }
-    }
-    JdbcUtils.createConnectionFactory(url, connProperties).apply()
-  }
-
-  def getConnector(id: String, driver: String, dialect: JdbcDialect,
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): () => Connection = {
+  def getConnector(id: String, connProperties: ConnectionProperties,
+      forExecutor: Boolean): () => Connection = {
     () => {
-      registerDriver(driver)
-      ConnectionPool.getPoolConnection(id, dialect, poolProps,
-        connProps, hikariCP)
+      registerDriver(connProperties.driver)
+      val connProps = if (forExecutor) connProperties.executorConnProps
+      else connProperties.connProps
+      ConnectionPool.getPoolConnection(id, connProperties.dialect,
+        connProperties.poolProps, connProps, connProperties.hikariCP)
     }
   }
 
-  def getConnectionType(url: String) = {
-    JdbcDialects.get(url) match {
+  def getConnectionType(dialect: JdbcDialect) = {
+    dialect match {
       case GemFireXDDialect => ConnectionType.Embedded
-      case GemFireXDClientDialect =>   ConnectionType.Net
+      case GemFireXDClientDialect => ConnectionType.Net
       case _ => ConnectionType.Unknown
     }
   }
@@ -291,7 +268,6 @@ object ExternalStoreUtils extends Logging {
           s"Can't translate to JDBC value for type $dataType")
       })
   }
-
 
 
   /**
@@ -366,51 +342,7 @@ object ExternalStoreUtils extends Logging {
   }
 
   def setStatementParameters(stmt: PreparedStatement,
-      columns: Array[StructField], row: Row, dialect: JdbcDialect): Unit = {
-    var col = 0
-    val len = columns.length
-    while (col < len) {
-      val dataType = columns(col).dataType
-      if (!row.isNullAt(col)) {
-        dataType match {
-          case IntegerType => stmt.setInt(col + 1, row.getInt(col))
-          case LongType => stmt.setLong(col + 1, row.getLong(col))
-          case DoubleType => stmt.setDouble(col + 1, row.getDouble(col))
-          case FloatType => stmt.setFloat(col + 1, row.getFloat(col))
-          case ShortType => stmt.setInt(col + 1, row.getShort(col))
-          case ByteType => stmt.setInt(col + 1, row.getByte(col))
-          case BooleanType => stmt.setBoolean(col + 1, row.getBoolean(col))
-          case StringType => stmt.setString(col + 1, row.getString(col))
-          case BinaryType =>
-            stmt.setBytes(col + 1, row(col).asInstanceOf[Array[Byte]])
-          case TimestampType => row(col) match {
-            case ts: java.sql.Timestamp => stmt.setTimestamp(col + 1, ts)
-            case s: String => stmt.setString(col + 1, s)
-            case o => stmt.setObject(col + 1, o)
-          }
-          case DateType => row(col) match {
-            case d: java.sql.Date => stmt.setDate(col + 1, d)
-            case s: String => stmt.setString(col + 1, s)
-            case o => stmt.setObject(col + 1, o)
-          }
-          case d: DecimalType =>
-            row(col) match {
-              case d: Decimal => stmt.setBigDecimal(col + 1, d.toJavaBigDecimal)
-              case bd: java.math.BigDecimal => stmt.setBigDecimal(col + 1, bd)
-              case s: String => stmt.setString(col + 1, s)
-              case o => stmt.setObject(col + 1, o)
-            }
-          case _ => stmt.setObject(col + 1, row(col))
-        }
-      } else {
-        stmt.setNull(col + 1, ExternalStoreUtils.getJDBCType(dialect, dataType))
-      }
-      col += 1
-    }
-  }
-
-  def setStatementParameters(stmt: PreparedStatement,
-      row: ArrayBuffer[Any]): Unit = {
+      row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1
     val len = row.length
     while (col <= len) {
@@ -531,6 +463,24 @@ object ExternalStoreUtils extends Logging {
     rows
   }
 
+  def removeCachedObjects(sqlContext: SQLContext, table: String,
+      registerDestroy: Boolean = false): Unit = {
+    // clean up the connection pool and caches on executors first
+    Utils.mapExecutors(sqlContext,
+      removeCachedObjects(table)
+    ).count()
+    // then on the driver
+    removeCachedObjects(table)()
+    if (registerDestroy) {
+      SnappyStoreHiveCatalog.registerRelationDestroy()
+    }
+  }
+
+  private def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    CodeGeneration.removeCache(table)
+    Iterator.empty
+  }
 }
 
 object ConnectionType extends Enumeration {
@@ -542,25 +492,21 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     table: String,
     schema: StructType,
     url: String,
+    dialect: JdbcDialect,
     batchSize: Int) {
 
-  var buff = new ArrayBuffer[InternalRow]()
-  val toScala = CatalystTypeConverters.createToScalaConverter(schema)
+  var buff = new mutable.ArrayBuffer[InternalRow]()
   var rowCount = 0
-
-  val nullTypes = ExternalStoreUtils.getNullTypes(url, schema)
-
-  val dialect = JdbcDialects.get(url)
 
   def appendRow_(row: InternalRow, flush: Boolean): Unit = {
     if (row != expressions.EmptyRow) {
       buff += row
       rowCount += 1
     }
-    if (rowCount % batchSize == 0 || flush) {
-      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(
-        toScala(_).asInstanceOf[Row]), schema, nullTypes, batchSize, dialect)
-      buff = new ArrayBuffer[InternalRow]()
+    if ((rowCount % batchSize) == 0 || flush) {
+      JdbcExtendedUtils.savePartition(getConnection, table, buff.iterator,
+        schema, dialect, batchSize, upsert = false)
+      buff = new mutable.ArrayBuffer[InternalRow]()
       rowCount = 0
     }
   }
@@ -578,6 +524,3 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
   }
 }
-
-case class ConnectionProperties(url: String, driver: String,
-    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)

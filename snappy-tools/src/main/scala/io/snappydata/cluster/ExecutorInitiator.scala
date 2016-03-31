@@ -35,6 +35,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
 
 /**
@@ -54,7 +55,7 @@ object ExecutorInitiator extends Logging {
     private var driverURL: Option[String] = None
     private var driverDM: InternalDistributedMember = null
     @volatile var stopTask = false
-    private var retryTask : Boolean = false
+    private var retryTask: Boolean = false
     private val lock = new ReentrantLock
 
     val membershipListener = new MembershipListener {
@@ -77,20 +78,24 @@ object ExecutorInitiator extends Logging {
       }
     }
 
-    def setRetryFlag(retry : Boolean = true) : Unit = lock.synchronized {
+    def setRetryFlag(retry: Boolean = true): Unit = lock.synchronized {
       retryTask = retry
       lock.notify()
     }
-    def getRetryFlag() : Boolean = lock.synchronized {
+
+    def getRetryFlag: Boolean = lock.synchronized {
       retryTask
     }
 
-    def getDriverURL: Option[String] = lock.synchronized { driverURL }
+    def getDriverURL: Option[String] = lock.synchronized {
+      driverURL
+    }
 
     def setDriverDetails(url: Option[String],
         dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
       driverDM = dm
+      SnappyContext.clearStaticArtifacts()
       lock.notify()
     }
 
@@ -111,9 +116,8 @@ object ExecutorInitiator extends Logging {
                   lock.wait()
                 }
               }
-            }
-            else {
-              if (getRetryFlag ) {
+            } else {
+              if (getRetryFlag) {
                 if (numTries >= 50) {
                   logError("Exhausted number of retries to connect to the driver. Exiting.")
                   return
@@ -137,8 +141,9 @@ object ExecutorInitiator extends Logging {
                    * CoarseGrainedExecutorBackend.
                    * We need to track the changes there and merge them here on a regular basis.
                    */
-                  val executorHost = GemFireCacheImpl.getExisting().getMyId.getHost
-                  val memberId = GemFireCacheImpl.getExisting().getMyId.toString
+                  val myId = GemFireCacheImpl.getExisting.getMyId
+                  val executorHost = myId.getHost
+                  val memberId = myId.toString
                   SparkHadoopUtil.get.runAsSparkUser { () =>
 
                     // Fetch the driver's Spark properties.
@@ -165,16 +170,16 @@ object ExecutorInitiator extends Logging {
                         }
                       }
                     }
-                  //TODO: Hemant: add executor specific properties from local conf to
-                  //TODO: this conf that was received from driver.
-                    //use Snappy static memory manager
+                    // TODO: Hemant: add executor specific properties from local
+                    // TODO: conf to this conf that was received from driver.
+                    // use Snappy static memory manager
                     driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
-                      Runtime.getRuntime().availableProcessors() * 2)
+                      Runtime.getRuntime.availableProcessors() * 2)
 
-                    env = SparkCallbacks.createExecutorEnv(
-                      driverConf, memberId, executorHost, port, cores, false)
+                    env = SparkCallbacks.createExecutorEnv(driverConf,
+                      memberId, executorHost, port, cores, isLocal = false)
 
                     // SparkEnv will set spark.executor.port if the rpc env is listening for incoming
                     // connections (e.g., if it's using akka). Otherwise, the executor is running in
@@ -207,7 +212,7 @@ object ExecutorInitiator extends Logging {
                 // log any exception other than those due to cache closing
                 logWarning("Unexpected exception in ExecutorInitiator", e)
               } catch {
-                case NonFatal(e) => stopTask = true // just stop the task
+                case NonFatal(_) => stopTask = true // just stop the task
               }
           }
         } // end of while(true)
@@ -240,13 +245,12 @@ object ExecutorInitiator extends Logging {
     executorRunnable.setDriverDetails(None, null)
   }
 
-  def restartExecutor() : Unit = {
+  def restartExecutor(): Unit = {
     executorRunnable.setRetryFlag()
   }
 
   /**
    * Set the new driver url and start the thread if not already started
-   * @param driverURL
    */
   def startOrTransmuteExecutor(driverURL: Option[String],
       driverDM: InternalDistributedMember): Unit = {

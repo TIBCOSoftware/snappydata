@@ -44,13 +44,10 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
       !url.startsWith("jdbc:gemfirexd://") &&
       !url.startsWith("jdbc:snappydata://")
 
-  override def extraDriverProperties(isLoner: Boolean): Properties = {
-    isLoner match {
-      case true => new Properties
-      case false =>
-        val props = new Properties()
-        props.setProperty("host-data", "false")
-        props
+  override def addExtraDriverProperties(isLoner: Boolean,
+      props: Properties): Unit = {
+    if (!isLoner) {
+      props.setProperty("host-data", "false")
     }
   }
 
@@ -111,8 +108,10 @@ abstract class GemFireXDBaseDialect extends JdbcExtendedDialect {
     // TODO: check if this should be INTEGER for GemFireXD for below two
     case ByteType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))
     case ShortType => Some(JdbcType("SMALLINT", java.sql.Types.INTEGER))
-    case DecimalType.Fixed(precision, scale) =>
-      Some(JdbcType(s"DECIMAL($precision,$scale)", java.sql.Types.DECIMAL))
+    case d: DecimalType => Some(JdbcType(s"DECIMAL(${d.precision},${d.scale})",
+      java.sql.Types.DECIMAL))
+    case _: ArrayType | _: MapType | _: StructType =>
+      Some(JdbcType("BLOB", java.sql.Types.BLOB))
     case _ => None
   }
 

@@ -51,10 +51,12 @@ import com.gemstone.gemfire.internal.shared.NativeCalls;
 import io.snappydata.test.dunit.standalone.DUnitBB;
 import io.snappydata.test.dunit.standalone.DUnitLauncher;
 import io.snappydata.test.util.TestException;
+import junit.framework.Test;
 import junit.framework.TestCase;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.junit.internal.MethodSorter;
 
 /**
  * This class is the superclass of all distributed unit tests.
@@ -99,6 +101,11 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
 
   public static InternalDistributedSystem system;
   private static Class lastSystemCreatedInTest;
+
+  /** this indicates whether beforeClass has been executed for current class */
+  protected static boolean beforeClassDone;
+  /** this stores the last test method in the current class for afterClass */
+  protected static String lastTest;
 
   // common static initialization (currently changes working directory)
   public static final class InitializeRun {
@@ -351,10 +358,6 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     }
   }
 
-  protected static void invokeInVM(VM vm, Class c, String method, Object[] methodArgs) {
-    vm.invoke(c, method, methodArgs);
-  }
-
   public static void invokeInVM(VM vm, final String className, final String method,
                                 final Object[] methodArgs) {
     SerializableRunnable run = new SerializableRunnable() {
@@ -379,6 +382,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         }
       }
     };
+    vm.invoke(run);
   }
 
   /**
@@ -672,6 +676,18 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
   }
 
   /**
+   * Common setup for all the tests in a class.
+   */
+  public void beforeClass() throws Exception {
+  }
+
+  /**
+   * Common cleanup for all the tests in a class.
+   */
+  public void afterClass() throws Exception {
+  }
+
+  /**
    * Sets up the test (noop).
    */
   @Override
@@ -679,6 +695,33 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     InitializeRun.setUp();
     logTestHistory();
     testName = getName();
+
+    if (!beforeClassDone) {
+      beforeClass();
+      beforeClassDone = true;
+    }
+    if (lastTest == null) {
+      // for class-level afterClass, list the test methods and do the
+      // afterClass in the tearDown of last method
+      Class<?> scanClass = getClass();
+      while (Test.class.isAssignableFrom(scanClass)) {
+        for (Method m : MethodSorter.getDeclaredMethods(scanClass)) {
+          String methodName = m.getName();
+          if (methodName.startsWith("test")
+              && m.getParameterTypes().length == 0
+              && m.getReturnType().equals(Void.TYPE)) {
+            lastTest = methodName;
+          }
+        }
+        scanClass = scanClass.getSuperclass();
+      }
+      if (lastTest == null) {
+        fail("Could not find any last test in " + getClass().getName());
+      } else {
+        getLogWriter().info(
+            "Last test for " + getClass().getName() + ": " + lastTest);
+      }
+    }
 
     if (testName != null) {
       String baseDefaultDiskStoreName = getTestClass().getCanonicalName() + "." + getTestName();
@@ -689,7 +732,7 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
           VM vm = host.getVM(v);
           final String vmDefaultDiskStoreName = "DiskStore-" + h + "-" + v +
               "-" + baseDefaultDiskStoreName;
-          invokeInVM(vm, "perVMSetup", testName, vmDefaultDiskStoreName);
+          invokeInVM(vm, "perVMSetUp", testName, vmDefaultDiskStoreName);
         }
       }
     }
@@ -737,6 +780,12 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
       }
     }
     tearDownAfter();
+
+    if (getName().equals(lastTest)) {
+      afterClass();
+      beforeClassDone = false;
+      lastTest = null;
+    }
   }
 
   public void perVMTearDown(String name) {
