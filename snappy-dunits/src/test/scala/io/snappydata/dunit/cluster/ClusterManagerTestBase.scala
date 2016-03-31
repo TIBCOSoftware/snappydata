@@ -7,7 +7,7 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable}
+import io.snappydata.test.dunit.{VM, DistributedTestBase, Host, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
@@ -32,11 +32,19 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   // bootProps.setProperty("gemfirexd.debug.true", "QueryDistribution,TraceExecution,TraceActivation")
   bootProps.setProperty("statistic-archive-file", "snappyStore.gfs")
 
-  val host = Host.getHost(0)
-  val vm0 = host.getVM(0)
-  val vm1 = host.getVM(1)
-  val vm2 = host.getVM(2)
-  val vm3 = host.getVM(3)
+  var host: Host = _
+  var vm0: VM = _
+  var vm1: VM = _
+  var vm2: VM = _
+  var vm3: VM = _
+
+  if (Host.getHostCount > 0) {
+    host = Host.getHost(0)
+    vm0 = host.getVM(0)
+    vm1 = host.getVM(1)
+    vm2 = host.getVM(2)
+    vm3 = host.getVM(3)
+  }
 
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
 
@@ -50,17 +58,8 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   // this can be used only by jobs running on Lead node
   def sc: SparkContext = SnappyContext.globalSparkContext
 
-  override def setUp(): Unit = {
-    super.setUp()
-    val testName = getName
-    val testClass = getClass
-    // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
-    TestUtil.currentTest = testName
-    TestUtil.currentTestClass = getTestClass
-    TestUtil.skipDefaultPartitioned = true
-    TestUtil.doCommonSetup(bootProps)
-    GemFireXDUtils.IS_TEST_MODE = true
-
+  override def beforeClass(): Unit = {
+    super.beforeClass()
     val locPort = locatorPort
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
@@ -77,8 +76,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
         assert(loc.status == FabricService.State.RUNNING)
 
         val logger = LoggerFactory.getLogger(getClass)
-        logger.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
-            testName + "\n\n")
+        logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
       }
     })
 
@@ -93,8 +91,7 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
             FabricService.State.RUNNING)
 
         val logger = LoggerFactory.getLogger(getClass)
-        logger.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
-            testName + "\n\n")
+        logger.info("\n\n\n  STARTING TESTS IN " + getClass.getName + "\n\n")
       }
     }
     vm0.invoke(startNode)
@@ -108,12 +105,25 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     }
     assert(ServiceManager.currentFabricServiceInstance.status ==
         FabricService.State.RUNNING)
+  }
+
+  override def setUp(): Unit = {
+    super.setUp()
+    val testName = getName
+    val testClass = getClass
+    // bootProps.setProperty(Attribute.SYS_PERSISTENT_DIR, s)
+    TestUtil.currentTest = testName
+    TestUtil.currentTestClass = getTestClass
+    TestUtil.skipDefaultPartitioned = true
+    TestUtil.doCommonSetup(bootProps)
+    GemFireXDUtils.IS_TEST_MODE = true
+
     getLogWriter.info("\n\n\n  STARTING TEST " + testClass.getName + '.' +
         testName + "\n\n")
   }
 
   override def tearDown2(): Unit = {
-    super.tearDown2();
+    super.tearDown2()
     GemFireXDUtils.IS_TEST_MODE = false
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
@@ -121,6 +131,10 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
     stopNetworkServers()
     bootProps.clear()
+  }
+
+  override def afterClass(): Unit = {
+    super.afterClass()
     val locNetPort = locatorNetPort
     DistributedTestBase.invokeInLocator(new SerializableRunnable() {
       override def run(): Unit = {

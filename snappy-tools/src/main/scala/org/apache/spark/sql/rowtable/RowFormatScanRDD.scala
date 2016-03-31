@@ -17,7 +17,6 @@
 package org.apache.spark.sql.rowtable
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -26,16 +25,17 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
+import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiExecutorLocalPartition
-import org.apache.spark.sql.execution.columnar.{ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.{ResultSetIterator, StoreUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
 
@@ -50,15 +50,14 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     schema: StructType,
     tableName: String,
     columns: Array[String],
-    connectionProperties: ConnectionProperties,
+    connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition],
     blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId],
-    properties: Properties = new Properties(),
-    url : String)
+    Map.empty[InternalDistributedMember, BlockManagerId])
     extends JDBCRDD(sc, getConnection, schema, tableName, columns,
-      filters, partitions, url, properties) {
+      filters, partitions, connProperties.url,
+      connProperties.executorConnProps) {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
@@ -153,7 +152,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args)
     }
-    val fetchSize = properties.getProperty("fetchSize")
+    val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }
@@ -176,8 +175,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[InternalRow] = {
     val (conn, stmt, rs) = computeResultSet(thePart)
-    new InternalRowIteratorOnRS(conn, stmt, rs, context,
-      schema).asInstanceOf[Iterator[InternalRow]]
+    new InternalRowIteratorOnRS(conn, stmt, rs, context, schema)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -185,7 +183,10 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   }
 
   override def getPartitions: Array[Partition] = {
-    executeWithConnection(getConnection, { conn =>
+    val conn = ConnectionPool.getPoolConnection(tableName,
+      connProperties.dialect, connProperties.poolProps,
+      connProperties.connProps, connProperties.hikariCP)
+    try {
       val tableSchema = conn.getSchema
       val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
@@ -194,7 +195,9 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       } else {
         StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
       }
-    })
+    } finally {
+      conn.close()
+    }
   }
 }
 
@@ -297,6 +300,22 @@ final class InternalRowIteratorOnRS(conn: Connection,
             mutableRow.setNullAt(i)
           }
         case BinaryType => mutableRow.update(i, rs.getBytes(pos))
+        case _: ArrayType =>
+          val bytes = rs.getBytes(pos)
+          val array = new UnsafeArrayData
+          array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
+          mutableRow.update(i, array)
+        case _: MapType =>
+          val bytes = rs.getBytes(pos)
+          val map = new UnsafeMapData
+          map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
+          mutableRow.update(i, map)
+        case s: StructType =>
+          val bytes = rs.getBytes(pos)
+          val row = new UnsafeRow
+          row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET,
+            s.fields.length, bytes.length)
+          mutableRow.update(i, row)
         case _ => throw new IllegalArgumentException(
           s"Unsupported field ${schema.fields(i)}")
       }
