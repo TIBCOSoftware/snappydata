@@ -4,6 +4,7 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
@@ -70,7 +71,8 @@ public class SnappyTest implements Serializable {
 /*        org.apache.spark.SparkConf conf = new org.apache.spark.SparkConf().setAppName("SnappyTest").setMaster("local").set("spark.ui.port", "6060");
         jsc = new JavaSparkContext(conf);
         snc = SnappyContext.getOrCreate(JavaSparkContext.toSparkContext(jsc));*/
-        snc = SnappyContext.getOrCreate(null);
+        SparkContext sc = null;
+        snc = SnappyContext.getOrCreate(sc);
         Log.getLogWriter().info("SS - SnappyContext initialized successfully");
     }
 
