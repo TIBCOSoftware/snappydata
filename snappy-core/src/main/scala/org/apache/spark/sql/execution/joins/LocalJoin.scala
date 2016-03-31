@@ -73,7 +73,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
     val numOutputRows = longMetric("numOutputRows")
 
-    val h1 = (buildIter: Iterator[InternalRow]) => Iterator[HashedRelation] {
+    def hashedRelationIter(buildIter: Iterator[InternalRow]): HashedRelation = {
       HashedRelation(buildIter, numBuildRows, buildSideKeyGenerator)
     }
 
@@ -82,7 +82,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
 
     val sc = buildRDD.sparkContext
     val hashedRDD = new HashRelationRDD(sc, buildRDD,
-      streamRDD.partitions.length, sc.clean(h1))
+      streamRDD.partitions.length, sc.clean(hashedRelationIter))
 
     narrowPartitions(hashedRDD, streamRDD, true) {
       (hashedIter, streamIter) => {
@@ -92,8 +92,10 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
   }
 
-  def narrowPartitions(hashedRDD: RDD[HashedRelation], streamRDD: RDD[InternalRow], preservesPartitioning: Boolean)
-      (f: (Iterator[HashedRelation], Iterator[InternalRow]) => Iterator[InternalRow]): NarrowPartitionsRDD = {
+  def narrowPartitions(hashedRDD: RDD[HashedRelation], streamRDD: RDD[InternalRow],
+      preservesPartitioning: Boolean)
+      (f: (Iterator[HashedRelation], Iterator[InternalRow])
+          => Iterator[InternalRow]): NarrowPartitionsRDD = {
     val sc = hashedRDD.sparkContext
     new NarrowPartitionsRDD(sc, sc.clean(f),
       hashedRDD, streamRDD, preservesPartitioning)
@@ -108,7 +110,7 @@ private[spark] class HashRelationRDD(
     sc: SparkContext,
     var buildRDD: RDD[InternalRow],
     val maxPartitions: Int,
-    var f: (Iterator[InternalRow]) => Iterator[HashedRelation]
+    var f: (Iterator[InternalRow]) => HashedRelation
     ) extends RDD[HashedRelation](sc, Seq(new OneToOneDependency(buildRDD))) {
 
   override def compute(s: Partition, context: TaskContext): Iterator[HashedRelation] = {
@@ -123,12 +125,10 @@ private[spark] class HashRelationRDD(
             case Some(x) => x.asInstanceOf[HashedRelation]
             case None => {
               val hashedRelation = f(buildRDD.iterator(s, context))
-              val rel = hashedRelation.next()
-
               SparkEnv.get.blockManager.putSingle(
-                blockId, rel, StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
-              
-              rel
+                blockId, hashedRelation, StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
+
+              hashedRelation
             }
           }
 
@@ -137,7 +137,6 @@ private[spark] class HashRelationRDD(
     }
 
     Seq(rel1).iterator
-    //f(buildRDD.iterator(s, context))
   }
 
   override def getPartitions: Array[Partition] = {
