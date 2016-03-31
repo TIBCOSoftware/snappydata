@@ -17,7 +17,7 @@
 package org.apache.spark.sql.store.impl
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.{Properties, UUID}
+import java.util.UUID
 
 import scala.reflect.ClassTag
 
@@ -28,9 +28,9 @@ import io.snappydata.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
-import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
@@ -58,8 +58,8 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
             (if (_connProperties.hikariCP) "jdbcUrl" else "url")
         new SparkShellCachedBatchRDD[CachedBatch](sparkContext,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
-            _connProperties.driver, poolProps, _connProperties.connProps,
-            _connProperties.hikariCP), this)
+            _connProperties.driver, _connProperties.dialect, poolProps,
+            _connProperties.connProps, _connProperties.hikariCP), this)
     }
   }
 
@@ -98,8 +98,8 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
-    store.tryExecute(tableName, {
-      case conn =>
+    store.tryExecute(tableName,
+      conn => {
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
         val par = split.index
         val ps1 = conn.prepareStatement(
@@ -122,10 +122,9 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override protected def getPartitions: Array[Partition] = {
-    store.tryExecute(tableName, {
-      case conn =>
-        val tableSchema = conn.getSchema
-        StoreUtils.getPartitionsPartitionedTable(_sc, tableName, tableSchema, store.blockMap)
+    store.tryExecute(tableName, conn => {
+      StoreUtils.getPartitionsPartitionedTable(_sc, tableName,
+        conn.getSchema, store.blockMap)
     })
   }
 }
@@ -161,21 +160,20 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     schema: StructType,
     tableName: String,
     columns: Array[String],
-    connectionProperties: ConnectionProperties,
+    connProperties: ConnectionProperties,
     store: ExternalStore,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition],
     blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId],
-    properties: Properties = new Properties())
+    Map.empty[InternalDistributedMember, BlockManagerId])
     extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns,
-      connectionProperties, filters, partitions, blockMap, properties) {
+      connProperties, filters, partitions, blockMap) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
     val helper = new SparkShellRDDHelper
     val conn: Connection = helper.getConnection(
-      connectionProperties, thePart)
+      connProperties, thePart)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
     // TODO: this will fail if no network server is available unless SNAP-365 is
     // fixed with the approach of having an iterator that can fetch from remote
@@ -192,7 +190,7 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args)
     }
-    val fetchSize = properties.getProperty("fetchSize")
+    val fetchSize = connProperties.connProps.getProperty("fetchSize")
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }

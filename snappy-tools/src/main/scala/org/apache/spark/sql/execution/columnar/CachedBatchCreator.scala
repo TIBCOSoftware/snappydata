@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columntable
+package org.apache.spark.sql.execution.columnar
 
 import java.sql.Types
 import java.util.UUID
@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnBuilder, ColumnType}
+import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform

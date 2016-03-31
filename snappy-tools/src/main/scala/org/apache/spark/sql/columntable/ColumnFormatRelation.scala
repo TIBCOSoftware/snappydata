@@ -27,12 +27,10 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
@@ -81,8 +79,7 @@ class ColumnFormatRelation(
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(
-    externalStore.connProperties.url)
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
   val resolvedName = executeWithConnection(connector, { conn =>
     StoreUtils.lookupName(table,
@@ -134,7 +131,7 @@ class ColumnFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          externalStore.connProperties,
+          connProperties,
           filters,
           Array.empty[Partition],
           blockMap
@@ -151,7 +148,7 @@ class ColumnFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          externalStore.connProperties,
+          connProperties,
           externalStore,
           filters
         ).asInstanceOf[RDD[Row]]
@@ -199,9 +196,7 @@ class ColumnFormatRelation(
     if (mode == SaveMode.Overwrite) {
       truncate()
     }
-    val connProps = externalStore.connProperties
-    JdbcExtendedUtils.saveTable(data, connProps.url, table,
-      connProps.poolProps, connProps.connProps, connProps.hikariCP)
+    JdbcExtendedUtils.saveTable(data, table, connProperties)
   }
 
   /**
@@ -217,11 +212,10 @@ class ColumnFormatRelation(
       throw new IllegalArgumentException(
         "ColumnFormatRelation.insert: no rows provided")
     }
-    val props = externalStore.connProperties
-    val connProps = props.connProps
+    val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      props.poolProps, connProps, props.hikariCP)
+      connProperties.poolProps, connProps, connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(rowInsertStr)
       val result = CodeGeneration.executeUpdate(table, stmt,
@@ -242,11 +236,10 @@ class ColumnFormatRelation(
    */
   def insert(rows: Iterator[InternalRow]): Int = {
     if (rows.hasNext) {
-      val props = externalStore.connProperties
-      val connProps = props.connProps
+      val connProps = connProperties.connProps
       val batchSize = connProps.getProperty("batchsize", "1000").toInt
       val connection = ConnectionPool.getPoolConnection(table, dialect,
-        props.poolProps, connProps, props.hikariCP)
+        connProperties.poolProps, connProps, connProperties.hikariCP)
       try {
         val stmt = connection.prepareStatement(rowInsertStr)
         val result = CodeGeneration.executeUpdate(table, stmt,
@@ -262,15 +255,14 @@ class ColumnFormatRelation(
   // truncate both actual and shadow table
   override def truncate() = writeLock {
     try {
-      externalStore.tryExecute(ColumnFormatRelation.cachedBatchTableName(table), {
-        case conn =>
-          JdbcExtendedUtils.truncateTable(conn, ColumnFormatRelation.
-              cachedBatchTableName(table), dialect)
+      val columnTable = ColumnFormatRelation.cachedBatchTableName(table)
+      externalStore.tryExecute(columnTable, conn => {
+        JdbcExtendedUtils.truncateTable(conn, ColumnFormatRelation.
+            cachedBatchTableName(table), dialect)
       })
     } finally {
-      externalStore.tryExecute(table, {
-        case conn =>
-          JdbcExtendedUtils.truncateTable(conn, table, dialect)
+      externalStore.tryExecute(table, conn => {
+        JdbcExtendedUtils.truncateTable(conn, table, dialect)
       })
       // remove info from UI
       unregisterRDDInfoForUI()
@@ -284,8 +276,7 @@ class ColumnFormatRelation(
    */
   override def destroy(ifExists: Boolean): Unit = {
     // use a non-pool connection for operations
-    val conn = JdbcUtils.createConnection(externalStore.connProperties.url,
-      externalStore.connProperties.connProps)
+    val conn = connFactory()
     try {
       // clean up the connection pool and caches
       StoreUtils.removeCachedObjects(sqlContext, table, numPartitions)
@@ -305,12 +296,8 @@ class ColumnFormatRelation(
   }
 
   override def createTable(mode: SaveMode): Unit = {
-    var conn: Connection = null
-    val dialect = JdbcDialects.get(externalStore.connProperties.url)
+    val conn = connFactory()
     try {
-      conn = JdbcUtils.createConnection(externalStore.connProperties.url,
-        externalStore.connProperties.connProps)
-
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
@@ -329,6 +316,8 @@ class ColumnFormatRelation(
       if (mode == SaveMode.ErrorIfExists && tableExists) {
         sys.error(s"Table $table already exists.")
       }
+    } finally {
+      conn.close()
     }
     createActualTable(table, externalStore)
   }
@@ -374,14 +363,13 @@ class ColumnFormatRelation(
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
-      val props = externalStore.connProperties
-      conn = JdbcUtils.createConnection(props.url, props.connProps)
+      conn = connFactory()
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
         val sql = s"CREATE TABLE $tableName $schemaExtensions "
-        logInfo(
-          s"Applying DDL (url=${props.url}; props=${props.connProps}): $sql")
+        logInfo(s"Applying DDL (url=${connProperties.url}; " +
+            s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
@@ -412,8 +400,8 @@ class ColumnFormatRelation(
    */
   override def executeUpdate(sql: String): Int = {
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      externalStore.connProperties.poolProps, externalStore.connProperties.connProps,
-      externalStore.connProperties.hikariCP)
+      connProperties.poolProps, connProperties.connProps,
+      connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
       //stmt.setSt
@@ -500,13 +488,13 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    val dialect = JdbcDialects.get(connProperties.url)
-    val blockMap = dialect match {
+    val blockMap = connProperties.dialect match {
       case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
         Some(schema), partitions, connProperties)
       case _ => Map.empty[InternalDistributedMember, BlockManagerId]
     }
-    val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
+    val schemaString = JdbcExtendedUtils.schemaString(schema,
+      connProperties.dialect)
     val schemaExtension = if (schemaString.length > 0) {
       val temp = schemaString.substring(0, schemaString.length - 1).
           concat(s", ${StoreUtils.SHADOW_COLUMN}, $primaryKeyClause )")

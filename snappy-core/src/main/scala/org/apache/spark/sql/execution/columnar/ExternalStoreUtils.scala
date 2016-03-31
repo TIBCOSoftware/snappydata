@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
@@ -31,11 +31,11 @@ import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 
@@ -198,49 +198,42 @@ object ExternalStoreUtils {
       }
     }: _*)).getOrElse(Map.empty)
 
+    val isLoner = Utils.isLoner(sc)
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
     parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
     val isEmbedded = dialect match {
-      case GemFireXDDialect => true
+      case GemFireXDDialect =>
+        GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
+        true
       case GemFireXDClientDialect =>
+        GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty("route-query", "false")
+        false
+      case d: JdbcExtendedDialect =>
+        d.addExtraDriverProperties(isLoner, connProps)
         false
       case _ => false
     }
+    connProps.remove("poolProperties")
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
-    new ConnectionProperties(url, driver, allPoolProps, connProps, hikariCP)
+    ConnectionProperties(url, driver, dialect, allPoolProps,
+      connProps, hikariCP)
   }
 
-  def getConnection(url: String, connProperties: Properties,
-      driverDialect: JdbcDialect, isLoner: Boolean) = {
-
-    connProperties.remove("poolProperties")
-    if (driverDialect != null) {
-      // add driver specific properties
-      driverDialect match {
-        // The driver if not a loner should be an accesor only
-        case d: JdbcExtendedDialect =>
-          connProperties.putAll(d.extraDriverProperties(isLoner))
-        case _ =>
-      }
-    }
-    JdbcUtils.createConnection(url, connProperties)
-  }
-
-  def getConnector(id: String, driver: String, dialect: JdbcDialect,
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean): () => Connection = {
+  def getConnector(id: String,
+      connProperties: ConnectionProperties): () => Connection = {
     () => {
-      registerDriver(driver)
-      ConnectionPool.getPoolConnection(id, dialect, poolProps,
-        connProps, hikariCP)
+      registerDriver(connProperties.driver)
+      ConnectionPool.getPoolConnection(id, connProperties.dialect,
+        connProperties.poolProps, connProperties.connProps,
+        connProperties.hikariCP)
     }
   }
 
-  def getConnectionType(url: String) = {
-    JdbcDialects.get(url) match {
+  def getConnectionType(dialect: JdbcDialect) = {
+    dialect match {
       case GemFireXDDialect => ConnectionType.Embedded
       case GemFireXDClientDialect => ConnectionType.Net
       case _ => ConnectionType.Unknown
@@ -286,6 +279,26 @@ object ExternalStoreUtils {
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
     })
+  }
+
+
+  def columnIndicesAndDataTypes(requestedSchema: StructType,
+      schema : StructType): (Seq[Int], Seq[DataType]) = {
+
+    if (requestedSchema.isEmpty) {
+
+      val (narrowestOrdinal, narrowestDataType) =
+        schema.fields.zipWithIndex.map { case (a, ordinal) =>
+          ordinal -> a.dataType
+        } minBy { case (_, dataType) =>
+          ColumnType(dataType).defaultSize
+        }
+      Seq(narrowestOrdinal) -> Seq(narrowestDataType)
+    } else {
+      requestedSchema.map { a =>
+        schema.fieldIndex(a.fieldName) -> a.dataType
+      }.unzip
+    }
   }
 
   def getInsertString(table: String, userSchema: StructType) = {
@@ -472,12 +485,11 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     table: String,
     schema: StructType,
     url: String,
+    dialect: JdbcDialect,
     batchSize: Int) {
 
   var buff = new mutable.ArrayBuffer[InternalRow]()
   var rowCount = 0
-
-  val dialect = JdbcDialects.get(url)
 
   def appendRow_(row: InternalRow, flush: Boolean): Unit = {
     if (row != expressions.EmptyRow) {
@@ -505,6 +517,3 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
   }
 }
-
-case class ConnectionProperties(url: String, driver: String,
-    poolProps: Map[String, String], connProps: Properties, hikariCP: Boolean)

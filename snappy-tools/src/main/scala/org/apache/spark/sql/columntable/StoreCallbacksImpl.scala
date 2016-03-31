@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.execution.columnar.CachedBatchCreator
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._

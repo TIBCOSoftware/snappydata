@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.execution.columnar
 
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.types.StructType

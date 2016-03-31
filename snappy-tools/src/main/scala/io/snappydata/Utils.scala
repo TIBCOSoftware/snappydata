@@ -35,10 +35,11 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorLocalShellPartition
-import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 
 object Utils {
@@ -131,7 +132,7 @@ object SparkShellRDDHelper {
 
   def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
     store.tryExecute(tableName, {
-      case conn =>
+      conn =>
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
         val bucketToServerList = getBucketToServerMapping(resolvedName)
         val numPartitions = bucketToServerList.length

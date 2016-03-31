@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{Connection, SQLException}
+import java.sql.SQLException
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -35,12 +35,12 @@ import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
@@ -599,12 +599,11 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
    */
   private[sql] def dropIndexOfTable(sql: String): Unit = {
-    var conn: Connection = null
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(
+      sparkContext, new mutable.HashMap[String, String])
+    val conn = JdbcUtils.createConnectionFactory(connProperties.url,
+      connProperties.connProps)()
     try {
-      val connProperties =
-        ExternalStoreUtils.validateAndGetAllProps(sparkContext, new mutable.HashMap[String, String])
-      conn = ExternalStoreUtils.getConnection(connProperties.url, connProperties.connProps,
-        JdbcDialects.get(connProperties.url), Utils.isLoner(sparkContext))
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
@@ -616,9 +615,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
           throw sqle
         }
     } finally {
-      if (conn != null) {
-        conn.close()
-      }
+      conn.close()
     }
   }
 
@@ -831,7 +828,7 @@ object SnappyContext extends Logging {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[org.apache.spark.sql.execution.columnar.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
     ROW_SOURCE -> "org.apache.spark.sql.rowtable.DefaultSource",

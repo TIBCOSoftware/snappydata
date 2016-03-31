@@ -14,9 +14,8 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.execution.columnar
 
-import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.mutable
@@ -26,8 +25,9 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
+import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
@@ -59,9 +59,12 @@ case class JDBCAppendableRelation(
 
   override val needConversion: Boolean = false
 
-  val driver = Utils.registerDriverUrl(externalStore.connProperties.url)
+  protected final val connProperties = externalStore.connProperties
 
-  final val dialect = JdbcDialects.get(externalStore.connProperties.url)
+  protected final val connFactory = JdbcUtils.createConnectionFactory(
+    connProperties.url, connProperties.connProps)
+
+  protected final def dialect = connProperties.dialect
 
   val schemaFields = Map(userSchema.fields.flatMap { f =>
     val name = if (f.metadata.contains("name")) f.metadata.getString("name")
@@ -69,10 +72,8 @@ case class JDBCAppendableRelation(
     Iterator((name, f))
   }: _*)
 
-  final lazy val connector = ExternalStoreUtils.getConnector(table, driver,
-    dialect, externalStore.connProperties.poolProps,
-    externalStore.connProperties.connProps,
-    externalStore.connProperties.hikariCP)
+  final lazy val connector = ExternalStoreUtils.getConnector(table,
+    connProperties)
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -140,7 +141,7 @@ case class JDBCAppendableRelation(
       batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
     //TODO - currently using the length from the part Object but it needs to be handled more generically
     //in order to replace UUID
-    val uuid = externalStore.storeCachedBatch(table , batch)
+    val uuid = externalStore.storeCachedBatch(table, batch)
     accumulated += uuid
   }
 
@@ -180,20 +181,14 @@ case class JDBCAppendableRelation(
 
   // truncate both actual and shadow table
   def truncate(): Unit = writeLock {
-    val dialect = JdbcDialects.get(externalStore.connProperties.url)
-    externalStore.tryExecute(table, {
-      case conn =>
-        JdbcExtendedUtils.truncateTable(conn, table, dialect)
+    externalStore.tryExecute(table, conn => {
+      JdbcExtendedUtils.truncateTable(conn, table, dialect)
     })
   }
 
   def createTable(mode: SaveMode): Unit = {
-    var conn: Connection = null
-    val dialect = JdbcDialects.get(externalStore.connProperties.url)
+    val conn = connFactory()
     try {
-      conn = ExternalStoreUtils.getConnection(externalStore.connProperties.url,
-        externalStore.connProperties.connProps, dialect,
-        isLoner = Utils.isLoner(sqlContext.sparkContext))
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       if (mode == SaveMode.Ignore && tableExists) {
@@ -209,6 +204,8 @@ case class JDBCAppendableRelation(
       if (mode == SaveMode.ErrorIfExists && tableExists) {
         sys.error(s"Table $table already exists.")
       }
+    } finally {
+      conn.close()
     }
     createExternalTableForCachedBatches(table, externalStore)
   }
@@ -237,8 +234,8 @@ case class JDBCAppendableRelation(
   def createTable(externalStore: ExternalStore, tableStr: String,
       tableName: String, dropIfExists: Boolean) = {
 
-    externalStore.tryExecute(tableName, {
-      case conn =>
+    externalStore.tryExecute(tableName,
+      conn => {
         if (dropIfExists) {
           JdbcExtendedUtils.dropTable(conn, tableName, dialect, sqlContext,
             ifExists = true)
@@ -246,9 +243,8 @@ case class JDBCAppendableRelation(
         val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
           dialect, sqlContext)
         if (!tableExists) {
-          val props = externalStore.connProperties
-          logInfo(s"Applying DDL (url=${props.url}; " +
-              s"props=${props.connProps}): $tableStr")
+          logInfo(s"Applying DDL (url=${connProperties.url}; " +
+              s"props=${connProperties.connProps}): $tableStr")
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,
@@ -256,7 +252,7 @@ case class JDBCAppendableRelation(
             case _ => // do nothing
           }
         }
-    })
+      })
   }
 
   /**
@@ -265,9 +261,7 @@ case class JDBCAppendableRelation(
    */
   override def destroy(ifExists: Boolean): Unit = {
     // drop the external table using a non-pool connection
-    val conn = ExternalStoreUtils.getConnection(
-      externalStore.connProperties.url, externalStore.connProperties.connProps,
-      dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
+    val conn = connFactory()
     try {
       // clean up the connection pool and caches
       ExternalStoreUtils.removeCachedObjects(sqlContext, table)
@@ -361,7 +355,7 @@ class ColumnarRelationProvider
     val clazz = JdbcDialects.get(url) match {
       case d: GemFireXDBaseDialect => ResolvedDataSource.
           lookupDataSource("org.apache.spark.sql.columntable.DefaultSource")
-      case _ => classOf[columnar.DefaultSource]
+      case _ => classOf[org.apache.spark.sql.execution.columnar.DefaultSource]
     }
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }
