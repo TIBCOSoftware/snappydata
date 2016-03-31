@@ -23,12 +23,14 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
+import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext}
-import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.storage.{StorageLevel, RDDInfo, BlockManagerId}
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 /*/10/15.
@@ -71,6 +73,7 @@ object StoreUtils extends Logging {
     PERSISTENT, SERVER_GROUPS, OFFHEAP, EXPIRE, OVERFLOW)
 
   val EMPTY_STRING = ""
+  val NONE = "NONE"
 
   val SHADOW_COLUMN_NAME = "rowid"
 
@@ -135,6 +138,40 @@ object StoreUtils extends Logging {
     val blockMap = new StoreInitRDD(sqlContext, table,
       schema, partitions, connProperties).collect()
     blockMap.toMap
+  }
+
+  def registerRDDInfoForUI(sc: SparkContext, table: String,
+      numPartitions: Int): Unit = {
+    StoreCallbacksImpl.stores.get(table) match {
+      case Some((_, _, rddId)) =>
+        val rddInfo = new RDDInfo(rddId, table, numPartitions,
+          StorageLevel.OFF_HEAP, Seq(), None)
+        rddInfo.numCachedPartitions = numPartitions
+        sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
+      case None => // nothing
+    }
+  }
+
+  def unregisterRDDInfoForUI(sc: SparkContext, table: String,
+      numPartitions: Int): Unit = {
+    StoreCallbacksImpl.stores.get(table) match {
+      case Some((_, _, rddId)) =>
+        sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
+      case None => // nothing
+    }
+  }
+
+  def removeCachedObjects(sqlContext: SQLContext, table: String,
+      numPartitions: Int, registerDestroy: Boolean = false): Unit = {
+    ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
+    unregisterRDDInfoForUI(sqlContext.sparkContext, table, numPartitions)
+    Utils.mapExecutors(sqlContext, () => {
+      StoreInitRDD.tableToIdMap.remove(table)
+      StoreCallbacksImpl.stores.remove(table)
+      Iterator.empty
+    }).count()
+    StoreInitRDD.tableToIdMap.remove(table)
+    StoreCallbacksImpl.stores.remove(table)
   }
 
   def appendClause(sb: mutable.StringBuilder, getClause: () => String): Unit = {
@@ -214,16 +251,19 @@ object StoreUtils extends Logging {
         .getOrElse(!isRowTable && !parameters.contains(EVICTION_BY))
     val defaultEviction = if (hasOverflow) GEM_HEAPPERCENT else EMPTY_STRING
     if (!isShadowTable) {
-      sb.append(parameters.remove(EVICTION_BY).map(v => s"$GEM_EVICTION_BY $v ")
+      sb.append(parameters.remove(EVICTION_BY).map(v =>
+        if (v == NONE) EMPTY_STRING else s"$GEM_EVICTION_BY $v ")
           .getOrElse(defaultEviction))
     } else {
       sb.append(parameters.remove(EVICTION_BY).map(v => {
-        v.contains(LRUCOUNT) match {
-          case true => throw new DDLException(
-            "Column table cannot take LRUCOUNT as Evcition Attributes")
-          case _ =>
+        if (v.contains(LRUCOUNT)) {
+          throw new DDLException(
+            "Column table cannot take LRUCOUNT as eviction policy")
+        } else if (v == NONE) {
+          EMPTY_STRING
+        } else {
+          s"$GEM_EVICTION_BY $v "
         }
-        s"$GEM_EVICTION_BY $v "
       }).getOrElse(defaultEviction))
     }
 

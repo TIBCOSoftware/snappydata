@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+import io.snappydata.util.StringUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -38,8 +39,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{SparkContext, Logging, SparkEnv}
+import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -327,7 +327,8 @@ object SparkSQLExecuteImpl {
             val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {
               val pos = in.position()
-              dvd.setValue(new String(in.array(), pos, utfLen, UTF8String.UTF8))
+              dvd.setValue(new String(in.array(), pos, utfLen,
+                StringUtils.UTF8))
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()

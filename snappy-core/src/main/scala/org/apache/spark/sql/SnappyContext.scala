@@ -980,20 +980,22 @@ object SnappyContext extends Logging {
   }
 
   /**
-   * @todo document me
+   * Shut down and cleanup the SparkContext and SnappyData artifacts.
+   * Prefer this over SparkContext.stop() when dealing with SnappyContext.
+   * <p>
+   * This method is not synchronized and is required to be executed by a single
+   * thread in a "quiet" state when no other threads are performing operations.
    */
   def stop(): Unit = {
     val sc = globalSparkContext
     if (sc != null && !sc.isStopped) {
       // clean up the connection pool and caches on executors first
       Utils.mapExecutors(sc, { (tc, p) =>
-        ConnectionPool.clear()
-        CodeGeneration.clearCache()
+        clearStaticArtifacts()
         Iterator.empty
       }).count()
       // then on the driver
-      ConnectionPool.clear()
-      CodeGeneration.clearCache()
+      clearStaticArtifacts()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isShellOrLocalMode(sc)) {
@@ -1009,6 +1011,20 @@ object SnappyContext extends Logging {
     _clusterMode = null
     _anySNContext = null
     GlobalSnappyInit.resetGlobalSNContext()
+  }
+
+  /** Cleanup static artifacts on this lead/executor. */
+  def clearStaticArtifacts(): Unit = {
+    ConnectionPool.clear()
+    CodeGeneration.clearCache()
+    _clusterMode match {
+      case m: ExternalClusterMode =>
+      case _ =>
+        val callbacks = ToolsCallbackInit.toolsCallback
+        if (callbacks ne null) {
+          callbacks.clearStaticArtifacts()
+        }
+    }
   }
 
   /**

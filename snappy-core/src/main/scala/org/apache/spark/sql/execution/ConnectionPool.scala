@@ -20,7 +20,8 @@ import java.sql.Connection
 import java.util.Properties
 import javax.sql.DataSource
 
-import scala.collection.{JavaConversions, mutable}
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 import com.zaxxer.hikari.util.PropertyElf
 import com.zaxxer.hikari.{HikariConfig, HikariDataSource => HDataSource}
@@ -175,13 +176,11 @@ object ConnectionPool {
   }
 
   /** To be invoked only on SparkContext stop. */
-  private[sql] def clear(): Unit = {
-    pools.synchronized {
-      JavaConversions.mapAsScalaMap(idToPoolMap).foreach {
-        case (id, dsKey) => removePoolKey(id, dsKey)
-      }
-      pools.clear()
-      idToPoolMap.clear()
+  private[sql] def clear(): Unit = pools.synchronized {
+    idToPoolMap.asScala.foreach {
+      case (id, dsKey) => removePoolKey(id, dsKey)
     }
+    pools.clear()
+    idToPoolMap.clear()
   }
 }

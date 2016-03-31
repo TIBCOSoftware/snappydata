@@ -32,6 +32,7 @@ import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
@@ -442,7 +443,20 @@ object ExternalStoreUtils {
     rows
   }
 
-  def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
+  def removeCachedObjects(sqlContext: SQLContext, table: String,
+      registerDestroy: Boolean = false): Unit = {
+    // clean up the connection pool and caches on executors first
+    Utils.mapExecutors(sqlContext,
+      removeCachedObjects(table)
+    ).count()
+    // then on the driver
+    removeCachedObjects(table)()
+    if (registerDestroy) {
+      SnappyStoreHiveCatalog.registerRelationDestroy()
+    }
+  }
+
+  private def removeCachedObjects(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     CodeGeneration.removeCache(table)
     Iterator.empty

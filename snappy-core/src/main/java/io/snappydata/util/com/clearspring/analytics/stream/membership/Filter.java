@@ -37,10 +37,9 @@
  */
 package io.snappydata.util.com.clearspring.analytics.stream.membership;
 
-import java.io.UnsupportedEncodingException;
-
 import java.lang.reflect.Method;
 
+import io.snappydata.util.StringUtils;
 import io.snappydata.util.com.clearspring.analytics.hash.MurmurHash;
 
 public abstract class Filter {
@@ -90,11 +89,7 @@ public abstract class Filter {
     // than performing further iterations of murmur.
     public static int[] getHashBuckets(String key, int hashCount, int max, boolean applyWidth) {
         byte[] b;
-        try {
-            b = key.getBytes("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        b = key.getBytes(StringUtils.UTF8());
         return getHashBuckets(b, hashCount, max, applyWidth);
     }
 
