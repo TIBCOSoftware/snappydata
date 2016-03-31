@@ -23,7 +23,7 @@ import org.apache.spark.storage.{BlockStatus, BlockId}
 
 private[spark] class SnappyStaticMemoryManager(
     override val conf: SparkConf,
-    override val maxExecutionMemory: Long,
+    val maxExecutionMemory: Long,
     override val maxStorageMemory: Long,
     numCores: Int)
     extends StaticMemoryManager(conf, maxExecutionMemory,
@@ -36,25 +36,25 @@ private[spark] class SnappyStaticMemoryManager(
       numCores)
   }
 
-  override def doAcquireExecutionMemory(
+  override def acquireExecutionMemory(
       numBytes: Long,
-      evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)]): Long = synchronized {
+      taskAttemptId: Long,
+      memoryMode: MemoryMode): Long = synchronized {
     if (SnappyMemoryUtils.isCriticalUp || SnappyMemoryUtils.isEvictionUp) {
       0
     } else {
-      super.doAcquireExecutionMemory(numBytes, evictedBlocks)
+      super.acquireExecutionMemory(numBytes, taskAttemptId , memoryMode)
     }
   }
 
-  override private[spark] def acquireStorageMemory(
+  override def acquireStorageMemory(
       blockId: BlockId,
-      numBytesToAcquire: Long,
-      numBytesToFree: Long,
+      numBytes: Long,
       evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)]): Boolean = synchronized {
     if (SnappyMemoryUtils.isCriticalUp || SnappyMemoryUtils.isEvictionUp) {
       false
     } else {
-      super.acquireStorageMemory(blockId, numBytesToAcquire, numBytesToFree, evictedBlocks)
+      super.acquireStorageMemory(blockId, numBytes, evictedBlocks)
     }
   }
 }

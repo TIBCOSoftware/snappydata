@@ -31,7 +31,7 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, Transac
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.columnar.JDBCAppendableRelation
+import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, JDBCAppendableRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._

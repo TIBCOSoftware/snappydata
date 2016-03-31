@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.execution.columnar
 
 import java.nio.ByteBuffer
 import java.sql.{Connection, PreparedStatement}
@@ -249,7 +249,7 @@ object ExternalStoreUtils extends Logging {
         case _ =>
       }
     }
-    JdbcUtils.createConnection(url, connProperties)
+    JdbcUtils.createConnectionFactory(url, connProperties).apply()
   }
 
   def getConnector(id: String, driver: String, dialect: JdbcDialect,
@@ -310,6 +310,26 @@ object ExternalStoreUtils extends Logging {
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
     })
+  }
+
+
+  def columnIndicesAndDataTypes(requestedSchema: StructType,
+      schema : StructType): (Seq[Int], Seq[DataType]) = {
+
+    if (requestedSchema.isEmpty) {
+
+      val (narrowestOrdinal, narrowestDataType) =
+        schema.fields.zipWithIndex.map { case (a, ordinal) =>
+          ordinal -> a.dataType
+        } minBy { case (_, dataType) =>
+          ColumnType(dataType).defaultSize
+        }
+      Seq(narrowestOrdinal) -> Seq(narrowestDataType)
+    } else {
+      requestedSchema.map { a =>
+        schema.fieldIndex(a.fieldName) -> a.dataType
+      }.unzip
+    }
   }
 
   def getInsertString(table: String, userSchema: StructType) = {
@@ -510,6 +530,7 @@ object ExternalStoreUtils extends Logging {
     }
     rows
   }
+
 }
 
 object ConnectionType extends Enumeration {
@@ -529,6 +550,8 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
 
   val nullTypes = ExternalStoreUtils.getNullTypes(url, schema)
 
+  val dialect = JdbcDialects.get(url)
+
   def appendRow_(row: InternalRow, flush: Boolean): Unit = {
     if (row != expressions.EmptyRow) {
       buff += row
@@ -536,7 +559,7 @@ private[sql] class ArrayBufferForRows(getConnection: () => Connection,
     }
     if (rowCount % batchSize == 0 || flush) {
       JdbcUtils.savePartition(getConnection, table, buff.iterator.map(
-        toScala(_).asInstanceOf[Row]), schema, nullTypes, batchSize)
+        toScala(_).asInstanceOf[Row]), schema, nullTypes, batchSize, dialect)
       buff = new ArrayBuffer[InternalRow]()
       rowCount = 0
     }

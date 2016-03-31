@@ -103,7 +103,9 @@ task docs(type: ScalaDoc) {
         !it.getPath().matches('.*/internal/.*') && !it.getPath().contains('com/gemstone/gemfire/cache/operations/')
       })
       if (project.plugins.hasPlugin('scala')) {
-        allSource.addAll(project.sourceSets.main.allScala)
+        allSource.addAll(project.sourceSets.main.allScala.findAll {
+          !it.getPath().matches('.*org/apache/spark/sql/execution/joins/HashedRelation.*') 
+        })
       }
       [ project ]
     } else []
