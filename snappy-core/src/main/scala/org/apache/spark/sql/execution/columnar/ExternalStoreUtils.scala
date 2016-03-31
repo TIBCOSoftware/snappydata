@@ -201,7 +201,13 @@ object ExternalStoreUtils {
     val isLoner = Utils.isLoner(sc)
     // remaining parameters are passed as properties to getConnection
     val connProps = new Properties()
-    parameters.foreach(kv => connProps.setProperty(kv._1, kv._2))
+    val executorConnProps = new Properties()
+    parameters.foreach { kv =>
+      connProps.setProperty(kv._1, kv._2)
+      executorConnProps.setProperty(kv._1, kv._2)
+    }
+    connProps.remove("poolProperties")
+    executorConnProps.remove("poolProperties")
     val isEmbedded = dialect match {
       case GemFireXDDialect =>
         GemFireXDDialect.addExtraDriverProperties(isLoner, connProps)
@@ -209,26 +215,27 @@ object ExternalStoreUtils {
       case GemFireXDClientDialect =>
         GemFireXDClientDialect.addExtraDriverProperties(isLoner, connProps)
         connProps.setProperty("route-query", "false")
+        executorConnProps.setProperty("route-query", "false")
         false
       case d: JdbcExtendedDialect =>
         d.addExtraDriverProperties(isLoner, connProps)
         false
       case _ => false
     }
-    connProps.remove("poolProperties")
     val allPoolProps = getAllPoolProperties(url, driver,
       poolProps, hikariCP, isEmbedded)
     ConnectionProperties(url, driver, dialect, allPoolProps,
-      connProps, hikariCP)
+      connProps, executorConnProps, hikariCP)
   }
 
-  def getConnector(id: String,
-      connProperties: ConnectionProperties): () => Connection = {
+  def getConnector(id: String, connProperties: ConnectionProperties,
+      forExecutor: Boolean): () => Connection = {
     () => {
       registerDriver(connProperties.driver)
+      val connProps = if (forExecutor) connProperties.executorConnProps
+      else connProperties.connProps
       ConnectionPool.getPoolConnection(id, connProperties.dialect,
-        connProperties.poolProps, connProperties.connProps,
-        connProperties.hikariCP)
+        connProperties.poolProps, connProps, connProperties.hikariCP)
     }
   }
 

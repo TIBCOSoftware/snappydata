@@ -34,7 +34,6 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
-import org.apache.spark.sql.store.StoreFunctions._
 import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
 import org.apache.spark.sql.store.{CodeGeneration, ExternalStore, StoreInitRDD, StoreUtils}
 import org.apache.spark.sql.types.StructType
@@ -81,19 +80,17 @@ class ColumnFormatRelation(
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
-  val resolvedName = executeWithConnection(connector, { conn =>
-    StoreUtils.lookupName(table,
-      JdbcExtendedUtils.getCurrentSchema(conn, dialect))
+  private val resolvedName: String = externalStore.tryExecute(table, conn => {
+    StoreUtils.lookupName(table, conn.getSchema)
   })
+
   val rowInsertStr = ExternalStoreUtils.getInsertStringWithColumnName(
     resolvedName, userSchema)
 
-  override def numPartitions: Int = {
-    executeWithConnection(connector, { conn =>
-      val region = Misc.getRegionForTable(resolvedName, true).
-          asInstanceOf[PartitionedRegion]
-      region.getTotalNumberOfBuckets
-    })
+  override lazy val numPartitions: Int = {
+    val region = Misc.getRegionForTable(resolvedName, true).
+        asInstanceOf[PartitionedRegion]
+    region.getTotalNumberOfBuckets
   }
 
   override def partitionColumns: Seq[String] = {
@@ -127,7 +124,7 @@ class ColumnFormatRelation(
       case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
-          connector,
+          executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
@@ -144,7 +141,7 @@ class ColumnFormatRelation(
       case _ =>
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
-          connector,
+          executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,

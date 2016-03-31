@@ -96,13 +96,13 @@ final class SparkShellRDDHelper {
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
-  def createConnection(connProps: ConnectionProperties,
+  def createConnection(connProperties: ConnectionProperties,
       hostList: ArrayBuffer[(String, String)]): Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
 
     val jdbcUrl = if (useLocatorURL) {
-      connProps.url
+      connProperties.url
     } else {
       if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
       if (index < 0) index = Random.nextInt(hostList.size)
@@ -111,18 +111,18 @@ final class SparkShellRDDHelper {
 
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
-      connProps.poolProps, connProps.hikariCP, isEmbedded = false)
+      connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
       ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect,
-        props, connProps.connProps, connProps.hikariCP)
+        props, connProperties.executorConnProps, connProperties.hikariCP)
     } catch {
       case sqlException: SQLException =>
         if (hostList.size == 1 || useLocatorURL)
           throw sqlException
         else {
           hostList.remove(index)
-          createConnection(connProps, hostList)
+          createConnection(connProperties, hostList)
         }
     }
   }

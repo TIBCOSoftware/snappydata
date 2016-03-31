@@ -76,7 +76,7 @@ class JDBCMutableRelation(
       conn = connFactory()
       var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
-      val tableSchema = JdbcExtendedUtils.getCurrentSchema(conn, dialect)
+      val tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
@@ -134,21 +134,21 @@ class JDBCMutableRelation(
     }
   }
 
-  final lazy val connector = ExternalStoreUtils.getConnector(table,
-    connProperties)
+  final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
+    connProperties, forExecutor = true)
 
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     new JDBCRDD(
       sqlContext.sparkContext,
-      connector,
+      executorConnector,
       ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
       filters,
       parts,
       connProperties.url,
-      connProperties.connProps).asInstanceOf[RDD[Row]]
+      connProperties.executorConnProps).asInstanceOf[RDD[Row]]
   }
 
   final lazy val rowInsertStr = ExternalStoreUtils.getInsertString(table, schema)
