@@ -19,7 +19,6 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -31,8 +30,7 @@ import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types._
-import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Milliseconds, Minutes, Seconds}
-
+import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 
 class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
 
@@ -485,27 +483,24 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
     }
 
     action match {
-      case 0 => {
+      case 0 =>
         val ssc = SnappyStreamingContext.getInstance()
         ssc match {
           case Some(x) => // TODO .We should create a named Streaming Context and check if the configurations match
           case None => SnappyStreamingContext.getActiveOrCreate(creatingFunc)
         }
-      }
-      case 1 => {
+      case 1 =>
         val ssc = SnappyStreamingContext.getInstance()
         ssc match {
           case Some(x) => x.start()
           case None => throw new AnalysisException("Streaming Context has not been initialized")
         }
-      }
-      case 2 => {
+      case 2 =>
         val ssc = SnappyStreamingContext.getActive()
         ssc match {
-          case Some(strCtx) => strCtx.stop(stopSparkContext = false , stopGracefully = true)
+          case Some(strCtx) => strCtx.stop(stopSparkContext = false, stopGracefully = true)
           case None => //throw new AnalysisException("There is no running Streaming Context to be stopped")
         }
-      }
     }
     Seq.empty[Row]
   }
