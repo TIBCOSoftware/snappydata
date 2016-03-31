@@ -126,4 +126,4 @@ abstract class MutableRelationProvider
 
 case class ConnectionProperties(url: String, driver: String,
     dialect: JdbcDialect, poolProps: Map[String, String],
-    connProps: Properties, hikariCP: Boolean)
+    connProps: Properties, executorConnProps: Properties, hikariCP: Boolean)

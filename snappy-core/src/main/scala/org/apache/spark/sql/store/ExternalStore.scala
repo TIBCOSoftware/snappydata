@@ -37,17 +37,17 @@ trait ExternalStore extends Serializable {
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch]
 
-  def getConnection(id: String): java.sql.Connection
+  def getConnection(id: String, onExecutor: Boolean): java.sql.Connection
 
   def getUUIDRegionKey(tableName: String, bucketId: Int = -1,
       batchId: Option[UUID] = None): UUIDRegionKey
 
   def connProperties: ConnectionProperties
 
-  def tryExecute[T: ClassTag](tableName: String,
+  final def tryExecute[T: ClassTag](tableName: String,
       f: Connection => T,
-      closeOnSuccess: Boolean = true): T = {
-    val conn = getConnection(tableName)
+      closeOnSuccess: Boolean = true, onExecutor: Boolean = false): T = {
+    val conn = getConnection(tableName, onExecutor)
     var isClosed = false
     try {
       f(conn)

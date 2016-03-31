@@ -41,9 +41,6 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
     JdbcExtendedUtils.tableExistsInMetaData(tableName, conn, this)
 
   /** Get the current schema set on the given connection. */
-  def getCurrentSchema(conn: Connection): String = conn.getSchema
-
-  /** Get the current schema set on the given connection. */
   def createSchema(schemaName: String, conn: Connection): Unit
 
   /** DDL to truncate a table, or null/empty if truncate is not supported */
@@ -120,7 +117,7 @@ object JdbcExtendedUtils extends Logging {
       table.substring(0, dotIndex)
     } else {
       // get the current schema
-      getCurrentSchema(conn, dialect)
+      conn.getSchema
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     try {
@@ -128,14 +125,6 @@ object JdbcExtendedUtils extends Logging {
       rs.next()
     } catch {
       case t: java.sql.SQLException => false
-    }
-  }
-
-  def getCurrentSchema(conn: Connection,
-      dialect: JdbcDialect): String = {
-    dialect match {
-      case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
-      case _ => conn.getSchema
     }
   }
 
@@ -321,7 +310,7 @@ object JdbcExtendedUtils extends Logging {
       upsert: Boolean = false): Unit = {
     val rddSchema = df.schema
     val getConnection: () => Connection = ExternalStoreUtils.getConnector(
-      table, connProperties)
+      table, connProperties, forExecutor = true)
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
     df.queryExecution.toRdd.foreachPartition { iterator =>

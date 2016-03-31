@@ -88,7 +88,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         stmt.close()
         cachedBatchSizeInBytes += uuid.getUUID.toString.length +
             2 * 4 /*size of bucket id and numrows*/ + stats.length
-    })
+    }, closeOnSuccess = true, onExecutor = true)
 
 //    log.trace("cachedBatchSizeInBytes =" + cachedBatchSizeInBytes
 //    + " rddId=" + rddId + " bucketId =" + uuid.getBucketId )
@@ -103,10 +103,11 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
     }
   }
 
-  override def getConnection(id: String): Connection = {
+  override def getConnection(id: String, onExecutor: Boolean): Connection = {
+    val connProps = if (onExecutor) connProperties.executorConnProps
+    else connProperties.connProps
     ConnectionPool.getPoolConnection(id, connProperties.dialect,
-      connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
+      connProperties.poolProps, connProps, connProperties.hikariCP)
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
@@ -243,7 +244,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
             s", numRows, stats from $resolvedName where bucketid = $par"
         val rs = stmt.executeQuery(query)
         new CachedBatchIteratorOnRS(conn, requiredColumns, stmt, rs, context)
-    }, closeOnSuccess = false)
+    }, closeOnSuccess = false, onExecutor = true)
   }
 
   override protected def getPartitions: Array[Partition] = {

@@ -59,35 +59,41 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
         new SparkShellCachedBatchRDD[CachedBatch](sparkContext,
           tableName, requiredColumns, ConnectionProperties(_connProperties.url,
             _connProperties.driver, _connProperties.dialect, poolProps,
-            _connProperties.connProps, _connProperties.hikariCP), this)
+            _connProperties.connProps, _connProperties.executorConnProps,
+            _connProperties.hikariCP), this)
     }
   }
 
   override def getUUIDRegionKey(tableName: String, bucketId: Int = -1,
       batchId: Option[UUID] = None): UUIDRegionKey = {
-    val connection: java.sql.Connection = getConnection(tableName)
-    val uuid = connectionType match {
-      case ConnectionType.Embedded =>
-        val resolvedName = StoreUtils.lookupName(tableName, connection.getSchema)
-        val region = Misc.getRegionForTable(resolvedName, true)
-        region.asInstanceOf[AbstractRegion] match {
-          case pr: PartitionedRegion =>
-            if (bucketId == -1) {
-              val primaryBucketIds = pr.getDataStore.
-                getAllLocalPrimaryBucketIdArray
-              genUUIDRegionKey(primaryBucketIds.getQuick(
-                rand.nextInt(primaryBucketIds.size())), batchId.getOrElse(UUID.randomUUID))
-            }
-            else {
-              genUUIDRegionKey(bucketId, batchId.getOrElse(UUID.randomUUID))
-            }
-          case _ =>
-            genUUIDRegionKey()
-        }
-      case _ => genUUIDRegionKey(rand.nextInt(_numPartitions))
+    val connection = getConnection(tableName, onExecutor = true)
+    try {
+      val uuid = connectionType match {
+        case ConnectionType.Embedded =>
+          val resolvedName = StoreUtils.lookupName(tableName,
+            connection.getSchema)
+          val region = Misc.getRegionForTable(resolvedName, true)
+          region.asInstanceOf[AbstractRegion] match {
+            case pr: PartitionedRegion =>
+              if (bucketId == -1) {
+                val primaryBucketIds = pr.getDataStore.
+                    getAllLocalPrimaryBucketIdArray
+                genUUIDRegionKey(primaryBucketIds.getQuick(
+                  rand.nextInt(primaryBucketIds.size())),
+                  batchId.getOrElse(UUID.randomUUID))
+              }
+              else {
+                genUUIDRegionKey(bucketId, batchId.getOrElse(UUID.randomUUID))
+              }
+            case _ =>
+              genUUIDRegionKey()
+          }
+        case _ => genUUIDRegionKey(rand.nextInt(_numPartitions))
+      }
+      uuid
+    } finally {
+      connection.close()
     }
-    connection.close()
-    uuid
   }
 }
 
@@ -114,7 +120,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val rs = ps.executeQuery()
         ps1.close()
         new CachedBatchIteratorOnRS(conn, requiredColumns, ps, rs, context)
-    }, closeOnSuccess = false)
+    }, closeOnSuccess = false, onExecutor = true)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -131,14 +137,14 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
 
 class SparkShellCachedBatchRDD[T: ClassTag](@transient _sc: SparkContext,
     tableName: String, requiredColumns: Array[String],
-    connectionProperties: ConnectionProperties,
+    connProperties: ConnectionProperties,
     store: ExternalStore)
     extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
     val helper = new SparkShellRDDHelper
-    val conn: Connection = helper.getConnection(connectionProperties, split)
+    val conn: Connection = helper.getConnection(connProperties, split)
     val query: String = helper.getSQLStatement(StoreUtils.lookupName(tableName, conn.getSchema),
       requiredColumns, split.index)
     val (statement, rs) = helper.executeQuery(conn, tableName, split, query)
@@ -190,7 +196,7 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args)
     }
-    val fetchSize = connProperties.connProps.getProperty("fetchSize")
+    val fetchSize = connProperties.executorConnProps.getProperty("fetchSize")
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }

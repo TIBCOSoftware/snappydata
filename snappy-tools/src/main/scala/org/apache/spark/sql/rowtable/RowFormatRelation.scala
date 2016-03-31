@@ -73,7 +73,7 @@ class RowFormatRelation(
       case ConnectionType.Embedded =>
         new RowFormatScanRDD(
           sqlContext.sparkContext,
-          connector,
+          executorConnector,
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
@@ -97,7 +97,7 @@ class RowFormatRelation(
    * Ideally it should consider child Spark plans partitioner.
    *
    */
-  override def numPartitions: Int = {
+  override lazy val numPartitions: Int = {
     val resolvedName = StoreUtils.lookupName(table, tableSchema)
     val region: Region[_, _] = Misc.getRegionForTable(resolvedName, true)
     region match {

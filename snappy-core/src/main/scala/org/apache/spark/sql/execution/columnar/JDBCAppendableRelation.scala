@@ -72,8 +72,8 @@ case class JDBCAppendableRelation(
     Iterator((name, f))
   }: _*)
 
-  final lazy val connector = ExternalStoreUtils.getConnector(table,
-    connProperties)
+  final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
+    connProperties, forExecutor = true)
 
   private val bufferLock = new ReentrantReadWriteLock()
 
@@ -361,8 +361,8 @@ class ColumnarRelationProvider
   }
 
   def getExternalSource(sqlContext: SQLContext,
-      connectionProperties: ConnectionProperties,
+      connProperties: ConnectionProperties,
       numPartitions: Int): ExternalStore = {
-    new JDBCSourceAsStore(connectionProperties, numPartitions)
+    new JDBCSourceAsStore(connProperties, numPartitions)
   }
 }

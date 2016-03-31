@@ -73,6 +73,7 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
       case None =>
     }
 
+    val props = connProperties.executorConnProps
     connProperties.dialect match {
       case d: JdbcExtendedDialect =>
         val extraProps = new Properties()
@@ -80,14 +81,13 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
         val extraPropNames = extraProps.propertyNames
         while (extraPropNames.hasMoreElements) {
           val p = extraPropNames.nextElement()
-          if (connProperties.connProps.get(p) != null) {
+          if (props.get(p) != null) {
             sys.error(s"Master specific property $p " +
                 "shouldn't exist here in Executors")
           }
         }
     }
-    val conn = JdbcUtils.createConnectionFactory(connProperties.url,
-      connProperties.connProps)()
+    val conn = JdbcUtils.createConnectionFactory(connProperties.url, props)()
     conn.close()
     GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
       Constant.COLUMN_MIN_BATCH_SIZE)
