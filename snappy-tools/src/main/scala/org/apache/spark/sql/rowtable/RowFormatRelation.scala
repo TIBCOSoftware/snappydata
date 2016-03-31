@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql.rowtable
 
-import java.util.Properties
-
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
@@ -27,12 +25,11 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ConnectionProperties, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.{GemFireXDDialect, JDBCMutableRelation}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
@@ -43,28 +40,22 @@ import org.apache.spark.storage.BlockManagerId
  * are retrieved using a JDBC URL or DataSource.
  */
 class RowFormatRelation(
-    _url: String,
+    _connProperties: ConnectionProperties,
     _table: String,
     _provider: String,
     preservepartitions: Boolean,
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
-    _poolProps: Map[String, String],
-    _connProperties: Properties,
-    _hikariCP: Boolean,
     _origOptions: Map[String, String],
     blockMap: Map[InternalDistributedMember, BlockManagerId],
     _context: SQLContext)
-    extends JDBCMutableRelation(_url,
+    extends JDBCMutableRelation(_connProperties,
       _table,
       _provider,
       _mode,
       _userSpecifiedString,
       _parts,
-      _poolProps,
-      _connProperties,
-      _hikariCP,
       _origOptions,
       _context)
     with PartitionedDataSourceScan
@@ -72,7 +63,7 @@ class RowFormatRelation(
 
   override def toString: String = s"RowFormatRelation[$table]"
 
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(url)
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(dialect)
 
   final lazy val putStr = ExternalStoreUtils.getPutString(table, schema)
 
@@ -86,11 +77,10 @@ class RowFormatRelation(
           ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
           table,
           requiredColumns,
-          ConnectionProperties(url, driver, _poolProps, connProperties, hikariCP),
+          connProperties,
           filters,
           parts,
-          blockMap,
-          connProperties
+          blockMap
         ).asInstanceOf[RDD[Row]]
 
       case _ =>
@@ -139,8 +129,7 @@ class RowFormatRelation(
    * @return number of rows upserted
    */
   def put(data: DataFrame): Unit = {
-    JdbcExtendedUtils.saveTable(data, url, table, poolProperties,
-      connProperties, hikariCP, upsert = true)
+    JdbcExtendedUtils.saveTable(data, table, connProperties, upsert = true)
   }
 
   /**
@@ -157,9 +146,10 @@ class RowFormatRelation(
       throw new IllegalArgumentException(
         "RowFormatRelation.put: no rows provided")
     }
-    val batchSize = connProperties.getProperty("batchsize", "1000").toInt
+    val connProps = connProperties.connProps
+    val batchSize = connProps.getProperty("batchsize", "1000").toInt
     val connection = ConnectionPool.getPoolConnection(table, dialect,
-      poolProperties, connProperties, hikariCP)
+      connProperties.poolProps, connProps, connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(putStr)
       val result = CodeGeneration.executeUpdate(table, stmt,
@@ -193,25 +183,21 @@ final class DefaultSource extends MutableRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    val dialect = JdbcDialects.get(connProperties.url)
     val blockMap =
-      dialect match {
+      connProperties.dialect match {
         case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
           None, partitions, connProperties)
         case _ => Map.empty[InternalDistributedMember, BlockManagerId]
       }
 
     var success = false
-    val relation = new RowFormatRelation(connProperties.url,
+    val relation = new RowFormatRelation(connProperties,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
       getClass.getCanonicalName,
       preservePartitions.exists(_.toBoolean),
       mode,
       schemaExtension,
       Array[Partition](JDBCPartition(null, 0)),
-      connProperties.poolProps,
-      connProperties.connProps,
-      connProperties.hikariCP,
       options,
       blockMap,
       sqlContext)

@@ -17,7 +17,6 @@
 package org.apache.spark.sql.rowtable
 
 import java.sql.{Connection, ResultSet, Statement}
-import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -29,7 +28,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiExecutorLocalPartition
-import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreFunctions._
@@ -51,14 +50,13 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     schema: StructType,
     tableName: String,
     columns: Array[String],
-    connectionProperties: ConnectionProperties,
+    connProperties: ConnectionProperties,
     filters: Array[Filter] = Array.empty[Filter],
     partitions: Array[Partition] = Array.empty[Partition],
     blockMap: Map[InternalDistributedMember, BlockManagerId] =
-    Map.empty[InternalDistributedMember, BlockManagerId],
-    properties: Properties = new Properties())
+    Map.empty[InternalDistributedMember, BlockManagerId])
     extends JDBCRDD(sc, getConnection, schema, tableName, columns,
-      filters, partitions, properties) {
+      filters, partitions, connProperties.url, connProperties.connProps) {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
@@ -153,7 +151,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
     if (args ne null) {
       ExternalStoreUtils.setStatementParameters(stmt, args)
     }
-    val fetchSize = properties.getProperty("fetchSize")
+    val fetchSize = connProperties.connProps.getProperty("fetchSize")
     if (fetchSize ne null) {
       stmt.setFetchSize(fetchSize.toInt)
     }

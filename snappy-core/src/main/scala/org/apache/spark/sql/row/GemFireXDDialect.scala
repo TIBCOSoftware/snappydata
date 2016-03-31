@@ -44,13 +44,10 @@ case object GemFireXDDialect extends GemFireXDBaseDialect {
       !url.startsWith("jdbc:gemfirexd://") &&
       !url.startsWith("jdbc:snappydata://")
 
-  override def extraDriverProperties(isLoner: Boolean): Properties = {
-    isLoner match {
-      case true => new Properties
-      case false =>
-        val props = new Properties()
-        props.setProperty("host-data", "false")
-        props
+  override def addExtraDriverProperties(isLoner: Boolean,
+      props: Properties): Unit = {
+    if (!isLoner) {
+      props.setProperty("host-data", "false")
     }
   }
 

@@ -19,13 +19,13 @@ package org.apache.spark.sql.store
 import java.sql.Connection
 import java.util.UUID
 
-import scala.collection.mutable.ArrayBuffer
 import scala.reflect.ClassTag
 
-import org.apache.spark.{Partitioner, SparkContext}
+import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{ConnectionProperties, CachedBatch}
+import org.apache.spark.sql.execution.columnar.CachedBatch
+import org.apache.spark.sql.sources.ConnectionProperties
 
 trait ExternalStore extends Serializable {
 
@@ -39,13 +39,13 @@ trait ExternalStore extends Serializable {
 
   def getConnection(id: String): java.sql.Connection
 
-  def getUUIDRegionKey(tableName: String, bucketId: Int = -1, batchId: Option[UUID] = None): UUIDRegionKey
+  def getUUIDRegionKey(tableName: String, bucketId: Int = -1,
+      batchId: Option[UUID] = None): UUIDRegionKey
 
-  def connProperties:ConnectionProperties
+  def connProperties: ConnectionProperties
 
-  // TODO: SW: why is this a PartialFunction??
   def tryExecute[T: ClassTag](tableName: String,
-      f: PartialFunction[(Connection), T],
+      f: Connection => T,
       closeOnSuccess: Boolean = true): T = {
     val conn = getConnection(tableName)
     var isClosed = false

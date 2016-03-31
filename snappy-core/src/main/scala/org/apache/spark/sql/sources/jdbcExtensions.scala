@@ -23,10 +23,9 @@ import scala.util.control.NonFatal
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
-import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
+import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
@@ -57,8 +56,8 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
       conn: Connection): Unit = {
   }
 
-  def extraDriverProperties(isLoner: Boolean): Properties =
-    new Properties()
+  def addExtraDriverProperties(isLoner: Boolean, props: Properties): Unit = {
+  }
 
   def getPartitionByClause(col: String): String
 }
@@ -317,21 +316,17 @@ object JdbcExtendedUtils extends Logging {
    */
   def saveTable(
       df: DataFrame,
-      url: String,
       table: String,
-      poolProps: Map[String, String], connProps: Properties,
-      hikariCP: Boolean,
+      connProperties: ConnectionProperties,
       upsert: Boolean = false): Unit = {
-    val dialect = JdbcDialects.get(url)
-
     val rddSchema = df.schema
-    val driver: String = DriverRegistry.getDriverClassName(url)
     val getConnection: () => Connection = ExternalStoreUtils.getConnector(
-      table, driver, dialect, poolProps, connProps, hikariCP)
-    val batchSize = connProps.getProperty("batchsize", "1000").toInt
+      table, connProperties)
+    val batchSize = connProperties.connProps.getProperty("batchsize",
+      "1000").toInt
     df.queryExecution.toRdd.foreachPartition { iterator =>
       savePartition(getConnection, table, iterator, rddSchema,
-        dialect, batchSize, upsert)
+        connProperties.dialect, batchSize, upsert)
     }
   }
 }
