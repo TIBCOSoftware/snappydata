@@ -17,6 +17,7 @@
 package org.apache.spark.sql.columntable
 
 import java.sql.Connection
+import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -28,8 +29,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
-import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -132,7 +133,9 @@ class ColumnFormatRelation(
           externalStore.connProperties,
           filters,
           Array.empty[Partition],
-          blockMap
+          blockMap,
+          new Properties(),
+          externalStore.connProperties.url
         ).asInstanceOf[RDD[Row]]
 
         rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
@@ -264,8 +267,8 @@ class ColumnFormatRelation(
    */
   override def destroy(ifExists: Boolean): Unit = {
     // use a non-pool connection for operations
-    val conn = JdbcUtils.createConnection(externalStore.connProperties.url,
-      externalStore.connProperties.connProps)
+    val conn = JdbcUtils.createConnectionFactory(externalStore.connProperties.url,
+      externalStore.connProperties.connProps)()
     try {
       // clean up the connection pool on executors first
       Utils.mapExecutors(sqlContext,
@@ -295,8 +298,8 @@ class ColumnFormatRelation(
     var conn: Connection = null
     val dialect = JdbcDialects.get(externalStore.connProperties.url)
     try {
-      conn = JdbcUtils.createConnection(externalStore.connProperties.url,
-        externalStore.connProperties.connProps)
+      conn = JdbcUtils.createConnectionFactory(externalStore.connProperties.url,
+        externalStore.connProperties.connProps)()
 
       val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
@@ -350,7 +353,7 @@ class ColumnFormatRelation(
     StoreCallbacksImpl.stores.get(table) match {
       case Some((_, _, rddId)) =>
         val rddInfo = new RDDInfo(rddId, table, numPartitions,
-          StorageLevel.OFF_HEAP, Seq(), None)
+          StorageLevel.OFF_HEAP, Seq())
         rddInfo.numCachedPartitions = numPartitions
         sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
       case None => // nothing
@@ -372,8 +375,8 @@ class ColumnFormatRelation(
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(externalStore.connProperties.url,
-        externalStore.connProperties.connProps)
+      conn = JdbcUtils.createConnectionFactory(externalStore.connProperties.url,
+        externalStore.connProperties.connProps)()
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {

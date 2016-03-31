@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
 import java.util.concurrent.locks.ReentrantReadWriteLock
@@ -371,7 +371,7 @@ class ColumnarRelationProvider
     val clazz = JdbcDialects.get(url) match {
       case d: GemFireXDBaseDialect => ResolvedDataSource.
           lookupDataSource("org.apache.spark.sql.columntable.DefaultSource")
-      case _ => classOf[columnar.DefaultSource]
+      case _ => classOf[org.apache.spark.sql.execution.columnar.DefaultSource]
     }
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]
   }

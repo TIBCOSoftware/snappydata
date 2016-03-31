@@ -82,8 +82,8 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     conn.close()
   }
 
-
-  def testStreamingAdhocSQL(): Unit = {
+  //Uncomment after AQP merge
+  def _testStreamingAdhocSQL(): Unit = {
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
