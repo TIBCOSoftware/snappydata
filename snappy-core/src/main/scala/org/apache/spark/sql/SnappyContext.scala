@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
@@ -874,7 +874,7 @@ object SnappyContext extends Logging {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[org.apache.spark.sql.execution.columnar.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
     ROW_SOURCE -> "org.apache.spark.sql.rowtable.DefaultSource",
