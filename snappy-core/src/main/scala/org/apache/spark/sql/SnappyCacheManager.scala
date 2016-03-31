@@ -16,8 +16,8 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.columnar.InMemoryAppendableRelation
-import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.execution.columnar.InMemoryAppendableRelation
+import org.apache.spark.sql.execution.{Queryable, SparkPlan}
 import org.apache.spark.storage.StorageLevel
 
 /**
@@ -31,27 +31,26 @@ private[sql] class SnappyCacheManager extends execution.CacheManager {
    * `MEMORY_AND_DISK` because recomputing the in-memory columnar representation
    * of the underlying table is expensive.
    */
-  override private[sql] def cacheQuery(query: DataFrame,
+  override protected[sql] def cacheQuery(query: Queryable,
       tableName: Option[String] = None,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = writeLock {
 
-    val alreadyCached = lookupCachedData(query.logicalPlan)
+    val alreadyCached = lookupCachedData(query.queryExecution.analyzed)
     if (alreadyCached.nonEmpty) {
       logWarning("SnappyCacheManager: asked to cache already cached data.")
     } else {
 
       val sqlContext = query.sqlContext
 
-      cachedData += execution.CachedData(query.logicalPlan,
+      cachedData += execution.CachedData(query.queryExecution.analyzed,
         getRelation(sqlContext, storageLevel,
-          query.queryExecution.executedPlan, tableName, query))
+          query.queryExecution.executedPlan, tableName))
     }
   }
 
   def getRelation(sqlContext: SQLContext, storageLevel: StorageLevel,
-      executedPlan: SparkPlan, tableName: Option[String],
-      query: DataFrame): InMemoryAppendableRelation =
-    columnar.InMemoryAppendableRelation(
+      executedPlan: SparkPlan, tableName: Option[String]): InMemoryAppendableRelation =
+    InMemoryAppendableRelation(
       sqlContext.conf.useCompression,
       sqlContext.conf.columnBatchSize,
       storageLevel,

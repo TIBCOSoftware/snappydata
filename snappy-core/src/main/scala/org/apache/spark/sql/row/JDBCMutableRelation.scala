@@ -22,7 +22,7 @@ import java.util.Properties
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.jdbc._
@@ -149,6 +149,7 @@ class JDBCMutableRelation(
       requiredColumns,
       filters,
       parts,
+      url,
       connProperties).asInstanceOf[RDD[Row]]
   }
 

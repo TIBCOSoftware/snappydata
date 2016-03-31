@@ -158,7 +158,7 @@ class SnappyStreamingContext protected[spark](
     // register a dummy task so that the DStream gets started
     // TODO: need to remove once we add proper registration of registerCQ
     // streams in catalog and possible AQP structures on top
-    dStream.foreachRDD(rdd => Unit)
+    dStream.foreachRDD((rdd, t) => Unit)
     dStream
   }
 

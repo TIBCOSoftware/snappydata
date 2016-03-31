@@ -28,7 +28,7 @@ import io.snappydata.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, CachedBatch, ConnectionProperties, ConnectionType}
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.Filter
 import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore, StoreUtils}
@@ -169,7 +169,7 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     Map.empty[InternalDistributedMember, BlockManagerId],
     properties: Properties = new Properties())
     extends RowFormatScanRDD(sc, getConnection, schema, tableName, columns,
-      connectionProperties, filters, partitions, blockMap, properties) {
+      connectionProperties, filters, partitions, blockMap, properties, connectionProperties.url) {
 
   override def computeResultSet(
       thePart: Partition): (Connection, Statement, ResultSet) = {
