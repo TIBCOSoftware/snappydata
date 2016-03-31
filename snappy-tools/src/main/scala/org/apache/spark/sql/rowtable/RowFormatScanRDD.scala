@@ -176,8 +176,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   override def compute(thePart: Partition,
       context: TaskContext): Iterator[InternalRow] = {
     val (conn, stmt, rs) = computeResultSet(thePart)
-    new InternalRowIteratorOnRS(conn, stmt, rs, context,
-      schema).asInstanceOf[Iterator[InternalRow]]
+    new InternalRowIteratorOnRS(conn, stmt, rs, context, schema)
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
@@ -297,12 +296,12 @@ final class InternalRowIteratorOnRS(conn: Connection,
             mutableRow.setNullAt(i)
           }
         case BinaryType => mutableRow.update(i, rs.getBytes(pos))
-        case a: ArrayType =>
+        case _: ArrayType =>
           val bytes = rs.getBytes(pos)
           val array = new UnsafeArrayData
           array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
           mutableRow.update(i, array)
-        case m: MapType =>
+        case _: MapType =>
           val bytes = rs.getBytes(pos)
           val map = new UnsafeMapData
           map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)

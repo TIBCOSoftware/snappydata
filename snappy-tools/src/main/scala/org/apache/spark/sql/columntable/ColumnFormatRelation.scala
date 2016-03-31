@@ -25,7 +25,6 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -42,7 +41,7 @@ import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRow
 import org.apache.spark.sql.store.{CodeGeneration, ExternalStore, StoreInitRDD, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
-import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
 /**
@@ -100,10 +99,10 @@ class ColumnFormatRelation(
     })
   }
 
-
   override def partitionColumns: Seq[String] = {
     connectionType match {
       case ConnectionType.Embedded => partitioningColumns
+      // TODO: [sumedh] is the issue in comment below being tracked somewhere??
       case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
     }
   }
@@ -119,9 +118,15 @@ class ColumnFormatRelation(
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
     val colRdd = scanTable(table, requiredColumns, filters)
-    // TODO: Suranjan scanning over column rdd before row will make sure that we don't have duplicates
-    // we may miss some result though
-    val union = connectionType match {
+    // TODO: Suranjan scanning over column rdd before row will make sure
+    // that we don't have duplicates; we may miss some results though
+    // [sumedh] In the absence of snapshot isolation, one option is to
+    // use increasing cached batch IDs and note the IDs at the start, then
+    // scan row buffer first and delay cached batch creation till that is done,
+    // finally skipping any IDs greater than the noted ones.
+    // However, with plans for mutability in column store (via row buffer) need
+    // to re-think in any case and provide proper snapshot isolation in store.
+    val zipped = connectionType match {
       case ConnectionType.Embedded =>
         val rowRdd = new RowFormatScanRDD(
           sqlContext.sparkContext,
@@ -135,11 +140,10 @@ class ColumnFormatRelation(
           blockMap
         ).asInstanceOf[RDD[Row]]
 
-        rowRdd.zipPartitions(colRdd) { (leftIter, rightIter) =>
-          leftIter ++ rightIter
+        rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
+          leftItr ++ rightItr
         }
 
-      //TODO: This needs to be changed for non-embedded mode, inefficient
       case _ =>
         val rowRdd = new SparkShellRowRDD(
           sqlContext.sparkContext,
@@ -152,9 +156,11 @@ class ColumnFormatRelation(
           filters
         ).asInstanceOf[RDD[Row]]
 
-        colRdd.union(rowRdd)
+        rowRdd.zipPartitions(colRdd) { (leftItr, rightItr) =>
+          leftItr ++ rightItr
+        }
     }
-    union
+    zipped
   }
 
   override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
@@ -281,20 +287,13 @@ class ColumnFormatRelation(
     val conn = JdbcUtils.createConnection(externalStore.connProperties.url,
       externalStore.connProperties.connProps)
     try {
-      // clean up the connection pool and caches on executors first
-      Utils.mapExecutors(sqlContext,
-        ExternalStoreUtils.removeCachedObjects(table)).count()
-      // then on the driver
-      ExternalStoreUtils.removeCachedObjects(table)
-      // drop the external table using a non-pool connection
-      unregisterRDDInfoForUI()
-      StoreInitRDD.tableToIdMap.remove(table)
+      // clean up the connection pool and caches
+      StoreUtils.removeCachedObjects(sqlContext, table, numPartitions)
     } finally {
       try {
         try {
           JdbcExtendedUtils.dropTable(conn, ColumnFormatRelation.
-              cachedBatchTableName(table), dialect, sqlContext,
-            ifExists)
+              cachedBatchTableName(table), dialect, sqlContext, ifExists)
         } finally {
           JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext,
             ifExists)
@@ -360,24 +359,13 @@ class ColumnFormatRelation(
   }
 
   def registerRDDInfoForUI(): Unit = {
-    val sc = sqlContext.sparkContext
-    StoreCallbacksImpl.stores.get(table) match {
-      case Some((_, _, rddId)) =>
-        val rddInfo = new RDDInfo(rddId, table, numPartitions,
-          StorageLevel.OFF_HEAP, Seq(), None)
-        rddInfo.numCachedPartitions = numPartitions
-        sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
-      case None => // nothing
-    }
+    StoreUtils.registerRDDInfoForUI(sqlContext.sparkContext, table,
+      numPartitions)
   }
 
   def unregisterRDDInfoForUI(): Unit = {
-    val sc = sqlContext.sparkContext
-    StoreCallbacksImpl.stores.get(table) match {
-      case Some((_, _, rddId)) =>
-        sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
-      case None => // nothing
-    }
+    StoreUtils.unregisterRDDInfoForUI(sqlContext.sparkContext, table,
+      numPartitions)
   }
 
   //TODO: Suranjan make sure that this table doesn't evict to disk by
@@ -386,13 +374,14 @@ class ColumnFormatRelation(
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
-      conn = JdbcUtils.createConnection(externalStore.connProperties.url,
-        externalStore.connProperties.connProps)
+      val props = externalStore.connProperties
+      conn = JdbcUtils.createConnection(props.url, props.connProps)
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
         val sql = s"CREATE TABLE $tableName $schemaExtensions "
-        logInfo("Applying DDL : " + sql)
+        logInfo(
+          s"Applying DDL (url=${props.url}; props=${props.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,
@@ -512,12 +501,11 @@ final class DefaultSource extends ColumnarRelationProvider {
     StoreUtils.validateConnProps(parameters)
 
     val dialect = JdbcDialects.get(connProperties.url)
-    val blockMap =
-      dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-          Some(schema), partitions, connProperties)
-        case _ => Map.empty[InternalDistributedMember, BlockManagerId]
-      }
+    val blockMap = dialect match {
+      case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
+        Some(schema), partitions, connProperties)
+      case _ => Map.empty[InternalDistributedMember, BlockManagerId]
+    }
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
     val schemaExtension = if (schemaString.length > 0) {
       val temp = schemaString.substring(0, schemaString.length - 1).

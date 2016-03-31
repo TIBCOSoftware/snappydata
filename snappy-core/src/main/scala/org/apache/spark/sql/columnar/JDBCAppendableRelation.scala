@@ -246,6 +246,9 @@ case class JDBCAppendableRelation(
         val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
           dialect, sqlContext)
         if (!tableExists) {
+          val props = externalStore.connProperties
+          logInfo(s"Applying DDL (url=${props.url}; " +
+              s"props=${props.connProps}): $tableStr")
           JdbcExtendedUtils.executeUpdate(tableStr, conn)
           dialect match {
             case d: JdbcExtendedDialect => d.initializeTable(tableName,
@@ -266,11 +269,8 @@ case class JDBCAppendableRelation(
       externalStore.connProperties.url, externalStore.connProperties.connProps,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      // clean up the connection pool and caches on executors first
-      Utils.mapExecutors(sqlContext,
-        ExternalStoreUtils.removeCachedObjects(table)).count()
-      // then on the driver
-      ExternalStoreUtils.removeCachedObjects(table)
+      // clean up the connection pool and caches
+      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)

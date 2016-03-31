@@ -28,11 +28,14 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodeGenContext, GenerateUnsafeProjection}
-import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
+import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
+import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.WrappedRow
 import org.apache.spark.sql.columnar.ExternalStoreUtils
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 
 /**
  * Utilities to generate code for exchanging data from Spark layer
@@ -66,11 +69,11 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>CodeGeneration</code>s.
    */
-  private val execCache = CacheBuilder.newBuilder().maximumSize(100).build(
+  private val execCache = CacheBuilder.newBuilder().maximumSize(200).build(
     new CacheLoader[ExecuteKey, CodeGeneration]() {
       override def load(key: ExecuteKey) = {
         val start = System.nanoTime()
-        val result = compilePreparedUpdate(key.schema, key.dialect)
+        val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
         logInfo(s"Expression code generated in $elapsed ms")
         result
@@ -79,7 +82,7 @@ object CodeGeneration extends Logging {
 
   private def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ctx: CodeGenContext,
-      buffHolder: String): (String, String) = {
+      buffHolderVar: String): (String, String) = {
     val nonNullCode: String = dataType match {
       case IntegerType =>
         s"stmt.setInt(${col + 1}, row.getInt($col));"
@@ -99,60 +102,48 @@ object CodeGeneration extends Logging {
         s"stmt.setString(${col + 1}, row.getString($col));"
       case BinaryType =>
         s"stmt.setBytes(${col + 1}, row.getBinary($col));"
-      case TimestampType =>
-        s"""
-          stmt.setTimestamp(${col + 1},
-            DateTimeUtils.toJavaTimestamp(row.getLong($col)));
-        """
-      case DateType =>
-        s"""
-          stmt.setDate(${col + 1},
-            DateTimeUtils.toJavaDate(row.getInt($col)));
-        """
-      case d: DecimalType =>
-        s"""
-          stmt.setBigDecimal(${col + 1},
-            row.getDecimal($col, ${d.precision}, ${d.scale}).toJavaBigDecimal);
-        """
-      case a: ArrayType =>
-        s"""
-          ArrayData arr = row.getArray($col);
-          if ($buffHolder == null) {
-            $buffHolder = new BufferHolder();
-          } else {
-            $buffHolder.reset();
-          }
-          ${GenerateUnsafeProjection.writeArrayToBuffer(ctx, "arr",
-            a.elementType, buffHolder)}
-          stmt.setBytes(${col + 1}, java.util.Arrays.copyOf($buffHolder.buffer,
-              $buffHolder.totalSize()));
-        """
-      case m: MapType =>
-        s"""
-          MapData map = row.getMap($col);
-          if ($buffHolder == null) {
-            $buffHolder = new BufferHolder();
-          } else {
-            $buffHolder.reset();
-          }
-          ${GenerateUnsafeProjection.writeMapToBuffer(ctx, "map",
-            m.keyType, m.valueType, buffHolder)}
-          stmt.setBytes(${col + 1}, java.util.Arrays.copyOf($buffHolder.buffer,
-              $buffHolder.totalSize()));
-        """
-      case s: StructType =>
-        s"""
-          InternalRow struct = row.getStruct($col, ${s.length});
-          if ($buffHolder == null) {
-            $buffHolder = new BufferHolder();
-          } else {
-            $buffHolder.reset();
-          }
-          ${GenerateUnsafeProjection.writeStructToBuffer(ctx, "struct",
-            s.fields.map(_.dataType), buffHolder)}
-          stmt.setBytes(${col + 1}, java.util.Arrays.copyOf($buffHolder.buffer,
-              $buffHolder.totalSize()));
-        """
+      case TimestampType => s"""
+        stmt.setTimestamp(${col + 1},
+          DateTimeUtils.toJavaTimestamp(row.getLong($col)));"""
+      case DateType => s"""
+        stmt.setDate(${col + 1},
+          DateTimeUtils.toJavaDate(row.getInt($col)));"""
+      case d: DecimalType => s"""
+        stmt.setBigDecimal(${col + 1},
+          row.getDecimal($col, ${d.precision}, ${d.scale}).toJavaBigDecimal());"""
+      case a: ArrayType => s"""
+        ArrayData arr = row.getArray($col);
+        if ($buffHolderVar == null) {
+          $buffHolderVar = new BufferHolder();
+        } else {
+          $buffHolderVar.reset();
+        }
+        ${GenerateUnsafeProjection.writeArrayToBuffer(ctx, "arr",
+          a.elementType, buffHolderVar)}
+        stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
+            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
+      case m: MapType => s"""
+        MapData map = row.getMap($col);
+        if ($buffHolderVar == null) {
+          $buffHolderVar = new BufferHolder();
+        } else {
+          $buffHolderVar.reset();
+        }
+        ${GenerateUnsafeProjection.writeMapToBuffer(ctx, "map",
+          m.keyType, m.valueType, buffHolderVar)}
+        stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
+            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
+      case s: StructType => s"""
+        InternalRow struct = row.getStruct($col, ${s.length});
+        if ($buffHolderVar == null) {
+          $buffHolderVar = new BufferHolder();
+        } else {
+          $buffHolderVar.reset();
+        }
+        ${GenerateUnsafeProjection.writeStructToBuffer(ctx, "struct",
+          s.fields.map(_.dataType), buffHolderVar)}
+        stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
+            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
       case _ =>
         s"stmt.setObject(${col + 1}, row.get($col, schema[$col].dataType()));"
     }
@@ -160,58 +151,71 @@ object CodeGeneration extends Logging {
         s"${ExternalStoreUtils.getJDBCType(dialect, dataType)});")
   }
 
-  private def compilePreparedUpdate(schema: Array[StructField],
+  private def compilePreparedUpdate(table: String, schema: Array[StructField],
       dialect: JdbcDialect): CodeGeneration = {
     val ctx = new CodeGenContext
-    val bufferHolder = ctx.freshName("bufferHolder")
+    val bufferHolderVar = ctx.freshName("bufferHolder")
+    val bufferHolderClass = classOf[BufferHolder].getName
+    ctx.addMutableState(bufferHolderClass, bufferHolderVar,
+      s"$bufferHolderVar = null;")
     val sb = new StringBuilder()
     schema.indices.foreach { col =>
       val (nonNullCode, nullCode) = getColumnSetterFragment(col,
-        schema(col).dataType, dialect, ctx, bufferHolder)
-      sb.append(
-        s"""
-          if (!row.isNullAt($col)) {
-            $nonNullCode
-          } else {
-            $nullCode
-          }
-        """)
+        schema(col).dataType, dialect, ctx, bufferHolderVar)
+      sb.append(s"""
+        if (!row.isNullAt($col)) {
+          $nonNullCode
+        } else {
+          $nullCode
+        }""")
     }
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(Array(
-      classOf[ArrayData].getName,
-      classOf[MapData].getName,
+    evaluator.setDefaultImports(Array(bufferHolderClass,
+      DateTimeUtils.getClass.getName.replace("$", ""),
+      classOf[Platform].getName,
       classOf[InternalRow].getName,
-      classOf[BufferHolder].getName))
-    val expression =
-      s"""
-        BufferHolder $bufferHolder = null;
-        int rowCount = 0;
-        int result = 0;
-        while (rows.hasNext()) {
-          InternalRow row = (InternalRow)rows.next();
-          ${sb.toString()}
-          rowCount++;
-          if (multipleRows) {
-            stmt.addBatch();
-            if ((rowCount % batchSize) == 0) {
-              result += stmt.executeBatch().length;
-              rowCount = 0;
-            }
-          }
-        }
+      classOf[UnsafeRow].getName,
+      classOf[UTF8String].getName,
+      classOf[Decimal].getName,
+      classOf[CalendarInterval].getName,
+      classOf[ArrayData].getName,
+      classOf[UnsafeArrayData].getName,
+      classOf[MapData].getName,
+      classOf[UnsafeMapData].getName,
+      classOf[MutableRow].getName))
+    val separator = "\n      "
+    val varDeclarations = ctx.mutableStates map { case (javaType, name, init) =>
+      s"$javaType $name;$separator${init.replace("this.", "")}"
+    }
+    val expression = s"""
+      ${varDeclarations.mkString(separator)}
+      int rowCount = 0;
+      int totalRowCount = 0;
+      int result = 0;
+      while (rows.hasNext()) {
+        InternalRow row = (InternalRow)rows.next();
+        ${sb.toString()}
+        rowCount++;
+        totalRowCount++;
         if (multipleRows) {
-          if (rowCount > 0) {
+          stmt.addBatch();
+          if ((rowCount % batchSize) == 0) {
             result += stmt.executeBatch().length;
+            rowCount = 0;
           }
-        } else {
-          result += stmt.executeUpdate();
         }
-        return result;
-      """
-    // logInfo(s"DEBUG: Generated code=$expression")
+      }
+      if (multipleRows) {
+        if (rowCount > 0) {
+          result += stmt.executeBatch().length;
+        }
+      } else {
+        result += stmt.executeUpdate();
+      }
+      return result;"""
+    // logInfo(s"DEBUG: For table=table generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[CodeGeneration],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
         "dialect")).asInstanceOf[CodeGeneration]

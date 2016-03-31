@@ -28,7 +28,7 @@ import com.pivotal.gemfirexd.internal.iapi.sql.execute.ExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{UnsafeMapData, UnsafeRow, UnsafeArrayData, SpecificMutableRow}
+import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.columnar.{CachedBatch, CachedBatchHolder, ColumnBuilder, ColumnType}
@@ -124,12 +124,12 @@ class CachedBatchCreator(
           }
         case BinaryType =>
           mutableRow.update(i, execRow.getColumn(pos).getBytes)
-        case a: ArrayType =>
+        case _: ArrayType =>
           val bytes = execRow.getColumn(pos).getBytes
           val array = new UnsafeArrayData
           array.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)
           mutableRow.update(i, array)
-        case m: MapType =>
+        case _: MapType =>
           val bytes = execRow.getColumn(pos).getBytes
           val map = new UnsafeMapData
           map.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET, bytes.length)

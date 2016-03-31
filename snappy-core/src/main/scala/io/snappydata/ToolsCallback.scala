@@ -16,13 +16,17 @@
  */
 package io.snappydata
 
-
-import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.SparkContext
 
 trait ToolsCallback {
 
   def invokeLeadStartAddonService(sc: SparkContext)
+
   def invokeStartFabricServer(sc: SparkContext, hostData: Boolean)
+
   def invokeStopFabricServer(sc: SparkContext)
-  def getLocatorJDBCURL(sc:SparkContext):String
+
+  def getLocatorJDBCURL(sc: SparkContext): String
+
+  def clearStaticArtifacts(): Unit
 }

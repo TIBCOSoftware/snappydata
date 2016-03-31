@@ -76,7 +76,6 @@ class JDBCMutableRelation(
     try {
       conn = ExternalStoreUtils.getConnection(url, connProperties,
         dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
-      logInfo("Applying DDL : "+ url + " connproperties " + connProperties)
 
       var tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
@@ -112,7 +111,7 @@ class JDBCMutableRelation(
       // Create the table if the table didn't exist.
       if (!tableExists) {
         val sql = s"CREATE TABLE $table $userSpecifiedString"
-        logInfo("Applying DDL : " + sql)
+        logInfo(s"Applying DDL (url=$url; props=$connProperties): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(table,
@@ -260,11 +259,8 @@ class JDBCMutableRelation(
     val conn = ExternalStoreUtils.getConnection(url, connProperties,
       dialect, isLoner = Utils.isLoner(sqlContext.sparkContext))
     try {
-      // clean up the connection pool and caches on executors first
-      Utils.mapExecutors(sqlContext,
-        ExternalStoreUtils.removeCachedObjects(table)).count()
-      // then on the driver
-      ExternalStoreUtils.removeCachedObjects(table)
+      // clean up the connection pool and caches
+      ExternalStoreUtils.removeCachedObjects(sqlContext, table)
     } finally {
       try {
         JdbcExtendedUtils.dropTable(conn, table, dialect, sqlContext, ifExists)
