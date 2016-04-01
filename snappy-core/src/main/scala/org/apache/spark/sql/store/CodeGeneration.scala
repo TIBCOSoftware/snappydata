@@ -244,6 +244,9 @@ object CodeGeneration extends Logging {
         internalRow.row = baseIterator.next()
         internalRow
       }
+
+      override def remove(): Unit =
+        throw new UnsupportedOperationException("remove not supported")
     }
     result.executeStatement(stmt, multipleRows, iterator, batchSize,
       schema, dialect)
