@@ -55,6 +55,8 @@ class JDBCMutableRelation(
 
   override val needConversion: Boolean = false
 
+  override  def sizeInBytes: Long = MemoryAnalyticsService.getTableSizeStatsInBytes(table)
+
   val driver = Utils.registerDriverUrl(connProperties.url)
 
   protected final def dialect = connProperties.dialect

@@ -100,7 +100,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
-  snappyContextFunctions.registerAQPErrorFunctions(this)
+  //snappyContextFunctions.registerAQPErrorFunctions(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -796,17 +796,21 @@ object GlobalSnappyInit {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+        MemoryAnalyticsService.start(sc)
       case SnappyShellMode(_, _) =>
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = false)
+        MemoryAnalyticsService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = false)
+        MemoryAnalyticsService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = true)
+        MemoryAnalyticsService.start(sc)
       case _ => // ignore
     }
   }
@@ -1003,6 +1007,7 @@ object SnappyContext extends Logging {
             "No connection to the distributed system") != -1 => // ignore
         }
       }
+      MemoryAnalyticsService.stop()
       sc.stop()
     }
     _clusterMode = null

@@ -47,6 +47,9 @@ object Constant {
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
   val DEFAULT_USE_HIKARICP = false
+
+  // Interval in ms  to run the MemoryAnalyticsService
+  val DEFAULT_ANALYTICS_SERVICE_INTERVAL = 10000
 }
 
 /**
