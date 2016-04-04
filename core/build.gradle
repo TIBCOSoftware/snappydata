@@ -8,6 +8,17 @@ sourceSets.main.java.srcDirs = []
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
+  compile 'org.scala-lang:scala-compiler:' + scalaVersion
+  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  nospark(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
@@ -27,20 +38,35 @@ dependencies {
     compile 'io.snappydata:snappy-spark-streaming-kafka_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
   }
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:gemfirexd-client')
+    compile project(':snappy-store:gemfirexd-core')
+    compile project(':snappy-store:gemfirexd-tools')
+    nospark project(':snappy-store:gemfirexd-client')
+    nospark project(':snappy-store:gemfirexd-core')
+    nospark project(':snappy-store:gemfirexd-tools')
+    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+  } else {
+    compile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+    nospark group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+    nospark group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    nospark group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
+  }
 
   //compile "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
   compile 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   compile 'com.zaxxer:HikariCP:2.4.4'
+  //nospark "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
+  nospark 'org.apache.tomcat:tomcat-jdbc:8.0.32'
+  nospark 'com.zaxxer:HikariCP:2.4.4'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
 
   testRuntime 'org.pegdown:pegdown:1.1.0'
-  if (new File(rootDir, 'store/build.gradle').exists()) {
-    testRuntime project(':snappy-store:gemfirexd-client')
-  } else {
-    testRuntime group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
-  }
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {

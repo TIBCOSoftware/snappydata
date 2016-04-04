@@ -37,10 +37,6 @@ artifactId: snappy-core_2.10
 version: 0.2.2-PREVIEW
 
 groupId: io.snappydata
-artifactId: snappy-datasource_2.10
-version: 0.2.2-PREVIEW
-
-groupId: io.snappydata
 artifactId: snappy-cluster_2.10
 version: 0.2.2-PREVIEW
 ```
@@ -49,11 +45,7 @@ If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
 `libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.2.2-PREVIEW"`
 
-For additions related to SnappyData store (column and row store etc), use:
-
-`libraryDependencies += "io.snappydata" % "snappy-datasource_2.10" % "0.2.2-PREVIEW"`
-
-For SnappyData cluster additions:
+For additions related to SnappyData cluster, use:
 
 `libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.2.2-PREVIEW"`
 

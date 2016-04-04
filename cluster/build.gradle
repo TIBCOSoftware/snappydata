@@ -12,7 +12,6 @@ dependencies {
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
-  compile project(':snappy-datasource_' + scalaBinaryVersion)
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
@@ -153,8 +152,7 @@ shadowJar {
 }
 
 task nosparkJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-  dependsOn project(':snappy-core_' + scalaBinaryVersion).jar,
-            project(':snappy-datasource_' + scalaBinaryVersion).jar, jar
+  dependsOn project(':snappy-core_' + scalaBinaryVersion).jar, jar
   zip64 = true
   baseName = 'snappydata'
   classifier = ''
@@ -162,7 +160,6 @@ task nosparkJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
   from {
     project.configurations.nospark +
     project(':snappy-core_' + scalaBinaryVersion).jar.outputs.files +
-    project(':snappy-datasource_' + scalaBinaryVersion).jar.outputs.files +
     jar.outputs.files
   }
   mergeServiceFiles {

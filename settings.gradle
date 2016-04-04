@@ -2,14 +2,12 @@ def scalaBinaryVersion = '2.10'
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-core_' + scalaBinaryVersion
-include ':snappy-datasource_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-examples_' + scalaBinaryVersion
 include 'dunit'
 include ':tests-dunit_' + scalaBinaryVersion
 
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
-project(':snappy-datasource_' + scalaBinaryVersion).projectDir = "$rootDir/datasource" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
 project(':tests-dunit_' + scalaBinaryVersion).projectDir = "$rootDir/tests/dunit" as File

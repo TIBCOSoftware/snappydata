@@ -62,10 +62,6 @@ artifactId: snappy-core_2.10
 version: 0.2.2-PREVIEW
 
 groupId: io.snappydata
-artifactId: snappy-datasource_2.10
-version: 0.2.2-PREVIEW
-
-groupId: io.snappydata
 artifactId: snappy-cluster_2.10
 version: 0.2.2-PREVIEW
 ```

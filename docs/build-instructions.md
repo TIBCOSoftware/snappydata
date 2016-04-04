@@ -37,15 +37,11 @@ Master
 
 ## Repository layout
 
-- **core** - Extensions to Apache Spark that should not be dependent on GemFireXD, job server etc. For example: SnappyContext, external cluster manager etc.
-
-- **datasource** - Primarily the bridge between _spark_ and _store_ (GemFireXD). It contains the implementations of row and column store, streaming additions etc.
-
-  This component depends directly on _store_. Code in _datasource_ depends on _core_ but not the other way round.
+- **core** - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between _spark_ and _store_ (GemFireXD). For example: SnappyContext, row and column store, streaming additions etc.
 
 - **cluster** - Provides the SnappyData implementation of cluster manager embedding GemFireXD, query routing, job server initialization etc.
 
-  This component depends on _datasource_ and _store_. Code in _cluster_ depends on _datasource_ and _core_ but not the other way round.
+  This component depends on _core_ and _store_. Code in _cluster_ depends on _core_ but not the other way round.
 
 - **spark** - _Apache Spark_ code with SnappyData enhancements.
 
@@ -98,8 +94,8 @@ The default build directory is _build-artifacts/scala-2.10_ for projects. Except
 The usual gradle test run targets (_test_, _check_) work as expected for junit tests. Separate targets have been provided for running scala tests (_scalaTest_) while the _check_ target will run both the junit and scalatests. One can run a single scala test suite class with _singleSuite_ option while running a single test within some suite works with the _--tests_ option:
 
 ```sh
-> ./gradlew datasource:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
-> ./gradlew datasource:scalaTest \
+> ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
+> ./gradlew core:scalaTest \
 >    --tests "Test the creation/dropping of table using SQL"  # run a single test (use full name)
 ```
 Running individual tests within some suite works using the _--tests_ argument.

@@ -749,7 +749,6 @@ task runQuickstart(dependsOn: product) {
 
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
-  copyTestsCommonResources(project(":snappy-datasource_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
   copyTestsCommonResources(project(":tests-dunit_${scalaBinaryVersion}").buildDir)
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
@@ -769,7 +768,6 @@ task buildAll {
 }
 task checkAll {
   dependsOn ":snappy-core_${scalaBinaryVersion}:check",
-            ":snappy-datasource_${scalaBinaryVersion}:check",
             ":snappy-cluster_${scalaBinaryVersion}:check",
             ":tests-dunit_${scalaBinaryVersion}:test"
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
