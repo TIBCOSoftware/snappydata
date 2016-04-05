@@ -31,9 +31,11 @@ import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, Transac
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.GenericMutableRow
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, JDBCAppendableRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.{StoreHashFunction, StorePartitioner, ExternalStore}
 import org.apache.spark.sql.types._
 
 import scala.collection.{JavaConversions, mutable}
@@ -42,6 +44,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   @transient private var sqlContext = None: Option[SQLContext]
   val stores = new mutable.HashMap[String, (StructType, ExternalStore, Int)]
+
+  val partioner = new StoreHashFunction
 
   var useCompression = false
   var cachedBatchSize = 0
@@ -119,6 +123,16 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     schemas.add(ColumnFormatRelation.INTERNAL_SCHEMA_NAME)
     schemas
   }
+
+  override def getHashCodeSnappy(dvd: scala.Any): Int = {
+    partioner.hashValue(dvd)
+  }
+
+  override def getHashCodeSnappy(dvds: scala.Array[Object]): Int = {
+    partioner.hashValue(dvds)
+  }
+
+
 }
 
 trait StoreCallback extends Serializable {

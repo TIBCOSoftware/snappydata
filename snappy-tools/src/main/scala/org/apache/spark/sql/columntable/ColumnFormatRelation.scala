@@ -380,8 +380,14 @@ class ColumnFormatRelation(
       val tableExists = JdbcExtendedUtils.tableExists(tableName, conn,
         dialect, sqlContext)
       if (!tableExists) {
+      /*  val sql1 = "CREATE FUNCTION TO_HASH(col1 INTEGER ) " +
+            "RETURNS INTEGER PARAMETER STYLE JAVA NO SQL LANGUAGE " +
+            "JAVA EXTERNAL NAME 'org.apache.spark.sql.store.DummyExpression.dummyMethod'";
+
+        JdbcExtendedUtils.executeUpdate(sql1, conn);
+*/
         val sql = s"CREATE TABLE $tableName $schemaExtensions "
-        logInfo("Applying DDL : " + sql)
+        println("Applying DDL : " + sql)
         JdbcExtendedUtils.executeUpdate(sql, conn)
         dialect match {
           case d: JdbcExtendedDialect => d.initializeTable(tableName,

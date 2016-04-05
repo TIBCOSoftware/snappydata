@@ -67,7 +67,9 @@ class StoreRDD(@transient sc: SparkContext,
     })
   }
 
-  private val part: Partitioner = new ColumnPartitioner(totalNumPartitions)
+  val partioner = new StoreHashFunction
+
+  private val part: Partitioner = new StorePartitioner(totalNumPartitions, partioner)
 
   private var serializer: Option[Serializer] = None // TDOD use tungsten or Spark inbuilt .
   // Will be easy once this transform into a SparkPlan

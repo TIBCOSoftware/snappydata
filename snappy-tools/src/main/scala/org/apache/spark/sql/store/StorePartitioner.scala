@@ -17,20 +17,21 @@
 package org.apache.spark.sql.store
 
 import org.apache.spark.Partitioner
+import org.apache.spark.sql.CatalystHashFunction
 import org.apache.spark.util.Utils
 
-class ColumnPartitioner (partitions: Int) extends Partitioner {
+class StorePartitioner(partitions: Int, hashFunction: CatalystHashFunction) extends Partitioner {
   require(partitions >= 0, s"Number of partitions ($partitions) cannot be negative.")
 
   def numPartitions: Int = partitions
 
   def getPartition(key: Any): Int = key match {
     case null => 0
-    case _ => Utils.nonNegativeMod(key.hashCode, numPartitions)
+    case _ => Utils.nonNegativeMod(hashFunction.hashValue(key), numPartitions)
   }
 
   override def equals(other: Any): Boolean = other match {
-    case h: ColumnPartitioner =>
+    case h: StorePartitioner =>
       h.numPartitions == numPartitions
     case _ =>
       false
@@ -39,3 +40,7 @@ class ColumnPartitioner (partitions: Int) extends Partitioner {
   override def hashCode: Int = numPartitions
 
 }
+
+
+
+

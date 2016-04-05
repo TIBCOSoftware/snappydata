@@ -155,7 +155,7 @@ object StoreUtils extends Logging {
       val primaryKey = {
         v match {
           case PRIMARY_KEY => ""
-          case _ => s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
+          case _ => s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"
         }
       }
       primaryKey
@@ -178,7 +178,11 @@ object StoreUtils extends Logging {
               throw new DDLException("Column table cannot be partitioned on" +
                   " PRIMARY KEY as no primary key")
             }
-            case _ => s"COLUMN ($v) "
+            case _ => {
+              val p = v.replace(",", "+")
+              s"($p)" // Added the () to cheat  GemXD to consider it as a
+              // partition by expression, rather than column.
+            }
           }
         }
         s"$GEM_PARTITION_BY $parClause "
