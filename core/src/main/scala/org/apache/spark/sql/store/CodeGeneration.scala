@@ -86,9 +86,11 @@ object CodeGeneration extends Logging {
    */
   private def generateComplexTypeCode(methodName: String,
       typeArgs: Any*): String = {
-    val types = typeArgs.map(_.getClass)
-    GenerateUnsafeProjection.getClass.getDeclaredMethod(methodName, types:_*)
-        .invoke(GenerateUnsafeProjection, typeArgs).asInstanceOf[String]
+    val argTypes = typeArgs.map(_.getClass)
+    val method = GenerateUnsafeProjection.getClass.getDeclaredMethod(
+      methodName, argTypes:_*)
+    method.setAccessible(true)
+    method.invoke(GenerateUnsafeProjection, typeArgs).asInstanceOf[String]
   }
 
   private def getColumnSetterFragment(col: Int, dataType: DataType,
