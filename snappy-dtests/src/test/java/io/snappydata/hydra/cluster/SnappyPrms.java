@@ -22,6 +22,12 @@ public class SnappyPrms extends BasePrms {
     public static Long sqlScriptNamesForTask;
 
     /**
+     * Parameter used to get the user specified script names for TASK.
+     * (VectosetValuesr of Strings) A list of values for script Names to execute.
+     */
+    public static Long snappyJobClassNamesForTask;
+
+    /**
      * (boolean) for testing HA
      */
     public static Long cycleVms;
@@ -44,6 +50,11 @@ public class SnappyPrms extends BasePrms {
 
     public static Vector getSQLScriptNamesForTask() {
         Long key = sqlScriptNamesForTask;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    }
+
+    public static Vector getSnappyJobClassNamesForTask() {
+        Long key = snappyJobClassNamesForTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 

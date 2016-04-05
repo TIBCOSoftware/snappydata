@@ -105,5 +105,5 @@ copy {
         include '**/*.inc'
         include '**/*.sql'
     }
-    into rootDir.getAbsolutePath() + '/snappy-store/tests/core/build-artifacts/' + osDir + '/classes/main'
+    into rootDir.getAbsolutePath() + '/snappy-store/tests/sql/build-artifacts/' + osDir + '/classes/main'
 }

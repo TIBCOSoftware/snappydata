@@ -3,6 +3,7 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
+import com.gemstone.gemfire.cache.query.facets.lang.Course;
 import hydra.*;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -32,6 +33,8 @@ import util.PRObserver;
 import util.StopStartPrms;
 import util.StopStartVMs;
 import util.TestException;
+
+import static java.lang.Thread.sleep;
 
 public class SnappyTest implements Serializable {
 
@@ -351,11 +354,11 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Done with generateSnappyConfig...");
     }
 
-    protected void writeToFile(String leadLogDir, File file) {
+    protected void writeToFile(String logDir, File file) {
         try {
             FileWriter fw = new FileWriter(file.getAbsoluteFile(), true);
             BufferedWriter bw = new BufferedWriter(fw);
-            bw.write(leadLogDir);
+            bw.write(logDir);
             bw.newLine();
             bw.close();
         } catch (IOException e) {
@@ -382,22 +385,17 @@ public class SnappyTest implements Serializable {
             ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file);
             snappyTest.executeProcess(pb, logFile);
         } catch (Exception e1) {
+            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
 
-    protected void executeProcess(ProcessBuilder pb, File logFile) {
+    protected synchronized void executeProcess(ProcessBuilder pb, File logFile) {
         try {
             Process p = null;
             pb.redirectErrorStream(true);
             pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
             p = pb.start();
-            Class clazz = Class.forName("java.lang.UNIXProcess");
-            Field pidField = clazz.getDeclaredField("pid");
-            pidField.setAccessible(true);
-            Object value = pidField.get(p);
-            System.out.println("pid = " + value);
-            Log.getLogWriter().info("pid = " + value);
             Log.getLogWriter().info("SS - snappy-shell started successfully");
             assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
             assert pb.redirectOutput().file() == logFile;
@@ -408,6 +406,54 @@ public class SnappyTest implements Serializable {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
+
+    protected void recordSnappyProcessIDinNukeRun(String pName) {
+        try {
+            String command = "ps ax | grep " + pName + " | grep -v grep | awk '{print $1}'";
+            hd = TestConfig.getInstance().getMasterDescription()
+                    .getVmDescription().getHostDescription();
+            ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
+            File log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "PIDs.log";
+            File logFile = new File(dest);
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+            Process pr = pb.start();
+            BufferedReader br = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+            String str = null;
+            while ((str = br.readLine()) != null) {
+//                String commandForNukeRun = " /bin/kill -KILL " + str;
+                Log.getLogWriter().info("pid value in recordSnappyProcessIDinNukeRun is :: " + str);
+                int pid = Integer.parseInt(str);
+                RemoteTestModule.Master.recordPID(hd, pid);
+            }
+            br.close();
+        } catch (Exception e) {
+            throw new TestException("Following error occurred while executing " + e.getMessage());
+        }
+    }
+
+    protected void removeSnappyProcessIDinNukeRun() {
+        try {
+            hd = TestConfig.getInstance().getMasterDescription()
+                    .getVmDescription().getHostDescription();
+            File log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "PIDs.log";
+            File pidFile = new File(dest);
+            FileInputStream fis = new FileInputStream(pidFile);
+            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+            String str = null;
+            while ((str = br.readLine()) != null) {
+                Log.getLogWriter().info("pid value in removeSnappyProcessIDinNukeRun is :: " + str);
+                int pid = Integer.parseInt(str);
+                RemoteTestModule.Master.removePID(hd, pid);
+            }
+            br.close();
+        } catch (Exception e) {
+            throw new TestException("Following error occurred while executing " + e.getMessage());
+        }
+    }
+
 
     /**
      * Executes user scripts for InitTask.
@@ -428,9 +474,70 @@ public class SnappyTest implements Serializable {
             ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file);
             snappyTest.executeProcess(pb, logFile);
         } catch (Exception e1) {
+            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
 
+    }
+
+    /**
+     * Executes snappy Jobs in Task.
+     */
+
+    public static void HydraTask_executeSnappyJob() {
+        Vector jobClasstNames = null;
+        String fileName = "snappyJob.txt";
+        String snappyJobScript = snappyTest.getSnappyPath() + sep + "bin" + sep + "snappy-job.sh";
+        ProcessBuilder pb = null;
+        File logFile = null;
+        jobClasstNames = SnappyPrms.getSnappyJobClassNamesForTask();
+        Log.getLogWriter().info("jobClasstNames.size() is :" + jobClasstNames.size());
+        Log.getLogWriter().info("jobClasstNames are :" + jobClasstNames.toString());
+        String appJar = snappyTest.getSnappyPath() + sep + "lib" + sep + "quickstart-0.2-SNAPSHOT.jar";
+        try {
+            for (int i = 0; i < jobClasstNames.size(); i++) {
+                Log.getLogWriter().info("SS - Inside loop in stdin for getting scriptnames and executing them");
+                String userJob = (String) jobClasstNames.elementAt(i);
+                Log.getLogWriter().info("SS - Snappy job class name is :: " + userJob);
+                Log.getLogWriter().info("Executing Snappy Job script... ");
+                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", "localhost:8090", "--app-name", "myapp", "--class", userJob, "--app-jar", appJar);
+                File log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + fileName;
+                logFile = new File(dest);
+                snappyTest.executeProcess(pb, logFile);
+            }
+            sleep(60000);
+            snappyTest.getSnappyJobsStatus(snappyJobScript, pb, logFile);
+
+        } catch (Exception e1) {
+            snappyTest.removeSnappyProcessIDinNukeRun();
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
+        }
+    }
+
+    protected void getSnappyJobsStatus(String snappyJobScript, ProcessBuilder pb, File logFile) {
+        try {
+            String line = null;
+            Set<String> jobIds = new LinkedHashSet<String>();
+            FileReader freader = new FileReader(logFile);
+            BufferedReader inputFile = new BufferedReader(freader);
+            while ((line = inputFile.readLine()) != null) {
+                if (line.contains("jobId")) {
+                    String jobID = line.split(":")[1].trim();
+                    jobID = jobID.substring(1, jobID.length() - 2);
+                    Log.getLogWriter().info("jobID is ::" + jobID);
+                    jobIds.add(jobID);
+                    Log.getLogWriter().info("jobIds are" + jobIds.toString());
+                }
+            }
+            inputFile.close();
+            for (String str : jobIds) {
+                pb = new ProcessBuilder(snappyJobScript, "status", "--lead", "localhost:8090", "--job-id", str);
+                snappyTest.executeProcess(pb, logFile);
+            }
+        } catch (Exception e1) {
+            throw new TestException("Following error occurred while executing " + e1.getMessage());
+        }
     }
 
     protected File writeDataToSQLFile(Vector scriptNames, String filename) {
@@ -668,7 +775,7 @@ public class SnappyTest implements Serializable {
                 String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
                 File logFile = new File(dest);
                 snappyTest.executeProcess(pb, logFile);
-
+                snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
             }
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
@@ -688,6 +795,7 @@ public class SnappyTest implements Serializable {
                 String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
                 File logFile = new File(dest);
                 snappyTest.executeProcess(pb, logFile);
+                snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
             }
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
@@ -707,6 +815,7 @@ public class SnappyTest implements Serializable {
                 String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
                 File logFile = new File(dest);
                 snappyTest.executeProcess(pb, logFile);
+                snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
             }
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
@@ -734,9 +843,6 @@ public class SnappyTest implements Serializable {
             Process pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop").start();
             int rc = pb.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
-        } catch (IOException e1) {
-            throw new TestException("Following error occurred while executing " + e1.getMessage());
-
         } catch (Exception e1) {
             e1.printStackTrace();
             throw new TestException("Following error occurred while executing " + e1.getMessage());
@@ -765,7 +871,6 @@ public class SnappyTest implements Serializable {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
-
 
     protected LogWriter log() {
         return Log.getLogWriter();
