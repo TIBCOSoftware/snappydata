@@ -24,7 +24,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc._
-import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -74,7 +73,7 @@ class JDBCMutableRelation(
     var conn: Connection = null
     try {
       conn = connFactory()
-      var tableExists = JdbcExtendedUtils.tableExists(table, conn,
+      val tableExists = JdbcExtendedUtils.tableExists(table, conn,
         dialect, sqlContext)
       val tableSchema = conn.getSchema
       if (mode == SaveMode.Ignore && tableExists) {
@@ -93,16 +92,10 @@ class JDBCMutableRelation(
       if (mode == SaveMode.Overwrite && tableExists) {
         // truncate the table if possible
         val truncate = dialect match {
-          case MySQLDialect | PostgresDialect => s"TRUNCATE TABLE $table"
           case d: JdbcExtendedDialect => d.truncateTable(table)
-          case _ => ""
+          case _ => s"TRUNCATE TABLE $table"
         }
-        if (truncate != null && truncate.length > 0) {
-          JdbcExtendedUtils.executeUpdate(truncate, conn)
-        } else {
-          JdbcUtils.dropTable(conn, table)
-          tableExists = false
-        }
+        JdbcExtendedUtils.executeUpdate(truncate, conn)
       }
 
       // Create the table if the table didn't exist.

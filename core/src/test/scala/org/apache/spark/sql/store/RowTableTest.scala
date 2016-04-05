@@ -93,7 +93,7 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     intercept[AnalysisException] {
-      dataDF.write.format("row").mode(SaveMode.Append).options(props).putInto(tableName)
+      dataDF.write.putInto(tableName)
     }
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
@@ -246,7 +246,7 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Overwrite).options(props).putInto(tableName)
+    dataDF.write.putInto(tableName)
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect

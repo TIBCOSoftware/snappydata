@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columntable
+package org.apache.spark.sql.execution.columnar.impl
 
 import java.util.{Collections, UUID}
 
@@ -32,9 +32,8 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.execution.columnar.CachedBatchCreator
+import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {

@@ -32,17 +32,16 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Union}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.{CacheManager, ConnectionPool}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -50,7 +49,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, SparkContext, SparkException}
+import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -79,22 +78,19 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  * @todo Provide links to above descriptions
  *
  */
-class SnappyContext protected[spark](@transient override val sparkContext: SparkContext,
+class SnappyContext protected[spark](
+    @transient override val sparkContext: SparkContext,
     override val listener: SQLListener,
-    override val isRootContext: Boolean ,
+    override val isRootContext: Boolean,
     val snappyContextFunctions: SnappyContextFunctions =
-                 GlobalSnappyInit.getSnappyContextFunctionsImpl)
-    extends SQLContext(sparkContext, snappyContextFunctions.getSnappyCacheManager,
-      listener, isRootContext)
+    GlobalSnappyInit.getSnappyContextFunctionsImpl)
+    extends SQLContext(sparkContext, new CacheManager, listener, isRootContext)
     with Serializable with Logging {
 
   self =>
   protected[spark] def this(sc: SparkContext) {
     this(sc, SQLContext.createListenerAndUI(sc), true)
   }
-
-  @transient protected[sql] val snappyCacheManager: SnappyCacheManager =
-    cacheManager.asInstanceOf[SnappyCacheManager]
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -105,12 +101,6 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
-
-    override def unsafeEnabled: Boolean = if(snappyContextFunctions.isTungstenEnabled) {
-      super.unsafeEnabled
-    }else {
-      false
-    }
   }
 
   override def newSession(): SnappyContext = {
@@ -183,35 +173,16 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
   @DeveloperApi
   def appendToTempTableCache(df: DataFrame, table: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
-    val useCompression = conf.useCompression
-    val columnBatchSize = conf.columnBatchSize
-
     val tableIdent = catalog.newQualifiedTableName(table)
     val plan = catalog.lookupRelation(tableIdent, None)
-    val relation = cacheManager.lookupCachedData(plan).getOrElse {
-      cacheManager.cacheQuery(DataFrame(self, plan),
-        Some(tableIdent.table), storageLevel)
-
-      cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableIdent")
-      }
-    }
-
-    val (schema, output) = (df.schema, df.logicalPlan.output)
-
-    val cached = df.queryExecution.toRdd.mapPartitionsPreserve { rowIterator =>
-
-      val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation, output)
-
-      rowIterator.foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
-    }.persist(storageLevel)
-
+    // cache the new DataFrame
+    df.persist(storageLevel)
     // trigger an Action to materialize 'cached' batch
-    if (cached.count() > 0) {
-      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
-          .appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
+    if (df.count() > 0) {
+      // create a union of the two plans and store that in catalog
+      val union = Union(plan, df.logicalPlan)
+      catalog.unregisterTable(tableIdent)
+      catalog.registerTable(tableIdent, union)
     }
   }
 
@@ -234,9 +205,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ => cacheManager.lookupCachedData(plan).foreach(
-        _.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
-            .truncate())
+      case _ =>
+        throw new AnalysisException(s"Table $tableIdent cannot be truncated")
     }
   }
 
@@ -828,10 +798,10 @@ object SnappyContext extends Logging {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[org.apache.spark.sql.execution.columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[execution.columnar.DefaultSource].getCanonicalName,
+    ROW_SOURCE -> classOf[execution.row.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
-    ROW_SOURCE -> "org.apache.spark.sql.rowtable.DefaultSource",
     "socket_stream" -> classOf[SocketStreamSource].getCanonicalName,
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
@@ -839,7 +809,17 @@ object SnappyContext extends Logging {
     "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName
   )
 
-  def globalSparkContext: SparkContext = SparkContext.activeContext.get()
+  private[this] val INVALID_CONF = new SparkConf(loadDefaults = false) {
+    override def getOption(key: String): Option[String] =
+      throw new IllegalStateException("Invalid SparkConf")
+  }
+
+  /** Returns the current SparkContext or null */
+  def globalSparkContext: SparkContext = try {
+    SparkContext.getOrCreate(INVALID_CONF)
+  } catch {
+    case _: IllegalStateException => null
+  }
 
   private def newSnappyContext(sc: SparkContext) = {
     val snc = new SnappyContext(sc)

@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.columntable
+package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
@@ -28,14 +28,13 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ColumnarRelationProvider, ConnectionType, ExternalStore, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
-import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
-import org.apache.spark.sql.store.{CodeGeneration, ExternalStore, StoreInitRDD, StoreUtils}
+import org.apache.spark.sql.store.{CodeGeneration, StoreInitRDD, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
@@ -71,7 +70,7 @@ class ColumnFormatRelation(
     partitioningColumns: Seq[String],
     _context: SQLContext)
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
-     _origOptions, _externalStore, _context)
+      _origOptions, _externalStore, _context)
     with PartitionedDataSourceScan with RowInsertableRelation {
 
   override def toString: String = s"ColumnFormatRelation[$table]"
@@ -441,7 +440,7 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     }
   }
 
-  def registerStoreCallbacks(sqlContext: SQLContext,table: String,
+  def registerStoreCallbacks(sqlContext: SQLContext, table: String,
       userSchema: StructType, externalStore: ExternalStore) = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
@@ -450,8 +449,8 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def cachedBatchTableName(table: String) = {
 
-    val tableName = if(table.indexOf('.') > 0){
-      table.replace(".","__")
+    val tableName = if (table.indexOf('.') > 0) {
+      table.replace(".", "__")
     } else {
       table
     }

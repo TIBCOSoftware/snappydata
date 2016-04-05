@@ -400,35 +400,6 @@ final class MultiColumnOpenHashMap[@specialized(Long, Int, Double) V: ClassTag](
     v
   }
 
-  def mapValues[B: ClassTag](f: V => B): MultiColumnOpenHashMap[B] = {
-    val keySet = self._keySet
-    val values = self._values
-    val capacity = keySet.capacity
-    val otherMap = new MultiColumnOpenHashMap[B](keySet.columns, keySet.types,
-      keySet.numColumns, capacity, keySet.loadFactor)
-    val otherValues = otherMap._values
-    if (capacity == otherMap._keySet.capacity) {
-      val bitset = keySet.getBitSet
-      keySet.copyTo(otherMap._keySet)
-      // map exact array by array
-      var pos = bitset.nextSetBit(0)
-      while (pos >= 0) {
-        otherValues(pos) = f(values(pos))
-        pos = bitset.nextSetBit(pos + 1)
-      }
-      if (!self.noNullValue) {
-        otherMap.noNullValue = false
-        otherMap.nullValue = f(self.nullValue)
-      }
-    } else {
-      // for some reason capacity is still different so use slower row by row
-      self.iteratorRowReuse.foreach { case (row, v) =>
-        otherMap.update(row, f(v))
-      }
-    }
-    otherMap
-  }
-
   def groupBy[K](groupOp: (Row, V) => Row,
       combineOp: (V, V) => V): MultiColumnOpenHashMap[V] = {
     val m = newBuilder

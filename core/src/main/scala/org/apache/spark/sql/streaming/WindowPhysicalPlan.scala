@@ -23,7 +23,7 @@ import org.apache.spark.sql.execution
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.streaming.StreamBaseRelation._
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Time}
+import org.apache.spark.streaming.{Duration, SnappyStreamingContext, StreamUtils, Time}
 
 case class WindowPhysicalPlan(
     windowDuration: Duration,
@@ -33,7 +33,7 @@ case class WindowPhysicalPlan(
 
   override def doExecute(): RDD[InternalRow] = {
     assert(validTime != null)
-    rowStream.getOrCompute(validTime)
+    StreamUtils.getOrCompute(rowStream, validTime)
         .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 

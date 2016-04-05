@@ -8,7 +8,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableCallable
 
-import org.apache.spark.sql.columntable.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
 /**

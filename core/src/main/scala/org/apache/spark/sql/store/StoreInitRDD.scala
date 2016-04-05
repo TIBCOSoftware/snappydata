@@ -28,11 +28,10 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columntable.StoreCallbacksImpl
+import org.apache.spark.sql.execution.columnar.impl.{JDBCSourceAsColumnarStore, StoreCallbacksImpl}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect}
-import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}

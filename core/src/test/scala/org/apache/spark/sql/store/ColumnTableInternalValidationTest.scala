@@ -25,7 +25,7 @@ import org.scalatest.BeforeAndAfter
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.columntable.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.DDLException
 
 class ColumnTableInternalValidationTest extends SnappyFunSuite

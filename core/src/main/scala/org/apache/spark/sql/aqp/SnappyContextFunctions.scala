@@ -68,8 +68,6 @@ trait SnappyContextFunctions {
 
   def getPlanner(context: SnappyContext): SparkPlanner
 
-  def getSnappyCacheManager: SnappyCacheManager
-
   def getSQLDialect(context: SnappyContext): ParserDialect
 
   def aqpTablePopulator(context: SnappyContext): Unit
@@ -78,8 +76,6 @@ trait SnappyContextFunctions {
 
   def getSnappyDDLParser(context: SnappyContext,
       planGenerator: String => LogicalPlan): DDLParser
-
-  def isTungstenEnabled: Boolean
 
   def createAnalyzer(context: SnappyContext): Analyzer
 }

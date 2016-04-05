@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.store
+package org.apache.spark.sql.execution.columnar
 
 import java.sql.Connection
 import java.util.UUID
@@ -24,7 +24,6 @@ import scala.reflect.ClassTag
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.columnar.CachedBatch
 import org.apache.spark.sql.sources.ConnectionProperties
 
 trait ExternalStore extends Serializable {

@@ -25,13 +25,14 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
+import org.apache.spark.ui.SnappyUIUtils
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 /*/10/15.
@@ -148,7 +149,8 @@ object StoreUtils extends Logging {
         val rddInfo = new RDDInfo(rddId, table, numPartitions,
           StorageLevel.OFF_HEAP, Seq())
         rddInfo.numCachedPartitions = numPartitions
-        sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
+        sc.ui.foreach(listener => SnappyUIUtils.registerRDDInfo(
+          listener.storageListener, rddInfo))
       case None => // nothing
     }
   }

@@ -67,15 +67,14 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private[snappydata] val snappyProperties = Utils.getFields(Property).
       map({
-        case (_, propValue) if propValue.isInstanceOf[String] =>
-          val propName = propValue.asInstanceOf[String]
+        case (_, propName: String) =>
           if (propName.startsWith(Constant.PROPERTY_PREFIX) &&
               !propName.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
             propName.substring(Constant.PROPERTY_PREFIX.length)
           } else {
             ""
           }
-        case (propField, _) => s"Property Field=${propField} non string"
+        case (propField, _) => s"Property Field=$propField non string"
       }).toSet
 
 
@@ -371,7 +370,7 @@ object LeadImpl {
     startingContext.set(sc)
   }
 
-  def getInitializingSparkContext(): SparkContext = {
+  def getInitializingSparkContext: SparkContext = {
     val sc = SnappyContext.globalSparkContext
     if (sc != null) {
       return sc

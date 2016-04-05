@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.store.impl
+package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
@@ -28,10 +28,10 @@ import io.snappydata.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.execution.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
-import org.apache.spark.sql.rowtable.RowFormatScanRDD
+import org.apache.spark.sql.execution.columnar.{CachedBatch, CachedBatchIteratorOnRS, ConnectionType, ExternalStore, ExternalStoreUtils, JDBCSourceAsStore}
+import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
-import org.apache.spark.sql.store.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}

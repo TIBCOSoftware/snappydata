@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.rowtable
+package org.apache.spark.sql.execution.row
 
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember

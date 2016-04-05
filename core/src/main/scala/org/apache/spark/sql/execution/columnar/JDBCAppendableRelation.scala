@@ -33,7 +33,6 @@ import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.types.StructType
 
 /**
@@ -354,7 +353,7 @@ class ColumnarRelationProvider
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val clazz = JdbcDialects.get(url) match {
       case d: GemFireXDBaseDialect => ResolvedDataSource.
-          lookupDataSource("org.apache.spark.sql.columntable.DefaultSource")
+          lookupDataSource(classOf[impl.DefaultSource].getCanonicalName)
       case _ => classOf[org.apache.spark.sql.execution.columnar.DefaultSource]
     }
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]

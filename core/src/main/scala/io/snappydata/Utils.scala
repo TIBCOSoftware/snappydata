@@ -36,11 +36,11 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.{ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 
 object Utils {
   val LocatorURLPattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")

@@ -13,12 +13,28 @@ dependencies {
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
   if (new File(rootDir, 'spark/build.gradle').exists()) {
+    compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
   } else {
+    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-kafka_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
+    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
     compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion

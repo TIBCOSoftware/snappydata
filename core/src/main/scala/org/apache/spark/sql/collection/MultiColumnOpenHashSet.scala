@@ -17,7 +17,7 @@
 
 package org.apache.spark.sql.collection
 
-import scala.collection.generic.{Growable, CanBuildFrom}
+import scala.collection.generic.{CanBuildFrom, Growable}
 import scala.collection.{IterableLike, mutable}
 import scala.util.hashing.MurmurHash3
 
@@ -293,23 +293,6 @@ final class MultiColumnOpenHashSet(val columns: Array[Int],
   }
 
   override def result(): MultiColumnOpenHashSet = this
-
-  /** Copy this set to given set clearing it if it is not empty */
-  def copyTo(other: MultiColumnOpenHashSet) {
-    val capacity = self.capacity
-    if (capacity == other.capacity) {
-      // do direct array copies
-      _data.indices.foreach { index =>
-        System.arraycopy(_data(index), 0, other._data(index), 0, capacity)
-      }
-      other._bitset = getBitSet.copyTo(other.getBitSet)
-      other._size = size
-    }
-    else {
-      if (other.nonEmpty) other.clear()
-      foreach(other.add)
-    }
-  }
 
   /**
    * Double the table's size and re-hash everything. We are not really using k,

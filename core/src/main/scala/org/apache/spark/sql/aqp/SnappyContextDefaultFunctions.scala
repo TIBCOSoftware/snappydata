@@ -82,8 +82,6 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
   def getPlanner(context: SnappyContext): SparkPlanner =
     new DefaultPlanner(context)
 
-  def getSnappyCacheManager: SnappyCacheManager = new SnappyCacheManager()
-
   def getSQLDialect(context: SnappyContext): SnappyParserDialect =
     new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
 
@@ -100,8 +98,6 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
   def getSnappyDDLParser(context: SnappyContext,
       planGenerator: String => LogicalPlan): DDLParser =
     new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)
-
-  def isTungstenEnabled: Boolean = true
 
   def createAnalyzer(context: SnappyContext): Analyzer =
     new Analyzer(context.catalog, context.functionRegistry, context.conf) {

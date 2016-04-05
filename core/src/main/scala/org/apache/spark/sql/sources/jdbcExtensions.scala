@@ -25,7 +25,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
-import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
@@ -40,10 +40,22 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
       context: SQLContext): Boolean =
     JdbcExtendedUtils.tableExistsInMetaData(tableName, conn, this)
 
-  /** Get the current schema set on the given connection. */
+  /**
+   * Retrieve the jdbc / sql type for a given datatype.
+   * @param dataType The datatype (e.g. [[StringType]])
+   * @param md The metadata
+   * @return The new JdbcType if there is an override for this DataType
+   */
+  def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType] =
+    getJDBCType(dataType)
+
+  /** Create a new schema. */
   def createSchema(schemaName: String, conn: Connection): Unit
 
-  /** DDL to truncate a table, or null/empty if truncate is not supported */
+  /**
+   * Get the DDL to truncate a table, or null/empty
+   * if truncate is not supported.
+   */
   def truncateTable(tableName: String): String = s"TRUNCATE TABLE $tableName"
 
   def dropTable(tableName: String, conn: Connection, context: SQLContext,
@@ -81,11 +93,15 @@ object JdbcExtendedUtils extends Logging {
    * Compute the schema string for this RDD.
    */
   def schemaString(schema: StructType, dialect: JdbcDialect): String = {
+    val jdbcType: (DataType, Metadata) => Option[JdbcType] = dialect match {
+      case ed: JdbcExtendedDialect => ed.getJDBCType
+      case _ => (dataType, _) => dialect.getJDBCType(dataType)
+    }
     val sb = new StringBuilder()
     schema.fields.foreach { field =>
       val dataType = field.dataType
       val typeString: String =
-        dialect.getJDBCType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
+        jdbcType(dataType, field.metadata).map(_.databaseTypeDefinition).getOrElse(
           dataType match {
             case IntegerType => "INTEGER"
             case LongType => "BIGINT"

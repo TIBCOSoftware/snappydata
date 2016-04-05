@@ -18,10 +18,9 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Expression, Attribute}
-import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
-
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
   * If user knows that the data is partitioned or replicated across
@@ -40,7 +39,7 @@ private[sql] case class PartitionedPhysicalRDD(
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override def outputPartitioning: Partitioning = {
     if (numPartition == 1) SinglePartition
-    else OrderlessHashPartitioning(partitionColumns, numPartition)
+    else HashPartitioning(partitionColumns, numPartition)
   }
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +

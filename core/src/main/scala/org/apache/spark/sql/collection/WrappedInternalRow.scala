@@ -26,13 +26,13 @@ import org.apache.spark.unsafe.types.UTF8String
  * Wraps an `InternalRow` to expose a `Row`
  */
 final class WrappedInternalRow(override val schema: StructType,
-    val converters: Array[(InternalRow, Int) => Any]) extends Row {
+    val converters: Array[Any => Any]) extends Row {
 
   private var _internalRow: InternalRow = _
   private val cache = new Array[Any](schema.length)
 
   def this(schema: StructType) = this(schema, schema.fields.map { f =>
-    CatalystTypeConverters.createRowToScalaConverter(f.dataType)
+    CatalystTypeConverters.createToScalaConverter(f.dataType)
   })
 
   def internalRow = _internalRow
@@ -94,7 +94,8 @@ final class WrappedInternalRow(override val schema: StructType,
   override def get(ordinal: Int) = {
     val v = cache(ordinal)
     if (v == null) {
-      val s = converters(ordinal)(_internalRow, ordinal)
+      val s = converters(ordinal)(_internalRow.get(ordinal,
+        schema(ordinal).dataType))
       cache(ordinal) = s
       s
     } else {

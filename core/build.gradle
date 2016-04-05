@@ -5,39 +5,76 @@ compileScala.options.encoding = 'UTF-8'
 sourceSets.main.scala.srcDir "src/main/java"
 sourceSets.main.java.srcDirs = []
 
+ext {
+  nettyGroup = 'io.netty'
+  scalaMacros = 'org.scalamacros'
+}
+
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
-  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+
+  // always use stock spark so that snappy extensions don't get accidently
+  // included here in snappy-core code.
+  provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
-  nospark(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+  provided("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
-  if (new File(rootDir, 'spark/build.gradle').exists()) {
-    compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion)
-  } else {
-    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-streaming-kafka_' + scalaBinaryVersion + ':' + sparkVersion
-    compile 'io.snappydata:snappy-spark-streaming-twitter_' + scalaBinaryVersion + ':' + sparkVersion
+  provided("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
+  provided("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
+    exclude(group: scalaTest)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  provided("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  provided("org.apache.spark:spark-streaming-kafka_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  provided("org.apache.spark:spark-streaming-twitter_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  provided("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}") {
+    exclude(group: nettyGroup)
+    exclude(group: scalaMacros)
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+
   if (new File(rootDir, 'store/build.gradle').exists()) {
     compile project(':snappy-store:gemfirexd-client')
     compile project(':snappy-store:gemfirexd-core')
@@ -56,12 +93,23 @@ dependencies {
     testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
   }
 
-  //compile "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
+  compile "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
   compile 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   compile 'com.zaxxer:HikariCP:2.4.4'
-  //nospark "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
+  nospark "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
   nospark 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   nospark 'com.zaxxer:HikariCP:2.4.4'
+
+  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  nospark(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'

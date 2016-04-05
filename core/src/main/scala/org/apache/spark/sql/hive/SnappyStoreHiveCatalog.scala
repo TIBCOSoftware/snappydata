@@ -27,7 +27,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import com.google.common.cache.{LoadingCache, CacheBuilder, CacheLoader}
+import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
@@ -47,7 +47,7 @@ import org.apache.spark.sql.hive.client._
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
-import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -118,7 +118,8 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
    * meta-store that is configured in the hive-site.xml file.
    */
   @transient
-  protected[sql] var client: ClientInterface = newClient()
+  protected[sql] var client: ClientWrapper =
+    newClient().asInstanceOf[ClientWrapper]
 
   private def newClient(): ClientInterface = {
 
@@ -356,11 +357,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       schema
     } else {
       val fields = schema.fields
-      if (fields.exists(f => Utils.hasLowerCase(f.fieldName))) {
+      if (fields.exists(f => Utils.hasLowerCase(Utils.fieldName(f)))) {
         StructType(fields.map { f =>
-          val name = Utils.toUpperCase(f.fieldName)
+          val name = Utils.toUpperCase(Utils.fieldName(f))
           val metadata = if (f.metadata.contains("name")) {
-            new Metadata(f.metadata.map + ("name" -> name))
+            val builder = new MetadataBuilder
+            builder.withMetadata(f.metadata).putString("name", name).build()
           } else {
             f.metadata
           }
@@ -475,6 +477,11 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     tempTables += (tableName -> plan)
   }
 
+  private def clientDropTable(dbName: String, tableName: String): Unit =
+    client.withHiveState {
+      client.client.dropTable(dbName, tableName)
+    }
+
   /**
    * Drops a data source table from Hive's meta-store.
    */
@@ -501,13 +508,13 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
     val dbName = tableIdent.getDatabase(client)
     try {
-      client.dropTable(dbName, tableIdent.table)
+      clientDropTable(dbName, tableIdent.table)
     } catch {
       case he: HiveException if isDisconnectException(he) =>
         // stale GemXD connection
         Hive.closeCurrent()
-        client = newClient()
-        client.dropTable(dbName, tableIdent.table)
+        client = newClient().asInstanceOf[ClientWrapper]
+        clientDropTable(dbName, tableIdent.table)
     }
   }
 
@@ -603,7 +610,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case he: HiveException if isDisconnectException(he) =>
         // stale GemXD connection
         Hive.closeCurrent()
-        client = newClient()
+        client = newClient().asInstanceOf[ClientWrapper]
         client.createTable(hiveTable)
     }
   }
@@ -737,7 +744,7 @@ final class QualifiedTableName(_database: Option[String], _tableIdent: String)
     getTableOption(client).getOrElse(throw new TableNotFoundException(
       s"Table Not Found: $table (in database: ${getDatabase(client)})"))
 
-  override def toString: String = {
+  override def toString(): String = {
     if (database eq None) table
     else database.get + '.' + table
   }

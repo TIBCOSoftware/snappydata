@@ -18,12 +18,11 @@ package org.apache.spark.sql.streaming
 
 import com.typesafe.config.Config
 import io.snappydata.impl.LeadImpl
-import org.apache.spark.sql.SnappyContext
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.streaming.{SnappyStreamingContext, Milliseconds, StreamingContext}
+import org.apache.spark.streaming.{Milliseconds, SnappyStreamingContext}
 
 trait SnappyStreamingJob extends SparkJobBase {
   type C = SnappyStreamingContext
@@ -36,14 +35,14 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
   override def makeContext(sparkConf: SparkConf, config: Config, contextName: String): C = {
     val interval = config.getInt("streaming.batch_interval")
 
-    new SnappyStreamingContext(LeadImpl.getInitializingSparkContext(),
+    new SnappyStreamingContext(LeadImpl.getInitializingSparkContext,
       Milliseconds(interval)) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappyStreamingJob]
 
       override def stop(): Unit = {
         val stopGracefully = config.getBoolean("streaming.stopGracefully")
-        stop(false, stopGracefully)
+        stop(stopSparkContext = false, stopGracefully = stopGracefully)
       }
     }
   }

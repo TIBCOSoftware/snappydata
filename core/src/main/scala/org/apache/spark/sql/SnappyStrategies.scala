@@ -21,7 +21,6 @@ import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.columnar.InMemoryColumnarTableScan
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.streaming._
@@ -36,18 +35,7 @@ private[sql] trait SnappyStrategies {
   object SnappyStrategies extends Strategy {
 
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-      val x: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-        case PhysicalOperation(projectList, filters,
-        mem: org.apache.spark.sql.execution.columnar.InMemoryAppendableRelation) =>
-          pruneFilterProject(
-            projectList,
-            filters,
-            identity[Seq[Expression]], // All filters still need to be evaluated
-            InMemoryColumnarTableScan(_, filters, mem)) :: Nil
-      }
-
-      x.orElse(sampleSnappyCase)(plan)
-
+      sampleSnappyCase(plan)
     }
   }
 

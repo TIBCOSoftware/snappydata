@@ -8,7 +8,6 @@ import io.snappydata.dunit.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
 
-import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.{DataFrame, SaveMode, SnappyContext}
 
 /**

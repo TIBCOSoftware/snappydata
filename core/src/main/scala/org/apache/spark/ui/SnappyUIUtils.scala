@@ -14,21 +14,14 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+package org.apache.spark.ui
 
-import org.apache.spark.sql.snappy.DataFrameWriterExtensions
+import org.apache.spark.storage.RDDInfo
+import org.apache.spark.ui.storage.StorageListener
 
-
-class DataFrameWriterJavaFunctions(val dfWriter: DataFrameWriter) {
-
-  /**
-   * Inserts the content of the [[DataFrame]] to the specified table. It requires
-   * that the schema of the [[DataFrame]] is the same as the schema of the table.
-   * If the row is already present then it is updated.
-   *
-   * This ignores all SaveMode
-   */
-  def putInto(tableName: String): Unit = {
-    new DataFrameWriterExtensions(dfWriter).putInto(tableName)
+object SnappyUIUtils {
+  def registerRDDInfo(listener: StorageListener,
+      rddInfo: RDDInfo): Unit = synchronized {
+    listener._rddInfoMap.getOrElseUpdate(rddInfo.id, rddInfo)
   }
 }

@@ -17,6 +17,7 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
+import java.sql.DriverManager
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{Map => SMap}
@@ -35,8 +36,9 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.execution.{SQLExecution, QueryExecution}
 import org.apache.spark.sql.execution.datasources.DDLException
-import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
@@ -88,6 +90,10 @@ object Utils {
             (${cols.mkString(", ")})""")
       }
     }
+  }
+
+  def fieldName(f: StructField): String = {
+    if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
   }
 
   def getAllExecutorsMemoryStatus(
@@ -427,8 +433,10 @@ object Utils {
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
             case e@(_: AnalysisException | _: DDLException) =>
-              throw new AnalysisException(s"Base table $baseTable " +
-                  s"not found for $tableType TABLE $table", e)
+              val ae = new AnalysisException(s"Base table $baseTable " +
+                  s"not found for $tableType TABLE $table")
+              ae.initCause(e)
+              throw ae
           }
         case None =>
           throw new DDLException(s"CREATE $tableType TABLE must provide " +
@@ -516,6 +524,11 @@ object Utils {
     }
   }
 
+  def getDriverClassName(url: String): String = DriverManager.getDriver(url) match {
+    case wrapper: DriverWrapper => wrapper.wrapped.getClass.getCanonicalName
+    case driver => driver.getClass.getCanonicalName
+  }
+
   /**
    * Register given driver class with Spark's loader.
    */
@@ -532,9 +545,14 @@ object Utils {
    * Register driver for given JDBC URL and return the driver class name.
    */
   def registerDriverUrl(url: String): String = {
-    val driver = DriverRegistry.getDriverClassName(url)
+    val driver = getDriverClassName(url)
     registerDriver(driver)
     driver
+  }
+
+  def withNewExecutionId[T](ctx: SQLContext,
+      queryExecution: QueryExecution)(body: => T): T = {
+    SQLExecution.withNewExecutionId(ctx, queryExecution)(body)
   }
 }
 

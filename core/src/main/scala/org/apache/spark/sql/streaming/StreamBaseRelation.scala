@@ -27,7 +27,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
-import org.apache.spark.streaming.{SnappyStreamingContext, Time}
+import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, Time}
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String])
@@ -72,17 +72,18 @@ abstract class StreamBaseRelation(options: Map[String, String])
       //   have been initialized e.g. after recovery, so add explicitly)
       val catalog = context.snappyContext.catalog
       val initDependents = catalog.getDataSourceTables(Seq.empty,
-        Some(tableName)).map(_.toString)
+        Some(tableName)).map(_.toString())
       (stream, initDependents)
     })
 
   override val needConversion: Boolean = false
 
   override def buildScan(): RDD[Row] = {
-    if (rowStream.generatedRDDs.isEmpty) {
+    val rdds = StreamUtils.getGeneratedRDDs(rowStream)
+    if (rdds.isEmpty) {
       new EmptyRDD[Row](sqlContext.sparkContext)
     } else {
-      rowStream.generatedRDDs.maxBy(_._1)._2.asInstanceOf[RDD[Row]]
+      rdds.maxBy(_._1)._2.asInstanceOf[RDD[Row]]
     }
 
     /* val currentRDD = rowStream.generatedRDDs.maxBy(_._1)._2

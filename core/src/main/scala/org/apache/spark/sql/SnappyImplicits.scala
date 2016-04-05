@@ -21,8 +21,7 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 
 /**
  * Implicit conversions used by Snappy.
@@ -118,7 +117,7 @@ object snappy extends Serializable {
     }
   }
 
-  implicit class DataFrameWriterExtensions(dfWriter: DataFrameWriter) extends Serializable {
+  implicit class DataFrameWriterExtensions(writer: DataFrameWriter) extends Serializable {
 
     /**
      * Inserts the content of the [[DataFrame]] to the specified table. It requires
@@ -126,24 +125,11 @@ object snappy extends Serializable {
      * If the row is already present then it is updated.
      *
      * This ignores all SaveMode
-     *
-     * @since 1.6.0
      */
     def putInto(tableName: String): Unit = {
-      val partitions = dfWriter.partitioningColumns.map(_.map(col => col -> (None: Option[String])).toMap)
-      //Suranjan: ignore mode altogether.
-      val overwrite = true
-      val df = dfWriter.df
-      df.sqlContext.executePlan(
-      InsertIntoTable(
-        UnresolvedRelation(df.sqlContext.sqlDialect.parseTableIdentifier(tableName)),
-        partitions.getOrElse(Map.empty[String, Option[String]]),
-        df.logicalPlan,
-        overwrite,
-        ifNotExists = false)).toRdd
+      writer.mode(SaveMode.Overwrite).insertInto(tableName)
     }
   }
-
 }
 
 private[sql] case class SnappyDataFrameOperations(context: SnappyContext,

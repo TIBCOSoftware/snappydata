@@ -7,7 +7,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
 
-import org.apache.spark.sql.columntable.ColumnFormatRelation
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**

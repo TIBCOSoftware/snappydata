@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.store
+package org.apache.spark.sql.execution.columnar
 
 import java.sql.{Connection, ResultSet, Statement}
 import java.util.UUID
@@ -30,7 +30,6 @@ import scala.util.control.NonFatal
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.storage.{BlockId, BlockStatus, RDDBlockId, StorageLevel}

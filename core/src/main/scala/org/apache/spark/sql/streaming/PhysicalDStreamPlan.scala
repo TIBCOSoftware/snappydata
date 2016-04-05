@@ -22,8 +22,9 @@ import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
 import org.apache.spark.sql.execution.SparkPlan
+import org.apache.spark.sql.streaming.StreamBaseRelation._
+import org.apache.spark.streaming.StreamUtils
 import org.apache.spark.streaming.dstream.DStream
-import StreamBaseRelation._
 
 /**
   * A PhysicalPlan wrapper of SchemaDStream, inject the validTime and
@@ -40,7 +41,7 @@ case class PhysicalDStreamPlan(output: Seq[Attribute],
 
   override def doExecute(): RDD[InternalRow] = {
     assert(validTime != null)
-    rowStream.getOrCompute(validTime)
+    StreamUtils.getOrCompute(rowStream, validTime)
         .getOrElse(new EmptyRDD[InternalRow](sparkContext))
   }
 }

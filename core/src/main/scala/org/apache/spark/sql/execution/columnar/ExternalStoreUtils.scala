@@ -87,7 +87,7 @@ object ExternalStoreUtils {
     dialect match {
       case GemFireXDDialect => "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
       case GemFireXDClientDialect => "com.pivotal.gemfirexd.jdbc.ClientDriver"
-      case _ => DriverRegistry.getDriverClassName(url)
+      case _ => Utils.getDriverClassName(url)
     }
   }
 
@@ -303,7 +303,7 @@ object ExternalStoreUtils {
       Seq(narrowestOrdinal) -> Seq(narrowestDataType)
     } else {
       requestedSchema.map { a =>
-        schema.fieldIndex(a.fieldName) -> a.dataType
+        schema.fieldIndex(Utils.fieldName(a)) -> a.dataType
       }.unzip
     }
   }
@@ -330,10 +330,10 @@ object ExternalStoreUtils {
     val sb = new StringBuilder(s"INSERT INTO $table (")
     val schemaFields = rddSchema.fields
     (0 until (schemaFields.length - 1)).foreach { i =>
-      sb.append(schemaFields(i).fieldName).append(',')
+      sb.append(Utils.fieldName(schemaFields(i))).append(',')
     }
-    sb.append(schemaFields(schemaFields.length - 1).fieldName).append(") ")
-    sb.append(" VALUES (")
+    sb.append(Utils.fieldName(schemaFields(schemaFields.length - 1)))
+    sb.append(") ").append(" VALUES (")
 
     (1 until rddSchema.length).foreach { _ =>
       sb.append("?,")

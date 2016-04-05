@@ -80,6 +80,17 @@ object CodeGeneration extends Logging {
       }
     })
 
+  /**
+   * Using reflection to invoke these private methods since using the public
+   * GenerateUnsafeProjection.createCode method is awkward.
+   */
+  private def generateComplexTypeCode(methodName: String,
+      typeArgs: Any*): String = {
+    val types = typeArgs.map(_.getClass)
+    GenerateUnsafeProjection.getClass.getDeclaredMethod(methodName, types:_*)
+        .invoke(GenerateUnsafeProjection, typeArgs).asInstanceOf[String]
+  }
+
   private def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ctx: CodeGenContext,
       buffHolderVar: String): (String, String) = {
@@ -118,7 +129,7 @@ object CodeGeneration extends Logging {
         } else {
           $buffHolderVar.reset();
         }
-        ${GenerateUnsafeProjection.writeArrayToBuffer(ctx, "arr",
+        ${generateComplexTypeCode("writeArrayToBuffer", ctx, "arr",
           a.elementType, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
@@ -129,7 +140,7 @@ object CodeGeneration extends Logging {
         } else {
           $buffHolderVar.reset();
         }
-        ${GenerateUnsafeProjection.writeMapToBuffer(ctx, "map",
+        ${generateComplexTypeCode("writeMapToBuffer", ctx, "map",
           m.keyType, m.valueType, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
@@ -140,7 +151,7 @@ object CodeGeneration extends Logging {
         } else {
           $buffHolderVar.reset();
         }
-        ${GenerateUnsafeProjection.writeStructToBuffer(ctx, "struct",
+        ${generateComplexTypeCode("writeStructToBuffer", ctx, "struct",
           s.fields.map(_.dataType), buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""

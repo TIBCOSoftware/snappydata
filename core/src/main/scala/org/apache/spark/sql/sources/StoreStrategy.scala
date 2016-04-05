@@ -52,9 +52,9 @@ object StoreStrategy extends Strategy {
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case InsertIntoTable(l @ LogicalRelation(t: RowPutRelation, _),
-    part, query, overwrite, false) if part.isEmpty =>
-      ExecutedCommand(PutIntoDataSource(l, query, overwrite)) :: Nil
+    case InsertIntoTable(l@LogicalRelation(t: RowPutRelation, _),
+    part, query, true, false) if part.isEmpty =>
+      ExecutedCommand(PutIntoDataSource(l, query)) :: Nil
 
     case _ => Nil
   }
@@ -83,8 +83,7 @@ private[sql] case class ExternalTableDMLCmd(
  */
 private[sql] case class PutIntoDataSource(
     logicalRelation: LogicalRelation,
-    query: LogicalPlan,
-    overwrite: Boolean)
+    query: LogicalPlan)
     extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {

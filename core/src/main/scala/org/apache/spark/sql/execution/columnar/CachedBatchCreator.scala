@@ -31,8 +31,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columntable.StoreCallbacksImpl
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
