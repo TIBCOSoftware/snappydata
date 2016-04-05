@@ -16,15 +16,19 @@
  */
 package org.apache.spark.sql.sources
 
-import java.sql.Connection
+import java.sql.{Connection, PreparedStatement}
 import java.util.Properties
 
 import scala.util.control.NonFatal
 
+import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.jdbc.JdbcDialect
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext, SaveMode}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -35,9 +39,6 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
   def tableExists(tableName: String, conn: Connection,
       context: SQLContext): Boolean =
     JdbcExtendedUtils.tableExistsInMetaData(tableName, conn, this)
-
-  /** Get the current schema set on the given connection. */
-  def getCurrentSchema(conn: Connection): String = conn.getSchema
 
   /** Get the current schema set on the given connection. */
   def createSchema(schemaName: String, conn: Connection): Unit
@@ -52,13 +53,13 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
       conn: Connection): Unit = {
   }
 
-  def extraDriverProperties(isLoner: Boolean): Properties =
-    new Properties()
+  def addExtraDriverProperties(isLoner: Boolean, props: Properties): Unit = {
+  }
 
   def getPartitionByClause(col: String): String
 }
 
-object JdbcExtendedUtils {
+object JdbcExtendedUtils extends Logging {
 
   val DBTABLE_PROPERTY = "dbtable"
   val SCHEMA_PROPERTY = "schemaddl"
@@ -116,7 +117,7 @@ object JdbcExtendedUtils {
       table.substring(0, dotIndex)
     } else {
       // get the current schema
-      getCurrentSchema(conn, dialect)
+      conn.getSchema
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     try {
@@ -124,14 +125,6 @@ object JdbcExtendedUtils {
       rs.next()
     } catch {
       case t: java.sql.SQLException => false
-    }
-  }
-
-  def getCurrentSchema(conn: Connection,
-      dialect: JdbcDialect): String = {
-    dialect match {
-      case d: JdbcExtendedDialect => d.getCurrentSchema(conn)
-      case _ => conn.getSchema
     }
   }
 
@@ -222,5 +215,107 @@ object JdbcExtendedUtils {
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
     }
     new ResolvedDataSource(clazz, relation)
+  }
+
+  /**
+   * Returns a PreparedStatement that inserts a row into table via conn.
+   */
+  def insertStatement(conn: Connection, table: String,
+      rddSchema: StructType, upsert: Boolean): PreparedStatement = {
+    val sql = new StringBuilder()
+    if (!upsert) {
+      sql.append(s"INSERT INTO $table (")
+    } else {
+      sql.append(s"PUT INTO $table (")
+    }
+    var fieldsLeft = rddSchema.fields.length
+    rddSchema.fields.foreach { field =>
+      sql.append(field.name)
+      if (fieldsLeft > 1) sql.append(',') else sql.append(')')
+      fieldsLeft = fieldsLeft - 1
+    }
+    sql.append(" VALUES (")
+    fieldsLeft = rddSchema.fields.length
+    while (fieldsLeft > 0) {
+      sql.append('?')
+      if (fieldsLeft > 1) sql.append(',') else sql.append(')')
+      fieldsLeft = fieldsLeft - 1
+    }
+    conn.prepareStatement(sql.toString())
+  }
+
+  /**
+   * Saves a partition of a DataFrame to the JDBC database.  This is done in
+   * a single database transaction in order to avoid repeatedly inserting
+   * data as much as possible.
+   *
+   * It is still theoretically possible for rows in a DataFrame to be
+   * inserted into the database more than once if a stage somehow fails after
+   * the commit occurs but before the stage can return successfully.
+   *
+   * This is not a closure inside saveTable() because apparently cosmetic
+   * implementation changes elsewhere might easily render such a closure
+   * non-Serializable.  Instead, we explicitly close over all variables that
+   * are used.
+   */
+  def savePartition(
+      getConnection: () => Connection,
+      table: String,
+      iterator: Iterator[InternalRow],
+      rddSchema: StructType,
+      dialect: JdbcDialect,
+      batchSize: Int,
+      upsert: Boolean): Unit = {
+    if (iterator.hasNext) {
+      val conn = getConnection()
+      var committed = false
+      try {
+        val stmt = insertStatement(conn, table, rddSchema, upsert)
+        try {
+          CodeGeneration.executeUpdate(table, stmt, iterator,
+            multipleRows = true, batchSize, rddSchema.fields, dialect)
+        } finally {
+          stmt.close()
+        }
+        conn.commit()
+        committed = true
+      } finally {
+        if (!committed) {
+          // The stage must fail.  We got here through an exception path, so
+          // let the exception through unless rollback() or close() want to
+          // tell the user about another problem.
+          conn.rollback()
+          conn.close()
+        } else {
+          // The stage must succeed.  We cannot propagate any exception
+          // close() might throw.
+          try {
+            conn.close()
+          } catch {
+            case e: Exception =>
+              logWarning("Transaction succeeded, but closing failed", e)
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Saves the RDD to the database in a single transaction.
+   */
+  def saveTable(
+      df: DataFrame,
+      table: String,
+      connProperties: ConnectionProperties,
+      upsert: Boolean = false): Unit = {
+    val rddSchema = df.schema
+    val getConnection: () => Connection = ExternalStoreUtils.getConnector(
+      table, connProperties, forExecutor = true)
+    val batchSize = connProperties.connProps.getProperty("batchsize",
+      "1000").toInt
+    df.queryExecution.toRdd.foreachPartition { iterator =>
+      savePartition(getConnection, table, iterator, rddSchema,
+        connProperties.dialect, batchSize, upsert)
+    }
   }
 }

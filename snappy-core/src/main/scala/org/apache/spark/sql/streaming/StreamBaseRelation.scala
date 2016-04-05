@@ -21,13 +21,13 @@ import scala.collection.mutable
 import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.streaming.{SnappyStreamingContext, Time}
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
+import org.apache.spark.streaming.{SnappyStreamingContext, Time}
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String])
@@ -76,12 +76,13 @@ abstract class StreamBaseRelation(options: Map[String, String])
       (stream, initDependents)
     })
 
+  override val needConversion: Boolean = false
+
   override def buildScan(): RDD[Row] = {
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
     if (rowStream.generatedRDDs.isEmpty) {
       new EmptyRDD[Row](sqlContext.sparkContext)
     } else {
-      rowStream.generatedRDDs.maxBy(_._1)._2.map(converter(_)).asInstanceOf[RDD[Row]]
+      rowStream.generatedRDDs.maxBy(_._1)._2.asInstanceOf[RDD[Row]]
     }
 
     /* val currentRDD = rowStream.generatedRDDs.maxBy(_._1)._2

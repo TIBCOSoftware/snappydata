@@ -182,9 +182,9 @@ trait DestroyRelation {
 trait IndexableRelation {
 
   /**
-   * Execute index on the table.
+   * Create an index on a table.
    */
-  def createIndex(tableName: String, colName: String): Unit
+  def createIndex(tableName: String, sql: String): Unit
 }
 
 /**

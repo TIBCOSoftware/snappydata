@@ -16,10 +16,11 @@
  */
 package org.apache.spark.sql.collection
 
-import java.io.{IOException, ObjectOutputStream}
+import java.io.ObjectOutputStream
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{Map => SMap}
+import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
@@ -137,7 +138,7 @@ object Utils {
   }
 
   def projectColumns(row: Row, columnIndices: Array[Int], schema: StructType,
-      convertToScalaRow: Boolean) = {
+      convertToScalaRow: Boolean): GenericRow = {
     val ncols = columnIndices.length
     val newRow = new Array[Any](ncols)
     var index = 0
@@ -620,7 +621,7 @@ private[spark] case class NarrowExecutorLocalSplitDep(
     var split: Partition
     ) extends Serializable {
 
-  @throws(classOf[IOException])
+  @throws[java.io.IOException]
   private def writeObject(oos: ObjectOutputStream): Unit = org.apache.spark.util.Utils.tryOrIOException {
     // Update the reference to parent split at the time of task serialization
     split = rdd.partitions(splitIndex)

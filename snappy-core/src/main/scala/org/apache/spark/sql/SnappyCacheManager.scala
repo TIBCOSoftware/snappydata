@@ -49,7 +49,8 @@ private[sql] class SnappyCacheManager extends execution.CacheManager {
   }
 
   def getRelation(sqlContext: SQLContext, storageLevel: StorageLevel,
-      executedPlan: SparkPlan, tableName: Option[String]): InMemoryAppendableRelation =
+      executedPlan: SparkPlan,
+      tableName: Option[String]): InMemoryAppendableRelation =
     InMemoryAppendableRelation(
       sqlContext.conf.useCompression,
       sqlContext.conf.columnBatchSize,
