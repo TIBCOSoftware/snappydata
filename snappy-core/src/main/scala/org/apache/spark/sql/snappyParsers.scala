@@ -190,6 +190,9 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected val TRUNCATE = Keyword("TRUNCATE")
   protected val INDEX = Keyword("INDEX")
   protected val ON = Keyword("ON")
+  protected val GLOBAL = Keyword("GLOBAL")
+  protected val HASH = Keyword("HASH")
+  protected val UNIQUE = Keyword("UNIQUE")
 
   protected override lazy val className: Parser[String] =
     repsep(ident, ".") ^^ { case s =>
@@ -294,15 +297,32 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> INDEX ~> tableIdentifier) ~ (ON ~> tableIdentifier) ~ wholeInput ^^ {
-      case indexName ~ tableName ~ sql =>
-        CreateIndex(tableName, sql)
+    (CREATE ~> (GLOBAL ~ HASH | UNIQUE).? <~ INDEX) ~
+      (tableIdentifier) ~ (ON ~> tableIdentifier) ~
+      commaSepIdents ~ (OPTIONS ~> options).? ^^ {
+      case indexType ~ indexName ~ tableName ~ cols ~ opts =>
+        val parameters = opts.getOrElse(Map.empty[String, String])
+        if (indexType.isDefined) {
+          val typeString = indexType match {
+            case Some("unique") =>
+              "unique"
+            case Some(x) if x.toString.equals("(global~hash)") =>
+              "global hash"
+          }
+          CreateIndex(indexName.toString, tableName,
+            cols.toArray, parameters + ("index_type" -> typeString))
+        } else {
+          CreateIndex(indexName.toString, tableName, cols.toArray, parameters)
+        }
+
     }
 
+  protected lazy val commaSepIdents: Parser[Seq[String]] = "(" ~> repsep(ident, ",") <~ ")"
+
   protected lazy val dropIndex: Parser[LogicalPlan] =
-    (DROP ~> INDEX ~> tableIdentifier) ~ wholeInput ^^ {
-      case indexName ~ sql =>
-        DropIndex(sql)
+    DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier  ^^ {
+      case ifExists ~ indexName =>
+        DropIndex(indexName.toString, ifExists.isDefined)
     }
 
   protected lazy val dropTable: Parser[LogicalPlan] =
@@ -429,23 +449,26 @@ private[sql] case class TruncateTable(
   }
 }
 
-private[sql] case class CreateIndex(
-    tableIdent: QualifiedTableName,
-    sql: String) extends RunnableCommand {
+private[sql] case class CreateIndex(indexName: String,
+                                    baseTable: QualifiedTableName,
+                                    indexColumns: Array[String],
+                                    options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnTable(tableIdent, sql)
+    snc.createIndexOnTable(indexName, baseTable.toString,
+      indexColumns, options)
     Seq.empty
   }
 }
 
 private[sql] case class DropIndex(
-    sql: String) extends RunnableCommand {
+    indexName: String,
+    ifExists : Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndexOfTable(sql)
+    snc.dropIndexOnTable(indexName, ifExists)
     Seq.empty
   }
 }

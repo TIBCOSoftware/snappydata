@@ -572,38 +572,58 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     }
   }
 
-
   /**
-   * Create Index on a SnappyData table (created by a call to createTable).
-   * @todo how can the user invoke this? sql?
-   */
-  private[sql] def createIndexOnTable(tableIdent: QualifiedTableName,
-      sql: String): Unit = {
-    //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
+    * Create an index on a table.
+    * @param indexName Index name which goes in the catalog
+    * @param baseTable Fully qualified name of table on which the index is created.
+    * @param indexColumns Columns on which the index has to be created
+    * @param options Options for indexes. For e.g.
+    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    */
+  def createIndexOnTable(indexName: String,
+                         baseTable: String,
+                         indexColumns: Array[String],
+                         options: Map[String, String]): Unit = {
+
+    val tableIdent = catalog.newQualifiedTableName(baseTable)
 
     if (!catalog.tableExists(tableIdent)) {
       throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
 
-    //println("qualifiedTable=" + qualifiedTable)
     catalog.lookupRelation(tableIdent) match {
-      case LogicalRelation(i: IndexableRelation, _) =>
-        i.createIndex(tableIdent.toString, sql)
+      case LogicalRelation(ir: IndexableRelation, _) =>
+        ir.createIndex(indexName,
+          baseTable,
+          indexColumns,
+          options)
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
   }
 
+  private def constructDropSQL(indexName: String,
+                               ifExists : Boolean): String = {
+
+    val ifExistsClause = if (ifExists) "IF EXISTS" else ""
+
+    return s"DROP INDEX $ifExistsClause $indexName"
+  }
+
   /**
-   * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
-   */
-  private[sql] def dropIndexOfTable(sql: String): Unit = {
+    * Drops an index on a table
+    * @param indexName Index name which goes in catalog
+    * @param ifExists Drop if exists, else exit gracefully
+    */
+  def dropIndexOnTable(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       sparkContext, new mutable.HashMap[String, String])
     val conn = JdbcUtils.createConnectionFactory(connProperties.url,
       connProperties.connProps)()
     try {
+      val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>

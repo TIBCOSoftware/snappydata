@@ -68,20 +68,36 @@ class CreateIndexTest extends SnappyFunSuite {
   test("Test create Index on Row Table using Snappy API") {
     val snContext = org.apache.spark.sql.SnappyContext(sc)
     val tableName : String = "trow1"
-    val props = Map(
-      "url" -> "jdbc:snappydata:;mcast-port=33619;user=app;password=app;persist-dd=false",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver",
-      "user" -> "app",
-      "password" -> "app"
-    )
-
-    snContext.sql("drop table if exists " + tableName)
+    val props = Map ("PARTITION_BY" -> "col2")
 
     val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
+    val rdd = sc.parallelize(data, data.length).
+      map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
-    snContext.createTable(tableName, "jdbc", dataDF.schema, props)
-    dataDF.write.format("jdbc").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snContext.createTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    doPrint("Verify index create and drop for various index types")
+    snContext.sql("create index test1 on " + tableName + " (COL1)")
+    snContext.sql("drop index test1")
+    snContext.sql("create unique index test1 on " + tableName + " (COL1)")
+    snContext.sql("drop index test1")
+    snContext.sql("create global hash index test1 on " + tableName + " (COL1)")
+    snContext.sql("drop index test1")
+
+    snContext.createIndexOnTable("test1", tableName, Array("col1"), Map("index_type" -> "unique"))
+    snContext.dropIndexOnTable("test1", false)
+    snContext.createIndexOnTable("test1", tableName,
+      Array("col1"), Map("index_type" -> "global hash"))
+    snContext.dropIndexOnTable("test1", false)
+    snContext.createIndexOnTable("test1", tableName, Array("col1"),
+      Map.empty[String, String])
+    snContext.dropIndexOnTable("test1", false)
+
+    // drop non-existent indexes with if exist clause
+    snContext.dropIndexOnTable("test1", true)
+    snContext.sql("drop index if exists test1")
+
 
     doPrint("Create Index - Start")
     snContext.sql("create index test1 on " + tableName + " (COL1)")

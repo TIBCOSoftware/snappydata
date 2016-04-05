@@ -182,9 +182,19 @@ trait DestroyRelation {
 trait IndexableRelation {
 
   /**
-   * Create an index on a table.
-   */
-  def createIndex(tableName: String, sql: String): Unit
+    * Create an index on a table.
+    * @param indexName Index name which goes in the catalog
+    * @param baseTable Table on which the index is created.
+    * @param indexColumns Columns on which the index has to be created
+    * @param options Options for indexes. For e.g.
+    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    */
+  def createIndex(indexName: String,
+                    baseTable: String,
+                    indexColumns: Array[String],
+                    options: Map[String, String]): Unit
+
 }
 
 /**
