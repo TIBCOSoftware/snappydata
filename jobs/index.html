@@ -311,12 +311,12 @@
 <p>See <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">examples</a> for Spark and spark streaming jobs. </p>
 <p>SnappySQLJob trait extends the SparkJobBase trait. It provides users the singleton SnappyContext object that may be reused across jobs. SnappyContext singleton object creates one SQLContext per incoming SQL connection. Similarly SnappyStreamingJob provides users access to SnappyStreamingContext object that can be reused across jobs</p>
 <h4 id="submitting-jobs">Submitting jobs</h4>
-<p>Following command submits <a href="https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a> from the <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">snappy-examples</a> directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart-0.2.2-PREVIEW.jar) and submitted to jobs server as shown below.</p>
+<p>Following command submits <a href="https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/CreateAndLoadAirlineDataJob.scala">CreateAndLoadAirlineDataJob</a> from the <a href="https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples">snappy-examples</a> directory.   This job creates dataframes from parquet files, loads the data from dataframe into column tables and row tables and creates sample table on column table in its runJob method. The program is compiled into a jar file (quickstart-0.2.1-PREVIEW.jar) and submitted to jobs server as shown below.</p>
 <pre><code>$ bin/snappy-job.sh submit  \
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.2.2-PREVIEW.jar
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.2.1-PREVIEW.jar
 </code></pre>
 
 <p>The utility snappy-job.sh submits the job and returns a JSON that has a jobId of this job.</p>
@@ -357,7 +357,7 @@
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.AirlineDataJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.2.2-PREVIEW.jar
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.2.1-PREVIEW.jar
 </code></pre>
 
 <p>The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. </p>
@@ -367,7 +367,7 @@
     --lead hostNameOfLead:8090  \
     --app-name airlineApp \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
-    --app-jar $SNAPPY_HOME/lib/quickstart-0.2.2-PREVIEW.jar \
+    --app-jar $SNAPPY_HOME/lib/quickstart-0.2.1-PREVIEW.jar \
     --stream
 </code></pre>
               
