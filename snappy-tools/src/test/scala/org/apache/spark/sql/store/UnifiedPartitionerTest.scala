@@ -118,7 +118,7 @@ with BeforeAndAfterAll {
 
   }
 
-  /*test("Test PR Expression for Int type column") {
+  test("Test PR Expression for Int type column") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
         "USING column " +
         "options " +
@@ -164,6 +164,28 @@ with BeforeAndAfterAll {
     assert(count.count() === 1000)
   }
 
+  test("Test PR Expression for String type column without repartition") {
+    snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemRef String) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'ItemRef'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => Data1(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.registerTempTable("ColumnTable1Temp")
+
+
+    dataDF.write.insertInto(ColumnTableName1)
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
+ /*   val qe = new QueryExecution(snc, count.logicalPlan)
+    println(qe.executedPlan)*/
+    assert(count.count() === 1000)
+  }
 
   test("Test PR Expression for String type column for row tables") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemRef String) " +
@@ -186,5 +208,5 @@ with BeforeAndAfterAll {
     dataDF.write.insertInto(ColumnTableName1)
     val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
     assert(count.count() === 1000)
-  }*/
+  }
 }
