@@ -40,7 +40,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
-
+import io.snappydata.Constant._
 /**
  * This class acts as a DataSource provider for column format tables provided Snappy.
  * It uses GemFireXD as actual datastore to physically locate the tables.
@@ -76,7 +76,7 @@ class ColumnFormatRelation(
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
-  override def sizeInBytes: Long = MemoryAnalyticsService.getTableSizeStatsInBytes(
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(
     ColumnFormatRelation.cachedBatchTableName(table))
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -425,8 +425,7 @@ class ColumnFormatRelation(
 object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
-  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+
 
   def flushLocalBuckets(resolvedName: String): Unit = {
     val pr = Misc.getRegionForTable(resolvedName, false)

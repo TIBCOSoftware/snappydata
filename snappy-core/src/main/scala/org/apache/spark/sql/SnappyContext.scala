@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
-import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.ui.{SQLListener, SnappyStatsTab}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
@@ -72,8 +72,7 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  *
  * User should use obtain reference to a SnappyContext instance as below
  * val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
- *
- * @see https://github.com/SnappyDataInc/snappydata#step-1---start-the-snappydata-cluster
+  * @see https://github.com/SnappyDataInc/snappydata#step-1---start-the-snappydata-cluster
  * @see https://github.com/SnappyDataInc/snappydata#interacting-with-snappydata
  * @todo document describing the Job server API
  * @todo Provide links to above descriptions
@@ -137,10 +136,10 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * :: DeveloperApi ::
-   * @todo do we need this anymore? If useful functionality, make this
-   *       private to sql package ... SchemaDStream should use the data source
-   *       API?
-   *              Tagging as developer API, for now
+    * @todo do we need this anymore? If useful functionality, make this
+   *        private to sql package ... SchemaDStream should use the data source
+   *        API?
+   *        Tagging as developer API, for now
    * @param stream
    * @param aqpTables
    * @param transformer
@@ -174,8 +173,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Append dataframe to cache table in Spark.
-   *
-   * @param df
+    * @param df
    * @param table
    * @param storageLevel default storage level is MEMORY_AND_DISK
    * @return  @todo -> return type?
@@ -217,14 +215,14 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-   * @param tableName full table name to be truncated
+    * @param tableName full table name to be truncated
    */
   def truncateTable(tableName: String): Unit =
     truncateTable(catalog.newQualifiedTableName(tableName))
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-   * @param tableIdent qualified name of table to be truncated
+    * @param tableIdent qualified name of table to be truncated
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName): Unit = {
     val plan = catalog.lookupRelation(tableIdent)
@@ -243,7 +241,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Create a stratified sample table.
-   * @todo provide lot more details and examples to explain creating and
+    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
    * @param schema
@@ -262,7 +260,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Create approximate structure to query top-K with time series support.
-   * @todo provide lot more details and examples to explain creating and
+    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
    * @param keyColumnName
@@ -292,7 +290,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * }}}
    * @param tableName Name of the table
    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
-   * @param options Properties for table creation
+   * @param options   Properties for table creation
    * @return DataFrame for the table
    */
   def createTable(
@@ -321,8 +319,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    *    snappyContext.createTable(tableName, "column", dataDF.schema, props)
    *
    * }}}
-   *
-   * @param tableName Name of the table
+    * @param tableName Name of the table
    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param schema   Table schema
    * @param options  Properties for table creation. See options list for different tables.
@@ -356,8 +353,8 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * "password" -> "app"
    * )
    *
-
-   * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+ *
+ * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
    * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
    *
    * Any DataFrame of the same schema can be inserted into the JDBC table using
@@ -373,8 +370,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * dataDF.write.format("jdbc").mode(SaveMode.Append).saveAsTable("jdbcTable")
    *
    * }}}
-   *
-   * @param tableName Name of the table
+    * @param tableName Name of the table
    * @param provider  Provider name 'ROW' and 'JDBC'.
    * @param schemaDDL Table schema as a string interpreted by provider
    * @param options   Properties for table creation. See options list for different tables.
@@ -514,7 +510,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
-   * @param tableName table to be dropped
+    * @param tableName table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
   def dropTable(tableName: String, ifExists: Boolean = false): Unit =
@@ -522,7 +518,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
-   * @param tableIdent table to be dropped
+    * @param tableIdent table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
   private[sql] def dropTable(tableIdent: QualifiedTableName,
@@ -575,7 +571,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Create Index on a SnappyData table (created by a call to createTable).
-   * @todo how can the user invoke this? sql?
+    * @todo how can the user invoke this? sql?
    */
   private[sql] def createIndexOnTable(tableIdent: QualifiedTableName,
       sql: String): Unit = {
@@ -627,7 +623,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    *            ("MyTable", x.toSeq)
    *         )
    *       }}}
-   * @param tableName
+    * @param tableName
    * @param rows
    * @return number of rows inserted
    */
@@ -648,7 +644,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    *            ("MyTable", x.toSeq)
    *         )
    *       }}}
-   * @param tableName
+    * @param tableName
    * @param rows
    * @return
    */
@@ -666,7 +662,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * {{{
    *   snappyContext.update("jdbcTable", "ITEMREF = 3" , Row(99) , "ITEMREF" )
    * }}}
-   * @param tableName    table name which needs to be updated
+    * @param tableName    table name which needs to be updated
    * @param filterExpr    SQL WHERE criteria to select rows that will be updated
    * @param newColumnValues  A single Row containing all updated column
    *                         values. They MUST match the updateColumn list
@@ -687,8 +683,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   /**
    * Delete all rows in table that match passed filter expression
-   *
-   * @param tableName  table name
+    * @param tableName  table name
    * @param filterExpr SQL WHERE criteria to select rows that will be updated
    * @return  number of rows deleted
    */
@@ -715,11 +710,10 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * and associate this to a base table (i.e. the full data set). The time
    * interval specified here should not be less than the minimum time interval
    * used when creating the TopK synopsis.
-   * @todo provide an example and explain the returned DataFrame. Key is the
+    * @todo provide an example and explain the returned DataFrame. Key is the
    *       attribute stored but the value is a struct containing
    *       count_estimate, and lower, upper bounds? How many elements are
    *       returned if K is not specified?
-    *
     * @param topKName - The topK structure that is to be queried.
     * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
     *                  If passed as null, oldest interval is considered as the start interval.
@@ -773,12 +767,12 @@ object GlobalSnappyInit {
 
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
-
   private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
     if (!_globalSNContextInitialized ) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
           invokeServices(sc)
+          sc.ui.foreach(parentUI => new SnappyStatsTab(parentUI))
           _globalSNContextInitialized = true
         }
       }
@@ -796,21 +790,21 @@ object GlobalSnappyInit {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        MemoryAnalyticsService.start(sc)
+        SnappyAnalyticsService.start(sc)
       case SnappyShellMode(_, _) =>
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = false)
-        MemoryAnalyticsService.start(sc)
+        SnappyAnalyticsService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = false)
-        MemoryAnalyticsService.start(sc)
+        SnappyAnalyticsService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = true)
-        MemoryAnalyticsService.start(sc)
+        SnappyAnalyticsService.start(sc)
       case _ => // ignore
     }
   }
@@ -899,7 +893,7 @@ object SnappyContext extends Logging {
 
   /**
    * Returns an existing SnappyContext or create one if does not exists
-   * @param jsc
+    * @param jsc
    * @return SnappyContext
    */
   def getOrCreate(jsc: JavaSparkContext): SnappyContext = {
@@ -1007,7 +1001,7 @@ object SnappyContext extends Logging {
             "No connection to the distributed system") != -1 => // ignore
         }
       }
-      MemoryAnalyticsService.stop()
+      SnappyAnalyticsService.stop()
       sc.stop()
     }
     _clusterMode = null
@@ -1034,7 +1028,7 @@ object SnappyContext extends Logging {
    * @param providerName
    * @param onlyBuiltin
    * @return
-   */
+    */
   def getProvider(providerName: String, onlyBuiltin: Boolean): String =
     builtinSources.getOrElse(providerName,
       if (onlyBuiltin) throw new AnalysisException(

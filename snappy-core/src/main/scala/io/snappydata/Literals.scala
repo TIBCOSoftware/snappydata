@@ -50,6 +50,12 @@ object Constant {
 
   // Interval in ms  to run the MemoryAnalyticsService
   val DEFAULT_ANALYTICS_SERVICE_INTERVAL = 10000
+
+  // Internal Column table store schema
+  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+
+  // Internal Column table store suffix
+  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
 }
 
 /**
