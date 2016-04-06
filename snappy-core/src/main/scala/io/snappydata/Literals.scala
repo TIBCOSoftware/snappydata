@@ -48,7 +48,7 @@ object Constant {
 
   val DEFAULT_USE_HIKARICP = false
 
-  // Interval in ms  to run the MemoryAnalyticsService
+  // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_ANALYTICS_SERVICE_INTERVAL: Long = 5000
 
   // Internal Column table store schema

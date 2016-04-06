@@ -26,18 +26,12 @@ import scala.collection.mutable
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
-import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.util.ThreadUtils
 
 
-/**
-	* get TableSizes for all the updated tables from Snappy Store
-	*/
-
-object SnappyAnalyticsService  {
-	private val sc = SnappyContext.globalSparkContext
+object SnappyAnalyticsService {
 	private val tableStats = collection.mutable.Map[String, Long]()
 	private val analyticsExecutor = ThreadUtils.newDaemonSingleThreadScheduledExecutor(
 		"SnappyAnalyticsService")
