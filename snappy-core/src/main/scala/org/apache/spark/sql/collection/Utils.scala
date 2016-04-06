@@ -335,7 +335,7 @@ object Utils {
   }
 
   final def isLoner(sc: SparkContext): Boolean =
-    sc.schedulerBackend != null && sc.schedulerBackend.isInstanceOf[LocalBackend]
+    sc.schedulerBackend.isInstanceOf[LocalBackend]
 
   def toLowerCase(k: String): String = {
     var index = 0

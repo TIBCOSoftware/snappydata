@@ -76,7 +76,7 @@ class ColumnFormatRelation(
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
-  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSizeStatsInBytes(
     ColumnFormatRelation.cachedBatchTableName(table))
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -203,7 +203,8 @@ class ColumnFormatRelation(
    * Insert a sequence of rows into the table represented by this relation.
    *
    * @param rows the rows to be inserted
-    * @return number of rows inserted
+   *
+   * @return number of rows inserted
    */
   override def insert(rows: Seq[Row]): Int = {
     val numRows = rows.length
@@ -230,7 +231,8 @@ class ColumnFormatRelation(
    * Insert a sequence of rows into the table represented by this relation.
    *
    * @param rows the rows to be inserted
-    * @return number of rows inserted
+   *
+   * @return number of rows inserted
    */
   def insert(rows: Iterator[InternalRow]): Int = {
     if (rows.hasNext) {
@@ -425,7 +427,6 @@ class ColumnFormatRelation(
 object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
-
 
   def flushLocalBuckets(resolvedName: String): Unit = {
     val pr = Misc.getRegionForTable(resolvedName, false)
