@@ -29,6 +29,7 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, TransactionController}
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import io.snappydata.Constant
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
@@ -123,7 +124,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   def getInternalTableSchemas: java.util.List[String] = {
     val schemas = new java.util.ArrayList[String](2)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
-    schemas.add(ColumnFormatRelation.INTERNAL_SCHEMA_NAME)
+    schemas.add(Constant.INTERNAL_SCHEMA_NAME)
     schemas
   }
 }

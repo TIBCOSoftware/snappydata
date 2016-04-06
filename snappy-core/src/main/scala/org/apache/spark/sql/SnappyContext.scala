@@ -99,7 +99,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
-  //snappyContextFunctions.registerAQPErrorFunctions(this)
+  snappyContextFunctions.registerAQPErrorFunctions(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -1001,7 +1001,7 @@ object SnappyContext extends Logging {
             "No connection to the distributed system") != -1 => // ignore
         }
       }
-      SnappyAnalyticsService.stop()
+      SnappyAnalyticsService.stop
       sc.stop()
     }
     _clusterMode = null
