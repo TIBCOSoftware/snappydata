@@ -28,10 +28,10 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/snappy-config.sh"
 
 # Start Locators
-"$sbin"/snappy-locators.sh start
+"$sbin"/snappy-locators.sh start "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh start
+"$sbin"/snappy-servers.sh start "$@"
 
 # Start Leads
 if [ "$1" != "rowstore" ]; then
