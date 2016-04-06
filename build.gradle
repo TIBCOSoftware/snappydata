@@ -54,8 +54,22 @@ allprojects {
   version = '0.2-SNAPSHOT'
 
   // apply compiler options
-  compileJava.options.encoding = 'UTF-8'
-  compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
+  tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.incremental = true
+    options.compilerArgs << '-Xlint:-serial,-path,-deprecation,-unchecked,-rawtypes'
+    options.compilerArgs << '-XDignore.symbol.file'
+    options.fork = true
+    options.forkOptions.executable = 'javac'
+  }
+  tasks.withType(ScalaCompile) {
+    // scalaCompileOptions.optimize = true
+    scalaCompileOptions.useAnt = false
+    scalaCompileOptions.deprecation = false
+    scalaCompileOptions.additionalParameters = [ '-feature' ]
+    options.encoding = 'UTF-8'
+  }
+
   javadoc.options.charSet = 'UTF-8'
 
   gradle.taskGraph.whenReady( { graph ->
@@ -68,12 +82,12 @@ allprojects {
   ext {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
-    sparkVersion = '1.6.0-BETA'
+    sparkVersion = '1.6.0'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    gemfireXDVersion = '2.0-BETA'
+    gemfireXDVersion = '1.5.0-BETA2'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -405,8 +419,7 @@ subprojects {
 
 task publishLocal {
   dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
-    p.name != 'gemfirexd-prebuild' && p.name != 'gemfirexd' &&
-    p.name != 'gemfirexd-tests' }.collect {
+    p.name != 'gemfirexd-prebuild' && p.name != 'gemfirexd' }.collect {
     it.getTasksByName('install', false).collect { it.path }
   }
 }
@@ -414,7 +427,7 @@ task publishLocal {
 task publishMaven {
   dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
     p.name != 'gemfirexd-prebuild' && p.name != 'snappy-store' &&
-    p.name != 'gemfirexd' && p.name != 'gemfirexd-tests' }.collect {
+    p.name != 'gemfirexd' }.collect {
     it.getTasksByName('uploadArchives', false).collect { it.path }
   }
 }
@@ -780,6 +793,6 @@ gradle.taskGraph.whenReady({ graph ->
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports//, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
 }

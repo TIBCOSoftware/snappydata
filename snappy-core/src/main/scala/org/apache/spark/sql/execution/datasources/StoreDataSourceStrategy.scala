@@ -18,7 +18,6 @@ package org.apache.spark.sql.execution.datasources
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -77,9 +76,11 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       filterPredicates,
       numPartition,
       partitionColumns,
-      (requestedColumns, pushedFilters) => {
-        scanBuilder(requestedColumns, selectFilters(pushedFilters).toArray)
+      (requestedColumns, _, pushedFilters) => {
+        scanBuilder(requestedColumns, pushedFilters.toArray)
       })
+
+
   }
 
   // Based on Catalyst expressions.
@@ -89,17 +90,20 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
       filterPredicates: Seq[Expression],
       numPartition: Int,
       partitionColumns: Seq[String],
-      scanBuilder: (Seq[Attribute], Seq[Expression]) => RDD[InternalRow]) = {
+      scanBuilder: (Seq[Attribute], Seq[Expression], Seq[Filter]) => RDD[InternalRow]) = {
 
     val projectSet = AttributeSet(projects.flatMap(_.references))
     val filterSet = AttributeSet(filterPredicates.flatMap(_.references))
     val filterCondition = filterPredicates.reduceLeftOption(expressions.And)
 
-    val pushedFilters = filterPredicates.map {
-      _ transform {
-        case a: AttributeReference => relation.attributeMap(a) // Match original case of attributes.
-      }
-    }
+
+    val candidatePredicates = filterPredicates.map { _ transform {
+      case a: AttributeReference => relation.attributeMap(a) // Match original case of attributes.
+    }}
+
+
+    val (unhandledPredicates, pushedFilters) =
+      selectFilters(relation.relation, candidatePredicates)
 
     // Get the partition column attribute INFO from relation schema
     val sqlContext = relation.relation.sqlContext
@@ -124,7 +128,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         projects.map(_.toAttribute),
         numPartition,
         joinedCols,
-        scanBuilder(requestedColumns, pushedFilters),
+        scanBuilder(requestedColumns,candidatePredicates, pushedFilters),
         relation.relation)
       filterCondition.map(execution.Filter(_, scan)).getOrElse(scan)
     } else {
@@ -134,7 +138,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         requestedColumns,
         numPartition,
         joinedCols,
-        scanBuilder(requestedColumns, pushedFilters),
+        scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
         relation.relation)
       execution.Project(projects, filterCondition.map(execution.Filter(_, scan)).getOrElse(scan))
     }

@@ -31,18 +31,24 @@ final class WrappedInternalRow(override val schema: StructType,
   private var _internalRow: InternalRow = _
   private val cache = new Array[Any](schema.length)
 
-  private[sql] def internalRow = _internalRow
+  def this(schema: StructType) = this(schema, schema.fields.map { f =>
+    CatalystTypeConverters.createRowToScalaConverter(f.dataType)
+  })
 
-  private[sql] def internalRow_=(row: InternalRow): Unit = {
-    _internalRow = row
-    val len = cache.length
-    var i = 0
-    while (i < len) {
-      if (cache(i) != null) {
-        cache(i) = null
+  def internalRow = _internalRow
+
+  def internalRow_=(row: InternalRow): Unit = {
+    if (_internalRow ne null) {
+      val len = cache.length
+      var i = 0
+      while (i < len) {
+        if (cache(i) != null) {
+          cache(i) = null
+        }
+        i += 1
       }
-      i += 1
     }
+    _internalRow = row
   }
 
   override def length: Int = schema.length
@@ -100,11 +106,5 @@ final class WrappedInternalRow(override val schema: StructType,
     val row = new WrappedInternalRow(schema, converters)
     row._internalRow = _internalRow
     row
-  }
-}
-
-object WrappedInternalRow {
-  def createConverters(schema: StructType) = schema.fields.map { f =>
-    CatalystTypeConverters.createRowToScalaConverter(f.dataType)
   }
 }

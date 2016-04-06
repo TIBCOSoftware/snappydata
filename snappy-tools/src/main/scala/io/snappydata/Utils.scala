@@ -35,10 +35,11 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorLocalShellPartition
-import org.apache.spark.sql.columnar.{ConnectionProperties, ExternalStoreUtils}
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.{ExternalStore, StoreUtils}
 
 object Utils {
@@ -95,13 +96,13 @@ final class SparkShellRDDHelper {
     createConnection(connectionProperties, urlsOfNetServerHost)
   }
 
-  def createConnection(connProps: ConnectionProperties,
+  def createConnection(connProperties: ConnectionProperties,
       hostList: ArrayBuffer[(String, String)]): Connection = {
     val localhost = SocketCreator.getLocalHost
     var index = -1
 
     val jdbcUrl = if (useLocatorURL) {
-      connProps.url
+      connProperties.url
     } else {
       if (index < 0) index = hostList.indexWhere(_._1.contains(localhost.getHostAddress))
       if (index < 0) index = Random.nextInt(hostList.size)
@@ -110,18 +111,18 @@ final class SparkShellRDDHelper {
 
     // setup pool properties
     val props = ExternalStoreUtils.getAllPoolProperties(jdbcUrl, null,
-      connProps.poolProps, connProps.hikariCP, isEmbedded = false)
+      connProperties.poolProps, connProperties.hikariCP, isEmbedded = false)
     try {
       // use jdbcUrl as the key since a unique pool is required for each server
       ConnectionPool.getPoolConnection(jdbcUrl, GemFireXDClientDialect,
-        props, connProps.connProps, connProps.hikariCP)
+        props, connProperties.executorConnProps, connProperties.hikariCP)
     } catch {
       case sqlException: SQLException =>
         if (hostList.size == 1 || useLocatorURL)
           throw sqlException
         else {
           hostList.remove(index)
-          createConnection(connProps, hostList)
+          createConnection(connProperties, hostList)
         }
     }
   }
@@ -131,7 +132,7 @@ object SparkShellRDDHelper {
 
   def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
     store.tryExecute(tableName, {
-      case conn =>
+      conn =>
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
         val bucketToServerList = getBucketToServerMapping(resolvedName)
         val numPartitions = bucketToServerList.length

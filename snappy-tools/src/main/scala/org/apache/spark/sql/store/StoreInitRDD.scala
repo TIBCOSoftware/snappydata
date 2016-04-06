@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.store
 
+import java.util.Properties
+
 import scala.collection.concurrent.TrieMap
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -26,34 +28,27 @@ import io.snappydata.Constant
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.collection.{ExecutorLocalPartition, Utils}
-import org.apache.spark.sql.columnar.ConnectionProperties
 import org.apache.spark.sql.columntable.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtils}
-import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.sources.JdbcExtendedDialect
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect}
 import org.apache.spark.sql.store.impl.JDBCSourceAsColumnarStore
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Partition, SparkContext, SparkEnv, TaskContext}
 
 /**
-  * This RDD is responsible for booting up GemFireXD store . It is needed for Spark's
-  * standalone cluster.
-  * For Snappy cluster,Snappy non-embedded cluster we can ingnore it.
-  */
-
-
+ * This RDD is responsible for booting up GemFireXD store (for non-snappydata
+ * clusters) and other setup for tables on executors.
+ */
 class StoreInitRDD(@transient sqlContext: SQLContext,
     table: String,
     userSchema: Option[StructType],
-    partitions:Int,
-    connProperties:ConnectionProperties
-    )
-    extends RDD[(InternalDistributedMember, BlockManagerId)](sqlContext.sparkContext, Nil) {
+    partitions: Int,
+    connProperties: ConnectionProperties)
+    extends RDD[(InternalDistributedMember, BlockManagerId)](
+      sqlContext.sparkContext, Nil) {
 
-
-  val driver = DriverRegistry.getDriverClassName(connProperties.url)
   val isLoner = Utils.isLoner(sqlContext.sparkContext)
   val userCompression = sqlContext.conf.useCompression
   val columnBatchSize = sqlContext.conf.columnBatchSize
@@ -61,33 +56,38 @@ class StoreInitRDD(@transient sqlContext: SQLContext,
     Constant.COLUMN_MIN_BATCH_SIZE)
   val rddId = StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext)
 
-  override def compute(split: Partition, context: TaskContext): Iterator[(InternalDistributedMember, BlockManagerId)] = {
+  override def compute(split: Partition,
+      context: TaskContext): Iterator[(InternalDistributedMember,
+      BlockManagerId)] = {
     GemFireXDDialect.init()
-    DriverRegistry.register(driver)
+    DriverRegistry.register(connProperties.driver)
 
     //TODO:Suranjan Hackish as we have to register this store at each executor, for storing the cachedbatch
     // We are creating JDBCSourceAsColumnarStore without blockMap as storing at each executor
     // doesn't require blockMap
     userSchema match {
       case Some(schema) =>
-        val store = new JDBCSourceAsColumnarStore(connProperties,partitions)
+        val store = new JDBCSourceAsColumnarStore(connProperties, partitions)
         StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table,
           schema, store, columnBatchSize, userCompression, rddId)
       case None =>
     }
 
-    JdbcDialects.get(connProperties.url) match {
+    val props = connProperties.executorConnProps
+    connProperties.dialect match {
       case d: JdbcExtendedDialect =>
-        val extraProps = d.extraDriverProperties(isLoner).propertyNames
-        while (extraProps.hasMoreElements) {
-          val p = extraProps.nextElement()
-          if (connProperties.connProps.get(p) != null) {
+        val extraProps = new Properties()
+        d.addExtraDriverProperties(isLoner, extraProps)
+        val extraPropNames = extraProps.propertyNames
+        while (extraPropNames.hasMoreElements) {
+          val p = extraPropNames.nextElement()
+          if (props.get(p) != null) {
             sys.error(s"Master specific property $p " +
                 "shouldn't exist here in Executors")
           }
         }
     }
-    val conn = JdbcUtils.createConnection(connProperties.url, connProperties.connProps)
+    val conn = JdbcUtils.createConnectionFactory(connProperties.url, props)()
     conn.close()
     GemFireCacheImpl.setColumnBatchSizes(columnBatchSize,
       Constant.COLUMN_MIN_BATCH_SIZE)
@@ -134,5 +134,4 @@ object StoreInitRDD {
         }
     }
   }
-
 }

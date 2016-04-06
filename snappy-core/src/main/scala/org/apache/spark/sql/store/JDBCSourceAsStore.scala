@@ -30,9 +30,9 @@ import scala.util.control.NonFatal
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.columnar.{CachedBatch, ConnectionProperties, ExternalStoreUtils}
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils}
 import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.storage.{BlockId, BlockStatus, RDDBlockId, StorageLevel}
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
 
@@ -45,9 +45,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
   @transient
   protected lazy val rand = new Random
 
-  protected val dialect = JdbcDialects.get(connProperties.url)
-
-  lazy val connectionType = ExternalStoreUtils.getConnectionType(connProperties.url)
+  lazy val connectionType = ExternalStoreUtils.getConnectionType(
+    connProperties.dialect)
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
@@ -71,7 +70,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
       uuid: UUIDRegionKey, rddId: Int): Unit = {
     var cachedBatchSizeInBytes :Long = 0L
     tryExecute(tableName, {
-      case connection =>
+      connection =>
         val rowInsertStr = getRowInsertStr(tableName, batch.buffers.length)
         val stmt = connection.prepareStatement(rowInsertStr)
         stmt.setString(1, uuid.getUUID.toString)
@@ -83,19 +82,19 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
           columnIndex += 1
-          cachedBatchSizeInBytes += buffer.size
+          cachedBatchSizeInBytes += buffer.length
         })
         stmt.executeUpdate()
         stmt.close()
-        cachedBatchSizeInBytes += uuid.getUUID.toString.size +
-            2*4 /*size of bucket id and numrows*/ + stats.length
-    })
+        cachedBatchSizeInBytes += uuid.getUUID.toString.length +
+            2 * 4 /*size of bucket id and numrows*/ + stats.length
+    }, closeOnSuccess = true, onExecutor = true)
 
 //    log.trace("cachedBatchSizeInBytes =" + cachedBatchSizeInBytes
 //    + " rddId=" + rddId + " bucketId =" + uuid.getBucketId )
-    val taskContext = TaskContext.get
-    if (Option(taskContext) != None && cachedBatchSizeInBytes > 0L) {
-      val metrics = taskContext.taskMetrics
+    val taskContext = TaskContext.get()
+    if (Option(taskContext).isDefined && cachedBatchSizeInBytes > 0L) {
+      val metrics = taskContext.taskMetrics()
       val lastUpdatedBlocks = metrics.updatedBlocks.getOrElse(
         new ArrayBuffer[(BlockId, BlockStatus)]())
       val blockIdAndStatus = (RDDBlockId(rddId, uuid.getBucketId),
@@ -104,9 +103,11 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
     }
   }
 
-  override def getConnection(id: String): Connection = {
-    ConnectionPool.getPoolConnection(id, dialect, connProperties.poolProps,
-      connProperties.connProps, connProperties.hikariCP)
+  override def getConnection(id: String, onExecutor: Boolean): Connection = {
+    val connProps = if (onExecutor) connProperties.executorConnProps
+    else connProperties.connProps
+    ConnectionPool.getPoolConnection(id, connProperties.dialect,
+      connProperties.poolProps, connProps, connProperties.hikariCP)
   }
 
   protected def genUUIDRegionKey(bucketId: Int = -1) = new UUIDRegionKey(bucketId)
@@ -230,8 +231,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {
     store.tryExecute(tableName, {
-      case conn =>
-
+      conn =>
         val resolvedName = {
           if (tableName.indexOf(".") <= 0) {
             conn.getSchema + "." + tableName
@@ -244,7 +244,7 @@ class ExternalStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
             s", numRows, stats from $resolvedName where bucketid = $par"
         val rs = stmt.executeQuery(query)
         new CachedBatchIteratorOnRS(conn, requiredColumns, stmt, rs, context)
-    }, closeOnSuccess = false)
+    }, closeOnSuccess = false, onExecutor = true)
   }
 
   override protected def getPartitions: Array[Partition] = {

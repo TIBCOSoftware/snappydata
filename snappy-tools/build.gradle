@@ -54,7 +54,7 @@ dependencies {
   if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
     compile project(':spark-jobserver')
   } else {
-    compile group: 'io.snappydata', name: 'spark-jobserver', version: '0.6.0'
+    compile group: 'io.snappydata', name: 'spark-jobserver', version: '0.6.1'
   }
   nospark 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   nospark 'com.zaxxer:HikariCP:2.4.4'
@@ -103,7 +103,9 @@ task docs(type: ScalaDoc) {
         !it.getPath().matches('.*/internal/.*') && !it.getPath().contains('com/gemstone/gemfire/cache/operations/')
       })
       if (project.plugins.hasPlugin('scala')) {
-        allSource.addAll(project.sourceSets.main.allScala)
+        allSource.addAll(project.sourceSets.main.allScala.findAll {
+          !it.getPath().matches('.*org/apache/spark/sql/execution/joins/HashedRelation.*') 
+        })
       }
       [ project ]
     } else []

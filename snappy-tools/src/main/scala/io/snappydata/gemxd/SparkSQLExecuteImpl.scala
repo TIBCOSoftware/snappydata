@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+import io.snappydata.util.StringUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -38,7 +39,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.{SparkContext, Logging, SparkEnv}
+import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
@@ -208,8 +209,8 @@ class SparkSQLExecuteImpl(val sql: String,
       case FloatType => (StoredFormatIds.SQL_REAL_ID, -1, -1)
       case DoubleType => (StoredFormatIds.SQL_DOUBLE_ID, -1, -1)
       case StringType => (StoredFormatIds.SQL_CLOB_ID, -1, -1)
-      // TODO: specific codes for other complex types like
-      // ArrayType, StructType, MapType? (SNAP-428)
+      case BinaryType => (StoredFormatIds.SQL_BLOB_ID, -1, -1)
+      // TODO: specific codes for complex types and UDTs?
       case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
@@ -287,7 +288,8 @@ object SparkSQLExecuteImpl {
       case ByteType => hdos.writeByte(row.getByte(colIndex))
       case FloatType => hdos.writeFloat(row.getFloat(colIndex))
       case DoubleType => hdos.writeDouble(row.getDouble(colIndex))
-      // TODO: transmitting rest as CLOBs; change for complex types (SNAP-428)
+      case BinaryType => hdos.write(row.getBinary(colIndex))
+      // TODO: transmitting rest as CLOBs; change for complex types and UDTs
       case other =>
         val sb = new StringBuilder()
         Utils.dataTypeStringBuilder(other, sb)(row.get(colIndex, other))
@@ -325,7 +327,8 @@ object SparkSQLExecuteImpl {
             val utfLen = InternalDataSerializer.readSignedVL(in).toInt
             if (utfLen >= 0) {
               val pos = in.position()
-              dvd.setValue(new String(in.array(), pos, utfLen, "utf-8"))
+              dvd.setValue(new String(in.array(), pos, utfLen,
+                StringUtils.UTF8))
               in.setPosition(pos + utfLen)
             } else {
               dvd.setToNull()

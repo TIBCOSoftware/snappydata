@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{Connection, SQLException}
+import java.sql.SQLException
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -30,20 +30,21 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
+import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.ConnectionPool
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
@@ -198,57 +199,13 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
 
     val (schema, output) = (df.schema, df.logicalPlan.output)
 
-    val cached = df.rdd.mapPartitionsPreserve { rowIterator =>
+    val cached = df.queryExecution.toRdd.mapPartitionsPreserve { rowIterator =>
 
       val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
         tableIdent, schema, relation.cachedRepresentation, output)
 
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-        .foreach(batches.appendRow((), _))
+      rowIterator.foreach(batches.appendRow((), _))
       batches.forceEndOfBatch().iterator
-    }.persist(storageLevel)
-
-    // trigger an Action to materialize 'cached' batch
-    if (cached.count() > 0) {
-      relation.cachedRepresentation.asInstanceOf[InMemoryAppendableRelation]
-          .appendBatch(cached.asInstanceOf[RDD[CachedBatch]])
-    }
-  }
-
-  /**
-   * @param rdd
-   * @param table
-   * @param schema
-   * @param storageLevel
-   */
-  @DeveloperApi
-  private[sql] def appendToTempTableCache(rdd: RDD[_], table: String,
-      schema: StructType, storageLevel: StorageLevel) {
-    val useCompression = conf.useCompression
-    val columnBatchSize = conf.columnBatchSize
-
-    val tableIdent = catalog.newQualifiedTableName(table)
-    val plan = catalog.lookupRelation(tableIdent, None)
-    val relation = cacheManager.lookupCachedData(plan).getOrElse {
-      cacheManager.cacheQuery(DataFrame(this, plan),
-        Some(tableIdent.table), storageLevel)
-
-      cacheManager.lookupCachedData(plan).getOrElse {
-        sys.error(s"couldn't cache table $tableIdent")
-      }
-    }
-
-    val cached = rdd.mapPartitionsPreserve { rowIterator =>
-
-      val batches = InMemoryAppendableRelation(useCompression, columnBatchSize,
-        tableIdent, schema, relation.cachedRepresentation , schema.toAttributes)
-      val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-      rowIterator.map(converter(_).asInstanceOf[InternalRow])
-          .foreach(batches.appendRow((), _))
-      batches.forceEndOfBatch().iterator
-
     }.persist(storageLevel)
 
     // trigger an Action to materialize 'cached' batch
@@ -642,12 +599,11 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
    * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
    */
   private[sql] def dropIndexOfTable(sql: String): Unit = {
-    var conn: Connection = null
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(
+      sparkContext, new mutable.HashMap[String, String])
+    val conn = JdbcUtils.createConnectionFactory(connProperties.url,
+      connProperties.connProps)()
     try {
-      val connProperties =
-        ExternalStoreUtils.validateAndGetAllProps(sparkContext, new mutable.HashMap[String, String])
-      conn = ExternalStoreUtils.getConnection(connProperties.url, connProperties.connProps,
-        JdbcDialects.get(connProperties.url), Utils.isLoner(sparkContext))
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
       case sqle: java.sql.SQLException =>
@@ -659,9 +615,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
           throw sqle
         }
     } finally {
-      if (conn != null) {
-        conn.close()
-      }
+      conn.close()
     }
   }
 
@@ -874,7 +828,7 @@ object SnappyContext extends Logging {
 
   private val builtinSources = Map(
     "jdbc" -> classOf[row.DefaultSource].getCanonicalName,
-    COLUMN_SOURCE -> classOf[columnar.DefaultSource].getCanonicalName,
+    COLUMN_SOURCE -> classOf[org.apache.spark.sql.execution.columnar.DefaultSource].getCanonicalName,
     SAMPLE_SOURCE -> "org.apache.spark.sql.sampling.DefaultSource",
     TOPK_SOURCE -> "org.apache.spark.sql.topk.DefaultSource",
     ROW_SOURCE -> "org.apache.spark.sql.rowtable.DefaultSource",
@@ -1023,18 +977,22 @@ object SnappyContext extends Logging {
   }
 
   /**
-   * @todo document me
+   * Shut down and cleanup the SparkContext and SnappyData artifacts.
+   * Prefer this over SparkContext.stop() when dealing with SnappyContext.
+   * <p>
+   * This method is not synchronized and is required to be executed by a single
+   * thread in a "quiet" state when no other threads are performing operations.
    */
   def stop(): Unit = {
     val sc = globalSparkContext
     if (sc != null && !sc.isStopped) {
-      // clean up the connection pool on executors first
+      // clean up the connection pool and caches on executors first
       Utils.mapExecutors(sc, { (tc, p) =>
-        ConnectionPool.clear()
+        clearStaticArtifacts()
         Iterator.empty
       }).count()
       // then on the driver
-      ConnectionPool.clear()
+      clearStaticArtifacts()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isShellOrLocalMode(sc)) {
@@ -1050,6 +1008,20 @@ object SnappyContext extends Logging {
     _clusterMode = null
     _anySNContext = null
     GlobalSnappyInit.resetGlobalSNContext()
+  }
+
+  /** Cleanup static artifacts on this lead/executor. */
+  def clearStaticArtifacts(): Unit = {
+    ConnectionPool.clear()
+    CodeGeneration.clearCache()
+    _clusterMode match {
+      case m: ExternalClusterMode =>
+      case _ =>
+        val callbacks = ToolsCallbackInit.toolsCallback
+        if (callbacks ne null) {
+          callbacks.clearStaticArtifacts()
+        }
+    }
   }
 
   /**

@@ -20,11 +20,14 @@ dependencies {
     testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
     testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
   }
+  //Uncomment after AQP merge
+/*
   if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
     testCompile project(':snappy-aqp')
   } else {
     testCompile "io.snappydata:snappy-aqp:${version}"
   }
+*/
 
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
 }

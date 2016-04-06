@@ -53,10 +53,10 @@ final class DirectKafkaStreamRelation(
     }.toMap
   }.getOrElse(Map())
 
-  val K = options.get("K").getOrElse("java.lang.String")
-  val V = options.get("V").getOrElse("java.lang.String")
-  val KD = options.get("KD").getOrElse("kafka.serializer.StringDecoder")
-  val VD = options.get("VD").getOrElse("kafka.serializer.StringDecoder")
+  val K = options.getOrElse("K", "java.lang.String")
+  val V = options.getOrElse("V", "java.lang.String")
+  val KD = options.getOrElse("KD", "kafka.serializer.StringDecoder")
+  val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
 
   override protected def createRowStream(): DStream[InternalRow] = {
       val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))

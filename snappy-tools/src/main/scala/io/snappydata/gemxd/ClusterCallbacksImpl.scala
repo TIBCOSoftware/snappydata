@@ -23,17 +23,16 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
-import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks,
-  LeadNodeExecutionContext, SparkSQLExecute}
+import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
-import org.apache.spark.scheduler.cluster.{SnappyClusterManager, SnappyEmbeddedModeClusterManager}
+import org.apache.spark.scheduler.cluster.SnappyClusterManager
 
 /**
-  * Callbacks that are sent by GemXD to Snappy for cluster management
-  */
+ * Callbacks that are sent by GemXD to Snappy for cluster management
+ */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
   override def getLeaderGroup: util.HashSet[String] = {
@@ -42,21 +41,21 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     leaderServerGroup
   }
 
-  override def launchExecutor(driverUrl: String, driverDM: InternalDistributedMember): Unit = {
+  override def launchExecutor(driverUrl: String,
+      driverDM: InternalDistributedMember): Unit = {
     val url = if (driverUrl == null || driverUrl == "") {
-      logInfo(s"call to launchExecutor but driverUrl is invalid. ${driverUrl}")
+      logInfo(s"call to launchExecutor but driverUrl is invalid. $driverUrl")
       None
     }
     else {
       Some(driverUrl)
     }
-    logInfo(s"invoking startOrTransmute with. ${url}")
+    logInfo(s"invoking startOrTransmute with. $url")
     ExecutorInitiator.startOrTransmuteExecutor(url, driverDM)
   }
 
   override def getDriverURL: String = {
-
-    return SnappyClusterManager.cm.map(_.schedulerBackend) match {
+    SnappyClusterManager.cm.map(_.schedulerBackend) match {
       case Some(x) =>
         logInfo(s"returning driverUrl=${x.driverUrl}")
         x.driverUrl
@@ -65,7 +64,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     }
   }
 
-  override def stopExecutor: Unit = {
+  override def stopExecutor(): Unit = {
     ExecutorInitiator.stop()
   }
 

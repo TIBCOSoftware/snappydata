@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 
-package org.apache.spark.sql.columnar
+package org.apache.spark.sql.execution.columnar
 
 /**
  * A version of Spark's InMemoryRelation where new rows can be appended.

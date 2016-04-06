@@ -27,11 +27,12 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
-import com.google.common.cache.{CacheBuilder, CacheLoader}
+import com.google.common.cache.{LoadingCache, CacheBuilder, CacheLoader}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
@@ -39,7 +40,7 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
@@ -120,7 +121,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] var client: ClientInterface = newClient()
 
   private def newClient(): ClientInterface = {
-
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
@@ -207,7 +207,8 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       logInfo("Initializing HiveMetastoreConnection version " +
           s"$hiveMetastoreVersion using maven.")
       IsolatedClientLoader.forVersion(
-        version = hiveMetastoreVersion,
+        hiveMetastoreVersion,
+        hadoopVersion = VersionInfo.getVersion,
         config = allConfig,
         barrierPrefixes = hiveMetastoreBarrierPrefixes(),
         sharedPrefixes = hiveMetastoreSharedPrefixes()).createClient()
@@ -261,7 +262,8 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   /** A cache of Spark SQL data source tables that have been accessed. */
-  private val cachedDataSourceTables = {
+  private val cachedDataSourceTables: LoadingCache[QualifiedTableName,
+      LogicalRelation] = {
     val cacheLoader = new CacheLoader[QualifiedTableName, LogicalRelation]() {
       override def load(in: QualifiedTableName): LogicalRelation = {
         logDebug(s"Creating new cached data source for $in")
@@ -578,17 +580,17 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case _ => // ignore baseTable for others
     }
 
-    val dataBase = tableIdent.getDatabase(client)
-    val dbInHive = client.getDatabaseOption(dataBase)
+    val database = tableIdent.getDatabase(client)
+    val dbInHive = client.getDatabaseOption(database)
     dbInHive match {
       case Some(x) => // We are all good
-      case None => client.createDatabase(new HiveDatabase(dataBase, ""))
+      case None => client.createDatabase(new HiveDatabase(database, ""))
       // Path is empty String for now @TODO for parquet & hadoop relation
       // handle path correctly
     }
 
     val hiveTable = HiveTable(
-      specifiedDatabase = Option(dataBase),
+      specifiedDatabase = Option(database),
       name = tableIdent.table,
       schema = Seq.empty,
       partitionColumns = metastorePartitionColumns,

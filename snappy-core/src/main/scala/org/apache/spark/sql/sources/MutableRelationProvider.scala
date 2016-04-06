@@ -16,15 +16,17 @@
  */
 package org.apache.spark.sql.sources
 
+import java.util.Properties
+
 import scala.collection.mutable
 
-import org.apache.spark.sql.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.jdbc.{JDBCRelation, JDBCPartitioningInfo}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.jdbc.{JDBCPartitioningInfo, JDBCRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SaveMode, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode}
 
 
 abstract class MutableRelationProvider
@@ -63,11 +65,9 @@ abstract class MutableRelationProvider
     val parts = JDBCRelation.columnPartition(partitionInfo)
 
     var success = false
-    val relation = new JDBCMutableRelation(connProperties.url,
+    val relation = new JDBCMutableRelation(connProperties,
       SnappyStoreHiveCatalog.processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName, mode, schema, parts,
-      connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP, options, sqlContext)
+      getClass.getCanonicalName, mode, schema, parts, options, sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
       success = true
@@ -123,3 +123,7 @@ abstract class MutableRelationProvider
     }
   }
 }
+
+case class ConnectionProperties(url: String, driver: String,
+    dialect: JdbcDialect, poolProps: Map[String, String],
+    connProps: Properties, executorConnProps: Properties, hikariCP: Boolean)
