@@ -18,8 +18,13 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
+import java.util.List
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
+
+import org.apache.hadoop.hive.ql.index.{TableBasedIndexHandler, HiveIndexQueryContext}
+import org.apache.hadoop.hive.ql.parse.ParseContext
+import org.apache.hadoop.hive.ql.plan.ExprNodeDesc
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -48,6 +53,7 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.hadoop.hive.metastore.api.{Table, Index}
 
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
@@ -617,6 +623,32 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     } else {
       false
     }
+  }
+
+  class SnappyIndexHandler extends TableBasedIndexHandler {
+    override def usesIndexTable() : Boolean = false
+
+    @throws(classOf[HiveException])
+    override def analyzeIndexDefinition(table: Table, index: Index, table1: Table) : Unit = { }
+
+    def generateIndexQuery(var1: List[Index], var2: ExprNodeDesc,
+                           var3: ParseContext, var4: HiveIndexQueryContext): Unit = {}
+
+  }
+
+  def createIndex(tableIdent: QualifiedTableName, indexName: String,
+                  indexedCols: List[String],
+                  idxProps: java.util.Map[String, String]): Unit = {
+
+    val hiveClient = client.asInstanceOf[ClientWrapper].client
+    val dbName = tableIdent.getDatabase(client)
+
+    hiveClient.createIndex(dbName + "." + tableIdent.table,
+      dbName + "." + indexName,
+      "org.apache.spark.sql.hive.SnappyIndexHandler", indexedCols,
+      dbName + "." + indexName, false, null, null, null, null, null, idxProps,
+      null, null, null, null, null, null, null, null)
+
   }
 
   override def getTables(dbIdent: Option[String]): Seq[(String, Boolean)] = {

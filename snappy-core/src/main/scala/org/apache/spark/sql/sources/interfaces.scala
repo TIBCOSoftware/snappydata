@@ -192,7 +192,7 @@ trait IndexableRelation {
     */
   def createIndex(indexName: String,
                     baseTable: String,
-                    indexColumns: Array[String],
+                    indexColumns: Seq[String],
                     options: Map[String, String]): Unit
 
 }

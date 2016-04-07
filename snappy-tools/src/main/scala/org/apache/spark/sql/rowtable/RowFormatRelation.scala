@@ -160,6 +160,19 @@ class RowFormatRelation(
       connection.close()
     }
   }
+  override protected def constructSQL(indexName: String,
+                           baseTable: String,
+                           indexColumns: Seq[String],
+                           options: Map[String, String]): String = {
+
+    val parameters = new CaseInsensitiveMutableHashMap(options)
+    val columns = indexColumns.reduceLeft[String](_ + "," + _)
+    val indexType = parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
+      case Some(x) => x
+      case None => ""
+    }
+    return s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
+  }
 }
 
 final class DefaultSource extends MutableRelationProvider {

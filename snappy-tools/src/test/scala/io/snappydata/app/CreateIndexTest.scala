@@ -26,16 +26,15 @@ class CreateIndexTest extends SnappyFunSuite {
     val tableName : String = "tcol1"
     val snContext = org.apache.spark.sql.SnappyContext(sc)
 
-    val props = Map(
-      "url" -> "jdbc:snappydata:;mcast-port=33619;user=app;password=app;persist-dd=false",
-      "driver" -> "com.pivotal.gemfirexd.jdbc.EmbeddedDriver"
-    )
+    val props = Map ("PARTITION_BY" -> "col2")
 
     snContext.sql("drop table if exists " + tableName)
 
-    val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
-    val rdd = sc.parallelize(data, data.length).map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
+    val data = Seq(Seq(111, "aaaaa"), Seq(222, ""))
+    val rdd = sc.parallelize(data, data.length).map(s =>
+      new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
+    val x = dataDF.schema
     snContext.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
@@ -48,19 +47,8 @@ class CreateIndexTest extends SnappyFunSuite {
     doPrint("=============== RESULTS END ===============")
 
     try {
-      snContext.sql("create index test1 on " + tableName + " (COL1)")
-      fail("Should not create index on column table")
+      snContext.sql("create index test1 on " + tableName + " (col1)")
     } catch {
-      case ae: org.apache.spark.sql.AnalysisException => // ignore
-      case e: Exception => throw e
-    }
-
-    try {
-      snContext.sql("drop index test1 ")
-      fail("Should not drop index on column table")
-    } catch {
-      case ae: com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException => // ignore
-      case ax:  com.pivotal.gemfirexd.internal.impl.jdbc.SQLExceptionFactory40.EmbedSQLSyntaxErrorException => // ignore
       case e: Exception => throw e
     }
   }
@@ -70,7 +58,7 @@ class CreateIndexTest extends SnappyFunSuite {
     val tableName : String = "trow1"
     val props = Map ("PARTITION_BY" -> "col2")
 
-    val data = Seq(Seq(111,"aaaaa"), Seq(222,""))
+    val data = Seq(Seq(111, "aaaaa"), Seq(222, ""))
     val rdd = sc.parallelize(data, data.length).
       map(s => new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)

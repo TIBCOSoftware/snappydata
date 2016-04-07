@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
-
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
@@ -36,12 +35,13 @@ import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
+import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, CachedBatch,
+ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
 import org.apache.spark.sql.snappy.RDDExtensions
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
@@ -583,20 +583,29 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     */
   def createIndexOnTable(indexName: String,
                          baseTable: String,
-                         indexColumns: Array[String],
+                         indexColumns: Seq[String],
                          options: Map[String, String]): Unit = {
 
     val tableIdent = catalog.newQualifiedTableName(baseTable)
 
     if (!catalog.tableExists(tableIdent)) {
       throw new AnalysisException(
-        s"$tableIdent is not an indexable table")
+        s"Could not find $tableIdent in catalog")
     }
-
+    import scala.collection.JavaConverters._
     catalog.lookupRelation(tableIdent) match {
-      case LogicalRelation(ir: IndexableRelation, _) =>
+      case LogicalRelation(ir: JDBCMutableRelation, _) =>
         ir.createIndex(indexName,
-          baseTable,
+          tableIdent.toString,
+          indexColumns,
+          options)
+      case LogicalRelation(ir: JDBCAppendableRelation, _) =>
+        // TODO: update the index in hive metastore
+        //        catalog.createIndex(tableIdent, indexName,
+        //          indexColumns.asJava,
+//          options.asJava)
+        ir.createIndex(indexName,
+          tableIdent.toString,
           indexColumns,
           options)
       case _ => throw new AnalysisException(

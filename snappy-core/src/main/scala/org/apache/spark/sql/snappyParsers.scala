@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{DefaultParserDialect, SqlLexical, SqlParserBase, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources._
@@ -310,9 +311,9 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
               "global hash"
           }
           CreateIndex(indexName.toString, tableName,
-            cols.toArray, parameters + ("index_type" -> typeString))
+            cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
         } else {
-          CreateIndex(indexName.toString, tableName, cols.toArray, parameters)
+          CreateIndex(indexName.toString, tableName, cols, parameters)
         }
 
     }
@@ -451,7 +452,7 @@ private[sql] case class TruncateTable(
 
 private[sql] case class CreateIndex(indexName: String,
                                     baseTable: QualifiedTableName,
-                                    indexColumns: Array[String],
+                                    indexColumns: Seq[String],
                                     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {

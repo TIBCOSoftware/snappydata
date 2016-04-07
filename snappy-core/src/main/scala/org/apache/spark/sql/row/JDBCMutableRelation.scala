@@ -23,7 +23,6 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
@@ -282,23 +281,17 @@ class JDBCMutableRelation(
     }
   }
 
-  private def constructSQL(indexName: String,
+  protected def constructSQL(indexName: String,
                            baseTable: String,
-                           indexColumns: Array[String],
+                           indexColumns: Seq[String],
                            options: Map[String, String]): String = {
 
-    val parameters = new CaseInsensitiveMutableHashMap(options)
-    val columns = indexColumns.reduceLeft[String](_ + "," + _)
-    val indexType = parameters.get("INDEX_TYPE") match {
-      case Some(x) => x
-      case None => ""
-    }
-    return s"CREATE $indexType INDEX $indexName ON $baseTable ($columns)"
+    ""
   }
 
   override def createIndex(indexName: String,
                            baseTable: String,
-                           indexColumns: Array[String],
+                           indexColumns: Seq[String],
                            options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {

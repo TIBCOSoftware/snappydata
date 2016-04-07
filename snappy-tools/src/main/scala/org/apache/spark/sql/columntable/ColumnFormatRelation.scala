@@ -55,7 +55,8 @@ import org.apache.spark.{Logging, Partition}
 
     This provider scans underlying tables in parallel and is aware of the data partition.
     It does not introduces a shuffle if simple table query is fired.
-    One can insert a single or multiple rows into this table as well as do a bulk insert by a Spark DataFrame.
+    One can insert a single or multiple rows into this table as well
+    as do a bulk insert by a Spark DataFrame.
     Bulk insert example is shown above.
  */
 class ColumnFormatRelation(
@@ -97,7 +98,7 @@ class ColumnFormatRelation(
     connectionType match {
       case ConnectionType.Embedded => partitioningColumns
       // TODO: [sumedh] is the issue in comment below being tracked somewhere??
-      case _ =>   Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
+      case _ => Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
     }
   }
 
@@ -159,11 +160,12 @@ class ColumnFormatRelation(
 
   override def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
       batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-    //TODO - currently using the length from the part Object but it needs to be handled more generically
-    //in order to replace UUID
+    // TODO - currently using the length from the part Object but it needs
+    // to be handled more generically in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
+      // TODO - rddID should be passed to the executors so that cachedBatch
+      // size can be shown be correctly even for non embedded mode
       val id = {
         StoreCallbacksImpl.stores.get(table) match {
           case Some((_, _, rddId)) => rddId
@@ -174,7 +176,7 @@ class ColumnFormatRelation(
           cachedBatchTableName(table), batch, rddId = id)
       accumulated += uuid
     } else {
-      //TODO: can we do it before compressing. Might save a bit
+      // TODO: can we do it before compressing. Might save a bit
       val unCachedRows = ExternalStoreUtils.cachedBatchesToRows(
         Iterator(batch), schema.map(_.name).toArray, schema)
       insert(unCachedRows)
@@ -250,7 +252,7 @@ class ColumnFormatRelation(
   }
 
   // truncate both actual and shadow table
-  override def truncate() = writeLock {
+  override def truncate(): Unit = writeLock {
     try {
       val columnTable = ColumnFormatRelation.cachedBatchTableName(table)
       externalStore.tryExecute(columnTable, conn => {
@@ -330,7 +332,7 @@ class ColumnFormatRelation(
       case d: JdbcExtendedDialect =>
         (s"constraint ${tableName}_bucketCheck check (bucketId != -1), " +
             "primary key (uuid, bucketId) ", d.getPartitionByClause("bucketId"))
-      case _ => ("primary key (uuid)", "") //TODO. How to get primary key contraint from each DB
+      case _ => ("primary key (uuid)", "") // TODO. How to get primary key contraint from each DB
     }
     val colocationClause = s"COLOCATE WITH ($table)"
 
@@ -354,9 +356,9 @@ class ColumnFormatRelation(
       numPartitions)
   }
 
-  //TODO: Suranjan make sure that this table doesn't evict to disk by
+  // TODO: Suranjan make sure that this table doesn't evict to disk by
   // setting some property, may be MemLRU?
-  def createActualTable(tableName: String, externalStore: ExternalStore) = {
+  def createActualTable(tableName: String, externalStore: ExternalStore): Unit = {
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
@@ -401,7 +403,7 @@ class ColumnFormatRelation(
       connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
-      //stmt.setSt
+      // stmt.setSt
       val result = stmt.executeUpdate()
       stmt.close()
       result
@@ -418,8 +420,74 @@ class ColumnFormatRelation(
     })
     ColumnFormatRelation.flushLocalBuckets(resolvedName)
   }
+
+  /**
+    * Index table is same as the column table apart from how it is
+    * partitioned and colocated. Add GEM_PARTITION_BY and GEM_COLOCATE_WITH
+    * clause in its options. Also add GEM_INDEXED_TABLE parameter to
+    * indicate that this is an index table.
+    */
+  private def createIndexTable(indexName: String,
+                               tableRelation: JDBCAppendableRelation,
+                               indexColumns: Seq[String],
+                               options: Map[String, String]): Unit = {
+
+
+    val parameters = new CaseInsensitiveMutableHashMap(options)
+    val indexTblName = getIndexTableName(tableRelation.table, indexName)
+    val tempOptions = tableRelation.origOptions.filterNot(pair => {
+      pair._1.equals(StoreUtils.GEM_PARTITION_BY) ||
+        pair._1.equals(StoreUtils.GEM_COLOCATE_WITH) ||
+        pair._1.equals(JdbcExtendedUtils.DBTABLE_PROPERTY)
+    }) + (StoreUtils.GEM_PARTITION_BY -> indexColumns.mkString(",")) +
+      (StoreUtils.GEM_INDEXED_TABLE -> tableRelation.table) +
+      (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)
+
+    val indexOptions = parameters.get(StoreUtils.GEM_COLOCATE_WITH) match {
+      case Some(value) => tempOptions + (StoreUtils.GEM_COLOCATE_WITH -> value)
+      case _ => tempOptions
+    }
+    _context.asInstanceOf[SnappyContext].createTable(
+      indexTblName,
+      "column",
+      tableRelation.schema,
+      indexOptions)
+  }
+
+  private def getIndexTableName(tableName: String, indexName: String): String = {
+     StoreUtils.PREFIX_INDEX_TABLE + tableName + "_" + indexName
+  }
+
+  override def createIndex(indexName: String,
+                           baseTable: String,
+                           indexColumns: Seq[String],
+                           options: Map[String, String]): Unit = {
+
+    createIndexTable(indexName, this, indexColumns, options)
+  }
 }
 
+/**
+  * Currently this is same as ColumnFormatRelation but has kept it as a separate class
+  * to allow adding of any index specific functionality in future.
+  */
+class IndexColumnFormatRelation(
+                            _table: String,
+                            _provider: String,
+                            _mode: SaveMode,
+                            _userSchema: StructType,
+                            _schemaExtensions: String,
+                            _ddlExtensionForShadowTable: String,
+                            _origOptions: Map[String, String],
+                            _externalStore: ExternalStore,
+                            _blockMap: Map[InternalDistributedMember, BlockManagerId],
+                            _partitioningColumns: Seq[String],
+                            _context: SQLContext)
+  extends ColumnFormatRelation(_table, _provider, _mode, _userSchema,
+    _schemaExtensions, _ddlExtensionForShadowTable, _origOptions,
+    _externalStore, _blockMap, _partitioningColumns, _context) {
+
+}
 
 object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
@@ -441,29 +509,29 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     }
   }
 
-  def registerStoreCallbacks(sqlContext: SQLContext,table: String,
-      userSchema: StructType, externalStore: ExternalStore) = {
+  def registerStoreCallbacks(sqlContext: SQLContext, table: String,
+      userSchema: StructType, externalStore: ExternalStore): Unit = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
       StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
   }
 
-  final def cachedBatchTableName(table: String) = {
+  final def cachedBatchTableName(table: String) : String = {
 
-    val tableName = if(table.indexOf('.') > 0){
-      table.replace(".","__")
+    val tableName = if (table.indexOf('.') > 0) {
+      table.replace(".", "__")
     } else {
       table
     }
     INTERNAL_SCHEMA_NAME + "." + tableName +
-        SHADOW_TABLE_SUFFIX
+      SHADOW_TABLE_SUFFIX
   }
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: StructType) = {
+      options: Map[String, String], schema: StructType) : JDBCAppendableRelation = {
     val parameters = new CaseInsensitiveMutableHashMap(options)
 
     val table = ExternalStoreUtils.removeInternalProps(parameters)
@@ -507,18 +575,35 @@ final class DefaultSource extends ColumnarRelationProvider {
       schema, externalStore)
 
     var success = false
-    val relation = new ColumnFormatRelation(SnappyStoreHiveCatalog.
+
+    // create an index relation if it is an index table
+    val relation = options.get(StoreUtils.GEM_INDEXED_TABLE) match {
+      case Some(_) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
         processTableIdentifier(table, sqlContext.conf),
-      getClass.getCanonicalName,
-      mode,
-      schema,
-      schemaExtension,
-      ddlExtensionForShadowTable,
-      options,
-      externalStore,
-      blockMap,
-      partitioningColumn,
-      sqlContext)
+        getClass.getCanonicalName,
+        mode,
+        schema,
+        schemaExtension,
+        ddlExtensionForShadowTable,
+        options,
+        externalStore,
+        blockMap,
+        partitioningColumn,
+        sqlContext)
+      case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
+        processTableIdentifier(table, sqlContext.conf),
+        getClass.getCanonicalName,
+        mode,
+        schema,
+        schemaExtension,
+        ddlExtensionForShadowTable,
+        options,
+        externalStore,
+        blockMap,
+        partitioningColumn,
+        sqlContext)
+    }
+
     try {
       relation.createTable(mode)
       success = true
