@@ -39,7 +39,7 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{CachedBatch, ExternalStoreUtils, InMemoryAppendableRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
-import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.ui.{SnappyStatsTab, SQLListener}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.snappy.RDDExtensions

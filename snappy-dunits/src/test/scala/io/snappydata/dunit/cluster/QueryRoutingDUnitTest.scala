@@ -4,12 +4,11 @@ import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Stat
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
 
-import org.apache.spark.sql.columntable.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
-
 /**
  * Tests for query routing from JDBC client driver.
  */
@@ -331,12 +330,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, ColumnFormatRelation.INTERNAL_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, Constant.INTERNAL_SCHEMA_NAME, null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"${t + ColumnFormatRelation.SHADOW_TABLE_SUFFIX}".
+      if (s"${t + Constant.SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))

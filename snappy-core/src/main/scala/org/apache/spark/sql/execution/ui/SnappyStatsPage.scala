@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest
 import scala.xml.Node
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.sources.SnappyAnalyticsService
+import org.apache.spark.sql.{UIAnalytics, SnappyAnalyticsService}
 import org.apache.spark.ui.{UIUtils, WebUIPage}
 import org.apache.spark.util.Utils
 
@@ -32,25 +32,49 @@ import org.apache.spark.util.Utils
 private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
 		extends WebUIPage("") with Logging {
 	def render(request: HttpServletRequest): Seq[Node] = {
-		val snappyStatsTable = UIUtils.listingTable(
-			tableHeader, tableRow, SnappyAnalyticsService.getTableStats.toSeq, fixedWidth = true)
+		val uiDetails = SnappyAnalyticsService.getUIDetails
+		val snappyRowTable = UIUtils.listingTable(
+			rowHeader, rowTable, uiDetails.filter(row => !row.isColumnTable))
+		val snappyColumnTable = UIUtils.listingTable(
+			columnHeader, columnTable, uiDetails.filter(row => row.isColumnTable))
+
 		val content =
 			<span>
-				<h4>Runtime Information</h4>{snappyStatsTable}
+				<h4>Snappy Row Tables</h4>{snappyRowTable}<h4>Snappy Column Tables</h4>{snappyColumnTable}
 			</span>
 
 		UIUtils.headerSparkPage("Snappy", content, parent, Some(500))
 	}
 
-	private def tableHeader = Seq("TableName", "TotalSize")
+	private def rowHeader = Seq("TableName", "TotalSize")
 
-	private def tableRow(kv: (String, Long)) = {
+	private def columnHeader = Seq("TableName", "Row Buffer Size", "Column Store Size", "TotalSize")
+
+	private def rowTable(stats: UIAnalytics) = {
 		<tr>
 			<td>
-				{kv._1}
+				{stats.tableName}
 			</td>
-			<td sorttable_customkey={kv._2.toString}>
-				{Utils.bytesToString(kv._2)}
+			<td sorttable_customkey={stats.rowBufferSize.toString}>
+				{Utils.bytesToString(stats.rowBufferSize)}
+			</td>
+		</tr>
+	}
+
+	private def columnTable(stats: UIAnalytics) = {
+		val totalSize = stats.rowBufferSize + stats.columnBufferSize
+		<tr>
+			<td>
+				{stats.tableName}
+			</td>
+			<td sorttable_customkey={stats.rowBufferSize.toString}>
+				{Utils.bytesToString(stats.rowBufferSize)}
+			</td>
+			<td sorttable_customkey={stats.columnBufferSize.toString}>
+				{Utils.bytesToString(stats.columnBufferSize)}
+			</td>
+			<td sorttable_customkey={totalSize.toString}>
+				{Utils.bytesToString(totalSize)}
 			</td>
 		</tr>
 	}
