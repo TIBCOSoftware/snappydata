@@ -17,9 +17,8 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.types.StructType
-
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 
@@ -46,7 +45,8 @@ final class SocketStreamRelation(
 
   val CONVERTER = "converter"
 
-  override protected def createRowStream(): DStream[InternalRow] =
+  override protected def createRowStream(): DStream[InternalRow] = {
+    val catConvert = CatalystTypeConverters.createToCatalystConverter(schema)
     if (options.exists(_._1 == CONVERTER)) {
       val converter = Utils.getContextOrSparkClassLoader.loadClass(
         options(CONVERTER)).newInstance().asInstanceOf[StreamConverter]
@@ -64,9 +64,12 @@ final class SocketStreamRelation(
       })
       context.socketStream(hostname, port, converter.convert,
         storageLevel).flatMap(rowConverter.toRows)
+          .map(catConvert(_).asInstanceOf[InternalRow])
     }
     else {
       context.socketTextStream(hostname, port,
         storageLevel).flatMap(rowConverter.toRows)
+          .map(catConvert(_).asInstanceOf[InternalRow])
     }
+  }
 }

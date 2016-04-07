@@ -22,7 +22,7 @@ import kafka.serializer.Decoder
 
 import org.apache.spark.Logging
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
@@ -59,11 +59,13 @@ final class DirectKafkaStreamRelation(
   val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
 
   override protected def createRowStream(): DStream[InternalRow] = {
-      val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
-      val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
-      val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
-      val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
-      KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-        kafkaParams, topicsSet)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
-    }
+    val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
+    val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
+    val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
+    val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
+    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
+    KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
+      kafkaParams, topicsSet)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
+        .map(converter(_).asInstanceOf[InternalRow])
+  }
 }

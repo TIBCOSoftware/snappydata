@@ -16,18 +16,23 @@
  */
 package io.snappydata.app.streaming
 
+import java.util
+
 import scala.collection.mutable.Queue
 
 import io.snappydata.SnappyFunSuite
+import io.snappydata.examples.adanalytics.SnappySparkLogAggregator._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import twitter4j.{Status, TwitterObjectFactory}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SaveMode
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
-import org.apache.spark.streaming._
+import org.apache.spark.sql.types.DataTypes._
+import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.{Seconds, SnappyStreamingContext, _}
 import org.apache.spark.unsafe.types.UTF8String
 
 class StreamingSuite extends SnappyFunSuite with Eventually
@@ -54,6 +59,48 @@ with BeforeAndAfterAll with BeforeAndAfter {
   after {
     baseCleanup()
     SnappyStreamingContext.getActive().map { _.stop(false, true) }
+  }
+
+  test("SchemaDStream Creation"){
+
+    def getRowDStream: DStream[Row] = {
+      val rowRDD1 = sc.parallelize(Row("1" , "one") :: Row("2" , "two") ::
+          Row("3" , "three") ::Row("4" , "four") :: Nil)
+      val rowRDD2 = sc.parallelize(Row("11" , "one") :: Row("22" , "two") ::
+          Row("33" , "three") ::Row("44" , "four") :: Nil)
+      val rowRDD3 = sc.parallelize(Row("111" , "one") :: Row("222" , "two") ::
+          Row("333" , "three") ::Row("444" , "four") :: Nil)
+      ssnc.queueStream[Row](Queue(rowRDD1, rowRDD2, rowRDD3))
+    }
+
+    def getTweetDStream: DStream[Tweet] = {
+      val rdd1 = sc.parallelize(Tweet(1 , "one") ::Nil )
+      val rdd2 = sc.parallelize(Tweet(2 , "two") ::Nil)
+      val rdd3 = sc.parallelize(Tweet(3 , "three") ::Nil)
+      val rdd4 = sc.parallelize(Tweet(4 , "four") ::Nil)
+      ssnc.queueStream[Tweet](Queue(rdd1, rdd2, rdd3, rdd4))
+    }
+
+    def getLogSchema: StructType = {
+      val publisher = createStructField("publisher", StringType, true)
+      val advertiser = createStructField("advertiser", StringType, true)
+      val fields = util.Arrays.asList(publisher, advertiser)
+      val schema = DataTypes.createStructType(fields)
+      schema
+    }
+
+    val rowStream = ssnc.createSchemaDStream(getRowDStream, getLogSchema)
+    rowStream.foreachDataFrame(df => {
+      assert(df.count == 4)
+    })
+
+    val tweetStream = ssnc.createSchemaDStream(getTweetDStream)
+    tweetStream.foreachDataFrame(df => {
+      assert(df.count == 1)
+    })
+
+    ssnc.start
+    ssnc.awaitTerminationOrTimeout(3000)
   }
 
   test("SNAP-414") {
@@ -489,9 +536,9 @@ case class Tweet(id: Int, text: String)
 
 class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 
-  override def toRows(message: Any): Seq[InternalRow] = {
+  override def toRows(message: Any): Seq[Row] = {
     val status: Status = message.asInstanceOf[Status]
-    Seq(InternalRow.fromSeq(Seq(status.getId,
+    Seq(Row.fromSeq(Seq(status.getId,
       UTF8String.fromString(status.getText),
       UTF8String.fromString(status.getUser().getName),
       UTF8String.fromString(status.getUser.getLang),
@@ -503,17 +550,17 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 
 class LineToRowsConverter extends StreamToRowsConverter with Serializable {
 
-  override def toRows(message: Any): Seq[InternalRow] = {
-    Seq(InternalRow.fromSeq(Seq(UTF8String.fromString(message.toString))))
+  override def toRows(message: Any): Seq[Row] = {
+    Seq(Row.fromSeq(Seq(UTF8String.fromString(message.toString))))
   }
 }
 
 class KafkaStreamToRowsConverter extends StreamToRowsConverter with Serializable {
 
-  override def toRows(message: Any): Seq[InternalRow] = {
+  override def toRows(message: Any): Seq[Row] = {
     val status: Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
     TwitterObjectFactory.getRawJSON(message)
-    Seq(InternalRow.fromSeq(Seq(status.getId,
+    Seq(Row.fromSeq(Seq(status.getId,
       UTF8String.fromString(status.getText),
       UTF8String.fromString(status.getUser().getName),
       UTF8String.fromString(status.getUser.getLang),
