@@ -25,7 +25,7 @@ import com.pivotal.gemfirexd.internal.iapi.types._
 import org.apache.spark.sql.CatalystHashFunction
 
 
-class StoreHashFunction extends CatalystHashFunction{
+class StoreHashFunction extends CatalystHashFunction {
 
   override def computeHash(key: Any): Int = {
     val update: Int =
@@ -43,37 +43,48 @@ class StoreHashFunction extends CatalystHashFunction{
             val b = java.lang.Double.doubleToLongBits(d)
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
+          case str: java.lang.String => utfStringHashCode(str.getBytes("utf-8"))
           //Custom type checks for Store
           case sb: SQLBoolean => if (sb.getBoolean) 0 else 1
           case sd: SQLDate => sd.getDate(Calendar.getInstance()).hashCode()
           case sd: SQLBit => java.util.Arrays.hashCode(sd.getBytes())
           case sf: SQLReal => java.lang.Float.floatToIntBits(sf.getFloat)
-          case clob: SQLClob => utfStringHashCode(clob.getString.getBytes("utf-8")) //@TODO
-          // Inefficient, we should use character array
-          case varchar: SQLVarchar => utfStringHashCode(varchar.getString.getBytes("utf-8"))
+          case clob: SQLClob => hashClob(clob.getCharArray(true))
+          case varchar: SQLVarchar => hashClob(varchar.getCharArray(true))
           case time: SQLTimestamp => time.getTimestamp(Calendar.getInstance()).hashCode()
-          case decimal :SQLDecimal => decimal.getObject().hashCode()
+          case decimal: SQLDecimal => decimal.getObject().hashCode()
           case other => other.hashCode()
         }
       }
     update
   }
 
-  def utfStringHashCode(a: Array[Byte]): Int = {
+  def hashClob(data: Array[Char]): Int = {
     var result = 1
-    val numBytes = a.length
-
-    var i: Int = 0
-    while (i < numBytes) {
+    var b = 0.toByte
+    for (index <- 0 to data.length - 1) {
       {
-        result = 31 * result + a(i)
+        val c: Int = data(index)
+        if ((c >= 0x0001) && (c <= 0x007F)) {
+          b = (c & 0xFF).toByte
+          result = 31 * result + b
+        }
+        else if (c > 0x07FF) {
+          b = (0xE0 | ((c >> 12) & 0x0F)).toByte
+          result = 31 * result + b
+          b = (0x80 | ((c >> 6) & 0x3F)).toByte
+          result = 31 * result + b
+          b = (0x80 | ((c >> 0) & 0x3F)).toByte
+          result = 31 * result + b
+        }
+        else {
+          b = (0xC0 | ((c >> 6) & 0x1F)).toByte
+          result = 31 * result + b
+          b = (0x80 | ((c >> 0) & 0x3F)).toByte
+          result = 31 * result + b
+        }
       }
-      ({
-        i += 1;
-        i - 1
-      })
     }
-
     return result
   }
 

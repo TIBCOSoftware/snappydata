@@ -211,7 +211,7 @@ object StoreUtils extends Logging {
                 throw new DDLException("Column table cannot be partitioned on" +
                     " PRIMARY KEY as no primary key")
               }
-            case _ =>  s"(${v.replace(",", "+")})"
+            case _ =>  s"hash COLUMN($v)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "

@@ -43,11 +43,30 @@ class CatalystHashFunction {
             val b = java.lang.Double.doubleToLongBits(d)
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
+          case str: java.lang.String => utfStringHashCode(str.getBytes("utf-8"))
           case other => other.hashCode()
         }
       }
     update
   }
+
+  def utfStringHashCode(a: Array[Byte]): Int = {
+    var result = 1
+    val numBytes = a.length
+
+    var i: Int = 0
+    while (i < numBytes) {
+      {
+        result = 31 * result + a(i)
+      }
+
+      i += 1;
+      i - 1
+    }
+
+    return result
+  }
+
 
   /**
    * This hashcode implementation matches that of Spark's hashcode implementation for rows.

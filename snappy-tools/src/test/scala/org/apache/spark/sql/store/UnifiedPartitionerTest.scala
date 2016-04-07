@@ -1,6 +1,6 @@
 package org.apache.spark.sql.store
 
-import java.math.BigDecimal
+import java.math.{BigInteger, BigDecimal}
 import java.util.Date
 
 import com.gemstone.gemfire.cache.{PartitionResolver, RegionAttributes, Region, CacheFactory, Cache}
@@ -46,6 +46,8 @@ with BeforeAndAfterAll {
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
 
+
+
   test(" Test hash codes for all Sql types ") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
         "USING column " +
@@ -62,12 +64,14 @@ with BeforeAndAfterAll {
 
     // Check All Datatypes
     val row = new GenericMutableRow(1)
-    row.update(0, 200)
     var dvd: DataValueDescriptor = new SQLInteger(200)
+    row.update(0, 200)
+
+
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
-    row.update(0, 200)
-    dvd = new SQLDouble(200)
+    row.update(0, new BigInteger("200000"))
+    dvd = new SQLInteger(200000)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     row.update(0, true)
@@ -77,6 +81,7 @@ with BeforeAndAfterAll {
     row.update(0, new java.sql.Date(1, 1, 2011))
     dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+
 
     val ipaddr: Array[Byte] = Array(192.toByte, 168.toByte, 1.toByte, 9.toByte)
     row.update(0, ipaddr)
@@ -92,11 +97,11 @@ with BeforeAndAfterAll {
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLVarchar("xxxx");
-    row.update(0, UTF8String.fromString("xxxx"))
+    row.update(0, UTF8String.fromString("xxxx")) // As catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLClob("xxxxx")
-    row.update(0, UTF8String.fromString("xxxxx"))
+    row.update(0, UTF8String.fromString("xxxxx")) // As catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLTimestamp(new java.sql.Timestamp(System.currentTimeMillis()))
@@ -111,9 +116,40 @@ with BeforeAndAfterAll {
     row.update(0, 2)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
+
     dvd = new SQLDecimal(new BigDecimal(32000.05f))
     row.update(0,new BigDecimal(32000.05f))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+
+
+    // Tests for external partitioner like Kafka partitioner
+
+    val func = new StoreHashFunction
+
+    dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.util.Date(1, 1, 2011)))
+
+    dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.sql.Date(1, 1, 2011)))
+
+    dvd = new SQLClob("xxxxx")
+    println("gem hashcode " + rpr.getRoutingKeyForColumn(dvd))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxxx"))
+
+    dvd = new SQLBoolean(true)
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(true))
+
+    dvd = new SQLVarchar("xxxx");
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxx"))
+
+    dvd = new SQLTimestamp(new java.sql.Timestamp(System.currentTimeMillis()))
+    assert(rpr.getRoutingKeyForColumn(dvd) ==
+        func.hashValue(new java.sql.Timestamp(System.currentTimeMillis())))
+
+    dvd = new SQLInteger(200000)
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new BigInteger("200000")))
+
+
 
 
   }
@@ -127,7 +163,7 @@ with BeforeAndAfterAll {
         "PERSISTENT 'ASYNCHRONOUS')")
 
     val rdd = sc.parallelize(
-      (1001 to 2000).map(i => TestData2(i, i.toString, i)))
+      (1 to 5).map(i => TestData2(i, i.toString, i)))
     val dataDF = snc.createDataFrame(rdd)
 
     val rep = dataDF.repartition(11, new ColumnName("key1"))
@@ -137,7 +173,7 @@ with BeforeAndAfterAll {
     dataDF.write.insertInto(ColumnTableName1)
 
     val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.OrderId=R.key1")
-    assert(count.count() === 1000)
+    assert(count.count() === 5)
   }
 
 
