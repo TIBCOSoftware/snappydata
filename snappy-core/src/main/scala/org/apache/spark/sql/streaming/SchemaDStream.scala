@@ -53,13 +53,25 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     super.filter(filterFunc)
   }
 
+ /* override def repartition(numPartitions: Int): SchemaDStream = {
+    snsc.createSchemaDStream(this.transform(_.repartition(numPartitions)), schema)
+  } */
+
   /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
     * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
     */
   def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
+    foreachDataFrame(foreachFunc, needsConversion = true)
+  }
+
+  /**
+    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+    */
+  def foreachDataFrame(foreachFunc: DataFrame => Unit, needsConversion: Boolean): Unit = {
     val func = (rdd: RDD[Row]) => {
-      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
+      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion))
     }
     this.foreachRDD(func)
   }
@@ -69,11 +81,20 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
     */
   def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
+    foreachDataFrame(foreachFunc, needsConversion = true)
+  }
+
+  /**
+    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+    */
+  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit, needsConversion : Boolean): Unit = {
     val func = (rdd: RDD[Row], time: Time) => {
-      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true), time)
+      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion), time)
     }
     this.foreachRDD(func)
   }
+
 
   /** Registers this SchemaDStream as a table in the catalog. */
   def registerAsTable(tableName: String): Unit = {

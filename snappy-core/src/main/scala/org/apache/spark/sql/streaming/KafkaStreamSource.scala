@@ -17,7 +17,7 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
@@ -55,7 +55,15 @@ final class KafkaStreamRelation(
     (a(0), a(1).toInt)
   }.toMap
 
-  override protected def createRowStream(): DStream[InternalRow] =
+  val K = options.getOrElse("K", "java.lang.String")
+  val V = options.getOrElse("V", "java.lang.String")
+  val KD = options.getOrElse("KD", "kafka.serializer.StringDecoder")
+  val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
+
+  override protected def createRowStream(): DStream[InternalRow] = {
+    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
     KafkaUtils.createStream(context, zkQuorum, groupId, topics, storageLevel)
         .map(_._2).flatMap(rowConverter.toRows)
+        .map(converter(_).asInstanceOf[InternalRow])
+  }
 }
