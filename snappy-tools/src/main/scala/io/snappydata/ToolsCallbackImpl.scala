@@ -28,7 +28,6 @@ import io.snappydata.impl.LeadImpl
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.columntable.StoreCallbacksImpl
-import org.apache.spark.sql.store.StoreInitRDD
 
 object ToolsCallbackImpl extends ToolsCallback {
 
@@ -90,7 +89,6 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   override def clearStaticArtifacts(): Unit = {
-    StoreInitRDD.tableToIdMap.clear()
     StoreCallbacksImpl.stores.clear()
   }
 }

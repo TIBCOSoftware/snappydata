@@ -68,7 +68,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getTableName)
     if (store.isDefined) {
-      val (schema, externalStore, _) = store.get
+      val (schema, externalStore) = store.get
       // LCC should be available assuming insert is already being done
       // via a proper connection
       var conn: EmbedConnection = null

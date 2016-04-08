@@ -169,7 +169,6 @@ class ColumnFormatRelation(
     if (batch.numRows >= columnBatchSize) {
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
           cachedBatchTableName(table), batch)
-      val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.cachedBatchTableName(table), batch)
       accumulated += uuid
     } else {
       //TODO: can we do it before compressing. Might save a bit
@@ -257,9 +256,6 @@ class ColumnFormatRelation(
       externalStore.tryExecute(table, conn => {
         JdbcExtendedUtils.truncateTable(conn, table, dialect)
       })
-      // remove info from UI
-      unregisterRDDInfoForUI()
-      registerRDDInfoForUI()
     }
   }
 

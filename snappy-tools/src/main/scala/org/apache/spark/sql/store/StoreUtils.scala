@@ -140,38 +140,13 @@ object StoreUtils extends Logging {
       schema, partitions, connProperties).collect()
     blockMap.toMap
   }
-
-  def registerRDDInfoForUI(sc: SparkContext, table: String,
-      numPartitions: Int): Unit = {
-    StoreCallbacksImpl.stores.get(table) match {
-      case Some((_, _, rddId)) =>
-        val rddInfo = new RDDInfo(rddId, table, numPartitions,
-          StorageLevel.OFF_HEAP, Seq())
-        rddInfo.numCachedPartitions = numPartitions
-        sc.ui.foreach(_.storageListener.registerRDDInfo(rddInfo))
-      case None => // nothing
-    }
-  }
-
-  def unregisterRDDInfoForUI(sc: SparkContext, table: String,
-      numPartitions: Int): Unit = {
-    StoreCallbacksImpl.stores.get(table) match {
-      case Some((_, _, rddId)) =>
-        sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
-      case None => // nothing
-    }
-  }
-
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       numPartitions: Int, registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
-    unregisterRDDInfoForUI(sqlContext.sparkContext, table, numPartitions)
     Utils.mapExecutors(sqlContext, () => {
-      StoreInitRDD.tableToIdMap.remove(table)
       StoreCallbacksImpl.stores.remove(table)
       Iterator.empty
     }).count()
-    StoreInitRDD.tableToIdMap.remove(table)
     StoreCallbacksImpl.stores.remove(table)
   }
 
