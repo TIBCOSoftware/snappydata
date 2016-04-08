@@ -41,20 +41,19 @@ import org.apache.spark.sql.types._
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   @transient private var sqlContext = None: Option[SQLContext]
-  val stores = new TrieMap[String, (StructType, ExternalStore, Int)]
-
+  val stores = new TrieMap[String, (StructType, ExternalStore)]
   var useCompression = false
   var cachedBatchSize = 0
 
   def registerExternalStoreAndSchema(context: SQLContext, tableName: String,
-      schema: StructType, externalStore: ExternalStore, batchSize: Int,
-      compress: Boolean, rddId: Int): Unit = {
+      schema: StructType, externalStore: ExternalStore,
+      batchSize: Int, compress: Boolean): Unit = {
     stores.synchronized {
       stores.get(tableName) match {
-        case None => stores.put(tableName, (schema, externalStore, rddId))
-        case Some((previousSchema, _, _)) =>
+        case None => stores.put(tableName, (schema, externalStore))
+        case Some((previousSchema, _)) =>
           if (previousSchema != schema) {
-            stores.put(tableName, (schema, externalStore, rddId))
+            stores.put(tableName, (schema, externalStore))
           }
       }
     }
@@ -65,7 +64,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[Any] = {
-
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getTableName)

@@ -25,7 +25,9 @@ import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
+
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
@@ -35,7 +37,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
 import org.apache.spark.sql.store.impl.{JDBCSourceAsColumnarStore, SparkShellRowRDD}
-import org.apache.spark.sql.store.{CodeGeneration, ExternalStore, StoreInitRDD, StoreUtils}
+import org.apache.spark.sql.store.{CodeGeneration, ExternalStore, StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
 import org.apache.spark.storage.BlockManagerId
@@ -165,15 +167,9 @@ class ColumnFormatRelation(
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
-      val id = {
-        StoreCallbacksImpl.stores.get(table) match {
-          case Some((_, _, rddId)) => rddId
-          case _ => -1
-        }
-      }
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
-          cachedBatchTableName(table), batch, rddId = id)
+          cachedBatchTableName(table), batch)
+      val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.cachedBatchTableName(table), batch)
       accumulated += uuid
     } else {
       //TODO: can we do it before compressing. Might save a bit
@@ -277,6 +273,7 @@ class ColumnFormatRelation(
     try {
       // clean up the connection pool and caches
       StoreUtils.removeCachedObjects(sqlContext, table, numPartitions)
+
     } finally {
       try {
         try {
@@ -340,23 +337,12 @@ class ColumnFormatRelation(
         structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
-
-    registerRDDInfoForUI()
-  }
-
-  def registerRDDInfoForUI(): Unit = {
-    StoreUtils.registerRDDInfoForUI(sqlContext.sparkContext, table,
-      numPartitions)
-  }
-
-  def unregisterRDDInfoForUI(): Unit = {
-    StoreUtils.unregisterRDDInfoForUI(sqlContext.sparkContext, table,
-      numPartitions)
   }
 
   //TODO: Suranjan make sure that this table doesn't evict to disk by
   // setting some property, may be MemLRU?
   def createActualTable(tableName: String, externalStore: ExternalStore) = {
+
     // Create the table if the table didn't exist.
     var conn: Connection = null
     try {
@@ -439,11 +425,10 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     }
   }
 
-  def registerStoreCallbacks(sqlContext: SQLContext,table: String,
+  def registerStoreCallbacks(sqlContext: SQLContext, table: String,
       userSchema: StructType, externalStore: ExternalStore) = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
-      externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
-      StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
+      externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression)
   }
 
   final def cachedBatchTableName(table: String) = {

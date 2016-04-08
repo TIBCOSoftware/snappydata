@@ -32,7 +32,7 @@ trait ExternalStore extends Serializable {
   final val columnPrefix = "Col_"
 
   def storeCachedBatch(tableName: String, batch: CachedBatch, bucketId: Int = -1,
-      batchId: Option[UUID] = None, rddId: Int = -1): UUIDRegionKey
+      batchId: Option[UUID] = None): UUIDRegionKey
 
   def getCachedBatchRDD(tableName: String, requiredColumns: Array[String],
       sparkContext: SparkContext): RDD[CachedBatch]
