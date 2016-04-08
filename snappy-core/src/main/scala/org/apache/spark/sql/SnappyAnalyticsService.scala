@@ -19,7 +19,7 @@
 
 package org.apache.spark.sql
 
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
 
 import scala.collection.mutable
 
@@ -34,8 +34,8 @@ import org.apache.spark.util.ThreadUtils
 
 object SnappyAnalyticsService {
 	private var tableStats = scala.collection.mutable.Map[String, MemoryAnalytics]()
-	private val analyticsExecutor = ThreadUtils.newDaemonSingleThreadScheduledExecutor(
-		"SnappyAnalyticsService")
+	private var analyticsExecutor: ScheduledExecutorService =
+		ThreadUtils.newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
 	private var connProperties: ConnectionProperties = null
 	private val readWriteLock = new LockUtils.ReadWriteLock()
 
@@ -44,6 +44,10 @@ object SnappyAnalyticsService {
 				ExternalStoreUtils.validateAndGetAllProps(sc, mutable.Map.empty[String, String])
 		val delayInMillisconds = sc.getConf.getOption("spark.snappy.analyticsService.interval")
 				.getOrElse(DEFAULT_ANALYTICS_SERVICE_INTERVAL).toString
+		if (analyticsExecutor.isShutdown) {
+			analyticsExecutor =
+					ThreadUtils.newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
+		}
 		analyticsExecutor.scheduleWithFixedDelay(
 			getTotalMemoryUsagePerTable, DEFAULT_ANALYTICS_SERVICE_INTERVAL,
 			delayInMillisconds.toLong, TimeUnit.MILLISECONDS)
@@ -51,7 +55,8 @@ object SnappyAnalyticsService {
 
 	def stop: Unit = {
 		if (!analyticsExecutor.isShutdown) {
-			analyticsExecutor.shutdown()
+			analyticsExecutor.shutdownNow()
+			analyticsExecutor.awaitTermination(DEFAULT_ANALYTICS_SERVICE_INTERVAL, TimeUnit.MILLISECONDS)
 		}
 	}
 
