@@ -286,9 +286,25 @@ case class JDBCAppendableRelation(
   def flushRowBuffer(): Unit = {
     // nothing by default
   }
+
+  private[sql] def externalColumnTableName: String = JDBCAppendableRelation.
+      cachedBatchTableName(table)
 }
 
 object JDBCAppendableRelation extends Logging {
+  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+
+  private[sql] final def cachedBatchTableName(table: String): String = {
+    val tableName = if (table.indexOf('.') > 0) {
+      table.replace(".", "__")
+    } else {
+      table
+    }
+
+    INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
+  }
+
   private def removePool(table: String): () => Iterator[Unit] = () => {
     ConnectionPool.removePoolReference(table)
     Iterator.empty
