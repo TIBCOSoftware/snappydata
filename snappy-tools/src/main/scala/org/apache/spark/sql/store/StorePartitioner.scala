@@ -39,7 +39,3 @@ class StorePartitioner(partitions: Int, hashFunction: CatalystHashFunction) exte
 
   override def hashCode: Int = numPartitions
 }
-
-
-
-
