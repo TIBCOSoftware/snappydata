@@ -1,9 +1,11 @@
 package org.apache.spark.sql.store
 
 import java.math.{BigInteger, BigDecimal}
+import java.sql.DriverManager
 import java.util.Date
 
 import com.gemstone.gemfire.cache.{PartitionResolver, RegionAttributes, Region, CacheFactory, Cache}
+import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.iapi.types._
@@ -27,10 +29,12 @@ with BeforeAndAfter
 with BeforeAndAfterAll {
 
   after {
-    snc.dropTable(ColumnTableName1, ifExists = true)
-    snc.dropTable(ColumnTableName2, ifExists = true)
-    snc.dropTable(RowTableName1, ifExists = true)
     snc.dropTable(RowTableName2, ifExists = true)
+    snc.dropTable(RowTableName1, ifExists = true)
+    snc.dropTable(ColumnTableName2, ifExists = true)
+    snc.dropTable(ColumnTableName1, ifExists = true)
+
+
   }
 
   val ColumnTableName1: String = "ColumnTable1"
@@ -44,8 +48,6 @@ with BeforeAndAfterAll {
   val options = "OPTIONS (PARTITION_BY 'col1')"
 
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
-
-
 
 
   test(" Test hash codes for all Sql types ") {
@@ -118,7 +120,7 @@ with BeforeAndAfterAll {
 
 
     dvd = new SQLDecimal(new BigDecimal(32000.05f))
-    row.update(0,new BigDecimal(32000.05f))
+    row.update(0, new BigDecimal(32000.05f))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
@@ -133,7 +135,6 @@ with BeforeAndAfterAll {
     assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.sql.Date(1, 1, 2011)))
 
     dvd = new SQLClob("xxxxx")
-    println("gem hashcode " + rpr.getRoutingKeyForColumn(dvd))
     assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxxx"))
 
     dvd = new SQLBoolean(true)
@@ -150,11 +151,9 @@ with BeforeAndAfterAll {
     assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new BigInteger("200000")))
 
 
-
-
   }
 
-  test("Test PR Expression for Int type column") {
+  test("Test PR for Int type column") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
         "USING column " +
         "options " +
@@ -177,7 +176,7 @@ with BeforeAndAfterAll {
   }
 
 
-  test("Test PR Expression for String type column") {
+  test("Test PR for String type column") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemRef String) " +
         "USING column " +
         "options " +
@@ -200,7 +199,7 @@ with BeforeAndAfterAll {
     assert(count.count() === 1000)
   }
 
-  test("Test PR Expression for String type column without repartition") {
+  test("Test PR for String type column without repartition") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemRef String) " +
         "USING column " +
         "options " +
@@ -218,12 +217,12 @@ with BeforeAndAfterAll {
 
     dataDF.write.insertInto(ColumnTableName1)
     val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
- /*   val qe = new QueryExecution(snc, count.logicalPlan)
-    println(qe.executedPlan)*/
+    /*   val qe = new QueryExecution(snc, count.logicalPlan)
+       println(qe.executedPlan)*/
     assert(count.count() === 1000)
   }
 
-  test("Test PR Expression for String type column for row tables") {
+  test("Test PR for String type column for row tables") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemRef String) " +
         "USING row " +
         "options " +
@@ -245,4 +244,105 @@ with BeforeAndAfterAll {
     val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
     assert(count.count() === 1000)
   }
+
+  test("Test PR for String type column with collocation") {
+    snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemRef String) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'ItemRef'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    snc.sql(s"CREATE TABLE $ColumnTableName2(OrderId INT ,ItemRef String) " +
+        "USING column " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'ItemRef'," +
+        "PERSISTENT 'ASYNCHRONOUS'," +
+        "COLOCATE_WITH 'ColumnTable1')")
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => Data1(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val rep = dataDF.repartition(11, new ColumnName("sk"))
+
+    rep.registerTempTable("ColumnTable1Temp")
+
+
+    dataDF.write.insertInto(ColumnTableName2)
+    val count = snc.sql(s"select * from $ColumnTableName2 P JOIN ColumnTable1Temp R ON P.ItemRef=R.sk")
+    assert(count.count() === 1000)
+  }
+
+  test("Test Row PR for String type primary key") {
+
+    snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT NOT NULL PRIMARY KEY ,ItemRef String) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'PRIMARY KEY'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => Data1(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val rep = dataDF.repartition(11, new ColumnName("pk"))
+
+    rep.registerTempTable("ColumnTable1Temp")
+
+    dataDF.write.insertInto(ColumnTableName1)
+
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R " +
+        s"ON P.OrderId=R.pk")
+    assert(count.count() === 1000)
+  }
+
+  test("Test row PR with jdbc connection") {
+    val serverHostPort = TestUtil.startNetServer()
+
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT NOT NULL " +
+        s"PRIMARY KEY ," +
+        s"ItemRef String) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'PRIMARY KEY'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => Data1(i, i.toString)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val rep = dataDF.repartition(11, new ColumnName("pk"))
+
+    rep.registerTempTable("ColumnTable1Temp")
+
+    val stmt = conn.createStatement()
+    val rows = rdd.collect()
+    try {
+
+      rows.foreach(d =>
+        stmt.executeUpdate(
+        s"insert into $ColumnTableName1 values(${d.pk}, '${d.sk}')")
+      )
+    } finally {
+      stmt.close()
+      conn.close()
+    }
+
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN " +
+        s"ColumnTable1Temp R ON P.OrderId=R.pk")
+    assert(count.count() === 1000)
+
+    TestUtil.stopNetServer()
+  }
+
 }

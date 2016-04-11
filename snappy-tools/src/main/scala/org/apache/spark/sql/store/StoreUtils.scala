@@ -206,7 +206,7 @@ object StoreUtils extends Logging {
           v match {
             case PRIMARY_KEY =>
               if (isRowTable) {
-                PRIMARY_KEY
+                s"hash $PRIMARY_KEY"
               } else {
                 throw new DDLException("Column table cannot be partitioned on" +
                     " PRIMARY KEY as no primary key")
