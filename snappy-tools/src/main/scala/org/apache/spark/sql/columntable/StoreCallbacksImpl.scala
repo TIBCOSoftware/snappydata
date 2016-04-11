@@ -116,7 +116,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   def getInternalTableSchemas: util.List[String] = {
     val schemas = new util.ArrayList[String](2)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
-    schemas.add(ColumnFormatRelation.INTERNAL_SCHEMA_NAME)
+    schemas.add(JDBCAppendableRelation.INTERNAL_SCHEMA_NAME)
     schemas
   }
 }
