@@ -143,9 +143,11 @@ with BeforeAndAfterAll {
     dvd = new SQLVarchar("xxxx");
     assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxx"))
 
-    dvd = new SQLTimestamp(new java.sql.Timestamp(System.currentTimeMillis()))
+    val timeStamp = new java.sql.Timestamp(System.currentTimeMillis())
+
+    dvd = new SQLTimestamp(timeStamp)
     assert(rpr.getRoutingKeyForColumn(dvd) ==
-        func.hashValue(new java.sql.Timestamp(System.currentTimeMillis())))
+        func.hashValue(timeStamp))
 
     dvd = new SQLInteger(200000)
     assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new BigInteger("200000")))
