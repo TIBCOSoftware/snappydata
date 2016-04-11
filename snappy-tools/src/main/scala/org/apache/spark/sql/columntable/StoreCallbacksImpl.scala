@@ -136,8 +136,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def getHashCodeSnappy(dvds: scala.Array[Object]): Int = {
     partioner.hashValue(dvds)
   }
-
-
 }
 
 trait StoreCallback extends Serializable {
