@@ -587,7 +587,13 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
                          options: Map[String, String]): Unit = {
 
     val tableIdent = catalog.newQualifiedTableName(baseTable)
+    val indexIdent = catalog.newQualifiedTableName(indexName)
 
+    if (indexIdent.database != tableIdent.database) {
+      throw new AnalysisException(
+        s"Index and table have different databases " +
+          s"specified ${indexIdent.database} and ${tableIdent.database}")
+    }
     if (!catalog.tableExists(tableIdent)) {
       throw new AnalysisException(
         s"Could not find $tableIdent in catalog")
@@ -595,22 +601,33 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     import scala.collection.JavaConverters._
     catalog.lookupRelation(tableIdent) match {
       case LogicalRelation(ir: JDBCMutableRelation, _) =>
-        ir.createIndex(indexName,
-          tableIdent.toString,
+        ir.createIndex(indexIdent,
+          tableIdent,
           indexColumns,
           options)
       case LogicalRelation(ir: JDBCAppendableRelation, _) =>
-        // TODO: update the index in hive metastore
-        //        catalog.createIndex(tableIdent, indexName,
-        //          indexColumns.asJava,
-//          options.asJava)
-        ir.createIndex(indexName,
-          tableIdent.toString,
+        ir.createIndex(indexIdent,
+          tableIdent,
           indexColumns,
           options)
+        // Main table is updated to store the index information in it. We could have instead used
+        // createIndex method of HiveClient to do this. But, there were two main issues:
+        // a. Schema needs to be added to the HiveTable to supply indexedCols while creating
+        // the index. But, when schema is added to the HiveTable object, it throws a foreign
+        // key constraint failure on the serdes table. Need to look into this.
+        // b. The bigger issue is that the createIndex needs an indexTable for creating this
+        // index. Also, there are multiple things (like implementing HiveIndexHandler)
+        // that are hive specific and can create issues for us from maintenance perspective
+        catalog.alterTableToAddIndexProp(tableIdent, getIndexTable(indexIdent).toString)
+
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
+  }
+
+  private[sql] def getIndexTable(indexIdent: QualifiedTableName): QualifiedTableName = {
+    new QualifiedTableName(indexIdent.database,
+      ExternalStoreUtils.PREFIX_INDEX_TABLE + indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,
@@ -627,6 +644,27 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
     * @param ifExists Drop if exists, else exit gracefully
     */
   def dropIndexOnTable(indexName: String, ifExists: Boolean): Unit = {
+
+    val indexIdent = getIndexTable(catalog.newQualifiedTableName(indexName))
+
+    // Since the index does not exist in catalog, it may be a row table index.
+    if (!catalog.tableExists(indexIdent)) {
+      dropRowStoreIndex(indexName, ifExists)
+    } else {
+      catalog.lookupRelation(indexIdent) match {
+        case LogicalRelation(dr: DependentRelation, _) =>
+          // Remove the index from the bse table props
+          val baseTableIdent = catalog.newQualifiedTableName(dr.baseTable.get)
+          catalog.alterTableToRemoveIndexProp(baseTableIdent, indexIdent.toString)
+          // Remove the actual index
+          dropTable(indexIdent, ifExists)
+
+        case _ => if (!ifExists) throw new AnalysisException(s"No index found for $indexName")
+      }
+    }
+  }
+
+  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       sparkContext, new mutable.HashMap[String, String])
     val conn = JdbcUtils.createConnectionFactory(connProperties.url,
@@ -635,7 +673,7 @@ class SnappyContext protected[spark](@transient override val sparkContext: Spark
       val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
-      case sqle: java.sql.SQLException =>
+      case sqle: SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
           throw new AnalysisException(s"${sqle.getMessage}\n" +
             "Ensure that the 'driver' option is set appropriately and " +

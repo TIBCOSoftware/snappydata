@@ -26,31 +26,49 @@ class CreateIndexTest extends SnappyFunSuite {
     val tableName : String = "tcol1"
     val snContext = org.apache.spark.sql.SnappyContext(sc)
 
-    val props = Map ("PARTITION_BY" -> "col2")
-
+    val props = Map (
+      "PARTITION_BY" -> "col1")
     snContext.sql("drop table if exists " + tableName)
 
-    val data = Seq(Seq(111, "aaaaa"), Seq(222, ""))
+    val data = Seq(Seq(111, "aaaaa"), Seq(222, "bbb"))
     val rdd = sc.parallelize(data, data.length).map(s =>
       new Data1(s(0).asInstanceOf[Int], s(1).asInstanceOf[String]))
     val dataDF = snContext.createDataFrame(rdd)
     val x = dataDF.schema
-    snContext.createTable(tableName, "column", dataDF.schema, props)
+    snContext.createTable("table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    val result = snContext.sql("select col1 from " +
-        tableName +
-        " where col2 like '%a%'")
-    doPrint("")
-    doPrint("=============== RESULTS START ===============")
-    result.collect.foreach(verifyRows)
-    doPrint("=============== RESULTS END ===============")
-
+    doPrint("Verify index create and drop for various index types")
+    snContext.sql("create index test1 on " + tableName + " (COL1)")
+    snContext.sql("create index test2 on " + tableName +
+      s" (COL1) Options (colocate_with  '$tableName')")
     try {
-      snContext.sql("create index test1 on " + tableName + " (col1)")
+      snContext.sql(s"drop table $tableName")
+      fail("This should fail as there are indexes associated with this table")
     } catch {
-      case e: Exception => throw e
+      case e: Throwable =>
     }
+    snContext.sql("drop index test1")
+    snContext.sql("drop index test2")
+    try {
+      snContext.sql("create index a1.test1 on " + tableName + " (COL1)")
+      fail("This should fail as the index should have same database as the table")
+    } catch {
+      case e: Throwable =>
+    }
+
+
+    snContext.createIndexOnTable("test1", tableName,
+      Array("col1"), Map("colocate_with" -> tableName))
+    snContext.dropIndexOnTable("test1", false)
+    snContext.createIndexOnTable("test1", tableName, Array("col1"),
+      Map.empty[String, String])
+    snContext.dropIndexOnTable("test1", false)
+
+    // drop non-existent indexes with if exist clause
+    snContext.dropIndexOnTable("test1", true)
+    snContext.sql("drop index if exists test1")
+
   }
 
   test("Test create Index on Row Table using Snappy API") {

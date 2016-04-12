@@ -18,6 +18,8 @@ package org.apache.spark.sql.columntable
 
 import java.sql.Connection
 
+import org.apache.spark.sql.execution.datasources.LogicalRelation
+
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -30,7 +32,7 @@ import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.{ColumnarRelationProvider, ExternalStoreUtils, JDBCAppendableRelation, _}
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.rowtable.RowFormatScanRDD
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
@@ -73,7 +75,9 @@ class ColumnFormatRelation(
     _context: SQLContext)
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
      _origOptions, _externalStore, _context)
-    with PartitionedDataSourceScan with RowInsertableRelation {
+    with PartitionedDataSourceScan
+    with RowInsertableRelation
+    with ParentRelation {
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
@@ -427,44 +431,55 @@ class ColumnFormatRelation(
     * clause in its options. Also add GEM_INDEXED_TABLE parameter to
     * indicate that this is an index table.
     */
-  private def createIndexTable(indexName: String,
+  private def createIndexTable(indexIdent: QualifiedTableName,
+                               tableIdent: QualifiedTableName,
                                tableRelation: JDBCAppendableRelation,
                                indexColumns: Seq[String],
                                options: Map[String, String]): Unit = {
 
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val indexTblName = getIndexTableName(tableRelation.table, indexName)
-    val tempOptions = tableRelation.origOptions.filterNot(pair => {
-      pair._1.equals(StoreUtils.GEM_PARTITION_BY) ||
-        pair._1.equals(StoreUtils.GEM_COLOCATE_WITH) ||
-        pair._1.equals(JdbcExtendedUtils.DBTABLE_PROPERTY)
-    }) + (StoreUtils.GEM_PARTITION_BY -> indexColumns.mkString(",")) +
-      (StoreUtils.GEM_INDEXED_TABLE -> tableRelation.table) +
+    val snc = _context.asInstanceOf[SnappyContext]
+    val indexTblName = snc.getIndexTable(indexIdent).toString
+    val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
+    val tempOptions = caseInsensitiveMap.filterNot(pair => {
+      pair._1.equals(Utils.toLowerCase(StoreUtils.PARTITION_BY)) ||
+        pair._1.equals(Utils.toLowerCase(StoreUtils.COLOCATE_WITH)) ||
+        pair._1.equals(Utils.toLowerCase(JdbcExtendedUtils.DBTABLE_PROPERTY)) ||
+        pair._1.equals(Utils.toLowerCase(ExternalStoreUtils.INDEX_NAME))
+    }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.mkString(",")) +
+      (StoreUtils.GEM_INDEXED_TABLE -> tableIdent.toString) +
       (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)
 
-    val indexOptions = parameters.get(StoreUtils.GEM_COLOCATE_WITH) match {
-      case Some(value) => tempOptions + (StoreUtils.GEM_COLOCATE_WITH -> value)
+    val indexOptions = parameters.get(StoreUtils.COLOCATE_WITH) match {
+      case Some(value) => tempOptions + (StoreUtils.COLOCATE_WITH -> value)
       case _ => tempOptions
     }
-    _context.asInstanceOf[SnappyContext].createTable(
+    snc.createTable(
       indexTblName,
       "column",
       tableRelation.schema,
       indexOptions)
   }
 
-  private def getIndexTableName(tableName: String, indexName: String): String = {
-     StoreUtils.PREFIX_INDEX_TABLE + tableName + "_" + indexName
-  }
-
-  override def createIndex(indexName: String,
-                           baseTable: String,
+  override def createIndex(indexIdent: QualifiedTableName,
+                           tableIdent: QualifiedTableName,
                            indexColumns: Seq[String],
                            options: Map[String, String]): Unit = {
 
-    createIndexTable(indexName, this, indexColumns, options)
+    createIndexTable(indexIdent, tableIdent, this, indexColumns, options)
   }
+
+  override def addDependent(dependent: DependentRelation,
+                            catalog: SnappyStoreHiveCatalog): Boolean =
+    DependencyCatalog.addDependent(table, dependent.name)
+
+  override def removeDependent(dependent: DependentRelation,
+                               catalog: SnappyStoreHiveCatalog): Boolean =
+    DependencyCatalog.removeDependent(table, dependent.name)
+
+  override def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String] =
+    DependencyCatalog.getDependents(table)
 }
 
 /**
@@ -482,11 +497,16 @@ class IndexColumnFormatRelation(
                             _externalStore: ExternalStore,
                             _blockMap: Map[InternalDistributedMember, BlockManagerId],
                             _partitioningColumns: Seq[String],
-                            _context: SQLContext)
+                            _context: SQLContext,
+                            baseTableName: String)
   extends ColumnFormatRelation(_table, _provider, _mode, _userSchema,
     _schemaExtensions, _ddlExtensionForShadowTable, _origOptions,
-    _externalStore, _blockMap, _partitioningColumns, _context) {
+    _externalStore, _blockMap, _partitioningColumns, _context)
+ with DependentRelation {
 
+  override def baseTable: Option[String] = Some(baseTableName)
+
+  override def name: String = _table
 }
 
 object ColumnFormatRelation extends Logging with StoreCallback {
@@ -578,7 +598,7 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     // create an index relation if it is an index table
     val relation = options.get(StoreUtils.GEM_INDEXED_TABLE) match {
-      case Some(_) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
+      case Some(baseTable) => new IndexColumnFormatRelation(SnappyStoreHiveCatalog.
         processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,
         mode,
@@ -589,7 +609,8 @@ final class DefaultSource extends ColumnarRelationProvider {
         externalStore,
         blockMap,
         partitioningColumn,
-        sqlContext)
+        sqlContext,
+        baseTable)
       case None => new ColumnFormatRelation(SnappyStoreHiveCatalog.
         processTableIdentifier(table, sqlContext.conf),
         getClass.getCanonicalName,
@@ -606,6 +627,21 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     try {
       relation.createTable(mode)
+      var indexes: Array[String] = Array()
+      try {
+        val options = new CaseInsensitiveMutableHashMap(relation.origOptions)
+        indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
+      } catch {
+        case e: NoSuchElementException =>
+        }
+
+      indexes.foreach(index => {
+        val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
+        val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
+          case LogicalRelation(r: DependentRelation, _ ) => r
+        }
+        relation.addDependent(dr, sncCatalog)
+      })
       success = true
       relation
     } finally {

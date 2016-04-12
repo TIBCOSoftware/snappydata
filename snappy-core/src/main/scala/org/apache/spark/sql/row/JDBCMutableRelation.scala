@@ -24,6 +24,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc._
+import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
@@ -289,16 +290,16 @@ class JDBCMutableRelation(
     ""
   }
 
-  override def createIndex(indexName: String,
-                           baseTable: String,
+  override def createIndex(indexIdent: QualifiedTableName,
+                           tableIdent: QualifiedTableName,
                            indexColumns: Seq[String],
                            options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(baseTable, conn,
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString, conn,
         dialect, sqlContext)
 
-      val sql = constructSQL(indexName, baseTable, indexColumns, options)
+      val sql = constructSQL(indexIdent.toString, tableIdent.toString, indexColumns, options)
 
       // Create the Index if the table exists.
       if (tableExists) {

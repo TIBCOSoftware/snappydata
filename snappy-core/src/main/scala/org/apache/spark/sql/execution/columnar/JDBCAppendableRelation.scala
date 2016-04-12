@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
@@ -279,8 +279,8 @@ case class JDBCAppendableRelation(
     // nothing by default
   }
 
-  override def createIndex(indexName: String,
-                           baseTable: String,
+  override def createIndex(indexIdent: QualifiedTableName,
+                           tableIdent: QualifiedTableName,
                            indexColumns: Seq[String],
                            options: Map[String, String]): Unit = {
     throw new UnsupportedOperationException("Indexes are not supported");

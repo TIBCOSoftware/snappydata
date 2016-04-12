@@ -18,7 +18,7 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-import java.util.List
+import java.util.{NoSuchElementException, List}
 import java.util.concurrent.ExecutionException
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
@@ -515,6 +515,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
         client = newClient()
         client.dropTable(dbName, tableIdent.table)
     }
+    cachedDataSourceTables.invalidate(tableIdent)
   }
 
   /**
@@ -612,6 +613,44 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
         client = newClient()
         client.createTable(hiveTable)
     }
+  }
+
+  def alterTableToAddIndexProp(inTable: QualifiedTableName, indexName: String): Unit = {
+    alterTableLock.synchronized {
+      val hiveTable = inTable.getTable(client)
+      var indexes = ""
+      try {
+        indexes = hiveTable.serdeProperties(ExternalStoreUtils.INDEX_NAME) + ","
+      } catch {
+        case e: NoSuchElementException =>
+      }
+      client.alterTable(
+        hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
+          (ExternalStoreUtils.INDEX_NAME -> (indexes + indexName)))
+      )
+    }
+    cachedDataSourceTables.invalidate(inTable)
+  }
+
+  def alterTableToRemoveIndexProp(inTable: QualifiedTableName, indexName: String): Unit = {
+    alterTableLock.synchronized {
+      val hiveTable = inTable.getTable(client)
+      val indexes = hiveTable.serdeProperties(ExternalStoreUtils.INDEX_NAME)
+      val indexArray = indexes.split(",")
+      val newindexes = indexArray.filter(_ != indexName).mkString(",")
+      if (newindexes == "") {
+        client.alterTable(
+          hiveTable.copy(
+            serdeProperties = hiveTable.serdeProperties - ExternalStoreUtils.INDEX_NAME)
+        )
+      } else {
+        client.alterTable(
+          hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
+            (ExternalStoreUtils.INDEX_NAME -> (newindexes)))
+        )
+      }
+    }
+    cachedDataSourceTables.invalidate(inTable)
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
@@ -731,6 +770,7 @@ object SnappyStoreHiveCatalog {
 
   private[this] var relationDestroyVersion = 0
   private val relationDestroyLock = new ReentrantReadWriteLock()
+  private val alterTableLock = new Object
 
   private[sql] def getRelationDestroyVersion: Int = relationDestroyVersion
 

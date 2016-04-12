@@ -19,7 +19,7 @@ package org.apache.spark.sql.sources
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -183,17 +183,17 @@ trait IndexableRelation {
 
   /**
     * Create an index on a table.
-    * @param indexName Index name which goes in the catalog
-    * @param baseTable Table on which the index is created.
+    * @param indexIdent Index Identifier which goes in the catalog
+    * @param tableIdent Table identifier on which the index is created.
     * @param indexColumns Columns on which the index has to be created
     * @param options Options for indexes. For e.g.
     *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
     */
-  def createIndex(indexName: String,
-                    baseTable: String,
-                    indexColumns: Seq[String],
-                    options: Map[String, String]): Unit
+  def createIndex(indexIdent: QualifiedTableName,
+                  tableIdent: QualifiedTableName,
+                  indexColumns: Seq[String],
+                  options: Map[String, String]): Unit
 
 }
 
