@@ -24,6 +24,7 @@ import scala.util.control.NonFatal
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.store.CodeGeneration
@@ -308,9 +309,11 @@ object JdbcExtendedUtils extends Logging {
       table: String,
       connProperties: ConnectionProperties,
       upsert: Boolean = false): Unit = {
-    val rddSchema = df.schema
     val getConnection: () => Connection = ExternalStoreUtils.getConnector(
       table, connProperties, forExecutor = true)
+    val rddSchema = JDBCRDD.resolveTable(
+      connProperties.url, table, connProperties.connProps)
+
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
     df.queryExecution.toRdd.foreachPartition { iterator =>

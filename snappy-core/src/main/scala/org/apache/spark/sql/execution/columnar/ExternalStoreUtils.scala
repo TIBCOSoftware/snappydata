@@ -247,8 +247,8 @@ object ExternalStoreUtils {
     }
   }
 
-  def getJDBCType(dialect: JdbcDialect, dataType: DataType) = {
-    dialect.getJDBCType(dataType).map(_.jdbcNullType).getOrElse(
+  def getJDBCType(dialect: JdbcDialect, dataType: DataType, field : StructField) = {
+    dialect.getJDBCType(dataType, field.metadata).map(_.jdbcNullType).getOrElse(
       dataType match {
         case IntegerType => java.sql.Types.INTEGER
         case LongType => java.sql.Types.BIGINT
