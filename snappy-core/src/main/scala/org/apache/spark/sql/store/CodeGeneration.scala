@@ -80,7 +80,7 @@ object CodeGeneration extends Logging {
       }
     })
 
-  private def getColumnSetterFragment(col: Int, field : StructField, dataType: DataType,
+  private def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ctx: CodeGenContext,
       buffHolderVar: String): (String, String) = {
     val nonNullCode: String = dataType match {
@@ -148,7 +148,7 @@ object CodeGeneration extends Logging {
         s"stmt.setObject(${col + 1}, row.get($col, schema[$col].dataType()));"
     }
     (nonNullCode, s"stmt.setNull(${col + 1}, " +
-        s"${ExternalStoreUtils.getJDBCType(dialect, dataType, field)});")
+        s"${ExternalStoreUtils.getJDBCType(dialect, NullType)});")
   }
 
   private def compilePreparedUpdate(table: String, schema: Array[StructField],
@@ -160,7 +160,7 @@ object CodeGeneration extends Logging {
       s"$bufferHolderVar = null;")
     val sb = new StringBuilder()
     schema.indices.foreach { col =>
-      val (nonNullCode, nullCode) = getColumnSetterFragment(col, schema(col),
+      val (nonNullCode, nullCode) = getColumnSetterFragment(col,
         schema(col).dataType, dialect, ctx, bufferHolderVar)
       sb.append(s"""
         if (!row.isNullAt($col)) {
@@ -216,7 +216,6 @@ object CodeGeneration extends Logging {
       }
       return result;"""
 
-    println(expression)
     // logInfo(s"DEBUG: For table=table generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[CodeGeneration],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
