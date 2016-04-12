@@ -309,10 +309,9 @@ object JdbcExtendedUtils extends Logging {
       table: String,
       connProperties: ConnectionProperties,
       upsert: Boolean = false): Unit = {
+    val rddSchema = df.schema
     val getConnection: () => Connection = ExternalStoreUtils.getConnector(
       table, connProperties, forExecutor = true)
-    val rddSchema = JDBCRDD.resolveTable(
-      connProperties.url, table, connProperties.connProps)
 
     val batchSize = connProperties.connProps.getProperty("batchsize",
       "1000").toInt
