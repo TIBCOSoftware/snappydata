@@ -3,28 +3,26 @@ package org.apache.spark.sql.streaming
 import org.json.{JSONArray, JSONObject}
 import twitter4j.Status
 
-import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[Row] = {
     val status: Status = message.asInstanceOf[Status]
     Seq(Row.fromSeq(Seq(status.getId,
-      UTF8String.fromString(status.getText),
-      UTF8String.fromString(status.getUser().getName),
-      UTF8String.fromString(status.getUser.getLang),
-      status.getRetweetCount, UTF8String.fromString(
-        status.getHashtagEntities.mkString(",")))))
+      status.getText,
+      status.getUser().getName,
+      status.getUser.getLang,
+      status.getRetweetCount,
+      status.getHashtagEntities.mkString(","))))
   }
-
 }
 
 class HashTagToRowsConverter extends StreamToRowsConverter with Serializable {
   override def toRows(message: Any): Seq[Row] = {
     val status: Status = message.asInstanceOf[Status]
-    Seq(Row.fromSeq(Seq(UTF8String.fromString(status.getText))))
+    Seq(Row.fromSeq(Seq(status.getText)))
   }
 }
 
@@ -42,7 +40,7 @@ class TweetToHashtagRow extends StreamToRowsConverter with Serializable {
       for (i <- 0 until hashArray.length()) {
         val a = hashArray.getJSONObject(i)
         val b = a.getString("text")
-        arr(i) = Row.fromSeq(Seq(UTF8String.fromString(b)))
+        arr(i) = Row.fromSeq(Seq(b))
       }
     } else {
       //for twitter stream
@@ -52,7 +50,7 @@ class TweetToHashtagRow extends StreamToRowsConverter with Serializable {
       for (i <- 0 until hashArray.length) {
         val b = hashArray(i).getText
 
-        arr(i) = Row.fromSeq(Seq(UTF8String.fromString(b)))
+        arr(i) = Row.fromSeq(Seq(b))
       }
     }
 
@@ -87,7 +85,7 @@ class TweetToRetweetRow extends StreamToRowsConverter with Serializable {
       }
     }
     val sampleRow = new Array[Row](1)
-    sampleRow(0) = Row.fromSeq(Seq(retweetId, retweetCnt, UTF8String.fromString(retweetTxt)))
+    sampleRow(0) = Row.fromSeq(Seq(retweetId, retweetCnt, retweetTxt))
     sampleRow.toSeq
   }
 }

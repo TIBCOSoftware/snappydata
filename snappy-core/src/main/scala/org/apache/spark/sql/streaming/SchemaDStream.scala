@@ -86,7 +86,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     }
     this.foreachRDD(func)
   }
-  
+
   /** Persist the RDDs of this SchemaDStream with the given storage level */
   override def persist(level: StorageLevel): SchemaDStream = {
     if (this.isInitialized) {
