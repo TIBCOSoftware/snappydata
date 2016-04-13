@@ -21,19 +21,17 @@ import java.util
 import scala.collection.mutable.Queue
 
 import io.snappydata.SnappyFunSuite
-import io.snappydata.examples.adanalytics.SnappySparkLogAggregator._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import twitter4j.{Status, TwitterObjectFactory}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
 import org.apache.spark.sql.types.DataTypes._
 import org.apache.spark.sql.types.{DataTypes, StructType}
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{Seconds, SnappyStreamingContext, _}
-import org.apache.spark.unsafe.types.UTF8String
 
 class StreamingSuite extends SnappyFunSuite with Eventually
 with BeforeAndAfterAll with BeforeAndAfter {
@@ -395,82 +393,6 @@ with BeforeAndAfterAll with BeforeAndAfter {
 
   }
 
-  /* ignore("sql stream sampling") {
-
-    ssnc.sql("create stream table tweetstreamtable " +
-        "(id long, text string, fullName string, " +
-        "country string, retweets int, hashtag string) " +
-        "using twitter_stream options (" +
-        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
-
-    val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
-
-    ssnc.snappyContext.registerSampleTable("tweetstreamtable_sampled", tableStream.schema, Map(
-      "qcs" -> "hashtag",
-      "fraction" -> "0.05",
-      "strataReservoirSize" -> "300",
-      "timeInterval" -> "3m"), Some("tweetstreamtable"))
-
-    tableStream.saveStream(Seq("tweetstreamtable_sampled"))
-
-    ssnc.sql("create table rawStreamColumnTable(id long, " +
-        "text string, " +
-        "fullName string, " +
-        "country string, " +
-        "retweets int, " +
-        "hashtag string) " +
-        "using column " +
-        "options('PARTITION_BY','id')")
-
-    var numTimes = 0
-    tableStream.foreachDataFrame { df =>
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("rawStreamColumnTable")
-
-      val top10Tags = ssnc.sql("select count(*) as cnt, hashtag from " +
-          "rawStreamColumnTable where length(hashtag) > 0 group by hashtag " +
-          "order by cnt desc limit 10").collect()
-      top10Tags.foreach(println) // scalastyle:ignore
-
-      numTimes += 1
-      if ((numTimes % 18) == 1) {
-        ssnc.sql("SELECT count(*) FROM rawStreamColumnTable").count()
-      }
-
-      val stop10Tags = ssnc.sql("select count(*) as cnt, " +
-          "hashtag from tweetstreamtable_sampled where length(hashtag) > 0 " +
-          "group by hashtag order by cnt desc limit 10").collect()
-      stop10Tags.foreach(println) // scalastyle:ignore
-    }
-
-    ssnc.sql("STREAMING START")
-    ssnc.awaitTerminationOrTimeout(10 * 1000)
-    ssnc.sql("drop table tweetstreamtable_sampled")
-    ssnc.sql("drop table tweetstreamtable")
-    ssnc.sql("drop table rawStreamColumnTable")
-  }
-
-  ignore("sql on socket streams") {
-
-    ssnc.sql("create stream table socketStreamTable (name string) " +
-        "using socket_stream options (" +
-        "hostname 'localhost', " +
-        "port '9998', " +
-        "storagelevel 'MEMORY_AND_DISK_SER_2', " +
-        "rowConverter 'io.snappydata.app.streaming.LineToRowsConverter') ")
-
-    ssnc.registerCQ("SELECT * FROM socketStreamTable window " +
-        "(duration '10' seconds, slide '10' seconds) ")
-
-    ssnc.sql("STREAMING START")
-    ssnc.sql("drop table socketStreamTable")
-  }
-*/
-
   test("sql on kafka streams") {
 
     ssnc.sql("create stream table kafkaStreamTable (name string, age int)" +
@@ -493,43 +415,6 @@ with BeforeAndAfterAll with BeforeAndAfter {
     //    "registered, so nothing to execute")
     ssnc.sql("drop table kafkaStreamTable")
   }
-
-
-  /* test("sql on direct kafka streams") {
-
-    intercept[Exception] {
-      // java.nio.channels.ClosedChannelException since no kafka cluster
-      ssnc.sql("create stream table directKafkaStreamTable (name string, age int) " +
-          "using directkafka_stream options " +
-          "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-          "rowConverter 'io.snappydata.app.streaming.KafkastreamToRowsConverter', " +
-          " kafkaParams 'metadata.broker.list->localhost:9092', " +
-          "topics 'tweets')")
-    }
-    val ex = intercept[Exception] {
-      ssnc.sql("STREAMING START")
-    }
-    assert(ex.getMessage === "requirement failed: No output operations" +
-        " registered, so nothing to execute")
-  } */
-
-  /* test("sql on file streams") {
-
-    // var hfile: String = getClass.getResource("/2015.parquet").getPath
-    ssnc.sql("create stream table fileStreamTable (name string, age int)" +
-        " using file_stream options " +
-        "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-        "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
-        " directory '/tmp')")
-    ssnc.registerCQ("SELECT name FROM fileStreamTable window " +
-        "(duration '10' seconds, slide '10' seconds) WHERE age >= 18")
-    // val thrown = intercept[Exception] {
-    ssnc.sql("STREAMING START")
-    // }
-    // assert(thrown.getMessage === "requirement failed: No output operations" +
-    //    " registered, so nothing to execute")
-    ssnc.sql("drop table fileStreamTable")
-  } */
 }
 
 case class Tweet(id: Int, text: String)
@@ -539,11 +424,11 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
   override def toRows(message: Any): Seq[Row] = {
     val status: Status = message.asInstanceOf[Status]
     Seq(Row.fromSeq(Seq(status.getId,
-      UTF8String.fromString(status.getText),
-      UTF8String.fromString(status.getUser().getName),
-      UTF8String.fromString(status.getUser.getLang),
-      status.getRetweetCount, UTF8String.fromString(
-        status.getHashtagEntities.mkString(",")))))
+      status.getText,
+      status.getUser().getName,
+      status.getUser.getLang,
+      status.getRetweetCount,
+      status.getHashtagEntities.mkString(","))))
   }
 
 }
@@ -551,7 +436,7 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
 class LineToRowsConverter extends StreamToRowsConverter with Serializable {
 
   override def toRows(message: Any): Seq[Row] = {
-    Seq(Row.fromSeq(Seq(UTF8String.fromString(message.toString))))
+    Seq(Row.fromSeq(Seq(message.toString)))
   }
 }
 
@@ -561,45 +446,10 @@ class KafkaStreamToRowsConverter extends StreamToRowsConverter with Serializable
     val status: Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
     TwitterObjectFactory.getRawJSON(message)
     Seq(Row.fromSeq(Seq(status.getId,
-      UTF8String.fromString(status.getText),
-      UTF8String.fromString(status.getUser().getName),
-      UTF8String.fromString(status.getUser.getLang),
-      status.getRetweetCount, UTF8String.fromString(
-        status.getHashtagEntities.mkString(",")))))
+      status.getText,
+      status.getUser().getName,
+      status.getUser.getLang,
+      status.getRetweetCount,
+      status.getHashtagEntities.mkString(","))))
   }
-
-  /* override def toRow(message: Any): Seq[InternalRow] = {
-    // TODO Yogesh. convert this raw JSON string to twitter4j.SatusJSONImpl
-    val status : Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
-    // val tweet = new JSONObject(message.asInstanceOf[String])
-    val hashTags = status.getHashtagEntities
-
-    val limit = KafkaMessageToRowConverter.rand.nextInt(20000)
-    (0 until limit).flatMap { i =>
-      val id = status.getId + (i.toLong *
-        KafkaMessageToRowConverter.rand.nextInt(100000))
-      if (hashTags.length <= 1) {
-        Seq(InternalRow.fromSeq(Seq(id,
-          UTF8String.fromString(status.getText),
-          UTF8String.fromString(status.getUser().getName),
-          UTF8String.fromString(status.getUser.getLang),
-          status.getRetweetCount,
-          UTF8String.fromString(if (hashTags.isEmpty) "" else hashTags(0).getText))))
-      } else {
-        hashTags.map { tag =>
-          InternalRow.fromSeq(Seq(id,
-            UTF8String.fromString(status.getText),
-            UTF8String.fromString(status.getUser().getName),
-            UTF8String.fromString(status.getUser.getLang),
-            status.getRetweetCount, UTF8String.fromString(tag.getText)))
-        }
-      }
-    }
-    // Row.fromSeq
-  }  */
 }
-
-/*
-object KafkaMessageToRowConverter {
-  private val rand = new Random
-} */
