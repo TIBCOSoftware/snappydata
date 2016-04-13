@@ -76,6 +76,8 @@ dependencies {
   compile "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
   compile 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   compile 'com.zaxxer:HikariCP:2.4.4'
+  provided 'com.rabbitmq:amqp-client:3.5.7'
+
   nospark "org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2"
   nospark 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   nospark 'com.zaxxer:HikariCP:2.4.4'

@@ -16,9 +16,8 @@ package io.snappydata.util.com.clearspring.analytics.hash;
  * limitations under the License.
  */
 
+import org.junit.Assert;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 /**
  * @author epollan
