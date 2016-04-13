@@ -1,23 +1,17 @@
 group 'io.snappydata'
 version '0.1.0-SNAPSHOT'
 
+
 apply plugin: 'scala'
-apply plugin: 'java'
 
 compileScala.options.encoding = 'UTF-8'
 
-// fix scala+java mix to all use compileScala which uses correct dependency order
 
-sourceSets {
-    main {
-        java {
-            srcDir 'src/test/java'
-        }
-        resources {
-            srcDir 'src/resources'
-        }
-    }
-}
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.java.srcDirs = []
+sourceSets.test.resources.srcDirs "src/resources"
+
 
 repositories {
     mavenCentral()
@@ -71,14 +65,12 @@ dependencies {
         testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
     }
     testRuntime project(':snappy-tools_' + scalaBinaryVersion)
-    testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(':snappy-tools_' + scalaBinaryVersion)
     testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
     testRuntime 'org.pegdown:pegdown:1.1.0'
-
+//    testRuntime group: 'org.datanucleus', name: 'datanucleus-core', version:'3.2.10'
 
 }
-
-
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
     classifier = 'javadoc'
@@ -89,6 +81,8 @@ if (rootProject.hasProperty('enablePublish')) {
         archives packageScalaDocs, packageSources
     }
 }
+
+
 
 archivesBaseName = 'gemfirexd-scala-tests'
 
@@ -107,3 +101,4 @@ copy {
     }
     into rootDir.getAbsolutePath() + '/snappy-store/tests/sql/build-artifacts/' + osDir + '/classes/main'
 }
+

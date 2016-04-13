@@ -213,7 +213,7 @@ subprojects {
   gradle.taskGraph.whenReady({ graph ->
     tasks.withType(Jar).each { pack ->
       if (pack.name == 'packageTests') {
-        pack.from(pack.project.sourceSets.test.output.classesDir)
+        pack.from(pack.project.sourceSets.test.output.classesDir, sourceSets.test.resources.srcDirs)
       }
     }
     tasks.withType(Test).each { test ->

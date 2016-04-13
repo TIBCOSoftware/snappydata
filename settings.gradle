@@ -112,5 +112,4 @@ if (new File(rootDir, "spark-jobserver/build.gradle").exists()) {
 if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
   include ':snappy-aqp'
 }
-include 'snappy-dtests'
 
