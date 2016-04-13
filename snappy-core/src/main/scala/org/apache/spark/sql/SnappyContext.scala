@@ -836,7 +836,10 @@ object SnappyContext extends Logging {
     "file_stream" -> classOf[FileStreamSource].getCanonicalName,
     "kafka_stream" -> classOf[KafkaStreamSource].getCanonicalName,
     "directkafka_stream" -> classOf[DirectKafkaStreamSource].getCanonicalName,
-    "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName
+    "twitter_stream" -> classOf[TwitterStreamSource].getCanonicalName,
+    "raw_socket_stream" -> classOf[RawSocketStreamSource].getCanonicalName,
+    "text_socket_stream" -> classOf[TextSocketStreamSource].getCanonicalName
+
   )
 
   def globalSparkContext: SparkContext = SparkContext.activeContext.get()
