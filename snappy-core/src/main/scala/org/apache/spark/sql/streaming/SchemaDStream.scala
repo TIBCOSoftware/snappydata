@@ -24,6 +24,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Time}
+import org.apache.spark.api.java.function.{VoidFunction => JVoidFunction, VoidFunction2}
 
 /**
   * A SQL based DStream with support for schema/Product
@@ -50,8 +51,9 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Return a new DStream containing only the elements that satisfy a predicate. */
   override def filter(filterFunc: Row => Boolean): DStream[Row] = {
-    super.filter(filterFunc)
+     super.filter(filterFunc)
   }
+
 
   /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
@@ -63,6 +65,22 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     }
     this.foreachRDD(func)
   }
+
+  def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame]): Unit = {
+    val func = (rdd: RDD[Row]) => {
+      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
+    }
+    this.foreachRDD(func)
+  }
+
+  def foreachDataFrame(foreachFunc: VoidFunction2[DataFrame, Time]): Unit = {
+    val func = (rdd: RDD[Row], time: Time) => {
+      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true),
+        time)
+    }
+    this.foreachRDD(func)
+  }
+
 
   /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so

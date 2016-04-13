@@ -25,9 +25,11 @@ import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
+import org.apache.spark.streaming.api.java.JavaDStream
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -179,7 +181,6 @@ class SnappyStreamingContext protected[spark](
   }
 
 
-
 }
 
 object SnappyStreamingContext extends Logging {
@@ -238,9 +239,8 @@ object SnappyStreamingContext extends Logging {
 
   /**
    * :: Experimental ::
-   *
    * Either return the "active" StreamingContext (that is, started but not stopped), or create a
-   * new StreamingContext that is
+   * new StreamingContext that is started by the creating function
    * @param creatingFunc   Function to create a new StreamingContext
    */
   @Experimental
