@@ -24,7 +24,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Time}
+import org.apache.spark.streaming.{StreamUtils, SnappyStreamingContext, Duration, Time}
 
 /**
   * A SQL based DStream with support for schema/Product
@@ -48,6 +48,40 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
     this(ssc, ssc.snappyContext.executePlan(logicalPlan))
+
+  /** Persist the RDDs of this SchemaDStream with the given storage level */
+  override def persist(level: StorageLevel): SchemaDStream = {
+    snsc.createSchemaDStream(StreamUtils.persist(this, level), schema)
+  }
+
+  /** Persist RDDs of this SchemaDStream with the default storage level (MEMORY_ONLY_SER) */
+  override def persist(): SchemaDStream = persist(StorageLevel.MEMORY_ONLY_SER)
+
+  /** Persist RDDs of this SchemaDStream with the default storage level (MEMORY_ONLY_SER) */
+  override def cache(): SchemaDStream = {
+    persist()
+  }
+
+  /**
+    * Enable periodic checkpointing of RDDs of this SchemaDStream
+    * @param interval Time interval after which generated RDD will be checkpointed
+    */
+  override def checkpoint(interval: Duration): SchemaDStream = {
+    snsc.createSchemaDStream(StreamUtils.checkpoint(this, interval), schema)
+  }
+
+  /** Return a new SchemaDStream containing only the elements that satisfy a predicate. */
+  override def filter(filterFunc: Row => Boolean): SchemaDStream = {
+    snsc.createSchemaDStream(filter(filterFunc), schema)
+  }
+
+  /**
+    * Return a new SchemaDStream with an increased or decreased level of parallelism.
+    * Each RDD in the returned SchemaDStream has exactly numPartitions partitions.
+    */
+  override def repartition(numPartitions: Int): SchemaDStream = {
+    snsc.createSchemaDStream(transform(_.repartition(numPartitions)), schema)
+  }
 
   /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
@@ -87,48 +121,6 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     this.foreachRDD(func)
   }
 
-  /** Persist the RDDs of this SchemaDStream with the given storage level */
-  override def persist(level: StorageLevel): SchemaDStream = {
-    if (this.isInitialized) {
-      throw new UnsupportedOperationException(
-        "Cannot change storage level of a SchemaDStream after streaming context has started")
-    }
-    this.storageLevel = level
-    this
-  }
-
-  /** Persist RDDs of this SchemaDStream with the default storage level (MEMORY_ONLY_SER) */
-  override def persist(): SchemaDStream = persist(StorageLevel.MEMORY_ONLY_SER)
-
-  /** Persist RDDs of this SchemaDStream with the default storage level (MEMORY_ONLY_SER) */
-  override def cache(): SchemaDStream = persist()
-
-  /**
-    * Enable periodic checkpointing of RDDs of this SchemaDStream
-    * @param interval Time interval after which generated RDD will be checkpointed
-    */
-  override def checkpoint(interval: Duration): SchemaDStream = {
-    if (isInitialized) {
-      throw new UnsupportedOperationException(
-        "Cannot change checkpoint interval of an DStream after streaming context has started")
-    }
-    persist()
-    checkpointDuration = interval
-    this
-  }
-
-  /** Return a new SchemaDStream containing only the elements that satisfy a predicate. */
-  override def filter(filterFunc: Row => Boolean): SchemaDStream = {
-    snsc.createSchemaDStream(filter(filterFunc), schema)
-  }
-
-  /**
-    * Return a new SchemaDStream with an increased or decreased level of parallelism.
-    * Each RDD in the returned SchemaDStream has exactly numPartitions partitions.
-    */
-  override def repartition(numPartitions: Int): SchemaDStream = {
-    snsc.createSchemaDStream(transform(_.repartition(numPartitions)), schema)
-  }
 
   /** Registers this SchemaDStream as a table in the catalog. */
   def registerAsTable(tableName: String): Unit = {
