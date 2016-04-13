@@ -148,7 +148,7 @@ object CodeGeneration extends Logging {
         s"stmt.setObject(${col + 1}, row.get($col, schema[$col].dataType()));"
     }
     (nonNullCode, s"stmt.setNull(${col + 1}, " +
-        s"${ExternalStoreUtils.getJDBCType(dialect, dataType)});")
+        s"${ExternalStoreUtils.getJDBCType(dialect, NullType)});")
   }
 
   private def compilePreparedUpdate(table: String, schema: Array[StructField],
@@ -215,6 +215,7 @@ object CodeGeneration extends Logging {
         result += stmt.executeUpdate();
       }
       return result;"""
+
     // logInfo(s"DEBUG: For table=table generated code=$expression")
     evaluator.createFastEvaluator(expression, classOf[CodeGeneration],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
