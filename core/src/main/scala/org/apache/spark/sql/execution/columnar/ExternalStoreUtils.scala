@@ -333,7 +333,7 @@ object ExternalStoreUtils {
       sb.append(Utils.fieldName(schemaFields(i))).append(',')
     }
     sb.append(Utils.fieldName(schemaFields(schemaFields.length - 1)))
-    sb.append(") ").append(" VALUES (")
+    sb.append(") VALUES (")
 
     (1 until rddSchema.length).foreach { _ =>
       sb.append("?,")

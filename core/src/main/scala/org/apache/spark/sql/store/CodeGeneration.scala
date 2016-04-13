@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.store
 
+import java.lang.reflect.Method
 import java.sql.PreparedStatement
 import java.util.Collections
 
@@ -84,18 +85,27 @@ object CodeGeneration extends Logging {
    * Using reflection to invoke these private methods since using the public
    * GenerateUnsafeProjection.createCode method is awkward.
    */
-  private def generateComplexTypeCode(methodName: String,
-      typeArgs: Any*): String = {
-    val argTypes = typeArgs.map {
-      case _: DataType => classOf[DataType]
-      case _: Seq[_] => classOf[Seq[_]]
-      case o => o.getClass
-    }
+  private val generateArrayCodeMethod = getComplexTypeCodeMethod(
+    "writeArrayToBuffer", classOf[CodeGenContext], classOf[String],
+    classOf[DataType], classOf[String])
+  private val generateMapCodeMethod = getComplexTypeCodeMethod(
+    "writeMapToBuffer", classOf[CodeGenContext], classOf[String],
+    classOf[DataType], classOf[DataType], classOf[String])
+  private val generateStructCodeMethod = getComplexTypeCodeMethod(
+    "writeStructToBuffer", classOf[CodeGenContext], classOf[String],
+    classOf[Seq[DataType]], classOf[String])
+
+  private def getComplexTypeCodeMethod(methodName: String,
+      argTypes: Class[_]*): Method = {
     val method = GenerateUnsafeProjection.getClass.getDeclaredMethod(
       methodName, argTypes:_*)
     method.setAccessible(true)
-    method.invoke(GenerateUnsafeProjection,
-      typeArgs.asInstanceOf[Seq[Object]]:_*).asInstanceOf[String]
+    method
+  }
+
+  private def generateComplexTypeCode(method: Method,
+      typeArgs: Object*): String = {
+    method.invoke(GenerateUnsafeProjection, typeArgs:_*).asInstanceOf[String]
   }
 
   private def getColumnSetterFragment(col: Int, dataType: DataType,
@@ -136,7 +146,7 @@ object CodeGeneration extends Logging {
         } else {
           $buffHolderVar.reset();
         }
-        ${generateComplexTypeCode("writeArrayToBuffer", ctx, "arr",
+        ${generateComplexTypeCode(generateArrayCodeMethod, ctx, "arr",
           a.elementType, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
@@ -147,7 +157,7 @@ object CodeGeneration extends Logging {
         } else {
           $buffHolderVar.reset();
         }
-        ${generateComplexTypeCode("writeMapToBuffer", ctx, "map",
+        ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
           m.keyType, m.valueType, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
@@ -158,7 +168,7 @@ object CodeGeneration extends Logging {
         } else {
           $buffHolderVar.reset();
         }
-        ${generateComplexTypeCode("writeStructToBuffer", ctx, "struct",
+        ${generateComplexTypeCode(generateStructCodeMethod, ctx, "struct",
           s.fields.map(_.dataType).toSeq, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
