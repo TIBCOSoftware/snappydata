@@ -18,54 +18,38 @@ package org.apache.spark.sql.streaming
 
 import scala.reflect.ClassTag
 
-import kafka.serializer.Decoder
-
-import org.apache.spark.Logging
-import org.apache.spark.sql._
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.kafka.KafkaUtils
 import org.apache.spark.util.Utils
 
-class DirectKafkaStreamSource extends StreamPlanProvider {
+final class RabbitMQStreamSource extends StreamPlanProvider {
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
       schema: StructType): BaseRelation = {
-    new DirectKafkaStreamRelation(sqlContext, options, schema)
+    new RabbitMQStreamRelation(sqlContext, options, schema)
   }
 }
 
-final class DirectKafkaStreamRelation(
+final class RabbitMQStreamRelation(
     @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
-    extends StreamBaseRelation(options)
-    with Logging with StreamPlan with Serializable {
+    extends StreamBaseRelation(options) {
 
-  val topicsSet = options("topics").split(",").toSet
-  val kafkaParams: Map[String, String] = options.get("kafkaParams").map { t =>
-    t.split(", ").map { s =>
-      val a = s.split("->")
-      (a(0), a(1))
-    }.toMap
-  }.getOrElse(Map())
+  val T = options.getOrElse("T", "java.lang.String")
+  val D = options.getOrElse("D", "org.apache.spark.sql.streaming.RabbitMQStringDecoder")
 
-  val K = options.getOrElse("K", "java.lang.String")
-  val V = options.getOrElse("V", "java.lang.String")
-  val KD = options.getOrElse("KD", "kafka.serializer.StringDecoder")
-  val VD = options.getOrElse("VD", "kafka.serializer.StringDecoder")
+  val t : ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(T))
+  val d : ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(D))
 
   override protected def createRowStream(): DStream[InternalRow] = {
-    val ck: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(K))
-    val cv: ClassTag[Any] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(V))
-    val ckd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(KD))
-    val cvd: ClassTag[Decoder[Any]] = ClassTag(Utils.getContextOrSparkClassLoader.loadClass(VD))
     val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-    KafkaUtils.createDirectStream[Any, Any, Decoder[Any], Decoder[Any]](context,
-      kafkaParams, topicsSet)(ck, cv, ckd, cvd).map(_._2).flatMap(rowConverter.toRows)
+    RabbitMQUtils.createStream[Any, Any](context, options)(t, d)
+        .flatMap(rowConverter.toRows)
         .map(converter(_).asInstanceOf[InternalRow])
   }
 }

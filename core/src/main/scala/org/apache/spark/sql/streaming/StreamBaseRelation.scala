@@ -27,7 +27,7 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
-import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, Time}
+import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, StreamingContextState, Time}
 import org.apache.spark.util.Utils
 
 abstract class StreamBaseRelation(options: Map[String, String])
@@ -79,6 +79,9 @@ abstract class StreamBaseRelation(options: Map[String, String])
   override val needConversion: Boolean = false
 
   override def buildScan(): RDD[Row] = {
+    if (context.getState() == StreamingContextState.STOPPED) {
+      throw new IllegalStateException("StreamingContext has stopped")
+    }
     val rdds = StreamUtils.getGeneratedRDDs(rowStream)
     if (rdds.isEmpty) {
       new EmptyRDD[Row](sqlContext.sparkContext)

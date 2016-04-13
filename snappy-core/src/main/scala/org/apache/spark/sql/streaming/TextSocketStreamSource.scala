@@ -14,60 +14,36 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.streaming
 
-import twitter4j.auth.{Authorization, OAuthAuthorization}
-import twitter4j.conf.{Configuration, ConfigurationBuilder}
+package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.twitter.TwitterUtils
 
-final class TwitterStreamSource extends StreamPlanProvider {
-
+final class TextSocketStreamSource extends StreamPlanProvider {
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String],
-      schema: StructType): BaseRelation = {
-    new TwitterStreamRelation(sqlContext, options, schema)
+      schema: StructType): TextSocketStreamRelation = {
+    new TextSocketStreamRelation(sqlContext, options, schema)
   }
 }
 
-final class TwitterStreamRelation(
+final class TextSocketStreamRelation(
     @transient override val sqlContext: SQLContext,
     options: Map[String, String],
     override val schema: StructType)
     extends StreamBaseRelation(options) {
 
-  val consumerKey = options("consumerKey")
-  val consumerSecret = options("consumerSecret")
-  val accessToken = options("accessToken")
-  val accessTokenSecret = options("accessTokenSecret")
+  val hostname: String = options.get("hostname").get // .getOrElse("localhost")
 
-  //  TODO Yogesh, need to pass this through DDL
-  val filters = Seq("e")
-
-  private val getTwitterConf: Configuration = {
-    val twitterConf = new ConfigurationBuilder()
-        .setOAuthConsumerKey(consumerKey)
-        .setOAuthConsumerSecret(consumerSecret)
-        .setOAuthAccessToken(accessToken)
-        .setOAuthAccessTokenSecret(accessTokenSecret)
-        .setJSONStoreEnabled(true)
-        .build()
-    twitterConf
-  }
-
-  private def createOAuthAuthorization(): Authorization = {
-    new OAuthAuthorization(getTwitterConf)
-  }
+  val port: Int = options.get("port").map(_.toInt).get // .getOrElse(9999)
 
   override protected def createRowStream(): DStream[InternalRow] = {
     val converter = CatalystTypeConverters.createToCatalystConverter(schema)
-    TwitterUtils.createStream(context, Some(createOAuthAuthorization()),
-      filters, storageLevel).flatMap(rowConverter.toRows)
+    context.socketTextStream(hostname, port,
+      storageLevel).flatMap(rowConverter.toRows)
         .map(converter(_).asInstanceOf[InternalRow])
   }
 }

@@ -30,11 +30,11 @@ import org.apache.spark.streaming.dstream.DStream
 
 object StreamSqlHelper {
 
-  def registerRelationDestroy(): Unit ={
+  def registerRelationDestroy(): Unit = {
      SnappyStoreHiveCatalog.registerRelationDestroy()
   }
 
-  def clearStreams(): Unit ={
+  def clearStreams(): Unit = {
     StreamBaseRelation.clearStreams()
   }
 
@@ -52,7 +52,8 @@ object StreamSqlHelper {
   /**
    * Creates a [[SchemaDStream]] from an DStream of Product (e.g. case classes).
    */
-  def createSchemaDStream[A <: Product : TypeTag](ssc: SnappyStreamingContext, stream: DStream[A]): SchemaDStream = {
+  def createSchemaDStream[A <: Product : TypeTag](ssc: SnappyStreamingContext,
+      stream: DStream[A]): SchemaDStream = {
     val schema = ScalaReflection.schemaFor[A].dataType.asInstanceOf[StructType]
     val rowStream = stream.transform(rdd => RDDConversions.productToRowRdd
     (rdd, schema.map(_.dataType)))
@@ -60,8 +61,9 @@ object StreamSqlHelper {
     new SchemaDStream(ssc, logicalPlan)
   }
 
-  def createSchemaDStream(ssc: SnappyStreamingContext, rowStream: DStream[Row], schema: StructType): SchemaDStream = {
-    val converter = CatalystTypeConverters.createToScalaConverter(schema)
+  def createSchemaDStream(ssc: SnappyStreamingContext, rowStream: DStream[Row],
+      schema: StructType): SchemaDStream = {
+    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
     val logicalPlan = LogicalDStreamPlan(schema.toAttributes,
       rowStream.map(converter(_).asInstanceOf[InternalRow]))(ssc)
     new SchemaDStream(ssc, logicalPlan)
