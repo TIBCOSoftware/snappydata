@@ -30,7 +30,7 @@ import io.snappydata.{LocalizedMessages, ServiceManager}
  */
 class ServerLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   override protected def getFabricServiceInstance: FabricService =
     ServiceManager.getServerInstance
 
@@ -63,7 +63,7 @@ object ServerLauncher {
  */
 class LocatorLauncher(baseName: String) extends GfxdDistributionLocator(baseName) {
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   override protected def getFabricServiceInstance: FabricService =
     ServiceManager.getLocatorInstance
 

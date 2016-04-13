@@ -14,12 +14,11 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.store
+package io.snappydata
 
 import java.sql.{Connection, DriverManager}
 
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.{Constant, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry

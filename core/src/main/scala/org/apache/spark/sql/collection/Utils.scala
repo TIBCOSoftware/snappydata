@@ -25,7 +25,7 @@ import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 
-import _root_.io.snappydata.ToolsCallback
+import io.snappydata.ToolsCallback
 import org.apache.commons.math3.distribution.NormalDistribution
 
 import org.apache.spark._
@@ -36,9 +36,9 @@ import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.execution.{SQLExecution, QueryExecution}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.{QueryExecution, SQLExecution}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
@@ -66,13 +66,16 @@ object Utils {
     }
   }
 
+  def analysisException(msg: String): AnalysisException =
+    new AnalysisException(msg)
+
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
     val colT = toUpperCase(col.trim)
     cols.indices.collectFirst {
       case index if col == cols(index) => index
       case index if colT == toUpperCase(cols(index)) => index
     }.getOrElse {
-      throw new AnalysisException(
+      throw analysisException(
         s"""$module: Cannot resolve column name "$col" among
             (${cols.mkString(", ")})""")
     }
@@ -85,7 +88,7 @@ object Utils {
       schema.fields.collectFirst {
         case field if colT == toUpperCase(field.name) => field
       }.getOrElse {
-        throw new AnalysisException(
+        throw analysisException(
           s"""$module: Cannot resolve column name "$col" among
             (${cols.mkString(", ")})""")
       }
@@ -120,12 +123,12 @@ object Utils {
     qcsV.map {
       case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
-        if (qs.isEmpty) throw new AnalysisException(ERROR_NO_QCS(module))
+        if (qs.isEmpty) throw analysisException(ERROR_NO_QCS(module))
         else qcsOf(qs.split(","), fieldNames, module)
       case qa: Array[String] => qcsOf(qa, fieldNames, module)
-      case q => throw new AnalysisException(
+      case q => throw analysisException(
         s"$module: Cannot parse 'qcs'='$q'")
-    }.getOrElse(throw new AnalysisException(ERROR_NO_QCS(module)))
+    }.getOrElse(throw analysisException(ERROR_NO_QCS(module)))
   }
 
   def matchOption(optName: String,
@@ -173,19 +176,19 @@ object Utils {
         try {
           vs.toLong
         } catch {
-          case nfe: NumberFormatException => throw new AnalysisException(
+          case nfe: NumberFormatException => throw analysisException(
             s"$module: Cannot parse int '$option' from string '$vs'")
         }
       case vl: Long => vl
       case vs: Short => vs
       case vb: Byte => vb
-      case _ => throw new AnalysisException(
+      case _ => throw analysisException(
         s"$module: Cannot parse int '$option'=$v")
     }
     if (vl >= min && vl <= max) {
       vl.toInt
     } else {
-      throw new AnalysisException(
+      throw analysisException(
         s"$module: Integer value outside of bounds [$min-$max] '$option'=$vl")
     }
   }
@@ -198,28 +201,28 @@ object Utils {
         try {
           vs.toDouble
         } catch {
-          case nfe: NumberFormatException => throw new AnalysisException(
+          case nfe: NumberFormatException => throw analysisException(
             s"$module: Cannot parse double '$option' from string '$vs'")
         }
       case vf: Float => vf.toDouble
       case vi: Int => vi.toDouble
       case vl: Long => vl.toDouble
       case vn: Number => vn.doubleValue()
-      case _ => throw new AnalysisException(
+      case _ => throw analysisException(
         s"$module: Cannot parse double '$option'=$v")
     }
     if (exclusive) {
       if (vd > min && vd < max) {
         vd
       } else {
-        throw new AnalysisException(
+        throw analysisException(
           s"$module: Double value outside of bounds ($min-$max) '$option'=$vd")
       }
     }
     else if (vd >= min && vd <= max) {
       vd
     } else {
-      throw new AnalysisException(
+      throw analysisException(
         s"$module: Double value outside of bounds [$min-$max] '$option'=$vd")
     }
   }
@@ -232,13 +235,13 @@ object Utils {
       case cl: Long => cl
       case cs: Short => cs
       case cb: Byte => cb
-      case _ => throw new AnalysisException(
+      case _ => throw analysisException(
         s"$module: Cannot parse '$option'=$cv")
     }
     if (cl >= 0 && cl < cols.length) {
       cl.toInt
     } else {
-      throw new AnalysisException(s"$module: Column index out of bounds " +
+      throw analysisException(s"$module: Column index out of bounds " +
           s"for '$option'=$cl among ${cols.mkString(", ")}")
     }
   }
@@ -265,10 +268,10 @@ object Utils {
             case _ => throw new AssertionError(
               s"unexpected regex match 'unit'=$unit")
           }
-        case _ => throw new AnalysisException(
+        case _ => throw analysisException(
           s"$module: Cannot parse 'timeInterval': $tis")
       }
-      case _ => throw new AnalysisException(
+      case _ => throw analysisException(
         s"$module: Cannot parse 'timeInterval': $optV")
     }
   }
@@ -282,7 +285,7 @@ object Utils {
           CastLongTime.getMillis(java.sql.Timestamp.valueOf(ts))
         } catch {
           case iae: IllegalArgumentException =>
-            throw new AnalysisException(
+            throw analysisException(
               s"$module: Cannot parse timestamp '$col'=$ts")
         }
     }
@@ -387,6 +390,14 @@ object Utils {
     }: _*)
   }
 
+  def getFields(o: Any): Map[String, Any] = {
+    val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
+      field.setAccessible(true)
+      (field.getName, field.get(o))
+    }
+    Map(fieldsAsPairs: _*)
+  }
+
   /**
    * Get the result schema given an optional explicit schema and base table.
    * In case both are specified, then check compatibility between the two.
@@ -433,7 +444,7 @@ object Utils {
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
             case e@(_: AnalysisException | _: DDLException) =>
-              val ae = new AnalysisException(s"Base table $baseTable " +
+              val ae = analysisException(s"Base table $baseTable " +
                   s"not found for $tableType TABLE $table")
               ae.initCause(e)
               throw ae

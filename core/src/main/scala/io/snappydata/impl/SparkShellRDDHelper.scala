@@ -14,24 +14,22 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata
+package io.snappydata.impl
 
 import java.sql.{Connection, ResultSet, SQLException, Statement}
-import java.util.regex.Pattern
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.cache.Region
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
-import com.gemstone.gemfire.internal.LogWriterImpl.GemFireThreadGroup
 import com.gemstone.gemfire.internal.SocketCreator
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
+import io.snappydata.Constant
 
 import org.apache.spark.Partition
 import org.apache.spark.sql.collection.ExecutorLocalShellPartition
@@ -41,29 +39,6 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
-
-object Utils {
-  val LocatorURLPattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
-
-  val SnappyDataThreadGroup = new GemFireThreadGroup("SnappyData Thread Group") {
-    override def uncaughtException(t: Thread, e: Throwable) {
-      e match {
-        case err: Error if SystemFailure.isJVMFailureError(err) =>
-          SystemFailure.setFailure(e.asInstanceOf[Error])
-        case _ =>
-      }
-      Thread.dumpStack()
-    }
-  }
-
-  def getFields(o: Any): Map[String, Any] = {
-    val fieldsAsPairs = for (field <- o.getClass.getDeclaredFields) yield {
-      field.setAccessible(true)
-      (field.getName, field.get(o))
-    }
-    Map(fieldsAsPairs: _*)
-  }
-}
 
 final class SparkShellRDDHelper {
 

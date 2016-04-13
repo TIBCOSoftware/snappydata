@@ -39,7 +39,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   val genericLogger = LoggerFactory.getLogger(getClass)
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   override protected def getFabricServiceInstance: FabricService = ServiceManager.getLeadInstance
 
   def initStartupArgs(args: ArrayBuffer[String]): Array[String] = {
@@ -84,7 +84,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   override protected def setDefaultHeapSize(): Boolean = false
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   override protected def startServerVM(props: Properties) : Unit = {
     val leadImpl = getFabricServiceInstance.asInstanceOf[LeadImpl]
     leadImpl.notifyOnStatusChange(writeStatusOnChange)
@@ -92,7 +92,7 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
     this.bootProps = props
   }
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   override protected def startAdditionalServices(cache: Cache,
       options: java.util.Map[String, Object], props: Properties): Unit = {
     // don't call super.startAdditionalServices.

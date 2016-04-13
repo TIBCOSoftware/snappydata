@@ -18,33 +18,22 @@ package io.snappydata
 
 import com.pivotal.gemfirexd.FabricService
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
-import io.snappydata.impl.{LeadImpl, LocatorImpl, ServerImpl}
+import io.snappydata.gemxd.ClusterCallbacksImpl
+import io.snappydata.impl.{LeadImpl, LocatorImpl}
 
 object ServiceManager {
 
-  private[this] val contextLock = new AnyRef
+  ClusterCallbacksImpl.initialize()
+
+  private def contextLock = ServerManager.contextLock
 
   /**
-   * Get the singleton instance of {@link Server}.
+   * Get the singleton instance of `Server`.
    */
-  def getServerInstance: Server = {
-    var instance: FabricService = FabricServiceImpl.getInstance
-    if (instance != null) {
-      return checkServerInstance(instance)
-    }
-    contextLock.synchronized {
-      instance = FabricServiceImpl.getInstance
-      if (instance  == null) {
-        val server: Server = new ServerImpl
-        FabricServiceImpl.setInstance(server)
-        return server
-      }
-      return checkServerInstance(instance)
-    }
-  }
+  def getServerInstance: Server = ServerManager.getServerInstance
 
   /**
-   * Get the singleton instance of {@link Locator}.
+   * Get the singleton instance of `Locator`.
    */
   def getLocatorInstance: Locator = {
     var instance: FabricService = FabricServiceImpl.getInstance
@@ -53,7 +42,7 @@ object ServiceManager {
     }
     contextLock.synchronized {
       instance = FabricServiceImpl.getInstance
-      if (instance  == null) {
+      if (instance == null) {
         val locator: Locator = new LocatorImpl
         FabricServiceImpl.setInstance(locator)
         return locator
@@ -63,7 +52,7 @@ object ServiceManager {
   }
 
   /**
-   * Get the singleton instance of {@link Lead}.
+   * Get the singleton instance of `Lead`.
    */
   def getLeadInstance: Lead = {
     var instance: FabricService = FabricServiceImpl.getInstance
@@ -72,7 +61,7 @@ object ServiceManager {
     }
     contextLock.synchronized {
       instance = FabricServiceImpl.getInstance
-      if (instance  == null) {
+      if (instance == null) {
         val lead: Lead = new LeadImpl
         FabricServiceImpl.setInstance(lead)
         return lead
@@ -82,35 +71,25 @@ object ServiceManager {
   }
 
   /**
-   * Get the current instance of either {@link Server} or
-   * {@link Locator} or {@link Lead}. This can be null if neither of
-   * {@link #getServerInstance()} or {@link #getLeadInstance()} or
-   * {@link #getLocatorInstance()} have been invoked, or the instance
-   * has been stopped.
+   * Get the current instance of either `Server` or `Locator` or `Lead`.
+   * This can be null if neither of `getServerInstance` or `getLeadInstance` or
+   * `getLocatorInstance` have been invoked, or the instance has been stopped.
    */
-  def currentFabricServiceInstance: FabricService = {
-    return FabricServiceImpl.getInstance
-  }
-
-  private def checkServerInstance(instance: FabricService): Server = {
-    if (instance.isInstanceOf[Server]) {
-      return instance.asInstanceOf[Server]
-    }
-    throw new IllegalStateException(s"Found an instance of another snappy component ${instance}.")
-  }
+  def currentFabricServiceInstance: FabricService = FabricServiceImpl.getInstance
 
   private def checkLocatorInstance(instance: FabricService): Locator = {
-    if (instance.isInstanceOf[Locator]) {
-      return instance.asInstanceOf[Locator]
+    instance match {
+      case locator: Locator => locator
+      case _ => throw new IllegalStateException(
+        s"Found an instance of another snappy component $instance.")
     }
-    throw new IllegalStateException(s"Found an instance of another snappy component ${instance}.")
   }
 
   private def checkLeadInstance(instance: FabricService): Lead = {
-    if (instance.isInstanceOf[Lead]) {
-      return instance.asInstanceOf[Lead]
+    instance match {
+      case lead: Lead => lead
+      case _ => throw new IllegalStateException(
+        s"Found an instance of another snappy component $instance.")
     }
-    throw new IllegalStateException(s"Found an instance of another snappy component ${instance}.")
   }
-
 }

@@ -29,10 +29,10 @@ import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArra
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.MultiExecutorLocalPartition
 import org.apache.spark.sql.execution.ConnectionPool
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.{ResultSetIterator, StoreUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform

@@ -21,12 +21,4 @@ import org.apache.spark.SparkContext
 trait ToolsCallback {
 
   def invokeLeadStartAddonService(sc: SparkContext)
-
-  def invokeStartFabricServer(sc: SparkContext, hostData: Boolean)
-
-  def invokeStopFabricServer(sc: SparkContext)
-
-  def getLocatorJDBCURL(sc: SparkContext): String
-
-  def clearStaticArtifacts(): Unit
 }

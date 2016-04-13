@@ -35,6 +35,12 @@ import org.apache.spark.scheduler.cluster.SnappyClusterManager
  */
 object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
 
+  CallbackFactoryProvider.setClusterCallbacks(this)
+
+  private[snappydata] def initialize(): Unit = {
+    // nothing to be done; singleton constructor does all
+  }
+
   override def getLeaderGroup: util.HashSet[String] = {
     val leaderServerGroup = new util.HashSet[String]
     leaderServerGroup.add(LeadImpl.LEADER_SERVERGROUP)
@@ -81,8 +87,4 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def clearSnappyContextForConnection(connectionId: Long): Unit = {
     SnappyContextPerConnection.removeSnappyContext(connectionId)
   }
-}
-
-trait ClusterCallback {
-  CallbackFactoryProvider.setClusterCallbacks(ClusterCallbacksImpl)
 }

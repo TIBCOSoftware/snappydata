@@ -19,107 +19,622 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import scala.language.implicitConversions
+
+import org.parboiled2._
+import shapeless.{::, HNil}
+
+import org.apache.spark.sql.SnappyParserConsts.{plusOrMinus, trueFn}
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedExtractValue, UnresolvedFunction, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.expressions._
+import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count, HyperLogLogPlusPlus}
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.{DefaultParserDialect, SqlLexical, SqlParserBase, TableIdentifier}
+import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftOuter, LeftSemi, RightOuter}
+import org.apache.spark.sql.catalyst.{ParserDialect, SqlLexical, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.execution.RunnableCommand
+import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DDLException, DDLParser, ResolvedDataSource}
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.sources._
-import org.apache.spark.sql.streaming._
+import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
+import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
+import org.apache.spark.unsafe.types.CalendarInterval
 
-class SnappyParserBase(caseSensitive: Boolean) extends SqlParserBase {
+class SnappyParser(caseSensitive: Boolean)
+    extends SnappyBaseParser(caseSensitive) {
 
-  protected val PUT = Keyword("PUT")
-  protected val DELETE = Keyword("DELETE")
-  protected val UPDATE = Keyword("UPDATE")
+  private[this] var _input: ParserInput = _
+
+  override final def input: ParserInput = _input
+
+  private[sql] def input_=(in: ParserInput): Unit = _input = in
+
+  final def ALL = rule { keyword(SnappyParserConsts.ALL) }
+  final def AND = rule { keyword(SnappyParserConsts.AND) }
+  final def APPROXIMATE = rule { keyword(SnappyParserConsts.APPROXIMATE) }
+  final def AS = rule { keyword(SnappyParserConsts.AS) }
+  final def ASC = rule { keyword(SnappyParserConsts.ASC) }
+  final def BETWEEN = rule { keyword(SnappyParserConsts.BETWEEN) }
+  final def BY = rule { keyword(SnappyParserConsts.BY) }
+  final def CASE = rule { keyword(SnappyParserConsts.CASE) }
+  final def CAST = rule { keyword(SnappyParserConsts.CAST) }
+  final def DELETE = rule { keyword(SnappyParserConsts.DELETE) }
+  final def DESC = rule { keyword(SnappyParserConsts.DESC) }
+  final def DISTINCT = rule { keyword(SnappyParserConsts.DISTINCT) }
+  final def ELSE = rule { keyword(SnappyParserConsts.ELSE) }
+  final def END = rule { keyword(SnappyParserConsts.END) }
+  final def EXCEPT = rule { keyword(SnappyParserConsts.EXCEPT) }
+  final def EXISTS = rule { keyword(SnappyParserConsts.EXISTS) }
+  final def FALSE = rule { keyword(SnappyParserConsts.FALSE) }
+  final def FROM = rule { keyword(SnappyParserConsts.FROM) }
+  final def FULL = rule { keyword(SnappyParserConsts.FULL) }
+  final def GROUP = rule { keyword(SnappyParserConsts.GROUP) }
+  final def HAVING = rule { keyword(SnappyParserConsts.HAVING) }
+  final def IN = rule { keyword(SnappyParserConsts.IN) }
+  final def INNER = rule { keyword(SnappyParserConsts.INNER) }
+  final def INSERT = rule { keyword(SnappyParserConsts.INSERT) }
+  final def INTERSECT = rule { keyword(SnappyParserConsts.INTERSECT) }
+  final def INTERVAL = rule { keyword(SnappyParserConsts.INTERVAL) }
+  final def INTO = rule { keyword(SnappyParserConsts.INTO) }
+  final def IS = rule { keyword(SnappyParserConsts.IS) }
+  final def JOIN = rule { keyword(SnappyParserConsts.JOIN) }
+  final def LEFT = rule { keyword(SnappyParserConsts.LEFT) }
+  final def LIKE = rule { keyword(SnappyParserConsts.LIKE) }
+  final def LIMIT = rule { keyword(SnappyParserConsts.LIMIT) }
+  final def NOT = rule { keyword(SnappyParserConsts.NOT) }
+  final def NULL = rule { keyword(SnappyParserConsts.NULL) }
+  final def ON = rule { keyword(SnappyParserConsts.ON) }
+  final def OR = rule { keyword(SnappyParserConsts.OR) }
+  final def ORDER = rule { keyword(SnappyParserConsts.ORDER) }
+  final def OUTER = rule { keyword(SnappyParserConsts.OUTER) }
+  final def OVERWRITE = rule { keyword(SnappyParserConsts.OVERWRITE) }
+  final def PUT = rule { keyword(SnappyParserConsts.PUT) }
+  final def REGEXP = rule { keyword(SnappyParserConsts.REGEXP) }
+  final def RIGHT = rule { keyword(SnappyParserConsts.RIGHT) }
+  final def RLIKE = rule { keyword(SnappyParserConsts.RLIKE) }
+  final def SELECT = rule { keyword(SnappyParserConsts.SELECT) }
+  final def SEMI = rule { keyword(SnappyParserConsts.SEMI) }
+  final def SORT = rule { keyword(SnappyParserConsts.SORT) }
+  final def TABLE = rule { keyword(SnappyParserConsts.TABLE) }
+  final def THEN = rule { keyword(SnappyParserConsts.THEN) }
+  final def TO = rule { keyword(SnappyParserConsts.TO) }
+  final def TRUE = rule { keyword(SnappyParserConsts.TRUE) }
+  final def UNION = rule { keyword(SnappyParserConsts.UNION) }
+  final def UPDATE = rule { keyword(SnappyParserConsts.UPDATE) }
+  final def WHEN = rule { keyword(SnappyParserConsts.WHEN) }
+  final def WHERE = rule { keyword(SnappyParserConsts.WHERE) }
+  final def WITH = rule { keyword(SnappyParserConsts.WITH) }
+  // interval units are not reserved (handled in SnappyParserConsts singleton)
+  final def DAY = rule { intervalUnit(SnappyParserConsts.DAY) }
+  final def HOUR = rule { intervalUnit(SnappyParserConsts.HOUR) }
+  final def MICROSECOND = rule { intervalUnit(SnappyParserConsts.MICROSECOND) }
+  final def MILLISECOND = rule { intervalUnit(SnappyParserConsts.MILLISECOND) }
+  final def MINUTE = rule { intervalUnit(SnappyParserConsts.MINUTE) }
+  final def MONTH = rule { intervalUnit(SnappyParserConsts.MONTH) }
+  final def SECOND = rule { intervalUnit(SnappyParserConsts.SECOND) }
+  final def WEEK = rule { intervalUnit(SnappyParserConsts.WEEK) }
+  final def YEAR = rule { intervalUnit(SnappyParserConsts.YEAR) }
   // Added for streaming window CQs
-  protected val WINDOW = Keyword("WINDOW")
-  protected val DURATION = Keyword("DURATION")
-  protected val SLIDE = Keyword("SLIDE")
-  protected val MILLISECONDS = Keyword("MILLISECONDS")
-  protected val SECONDS = Keyword("SECONDS")
-  protected val MINUTES = Keyword("MINUTES")
+  final def DURATION = rule { keyword(SnappyParserConsts.DURATION) }
+  final def SLIDE = rule { keyword(SnappyParserConsts.SLIDE) }
+  final def WINDOW = rule { keyword(SnappyParserConsts.WINDOW) }
 
-  override val lexical = new SnappyLexical(caseSensitive)
-
-  override protected lazy val start: Parser[LogicalPlan] = start1 | insert |
-      put | cte | dmlForExternalTable
-
-  protected lazy val put: Parser[LogicalPlan] =
-    PUT ~> (OVERWRITE ^^^ true | INTO ^^^ false) ~ (TABLE ~> relation) ~
-        select ^^ {
-      case o ~ r ~ s => InsertIntoTable(r, Map.empty[String, Option[String]],
-        s, o, ifNotExists = false)
-    }
-
-  protected lazy val dmlForExternalTable: Parser[LogicalPlan] =
-    (INSERT ~> INTO | PUT ~> INTO | DELETE ~> FROM | UPDATE) ~> tableIdentifier ~
-        wholeInput ^^ {
-      case r ~ s => DMLExternalTable(r, UnresolvedRelation(r), s)
-    }
-
-  protected lazy val unit: Parser[Duration] =
-    (
-        stringLit <~ MILLISECONDS ^^ { case str => Milliseconds(str.toInt) }
-      | stringLit <~ SECONDS ^^ { case str => Seconds(str.toInt) }
-      | stringLit <~ MINUTES ^^ { case str => Minutes(str.toInt) }
-    )
-
-  protected lazy val windowOptions: Parser[(Duration, Option[Duration])] =
-    WINDOW ~ "(" ~> (DURATION ~> unit) ~
-      ("," ~ SLIDE ~> unit).? <~ ")" ^^ {
-      case duration ~ slide => (duration, slide)
-    }
-
-  protected override lazy val relationFactor: Parser[LogicalPlan] =
-    (tableIdentifier ~ windowOptions.? ~ (opt(AS) ~> opt(ident)) ^^ {
-      case tableIdent ~ window ~ alias => window.map { win =>
-        WindowLogicalPlan(
-          win._1,
-          win._2,
-          UnresolvedRelation(tableIdent, alias))
-      }.getOrElse(UnresolvedRelation(tableIdent, alias))
-    }
-      |
-      ("(" ~> start <~ ")") ~ windowOptions.? ~ (AS.? ~> ident) ^^ {
-      case child ~ window ~ alias => window.map { win =>
-        WindowLogicalPlan(
-          win._1,
-          win._2,
-          Subquery(alias, child))
-      }.getOrElse(Subquery(alias, child))
-    })
-
-  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
-    (ident <~ ".").? ~ ident ^^ {
-      case maybeSchemaName ~ tableName =>
-        new QualifiedTableName(maybeSchemaName, tableName)
-    }
-
-  override def parseExpression(input: String): Expression = synchronized {
-    // Initialize the Keywords.
-    initLexical
-    phrase(projection)(new lexical.Scanner(input)) match {
-      case Success(plan, _) => plan
-      // case failureOrError => sys.error(failureOrError.toString)
-      case failureOrError =>
-        throw new SQLException(failureOrError.toString, "42X01")
+  private def toDecimalOrDoubleLiteral(s: String,
+      scientific: Boolean): Literal = {
+    // follow the behavior in MS SQL Server
+    // https://msdn.microsoft.com/en-us/library/ms179899.aspx
+    if (scientific) {
+      Literal(s.toDouble)
+    } else {
+      Literal(new java.math.BigDecimal(s, BigDecimal.defaultMathContext))
     }
   }
 
-  override def parse(input: String): LogicalPlan = synchronized {
-    // Initialize the Keywords.
-    initLexical
-    phrase(start)(new lexical.Scanner(input)) match {
-      case Success(plan, _) => plan
-      case failureOrError =>
-        throw new SQLException(failureOrError.toString, "42X01")
+  private def toNumericLiteral(s: String): Literal = {
+    // quick pass through the string to check for floats
+    var decimal = false
+    var index = 0
+    val len = s.length
+    while (index < len) {
+      val c = s.charAt(index)
+      if (!decimal) {
+        if (c == '.') {
+          decimal = true
+        } else if (c == 'e' || c == 'E') {
+          return toDecimalOrDoubleLiteral(s, scientific = true)
+        }
+      } else if (c == 'e' || c == 'E') {
+        return toDecimalOrDoubleLiteral(s, scientific = true)
+      }
+      index += 1
     }
+    if (decimal) {
+      toDecimalOrDoubleLiteral(s, scientific = false)
+    } else {
+      // case of integral value
+      // most cases should be handled by Long, so try that first
+      try {
+        val longValue = java.lang.Long.parseLong(s)
+        if (longValue >= Int.MinValue && longValue <= Int.MaxValue) {
+          Literal(longValue.toInt)
+        } else {
+          Literal(longValue)
+        }
+      } catch {
+        case nfe: NumberFormatException =>
+          val decimal = BigDecimal(s)
+          if (decimal.isValidInt) {
+            Literal(decimal.toIntExact)
+          } else if (decimal.isValidLong) {
+            Literal(decimal.toLongExact)
+          } else {
+            Literal(decimal)
+          }
+      }
+    }
+  }
+
+  protected def booleanLiteral: Rule1[Literal] = rule {
+    TRUE ~> (() => Literal.create(true, BooleanType)) |
+    FALSE ~> (() => Literal.create(false, BooleanType))
+  }
+
+  protected def numericLiteral: Rule1[Literal] = rule {
+    capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ ws ~>
+        ((s: String) => toNumericLiteral(s))
+  }
+
+  protected def literal: Rule1[Literal] = rule {
+    stringLiteral ~> ((s: String) => Literal.create(s, StringType)) |
+    numericLiteral |
+    booleanLiteral |
+    NULL ~> (() => Literal.create(null, NullType)) |
+    intervalLiteral
+  }
+
+  private def intervalUnit(k: Keyword): Rule0 = rule {
+    atomic(ignoreCase(k.lower) ~ SnappyParserConsts.plural.?) ~ delimiter
+  }
+
+  protected def month: Rule1[Int] = rule {
+    integral ~ MONTH ~> ((num: String) => num.toInt)
+  }
+
+  protected def year: Rule1[Int] = rule {
+    integral ~ YEAR ~> ((num: String) => num.toInt * 12)
+  }
+
+  protected def microsecond: Rule1[Long] = rule {
+    integral ~ MICROSECOND ~> ((num: String) => num.toLong)
+  }
+
+  protected def millisecond: Rule1[Long] = rule {
+    integral ~ MILLISECOND ~> ((num: String) =>
+      num.toLong * CalendarInterval.MICROS_PER_MILLI)
+  }
+
+  protected def second: Rule1[Long] = rule {
+    integral ~ SECOND ~> ((num: String) =>
+      num.toLong * CalendarInterval.MICROS_PER_SECOND)
+  }
+
+  protected def minute: Rule1[Long] = rule {
+    integral ~ MINUTE ~> ((num: String) =>
+      num.toLong * CalendarInterval.MICROS_PER_MINUTE)
+  }
+
+  protected def hour: Rule1[Long] = rule {
+    integral ~ HOUR ~> ((num: String) =>
+      num.toLong * CalendarInterval.MICROS_PER_HOUR)
+  }
+
+  protected def day: Rule1[Long] = rule {
+    integral ~ DAY ~> ((num: String) =>
+      num.toLong * CalendarInterval.MICROS_PER_DAY)
+  }
+
+  protected def week: Rule1[Long] = rule {
+    integral ~ WEEK ~> ((num: String) =>
+      num.toLong * CalendarInterval.MICROS_PER_WEEK)
+  }
+
+  protected def intervalLiteral: Rule1[Literal] = rule {
+    INTERVAL ~ (
+        stringLiteral ~ (
+            YEAR ~ TO ~ MONTH ~> ((s: String) =>
+              Literal(CalendarInterval.fromYearMonthString(s))) |
+            DAY ~ TO ~ SECOND ~> ((s: String) =>
+              Literal(CalendarInterval.fromDayTimeString(s))) |
+            YEAR ~> ((s: String) =>
+              Literal(CalendarInterval.fromSingleUnitString("year", s))) |
+            MONTH ~> ((s: String) =>
+              Literal(CalendarInterval.fromSingleUnitString("month", s))) |
+            DAY ~> ((s: String) =>
+              Literal(CalendarInterval.fromSingleUnitString("day", s))) |
+            HOUR ~> ((s: String) =>
+              Literal(CalendarInterval.fromSingleUnitString("hour", s))) |
+            MINUTE ~> ((s: String) =>
+              Literal(CalendarInterval.fromSingleUnitString("minute", s))) |
+            SECOND ~> ((s: String) =>
+              Literal(CalendarInterval.fromSingleUnitString("second", s)))
+        ) |
+        year.? ~ month.? ~ week.? ~ day.? ~ hour.? ~ minute.? ~
+            second.? ~ millisecond.? ~ microsecond.? ~> { (y: Option[Int],
+            m: Option[Int], w: Option[Long], d: Option[Long], h: Option[Long],
+            min: Option[Long], s: Option[Long], millis: Option[Long],
+            micros: Option[Long]) =>
+          if (!Seq(y, m, w, d, h, min, s, millis, micros).exists(_.isDefined)) {
+            throw Utils.analysisException(
+              "at least one time unit should be given for interval literal")
+          }
+          val months = Seq(y, m).map(_.getOrElse(0)).sum
+          val microseconds = Seq(w, d, h, min, s, millis, micros)
+              .map(_.getOrElse(0L)).sum
+          Literal(new CalendarInterval(months, microseconds))
+        }
+    )
+  }
+
+  protected def unsignedFloat: Rule1[String] = rule {
+    capture(
+      CharPredicate.Digit.* ~ '.' ~ CharPredicate.Digit.+ ~
+          scientificNotation.? |
+      CharPredicate.Digit.+ ~ scientificNotation
+    ) ~ ws
+  }
+
+  protected def projection: Rule1[Expression] = rule {
+    expression ~ (AS ~ identifier).? ~> ((e: Expression, a: Option[String]) =>
+      if (a.isDefined) Alias(e, a.get)() else e)
+  }
+
+  protected def expression: Rule1[Expression] = rule {
+    andExpression ~ (OR ~ andExpression ~>
+        ((e1: Expression, e2: Expression) => Or(e1, e2))).*
+  }
+
+  protected def andExpression: Rule1[Expression] = rule {
+    notExpression ~ (AND ~ notExpression ~>
+        ((e1: Expression, e2: Expression) => And(e1, e2))).*
+  }
+
+  protected def notExpression: Rule1[Expression] = rule {
+    NOT ~ comparisonExpression ~> ((e: Expression) => Not(e)) |
+    comparisonExpression
+  }
+
+  protected def comparisonExpression: Rule1[Expression] = rule {
+    termExpression ~ (
+        '=' ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => EqualTo(e1, e2)) |
+        ">=" ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => GreaterThanOrEqual(e1, e2)) |
+        '>' ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => GreaterThan(e1, e2)) |
+        "<>" ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
+        "<=>" ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => EqualNullSafe(e1, e2)) |
+        "<=" ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => LessThanOrEqual(e1, e2)) |
+        '<' ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => LessThan(e1, e2)) |
+        "!=" ~ ws ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
+        IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~>
+            ((e1: Expression, e2: Seq[Expression]) => In(e1, e2)) |
+        LIKE ~ termExpression ~>
+            ((e1: Expression, e2: Expression) => Like(e1, e2)) |
+        IS ~ NULL ~>
+            ((e: Expression) => IsNull(e)) |
+        IS ~ NOT ~ NULL ~>
+            ((e: Expression) => IsNotNull(e)) |
+        BETWEEN ~ termExpression ~ AND ~ termExpression ~>
+            ((e: Expression, el: Expression, eu: Expression) =>
+              And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
+        NOT ~ (
+            IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~>
+                ((e1: Expression, e2: Seq[Expression]) => Not(In(e1, e2))) |
+            LIKE ~ termExpression ~>
+                ((e1: Expression, e2: Expression) => Not(Like(e1, e2))) |
+            BETWEEN ~ termExpression ~ AND ~ termExpression ~>
+                ((e: Expression, el: Expression, eu: Expression) =>
+                  Not(And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))))
+        ) |
+        extraComparisonExpression |
+        MATCH ~> ((e: Expression) => e)
+    )
+  }
+
+  protected def extraComparisonExpression: Rule[Expression :: HNil,
+      Expression :: HNil] = rule {
+    RLIKE ~ termExpression ~>
+        ((e1: Expression, e2: Expression) => RLike(e1, e2)) |
+    REGEXP ~ termExpression ~>
+        ((e1: Expression, e2: Expression) => RLike(e1, e2))
+  }
+
+  protected def termExpression: Rule1[Expression] = rule {
+    productExpression ~ (capture(plusOrMinus) ~ ws ~ productExpression ~>
+        ((e1: Expression, op: String, e2: Expression) =>
+          if (op.charAt(0) == '+') Add(e1, e2) else Subtract(e1, e2))).*
+  }
+
+  protected def productExpression: Rule1[Expression] = rule {
+    baseExpression ~ (
+        "||" ~ ws ~ baseExpression ~> ((e1: Expression, e2: Expression) =>
+          e1 match {
+            case Concat(children) => Concat(children :+ e2)
+            case _ => Concat(Seq(e1, e2))
+          }) |
+        capture(SnappyParserConsts.arithmeticOperator) ~ ws ~
+            baseExpression ~> ((e1: Expression, op: String, e2: Expression) =>
+          op.charAt(0) match {
+            case '*' => Multiply(e1, e2)
+            case '/' => Divide(e1, e2)
+            case '%' => Remainder(e1, e2)
+            case '&' => BitwiseAnd(e1, e2)
+            case '|' => BitwiseOr(e1, e2)
+            case '^' => BitwiseXor(e1, e2)
+            case c => throw new IllegalStateException(
+              s"unexpected operation '$c'")
+          }) |
+        '[' ~ ws ~ baseExpression ~ ']' ~ ws ~> ((base: Expression,
+            ordinal: Expression) => UnresolvedExtractValue(base, ordinal)) |
+        '.' ~ ws ~ identifier ~> ((base: Expression, fieldName: String) =>
+          UnresolvedExtractValue(base, Literal(fieldName)))
+        ).*
+  }
+
+  protected def durationUnit: Rule1[Duration] = rule {
+    integral ~ (
+        MILLISECOND ~> ((s: String) => Milliseconds(s.toInt)) |
+        SECOND ~> ((s: String) => Seconds(s.toInt)) |
+        MINUTE ~> ((s: String) => Minutes(s.toInt))
+    )
+  }
+
+  protected def windowOptions: Rule1[(Duration, Option[Duration])] = rule {
+    WINDOW ~ '(' ~ ws ~ DURATION ~ durationUnit ~ (',' ~ ws ~
+        SLIDE ~ durationUnit).? ~ ')' ~ ws ~>
+        ((d: Duration, s: Option[Duration]) => (d, s))
+  }
+
+  protected def relationFactor: Rule1[LogicalPlan] = rule {
+    tableIdentifier ~ windowOptions.? ~ (AS.? ~ identifier).? ~>
+        ((tableIdent: QualifiedTableName,
+            window: Option[(Duration, Option[Duration])],
+            alias: Option[String]) => window match {
+          case None => UnresolvedRelation(tableIdent, alias)
+          case Some(win) => WindowLogicalPlan(win._1, win._2,
+            UnresolvedRelation(tableIdent, alias))
+        }) |
+    '(' ~ ws ~ start ~ ')' ~ ws ~ windowOptions.? ~ AS.? ~ identifier ~>
+        ((child: LogicalPlan, window: Option[(Duration, Option[Duration])],
+            alias: String) => window match {
+          case None => Subquery(alias, child)
+          case Some(win) => WindowLogicalPlan(win._1, win._2,
+            Subquery(alias, child))
+        })
+  }
+
+  protected def joinConditions: Rule1[Expression] = rule {
+    ON ~ expression
+  }
+
+  protected def joinType: Rule1[JoinType] = rule {
+    INNER ~> (() => Inner) |
+    LEFT ~ SEMI ~> (() => LeftSemi) |
+    LEFT ~ OUTER.? ~> (() => LeftOuter) |
+    RIGHT ~ OUTER.? ~> (() => RightOuter) |
+    FULL ~ OUTER.? ~> (() => FullOuter)
+  }
+
+  protected def sortDirection: Rule1[Option[SortDirection]] = rule {
+    (ASC ~> (() => Ascending) | DESC ~> (() => Descending)).?
+  }
+
+  protected def ordering: Rule1[Seq[SortOrder]] = rule {
+    ((expression ~ sortDirection ~> ((e: Expression,
+        d: Option[SortDirection]) => (e, d))) + (',' ~ ws)) ~>
+        ((exps: Seq[(Expression, Option[SortDirection])]) =>
+          exps.map(pair => SortOrder(pair._1, pair._2.getOrElse(Ascending))))
+  }
+
+  protected def sortType: Rule1[LogicalPlan => LogicalPlan] = rule {
+    ORDER ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
+      (l: LogicalPlan) => Sort(o, global = true, l)) |
+    SORT ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
+      (l: LogicalPlan) => Sort(o, global = false, l))
+  }
+
+  protected def relation: Rule1[LogicalPlan] = rule {
+    relationFactor ~ (
+        (joinType.? ~ JOIN ~ relationFactor ~
+            joinConditions.? ~> ((t: Option[JoinType], r: LogicalPlan,
+            j: Option[Expression]) => (t, r, j))).+ ~> ((r1: LogicalPlan,
+            joins: Seq[(Option[JoinType], LogicalPlan, Option[Expression])]) =>
+          joins.foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
+            Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
+          }) |
+        MATCH ~> ((l: LogicalPlan) => l)
+    )
+  }
+
+  protected def relations: Rule1[LogicalPlan] = rule {
+    (relation + (',' ~ ws)) ~> ((joins: Seq[LogicalPlan]) =>
+      if (joins.size == 1) joins.head
+      else joins.tail.foldLeft(joins.head) {
+        case (lhs, rel) => Join(lhs, rel, Inner, None)
+      })
+  }
+
+  protected def cast: Rule1[Expression] = rule {
+    CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~>
+        ((exp: Expression, t: DataType) => Cast(exp, t))
+  }
+
+  protected def whenThenElse: Rule1[Seq[Expression]] = rule {
+    (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
+        t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
+        ((altPart: Seq[(Expression, Expression)], elsePart: Option[Expression]) =>
+          altPart.flatMap(e => Seq(e._1, e._2)) ++ elsePart)
+  }
+
+  protected def specialFunction: Rule1[Expression] = rule {
+    CASE ~ (
+        whenThenElse ~> CaseWhen |
+        expression ~ whenThenElse ~> CaseKeyWhen
+    ) |
+    APPROXIMATE ~ ('(' ~ ws ~ unsignedFloat ~ ')' ~ ws).? ~
+        identifier ~ '(' ~ ws ~ DISTINCT ~ expression ~ ')' ~ ws ~>
+        ((s: Option[String], udfName: String, exp: Expression) =>
+          if (udfName == "COUNT") {
+            AggregateExpression(
+              if (s.isEmpty) HyperLogLogPlusPlus(exp)
+              else HyperLogLogPlusPlus(exp, s.get.toDouble),
+              mode = Complete, isDistinct = false)
+          } else {
+            throw Utils.analysisException(
+              s"invalid function approximate $udfName")
+          })
+  }
+
+  protected def primary: Rule1[Expression] = rule {
+    identifier ~ (
+        '(' ~ (
+            ws ~ '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
+              if (udfName == "COUNT") {
+                AggregateExpression(Count(Literal(1)), mode = Complete,
+                  isDistinct = false)
+              } else {
+                throw Utils.analysisException(s"invalid expression $udfName(*)")
+              }) |
+            ws ~ (DISTINCT ~> trueFn).? ~ (expression * (',' ~ ws)) ~ ')' ~ ws ~>
+                ((udfName: String, d: Option[Boolean], exprs: Seq[Expression]) =>
+              if (d.isEmpty) {
+                UnresolvedFunction(udfName, exprs, isDistinct = false)
+              } else if (udfName == "COUNT") {
+                aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
+              } else {
+                UnresolvedFunction(udfName, exprs, isDistinct = true)
+              })
+        ) |
+        '.' ~ (
+            ws ~ identifier ~ ('.' ~ ws ~ identifier).* ~>
+                ((i1: String, i2: String, rest: Seq[String]) =>
+                  UnresolvedAttribute(Seq(i1, i2) ++ rest)) |
+            ws ~ (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~>
+                ((i1: String, target: Seq[String]) =>
+                  UnresolvedStar(Option(i1 +: target)))
+        ) |
+        MATCH ~> UnresolvedAttribute.quoted _
+    ) |
+    literal |
+    '(' ~ ws ~ expression ~ ')' ~ ws |
+    cast |
+    specialFunction |
+    signedPrimary |
+    '~' ~ ws ~ expression ~> BitwiseNot
+  }
+
+  protected def signedPrimary: Rule1[Expression] = rule {
+    capture(plusOrMinus) ~ ws ~ primary ~> ((s: String, e: Expression) =>
+      if (s.charAt(0) == '-') UnaryMinus(e) else e)
+  }
+
+  protected def baseExpression: Rule1[Expression] = rule {
+    '*' ~ ws ~> (() => UnresolvedStar(None)) |
+    primary
+  }
+
+  protected def select: Rule1[LogicalPlan] = rule {
+    SELECT ~ (DISTINCT ~> trueFn).? ~
+    (projection + (',' ~ ws)) ~
+    (FROM ~ relations).? ~
+    (WHERE ~ expression).? ~
+    (GROUP ~ BY ~ (expression + (',' ~ ws))).? ~
+    (HAVING ~ expression).? ~
+    sortType.? ~
+    (LIMIT ~ expression).? ~> { (d: Option[Boolean], p: Seq[Expression],
+        f: Option[LogicalPlan], w: Option[Expression],
+        g: Option[Seq[Expression]], h: Option[Expression],
+        s: Option[LogicalPlan => LogicalPlan], l: Option[Expression]) =>
+      val base = f.getOrElse(OneRowRelation)
+      val withFilter = w.map(Filter(_, base)).getOrElse(base)
+      val withProjection = g.map(Aggregate(_, p.map(UnresolvedAlias),
+        withFilter)).getOrElse(Project(p.map(UnresolvedAlias), withFilter))
+      val withDistinct =
+        if (d.isEmpty) withProjection else Distinct(withProjection)
+      val withHaving = h.map(Filter(_, withDistinct)).getOrElse(withDistinct)
+      val withOrder = s.map(_ (withHaving)).getOrElse(withHaving)
+      val withLimit = l.map(Limit(_, withOrder)).getOrElse(withOrder)
+      withLimit
+    }
+  }
+
+  protected final def select1: Rule1[LogicalPlan] = rule {
+    select | ('(' ~ ws ~ select ~ ')' ~ ws)
+  }
+  protected def query: Rule1[LogicalPlan] = rule {
+    select1.named("select") ~ (
+        UNION ~ (
+            ALL ~ select1.named("select") ~>
+                ((q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2)) |
+            DISTINCT.? ~ select1.named("select") ~>
+                ((q1: LogicalPlan, q2: LogicalPlan) => Distinct(Union(q1, q2)))
+        ) |
+        INTERSECT ~ select1.named("select") ~>
+            ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
+        EXCEPT ~ select1.named("select") ~>
+            ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
+    ).*
+  }
+
+  protected def insert: Rule1[LogicalPlan] = rule {
+    INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
+    TABLE ~ relation ~ select ~> ((o: Boolean, r: LogicalPlan,
+        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String, Option[String]],
+        s, o, ifNotExists = false))
+  }
+
+  protected def put: Rule1[LogicalPlan] = rule {
+    PUT ~ INTO ~ TABLE ~ relation ~ select ~> ((r: LogicalPlan,
+        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String, Option[String]],
+        s, overwrite = true, ifNotExists = false))
+  }
+
+  protected def withIdentifier: Rule1[LogicalPlan] = rule {
+    WITH ~ ((identifier ~ AS ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
+        ((id: String, p: LogicalPlan) => (id, p))) + (',' ~ ws)) ~
+        (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
+        With(s, r.map(ns => (ns._1, Subquery(ns._1, ns._2))).toMap))
+  }
+
+  protected def dmlOperation: Rule1[LogicalPlan] = rule {
+    (INSERT ~ INTO | PUT ~ INTO | DELETE ~ FROM | UPDATE) ~ tableIdentifier ~
+        ANY.* ~> ((r: QualifiedTableName) => DMLExternalTable(r,
+        UnresolvedRelation(r), input.sliceString(0, input.length)))
+  }
+
+  override protected def start: Rule1[LogicalPlan] = rule {
+    query.named("select") | insert | put | withIdentifier | dmlOperation
+  }
+}
+
+/**
+ * Snappy dialect uses a much more optimized parser and adds SnappyParser
+ * additions to the standard "sql" dialect.
+ */
+private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
+    extends ParserDialect {
+
+  private[sql] val sqlParser = new SnappyParser(caseSensitive)
+
+  override def parse(sqlText: String): LogicalPlan = synchronized {
+    sqlParser.input = sqlText
+    sqlParser.parse()
   }
 }
 
@@ -134,18 +649,6 @@ final class SnappyLexical(caseSensitive: Boolean) extends SqlLexical {
       Identifier(Utils.toUpperCase(name))
     }
   }
-}
-
-object SnappyParser extends SnappyParserBase(false)
-
-object SnappyParserCaseSensitive extends SnappyParserBase(true)
-
-/** Snappy dialect adds SnappyParser additions to the standard "sql" dialect */
-private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
-    extends DefaultParserDialect {
-
-  @transient protected override val sqlParser =
-    if (caseSensitive) SnappyParserCaseSensitive else SnappyParser
 }
 
 /**
@@ -327,7 +830,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         // check that the provider is a stream relation
         val clazz = ResolvedDataSource.lookupDataSource(provider)
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
-          throw new AnalysisException(s"CREATE STREAM provider $providerName" +
+          throw Utils.analysisException(s"CREATE STREAM provider $providerName" +
               " does not implement StreamPlanProvider")
         }
         CreateMetastoreTableUsing(streamName, specifiedSchema, None,
@@ -493,13 +996,15 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
         val ssc = SnappyStreamingContext.getInstance()
         ssc match {
           case Some(x) => x.start()
-          case None => throw new AnalysisException("Streaming Context has not been initialized")
+          case None => throw Utils.analysisException(
+            "Streaming Context has not been initialized")
         }
       case 2 =>
         val ssc = SnappyStreamingContext.getActive()
         ssc match {
           case Some(strCtx) => strCtx.stop(stopSparkContext = false, stopGracefully = true)
-          case None => //throw new AnalysisException("There is no running Streaming Context to be stopped")
+          case None => //throw Utils.analysisException(
+            //"There is no running Streaming Context to be stopped")
         }
     }
     Seq.empty[Row]

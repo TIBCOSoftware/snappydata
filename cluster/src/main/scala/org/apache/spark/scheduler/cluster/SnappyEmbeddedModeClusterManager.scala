@@ -17,16 +17,17 @@
 package org.apache.spark.scheduler.cluster
 
 import io.snappydata.impl.LeadImpl
-import io.snappydata.{Constant, Property, Utils}
+import io.snappydata.util.ServiceUtils
+import io.snappydata.{Constant, Property}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler._
 
 /**
-  * Snappy's cluster manager that is responsible for creating
-  * scheduler and scheduler backend.
-  */
+ * Snappy's cluster manager that is responsible for creating
+ * scheduler and scheduler backend.
+ */
 class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
   val logger = LoggerFactory.getLogger(getClass)
@@ -51,7 +52,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
         else if (locator.isEmpty ||
             locator == "" ||
             locator == "null" ||
-            !Utils.LocatorURLPattern.matcher(locator).matches()
+            !ServiceUtils.LOCATOR_URL_PATTERN.matcher(locator).matches()
         ) {
           throw new Exception(s"locator info not provided in the snappy embedded url ${sc.master}")
         }
@@ -71,7 +72,7 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
   def createSchedulerBackend(sc: SparkContext,
       scheduler: TaskScheduler): SchedulerBackend = {
     schedulerBackend = new SnappyCoarseGrainedSchedulerBackend(
-        scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv)
+      scheduler.asInstanceOf[TaskSchedulerImpl], sc.env.rpcEnv)
 
     schedulerBackend
   }
@@ -94,11 +95,11 @@ class SnappyEmbeddedModeClusterManager extends ExternalClusterManager {
 
 object SnappyClusterManager {
 
-  private[this] var _cm : SnappyEmbeddedModeClusterManager = null
+  private[this] var _cm: SnappyEmbeddedModeClusterManager = null
 
   def init(mgr: SnappyEmbeddedModeClusterManager): Unit = {
     _cm = mgr
   }
 
-  def cm : Option[SnappyEmbeddedModeClusterManager] = if (_cm != null) Some(_cm) else None
+  def cm: Option[SnappyEmbeddedModeClusterManager] = Option(_cm)
 }

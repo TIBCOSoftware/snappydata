@@ -37,7 +37,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, SnappyContext, SnappyUIUtils}
+import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
 
@@ -382,7 +382,7 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
     partitionBlockIds: Array[RDDBlockId]) extends Serializable {
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
-    SnappyUIUtils.withNewExecutionId(df.sqlContext, df.queryExecution) {
+    Utils.withNewExecutionId(df.sqlContext, df.queryExecution) {
       val sc = SnappyContext.globalSparkContext
       sc.runJob(resultsRdd, rowIter _, resultHandler _)
     }

@@ -18,24 +18,17 @@ package io.snappydata
 
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
 import com.pivotal.gemfirexd.{FabricLocator, FabricServer}
-import io.snappydata.gemxd.ClusterCallback
 
-import org.apache.spark.sql.columntable.StoreCallback
-
-// TODO: Documentation
-trait Server extends FabricServer with ClusterCallback with StoreCallback {
-
-}
+import org.apache.spark.sql.execution.columnar.impl.StoreCallback
 
 // TODO: Documentation
-trait Lead extends Server {
-
-}
+trait Server extends FabricServer with StoreCallback
 
 // TODO: Documentation
-trait Locator extends FabricLocator with ClusterCallback {
+trait Lead extends Server
 
-}
+// TODO: Documentation
+trait Locator extends FabricLocator
 
 trait ProtocolOverrides extends FabricServiceImpl {
 
@@ -48,10 +41,10 @@ trait ProtocolOverrides extends FabricServiceImpl {
   }
 
   abstract override def getDRDAProtocol: String = {
-    return "jdbc:snappydata:drda://"
+    "jdbc:snappydata:drda://"
   }
 
   abstract override def getThriftProtocol: String = {
-    return "jdbc:snappydata:thrift://"
+    "jdbc:snappydata:thrift://"
   }
 }

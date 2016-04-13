@@ -24,6 +24,7 @@ import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
@@ -767,16 +768,13 @@ object GlobalSnappyInit {
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
       case SnappyShellMode(_, _) =>
-        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
-          hostData = false)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
-        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
-          hostData = false)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
-        ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
-          hostData = true)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = true)
       case _ => // ignore
     }
   }
@@ -912,21 +910,21 @@ object SnappyContext extends Logging {
     if ((mode != null && mode.sc == sc) || sc == null) {
       mode
     } else if (mode != null) {
-      evalClusterMode(sc)
+      resolveClusterMode(sc)
     } else contextLock.synchronized {
       val mode = _clusterMode
       if ((mode != null && mode.sc == sc) || sc == null) {
         mode
       } else if (mode != null) {
-        evalClusterMode(sc)
+        resolveClusterMode(sc)
       } else {
-        _clusterMode = evalClusterMode(sc)
+        _clusterMode = resolveClusterMode(sc)
         _clusterMode
       }
     }
   }
 
-  private def evalClusterMode(sc: SparkContext): ClusterMode = {
+  private def resolveClusterMode(sc: SparkContext): ClusterMode = {
     if (sc.master.startsWith(Constant.JDBC_URL_PREFIX)) {
       if (ToolsCallbackInit.toolsCallback == null) {
         throw new SparkException("Missing 'io.snappydata.ToolsCallbackImpl$'" +
@@ -934,7 +932,7 @@ object SnappyContext extends Logging {
       }
       SnappyEmbeddedMode(sc,
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
-    } else if (ToolsCallbackInit.toolsCallback != null) {
+    } else {
       val conf = sc.conf
       val embedded = conf.getOption(Property.embedded).exists(_.toBoolean)
       conf.getOption(Property.locators).collectFirst {
@@ -951,8 +949,6 @@ object SnappyContext extends Logging {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
       }
-    } else {
-      ExternalClusterMode(sc, sc.master)
     }
   }
 
@@ -977,7 +973,7 @@ object SnappyContext extends Logging {
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isShellOrLocalMode(sc)) {
         try {
-          ToolsCallbackInit.toolsCallback.invokeStopFabricServer(sc)
+          ServiceUtils.invokeStopFabricServer(sc)
         } catch {
           case se: SQLException if se.getCause.getMessage.indexOf(
             "No connection to the distributed system") != -1 => // ignore
@@ -996,11 +992,7 @@ object SnappyContext extends Logging {
     CodeGeneration.clearCache()
     _clusterMode match {
       case m: ExternalClusterMode =>
-      case _ =>
-        val callbacks = ToolsCallbackInit.toolsCallback
-        if (callbacks ne null) {
-          callbacks.clearStaticArtifacts()
-        }
+      case _ => ServiceUtils.clearStaticArtifacts()
     }
   }
 

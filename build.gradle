@@ -87,6 +87,7 @@ allprojects {
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
+    jettyVersion = '8.1.14.v20131031'
     gemfireXDVersion = '1.5.0-BETA2'
     buildFlags = ''
     createdBy = System.getProperty("user.name")

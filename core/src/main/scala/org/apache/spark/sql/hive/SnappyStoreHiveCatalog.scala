@@ -626,16 +626,16 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     }
   }
 
-  override def getTables(dbIdent: Option[String]): Seq[(String, Boolean)] = {
+  override def getTables(db: Option[String]): Seq[(String, Boolean)] = {
     val client = this.client
-    val dbName = dbIdent.map(processTableIdentifier)
+    val dbName = db.map(processTableIdentifier)
         .getOrElse(client.currentDatabase)
     tempTables.collect {
-      case (tableIdent, _) if dbIdent.isEmpty || tableIdent.getDatabase(
+      case (tableIdent, _) if db.isEmpty || tableIdent.getDatabase(
         client) == dbName => (tableIdent.table, true)
     }.toSeq ++
-        client.listTables(if (dbIdent.isEmpty) null else dbName).map { t =>
-          if (dbIdent.isDefined) {
+        (if (db.isEmpty) allTables() else client.listTables(dbName)).map { t =>
+          if (db.isDefined) {
             (dbName + '.' + processTableIdentifier(t), false)
           } else {
             (processTableIdentifier(t), false)
@@ -647,7 +647,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       baseTable: Option[String] = None): Seq[QualifiedTableName] = {
     val client = this.client
     val tables = new ArrayBuffer[QualifiedTableName](4)
-    client.listTables(null).foreach { t =>
+    allTables().foreach { t =>
       val tableIdent = newQualifiedTableName(processTableIdentifier(t))
       val table = tableIdent.getTable(client)
       if (tableTypes.isEmpty || table.properties.get(JdbcExtendedUtils
@@ -660,6 +660,27 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       }
     }
     tables
+  }
+
+  private def allTables(): Seq[String] = {
+    val allTables = new ArrayBuffer[String]()
+    val currentDb = this.client.currentDatabase
+    var hasCurrentDb = false
+    val client = this.client.client
+    val databases = client.getAllDatabases.iterator()
+    while (databases.hasNext) {
+      val db = databases.next()
+      if (!hasCurrentDb && db == currentDb) {
+        allTables ++= client.getAllTables(db).asScala
+        hasCurrentDb = true
+      } else {
+        allTables ++= client.getAllTables(db).asScala.map(db + '.' + _)
+      }
+    }
+    if (!hasCurrentDb) {
+      allTables ++= client.getAllTables(currentDb).asScala
+    }
+    allTables
   }
 
   def getDataSourceRelations[T](tableTypes: Seq[ExternalTableType.Type],

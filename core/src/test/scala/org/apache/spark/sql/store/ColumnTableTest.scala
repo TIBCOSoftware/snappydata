@@ -16,16 +16,22 @@
  */
 package org.apache.spark.sql.store
 
+import java.sql.DriverManager
+
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData, TestData2}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
-import scala.collection.JavaConverters._
+import org.apache.hadoop.hive.ql.parse.ParseDriver
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.catalyst.SqlParser
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
@@ -504,4 +510,120 @@ class ColumnTableTest
 
   }
 
+  test("compare parser performance") {
+    val snc = this.snc
+    val sqlText = " select" +
+        "         SUPP_NATION," +
+        "         CUST_NATION," +
+        "         L_YEAR, " +
+        "         sum(VOLUME) as REVENUE" +
+        " from (" +
+        "         select" +
+        "                 N1.N_NAME as SUPP_NATION," +
+        "                 N2.N_NAME as CUST_NATION," +
+        //        "                 extract m(year from l_shipdate) as l_year," +
+        "                 year(L_SHIPDATE) as L_YEAR," +
+        "                 L_EXTENDEDPRICE * (1 - L_DISCOUNT) as VOLUME" +
+        "         from" +
+        "                 SUPPLIER," +
+        "                 LINEITEM," +
+        "                 ORDERS," +
+        "                 CUSTOMER," +
+        "                 NATION N1," +
+        "                 NATION N2" +
+        "         where" +
+        "                 S_SUPPKEY = L_SUPPKEY" +
+        "                 and O_ORDERKEY = L_ORDERKEY" +
+        "                 and C_CUSTKEY = O_CUSTKEY" +
+        "                 and S_NATIONKEY = N1.N_NATIONKEY" +
+        "                 and C_NATIONKEY = N2.N_NATIONKEY" +
+        "                 and (" +
+        "                         (trim(upper(N1.N_NAME)) = 'FRANCE' and " +
+        "                          trim(upper(N2.N_NAME)) = 'GERMANY')" +
+        "                      or (trim(upper(N1.N_NAME)) = 'GERMANY' and " +
+        "                          trim(upper(N2.N_NAME)) = 'FRANCE')" +
+        "                 )" +
+        "                 and L_SHIPDATE between '1995-01-01' and '1996-12-31'" +
+        "         ) as SHIPPING" +
+        " group by" +
+        "         SUPP_NATION," +
+        "         CUST_NATION," +
+        "         L_YEAR" +
+        " order by" +
+        "         SUPP_NATION," +
+        "         CUST_NATION," +
+        "         L_YEAR"
+
+    // warmup runs
+    var plan1: LogicalPlan = null
+    var plan2: LogicalPlan = null
+    val conn = DriverManager.getConnection("jdbc:snappydata:")
+        .asInstanceOf[EmbedConnection]
+    conn.setupContextStack(true)
+    val cc = conn.getLanguageConnection.pushCompilerContext()
+    try {
+
+      val pi = new ParserImpl(cc)
+      val pd = new ParseDriver
+
+      println(s"Warmup runs ...")
+      for (i <- 0 until 20) {
+        plan1 = SqlParser.parse(sqlText)
+        plan2 = snc.getSQLDialect().parse(sqlText)
+        // assert (plan1 === plan2)
+        pi.parseStatement(sqlText)
+        pd.parse(sqlText)
+      }
+      println(s"Done with warmup runs")
+
+      // timed runs for the parsers
+      var start: Double = 0.0
+      var end: Double = 0.0
+      var elapsed: Double = 0.0
+      val timedRuns = 50
+      println(s"===============  Comparing $timedRuns runs  ===============")
+      println()
+
+      start = System.nanoTime()
+      for (i <- 0 until timedRuns) {
+        plan1 = SqlParser.parse(sqlText)
+      }
+      end = System.nanoTime()
+      elapsed = (end - start) / 1000000.0
+      println(s"Time taken by SparkSQL parser = ${elapsed}ms " +
+          s"average=${elapsed / timedRuns}ms")
+
+      start = System.nanoTime()
+      for (i <- 0 until timedRuns) {
+        plan2 = snc.getSQLDialect().parse(sqlText)
+      }
+      end = System.nanoTime()
+      elapsed = (end - start) / 1000000.0
+      println(s"Time taken by Snappy parser = ${elapsed}ms " +
+          s"average=${elapsed / timedRuns}ms")
+
+      start = System.nanoTime()
+      for (i <- 0 until timedRuns) {
+        pi.parseStatement(sqlText)
+      }
+      end = System.nanoTime()
+      elapsed = (end - start) / 1000000.0
+      println(s"Time taken by GemXD parser = ${elapsed}ms " +
+          s"average=${elapsed / timedRuns}ms")
+
+      start = System.nanoTime()
+      for (i <- 0 until timedRuns) {
+        pd.parse(sqlText)
+      }
+      end = System.nanoTime()
+      elapsed = (end - start) / 1000000.0
+      println(s"Time taken by Hive parser = ${elapsed}ms " +
+          s"average=${elapsed / timedRuns}ms")
+
+    } finally {
+      conn.getLanguageConnection.popCompilerContext(cc)
+      conn.restoreContextStack()
+      conn.close()
+    }
+  }
 }

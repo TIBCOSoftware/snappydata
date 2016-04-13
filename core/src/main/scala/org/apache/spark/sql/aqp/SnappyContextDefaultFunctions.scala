@@ -17,9 +17,9 @@
 package org.apache.spark.sql.aqp
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DDLParser, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -27,6 +27,7 @@ import org.apache.spark.sql.sources.StoreStrategy
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{execution => sparkexecution, _}
+import org.apache.spark.util.Utils
 
 object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
@@ -82,8 +83,18 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
   def getPlanner(context: SnappyContext): SparkPlanner =
     new DefaultPlanner(context)
 
-  def getSQLDialect(context: SnappyContext): SnappyParserDialect =
-    new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
+  def getSQLDialect(context: SnappyContext): ParserDialect = {
+    try {
+      val clazz = Utils.classForName(
+        "org.apache.spark.sql.SnappyExtendedParserDialect")
+      clazz.getConstructor(classOf[Boolean]).newInstance(
+        Boolean.box(context.conf.caseSensitiveAnalysis))
+          .asInstanceOf[ParserDialect]
+    } catch {
+      case _: Exception =>
+        new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
+    }
+  }
 
   def aqpTablePopulator(context: SnappyContext): Unit = {
     // register blank tasks for the stream tables so that the streams start

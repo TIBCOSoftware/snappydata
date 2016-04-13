@@ -86,11 +86,16 @@ object CodeGeneration extends Logging {
    */
   private def generateComplexTypeCode(methodName: String,
       typeArgs: Any*): String = {
-    val argTypes = typeArgs.map(_.getClass)
+    val argTypes = typeArgs.map {
+      case _: DataType => classOf[DataType]
+      case _: Seq[_] => classOf[Seq[_]]
+      case o => o.getClass
+    }
     val method = GenerateUnsafeProjection.getClass.getDeclaredMethod(
       methodName, argTypes:_*)
     method.setAccessible(true)
-    method.invoke(GenerateUnsafeProjection, typeArgs).asInstanceOf[String]
+    method.invoke(GenerateUnsafeProjection,
+      typeArgs.asInstanceOf[Seq[Object]]:_*).asInstanceOf[String]
   }
 
   private def getColumnSetterFragment(col: Int, dataType: DataType,
@@ -154,7 +159,7 @@ object CodeGeneration extends Logging {
           $buffHolderVar.reset();
         }
         ${generateComplexTypeCode("writeStructToBuffer", ctx, "struct",
-          s.fields.map(_.dataType), buffHolderVar)}
+          s.fields.map(_.dataType).toSeq, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
       case _ =>

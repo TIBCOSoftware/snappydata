@@ -23,13 +23,14 @@ import java.util.Properties
 import scala.collection.mutable
 
 import io.snappydata.Constant
+import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils._
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -147,8 +148,7 @@ object ExternalStoreUtils {
         // Already connected to SnappyData in embedded mode.
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
       case SnappyShellMode(_, _) =>
-        ToolsCallbackInit.toolsCallback.getLocatorJDBCURL(sc) +
-            "/route-query=false"
+        ServiceUtils.getLocatorJDBCURL(sc) + "/route-query=false"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
       case LocalMode(_, url) =>

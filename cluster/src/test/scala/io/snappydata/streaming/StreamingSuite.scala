@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.app.streaming
+package io.snappydata.streaming
 
 import scala.collection.mutable
 
@@ -60,80 +60,7 @@ class StreamingSuite
     }
   }
 
-  test("SNAP-414") {
-    ssnc.sql("create stream table tableStream " +
-        "(id long, text string, fullName string, " +
-        "country string, retweets int, hashtag string) " +
-        "using twitter_stream options (" +
-        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
-
-    ssnc.sql("create stream table tableStream2 " +
-        "(text string) " +
-        "using twitter_stream options (" +
-        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'org.apache.spark.sql.streaming.HashTagToRowsConverter')")
-
-    ssnc.sql("STREAMING START")
-    for (a <- 1 to 3) {
-      Thread.sleep(2000)
-      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").show()
-    }
-    for (a <- 1 to 3) {
-      Thread.sleep(2000)
-      ssnc.sql("select text from tableStream2 where text like '%e%'").show()
-    }
-    ssnc.sql("drop table tableStream")
-    ssnc.sql("drop table tableStream2")
-  }
-
-  test("SNAP-408") {
-    ssnc.sql("create stream table tableStream " +
-        "(id long, text string, fullName string, " +
-        "country string, retweets int, hashtag string) " +
-        "using twitter_stream options (" +
-        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
-    ssnc.sql("STREAMING START")
-    for (a <- 1 to 3) {
-      Thread.sleep(2000)
-      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count()
-    }
-    // try drop from another streaming context
-    SnappyStreamingContext.getActive().foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
-    ssnc = new SnappyStreamingContext(snc.sparkContext, batchDuration)
-
-    ssnc.sql("drop table tableStream")
-    intercept[Exception] {
-      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count()
-    }
-    ssnc.sql("create stream table tableStream " +
-        "(id long, text string, fullName string, " +
-        "country string, retweets int, hashtag string) " +
-        "using twitter_stream options (" +
-        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
-        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
-        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
-        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.app.streaming.TweetToRowsConverter')")
-    for (a <- 1 to 3) {
-      Thread.sleep(1000)
-      ssnc.sql("select id, text, fullName from tableStream where text like '%e%'").count()
-    }
-    ssnc.sql("drop table tableStream")
-  }
-
+  /** same test in core does not test for dynamic CQ registration */
   test("stream ad-hoc sql") {
     ssnc.sql("create stream table tweetsTable " +
         "(id long, text string, fullName string, " +
@@ -149,11 +76,11 @@ class StreamingSuite
         "window (duration 10 seconds, slide 10 seconds) where text like '%e%'")
     cqResult.foreachDataFrame(df => df.count())
 
+    ssnc.sql("STREAMING START")
+
     val dynamicCQResult = ssnc.registerCQ("SELECT text, fullName FROM tweetsTable " +
         "window (duration 4 seconds, slide 4 seconds) where text like '%e%'")
     dynamicCQResult.foreachDataFrame(df => df.count())
-
-    ssnc.sql("STREAMING START")
 
     for (a <- 1 to 5) {
       Thread.sleep(2000)
@@ -197,95 +124,7 @@ class StreamingSuite
     assert(r2.length == 30)
   }
 
-
-  test("SNAP-240 NotSerializableException with checkpoint") {
-
-    def getQueueOfRDDs: mutable.Queue[RDD[Tweet]] = {
-      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
-      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
-      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
-      mutable.Queue(distData1, distData2, distData3)
-    }
-
-    val dStream = ssnc.queueStream[Tweet](getQueueOfRDDs)
-
-    val schemaDStream = ssnc.createSchemaDStream(dStream)
-    schemaDStream.foreachRDD(rdd => {
-      // schemaDStream.createDataFrame (rdd).show() //NotSerializableException
-      // println(rdd) // scalastyle:ignore
-    })
-
-    ssnc.start()
-    ssnc.awaitTerminationOrTimeout(5 * 1000)
-  }
-
-  test("api stream to stream and stream to table join") {
-    def getQueueOfRDDs1: mutable.Queue[RDD[Tweet]] = {
-      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
-      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
-      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
-      mutable.Queue(distData1, distData2, distData3)
-    }
-
-    val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
-
-    val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    schemaStream1.foreachDataFrame(df => {
-      df.count()
-    })
-    schemaStream1.registerAsTable("tweetStream1")
-
-    def getQueueOfRDDs2: mutable.Queue[RDD[Tweet]] = {
-      val distData1: RDD[Tweet] = sc.parallelize(9 to 10).map(i => Tweet(i, s"Text$i"))
-      val distData2: RDD[Tweet] = sc.parallelize(19 to 20).map(i => Tweet(i, s"Text$i"))
-      val distData3: RDD[Tweet] = sc.parallelize(29 to 30).map(i => Tweet(i, s"Text$i"))
-      mutable.Queue(distData1, distData2, distData3)
-    }
-
-    val dStream2 = ssnc.queueStream[Tweet](getQueueOfRDDs2)
-
-    val schemaStream2 = ssnc.createSchemaDStream(dStream2)
-    schemaStream2.foreachDataFrame(df => {
-      df.count()
-    })
-    schemaStream2.registerAsTable("tweetStream2")
-
-    val resultStream: SchemaDStream = ssnc.registerCQ("SELECT t1.id, t1.text FROM " +
-        "tweetStream1 window (duration 2 seconds, slide 2 seconds) t1 JOIN " +
-        "tweetStream2 t2 ON t1.id = t2.id ")
-
-    ssnc.snappyContext.dropTable("gemxdColumnTable", ifExists = true)
-    ssnc.snappyContext.createTable("gemxdColumnTable", "column", schemaStream1.schema,
-      Map.empty[String, String])
-
-    resultStream.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("gemxdColumnTable")
-    })
-
-    val df = ssnc.snappyContext.createDataFrame(
-      sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
-    df.registerTempTable("tweetTable")
-
-    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window " +
-        "(duration 4 seconds, slide 4 seconds) " +
-        "t1 JOIN tweetTable t2 ON t1.id = t2.id")
-    resultSet.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("gemxdColumnTable")
-    })
-
-    ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
-
-    val result = ssnc.sql("select * from gemxdColumnTable")
-    val r = result.collect()
-    assert(r.length > 0)
-    ssnc.sql("drop table gemxdColumnTable")
-  }
-
-  /** will fail with stock Spark (until relevant PR is pushed and merged) */
-  ignore("dynamic CQ") {
+  test("dynamic CQ") {
 
     def getQueueOfRDDs1: mutable.Queue[RDD[Tweet]] = {
       val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
@@ -502,7 +341,6 @@ class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
       status.getRetweetCount, UTF8String.fromString(
         status.getHashtagEntities.mkString(",")))))
   }
-
 }
 
 class LineToRowsConverter extends StreamToRowsConverter with Serializable {

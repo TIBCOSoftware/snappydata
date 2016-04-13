@@ -59,6 +59,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     ThreadFactory hmsClientThreadFactory = new ThreadFactory() {
       private int next = 0;
 
+      @SuppressWarnings("NullableProblems")
       public Thread newThread(Runnable command) {
         Thread t = new Thread(hmsThreadGroup, command, "HiveMetaStore Client-"
             + next++);
@@ -130,7 +131,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int INIT = 0;
     private static final int ISROWTABLE_QUERY = 1;
     private static final int ISCOLUMNTABLE_QUERY = 2;
-    private static final int CLOSE_HMC = 3;
+    // private static final int CLOSE_HMC = 3;
 
     // More to be added later
 

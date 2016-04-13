@@ -30,10 +30,11 @@ import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
-import io.snappydata._
+import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 class LeadImpl extends ServerImpl with Lead with Logging {
@@ -82,7 +83,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   def directApiInvoked: Boolean = _directApiInvoked
 
-  @throws(classOf[SQLException])
+  @throws[SQLException]
   override def start(bootProperties: Properties, ignoreIfStarted: Boolean): Unit = {
 
     _directApiInvoked = true
@@ -194,7 +195,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     }
   }
 
-  @throws(classOf[SQLException])
+  @throws[SQLException]
   override def stop(shutdownCredentials: Properties): Unit = {
     assert(sparkContext != null, "Mix and match of LeadService api " +
         "and SparkContext is unsupported.")
@@ -256,7 +257,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   protected[snappydata] def notifyOnStatusChange(f: (FabricService.State) => Unit): Unit =
     this.notifyStatusChange = f
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   private[snappydata] def startAddOnServices(sc: SparkContext): Unit = this.synchronized {
     LeadImpl.setInitializingSparkContext(sc)
 
@@ -318,21 +319,21 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     ActorSystem("SnappyLeadJobServer", conf)
   }
 
-  @throws(classOf[SQLException])
+  @throws[SQLException]
   override def startNetworkServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Network server cannot be started on lead node.")
   }
 
-  @throws(classOf[SQLException])
+  @throws[SQLException]
   override def startThriftServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {
     throw new SQLException("Thrift server cannot be started on lead node.")
   }
 
-  @throws(classOf[SQLException])
+  @throws[SQLException]
   override def startDRDAServer(bindAddress: String,
       port: Int,
       networkProperties: Properties): NetworkInterface = {

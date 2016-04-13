@@ -66,7 +66,8 @@ case class LocalJoin(leftKeys: Seq[Expression],
     }
     val numOutputRows = longMetric("numOutputRows")
 
-    narrowPartitions(buildPlan.execute(), streamedPlan.execute(), true) {
+    narrowPartitions(buildPlan.execute(), streamedPlan.execute(),
+      preservesPartitioning = true) {
       (buildIter, streamIter) => {
         val hashed = HashedRelation(buildIter, numBuildRows, buildSideKeyGenerator)
         hashJoin(streamIter, numStreamedRows, hashed, numOutputRows)
@@ -104,7 +105,7 @@ private[spark] class NarrowPartitionsRDD(
       val streamLocs = streamRDD.preferredLocations(streamRDD.partitions(i))
       val buildLocs = buildRDD.preferredLocations(part)
       val exactMatchLocations = streamLocs.intersect(buildLocs)
-      val locs = if (!exactMatchLocations.isEmpty) exactMatchLocations else
+      val locs = if (exactMatchLocations.nonEmpty) exactMatchLocations else
                          (streamLocs ++ buildLocs).distinct
 
       new NarrowPartitionsPartition(part.index, buildRDD, i, streamRDD , locs)
@@ -135,7 +136,7 @@ private[spark] class NarrowPartitionsPartition(
   var buildPartition = buildRDD.partitions(buildIdx)
   var streamPartition = streamRDD.partitions(streamIdx)
 
-  @throws(classOf[IOException])
+  @throws[IOException]
   private def writeObject(oos: ObjectOutputStream): Unit = Utils.tryOrIOException {
     // Update the reference to parent split at the time of task serialization
     buildPartition = buildRDD.partitions(buildIdx)

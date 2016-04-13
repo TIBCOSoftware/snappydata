@@ -39,7 +39,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     conn.close()
   }
 
-//  @throws(classOf[Exception])
+//  @throws[Exception]
 //  def testStringAsDatatype_runInXD {
 //    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
 //    val st: Statement = conn.createStatement
@@ -63,7 +63,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
 //    conn.close()
 //  }
 
-  @throws(classOf[Exception])
+  @throws[Exception]
   def testStringAsDatatype_runInSpark() {
 
     val sc = new org.apache.spark.SparkContext(LocalSparkConf.newConf())
@@ -106,7 +106,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
   }
 
   // Copy from BugsTest to verify basic JUnit is running in Scala
-//  @throws(classOf[Exception])
+//  @throws[Exception]
 //  def testBug47329 {
 //    val conn: Connection = TestUtil.getConnection("jdbc:snappydata:;", new Properties())
 //    val st: Statement = conn.createStatement

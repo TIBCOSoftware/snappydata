@@ -192,8 +192,8 @@ object ExternalShellDUnitTest {
       props: Map[String, String]): Unit = {
 
     val hostName = InetAddress.getLocalHost.getHostName
-    val conf = new SparkConf().
-        setAppName("test Application")
+    val conf = new SparkConf()
+        .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
         .set("snappydata.store.locators", s"localhost:$locatorPort")
         .set("spark.executor.extraClassPath",
