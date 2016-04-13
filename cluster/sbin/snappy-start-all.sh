@@ -18,7 +18,7 @@
 #
 
 # Start all snappy daemons - locator, lead and server on the nodes specified in the
-# conf/locators, conf/leads and conf/servers files repsectively
+# conf/locators, conf/leads and conf/servers files respectively
 
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
@@ -28,10 +28,12 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/snappy-config.sh"
 
 # Start Locators
-"$sbin"/snappy-locators.sh start
+"$sbin"/snappy-locators.sh start "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh start
+"$sbin"/snappy-servers.sh start "$@"
 
 # Start Leads
-"$sbin"/snappy-leads.sh start
+if [ "$1" != "rowstore" ]; then
+  "$sbin"/snappy-leads.sh start
+fi

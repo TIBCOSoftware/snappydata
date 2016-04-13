@@ -22,10 +22,16 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     setDMLMaxChunkSize(default_chunk_size)
     super.tearDown2()
   }
-  private def getANetConnection(netPort: Int): Connection = {
+  private def getANetConnection(netPort: Int, useGemXDURL: Boolean = false): Connection = {
     val driver = "com.pivotal.gemfirexd.jdbc.ClientDriver"
     Class.forName(driver).newInstance //scalastyle:ignore
-    val url = "jdbc:snappydata://localhost:" + netPort + "/"
+    var url: String = null
+    if (useGemXDURL) {
+      url = "jdbc:gemfirexd://localhost:" + netPort + "/"
+    } else {
+      url = "jdbc:snappydata://localhost:" + netPort + "/"
+    }
+
     DriverManager.getConnection(url)
   }
 
@@ -378,6 +384,39 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   def setDMLMaxChunkSize(size: Long): Unit = {
     GemFireXDUtils.DML_MAX_CHUNK_SIZE = size
+  }
+
+  def testGemXDURL(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn = getANetConnection(netPort1, true)
+    val s = conn.createStatement()
+    s.execute("CREATE TABLE T1(COL1 INT, COL2 INT) PERSISTENT REPLICATE")
+    s.execute("INSERT INTO T1 VALUES(1, 1), (2, 2), (3, 3),(4, 4), (5, 5)")
+    s.execute("SELECT * FROM T1")
+    var rs = s.getResultSet
+    var cnt = 0
+    while (rs.next()) {
+      cnt += 1
+    }
+    assert(cnt == 5)
+
+    try {
+      s.execute("CREATE TABLE colTable(Col1 INT ,Col2 INT, Col3 INT)" +
+          "USING column " +
+          "options " +
+          "(" +
+          "BUCKETS '1'," +
+          "REDUNDANCY '0')")
+      assert(false, "Should have thrown an exception as gemxd URL does not route query")
+    } catch {
+      case sqe: SQLException =>
+        if ("42X01" != sqe.getSQLState) {
+          throw sqe
+        }
+    }
+
   }
 }
 
