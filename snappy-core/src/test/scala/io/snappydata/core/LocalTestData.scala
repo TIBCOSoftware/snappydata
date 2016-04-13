@@ -35,6 +35,23 @@ case class Data2(pk: Int, Year: Int)
 
 case class RefData(ref: Int, description: String)
 
+case class TRIPDATA(
+    MEDALLION: String,
+    HACK_LICENSE: String,
+    VENDOR_ID: String,
+    RATE_CODE: Integer,
+    STORE_AND_FWD_FLAG: String,
+    PICKUP_DATETIME: String,
+    DROPOFF_DATETIME: String,
+    PASSENGER_COUNT: Integer,
+    TRIP_TIME_IN_SECS: Integer,
+    TRIP_DISTANCE: Double,
+    PICKUP_LONGITUDE: Double,
+    PICKUP_LATITUDE: Double,
+    DROPOFF_LONGITUDE: Double,
+    DROPOFF_LATITUDE: Double
+    )
+
 object FileCleaner {
 
   def deletePath(path: String): Boolean = {
