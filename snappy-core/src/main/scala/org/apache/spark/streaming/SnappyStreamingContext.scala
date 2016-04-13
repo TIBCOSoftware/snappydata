@@ -177,9 +177,6 @@ class SnappyStreamingContext protected[spark](
   def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
     StreamSqlHelper.createSchemaDStream(self, rowStream, schema)
   }
-
-
-
 }
 
 object SnappyStreamingContext extends Logging {

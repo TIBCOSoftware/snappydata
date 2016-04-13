@@ -16,10 +16,10 @@
  */
 package org.apache.spark.sql.streaming
 
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.Row
 
 trait StreamToRowsConverter extends Serializable {
-  def toRows(message: Any): Seq[InternalRow]
+  def toRows(message: Any): Seq[Row]
 }
 
 
