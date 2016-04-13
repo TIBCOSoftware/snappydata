@@ -41,10 +41,10 @@ private[sql] case class PartitionedPhysicalRDD(
   override lazy val outputPartitioning: Partitioning = {
     if (numPartitions == 1) SinglePartition
     else {
-      /*val callbacks = ToolsCallbackInit.toolsCallback
+      val callbacks = ToolsCallbackInit.toolsCallback
       if (callbacks != null) {
         callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions)
-      } else*/ {
+      } else {
         HashPartitioning(partitionColumns, numPartitions)
       }
     }
