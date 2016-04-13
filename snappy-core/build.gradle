@@ -30,6 +30,7 @@ dependencies {
 
   compile 'org.apache.tomcat:tomcat-jdbc:8.0.32'
   compile 'com.zaxxer:HikariCP:2.4.4'
+  provided 'com.rabbitmq:amqp-client:3.5.7'
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
