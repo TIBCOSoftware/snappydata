@@ -20,6 +20,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
@@ -30,16 +31,23 @@ import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
 private[sql] case class PartitionedPhysicalRDD(
     output: Seq[Attribute],
     rdd: RDD[InternalRow],
-    numPartition: Int,
+    numPartitions: Int,
     partitionColumns: Seq[Expression],
     extraInformation: String) extends LeafNode {
 
   protected override def doExecute(): RDD[InternalRow] = rdd
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
-  override def outputPartitioning: Partitioning = {
-    if (numPartition == 1) SinglePartition
-    else HashPartitioning(partitionColumns, numPartition)
+  override lazy val outputPartitioning: Partitioning = {
+    if (numPartitions == 1) SinglePartition
+    else {
+      /*val callbacks = ToolsCallbackInit.toolsCallback
+      if (callbacks != null) {
+        callbacks.getOrderlessHashPartitioning(partitionColumns, numPartitions)
+      } else*/ {
+        HashPartitioning(partitionColumns, numPartitions)
+      }
+    }
   }
 
   override def simpleString: String = "Partitioned Scan " + extraInformation +

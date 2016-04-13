@@ -24,7 +24,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Time}
+import org.apache.spark.streaming.{Duration, SnappyStreamingContext, StreamUtils, Time}
 
 /**
   * A SQL based DStream with support for schema/Product
@@ -89,11 +89,11 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Persist the RDDs of this SchemaDStream with the given storage level */
   override def persist(level: StorageLevel): SchemaDStream = {
-    if (this.isInitialized) {
+    if (StreamUtils.isStreamInitialized(this)) {
       throw new UnsupportedOperationException(
         "Cannot change storage level of a SchemaDStream after streaming context has started")
     }
-    this.storageLevel = level
+    StreamUtils.setStorageLevel(level, this)
     this
   }
 
@@ -108,12 +108,12 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     * @param interval Time interval after which generated RDD will be checkpointed
     */
   override def checkpoint(interval: Duration): SchemaDStream = {
-    if (isInitialized) {
+    if (StreamUtils.isStreamInitialized(this)) {
       throw new UnsupportedOperationException(
         "Cannot change checkpoint interval of an DStream after streaming context has started")
     }
     persist()
-    checkpointDuration = interval
+    StreamUtils.setCheckpointDuration(interval, this)
     this
   }
 

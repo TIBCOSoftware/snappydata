@@ -18,48 +18,21 @@ package io.snappydata.streaming
 
 import scala.collection.mutable
 
-import io.snappydata.SnappyFunSuite
-import org.scalatest.BeforeAndAfter
-import org.scalatest.concurrent.Eventually
-import twitter4j.{Status, TwitterObjectFactory}
+import io.snappydata.app.streaming.{StreamingSuite, Tweet}
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.streaming.{SchemaDStream, StreamToRowsConverter}
-import org.apache.spark.sql.{Row, SaveMode}
-import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.streaming.SchemaDStream
 
-class StreamingSuite
-    extends SnappyFunSuite with Eventually with BeforeAndAfter {
-
-  private var ssnc: SnappyStreamingContext = _
-
-  def framework: String = this.getClass.getSimpleName
-
-  def master: String = "local[2]"
-
-  def batchDuration: Duration = Seconds(1)
-
-  def creatingFunc(): SnappyStreamingContext = {
-    new SnappyStreamingContext(sc, batchDuration)
-  }
-
-
-  before {
-    SnappyStreamingContext.getActive().foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
-    ssnc = SnappyStreamingContext.getActiveOrCreate(creatingFunc)
-  }
-
-  after {
-    baseCleanup()
-    SnappyStreamingContext.getActive().foreach {
-      _.stop(stopSparkContext = false, stopGracefully = true)
-    }
-  }
+/**
+ * Inherit all tests of StreamingSuite to run with snappy-spark
+ * (instead of stock spark that StreamingSuite is run with).
+ */
+class ClusterStreamingSuite
+    extends StreamingSuite {
 
   /** same test in core does not test for dynamic CQ registration */
-  test("stream ad-hoc sql") {
+  test("stream ad-hoc sql with dynamic CQ") {
     ssnc.sql("create stream table tweetsTable " +
         "(id long, text string, fullName string, " +
         "country string, retweets int, hashtag string) " +
@@ -86,40 +59,6 @@ class StreamingSuite
     }
     ssnc.sql("drop table tweetsTable")
     ssnc.awaitTerminationOrTimeout(10 * 1000)
-  }
-
-  test("save stream to external table using forEachDataFrame") {
-    def getQueueOfRDDs1: mutable.Queue[RDD[Tweet]] = {
-      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
-      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
-      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
-      mutable.Queue(distData1, distData2, distData3)
-    }
-
-    val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
-    val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    ssnc.snappyContext.dropTable("gemxdColumnTable1", ifExists = true)
-    schemaStream1.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append)
-          .options(Map.empty[String, String]).saveAsTable("gemxdColumnTable1")
-    })
-
-    ssnc.snappyContext.dropTable("gemxdColumnTable2", ifExists = true)
-    schemaStream1.foreachDataFrame((df, time) => {
-      df.write.format("column").mode(SaveMode.Append)
-          .options(Map.empty[String, String]).saveAsTable("gemxdColumnTable2")
-    })
-
-    ssnc.start()
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
-
-    val result1 = ssnc.sql("select * from gemxdColumnTable1")
-    val r1 = result1.collect()
-    assert(r1.length == 30)
-
-    val result2 = ssnc.sql("select * from gemxdColumnTable2")
-    val r2 = result2.collect()
-    assert(r2.length == 30)
   }
 
   test("dynamic CQ") {
@@ -186,65 +125,5 @@ class StreamingSuite
     val r = result.collect()
     assert(r.length > 0)
     ssnc.sql("drop table gemColumnTable")
-
-  }
-
-  test("sql on kafka streams") {
-
-    ssnc.sql("create stream table kafkaStreamTable (name string, age int)" +
-        " using kafka_stream options " +
-        "(storagelevel 'MEMORY_AND_DISK_SER_2', " +
-        "rowConverter 'io.snappydata.app.streaming.KafkaStreamToRowsConverter', " +
-        "zkQuorum 'localhost:2181', " +
-        "groupId 'streamSQLConsumer', " +
-        "topics 'tweets:01')")
-
-    /* val tableDStream: SchemaDStream = ssnc.getSchemaDStream("directKafkaStreamTable")
-    import org.apache.spark.sql.streaming.snappy._
-    tableDStream.saveToExternalTable("kafkaStreamGemXdTable", tableDStream.schema,
-   Map.empty[String, String]) */
-
-    // val thrown = intercept[Exception] {
-    ssnc.sql("STREAMING START")
-    // }
-    // assert(thrown.getMessage === "requirement failed: No output operations " +
-    //    "registered, so nothing to execute")
-    ssnc.sql("drop table kafkaStreamTable")
-  }
-}
-
-case class Tweet(id: Int, text: String)
-
-class TweetToRowsConverter extends StreamToRowsConverter with Serializable {
-
-  override def toRows(message: Any): Seq[Row] = {
-    val status: Status = message.asInstanceOf[Status]
-    Seq(Row.fromSeq(Seq(status.getId,
-      status.getText,
-      status.getUser.getName,
-      status.getUser.getLang,
-      status.getRetweetCount,
-      status.getHashtagEntities.mkString(","))))
-  }
-}
-
-class LineToRowsConverter extends StreamToRowsConverter with Serializable {
-
-  override def toRows(message: Any): Seq[Row] = {
-    Seq(Row.fromSeq(Seq(message.toString)))
-  }
-}
-
-class KafkaStreamToRowsConverter extends StreamToRowsConverter with Serializable {
-
-  override def toRows(message: Any): Seq[Row] = {
-    val status: Status = TwitterObjectFactory.createStatus(message.asInstanceOf[String])
-    TwitterObjectFactory.getRawJSON(message)
-    Seq(Row.fromSeq(Seq(status.getId,
-      status.getText,
-      status.getUser.getName,
-      status.getUser.getLang,
-      status.getRetweetCount,
-      status.getHashtagEntities.mkString(","))))
   }
 }

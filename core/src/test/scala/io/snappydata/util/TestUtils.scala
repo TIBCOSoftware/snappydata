@@ -16,11 +16,12 @@
  */
 package io.snappydata.util
 
+import scala.collection.mutable
+
 import _root_.com.gemstone.gemfire.cache.Region
 import _root_.com.gemstone.gemfire.internal.cache.PartitionedRegion
 import _root_.com.pivotal.gemfirexd.internal.engine.Misc
 
-import scala.collection.mutable
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.hive.ExternalTableType
 
@@ -35,11 +36,20 @@ object TestUtils {
         // also drop parents in colocated chain last (assuming chain length = 1)
         val streams = snc.catalog.getDataSourceTables(Seq(ExternalTableType.Stream))
         val parents = mutable.HashSet[String]()
-        snc.catalog.getTables(None).filter { t =>
-          if (streams.exists(_.toString() == t._1)) {
+        val allTables = snc.catalog.getTables(None)
+        val allRegions = mutable.HashSet[String]()
+        val allTablesWithRegions = allTables.map { t =>
+          val table = t._1
+          val tableName = if (table.indexOf('.') < 0) "APP." + table else table
+          val path = Misc.getRegionPath(tableName)
+          allRegions += path
+          (table, path)
+        }
+        allTablesWithRegions.filter { case (table, path) =>
+          if (streams.exists(_.toString() == table)) {
             false
-          } else if (hasColocatedChildren(t._1)) {
-            parents += t._1
+          } else if (hasColocatedChildren(path, allRegions)) {
+            parents += table
             false
           } else true
         }.foreach(t => snc.dropTable(t._1, ifExists = true))
@@ -51,14 +61,27 @@ object TestUtils {
     }
   }
 
-  def hasColocatedChildren(table: String): Boolean = {
+  private def checkColocatedByList(colocated: java.util.List[PartitionedRegion],
+      allRegions: mutable.Set[String]): Boolean = {
+    val itr = colocated.iterator()
+    while (itr.hasNext) {
+      if (allRegions.contains(itr.next().getFullPath)) {
+        return true
+      }
+    }
+    false
+  }
+
+  def hasColocatedChildren(path: String,
+      allRegions: mutable.Set[String]): Boolean = {
     try {
-      Misc.getRegionForTable(table, true).asInstanceOf[Region[_, _]] match {
-        case pr: PartitionedRegion => pr.isColocatedBy
+      Misc.getRegion(path, true, false).asInstanceOf[Region[_, _]] match {
+        case pr: PartitionedRegion => checkColocatedByList(pr.colocatedByList,
+          allRegions)
         case _ => false
       }
     } catch {
-      case _: Exception => false
+      case e: Exception => false
     }
   }
 }

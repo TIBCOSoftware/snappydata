@@ -19,10 +19,16 @@ package io.snappydata
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.physical.{OrderlessHashPartitioning, Partitioning}
 
 object ToolsCallbackImpl extends ToolsCallback {
 
   override def invokeLeadStartAddonService(sc: SparkContext): Unit = {
     LeadImpl.invokeLeadStartAddonService(sc)
   }
+
+  def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
+      numPartitions: Int): Partitioning = OrderlessHashPartitioning(
+    partitionColumns, numPartitions)
 }

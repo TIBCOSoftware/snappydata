@@ -17,8 +17,13 @@
 package io.snappydata
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 
 trait ToolsCallback {
 
-  def invokeLeadStartAddonService(sc: SparkContext)
+  def invokeLeadStartAddonService(sc: SparkContext): Unit
+
+  def getOrderlessHashPartitioning(partitionColumns: Seq[Expression],
+      numPartitions: Int): Partitioning
 }

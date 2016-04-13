@@ -20,16 +20,32 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 
 /**
  * Some utility methods for streaming operations.
  */
 object StreamUtils {
+
   /** Invoke <code>DStream.getOrCompute</code> */
   def getOrCompute[T: ClassTag](dStream: DStream[T],
       time: Time): Option[RDD[T]] = dStream.getOrCompute(time)
 
-  def getGeneratedRDDs[T: ClassTag](dStream: DStream[T]): mutable.HashMap[Time,
-      RDD[T]] = dStream.generatedRDDs
+  def getGeneratedRDDs[T: ClassTag](dStream: DStream[T]): mutable.Map[Time,
+      RDD[T]] = {
+    // using reflection here since Spark's object is a HashMap while it is
+    // a ConcurrentHashMap in snappydata's version of Spark
+    // [TODO PR] it should be a concurrent map in Apache Spark too
+    dStream.getClass.getMethod("generatedRDDs").invoke(dStream)
+        .asInstanceOf[mutable.Map[Time, RDD[T]]]
+  }
+
+  def isStreamInitialized(stream: DStream[_]): Boolean = stream.isInitialized
+
+  def setStorageLevel(level: StorageLevel, stream: DStream[_]): Unit =
+    stream.storageLevel = level
+
+  def setCheckpointDuration(duration: Duration, stream: DStream[_]): Unit =
+    stream.checkpointDuration = duration
 }

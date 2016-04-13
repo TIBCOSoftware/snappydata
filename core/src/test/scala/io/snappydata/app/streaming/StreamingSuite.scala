@@ -36,7 +36,7 @@ import org.apache.spark.streaming.{Duration, Seconds, SnappyStreamingContext}
 class StreamingSuite
     extends SnappyFunSuite with Eventually with BeforeAndAfter {
 
-  private var ssnc: SnappyStreamingContext = _
+  protected var ssnc: SnappyStreamingContext = _
 
   def framework: String = this.getClass.getSimpleName
 
@@ -47,7 +47,6 @@ class StreamingSuite
   def creatingFunc(): SnappyStreamingContext = {
     new SnappyStreamingContext(sc, batchDuration)
   }
-
 
   before {
     SnappyStreamingContext.getActive().foreach {
@@ -327,74 +326,6 @@ class StreamingSuite
     val r = result.collect()
     assert(r.length > 0)
     ssnc.sql("drop table gemxdColumnTable")
-  }
-
-  /** will fail with stock Spark (until relevant PR is pushed and merged) */
-  ignore("dynamic CQ") {
-
-    def getQueueOfRDDs1: mutable.Queue[RDD[Tweet]] = {
-      val distData1: RDD[Tweet] = sc.parallelize(1 to 10).map(i => Tweet(i, s"Text$i"))
-      val distData2: RDD[Tweet] = sc.parallelize(11 to 20).map(i => Tweet(i, s"Text$i"))
-      val distData3: RDD[Tweet] = sc.parallelize(21 to 30).map(i => Tweet(i, s"Text$i"))
-      mutable.Queue(distData1, distData2, distData3)
-    }
-    val dStream1 = ssnc.queueStream[Tweet](getQueueOfRDDs1)
-
-    val schemaStream1 = ssnc.createSchemaDStream(dStream1)
-    schemaStream1.foreachDataFrame(df => {
-      df.count()
-    })
-    schemaStream1.registerAsTable("tweetStream1")
-
-    def getQueueOfRDDs2: mutable.Queue[RDD[Tweet]] = {
-      val distData1: RDD[Tweet] = sc.parallelize(9 to 10).map(i => Tweet(i, s"Text$i"))
-      val distData2: RDD[Tweet] = sc.parallelize(19 to 20).map(i => Tweet(i, s"Text$i"))
-      val distData3: RDD[Tweet] = sc.parallelize(29 to 30).map(i => Tweet(i, s"Text$i"))
-      mutable.Queue(distData1, distData2, distData3)
-    }
-
-    val dStream2 = ssnc.queueStream[Tweet](getQueueOfRDDs2)
-
-    val schemaStream2 = ssnc.createSchemaDStream(dStream2)
-    schemaStream2.foreachDataFrame(df => {
-      df.count()
-    })
-    schemaStream2.registerAsTable("tweetStream2")
-
-    val resultStream: SchemaDStream = ssnc.registerCQ("SELECT t1.id, t1.text" +
-        " FROM tweetStream1 window (duration 2 seconds, slide 2 seconds)" +
-        "t1 JOIN tweetStream2 t2 ON t1.id = t2.id ")
-
-    ssnc.snappyContext.dropTable("gemColumnTable", ifExists = true)
-    ssnc.snappyContext.createTable("gemColumnTable", "column", schemaStream1.schema,
-      Map.empty[String, String])
-
-    resultStream.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("gemColumnTable")
-    })
-
-    val df = ssnc.snappyContext.createDataFrame(
-      sc.parallelize(1 to 10).map(i => Tweet(i / 2, s"Text${i / 2}")))
-    df.registerTempTable("tweetTable")
-
-    ssnc.start()
-
-    val resultSet = ssnc.registerCQ("SELECT t2.id, t2.text FROM tweetStream1 window" +
-        " (duration 4 seconds, slide 4 seconds) " +
-        "t1 JOIN tweetTable t2 ON t1.id = t2.id")
-
-    resultSet.foreachDataFrame(df => {
-      df.write.format("column").mode(SaveMode.Append).options(Map.empty[String, String])
-          .saveAsTable("gemColumnTable")
-    })
-    ssnc.awaitTerminationOrTimeout(20 * 1000)
-
-    val result = ssnc.sql("select * from gemColumnTable")
-    val r = result.collect()
-    assert(r.length > 0)
-    ssnc.sql("drop table gemColumnTable")
-
   }
 
   test("sql on kafka streams") {
