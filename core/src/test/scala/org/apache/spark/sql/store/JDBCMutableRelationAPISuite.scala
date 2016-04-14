@@ -18,8 +18,8 @@ package org.apache.spark.sql.store
 
 import java.sql.{DriverManager, SQLException}
 
+import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
-import io.snappydata.{SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 
 //scalastyle:ignore
@@ -36,9 +36,9 @@ class JDBCMutableRelationAPISuite
   val path = "JDBCMutableRelationAPISuite"
 
   override def beforeAll(): Unit = {
+    dirList += path
     super.beforeAll()
     DriverManager.getConnection(s"jdbc:derby:$path;create=true")
-    dirList += path
   }
 
   override def afterAll(): Unit = {

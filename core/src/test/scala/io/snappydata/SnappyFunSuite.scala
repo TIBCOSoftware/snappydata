@@ -36,7 +36,7 @@ abstract class SnappyFunSuite
     with Logging {
 
   protected var testName: String = _
-  protected var dirList = ArrayBuffer[String]()
+  protected val dirList = ArrayBuffer[String]()
 
   protected def sc: SparkContext = {
     val ctx = SnappyContext.globalSparkContext
