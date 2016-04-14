@@ -16,12 +16,13 @@
  */
 package org.apache.spark.sql.sources
 
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.types.DataType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, _}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
+import org.apache.spark.sql.types.DataType
+
 /**
  * Support for DML and other operations on external tables.
  *
@@ -54,8 +55,8 @@ object StoreStrategy extends Strategy {
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _),
-        query) => ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
+    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _), query) =>
+      ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
 
     case _ => Nil
   }
@@ -84,7 +85,7 @@ private[sql] case class PutIntoTable(
     child: LogicalPlan)
     extends LogicalPlan {
 
-  override def children: Seq[LogicalPlan] = child :: Nil
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
 
   override def output: Seq[Attribute] = Seq.empty
 
