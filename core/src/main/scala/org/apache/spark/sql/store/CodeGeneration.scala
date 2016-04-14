@@ -70,7 +70,7 @@ object CodeGeneration extends Logging {
   /**
    * A loading cache of generated <code>CodeGeneration</code>s.
    */
-  private val execCache = CacheBuilder.newBuilder().maximumSize(200).build(
+  private[this] val cache = CacheBuilder.newBuilder().maximumSize(200).build(
     new CacheLoader[ExecuteKey, CodeGeneration]() {
       override def load(key: ExecuteKey) = {
         val start = System.nanoTime()
@@ -85,30 +85,29 @@ object CodeGeneration extends Logging {
    * Using reflection to invoke these private methods since using the public
    * GenerateUnsafeProjection.createCode method is awkward.
    */
-  private val generateArrayCodeMethod = getComplexTypeCodeMethod(
-    "writeArrayToBuffer", classOf[CodeGenContext], classOf[String],
-    classOf[DataType], classOf[String])
-  private val generateMapCodeMethod = getComplexTypeCodeMethod(
-    "writeMapToBuffer", classOf[CodeGenContext], classOf[String],
-    classOf[DataType], classOf[DataType], classOf[String])
-  private val generateStructCodeMethod = getComplexTypeCodeMethod(
-    "writeStructToBuffer", classOf[CodeGenContext], classOf[String],
-    classOf[Seq[DataType]], classOf[String])
+  private[this] val allMethods = GenerateUnsafeProjection.getClass
+      .getDeclaredMethods.toIndexedSeq
+  private[this] val generateArrayCodeMethod = getComplexTypeCodeMethod(
+    "writeArrayToBuffer")
+  private[this] val generateMapCodeMethod = getComplexTypeCodeMethod(
+    "writeMapToBuffer")
+  private[this] val generateStructCodeMethod = getComplexTypeCodeMethod(
+    "writeStructToBuffer")
 
-  private def getComplexTypeCodeMethod(methodName: String,
-      argTypes: Class[_]*): Method = {
-    val method = GenerateUnsafeProjection.getClass.getDeclaredMethod(
-      methodName, argTypes:_*)
+  private[this] def getComplexTypeCodeMethod(methodName: String): Method = {
+    val method = allMethods.find(_.getName.endsWith(methodName))
+        .getOrElse(sys.error(s"Failed to find method $methodName in " +
+            s"GenerateUnsafeProjection (methods=${allMethods.toSeq})"))
     method.setAccessible(true)
     method
   }
 
-  private def generateComplexTypeCode(method: Method,
+  private[this] def generateComplexTypeCode(method: Method,
       typeArgs: Object*): String = {
     method.invoke(GenerateUnsafeProjection, typeArgs:_*).asInstanceOf[String]
   }
 
-  private def getColumnSetterFragment(col: Int, dataType: DataType,
+  private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ctx: CodeGenContext,
       buffHolderVar: String): (String, String) = {
     val nonNullCode: String = dataType match {
@@ -160,7 +159,7 @@ object CodeGeneration extends Logging {
         ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
           m.keyType, m.valueType, buffHolderVar)}
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
-            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
+           $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
       case s: StructType => s"""
         InternalRow struct = row.getStruct($col, ${s.length});
         if ($buffHolderVar == null) {
@@ -179,8 +178,8 @@ object CodeGeneration extends Logging {
         s"${ExternalStoreUtils.getJDBCType(dialect, NullType)});")
   }
 
-  private def compilePreparedUpdate(table: String, schema: Array[StructField],
-      dialect: JdbcDialect): CodeGeneration = {
+  private[this] def compilePreparedUpdate(table: String,
+      schema: Array[StructField], dialect: JdbcDialect): CodeGeneration = {
     val ctx = new CodeGenContext
     val bufferHolderVar = ctx.freshName("bufferHolder")
     val bufferHolderClass = classOf[BufferHolder].getName
@@ -253,7 +252,7 @@ object CodeGeneration extends Logging {
   def executeUpdate(name: String, stmt: PreparedStatement,
       rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
       schema: Array[StructField], dialect: JdbcDialect): Int = {
-    val result = execCache.get(new ExecuteKey(name, schema, dialect))
+    val result = cache.get(new ExecuteKey(name, schema, dialect))
     result.executeStatement(stmt, multipleRows, rows.asJava, batchSize,
       schema, dialect)
   }
@@ -261,7 +260,7 @@ object CodeGeneration extends Logging {
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
       dialect: JdbcDialect): Int = {
-    val result = execCache.get(new ExecuteKey(name, schema, dialect))
+    val result = cache.get(new ExecuteKey(name, schema, dialect))
     val iterator = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
@@ -283,7 +282,7 @@ object CodeGeneration extends Logging {
 
   def executeUpdate(name: String, stmt: PreparedStatement, row: Row,
       schema: Array[StructField], dialect: JdbcDialect): Int = {
-    val result = execCache.get(new ExecuteKey(name, schema, dialect))
+    val result = cache.get(new ExecuteKey(name, schema, dialect))
     val internalRow = new WrappedRow(schema)
     internalRow.row = row
     result.executeStatement(stmt, multipleRows = false, Collections.singleton(
@@ -291,7 +290,7 @@ object CodeGeneration extends Logging {
   }
 
   def removeCache(name: String): Unit =
-    execCache.invalidate(new ExecuteKey(name, null, null))
+    cache.invalidate(new ExecuteKey(name, null, null))
 
-  def clearCache(): Unit = execCache.invalidateAll()
+  def clearCache(): Unit = cache.invalidateAll()
 }
