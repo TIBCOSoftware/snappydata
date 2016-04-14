@@ -16,10 +16,13 @@
  */
 package org.apache.spark.sql.sources
 
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, _}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, LogicalRelation}
 import org.apache.spark.sql.execution.{ExecutedCommand, RunnableCommand, SparkPlan}
+import org.apache.spark.sql.types.DataType
+
 /**
  * Support for DML and other operations on external tables.
  *
@@ -52,9 +55,8 @@ object StoreStrategy extends Strategy {
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommand(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case InsertIntoTable(l@LogicalRelation(t: RowPutRelation, _),
-    part, query, true, false) if part.isEmpty =>
-      ExecutedCommand(PutIntoDataSource(l, query)) :: Nil
+    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _), query) =>
+      ExecutedCommand(PutIntoDataSource(l, t, query)) :: Nil
 
     case _ => Nil
   }
@@ -78,16 +80,33 @@ private[sql] case class ExternalTableDMLCmd(
   }
 }
 
+private[sql] case class PutIntoTable(
+    table: LogicalPlan,
+    child: LogicalPlan)
+    extends LogicalPlan {
+
+  override def children: Seq[LogicalPlan] = table :: child :: Nil
+
+  override def output: Seq[Attribute] = Seq.empty
+
+  override lazy val resolved: Boolean = childrenResolved &&
+      child.output.zip(table.output).forall {
+        case (childAttr, tableAttr) =>
+          DataType.equalsIgnoreCompatibleNullability(childAttr.dataType,
+            tableAttr.dataType)
+      }
+}
+
 /**
  * Puts the results of `query` in to a relation that extends [[RowPutRelation]].
  */
 private[sql] case class PutIntoDataSource(
     logicalRelation: LogicalRelation,
+    relation: RowPutRelation,
     query: LogicalPlan)
     extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
-    val relation = logicalRelation.relation.asInstanceOf[RowPutRelation]
     val data = DataFrame(sqlContext, query)
     // Apply the schema of the existing table to the new data.
     val df = sqlContext.internalCreateDataFrame(data.queryExecution.toRdd,
