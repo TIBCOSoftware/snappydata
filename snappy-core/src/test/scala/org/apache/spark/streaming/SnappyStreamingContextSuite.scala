@@ -47,6 +47,8 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
 
   var snsc: SnappyStreamingContext = null
 
+
+  val contextSuite: StreamingContextSuite = new StreamingContextSuite
   // context creation is handled by App main
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -77,7 +79,7 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
     snsc = new SnappyStreamingContext(sc, batchDuration = batchDuration)
     assert(SnappyStreamingContext.getInstance() != null)
 
-    val input = addInputStream(snsc)
+    val input = contextSuite.addInputStream(snsc)
     input.foreachRDD { rdd => rdd.count }
     snsc.start()
 
@@ -115,7 +117,7 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
       assert(newContextCreated, "new context not created")
     }
 
-    val corruptedCheckpointPath = createCorruptedCheckpoint()
+    val corruptedCheckpointPath = contextSuite.createCorruptedCheckpoint()
 
     // getOrCreate should throw exception with fake checkpoint file and createOnError = false
     intercept[Exception] {
@@ -136,7 +138,7 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
       assert(newContextCreated, "new context not created")
     }
 
-    val checkpointPath = createValidCheckpoint()
+    val checkpointPath = contextSuite.createValidCheckpoint()
 
     // getOrCreate should recover context with checkpoint path, and recover old configuration
     testGetOrCreate {
@@ -171,14 +173,17 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
     }
 
     val emptyPath = Utils.createTempDir().getAbsolutePath()
-    val corruptedCheckpointPath = createCorruptedCheckpoint()
-    val checkpointPath = createValidCheckpoint()
+
+
+
+    val corruptedCheckpointPath = contextSuite.createCorruptedCheckpoint()
+    val checkpointPath = contextSuite.createValidCheckpoint()
 
     // getActiveOrCreate should return the current active context if there is one
     testGetActiveOrCreate {
       snsc = new SnappyStreamingContext(
         conf.clone.set("spark.streaming.clock", "org.apache.spark.util.ManualClock"), batchDuration)
-      addInputStream(snsc).register()
+      contextSuite.addInputStream(snsc).register()
       snsc.start()
       val returnedSsc = SnappyStreamingContext.getActiveOrCreate(checkpointPath, creatingFunction _)
       assert(!newContextCreated, "new context created instead of returning")
@@ -221,59 +226,4 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
     }
   }
 
-  def addInputStream(s: StreamingContext): DStream[Int] = {
-    val input = (1 to 100).map(i => 1 to i)
-    val inputStream = new TestInputStream(s, input, 1)
-    inputStream
-  }
-
-  def createValidCheckpoint(): String = {
-    val testDirectory = Utils.createTempDir().getAbsolutePath()
-    val checkpointDirectory = Utils.createTempDir().getAbsolutePath()
-    val ssc = new StreamingContext(conf.clone.set("someKey", "someValue"), batchDuration)
-    ssc.checkpoint(checkpointDirectory)
-    ssc.textFileStream(testDirectory).foreachRDD { rdd => rdd.count() }
-    ssc.start()
-    eventually(timeout(10000 millis)) {
-      assert(Checkpoint.getCheckpointFiles(checkpointDirectory).size > 1)
-    }
-    ssc.stop()
-    checkpointDirectory
-  }
-
-  def createCorruptedCheckpoint(): String = {
-    val checkpointDirectory = Utils.createTempDir().getAbsolutePath()
-    val fakeCheckpointFile = Checkpoint.checkpointFile(checkpointDirectory, Time(1000))
-    FileUtils.write(new File(fakeCheckpointFile.toString()), "blablabla")
-    assert(Checkpoint.getCheckpointFiles(checkpointDirectory).nonEmpty)
-    checkpointDirectory
-  }
-
-}
-
-class TestInputStream[T: ClassTag](ssc_ : StreamingContext, input: Seq[Seq[T]], numPartitions: Int)
-    extends InputDStream[T](ssc_) {
-
-  def start() {}
-
-  def stop() {}
-
-  def compute(validTime: Time): Option[RDD[T]] = {
-    logInfo("Computing RDD for time " + validTime)
-    val index = ((validTime - zeroTime) / slideDuration - 1).toInt
-    val selectedInput = if (index < input.size) input(index) else Seq[T]()
-
-    // lets us test cases where RDDs are not created
-    if (selectedInput == null) {
-      return None
-    }
-
-    // Report the input data's information to InputInfoTracker for testing
-    val inputInfo = StreamInputInfo(id, selectedInput.length.toLong)
-    ssc.scheduler.inputInfoTracker.reportInfo(validTime, inputInfo)
-
-    val rdd = ssc.sc.makeRDD(selectedInput, numPartitions)
-    logInfo("Created RDD " + rdd.id + " with " + selectedInput)
-    Some(rdd)
-  }
 }
