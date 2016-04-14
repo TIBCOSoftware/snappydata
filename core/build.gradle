@@ -12,47 +12,14 @@ dependencies {
 
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
-  provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: scalaTest)
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-streaming-kafka_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-streaming-twitter_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
-  provided("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}") {
-    exclude(group: 'org.scala-lang', module: 'scala-library')
-    exclude(group: 'org.scala-lang', module: 'scala-reflect')
-    exclude(group: 'org.scala-lang', module: 'scala-compiler')
-  }
+  provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-streaming-kafka_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-streaming-twitter_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
   provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -95,6 +62,9 @@ dependencies {
 
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
 
   testRuntime 'org.pegdown:pegdown:1.1.0'
 }

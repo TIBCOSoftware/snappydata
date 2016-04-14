@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.streaming
 
+import org.apache.spark.api.java.function.{VoidFunction => JVoidFunction, VoidFunction2 => JVoidFunction2}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -24,7 +25,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{Duration, SnappyStreamingContext, StreamUtils, Time}
+import org.apache.spark.streaming.{Duration, SnappyStreamingContext, Time}
 
 /**
   * A SQL based DStream with support for schema/Product
@@ -69,6 +70,41 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   }
 
   /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame]): Unit = {
+    val func = (rdd: RDD[Row]) => {
+      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
+    }
+    this.foreachRDD(func)
+  }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame], needsConversion: Boolean): Unit = {
+    val func = (rdd: RDD[Row]) => {
+      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion))
+    }
+    this.foreachRDD(func)
+  }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: JVoidFunction2[DataFrame, Time]): Unit = {
+    val func = (rdd: RDD[Row], time: Time) => {
+      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true),
+        time)
+    }
+    this.foreachRDD(func)
+  }
+
+
+  /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
     * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
     */
@@ -89,11 +125,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
 
   /** Persist the RDDs of this SchemaDStream with the given storage level */
   override def persist(level: StorageLevel): SchemaDStream = {
-    if (StreamUtils.isStreamInitialized(this)) {
-      throw new UnsupportedOperationException(
-        "Cannot change storage level of a SchemaDStream after streaming context has started")
-    }
-    StreamUtils.setStorageLevel(level, this)
+    super.persist(level)
     this
   }
 
@@ -108,12 +140,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     * @param interval Time interval after which generated RDD will be checkpointed
     */
   override def checkpoint(interval: Duration): SchemaDStream = {
-    if (StreamUtils.isStreamInitialized(this)) {
-      throw new UnsupportedOperationException(
-        "Cannot change checkpoint interval of an DStream after streaming context has started")
-    }
-    persist()
-    StreamUtils.setCheckpointDuration(interval, this)
+    super.checkpoint(interval)
     this
   }
 

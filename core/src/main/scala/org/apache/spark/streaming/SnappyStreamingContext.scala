@@ -235,9 +235,8 @@ object SnappyStreamingContext extends Logging {
 
   /**
    * :: Experimental ::
-   *
    * Either return the "active" StreamingContext (that is, started but not stopped), or create a
-   * new StreamingContext that is
+   * new StreamingContext that is started by the creating function
    * @param creatingFunc   Function to create a new StreamingContext
    */
   @Experimental

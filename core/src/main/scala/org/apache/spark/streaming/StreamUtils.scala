@@ -20,7 +20,6 @@ import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
 
 /**
@@ -42,12 +41,4 @@ object StreamUtils {
     // [TODO SPARK PR] it should be a concurrent map in Apache Spark too
     generatedRDDsMethod.invoke(dStream).asInstanceOf[mutable.Map[Time, RDD[T]]]
   }
-
-  def isStreamInitialized(stream: DStream[_]): Boolean = stream.isInitialized
-
-  def setStorageLevel(level: StorageLevel, stream: DStream[_]): Unit =
-    stream.storageLevel = level
-
-  def setCheckpointDuration(duration: Duration, stream: DStream[_]): Unit =
-    stream.checkpointDuration = duration
 }
