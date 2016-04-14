@@ -21,7 +21,9 @@ import scala.reflect.ClassTag
 
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Subquery}
+import org.apache.spark.sql.sources.PutIntoTable
 
 /**
  * Implicit conversions used by Snappy.
@@ -117,17 +119,47 @@ object snappy extends Serializable {
     }
   }
 
-  implicit class DataFrameWriterExtensions(writer: DataFrameWriter) extends Serializable {
+  implicit class DataFrameWriterExtensions(writer: DataFrameWriter)
+      extends Serializable {
 
     /**
-     * Inserts the content of the [[DataFrame]] to the specified table. It requires
-     * that the schema of the [[DataFrame]] is the same as the schema of the table.
-     * If the row is already present then it is updated.
+     * "Puts" the content of the [[DataFrame]] to the specified table. It
+     * requires that the schema of the [[DataFrame]] is the same as the schema
+     * of the table. If some rows are already present then they are updated.
      *
-     * This ignores all SaveMode
+     * This ignores all SaveMode.
      */
     def putInto(tableName: String): Unit = {
-      writer.mode(SaveMode.Overwrite).insertInto(tableName)
+      // unfortunately everything including DataFrame is private in
+      // DataFrameWriter so have to use reflection
+      val dfField = writer.getClass.getDeclaredFields.find { f =>
+        f.getName == "df" || f.getName.endsWith("$df")
+      }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
+      dfField.setAccessible(true)
+      val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
+      val context = df.sqlContext match {
+        case sc: SnappyContext => sc
+        case _ => sys.error("Expected a SnappyContext for putInto operation")
+      }
+      val parColMethod = writer.getClass.getDeclaredMethod("normalizedParCols")
+      parColMethod.setAccessible(true)
+      val normalizedParCols = parColMethod.invoke(writer)
+          .asInstanceOf[Option[Seq[String]]]
+      // A partitioned relation's schema can be different from the input
+      // logicalPlan, since partition columns are all moved after data columns.
+      // We Project to adjust the ordering.
+      // TODO: this belongs to the analyzer.
+      val input = normalizedParCols.map { parCols =>
+        val (inputPartCols, inputDataCols) = df.logicalPlan.output.partition {
+          attr => parCols.contains(attr.name)
+        }
+        Project(inputDataCols ++ inputPartCols, df.logicalPlan)
+      }.getOrElse(df.logicalPlan)
+
+      df.sqlContext.executePlan(
+        PutIntoTable(
+          UnresolvedRelation(context.catalog.newQualifiedTableName(tableName)),
+          input)).toRdd
     }
   }
 }
