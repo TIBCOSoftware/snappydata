@@ -16,9 +16,12 @@
  */
 package org.apache.spark.sql.streaming
 
+import java.beans.{BeanInfo, Introspector}
+
 import scala.reflect.runtime.universe.TypeTag
 
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, ScalaReflection}
+import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, AttributeReference}
+import org.apache.spark.sql.catalyst.{JavaTypeInference, CatalystTypeConverters, InternalRow, ScalaReflection}
 import org.apache.spark.sql.execution.RDDConversions
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
@@ -26,7 +29,9 @@ import org.apache.spark.sql.sources.SchemaRelationProvider
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.streaming.SnappyStreamingContext
+import org.apache.spark.streaming.api.java.JavaDStream
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.util.Utils
 
 object StreamSqlHelper {
 
@@ -36,6 +41,35 @@ object StreamSqlHelper {
 
   def clearStreams(): Unit = {
     StreamBaseRelation.clearStreams()
+  }
+
+  /**
+   * Returns a Catalyst Schema for the given java bean class.
+   */
+  protected def getSchema(beanClass: Class[_]): Seq[AttributeReference] = {
+    val (dataType, _) = JavaTypeInference.inferDataType(beanClass)
+    dataType.asInstanceOf[StructType].fields.map { f =>
+      AttributeReference(f.name, f.dataType, f.nullable)()
+    }
+  }
+
+  /**
+   * Converts an iterator of Java Beans to InternalRow using the provided
+   * bean info & schema. This is not related to the singleton, but is a static
+   * method for internal use.
+   */
+  private def beansToRows(data: Iterator[_], beanInfo: BeanInfo, attrs: Seq[AttributeReference]):
+  Iterator[InternalRow] = {
+    val extractors =
+      beanInfo.getPropertyDescriptors.filterNot(_.getName == "class").map(_.getReadMethod)
+    val methodsToConverts = extractors.zip(attrs).map { case (e, attr) =>
+      (e, CatalystTypeConverters.createToCatalystConverter(attr.dataType))
+    }
+    data.map{ element =>
+      new GenericInternalRow(
+        methodsToConverts.map { case (e, convert) => convert(e.invoke(element)) }.toArray[Any]
+      ): InternalRow
+    }
   }
 
 
@@ -69,6 +103,20 @@ object StreamSqlHelper {
     new SchemaDStream(ssc, logicalPlan)
   }
 
+
+  def createSchemaDStream(ssc: SnappyStreamingContext, rowStream: JavaDStream[_], beanClass: Class[_]): SchemaDStream = {
+    val attributeSeq: Seq[AttributeReference] = getSchema(beanClass)
+    val className = beanClass.getName
+    val internalRowStream = rowStream.dstream.mapPartitions { iter =>
+      // BeanInfo is not serializable so we must rediscover it remotely for each partition.
+      val localBeanInfo = Introspector.getBeanInfo(Utils.classForName(className))
+      beansToRows(iter, localBeanInfo, attributeSeq)
+    }
+
+    val logicalPlan = LogicalDStreamPlan(attributeSeq,
+      internalRowStream)(ssc)
+    new SchemaDStream(ssc, logicalPlan)
+  }
 }
 
 

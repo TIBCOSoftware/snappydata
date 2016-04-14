@@ -35,6 +35,10 @@ dependencies {
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
 
+  testCompile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion).sourceSets.test.output
+  testCompile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion).sourceSets.test.output
+
+
   testRuntime 'org.pegdown:pegdown:1.1.0'
   if (new File(rootDir, "snappy-store/build.gradle").exists()) {
     testRuntime project(':snappy-store:gemfirexd-client')
