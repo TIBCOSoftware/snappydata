@@ -35,7 +35,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DDLException, DDLParser, ResolvedDataSource}
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.sources.ExternalSchemaRelationProvider
+import org.apache.spark.sql.sources.{PutIntoTable, ExternalSchemaRelationProvider}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
@@ -601,8 +601,7 @@ class SnappyParser(caseSensitive: Boolean)
 
   protected def put: Rule1[LogicalPlan] = rule {
     PUT ~ INTO ~ TABLE ~ relation ~ select ~> ((r: LogicalPlan,
-        s: LogicalPlan) => InsertIntoTable(r, Map.empty[String, Option[String]],
-        s, overwrite = true, ifNotExists = false))
+        s: LogicalPlan) => PutIntoTable(r, s))
   }
 
   protected def withIdentifier: Rule1[LogicalPlan] = rule {
