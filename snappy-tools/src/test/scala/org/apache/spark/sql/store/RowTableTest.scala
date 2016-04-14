@@ -19,7 +19,8 @@ package org.apache.spark.sql.store
 import scala.util.{Random, Failure, Success, Try}
 
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.Data
+
+import io.snappydata.core.{TRIPDATA, Data}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql.snappy._
@@ -491,6 +492,55 @@ class RowTableTest
       case Success(df) => throw new AssertionError(" Should not have succedded with incorrect options")
       case Failure(error) => // Do nothing
     }
+
+  }
+
+  test("Test Null varchar value for row table inserts") {
+    snc.sql(
+      s"""CREATE TABLE NYCTAXI (MEDALLION VARCHAR(100) NOT NULL PRIMARY KEY,
+         			HACK_LICENSE VARCHAR(100),
+         			VENDOR_ID VARCHAR(100),
+         			RATE_CODE INTEGER,
+         			STORE_AND_FWD_FLAG VARCHAR(100),
+         			PICKUP_DATETIME VARCHAR(100),
+         			DROPOFF_DATETIME VARCHAR(100),
+         			PASSENGER_COUNT INTEGER,
+         			TRIP_TIME_IN_SECS INTEGER,
+         			TRIP_DISTANCE DOUBLE PRECISION,
+         			PICKUP_LONGITUDE DOUBLE PRECISION,
+         			PICKUP_LATITUDE DOUBLE PRECISION,
+         			DROPOFF_LONGITUDE DOUBLE PRECISION,
+         			DROPOFF_LATITUDE DOUBLE PRECISION
+         			)PARTITION BY COLUMN (MEDALLION)
+         			BUCKETS 5
+        """)
+
+    val rdd = sc.parallelize(
+      (1 to 2000), 5).map(i => TRIPDATA(
+      "23A89BC906FBB8BD110677FBB0B0A6C5" + i,
+      if (i % 100 == 0) "HACK_LICENSE_" + i else null,
+      if (i % 200 == 0) "VENDOR_ID" + i else "",
+      156,
+      "STORE_AND_FWD_FLAG" + i,
+      "PICKUP_DATETIME" + i,
+      "2003-12-01 23:11:12",
+      10,
+      2000,
+      -20.000879,
+      20.0,
+      -20.00045,
+      12.0,
+      12.0
+    )
+    )
+
+    val csvDF = snc.createDataFrame(rdd)
+
+    csvDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("NYCTAXI")
+
+    val cnts = snc.sql("select * from NYCTAXI").count()
+
+    assert(cnts === 2000)
 
   }
 }

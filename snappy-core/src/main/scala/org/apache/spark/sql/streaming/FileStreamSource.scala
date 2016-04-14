@@ -17,10 +17,9 @@
 package org.apache.spark.sql.streaming
 
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
-
 import org.apache.spark.streaming.dstream.DStream
 
 final class FileStreamSource extends StreamPlanProvider {
@@ -62,6 +61,9 @@ final class FileStreamRelation(
   val directory = options(DIRECTORY)
 
   // TODO: Yogesh, add support for other types of files streams
-  override protected def createRowStream(): DStream[InternalRow] =
+  override protected def createRowStream(): DStream[InternalRow] = {
+    val converter = CatalystTypeConverters.createToCatalystConverter(schema)
     context.textFileStream(directory).flatMap(rowConverter.toRows)
+        .map(converter(_).asInstanceOf[InternalRow])
+  }
 }

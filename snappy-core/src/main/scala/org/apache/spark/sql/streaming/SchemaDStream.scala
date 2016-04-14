@@ -16,15 +16,16 @@
  */
 package org.apache.spark.sql.streaming
 
+import org.apache.spark.api.java.function.{VoidFunction => JVoidFunction, VoidFunction2 => JVoidFunction2}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.types.StructType
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.{SnappyStreamingContext, Duration, Time}
-import org.apache.spark.api.java.function.{VoidFunction => JVoidFunction, VoidFunction2}
+import org.apache.spark.streaming.{Duration, SnappyStreamingContext, StreamUtils, Time}
 
 /**
   * A SQL based DStream with support for schema/Product
@@ -49,9 +50,39 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
     this(ssc, ssc.snappyContext.executePlan(logicalPlan))
 
-  /** Return a new DStream containing only the elements that satisfy a predicate. */
-  override def filter(filterFunc: Row => Boolean): DStream[Row] = {
-     super.filter(filterFunc)
+
+  /** Persist the RDDs of this SchemaDStream with the given storage level */
+  override def persist(level: StorageLevel): SchemaDStream = {
+    snsc.createSchemaDStream(StreamUtils.persist(this, level), schema)
+  }
+
+  /** Persist RDDs of this SchemaDStream with the default storage level (MEMORY_ONLY_SER) */
+  override def persist(): SchemaDStream = persist(StorageLevel.MEMORY_ONLY_SER)
+
+  /** Persist RDDs of this SchemaDStream with the default storage level (MEMORY_ONLY_SER) */
+  override def cache(): SchemaDStream = {
+    persist()
+  }
+
+  /**
+    * Enable periodic checkpointing of RDDs of this SchemaDStream
+    * @param interval Time interval after which generated RDD will be checkpointed
+    */
+  override def checkpoint(interval: Duration): SchemaDStream = {
+    snsc.createSchemaDStream(StreamUtils.checkpoint(this, interval), schema)
+  }
+
+  /** Return a new SchemaDStream containing only the elements that satisfy a predicate. */
+  override def filter(filterFunc: Row => Boolean): SchemaDStream = {
+    snsc.createSchemaDStream(filter(filterFunc), schema)
+  }
+
+  /**
+    * Return a new SchemaDStream with an increased or decreased level of parallelism.
+    * Each RDD in the returned SchemaDStream has exactly numPartitions partitions.
+    */
+  override def repartition(numPartitions: Int): SchemaDStream = {
+    snsc.createSchemaDStream(transform(_.repartition(numPartitions)), schema)
   }
 
 
@@ -60,12 +91,24 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
     */
   def foreachDataFrame(foreachFunc: DataFrame => Unit): Unit = {
+    foreachDataFrame(foreachFunc, needsConversion = true)
+  }
+
+  /**
+    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+    */
+  def foreachDataFrame(foreachFunc: DataFrame => Unit, needsConversion: Boolean): Unit = {
     val func = (rdd: RDD[Row]) => {
-      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
+      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion))
     }
     this.foreachRDD(func)
   }
 
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
   def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame]): Unit = {
     val func = (rdd: RDD[Row]) => {
       foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
@@ -73,7 +116,22 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     this.foreachRDD(func)
   }
 
-  def foreachDataFrame(foreachFunc: VoidFunction2[DataFrame, Time]): Unit = {
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame], needsConversion: Boolean): Unit = {
+    val func = (rdd: RDD[Row]) => {
+      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion))
+    }
+    this.foreachRDD(func)
+  }
+
+  /**
+   * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+   * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+   */
+  def foreachDataFrame(foreachFunc: JVoidFunction2[DataFrame, Time]): Unit = {
     val func = (rdd: RDD[Row], time: Time) => {
       foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true),
         time)
@@ -87,21 +145,26 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
     */
   def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit): Unit = {
+    foreachDataFrame(foreachFunc, needsConversion = true)
+  }
+
+  /**
+    * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
+    * 'this' SchemaDStream will be registered as an output stream and therefore materialized.
+    */
+  def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit, needsConversion : Boolean): Unit = {
     val func = (rdd: RDD[Row], time: Time) => {
-      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true), time)
+      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion), time)
     }
     this.foreachRDD(func)
   }
+
 
   /** Registers this SchemaDStream as a table in the catalog. */
   def registerAsTable(tableName: String): Unit = {
     catalog.registerTable(
       catalog.newQualifiedTableName(tableName),
       logicalPlan)
-
-    /* catalog.registerExternalTable(catalog.newQualifiedTableName(tableName), Some(schema),
-      Array.empty[String], "stream", Map.empty[String, String],
-      ExternalTableType.Stream) */
   }
 
   /** Returns the schema of this SchemaDStream (represented by
