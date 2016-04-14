@@ -119,7 +119,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
           else Nil)
 
       override val extendedCheckRules = Seq(
-        sparkexecution.datasources.PreWriteCheck(context.catalog))
+        sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
     }
 }
 

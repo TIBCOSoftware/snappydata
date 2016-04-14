@@ -32,9 +32,9 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
-import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.expressions.{Cast, Alias, Attribute}
-import org.apache.spark.sql.catalyst.plans.logical.{Project, InsertIntoTable, LogicalPlan, Union}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -1021,10 +1021,10 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
 
     // Check for SchemaInsertableRelation first
     case i@InsertIntoTable(l@LogicalRelation(r:
-        SchemaInsertableRelation, _), _, child, _, _) =>
-      r.schemaForInsert(child.output) match {
+        SchemaInsertableRelation, _), _, query, _, _) =>
+      r.schemaForInsert(query.output) match {
         case Some(output) =>
-          PreInsertCastAndRename.castAndRenameChildOutput(i, output, child)
+          PreInsertCastAndRename.castAndRenameChildOutput(i, output, query)
         case None =>
           throw new AnalysisException(s"$l requires that the query in the " +
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
@@ -1032,16 +1032,23 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
       }
 
     // Check for PUT
-    case p@PutIntoTable(l@LogicalRelation(r:
-        RowInsertableRelation, _), child) =>
-      // First, make sure the data to be inserted have the same number of
-      // fields with the schema of the relation.
-      if (l.output.size != child.output.size) {
-        throw new AnalysisException(s"$l requires that the query in the " +
-            "SELECT clause of the PUT INTO statement " +
-            "generates the same number of columns as its schema.")
+    // Need to eliminate subqueries here. Unlike InsertIntoTable whose
+    // subqueries have already been eliminated by special check in
+    // ResolveRelations, no such special rule has been added for PUT
+    case p@PutIntoTable(table, query) =>
+      EliminateSubQueries(table) match {
+        case l@LogicalRelation(_: RowInsertableRelation, _) =>
+          // First, make sure the data to be inserted have the same number of
+          // fields with the schema of the relation.
+          if (l.output.size != query.output.size) {
+            throw new AnalysisException(s"$l requires that the query in the " +
+                "SELECT clause of the PUT INTO statement " +
+                "generates the same number of columns as its schema.")
+          }
+          castAndRenameChildOutput(p, l, query)
+
+        case _ => p
       }
-      castAndRenameChildOutput(p, l.output, child)
 
     // We are inserting into an InsertableRelation or HadoopFsRelation.
     case i@InsertIntoTable(l@LogicalRelation(_: InsertableRelation |
@@ -1062,9 +1069,9 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
    */
   def castAndRenameChildOutput(
       putInto: PutIntoTable,
-      expectedOutput: Seq[Attribute],
+      relation: LogicalRelation,
       child: LogicalPlan): PutIntoTable = {
-    val newChildOutput = expectedOutput.zip(child.output).map {
+    val newChildOutput = relation.output.zip(child.output).map {
       case (expected, actual) =>
         val needCast = !expected.dataType.sameType(actual.dataType)
         // We want to make sure the filed names in the data to be inserted exactly match
@@ -1078,9 +1085,33 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
     }
 
     if (newChildOutput == child.output) {
-      putInto
+      putInto.copy(table = relation)
     } else {
-      putInto.copy(child = Project(newChildOutput, child))
+      putInto.copy(table = relation, child = Project(newChildOutput, child))
+    }
+  }
+}
+
+private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
+
+  def apply(plan: LogicalPlan): Unit = {
+    plan.foreach {
+      case PutIntoTable(LogicalRelation(t: RowPutRelation, _), query) =>
+        // Get all input data source relations of the query.
+        val srcRelations = query.collect {
+          case LogicalRelation(src: BaseRelation, _) => src
+        }
+        if (srcRelations.contains(t)) {
+          throw Utils.analysisException(
+            "Cannot put into table that is also being read from.")
+        } else {
+          // OK
+        }
+
+      case PutIntoTable(table, query) =>
+        throw Utils.analysisException(s"$table does not allow puts.")
+
+      case _ => // OK
     }
   }
 }

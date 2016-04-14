@@ -119,6 +119,19 @@ object snappy extends Serializable {
     }
   }
 
+  /**
+   * Unfortunately everything including DataFrame is private in
+   * DataFrameWriter so have to use reflection.
+   */
+  private[this] val dfField = classOf[DataFrameWriter].getDeclaredFields.find {
+    f => f.getName == "df" || f.getName.endsWith("$df")
+  }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
+  private[this] val parColsMethod = classOf[DataFrameWriter].getDeclaredMethod(
+    "normalizedParCols")
+
+  dfField.setAccessible(true)
+  parColsMethod.setAccessible(true)
+
   implicit class DataFrameWriterExtensions(writer: DataFrameWriter)
       extends Serializable {
 
@@ -130,20 +143,12 @@ object snappy extends Serializable {
      * This ignores all SaveMode.
      */
     def putInto(tableName: String): Unit = {
-      // unfortunately everything including DataFrame is private in
-      // DataFrameWriter so have to use reflection
-      val dfField = writer.getClass.getDeclaredFields.find { f =>
-        f.getName == "df" || f.getName.endsWith("$df")
-      }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
-      dfField.setAccessible(true)
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val context = df.sqlContext match {
         case sc: SnappyContext => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
-      val parColMethod = writer.getClass.getDeclaredMethod("normalizedParCols")
-      parColMethod.setAccessible(true)
-      val normalizedParCols = parColMethod.invoke(writer)
+      val normalizedParCols = parColsMethod.invoke(writer)
           .asInstanceOf[Option[Seq[String]]]
       // A partitioned relation's schema can be different from the input
       // logicalPlan, since partition columns are all moved after data columns.
