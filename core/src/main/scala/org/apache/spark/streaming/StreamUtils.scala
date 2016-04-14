@@ -28,6 +28,9 @@ import org.apache.spark.streaming.dstream.DStream
  */
 object StreamUtils {
 
+  private[this] val generatedRDDsMethod = classOf[DStream[_]]
+      .getMethod("generatedRDDs")
+
   /** Invoke <code>DStream.getOrCompute</code> */
   def getOrCompute[T: ClassTag](dStream: DStream[T],
       time: Time): Option[RDD[T]] = dStream.getOrCompute(time)
@@ -36,9 +39,8 @@ object StreamUtils {
       RDD[T]] = {
     // using reflection here since Spark's object is a HashMap while it is
     // a ConcurrentHashMap in snappydata's version of Spark
-    // [TODO PR] it should be a concurrent map in Apache Spark too
-    dStream.getClass.getMethod("generatedRDDs").invoke(dStream)
-        .asInstanceOf[mutable.Map[Time, RDD[T]]]
+    // [TODO SPARK PR] it should be a concurrent map in Apache Spark too
+    generatedRDDsMethod.invoke(dStream).asInstanceOf[mutable.Map[Time, RDD[T]]]
   }
 
   def isStreamInitialized(stream: DStream[_]): Boolean = stream.isInitialized
