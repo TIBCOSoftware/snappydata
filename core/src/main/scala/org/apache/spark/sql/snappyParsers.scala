@@ -626,7 +626,7 @@ class SnappyParser(caseSensitive: Boolean)
  * Snappy dialect uses a much more optimized parser and adds SnappyParser
  * additions to the standard "sql" dialect.
  */
-private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
+private[sql] class SnappyParserDialect(caseSensitive: Boolean)
     extends ParserDialect {
 
   private[sql] val sqlParser = new SnappyParser(caseSensitive)
