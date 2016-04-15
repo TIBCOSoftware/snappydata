@@ -423,8 +423,6 @@ class ColumnFormatRelation(
 object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
-  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
 
   def flushLocalBuckets(resolvedName: String): Unit = {
     val pr = Misc.getRegionForTable(resolvedName, false)
@@ -447,16 +445,13 @@ object ColumnFormatRelation extends Logging with StoreCallback {
       StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
   }
 
-  final def cachedBatchTableName(table: String) = {
-
-    val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", "__")
-    } else {
-      table
-    }
-    INTERNAL_SCHEMA_NAME + "." + tableName +
-        SHADOW_TABLE_SUFFIX
+  private def removePool(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    Iterator.empty
   }
+
+  final def cachedBatchTableName(table: String): String =
+    JDBCAppendableRelation.cachedBatchTableName(table)
 }
 
 final class DefaultSource extends ColumnarRelationProvider {
