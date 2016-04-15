@@ -16,11 +16,14 @@
  */
 package org.apache.spark.streaming
 
+import java.io.OutputStream
+
 import scala.collection.mutable
 import scala.reflect.ClassTag
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.streaming.dstream.DStream
+import org.apache.spark.streaming.util.RateLimitedOutputStream
 
 /**
  * Some utility methods for streaming operations.
@@ -40,5 +43,10 @@ object StreamUtils {
     // a ConcurrentHashMap in snappydata's version of Spark
     // [TODO SPARK PR] it should be a concurrent map in Apache Spark too
     generatedRDDsMethod.invoke(dStream).asInstanceOf[mutable.Map[Time, RDD[T]]]
+  }
+
+  def getRateLimitedOutputStream(out: OutputStream,
+      desiredBytesPerSec: Int): RateLimitedOutputStream = {
+    new RateLimitedOutputStream(out, desiredBytesPerSec)
   }
 }
