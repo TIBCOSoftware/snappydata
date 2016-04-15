@@ -34,8 +34,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
-import org.apache.spark.sql.store.{ExternalStore, StoreHashFunction}
-import org.apache.spark.sql.store.ExternalStore
+import org.apache.spark.sql.store.StoreHashFunction
 import org.apache.spark.sql.types._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
