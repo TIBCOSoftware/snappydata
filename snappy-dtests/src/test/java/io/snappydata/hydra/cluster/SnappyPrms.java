@@ -22,8 +22,14 @@ public class SnappyPrms extends BasePrms {
     public static Long sqlScriptNamesForTask;
 
     /**
+     * Parameter used to get the user specified script names for CLOSETASK.
+     * (VectosetValuesr of Strings) A list of values for snappy-job Names to execute.
+     */
+    public static Long snappyJobClassNamesForCloseTask;
+
+    /**
      * Parameter used to get the user specified script names for TASK.
-     * (VectosetValuesr of Strings) A list of values for script Names to execute.
+     * (VectosetValuesr of Strings) A list of values for snappy-job Names to execute.
      */
     public static Long snappyJobClassNamesForTask;
 
@@ -33,9 +39,39 @@ public class SnappyPrms extends BasePrms {
     public static Long cycleVms;
 
     /**
+     * (boolean) for running streaming job
+     */
+    public static Long streamingJob;
+
+    /**
      * (String) cycleVMTarget - which node to be cycled "store, lead" etc
      */
     public static Long cycleVMTarget;
+
+    /**
+     * (String) e.g. simulateFileStream
+     */
+    public static Long simulateStreamScriptName;
+
+    /**
+     * (String) - destination folder to copy the streaming data. e.g. /home/swati
+     */
+    public static Long simulateStreamScriptDestinationFolder;
+
+    /**
+     * (String) userAppJar containing the user snappy job class
+     */
+    public static Long userAppJar;
+
+    /**
+     * (int) how long (milliseconds) it should wait for getting the job status in Task
+     */
+    public static Long snappyJobExecutionTimeInMillisForTask;
+
+    /**
+     * (int) how long (milliseconds) it should wait for getting the job status in Close Task
+     */
+    public static Long snappyJobExecutionTimeInMillisForCloseTask;
 
     /**
      * (int) how long (milliseconds) it should wait before Cycle VMs again
@@ -55,6 +91,11 @@ public class SnappyPrms extends BasePrms {
 
     public static Vector getSnappyJobClassNamesForTask() {
         Long key = snappyJobClassNamesForTask;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    }
+
+    public static Vector getSnappyJobClassNamesForCloseTask() {
+        Long key = snappyJobClassNamesForCloseTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
