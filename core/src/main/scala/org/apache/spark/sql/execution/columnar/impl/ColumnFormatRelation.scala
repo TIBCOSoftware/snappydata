@@ -364,7 +364,6 @@ class ColumnFormatRelation(
         dialect, sqlContext)
       if (!tableExists) {
         val sql = s"CREATE TABLE $tableName $schemaExtensions "
-
         logInfo(s"Applying DDL (url=${connProperties.url}; " +
             s"props=${connProperties.connProps}): $sql")
         JdbcExtendedUtils.executeUpdate(sql, conn)
