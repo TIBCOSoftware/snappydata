@@ -26,7 +26,7 @@ import scala.collection.mutable.ArrayBuffer
 import io.snappydata.Constant
 
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, expressions}
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
@@ -34,6 +34,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JdbcUtil
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
 import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
+import org.apache.spark.sql.store.ExternalStore
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, _}
 import org.apache.spark.{Logging, SparkContext}
@@ -538,45 +539,39 @@ object ConnectionType extends Enumeration {
   val Embedded, Net, Unknown = Value
 }
 
-private[sql] class ArrayBufferForRows(getConnection: () => Connection,
-    table: String,
+private[sql] class ArrayBufferForRows(externalStore: ExternalStore,
+    colTableName: String,
     schema: StructType,
-    url: String,
-    batchSize: Int) {
+    useCompression: Boolean,
+    bufferSize: Int) {
+  var holder = getCachedBatchHolder
 
-  var buff = new ArrayBuffer[InternalRow]()
-  val toScala = CatalystTypeConverters.createToScalaConverter(schema)
-  var rowCount = 0
+  def getCachedBatchHolder: CachedBatchHolder[Unit] =
+    new CachedBatchHolder[Unit](columnBuilders, 0,
+      Int.MaxValue, schema, new ArrayBuffer[InternalRow](1),
+      (u: Unit, c: CachedBatch) =>
+        externalStore.storeCachedBatch(colTableName, c))
 
-  val nullTypes = ExternalStoreUtils.getNullTypes(url, schema)
+  def columnBuilders: Array[ColumnBuilder] = schema.map {
+    attribute =>
+      val columnType = ColumnType(attribute.dataType)
+      val initialBufferSize = columnType.defaultSize * bufferSize
+      ColumnBuilder(attribute.dataType, initialBufferSize,
+        attribute.name, useCompression)
+  }.toArray
 
-  val dialect = JdbcDialects.get(url)
+  def appendRow_(row: InternalRow, flush: Boolean): Unit = holder.appendRow((), row)
 
-  def appendRow_(row: InternalRow, flush: Boolean): Unit = {
-    if (row != expressions.EmptyRow) {
-      buff += row
-      rowCount += 1
-    }
-    if (rowCount % batchSize == 0 || flush) {
-      JdbcUtils.savePartition(getConnection, table, buff.iterator.map(
-        toScala(_).asInstanceOf[Row]), schema, nullTypes, batchSize, dialect)
-      buff = new ArrayBuffer[InternalRow]()
-      rowCount = 0
-    }
+  def endRows(u: Unit): Unit = {
+    holder.forceEndOfBatch()
+    holder = getCachedBatchHolder
   }
-
-  // empty for now
-  def endRows(u: Unit): Unit = {}
 
   def appendRow(u: Unit, row: InternalRow): Unit = {
     appendRow_(row, flush = false)
   }
 
-  def forceEndOfBatch(): Unit = {
-    if (rowCount > 0) {
-      appendRow_(expressions.EmptyRow, flush = true)
-    }
-  }
+  def forceEndOfBatch(): Unit = endRows(())
 }
 
 case class ConnectionProperties(url: String, driver: String,
