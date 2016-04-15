@@ -1,0 +1,12 @@
+-- DROP TABLE IF ALREADY EXISTS --
+DROP TABLE IF EXISTS STAGING_AIRLINEREF;
+DROP TABLE IF EXISTS AIRLINEREF;
+
+----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
+CREATE TABLE STAGING_AIRLINEREF
+    USING parquet OPTIONS(path '/home/swati/snappy-commons/build-artifacts/scala-2.10/snappy/quickstart/data/airportcodeParquetData');
+--  USING parquet OPTIONS(path '../../quickstart/data/airportcodeParquetData');
+
+----- CREATE ROW TABLE -----
+
+CREATE TABLE AIRLINEREF USING row OPTIONS() AS (SELECT CODE, DESCRIPTION FROM STAGING_AIRLINEREF);
