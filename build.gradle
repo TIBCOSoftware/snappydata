@@ -88,7 +88,7 @@ allprojects {
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
-    gemfireXDVersion = '1.5.0-BETA2'
+    gemfireXDVersion = '1.5.0-SNAPSHOT'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -590,6 +590,13 @@ task product {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
+  }
+}
+
+if (rootProject.hasProperty('copyToDir')) {
+  task copyProduct(type: Copy, dependsOn: product) {
+    from snappyProductDir
+    into copyToDir
   }
 }
 
