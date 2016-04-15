@@ -22,7 +22,8 @@
 usage=$'Usage: 
        snappy-job.sh newcontext <context-name> --factory <factory class name> [--app-jar <jar-path> --app-name <app-name>]
        snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name> | --stream]
-       snappy-job.sh status --lead <hostname:port> --job-id <job-id>'
+       snappy-job.sh status --lead <hostname:port> --job-id <job-id>
+       snappy-job.sh stop --lead <hostname:port> --job-id <job-id>'
 
 function showUsage {
   echo "ERROR: incorrect argument specified: " "$@"
@@ -48,6 +49,9 @@ while (( "$#" )); do
     ;;
     status)
       cmd="status"
+    ;;
+    stop)
+      cmd="stop"
     ;;
     newcontext)
       cmd="context"
@@ -147,6 +151,13 @@ case $cmd in
     fi
   ;;
 
+  stop)
+     if validateArg $jobID ; then
+       showUsage "--job-id"
+     fi
+     cmdLine="jobs/${jobID}"
+  ;;
+
   context)
     if validateArg $contextName ; then
       showUsage "newcontext <context-name>"
@@ -206,6 +217,10 @@ case $cmd in
 
   status)
     curl ${jobServerURL} $CURL_OPTS
+  ;;
+
+  stop)
+    curl -X DELETE ${jobServerURL} $CURL_OPTS
   ;;
 esac
 
