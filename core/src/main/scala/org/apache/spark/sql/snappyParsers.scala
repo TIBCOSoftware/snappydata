@@ -288,7 +288,7 @@ class SnappyParser(caseSensitive: Boolean)
   }
 
   protected def projection: Rule1[Expression] = rule {
-    expression ~ (AS ~ identifier).? ~> ((e: Expression, a: Option[String]) =>
+    expression ~ (AS.? ~ identifier).? ~> ((e: Expression, a: Option[String]) =>
       if (a.isDefined) Alias(e, a.get)() else e)
   }
 
