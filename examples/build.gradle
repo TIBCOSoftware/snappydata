@@ -1,0 +1,44 @@
+apply plugin: 'scala'
+compileScala.options.encoding = 'UTF-8'
+
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.java.srcDirs = []
+
+dependencies {
+
+  compile project(":snappy-cluster_${scalaBinaryVersion}")
+
+  /*
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+    testRuntime project(":snappy-aqp_${scalaBinaryVersion}")
+  } else {
+    testRuntime "io.snappydata:snappy-aqp_${scalaBinaryVersion}:${version}"
+  }
+  */
+  // below dependency is for top-level product to easily find datanucleus jars
+  // in the non-integrated build
+  testRuntime group: 'org.datanucleus', name: 'datanucleus-core', version:'3.2.10'
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
+task productExamples(dependsOn: 'jar') << {
+  def productDir = file("${rootProject.buildDir}/snappy")
+  productDir.mkdirs()
+  def exampleArchiveName = "quickstart-${version}.jar"
+  copy {
+    from "${project.buildDir}/libs"
+    into "${productDir}/lib"
+    include "${project.jar.archiveName}"
+    rename { filename -> exampleArchiveName }
+  }
+}
