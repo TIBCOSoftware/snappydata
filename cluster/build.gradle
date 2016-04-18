@@ -166,39 +166,3 @@ shadowJar {
     )
   }
 }
-
-task nosparkJar(type: com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
-  dependsOn project(':snappy-core_' + scalaBinaryVersion).jar, jar
-  zip64 = true
-  baseName = 'snappydata'
-  classifier = ''
-
-  from {
-    project.configurations.nospark +
-    project(':snappy-core_' + scalaBinaryVersion).jar.outputs.files +
-    jar.outputs.files
-  }
-  mergeServiceFiles {
-    exclude 'META-INF/*.SF'
-    exclude 'META-INF/*.DSA'
-    exclude 'META-INF/*.RSA'
-  }
-  exclude 'jobserver*.conf'
-  exclude 'log4j.properties'
-
-  if (rootProject.hasProperty('enablePublish')) {
-    createdBy = "SnappyData Build Team"
-  } else {
-    createdBy = System.getProperty("user.name")
-  }
-  manifest {
-    attributes(
-      "Manifest-Version"  : "1.0",
-      "Created-By"        : createdBy,
-      "Title"             : rootProject.name,
-      "Version"           : version,
-      "Vendor"            : "SnappyData, Inc."
-    )
-  }
-}
-shadowJar.dependsOn nosparkJar
