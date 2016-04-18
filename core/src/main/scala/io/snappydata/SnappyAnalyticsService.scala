@@ -32,6 +32,7 @@ import io.snappydata.Constant._
 
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.{Logging, SparkContext}
 
@@ -120,8 +121,9 @@ object SnappyAnalyticsService extends Logging {
 		}
 		else {
 			if (isColumnTable) {
-				currentTableStats.get(cachedBatchTableName(tableName)).getOrElse(defaultStats).valueSize
-				+ currentTableStats.get(tableName).get.valueSize
+				currentTableStats.get(ColumnFormatRelation.cachedBatchTableName(tableName))
+						.getOrElse(defaultStats).valueSize
+				+currentTableStats.get(tableName).get.valueSize
 			} else {
 				currentTableStats.get(tableName).get.valueSize
 			}
@@ -143,15 +145,6 @@ object SnappyAnalyticsService extends Logging {
 		}).
 				++(currentTableStats.map(entry =>
 					new UIAnalytics(entry._1, entry._2.totalSize, 0, false)))).toSeq
-	}
-
-	private def cachedBatchTableName(table: String) = {
-		val tableName = if (table.indexOf('.') > 0) {
-			table.replace(".", "__")
-		} else {
-			table
-		}
-		INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
 	}
 
 	final def tryExecute[T: ClassTag](f: Connection => T,
