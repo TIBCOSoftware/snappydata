@@ -86,16 +86,18 @@ import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 class SnappyContext protected[spark](
     @transient override val sparkContext: SparkContext,
     override val listener: SQLListener,
-    override val isRootContext: Boolean,
-    val snappyContextFunctions: SnappyContextFunctions =
-    GlobalSnappyInit.getSnappyContextFunctionsImpl)
+    override val isRootContext: Boolean)
     extends SQLContext(sparkContext, new CacheManager, listener, isRootContext)
     with Serializable with Logging {
 
   self =>
+
   protected[spark] def this(sc: SparkContext) {
     this(sc, SQLContext.createListenerAndUI(sc), true)
   }
+
+  @transient private[spark] lazy val snappyContextFunctions:
+      SnappyContextFunctions = GlobalSnappyInit.getSnappyContextFunctionsImpl
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -114,7 +116,7 @@ class SnappyContext protected[spark](
   }
 
   override def newSession(): SnappyContext = {
-    new SnappyContext(this.sparkContext, this.listener, false, this.snappyContextFunctions)
+    new SnappyContext(this.sparkContext, this.listener, false)
   }
 
   @transient

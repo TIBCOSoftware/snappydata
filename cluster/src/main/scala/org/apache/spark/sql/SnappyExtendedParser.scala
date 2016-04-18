@@ -34,14 +34,14 @@ import org.apache.spark.sql.hive.QualifiedTableName
 class SnappyExtendedParser(caseSensitive: Boolean)
     extends SnappyParser(caseSensitive) {
 
-  override protected def extraComparisonExpression: Rule[Expression :: HNil,
+  override protected def comparisonExpression1: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
-    super.extraComparisonExpression |
+    super.comparisonExpression1 |
     IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
       InSubquery(e, subQuery, positive = true)) |
     NOT ~ IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
       InSubquery(e, subQuery, positive = false)) |
-    '=' ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
+    '=' ~ ws ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
       InSubquery(e, subQuery, positive = true))
   }
 
