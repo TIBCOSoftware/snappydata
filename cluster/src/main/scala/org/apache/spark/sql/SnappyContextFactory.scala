@@ -44,8 +44,7 @@ object SnappyContextFactory {
   protected def newSession(): SnappyContext with ContextLike =
     new SnappyContext(snappyContextLike.sparkContext,
       snappyContextLike.listener,
-      false,
-      snappyContextLike.snappyContextFunctions) with ContextLike {
+      false) with ContextLike {
     override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
     override def stop(): Unit =
     {
