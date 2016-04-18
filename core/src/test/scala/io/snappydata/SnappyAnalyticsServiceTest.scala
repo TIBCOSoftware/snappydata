@@ -1,11 +1,11 @@
-package org.apache.spark.sql
+package io.snappydata
 
 import java.sql.DriverManager
 
-import io.snappydata.{Constant, SnappyFunSuite}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.columntable.ColumnFormatRelation
+import org.apache.spark.sql.SaveMode
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 class SnappyAnalyticsServiceTest extends SnappyFunSuite
 		with BeforeAndAfter

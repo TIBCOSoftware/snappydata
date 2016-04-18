@@ -17,22 +17,22 @@
  * LICENSE file.
  */
 
-package org.apache.spark.sql
+package io.snappydata
 
 import java.sql.Connection
 import java.util.concurrent.atomic.AtomicReference
-import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
+import java.util.concurrent.{ScheduledExecutorService, ScheduledThreadPoolExecutor, TimeUnit}
 
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder
 import io.snappydata.Constant._
 
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.util.ThreadUtils
 import org.apache.spark.{Logging, SparkContext}
 
 
@@ -50,7 +50,7 @@ object SnappyAnalyticsService extends Logging {
 		connProperties =
 				ExternalStoreUtils.validateAndGetAllProps(sc, mutable.Map.empty[String, String])
 		getScheduledExecutor.scheduleWithFixedDelay(
-			getTotalMemoryUsagePerTable, DEFAULT_ANALYTICS_SERVICE_INTERVAL,
+			getTotalMemoryUsagePerTable, ZERO,
 			delayInMillisconds.toLong, TimeUnit.MILLISECONDS)
 	}
 
@@ -64,8 +64,7 @@ object SnappyAnalyticsService extends Logging {
 
 	private def getScheduledExecutor: ScheduledExecutorService = {
 		if (analyticsExecutor == null || analyticsExecutor.isShutdown) {
-			analyticsExecutor =
-					ThreadUtils.newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
+			analyticsExecutor =	newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
 		}
 		analyticsExecutor
 	}
@@ -116,18 +115,24 @@ object SnappyAnalyticsService extends Logging {
 
 	def getTableSize(tableName: String, isColumnTable: Boolean = false): Long = {
 		val currentTableStats = tableStats.get()
-		if (currentTableStats.contains(tableName)) {
+		if (currentTableStats == null || !currentTableStats.contains(tableName)) {
+			defaultStats.valueSize
+		}
+		else {
 			if (isColumnTable) {
 				currentTableStats.get(cachedBatchTableName(tableName)).getOrElse(defaultStats).valueSize
-				currentTableStats.get(tableName).get.valueSize
+				+ currentTableStats.get(tableName).get.valueSize
 			} else {
 				currentTableStats.get(tableName).get.valueSize
 			}
-		} else defaultStats.valueSize
+		}
 	}
 
 	def getUIInfo: Seq[UIAnalytics] = {
 		val currentTableStats = tableStats.get()
+		if ( currentTableStats == null ) {
+			return Seq.empty
+		}
 		val internalColumnTables = currentTableStats.filter(entry => isColumnTable(entry._1))
 		(internalColumnTables.map(entry => {
 			val rowBuffer = getRowBufferName(entry._1)
@@ -167,6 +172,15 @@ object SnappyAnalyticsService extends Logging {
 				conn.close()
 			}
 		}
+	}
+
+	private def newDaemonSingleThreadScheduledExecutor(threadName: String)
+	: ScheduledExecutorService = {
+		val threadFactory =
+			new ThreadFactoryBuilder().setDaemon(true).setNameFormat(threadName).build()
+		val executor = new ScheduledThreadPoolExecutor(1, threadFactory)
+		executor.setRemoveOnCancelPolicy(true)
+		executor
 	}
 }
 
