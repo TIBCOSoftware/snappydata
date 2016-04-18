@@ -325,6 +325,9 @@ object SnappyParserConsts {
   final val SLIDE = keyword("slide")
   final val WINDOW = keyword("window")
 
+  // Added for AQP
+  final val CONFIDENCE = keyword("confidence")
+
   // datatypes are not reserved
   final val ARRAY = new Keyword("array")
   final val BIGINT = new Keyword("bigint")

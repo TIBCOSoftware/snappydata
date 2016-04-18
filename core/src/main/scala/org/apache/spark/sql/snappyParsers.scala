@@ -119,6 +119,7 @@ class SnappyParser(caseSensitive: Boolean)
   final def DURATION = rule { keyword(SnappyParserConsts.DURATION) }
   final def SLIDE = rule { keyword(SnappyParserConsts.SLIDE) }
   final def WINDOW = rule { keyword(SnappyParserConsts.WINDOW) }
+  final def CONFIDENCE = rule { keyword(SnappyParserConsts.CONFIDENCE) }
 
   private def toDecimalOrDoubleLiteral(s: String,
       scientific: Boolean): Literal = {
