@@ -86,7 +86,7 @@ object SampleTableQuery  extends Serializable {
 
 
 
-      spc.createSampleTable("mainTable_sampled", None,
+      spc.createSampleTable("mainTable_sampled",
         Map(
           "qcs" -> "l_quantity",
           "fraction" -> "0.01",

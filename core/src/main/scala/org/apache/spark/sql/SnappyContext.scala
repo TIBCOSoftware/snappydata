@@ -20,6 +20,7 @@ import java.sql.SQLException
 
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
@@ -218,19 +219,59 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
-   * @param schema
    * @param samplingOptions
-   * @param ifExists
-   */
-  def createSampleTable(tableName: String, schema: Option[StructType],
-      samplingOptions: Map[String, String],
-      ifExists: Boolean = false): DataFrame = {
+    */
+  def createSampleTable(tableName: String, samplingOptions: Map[String, String]): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
-      SnappyContext.SAMPLE_SOURCE, schema, schemaDDL = None,
+      SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
       SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
+
+  /**
+   * Create a stratified sample table. Java friendly version.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
+   * @param samplingOptions
+   */
+  def createSampleTable(tableName: String
+      , samplingOptions: java.util.Map[String, String]): DataFrame = {
+    createSampleTable(tableName, samplingOptions.asScala.toMap)
+  }
+
+
+  /**
+   * Create a stratified sample table.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
+   * @param schema
+   * @param samplingOptions
+   */
+  def createSampleTable(tableName: String, schema: StructType,
+      samplingOptions: Map[String, String]): DataFrame = {
+    val plan = createTable(catalog.newQualifiedTableName(tableName),
+      SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
+      SaveMode.ErrorIfExists, samplingOptions,
+      onlyBuiltIn = true, onlyExternal = false)
+    DataFrame(self, plan)
+  }
+
+  /**
+   * Create a stratified sample table. Java friendly version.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
+   * @param schema
+   * @param samplingOptions
+   */
+  def createSampleTable(tableName: String, schema: StructType
+      , samplingOptions: java.util.Map[String, String]): DataFrame = {
+    createSampleTable(tableName, schema, samplingOptions.asScala.toMap)
+  }
+
 
   /**
    * Create approximate structure to query top-K with time series support.
@@ -240,16 +281,60 @@ class SnappyContext protected[spark](
    * @param keyColumnName
    * @param inputDataSchema
    * @param topkOptions
-   * @param ifExists
    */
   def createApproxTSTopK(topKName: String, keyColumnName: String,
-      inputDataSchema: Option[StructType], topkOptions: Map[String, String],
-      ifExists: Boolean = false): DataFrame = {
+      inputDataSchema: StructType, topkOptions: Map[String, String]): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
-      SnappyContext.TOPK_SOURCE, inputDataSchema, schemaDDL = None,
+      SnappyContext.TOPK_SOURCE, Some(inputDataSchema), schemaDDL = None,
       SaveMode.ErrorIfExists, topkOptions + ("key" -> keyColumnName),
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
+  }
+
+  /**
+   * Create approximate structure to query top-K with time series support.
+   * Java friendly api.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   * @param keyColumnName
+   * @param inputDataSchema
+   * @param topkOptions
+   */
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      inputDataSchema: StructType, topkOptions: java.util.Map[String, String]): DataFrame = {
+    createApproxTSTopK(topKName, keyColumnName, inputDataSchema, topkOptions.asScala.toMap)
+  }
+
+  /**
+   * Create approximate structure to query top-K with time series support.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   * @param keyColumnName
+   * @param topkOptions
+   */
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      topkOptions: Map[String, String]): DataFrame = {
+    val plan = createTable(catalog.newQualifiedTableName(topKName),
+      SnappyContext.TOPK_SOURCE, None, schemaDDL = None,
+      SaveMode.ErrorIfExists, topkOptions + ("key" -> keyColumnName),
+      onlyBuiltIn = true, onlyExternal = false)
+    DataFrame(self, plan)
+  }
+
+  /**
+   * Create approximate structure to query top-K with time series support. Java
+   * friendly api.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   * @param keyColumnName
+   * @param topkOptions
+   */
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      topkOptions: java.util.Map[String, String]): DataFrame = {
+    createApproxTSTopK(topKName, keyColumnName, topkOptions.asScala.toMap)
   }
 
   /**
@@ -276,6 +361,13 @@ class SnappyContext protected[spark](
       SaveMode.ErrorIfExists, options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
+  }
+
+  def createTable(
+      tableName: String,
+      provider: String,
+      options: java.util.Map[String, String]): DataFrame = {
+    createTable(tableName, provider, options.asScala.toMap)
   }
 
   /**
@@ -311,6 +403,16 @@ class SnappyContext protected[spark](
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
+
+
+  def createTable(
+      tableName: String,
+      provider: String,
+      schema: StructType,
+      options: java.util.Map[String, String]): DataFrame = {
+    createTable(tableName, provider, schema, options.asScala.toMap)
+  }
+
 
   /**
    * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
