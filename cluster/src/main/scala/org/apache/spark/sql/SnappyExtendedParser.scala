@@ -75,6 +75,7 @@ private[sql] final class SnappyExtendedParserDialect(caseSensitive: Boolean)
     sqlParser.parse()
   }
 
+  /** TODO: What to do these methods?
   // parse expressions in a projection
   override def parseExpression(sqlText: String): Expression = synchronized {
     sqlParser.input = sqlText
@@ -103,4 +104,5 @@ private[sql] final class SnappyExtendedParserDialect(caseSensitive: Boolean)
         throw ae
     }
   }
+    */
 }
