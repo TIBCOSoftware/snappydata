@@ -78,7 +78,7 @@ class ColumnFormatRelation(
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
-  override def sizeInBytes: Long = SnappyAnalyticsService.getValueSize(table , true)
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table , true)
 
   val columnBatchSize = sqlContext.conf.columnBatchSize
 

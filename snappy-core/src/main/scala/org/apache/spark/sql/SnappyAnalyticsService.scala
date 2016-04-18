@@ -19,80 +19,90 @@
 
 package org.apache.spark.sql
 
+import java.sql.Connection
+import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ScheduledExecutorService, TimeUnit}
 
 import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.reflect.ClassTag
 
 import io.snappydata.Constant._
 
-import org.apache.spark.SparkContext
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.util.ThreadUtils
+import org.apache.spark.{Logging, SparkContext}
 
 
-object SnappyAnalyticsService {
-	private var tableStats = scala.collection.mutable.Map[String, MemoryAnalytics]()
-	private var analyticsExecutor: ScheduledExecutorService =
-		ThreadUtils.newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
+object SnappyAnalyticsService extends Logging {
+	private val tableStats =
+		new AtomicReference[scala.collection.mutable.Map[String, MemoryAnalytics]]()
+	private var analyticsExecutor: ScheduledExecutorService = null
 	private var connProperties: ConnectionProperties = null
-	private val readWriteLock = new LockUtils.ReadWriteLock()
+	val defaultStats = new MemoryAnalytics(0, 0, 0, 0, 0)
+	private final val ZERO = 0
 
 	def start(sc: SparkContext): Unit = {
-		connProperties =
-				ExternalStoreUtils.validateAndGetAllProps(sc, mutable.Map.empty[String, String])
 		val delayInMillisconds = sc.getConf.getOption("spark.snappy.analyticsService.interval")
 				.getOrElse(DEFAULT_ANALYTICS_SERVICE_INTERVAL).toString
-		if (analyticsExecutor.isShutdown) {
-			analyticsExecutor =
-					ThreadUtils.newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
-		}
-		analyticsExecutor.scheduleWithFixedDelay(
+		connProperties =
+				ExternalStoreUtils.validateAndGetAllProps(sc, mutable.Map.empty[String, String])
+		getScheduledExecutor.scheduleWithFixedDelay(
 			getTotalMemoryUsagePerTable, DEFAULT_ANALYTICS_SERVICE_INTERVAL,
 			delayInMillisconds.toLong, TimeUnit.MILLISECONDS)
 	}
 
+
 	def stop: Unit = {
-		if (!analyticsExecutor.isShutdown) {
+		if (!getScheduledExecutor.isShutdown) {
 			analyticsExecutor.shutdownNow()
 			analyticsExecutor.awaitTermination(DEFAULT_ANALYTICS_SERVICE_INTERVAL, TimeUnit.MILLISECONDS)
 		}
 	}
 
+	private def getScheduledExecutor: ScheduledExecutorService = {
+		if (analyticsExecutor == null || analyticsExecutor.isShutdown) {
+			analyticsExecutor =
+					ThreadUtils.newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
+		}
+		analyticsExecutor
+	}
 	private def getTotalMemoryUsagePerTable = new Runnable {
 		override def run(): Unit = {
-			val currentTableStats = scala.collection.mutable.Map[String, MemoryAnalytics]()
-			val stmt = "select TABLE_NAME," +
-					" SUM(ENTRY_SIZE), " +
-					"SUM(KEY_SIZE), " +
-					"SUM(VALUE_SIZE)," +
-					"SUM(VALUE_SIZE_OFFHEAP)," +
-					"SUM(TOTAL_SIZE)" +
-					"from SYS.MEMORYANALYTICS " +
-					"WHERE table_name not like 'HIVE_METASTORE%'  group by TABLE_NAME"
-			val connection = ConnectionPool.getPoolConnection("SYS.MEMORYANALYTICS",
-				connProperties.dialect, connProperties.poolProps, connProperties.connProps,
-				connProperties.hikariCP)
-			val rs = connection.prepareStatement(stmt).executeQuery()
-			while (rs.next()) {
-				val name = rs.getString(1)
-				val entrySize = convertToBytes(rs.getString(2))
-				val keySize = convertToBytes(rs.getString(3))
-				val valueSize = convertToBytes(rs.getString(4))
-				val valueSizeOffHeap = convertToBytes(rs.getString(5))
-				val totalSize = convertToBytes(rs.getString(6))
-				currentTableStats.put(name,
-					new MemoryAnalytics(entrySize, keySize, valueSize, valueSizeOffHeap, totalSize))
-			}
-
-			readWriteLock.executeInWriteLock(tableStats = currentTableStats)
-			rs.close()
-			connection.close()
+			tryExecute(conn => getMemoryAnalyticsdetails(conn))
 		}
 	}
 
-	private def convertToBytes(value: String): Long = (value.toDouble * 1024).toLong
+	private def getMemoryAnalyticsdetails(conn: Connection): Unit = {
+		val currentTableStats = scala.collection.mutable.Map[String, MemoryAnalytics]()
+		val stmt = "select TABLE_NAME," +
+				" SUM(ENTRY_SIZE), " +
+				"SUM(KEY_SIZE), " +
+				"SUM(VALUE_SIZE)," +
+				"SUM(VALUE_SIZE_OFFHEAP)," +
+				"SUM(TOTAL_SIZE)" +
+				"from SYS.MEMORYANALYTICS " +
+				"WHERE table_name not like 'HIVE_METASTORE%'  group by TABLE_NAME"
+		val rs = conn.prepareStatement(stmt).executeQuery()
+		while (rs.next()) {
+			val name = rs.getString(1)
+			val entrySize = convertToBytes(rs.getString(2))
+			val keySize = convertToBytes(rs.getString(3))
+			val valueSize = convertToBytes(rs.getString(4))
+			val valueSizeOffHeap = convertToBytes(rs.getString(5))
+			val totalSize = convertToBytes(rs.getString(6))
+			currentTableStats.put(name,
+				new MemoryAnalytics(entrySize, keySize, valueSize, valueSizeOffHeap, totalSize))
+		}
+
+		tableStats.set(currentTableStats)
+	}
+
+	private def convertToBytes(value: String): Long = {
+		if (value == null) ZERO else (value.toDouble * 1024).toLong
+	}
 
 	private def getRowBufferName(columnStoreName: String): String = {
 		DEFAULT_SCHEMA +
@@ -104,37 +114,31 @@ object SnappyAnalyticsService {
 		tablename.startsWith(INTERNAL_SCHEMA_NAME) && tablename.endsWith(SHADOW_TABLE_SUFFIX)
 
 
-	private def getValue(tableName: String, isColumnTable: Boolean = false): Long = {
-		val defaultStats = new MemoryAnalytics(0, 0, 0, 0, 0)
-		if (tableStats.contains(tableName)) {
+	def getTableSize(tableName: String, isColumnTable: Boolean = false): Long = {
+		val currentTableStats = tableStats.get()
+		if (currentTableStats.contains(tableName)) {
 			if (isColumnTable) {
-				tableStats.get(cachedBatchTableName(tableName)).getOrElse(defaultStats).valueSize
-				tableStats.get(tableName).get.valueSize
+				currentTableStats.get(cachedBatchTableName(tableName)).getOrElse(defaultStats).valueSize
+				currentTableStats.get(tableName).get.valueSize
 			} else {
-				tableStats.get(tableName).get.valueSize
+				currentTableStats.get(tableName).get.valueSize
 			}
 		} else defaultStats.valueSize
 	}
 
-	private def getUIInfo: Seq[UIAnalytics] = {
-		val internalColumnTables = tableStats.filter(entry => isColumnTable(entry._1))
+	def getUIInfo: Seq[UIAnalytics] = {
+		val currentTableStats = tableStats.get()
+		val internalColumnTables = currentTableStats.filter(entry => isColumnTable(entry._1))
 		(internalColumnTables.map(entry => {
 			val rowBuffer = getRowBufferName(entry._1)
-			val rowBufferSize = tableStats.get(rowBuffer).get.totalSize
-			tableStats.remove(rowBuffer)
-			tableStats.remove(entry._1)
+			val rowBufferSize = currentTableStats.get(rowBuffer).get.totalSize
+			currentTableStats.remove(rowBuffer)
+			currentTableStats.remove(entry._1)
 			new UIAnalytics(rowBuffer, rowBufferSize, entry._2.totalSize, true)
 		}).
-				++(tableStats.map(entry =>
+				++(currentTableStats.map(entry =>
 					new UIAnalytics(entry._1, entry._2.totalSize, 0, false)))).toSeq
 	}
-
-	def getValueSize(tableName: String, isColumnTable: Boolean = false): Long = {
-		readWriteLock.executeInReadLock(getValue(tableName, isColumnTable))
-	}
-
-
-	def getUIDetails: Seq[UIAnalytics] = readWriteLock.executeInReadLock(getUIInfo)
 
 	private def cachedBatchTableName(table: String) = {
 		val tableName = if (table.indexOf('.') > 0) {
@@ -145,6 +149,37 @@ object SnappyAnalyticsService {
 		INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
 	}
 
+	final def tryExecute[T: ClassTag](f: Connection => T,
+			closeOnSuccess: Boolean = true): T = {
+		val conn = ConnectionPool.getPoolConnection("SYS.MEMORYANALYTICS",
+			connProperties.dialect, connProperties.poolProps, connProperties.connProps,
+			connProperties.hikariCP)
+		var isClosed = false
+		try {
+			f(conn)
+		} catch {
+			case t: Throwable =>
+				conn.close()
+				isClosed = true
+				throw t
+		} finally {
+			if (closeOnSuccess && !isClosed) {
+				conn.close()
+			}
+		}
+	}
+}
+
+
+object SnappyDaemons {
+
+	def start(sc: SparkContext): Unit = {
+		SnappyAnalyticsService.start(sc)
+	}
+
+	def stop: Unit = {
+		SnappyAnalyticsService.stop
+	}
 }
 
 case class MemoryAnalytics(entrySize: Long, keySize: Long,

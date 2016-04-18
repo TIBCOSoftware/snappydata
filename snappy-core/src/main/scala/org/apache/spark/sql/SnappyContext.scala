@@ -797,21 +797,21 @@ object GlobalSnappyInit {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        SnappyAnalyticsService.start(sc)
+        SnappyDaemons.start(sc)
       case SnappyShellMode(_, _) =>
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = false)
-        SnappyAnalyticsService.start(sc)
+        SnappyDaemons.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = false)
-        SnappyAnalyticsService.start(sc)
+        SnappyDaemons.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ToolsCallbackInit.toolsCallback.invokeStartFabricServer(sc,
           hostData = true)
-        SnappyAnalyticsService.start(sc)
+        SnappyDaemons.start(sc)
       case _ => // ignore
     }
   }

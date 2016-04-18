@@ -29,8 +29,8 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
 
 		val analytics = queryMemoryAnalytics(s"APP.$rowTableName")
 
-		val mValueSize = SnappyAnalyticsService.getValueSize(s"APP.$rowTableName")
-		val mTotalSize = SnappyAnalyticsService.getUIDetails
+		val mValueSize = SnappyAnalyticsService.getTableSize(s"APP.$rowTableName")
+		val mTotalSize = SnappyAnalyticsService.getUIInfo
 				.filter(_.tableName.equals(s"APP.$rowTableName")).head.rowBufferSize
 
 		assert(analytics.valueSize == mValueSize)
@@ -52,8 +52,8 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
 		val analyticsRowBuffer = queryMemoryAnalytics(s"APP.$columnTableName")
 		val analyticsColumnBuffer = queryMemoryAnalytics(
 			ColumnFormatRelation.cachedBatchTableName(columnTableName))
-		val mValueSize = SnappyAnalyticsService.getValueSize(s"APP.$columnTableName")
-		val uiDetails = SnappyAnalyticsService.getUIDetails
+		val mValueSize = SnappyAnalyticsService.getTableSize(s"APP.$columnTableName")
+		val uiDetails = SnappyAnalyticsService.getUIInfo
 				.filter(_.tableName.equals(s"APP.$columnTableName")).head
 
 		assert(mValueSize == analyticsColumnBuffer.valueSize + analyticsRowBuffer.valueSize)

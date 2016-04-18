@@ -32,7 +32,7 @@ import org.apache.spark.util.Utils
 private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
 		extends WebUIPage("") with Logging {
 	def render(request: HttpServletRequest): Seq[Node] = {
-		val uiDetails = SnappyAnalyticsService.getUIDetails
+		val uiDetails = SnappyAnalyticsService.getUIInfo
 		val snappyRowTable = UIUtils.listingTable(
 			rowHeader, rowTable, uiDetails.filter(row => !row.isColumnTable))
 		val snappyColumnTable = UIUtils.listingTable(
