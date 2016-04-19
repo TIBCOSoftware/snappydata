@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property}
+import io.snappydata.{SnappyDaemons, Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.java.JavaSparkContext
@@ -770,14 +770,18 @@ object GlobalSnappyInit {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+        SnappyDaemons.start(sc)
       case SnappyShellMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        SnappyDaemons.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        SnappyDaemons.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
+        SnappyDaemons.start(sc)
       case _ => // ignore
     }
   }
