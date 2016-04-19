@@ -17,6 +17,9 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
+
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
@@ -32,7 +35,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
+import org.apache.spark.sql.catalyst.expressions.{SortDirection, Alias, Cast}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -554,10 +557,27 @@ class SnappyContext protected[spark](
     *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
     */
-  def createIndexOnTable(indexName: String,
-                         baseTable: String,
-                         indexColumns: Seq[String],
-                         options: Map[String, String]): Unit = {
+  def createIndex(indexName: String,
+                  baseTable: String,
+                  indexColumns: java.util.Map[String, Option[SortDirection]],
+                  options: java.util.Map[String, String]): Unit = {
+    createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
+  }
+
+  /**
+    * Create an index on a table.
+    * @param indexName Index name which goes in the catalog
+    * @param baseTable Fully qualified name of table on which the index is created.
+    * @param indexColumns Columns on which the index has to be created with the
+    *                     direction of sorting. Direction can be specified as None.
+    * @param options Options for indexes. For e.g.
+    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    */
+  def createIndex(indexName: String,
+      baseTable: String,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
 
     val tableIdent = catalog.newQualifiedTableName(baseTable)
     val indexIdent = catalog.newQualifiedTableName(indexName)
@@ -573,25 +593,11 @@ class SnappyContext protected[spark](
     }
     import scala.collection.JavaConverters._
     catalog.lookupRelation(tableIdent) match {
-      case LogicalRelation(ir: JDBCMutableRelation, _) =>
+      case LogicalRelation(ir: IndexableRelation, _) =>
         ir.createIndex(indexIdent,
           tableIdent,
           indexColumns,
           options)
-      case LogicalRelation(ir: JDBCAppendableRelation, _) =>
-        ir.createIndex(indexIdent,
-          tableIdent,
-          indexColumns,
-          options)
-        // Main table is updated to store the index information in it. We could have instead used
-        // createIndex method of HiveClient to do this. But, there were two main issues:
-        // a. Schema needs to be added to the HiveTable to supply indexedCols while creating
-        // the index. But, when schema is added to the HiveTable object, it throws a foreign
-        // key constraint failure on the serdes table. Need to look into this.
-        // b. The bigger issue is that the createIndex needs an indexTable for creating this
-        // index. Also, there are multiple things (like implementing HiveIndexHandler)
-        // that are hive specific and can create issues for us from maintenance perspective
-        catalog.alterTableToAddIndexProp(tableIdent, getIndexTable(indexIdent).toString)
 
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
@@ -599,12 +605,12 @@ class SnappyContext protected[spark](
   }
 
   private[sql] def getIndexTable(indexIdent: QualifiedTableName): QualifiedTableName = {
-    new QualifiedTableName(indexIdent.database,
-      ExternalStoreUtils.PREFIX_INDEX_TABLE + indexIdent.table)
+    new QualifiedTableName(Some(ColumnFormatRelation.INTERNAL_SCHEMA_NAME),
+      indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,
-                               ifExists : Boolean): String = {
+              ifExists : Boolean): String = {
 
     val ifExistsClause = if (ifExists) "IF EXISTS" else ""
 
@@ -616,7 +622,7 @@ class SnappyContext protected[spark](
     * @param indexName Index name which goes in catalog
     * @param ifExists Drop if exists, else exit gracefully
     */
-  def dropIndexOnTable(indexName: String, ifExists: Boolean): Unit = {
+  def dropIndex(indexName: String, ifExists: Boolean): Unit = {
 
     val indexIdent = getIndexTable(catalog.newQualifiedTableName(indexName))
 
@@ -628,11 +634,14 @@ class SnappyContext protected[spark](
         case LogicalRelation(dr: DependentRelation, _) =>
           // Remove the index from the bse table props
           val baseTableIdent = catalog.newQualifiedTableName(dr.baseTable.get)
-          catalog.alterTableToRemoveIndexProp(baseTableIdent, indexIdent.toString)
-          // Remove the actual index
-          dropTable(indexIdent, ifExists)
+          catalog.lookupRelation(baseTableIdent) match {
+            case LogicalRelation(cr: ColumnFormatRelation, _) =>
+              cr.removeDependent(dr, catalog)
+              cr.dropIndex(indexIdent, baseTableIdent, ifExists)
+          }
 
-        case _ => if (!ifExists) throw new AnalysisException(s"No index found for $indexName")
+        case _ => if (!ifExists) throw new AnalysisException(
+          s"No index found for $indexName")
       }
     }
   }

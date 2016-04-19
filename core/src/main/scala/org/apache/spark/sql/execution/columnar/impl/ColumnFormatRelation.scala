@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 
 import scala.collection.mutable.ArrayBuffer
@@ -60,7 +61,7 @@ import org.apache.spark.{Logging, Partition}
     as do a bulk insert by a Spark DataFrame.
     Bulk insert example is shown above.
  */
-class ColumnFormatRelation(
+class BaseColumnFormatRelation(
     _table: String,
     _provider: String,
     _mode: SaveMode,
@@ -72,10 +73,16 @@ class ColumnFormatRelation(
     blockMap: Map[InternalDistributedMember, BlockManagerId],
     partitioningColumns: Seq[String],
     _context: SQLContext)
-    extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
-      _origOptions, _externalStore, _context)
-    with PartitionedDataSourceScan with RowInsertableRelation
-    with ParentRelation {
+    extends JDBCAppendableRelation(
+    _table,
+    _provider,
+    _mode,
+    _userSchema,
+    _origOptions,
+    _externalStore,
+    _context)
+    with PartitionedDataSourceScan
+    with RowInsertableRelation {
 
   override def toString: String = s"ColumnFormatRelation[$table]"
 
@@ -405,7 +412,6 @@ class ColumnFormatRelation(
       connProperties.hikariCP)
     try {
       val stmt = connection.prepareStatement(sql)
-      // stmt.setSt
       val result = stmt.executeUpdate()
       stmt.close()
       result
@@ -423,6 +429,55 @@ class ColumnFormatRelation(
     ColumnFormatRelation.flushLocalBuckets(resolvedName)
   }
 
+}
+
+class ColumnFormatRelation(
+    _table: String,
+    _provider: String,
+    _mode: SaveMode,
+    _userSchema: StructType,
+    schemaExtensions: String,
+    ddlExtensionForShadowTable: String,
+    _origOptions: Map[String, String],
+    _externalStore: ExternalStore,
+    blockMap: Map[InternalDistributedMember, BlockManagerId],
+    partitioningColumns: Seq[String],
+    _context: SQLContext)
+  extends BaseColumnFormatRelation(
+    _table,
+    _provider,
+    _mode,
+    _userSchema,
+    schemaExtensions,
+    ddlExtensionForShadowTable,
+    _origOptions,
+    _externalStore,
+    blockMap,
+    partitioningColumns,
+    _context)
+  with ParentRelation {
+
+  override def addDependent(dependent: DependentRelation,
+               catalog: SnappyStoreHiveCatalog): Boolean =
+    DependencyCatalog.addDependent(table, dependent.name)
+
+  override def removeDependent(dependent: DependentRelation,
+               catalog: SnappyStoreHiveCatalog): Boolean =
+    DependencyCatalog.removeDependent(table, dependent.name)
+
+  override def dropIndex(indexIdent: QualifiedTableName,
+               tableIdent: QualifiedTableName,
+               ifExists: Boolean): Unit = {
+    val snc = _context.asInstanceOf[SnappyContext]
+    snc.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
+    // Remove the actual index
+    snc.dropTable(indexIdent, ifExists)
+  }
+
+  override def getDependents(
+               catalog: SnappyStoreHiveCatalog): Seq[String] =
+    DependencyCatalog.getDependents(table)
+
   /**
     * Index table is same as the column table apart from how it is
     * partitioned and colocated. Add GEM_PARTITION_BY and GEM_COLOCATE_WITH
@@ -430,10 +485,10 @@ class ColumnFormatRelation(
     * indicate that this is an index table.
     */
   private def createIndexTable(indexIdent: QualifiedTableName,
-                               tableIdent: QualifiedTableName,
-                               tableRelation: JDBCAppendableRelation,
-                               indexColumns: Seq[String],
-                               options: Map[String, String]): Unit = {
+              tableIdent: QualifiedTableName,
+              tableRelation: JDBCAppendableRelation,
+              indexColumns: Map[String, Option[SortDirection]],
+              options: Map[String, String]): Unit = {
 
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
@@ -445,7 +500,7 @@ class ColumnFormatRelation(
         pair._1.equals(Utils.toLowerCase(StoreUtils.COLOCATE_WITH)) ||
         pair._1.equals(Utils.toLowerCase(JdbcExtendedUtils.DBTABLE_PROPERTY)) ||
         pair._1.equals(Utils.toLowerCase(ExternalStoreUtils.INDEX_NAME))
-    }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.mkString(",")) +
+    }).toMap + (StoreUtils.PARTITION_BY -> indexColumns.keys.mkString(",")) +
       (StoreUtils.GEM_INDEXED_TABLE -> tableIdent.toString) +
       (JdbcExtendedUtils.DBTABLE_PROPERTY -> indexTblName)
 
@@ -461,46 +516,55 @@ class ColumnFormatRelation(
   }
 
   override def createIndex(indexIdent: QualifiedTableName,
-                           tableIdent: QualifiedTableName,
-                           indexColumns: Seq[String],
-                           options: Map[String, String]): Unit = {
+               tableIdent: QualifiedTableName,
+               indexColumns: Map[String, Option[SortDirection]],
+               options: Map[String, String]): Unit = {
 
+    val snc = sqlContext.asInstanceOf[SnappyContext]
     createIndexTable(indexIdent, tableIdent, this, indexColumns, options)
+    // Main table is updated to store the index information in it. We could have instead used
+    // createIndex method of HiveClient to do this. But, there were two main issues:
+    // a. Schema needs to be added to the HiveTable to supply indexedCols while creating
+    // the index. But, when schema is added to the HiveTable object, it throws a foreign
+    // key constraint failure on the serdes table. Need to look into this.
+    // b. The bigger issue is that the createIndex needs an indexTable for creating this
+    // index. Also, there are multiple things (like implementing HiveIndexHandler)
+    // that are hive specific and can create issues for us from maintenance perspective
+    snc.catalog.alterTableToAddIndexProp(
+      tableIdent, snc.getIndexTable(indexIdent))
+
   }
-
-  override def addDependent(dependent: DependentRelation,
-                            catalog: SnappyStoreHiveCatalog): Boolean =
-    DependencyCatalog.addDependent(table, dependent.name)
-
-  override def removeDependent(dependent: DependentRelation,
-                               catalog: SnappyStoreHiveCatalog): Boolean =
-    DependencyCatalog.removeDependent(table, dependent.name)
-
-  override def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String] =
-    DependencyCatalog.getDependents(table)
 }
-
 /**
   * Currently this is same as ColumnFormatRelation but has kept it as a separate class
   * to allow adding of any index specific functionality in future.
   */
 class IndexColumnFormatRelation(
-                            _table: String,
-                            _provider: String,
-                            _mode: SaveMode,
-                            _userSchema: StructType,
-                            _schemaExtensions: String,
-                            _ddlExtensionForShadowTable: String,
-                            _origOptions: Map[String, String],
-                            _externalStore: ExternalStore,
-                            _blockMap: Map[InternalDistributedMember, BlockManagerId],
-                            _partitioningColumns: Seq[String],
-                            _context: SQLContext,
-                            baseTableName: String)
-  extends ColumnFormatRelation(_table, _provider, _mode, _userSchema,
-    _schemaExtensions, _ddlExtensionForShadowTable, _origOptions,
-    _externalStore, _blockMap, _partitioningColumns, _context)
- with DependentRelation {
+    _table: String,
+    _provider: String,
+    _mode: SaveMode,
+    _userSchema: StructType,
+    _schemaExtensions: String,
+    _ddlExtensionForShadowTable: String,
+    _origOptions: Map[String, String],
+    _externalStore: ExternalStore,
+    _blockMap: Map[InternalDistributedMember, BlockManagerId],
+    _partitioningColumns: Seq[String],
+    _context: SQLContext,
+    baseTableName: String)
+  extends BaseColumnFormatRelation(
+    _table,
+    _provider,
+    _mode,
+    _userSchema,
+    _schemaExtensions,
+    _ddlExtensionForShadowTable,
+    _origOptions,
+    _externalStore,
+    _blockMap,
+    _partitioningColumns,
+    _context)
+  with DependentRelation {
 
   override def baseTable: Option[String] = Some(baseTableName)
 
@@ -528,7 +592,7 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   }
 
   def registerStoreCallbacks(sqlContext: SQLContext, table: String,
-      userSchema: StructType, externalStore: ExternalStore) = {
+      userSchema: StructType, externalStore: ExternalStore): Unit = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
       StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
@@ -625,21 +689,23 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     try {
       relation.createTable(mode)
-      var indexes: Array[String] = Array()
-      try {
-        val options = new CaseInsensitiveMutableHashMap(relation.origOptions)
-        indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
-      } catch {
-        case e: NoSuchElementException =>
+      if (relation.isInstanceOf[ColumnFormatRelation]) {
+        var indexes: Array[String] = Array()
+        try {
+          val options = new CaseInsensitiveMutableHashMap(relation.origOptions)
+          indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
+        } catch {
+          case e: NoSuchElementException =>
         }
 
-      indexes.foreach(index => {
-        val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
-        val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
-          case LogicalRelation(r: DependentRelation, _ ) => r
-        }
-        relation.addDependent(dr, sncCatalog)
-      })
+        indexes.foreach(index => {
+          val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
+          val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
+            case LogicalRelation(r: DependentRelation, _) => r
+          }
+          relation.asInstanceOf[ColumnFormatRelation].addDependent(dr, sncCatalog)
+        })
+      }
       success = true
       relation
     } finally {

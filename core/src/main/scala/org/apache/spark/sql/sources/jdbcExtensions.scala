@@ -137,7 +137,7 @@ object JdbcExtendedUtils extends Logging {
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     try {
-      val rs = conn.getMetaData.getTables(null, schemaName.toUpperCase, tableName.toUpperCase, null)
+      val rs = conn.getMetaData.getTables(null, schemaName, tableName, null)
       rs.next()
     } catch {
       case t: java.sql.SQLException => false

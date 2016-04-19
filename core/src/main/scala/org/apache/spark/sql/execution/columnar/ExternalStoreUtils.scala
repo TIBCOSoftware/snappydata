@@ -50,7 +50,6 @@ object ExternalStoreUtils {
   final val DEFAULT_TABLE_BUCKETS_LOCAL_MODE = "11"
   final val DEFAULT_SAMPLE_TABLE_BUCKETS_LOCAL_MODE = "7"
   final val INDEX_TYPE = "INDEX_TYPE"
-  final val PREFIX_INDEX_TABLE = "SNCIDXTBL_"
   final val INDEX_NAME = "INDEX_NAME"
 
 

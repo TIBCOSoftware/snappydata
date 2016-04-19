@@ -17,6 +17,7 @@
 package io.snappydata.app
 
 import io.snappydata.SnappyFunSuite
+import org.apache.spark.sql.catalyst.expressions.{Descending, Ascending}
 
 import org.apache.spark.sql.{Row, SaveMode}
 
@@ -57,16 +58,22 @@ class CreateIndexTest extends SnappyFunSuite {
       case e: Throwable =>
     }
 
+    snContext.sql("create index test1 on " + tableName + " (COL1 asc)")
+    snContext.sql("drop index test1")
 
-    snContext.createIndexOnTable("test1", tableName,
-      Array("col1"), Map("colocate_with" -> tableName))
-    snContext.dropIndexOnTable("test1", false)
-    snContext.createIndexOnTable("test1", tableName, Array("col1"),
+    snContext.createIndex("test1", tableName,
+      Map(("col1" -> None)), Map("colocate_with" -> tableName))
+    snContext.dropIndex("test1", false)
+    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
       Map.empty[String, String])
-    snContext.dropIndexOnTable("test1", false)
+    snContext.dropIndex("test1", false)
+
+    snContext.createIndex("test1", tableName, Map(("col1" -> Some(Ascending))),
+      Map.empty[String, String])
+    snContext.dropIndex("test1", false)
 
     // drop non-existent indexes with if exist clause
-    snContext.dropIndexOnTable("test1", true)
+    snContext.dropIndex("test1", true)
     snContext.sql("drop index if exists test1")
 
   }
@@ -90,18 +97,25 @@ class CreateIndexTest extends SnappyFunSuite {
     snContext.sql("drop index test1")
     snContext.sql("create global hash index test1 on " + tableName + " (COL1)")
     snContext.sql("drop index test1")
+    snContext.sql("create index test1 on " + tableName + " (COL1 asc)")
+    snContext.sql("drop index test1")
 
-    snContext.createIndexOnTable("test1", tableName, Array("col1"), Map("index_type" -> "unique"))
-    snContext.dropIndexOnTable("test1", false)
-    snContext.createIndexOnTable("test1", tableName,
-      Array("col1"), Map("index_type" -> "global hash"))
-    snContext.dropIndexOnTable("test1", false)
-    snContext.createIndexOnTable("test1", tableName, Array("col1"),
+
+    snContext.createIndex("test1", tableName, Map(("col1" -> None)), Map("index_type" -> "unique"))
+    snContext.dropIndex("test1", false)
+    snContext.createIndex("test1", tableName,
+      Map(("col1" -> None)), Map("index_type" -> "global hash"))
+    snContext.dropIndex("test1", false)
+    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
       Map.empty[String, String])
-    snContext.dropIndexOnTable("test1", false)
+    snContext.dropIndex("test1", false)
+
+    snContext.createIndex("test1", tableName,
+      Map(("col1" -> Some(Descending))), Map("index_type" -> "unique"))
+    snContext.dropIndex("test1", false)
 
     // drop non-existent indexes with if exist clause
-    snContext.dropIndexOnTable("test1", true)
+    snContext.dropIndex("test1", true)
     snContext.sql("drop index if exists test1")
 
 

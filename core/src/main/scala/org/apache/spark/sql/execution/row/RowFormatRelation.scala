@@ -25,6 +25,7 @@ import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpress
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.{Descending, Ascending, SortDirection}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
@@ -160,13 +161,27 @@ class RowFormatRelation(
       connection.close()
     }
   }
+
+  private def getColumnStr(colWithDirection: (String, Option[SortDirection])): String = {
+    colWithDirection._1 + " " + (colWithDirection._2 match
+    {
+      case Some(Ascending) => "ASC"
+      case Some(Descending) => "DESC"
+      case None => ""
+    })
+
+  }
   override protected def constructSQL(indexName: String,
-                           baseTable: String,
-                           indexColumns: Seq[String],
-                           options: Map[String, String]): String = {
+                         baseTable: String,
+                         indexColumns: Map[String, Option[SortDirection]],
+                         options: Map[String, String]): String = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val columns = indexColumns.reduceLeft[String](_ + "," + _)
+    val columns = indexColumns.tail.foldLeft[String](
+      getColumnStr(indexColumns.head))((cumulative, colsWithDirection) =>
+      cumulative + "," + getColumnStr(colsWithDirection))
+
+
     val indexType = parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
       case Some(x) => x
       case None => ""

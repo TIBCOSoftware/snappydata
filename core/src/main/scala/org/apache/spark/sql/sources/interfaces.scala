@@ -18,7 +18,7 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.Attribute
+import org.apache.spark.sql.catalyst.expressions.{SortDirection, Attribute}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
@@ -180,20 +180,30 @@ trait DestroyRelation {
 
 @DeveloperApi
 trait IndexableRelation {
-
   /**
     * Create an index on a table.
     * @param indexIdent Index Identifier which goes in the catalog
     * @param tableIdent Table identifier on which the index is created.
-    * @param indexColumns Columns on which the index has to be created
+    * @param indexColumns Columns on which the index has to be created with the
+    *                     direction of sorting. Direction can be specified as None.
     * @param options Options for indexes. For e.g.
     *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
     */
   def createIndex(indexIdent: QualifiedTableName,
                   tableIdent: QualifiedTableName,
-                  indexColumns: Seq[String],
+                  indexColumns: Map[String, Option[SortDirection]],
                   options: Map[String, String]): Unit
+
+  /**
+    * Drops an index on this table
+    * @param indexIdent Index identifier
+    * @param tableIdent Table identifier
+    * @param ifExists Drop if exists
+    */
+  def dropIndex(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      ifExists: Boolean): Unit
 
 }
 

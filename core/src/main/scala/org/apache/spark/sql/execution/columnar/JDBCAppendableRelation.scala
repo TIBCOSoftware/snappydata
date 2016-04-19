@@ -18,6 +18,8 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import org.apache.spark.sql.catalyst.expressions.SortDirection
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -40,13 +42,13 @@ import org.apache.spark.sql.types.StructType
  * are retrieved using a JDBC URL or DataSource.
  */
 case class JDBCAppendableRelation(
- table: String,
- provider: String,
- mode: SaveMode,
- userSchema: StructType,
- origOptions: Map[String, String],
- externalStore: ExternalStore,
- @transient override val sqlContext: SQLContext)
+    table: String,
+    provider: String,
+    mode: SaveMode,
+    userSchema: StructType,
+    origOptions: Map[String, String],
+    externalStore: ExternalStore,
+    @transient override val sqlContext: SQLContext)
   extends BaseRelation
   with PrunedFilteredScan
   with InsertableRelation
@@ -279,10 +281,16 @@ case class JDBCAppendableRelation(
   }
 
   override def createIndex(indexIdent: QualifiedTableName,
-                           tableIdent: QualifiedTableName,
-                           indexColumns: Seq[String],
-                           options: Map[String, String]): Unit = {
-    throw new UnsupportedOperationException("Indexes are not supported");
+               tableIdent: QualifiedTableName,
+               indexColumns: Map[String, Option[SortDirection]],
+               options: Map[String, String]): Unit = {
+    throw new UnsupportedOperationException("Indexes are not supported")
+  }
+
+  override def dropIndex(indexIdent: QualifiedTableName,
+                tableIdent: QualifiedTableName,
+                ifExists: Boolean): Unit = {
+    throw new UnsupportedOperationException("Indexes are not supported")
   }
 }
 

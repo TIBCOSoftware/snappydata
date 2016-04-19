@@ -513,16 +513,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     registerRelationDestroy()
 
     val dbName = tableIdent.getDatabase(client)
-    try {
-      clientDropTable(dbName, tableIdent.table)
-    } catch {
-      case he: HiveException if isDisconnectException(he) =>
-        // stale GemXD connection
-        Hive.closeCurrent()
-        client = newClient().asInstanceOf[ClientWrapper]
-        clientDropTable(dbName, tableIdent.table)
-    }
-    cachedDataSourceTables.invalidate(tableIdent)
+    withHiveExceptionHandling(clientDropTable(dbName, tableIdent.table))
   }
 
   /**
@@ -611,51 +602,68 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       tableType = ExternalTable,
       properties = tableProperties.toMap,
       serdeProperties = options)
+    withHiveExceptionHandling( client.createTable(hiveTable))
+  }
+  private def addIndexProp(inTable: QualifiedTableName,
+              index: QualifiedTableName): Unit = {
+    val hiveTable = inTable.getTable(client)
+    var indexes = ""
     try {
-      client.createTable(hiveTable)
+      indexes = hiveTable.serdeProperties(ExternalStoreUtils.INDEX_NAME) + ","
+    } catch {
+      case e: scala.NoSuchElementException =>
+    }
+
+    client.alterTable(
+      // indexes are stored in lower case
+      hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
+        (ExternalStoreUtils.INDEX_NAME -> (indexes + Utils.toLowerCase(index.toString()))))
+    )
+  }
+
+  def withHiveExceptionHandling[T](function: => T): T = {
+    try {
+      function
     } catch {
       case he: HiveException if isDisconnectException(he) =>
         // stale GemXD connection
         Hive.closeCurrent()
         client = newClient().asInstanceOf[ClientWrapper]
-        client.createTable(hiveTable)
+        function
     }
   }
 
-  def alterTableToAddIndexProp(inTable: QualifiedTableName, indexName: String): Unit = {
+  def alterTableToAddIndexProp(inTable: QualifiedTableName,
+      index: QualifiedTableName): Unit = {
     alterTableLock.synchronized {
-      val hiveTable = inTable.getTable(client)
-      var indexes = ""
-      try {
-        indexes = hiveTable.serdeProperties(ExternalStoreUtils.INDEX_NAME) + ","
-      } catch {
-        case e: NoSuchElementException =>
-      }
-      client.alterTable(
-        hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
-          (ExternalStoreUtils.INDEX_NAME -> (indexes + indexName)))
-      )
+      withHiveExceptionHandling(addIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
   }
 
-  def alterTableToRemoveIndexProp(inTable: QualifiedTableName, indexName: String): Unit = {
+  def removeIndexProp (inTable: QualifiedTableName, index: QualifiedTableName) : Unit = {
+    val hiveTable = inTable.getTable(client)
+    val indexes = hiveTable.serdeProperties(ExternalStoreUtils.INDEX_NAME)
+    val indexArray = indexes.split(",")
+    // indexes are stored in lower case
+    val newindexes = indexArray.filter(_ != Utils.toLowerCase(index.toString())).mkString(",")
+    if (newindexes == "") {
+      client.alterTable(
+        hiveTable.copy(
+          serdeProperties = hiveTable.serdeProperties - ExternalStoreUtils.INDEX_NAME)
+      )
+    } else {
+      client.alterTable(
+        hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
+          (ExternalStoreUtils.INDEX_NAME -> (newindexes)))
+      )
+    }
+  }
+
+  def alterTableToRemoveIndexProp(inTable: QualifiedTableName,
+      index: QualifiedTableName): Unit = {
     alterTableLock.synchronized {
-      val hiveTable = inTable.getTable(client)
-      val indexes = hiveTable.serdeProperties(ExternalStoreUtils.INDEX_NAME)
-      val indexArray = indexes.split(",")
-      val newindexes = indexArray.filter(_ != indexName).mkString(",")
-      if (newindexes == "") {
-        client.alterTable(
-          hiveTable.copy(
-            serdeProperties = hiveTable.serdeProperties - ExternalStoreUtils.INDEX_NAME)
-        )
-      } else {
-        client.alterTable(
-          hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
-            (ExternalStoreUtils.INDEX_NAME -> (newindexes)))
-        )
-      }
+      withHiveExceptionHandling(removeIndexProp(inTable, index))
     }
     cachedDataSourceTables.invalidate(inTable)
   }
@@ -669,32 +677,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     } else {
       false
     }
-  }
-
-  class SnappyIndexHandler extends TableBasedIndexHandler {
-    override def usesIndexTable() : Boolean = false
-
-    @throws(classOf[HiveException])
-    override def analyzeIndexDefinition(table: Table, index: Index, table1: Table) : Unit = { }
-
-    def generateIndexQuery(var1: List[Index], var2: ExprNodeDesc,
-                           var3: ParseContext, var4: HiveIndexQueryContext): Unit = {}
-
-  }
-
-  def createIndex(tableIdent: QualifiedTableName, indexName: String,
-                  indexedCols: List[String],
-                  idxProps: java.util.Map[String, String]): Unit = {
-
-    val hiveClient = client.asInstanceOf[ClientWrapper].client
-    val dbName = tableIdent.getDatabase(client)
-
-    hiveClient.createIndex(dbName + "." + tableIdent.table,
-      dbName + "." + indexName,
-      "org.apache.spark.sql.hive.SnappyIndexHandler", indexedCols,
-      dbName + "." + indexName, false, null, null, null, null, null, idxProps,
-      null, null, null, null, null, null, null, null)
-
   }
 
   override def getTables(db: Option[String]): Seq[(String, Boolean)] = {

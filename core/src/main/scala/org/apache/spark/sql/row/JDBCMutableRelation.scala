@@ -20,6 +20,7 @@ import java.sql.Connection
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -277,17 +278,17 @@ class JDBCMutableRelation(
   }
 
   protected def constructSQL(indexName: String,
-                           baseTable: String,
-                           indexColumns: Seq[String],
-                           options: Map[String, String]): String = {
+                baseTable: String,
+                indexColumns: Map[String, Option[SortDirection]],
+                options: Map[String, String]): String = {
 
     ""
   }
 
   override def createIndex(indexIdent: QualifiedTableName,
-                           tableIdent: QualifiedTableName,
-                           indexColumns: Seq[String],
-                           options: Map[String, String]): Unit = {
+               tableIdent: QualifiedTableName,
+               indexColumns: Map[String, Option[SortDirection]],
+               options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString, conn,
@@ -313,6 +314,12 @@ class JDBCMutableRelation(
     } finally {
       conn.close()
     }
+  }
+
+  override def dropIndex(indexIdent: QualifiedTableName,
+               tableIdent: QualifiedTableName,
+               ifExists: Boolean): Unit = {
+    throw new UnsupportedOperationException()
   }
 }
 
