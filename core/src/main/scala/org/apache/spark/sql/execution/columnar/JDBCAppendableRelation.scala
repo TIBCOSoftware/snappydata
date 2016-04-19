@@ -23,6 +23,8 @@ import org.apache.spark.sql.catalyst.expressions.SortDirection
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
+import _root_.io.snappydata.SnappyAnalyticsService
+
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -65,6 +67,8 @@ case class JDBCAppendableRelation(
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
+
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table, true)
 
   protected final def dialect = connProperties.dialect
 

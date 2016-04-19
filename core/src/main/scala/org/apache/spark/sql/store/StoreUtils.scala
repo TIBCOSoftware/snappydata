@@ -32,11 +32,8 @@ import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
-import org.apache.spark.ui.SnappyUIUtils
 import org.apache.spark.{Logging, Partition, SparkContext}
 
-/*/10/15.
-  */
 object StoreUtils extends Logging {
 
   val PARTITION_BY = ExternalStoreUtils.PARTITION_BY
@@ -144,38 +141,13 @@ object StoreUtils extends Logging {
     blockMap.toMap
   }
 
-  def registerRDDInfoForUI(sc: SparkContext, table: String,
-      numPartitions: Int): Unit = {
-    StoreCallbacksImpl.stores.get(table) match {
-      case Some((_, _, rddId)) =>
-        val rddInfo = new RDDInfo(rddId, table, numPartitions,
-          StorageLevel.OFF_HEAP, Seq())
-        rddInfo.numCachedPartitions = numPartitions
-        sc.ui.foreach(listener => SnappyUIUtils.registerRDDInfo(
-          listener.storageListener, rddInfo))
-      case None => // nothing
-    }
-  }
-
-  def unregisterRDDInfoForUI(sc: SparkContext, table: String,
-      numPartitions: Int): Unit = {
-    StoreCallbacksImpl.stores.get(table) match {
-      case Some((_, _, rddId)) =>
-        sc.listenerBus.post(SparkListenerUnpersistRDD(rddId))
-      case None => // nothing
-    }
-  }
-
   def removeCachedObjects(sqlContext: SQLContext, table: String,
       numPartitions: Int, registerDestroy: Boolean = false): Unit = {
     ExternalStoreUtils.removeCachedObjects(sqlContext, table, registerDestroy)
-    unregisterRDDInfoForUI(sqlContext.sparkContext, table, numPartitions)
     Utils.mapExecutors(sqlContext, () => {
-      StoreInitRDD.tableToIdMap.remove(table)
       StoreCallbacksImpl.stores.remove(table)
       Iterator.empty
     }).count()
-    StoreInitRDD.tableToIdMap.remove(table)
     StoreCallbacksImpl.stores.remove(table)
   }
 
