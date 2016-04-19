@@ -1,5 +1,5 @@
 *.class
-snappy-aqp
+aqp
 
 # sbt specific
 .cache/
