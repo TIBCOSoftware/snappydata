@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql
 
-import scala.util.{Failure, Success}
-
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -25,7 +23,6 @@ import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Exists, InSubquery}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.QualifiedTableName
 
 /**
@@ -74,35 +71,4 @@ private[sql] final class SnappyExtendedParserDialect(caseSensitive: Boolean)
     sqlParser.input = sqlText
     sqlParser.parse()
   }
-
-  /** TODO: What to do these methods?
-  // parse expressions in a projection
-  override def parseExpression(sqlText: String): Expression = synchronized {
-    sqlParser.input = sqlText
-    sqlParser.expr.run() match {
-      case Success(plan) => plan
-      case Failure(e: ParseError) =>
-        throw Utils.analysisException(sqlParser.formatError(e))
-      case Failure(e) =>
-        val ae = Utils.analysisException(e.toString)
-        ae.initCause(e)
-        throw ae
-    }
-  }
-
-  // parse table identifiers
-  override def parseTableIdentifier(
-      sqlText: String): QualifiedTableName = synchronized {
-    sqlParser.input = sqlText
-    sqlParser.tableIdent.run() match {
-      case Success(plan) => plan
-      case Failure(e: ParseError) =>
-        throw Utils.analysisException(sqlParser.formatError(e))
-      case Failure(e) =>
-        val ae = Utils.analysisException(e.toString)
-        ae.initCause(e)
-        throw ae
-    }
-  }
-    */
 }
