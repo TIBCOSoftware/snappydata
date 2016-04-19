@@ -91,7 +91,6 @@ object ServiceUtils {
   }
 
   def clearStaticArtifacts(): Unit = {
-    StoreInitRDD.tableToIdMap.clear()
     StoreCallbacksImpl.stores.clear()
   }
 }
