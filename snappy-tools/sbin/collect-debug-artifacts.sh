@@ -41,6 +41,9 @@ case $key in
   -v|--verbose)
   VERBOSE=1
   ;;
+  -d|--dump)
+  DUMP_STACK=1
+  ;;
 esac
 shift # past argument or value
 done
@@ -84,6 +87,8 @@ function check_configs {
   fi
 }
 
+collector_host=`hostname`
+
 function collect_data {
   host=$1
   wd=$2
@@ -96,7 +101,6 @@ function collect_data {
   # make a sub directory for this host and pid
   out_dir="${PWD}/debug_data/${host}-${srv_num}"
 
-  collector_host="pnq-kneeraj3"
   mkdir -p $out_dir 
   if [ "${VERBOSE}" = "1" ]; then
     echo "Args Being passed"
@@ -106,6 +110,11 @@ function collect_data {
     echo "arg4 GET_EVERYTHING = ${GET_EVERYTHING}" 
     echo "arg5 collector_host = ${collector_host}" 
     echo "arg6 out dir = ${out_dir}"
+  fi
+
+  if [ "${DUMP_STACK}" != "1" ]; then
+    NO_OF_STACK_DUMPS=0
+    INTERVAL_BETWEEN_DUMPS=0
   fi
 
   typeset -f | ssh $host "$(cat);collect_on_remote ${wd} ${NO_OF_STACK_DUMPS} \\
@@ -128,10 +137,26 @@ function collect_on_remote {
   fi
 
   cd $data_dir
+
+  logs_sorted_reverse=`ls *.log | sed 's/\([0-9]\)/;\1/' | sort -r -n -t\; -k2,2 | tr -d ';'`
+
+  arr=($logs_sorted_reverse)
+  latest_log=${arr[-1]}
+  unset arr[${#arr[@]}-1]
+
+  all_logs=()
+  all_logs+=($latest_log)
+  all_logs+=("${arr[@]}")
+
   files=()
   last_restart_log=""
-  for l in $( ls -t *.log )
+  for l in "${all_logs[@]}"
   do
+    # If last log is got, get the one before that as well
+    if [ ! -z "$last_restart_log" ]; then
+      files+=($l)
+      break
+    fi
     copyright_headers=`grep 'Copyright (C)' ${l}`
     if [ ! -z "$copyright_headers" ]; then
       # also check for the pid line and get the pid
@@ -141,7 +166,6 @@ function collect_on_remote {
       fi
       files+=($l)
       last_restart_log=$l
-      break
     fi
   done
 
