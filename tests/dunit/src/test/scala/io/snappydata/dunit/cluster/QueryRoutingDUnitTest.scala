@@ -7,6 +7,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
 
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
@@ -337,12 +338,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, ColumnFormatRelation.INTERNAL_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, JDBCAppendableRelation.INTERNAL_SCHEMA_NAME, null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"${t + ColumnFormatRelation.SHADOW_TABLE_SUFFIX}".
+      if (s"${t + JDBCAppendableRelation.SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))
