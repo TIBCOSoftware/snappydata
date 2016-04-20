@@ -23,10 +23,10 @@
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
-MEMBERS_INFO_FILE=members_info
+MEMBERS_FILE=members.txt
 
-rm -rf $MEMBERS_INFO_FILE 2> /dev/null
-touch $MEMBERS_INFO_FILE
+rm -rf $MEMBERS_FILE 2> /dev/null
+touch $MEMBERS_FILE
 
 # Load the Spark configuration
 . "$sbin/spark-config.sh"

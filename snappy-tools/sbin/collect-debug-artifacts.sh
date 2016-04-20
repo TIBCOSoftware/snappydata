@@ -19,50 +19,54 @@
 
 #!/usr/bin/env bash
 
-usage="Usage: collect-debug-artifacts [ -c|--conf|--config conffile ] [ -h|--help ] \
-       [ -a|--all ] [ -v|--verbose ]"
+usage="Usage: collect-debug-artifacts \
+        [ -c confifile|--conf=conffile|--config=conffile ] [ -h|--help ] \
+        [ -a|--all ] [ -v|--verbose ]"
 
-PWD=`pwd`
+SCRIPT_DIR="`dirname "$0"`"
+SCRIPT_DIR="`cd "$SCRIPT_DIR" && pwd`"
+
 while [ "$1" != "" ]; do
-key="$1"
+  option="$1"
 
-case $key in
-  -c|--conf|--config)
-  CONF_FILE="$2"
-  shift # past argument
-  ;;
-  -h|--help)
-  echo $usage
-  exit 0
-  ;;
-  -a|--all)
-  GET_EVERYTHING=1
-  ;;
-  -v|--verbose)
-  VERBOSE=1
-  ;;
-  -d|--dump)
-  DUMP_STACK=1
-  ;;
-esac
-shift # past argument or value
+  case "$option" in
+    -c)
+      CONF_FILE="$2"
+      shift ;;
+    --conf=*|--config=*)
+      CONF_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+    -h|--help)
+    echo $usage
+    exit 0
+    ;;
+    -a|--all)
+    GET_EVERYTHING=1
+    ;;
+    -v|--verbose)
+    VERBOSE=1
+    ;;
+    -d|--dump)
+    DUMP_STACK=1
+    ;;
+  esac
+  shift # past argument or value
 done
 
 # Check configurations and assign defaults
 function check_configs {
   if [ -z "${CONF_FILE}" ]; then
-    CONF_FILE="../conf/debug.conf.template"
+    CONF_FILE="${SCRIPT_DIR}/../conf/debug.conf.template"
   fi
 
   if [ ! -f "${CONF_FILE}" ]; then
-    echo "Config file ${CONF_FILE} does not exists"
+    echo "Config file ${CONF_FILE} does not exist"
     exit 1
   fi
 
   source $CONF_FILE
 
-  if [ ! -f "${MEMBERS_INFO_FILE}" ]; then
-    echo "MEMBERS_INFO_FILE file ${MEMBERS_INFO_FILE} does not exists"
+  if [ ! -f "${MEMBERS_FILE}" ]; then
+    echo "members file ${MEMBERS_FILE} does not exist"
     exit 1
   fi
 
@@ -80,7 +84,7 @@ function check_configs {
 
   if [ "${VERBOSE}" = "1" ]; then
     echo CONF=$CONF_FILE
-    echo MEMINFO=$MEMBERS_INFO_FILE
+    echo MEMINFO=$MEMBERS_FILE
     echo NUM_STACK_DUMPS=$NO_OF_STACK_DUMPS
     echo INTERVAL_BETWEEN_DUMPS=$INTERVAL_BETWEEN_DUMPS
     echo GET_EVERYTHING=${GET_EVERYTHING}
@@ -90,16 +94,17 @@ function check_configs {
 collector_host=`hostname`
 
 function collect_data {
-  host=$1
-  wd=$2
-  srv_num=$3
+  host="$1"
+  wd="$2"
+  srv_num="$3"
+  top_level_out_dir="$4"
 
   if [ "${VERBOSE}" = "1" ]; then
     echo "Collecting data for process running on ${host} with working_dir ${wd}"
   fi
 
   # make a sub directory for this host and pid
-  out_dir="${PWD}/debug_data/${host}-${srv_num}"
+  out_dir="${top_level_out_dir}/${host}-${srv_num}"
 
   mkdir -p $out_dir 
   if [ "${VERBOSE}" = "1" ]; then
@@ -122,21 +127,21 @@ function collect_data {
 }
 
 function collect_on_remote {
-  data_dir=$1
-  num_stack_dumps=$2
-  int_stack_dumps=$3
-  get_all=$4
-  collector_host=$5
-  collector_dir=$6
-  verbose=$7
+  data_dir="$1"
+  num_stack_dumps="$2"
+  int_stack_dumps="$3"
+  get_all="$4"
+  collector_host="$5"
+  collector_dir="$6"
+  verbose="$7"
 
   # first get the pid. The latest log file with the header will have the pid
   host=`hostname`
-  if [ ! -d $data_dir ]; then
+  if [ ! -d "$data_dir" ]; then
     echo "${data_dir} not found on host: ${host}"
   fi
 
-  cd $data_dir
+  cd "$data_dir"
 
   logs_sorted_reverse=`ls *.log | sed 's/\([0-9]\)/;\1/' | sort -r -n -t\; -k2,2 | tr -d ';'`
 
@@ -162,10 +167,10 @@ function collect_on_remote {
       # also check for the pid line and get the pid
       proc_id=`sed -n 's/.*Process ID: \([0-9]\+\)$/\1/p' ${l}`
       if [ "${verbose}" = "1" ]; then
-        echo "Addiing file ${l} to the array"
+        echo "Adding file ${l} to the array"
       fi
       files+=($l)
-      last_restart_log=$l
+      last_restart_log="$l"
     fi
   done
 
@@ -184,11 +189,9 @@ function collect_on_remote {
   done
 
   if [ "${get_all}" = "1" ]; then
-    if [ "${verbose}" = "1" ]; then
-      rsync -avrz $data_dir "${collector_host}:${collector_dir}/"
-    else
-      rsync -avrzq $data_dir "${collector_host}:${collector_dir}/"
-    fi
+    tar cvzf "${data_dir}.tar.gz" "$data_dir" && \
+    rsync -av "${data_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
+    rm -f "${data_dir}.tar.gz"
   else
     # get the latest log and the latest with the copyright headers
     for l in $( ls -t *.log )
@@ -202,7 +205,7 @@ function collect_on_remote {
     for l in $( ls -t *.gfs 2> /dev/null )
     do
       if [ "${verbose}" = "1" ]; then
-        echo "Addiing file ${l} to the array"
+        echo "Adding file ${l} to the array"
       fi
       files+=($l)
     done
@@ -210,11 +213,9 @@ function collect_on_remote {
   if [ "${verbose}" = "1" ]; then
     echo "FILES=${files[@]} will be rsynced to ${collector_host}:$collector_dir}"
   fi
-  if [ "${verbose}" = "1" ]; then
-    rsync -avz ${files[@]} "${collector_host}:${collector_dir}"
-  else
-    rsync -avzq ${files[@]} "${collector_host}:${collector_dir}"
-  fi
+  tar cvzf "${data_dir}.tar.gz" "$data_dir" && \
+  rsync -av "${data_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
+  rm -f "${data_dir}.tar.gz"
 }
 
 check_configs
@@ -223,8 +224,10 @@ check_configs
 
 all_pids=()
 # Make output directory
-rm -rf debug_data 2> /dev/null
-mkdir debug_data
+TS=`date +%F-%R-%s`
+OUT_DIR="${SCRIPT_DIR}/debug_data-/${TS}"
+
+mkdir "$OUT_DIR"
 
 serv_num=1
 while  read -r line || [[ -n "$line" ]]; do
@@ -237,10 +240,10 @@ while  read -r line || [[ -n "$line" ]]; do
     echo "host: $host pid: $pid and cwd: $cwd"
   fi
 
-  collect_data $host $cwd $serv_num &
+  collect_data $host $cwd $serv_num $OUT_DIR &
   serv_num=`expr $serv_num + 1`
   all_pids+=($!)
-done < $MEMBERS_INFO_FILE
+done < $MEMBERS_FILE
 
 for p in "${all_pids[@]}"
 do
@@ -251,4 +254,4 @@ do
 done
 
 # make zipped tar ball
-tar -zcf debug_data.tar.gz debug_data
+#tar -zcf debug_data.tar.gz debug_data
