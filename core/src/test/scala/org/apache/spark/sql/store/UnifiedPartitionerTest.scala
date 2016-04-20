@@ -15,7 +15,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.ColumnName
-import org.apache.spark.sql.catalyst.expressions.GenericMutableRow
+import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericMutableRow}
 import org.apache.spark.sql.execution.QueryExecution
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -64,63 +64,68 @@ with BeforeAndAfterAll {
     val rpr: GfxdPartitionByExpressionResolver = pr.asInstanceOf[GfxdPartitionByExpressionResolver]
     assert(rpr != null)
 
+    def createRow(values: Any*): GenericInternalRow = new GenericInternalRow(values.toArray)
+
     // Check All Datatypes
-    val row = new GenericMutableRow(1)
+    var row = createRow(200)
     var dvd: DataValueDescriptor = new SQLInteger(200)
-    row.update(0, 200)
 
 
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
-    row.update(0, new BigInteger("200000"))
+    row = createRow(new BigInteger("200000"))
     dvd = new SQLInteger(200000)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
-    row.update(0, true)
+    row = createRow(true)
     dvd = new SQLBoolean(true)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
-    row.update(0, new java.sql.Date(1, 1, 2011))
+    row = createRow(new java.sql.Date(1, 1, 2011))
+    dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
+    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+
+    row = createRow(new java.util.Date(1, 1, 2011))
     dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
     val ipaddr: Array[Byte] = Array(192.toByte, 168.toByte, 1.toByte, 9.toByte)
-    row.update(0, ipaddr)
+    row = createRow(ipaddr)
     dvd = new SQLBit(ipaddr)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLReal(10.5F)
-    row.update(0, 10.5F)
+    row = createRow(10.5F)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLLongint(479L)
-    row.update(0, 479L)
+    row = createRow(479L)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLVarchar("xxxx");
-    row.update(0, UTF8String.fromString("xxxx")) // As catalyst converts String to UtfString
+    row = createRow(UTF8String.fromString("xxxx")) // As catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLClob("xxxxx")
-    row.update(0, UTF8String.fromString("xxxxx")) // As catalyst converts String to UtfString
+    row = createRow(UTF8String.fromString("xxxxx")) // As catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLTimestamp(new java.sql.Timestamp(System.currentTimeMillis()))
-    row.update(0, new java.sql.Timestamp(System.currentTimeMillis()))
+    row = createRow(new java.sql.Timestamp(System.currentTimeMillis()))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLSmallint(5)
-    row.update(0, 5)
+    row = createRow( 5)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLTinyint(2)
-    row.update(0, 2)
+    row = createRow(2)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
     dvd = new SQLDecimal(new BigDecimal(32000.05f))
-    row.update(0, new BigDecimal(32000.05f))
+    row = createRow(new BigDecimal(32000.05f))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
