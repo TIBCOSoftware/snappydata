@@ -30,6 +30,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -295,6 +296,29 @@ case class JDBCAppendableRelation(
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     throw new UnsupportedOperationException("Indexes are not supported")
+  }
+
+  private[sql] def externalColumnTableName: String = JDBCAppendableRelation.
+      cachedBatchTableName(table)
+}
+
+object JDBCAppendableRelation extends Logging {
+  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+
+  private[sql] final def cachedBatchTableName(table: String): String = {
+    val tableName = if (table.indexOf('.') > 0) {
+      table.replace(".", "__")
+    } else {
+      table
+    }
+
+    INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
+  }
+
+  private def removePool(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    Iterator.empty
   }
 }
 

@@ -9,6 +9,7 @@ import io.snappydata.Constant
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableCallable
 
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
