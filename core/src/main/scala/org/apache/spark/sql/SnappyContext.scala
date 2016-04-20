@@ -201,15 +201,16 @@ class SnappyContext protected[spark](
    * Empties the contents of the table without deleting the catalog entry.
    * @param tableIdent qualified name of table to be truncated
    */
-  private[sql] def truncateTable(tableIdent: QualifiedTableName): Unit = {
+  private[sql] def truncateTable(tableIdent: QualifiedTableName,
+      ignoreIfUnsupported: Boolean = false): Unit = {
     val plan = catalog.lookupRelation(tableIdent)
+    cacheManager.tryUncacheQuery(DataFrame(self, plan))
     plan match {
       case LogicalRelation(br, _) =>
-        cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ =>
+      case _ => if (!ignoreIfUnsupported)
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
     }
   }
@@ -770,18 +771,18 @@ object GlobalSnappyInit {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        SnappyDaemons.start(sc)
+       // SnappyDaemons.start(sc)
       case SnappyShellMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyDaemons.start(sc)
+      //  SnappyDaemons.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyDaemons.start(sc)
+       // SnappyDaemons.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        SnappyDaemons.start(sc)
+       // SnappyDaemons.start(sc)
       case _ => // ignore
     }
   }
