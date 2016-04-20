@@ -172,9 +172,9 @@ class RowFormatRelation(
 
   }
   override protected def constructSQL(indexName: String,
-                         baseTable: String,
-                         indexColumns: Map[String, Option[SortDirection]],
-                         options: Map[String, String]): String = {
+      baseTable: String,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): String = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val columns = indexColumns.tail.foldLeft[String](

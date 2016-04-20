@@ -191,9 +191,9 @@ trait IndexableRelation {
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
     */
   def createIndex(indexIdent: QualifiedTableName,
-                  tableIdent: QualifiedTableName,
-                  indexColumns: Map[String, Option[SortDirection]],
-                  options: Map[String, String]): Unit
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit
 
   /**
     * Drops an index on this table

@@ -282,17 +282,17 @@ class JDBCMutableRelation(
   }
 
   protected def constructSQL(indexName: String,
-                baseTable: String,
-                indexColumns: Map[String, Option[SortDirection]],
-                options: Map[String, String]): String = {
+      baseTable: String,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): String = {
 
     ""
   }
 
   override def createIndex(indexIdent: QualifiedTableName,
-               tableIdent: QualifiedTableName,
-               indexColumns: Map[String, Option[SortDirection]],
-               options: Map[String, String]): Unit = {
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {
       val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString, conn,
@@ -321,8 +321,8 @@ class JDBCMutableRelation(
   }
 
   override def dropIndex(indexIdent: QualifiedTableName,
-               tableIdent: QualifiedTableName,
-               ifExists: Boolean): Unit = {
+      tableIdent: QualifiedTableName,
+      ifExists: Boolean): Unit = {
     throw new UnsupportedOperationException()
   }
 }

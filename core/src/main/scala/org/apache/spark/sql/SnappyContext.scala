@@ -559,9 +559,9 @@ class SnappyContext protected[spark](
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
     */
   def createIndex(indexName: String,
-                  baseTable: String,
-                  indexColumns: java.util.Map[String, Option[SortDirection]],
-                  options: java.util.Map[String, String]): Unit = {
+      baseTable: String,
+      indexColumns: java.util.Map[String, Option[SortDirection]],
+      options: java.util.Map[String, String]): Unit = {
     createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
   }
 
@@ -611,7 +611,7 @@ class SnappyContext protected[spark](
   }
 
   private def constructDropSQL(indexName: String,
-              ifExists : Boolean): String = {
+      ifExists : Boolean): String = {
 
     val ifExistsClause = if (ifExists) "IF EXISTS" else ""
 

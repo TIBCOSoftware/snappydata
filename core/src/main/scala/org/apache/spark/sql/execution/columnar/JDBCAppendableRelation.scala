@@ -285,15 +285,15 @@ case class JDBCAppendableRelation(
   }
 
   override def createIndex(indexIdent: QualifiedTableName,
-               tableIdent: QualifiedTableName,
-               indexColumns: Map[String, Option[SortDirection]],
-               options: Map[String, String]): Unit = {
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
     throw new UnsupportedOperationException("Indexes are not supported")
   }
 
   override def dropIndex(indexIdent: QualifiedTableName,
-                tableIdent: QualifiedTableName,
-                ifExists: Boolean): Unit = {
+      tableIdent: QualifiedTableName,
+      ifExists: Boolean): Unit = {
     throw new UnsupportedOperationException("Indexes are not supported")
   }
 }

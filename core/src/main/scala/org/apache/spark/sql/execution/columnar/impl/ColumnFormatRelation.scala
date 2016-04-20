@@ -435,16 +435,16 @@ class ColumnFormatRelation(
   with ParentRelation {
 
   override def addDependent(dependent: DependentRelation,
-               catalog: SnappyStoreHiveCatalog): Boolean =
+      catalog: SnappyStoreHiveCatalog): Boolean =
     DependencyCatalog.addDependent(table, dependent.name)
 
   override def removeDependent(dependent: DependentRelation,
-               catalog: SnappyStoreHiveCatalog): Boolean =
+      catalog: SnappyStoreHiveCatalog): Boolean =
     DependencyCatalog.removeDependent(table, dependent.name)
 
   override def dropIndex(indexIdent: QualifiedTableName,
-               tableIdent: QualifiedTableName,
-               ifExists: Boolean): Unit = {
+      tableIdent: QualifiedTableName,
+      ifExists: Boolean): Unit = {
     val snc = _context.asInstanceOf[SnappyContext]
     snc.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
     // Remove the actual index
@@ -452,7 +452,7 @@ class ColumnFormatRelation(
   }
 
   override def getDependents(
-               catalog: SnappyStoreHiveCatalog): Seq[String] =
+      catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(table)
 
   /**
@@ -462,10 +462,10 @@ class ColumnFormatRelation(
     * indicate that this is an index table.
     */
   private def createIndexTable(indexIdent: QualifiedTableName,
-              tableIdent: QualifiedTableName,
-              tableRelation: JDBCAppendableRelation,
-              indexColumns: Map[String, Option[SortDirection]],
-              options: Map[String, String]): Unit = {
+      tableIdent: QualifiedTableName,
+      tableRelation: JDBCAppendableRelation,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
 
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
@@ -493,9 +493,9 @@ class ColumnFormatRelation(
   }
 
   override def createIndex(indexIdent: QualifiedTableName,
-               tableIdent: QualifiedTableName,
-               indexColumns: Map[String, Option[SortDirection]],
-               options: Map[String, String]): Unit = {
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
 
     val snc = sqlContext.asInstanceOf[SnappyContext]
     createIndexTable(indexIdent, tableIdent, this, indexColumns, options)
@@ -507,9 +507,14 @@ class ColumnFormatRelation(
     // b. The bigger issue is that the createIndex needs an indexTable for creating this
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
-    snc.catalog.alterTableToAddIndexProp(
-      tableIdent, snc.getIndexTable(indexIdent))
-
+    try {
+      snc.catalog.alterTableToAddIndexProp(
+        tableIdent, snc.getIndexTable(indexIdent))
+    } catch {
+      case e =>
+        snc.dropTable(indexIdent, ifExists = false)
+        throw e
+    }
   }
 }
 /**
