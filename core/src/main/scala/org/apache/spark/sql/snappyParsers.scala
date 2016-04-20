@@ -970,9 +970,9 @@ private[sql] case class TruncateTable(
 }
 
 private[sql] case class CreateIndex(indexName: String,
-                                    baseTable: QualifiedTableName,
-                                    indexColumns: Map[String, Option[SortDirection]],
-                                    options: Map[String, String]) extends RunnableCommand {
+    baseTable: QualifiedTableName,
+    indexColumns: Map[String, Option[SortDirection]],
+    options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
@@ -983,8 +983,8 @@ private[sql] case class CreateIndex(indexName: String,
 }
 
 private[sql] case class DropIndex(
-                                   indexName: String,
-                                   ifExists : Boolean) extends RunnableCommand {
+    indexName: String,
+    ifExists : Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
