@@ -5,9 +5,11 @@ import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
 import io.snappydata.dunit.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableCallable
 
+import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
@@ -158,8 +160,8 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val p = Map.empty[String, String]
     snc.createTable(tableName, "column", dataDF.schema, p)
 
-    val tName = s"${ColumnFormatRelation.INTERNAL_SCHEMA_NAME}.${
-      tableName.toUpperCase}${ColumnFormatRelation.SHADOW_TABLE_SUFFIX}"
+    val tName = s"${Constant.INTERNAL_SCHEMA_NAME}.${
+      tableName.toUpperCase}${Constant.SHADOW_TABLE_SUFFIX}"
     // we don't expect any increase in put distribution stats
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {

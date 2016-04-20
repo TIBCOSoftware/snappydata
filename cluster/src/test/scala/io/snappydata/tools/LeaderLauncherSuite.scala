@@ -32,11 +32,12 @@ import org.apache.spark.{SparkConf, SparkContext}
 class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
   private val availablePort = AvailablePort.getRandomAvailablePort(AvailablePort.JGROUPS)
-
+  private  var locatorDirPath = ""
   override def beforeAll(): Unit = {
     val f = new java.io.File("tests-snappy-loc-dir")
     f.mkdir()
-    dirList += f.getAbsolutePath
+    locatorDirPath = f.getAbsolutePath
+    dirList += locatorDirPath
 
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = true
     GfxdDistributionLocator.main(Array(
@@ -50,7 +51,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
   override def afterAll(): Unit = {
     GfxdDistributionLocator.main(Array(
       "stop",
-      "-dir=tests-snappy-loc-dir"
+      "-dir=" +locatorDirPath
     ))
     CacheServerLauncher.DONT_EXIT_AFTER_LAUNCH = false
     dirCleanup()

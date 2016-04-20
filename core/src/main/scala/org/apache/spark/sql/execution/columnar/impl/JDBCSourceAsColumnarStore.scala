@@ -28,10 +28,13 @@ import io.snappydata.impl.SparkShellRDDHelper
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.collection._
-import org.apache.spark.sql.execution.columnar.{CachedBatch, CachedBatchIteratorOnRS, ConnectionType, ExternalStore, ExternalStoreUtils, JDBCSourceAsStore}
+import org.apache.spark.sql.execution.columnar.{CachedBatchIteratorOnRS, ExternalStore, JDBCSourceAsStore}
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
-import org.apache.spark.sql.sources.{ConnectionProperties, Filter}
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.sources.{ConnectionProperties}
+
+import org.apache.spark.sql.execution.columnar.{CachedBatch, ConnectionType, ExternalStoreUtils}
+import org.apache.spark.sql.sources.Filter
+import org.apache.spark.sql.store.{StoreUtils}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}

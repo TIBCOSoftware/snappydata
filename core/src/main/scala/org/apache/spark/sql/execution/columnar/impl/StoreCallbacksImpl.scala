@@ -29,30 +29,30 @@ import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemF
 import com.pivotal.gemfirexd.internal.iapi.sql.conn.LanguageConnectionContext
 import com.pivotal.gemfirexd.internal.iapi.store.access.{ScanController, TransactionController}
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
+import io.snappydata.Constant
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
+import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, CachedBatchCreator, ExternalStore}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.types._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   @transient private var sqlContext = None: Option[SQLContext]
-  val stores = new TrieMap[String, (StructType, ExternalStore, Int)]
-
+  val stores = new TrieMap[String, (StructType, ExternalStore)]
   var useCompression = false
   var cachedBatchSize = 0
 
   def registerExternalStoreAndSchema(context: SQLContext, tableName: String,
-      schema: StructType, externalStore: ExternalStore, batchSize: Int,
-      compress: Boolean, rddId: Int): Unit = {
+      schema: StructType, externalStore: ExternalStore,
+      batchSize: Int, compress: Boolean): Unit = {
     stores.synchronized {
       stores.get(tableName) match {
-        case None => stores.put(tableName, (schema, externalStore, rddId))
-        case Some((previousSchema, _, _)) =>
+        case None => stores.put(tableName, (schema, externalStore))
+        case Some((previousSchema, _)) =>
           if (previousSchema != schema) {
-            stores.put(tableName, (schema, externalStore, rddId))
+            stores.put(tableName, (schema, externalStore))
           }
       }
     }
@@ -63,12 +63,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
       bucketID: Int): java.util.Set[Any] = {
-
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getTableName)
     if (store.isDefined) {
-      val (schema, externalStore, _) = store.get
+      val (schema, externalStore) = store.get
       // LCC should be available assuming insert is already being done
       // via a proper connection
       var conn: EmbedConnection = null
@@ -122,7 +121,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   def getInternalTableSchemas: java.util.List[String] = {
     val schemas = new java.util.ArrayList[String](2)
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
-    schemas.add(ColumnFormatRelation.INTERNAL_SCHEMA_NAME)
+    schemas.add(Constant.INTERNAL_SCHEMA_NAME)
     schemas
   }
 }
