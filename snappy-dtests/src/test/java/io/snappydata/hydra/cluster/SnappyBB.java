@@ -2,6 +2,9 @@ package io.snappydata.hydra.cluster;
 
 import hydra.blackboard.Blackboard;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by swati on 22/3/16.
  */
@@ -47,5 +50,6 @@ public class SnappyBB extends Blackboard {
     public static int serversStarted;
     public static int locatorsStarted;
     public static int leadsStarted;
+    public static int doneExecution;
     public static int stopStartVms;
 }

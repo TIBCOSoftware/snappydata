@@ -3,7 +3,6 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
-import com.gemstone.gemfire.cache.query.facets.lang.Course;
 import hydra.*;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -14,7 +13,6 @@ import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.catalyst.expressions.GenericRow;
 import org.junit.Assert;
 
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
@@ -57,12 +55,14 @@ public class SnappyTest implements Serializable {
     private static Set<String> serversFileContent = new LinkedHashSet<String>();
     private static Set<String> locatorsFileContent = new LinkedHashSet<String>();
     private static Set<String> leadsFileContent = new LinkedHashSet<String>();
+    private static Set<String> snappyJobLogFilesForTask = new LinkedHashSet<String>();
+    private static Set<String> snappyJobLogFilesForCloseTask = new LinkedHashSet<String>();
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
     private static String locatorsFilePath = null;
     private static String serversFilePath = null;
     private static String leadsFilePath = null;
     protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, true);
-    protected static boolean streamingJob = TestConfig.tab().booleanAt(SnappyPrms.streamingJob, false);
+    //    protected static boolean streamingJob = TestConfig.tab().booleanAt(SnappyPrms.streamingJob, false);
     private static String userAppJar = TestConfig.tab().stringAt(SnappyPrms.userAppJar, "gemfirexd-scala-tests-0.1.0-SNAPSHOT-tests.jar");
     private static String simulateStreamScriptName = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptName, "simulateFileStream");
     private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, "/home/swati");
@@ -70,8 +70,9 @@ public class SnappyTest implements Serializable {
     private static String leadHost = null;
     public static long lastCycledTime = 0;
     public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
-    public static Long waitTimeBeforeJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.snappyJobExecutionTimeInMillisForTask, 600000);
-    public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.snappyJobExecutionTimeInMillisForCloseTask, 600000);
+    public static Long waitTimeBeforeJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForTask, 600000);
+    public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 600000);
+    public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForCloseTask, 600000);
     public static final int THOUSAND = 1000;
     public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "store");
     private static Set active;
@@ -530,11 +531,16 @@ public class SnappyTest implements Serializable {
      */
 
     public static void HydraTask_executeSnappyJobInCloseTask() {
-        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNamesForCloseTask(), "snappyJobCloseTaskResult.log");
+        int currentThread = snappyTest.getMyTid();
+        String logFile = "snappyJobCloseTaskResult_thread_" + currentThread + ".log";
+        SnappyBB.getBB().getSharedMap().put("logFilesForCloseTask" + currentThread, logFile);
+        Log.getLogWriter().info("snappyJoblogFiles for closeTask in BlackBoard are::" + SnappyBB.getBB().getSharedMap().get("logFiles" + currentThread));
+        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNamesForCloseTask(), logFile);
         try {
             sleep(waitTimeBeforeJobStatusInCloseTask);
+            snappyTest.getSnappyJobOutputCollectively("logFilesForCloseTask", snappyJobLogFilesForCloseTask, "snappyJobCollectiveOutputForCloseTask.log");
         } catch (InterruptedException e) {
-            throw new TestException("Following error occurred while executing " + e.getMessage());
+            throw new TestException("Following error occurred while executing HydraTask_executeSnappyJobInCloseTask" + e.getMessage());
         }
     }
 
@@ -543,7 +549,17 @@ public class SnappyTest implements Serializable {
      */
 
     public static void HydraTask_executeSnappyJobInTask() {
-        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNamesForTask(), "snappyJobTaskResult.log");
+        int currentThread = snappyTest.getMyTid();
+        String logFile = "snappyJobTaskResult_thread_" + currentThread + ".log";
+        SnappyBB.getBB().getSharedMap().put("logFilesForTask" + currentThread, logFile);
+        Log.getLogWriter().info("snappyJoblogFiles for Task in BlackBoard are::" + SnappyBB.getBB().getSharedMap().get("logFiles" + currentThread));
+        snappyTest.executeSnappyJob(SnappyPrms.getSnappyJobClassNamesForTask(), logFile);
+        try {
+            sleep(waitTimeBeforeJobStatusInTask);
+            snappyTest.getSnappyJobOutputCollectively("logFilesForTask", snappyJobLogFilesForTask, "snappyJobCollectiveOutputForTask.log");
+        } catch (InterruptedException e) {
+            throw new TestException("Following error occurred while executing HydraTask_executeSnappyJobInTask" + e.getMessage());
+        }
     }
 
     /**
@@ -556,7 +572,7 @@ public class SnappyTest implements Serializable {
             public void run() {
                 try {
                     Log.getLogWriter().info("Entered for executeSnappyStreamingJob .....");
-                    snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyJobClassNamesForTask(), "snappyJobTaskResult.log");
+                    snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNamesForTask(), "snappyJobTaskResult.log");
                 } catch (Exception e) {
                     throw new TestException("Following error occurred while executing " + e.getMessage());
                 }
@@ -577,9 +593,9 @@ public class SnappyTest implements Serializable {
         es.submit(fileStreaming);
         es.submit(simulateFileStream);
         try {
-            Log.getLogWriter().info("Sleeping for " + waitTimeBeforeJobStatusInTask + "millis before executor service shut down");
-            Thread.sleep(waitTimeBeforeJobStatusInTask);
-            Log.getLogWriter().info("done Sleeping for " + waitTimeBeforeJobStatusInTask + "millis before executor service shut down");
+            Log.getLogWriter().info("Sleeping for " + waitTimeBeforeStreamingJobStatusInTask + "millis before executor service shut down");
+            Thread.sleep(waitTimeBeforeStreamingJobStatusInTask);
+            Log.getLogWriter().info("done Sleeping for " + waitTimeBeforeStreamingJobStatusInTask + "millis before executor service shut down");
             es.shutdown();
             es.awaitTermination(60, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
@@ -624,16 +640,76 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 Log.getLogWriter().info("SS - Snappy job class name is :: " + userJob);
                 Log.getLogWriter().info("Executing Snappy Job script... ");
-                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":8090", "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar));
+                String APP_PROPS = "\"logFileName=" + logFileName + "\"";
+                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
+                Log.getLogWriter().info("Command1 is ::" + curlCommand1);
+                String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
+                Log.getLogWriter().info("Command2 is ::" + curlCommand2);
+                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
+                snappyTest.executeProcess(pb, logFile);
+                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand2);
                 snappyTest.executeProcess(pb, logFile);
             }
 //            sleep(waitTimeBeforeJobStatus);
             snappyTest.getSnappyJobsStatus(snappyJobScript, logFile);
         } catch (Exception e1) {
+            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("Following error occurred while executing " + e1.getMessage());
+        }
+    }
+
+    public static void HydraTask_getSnappyJobOutputCollectively() {
+        snappyTest.getSnappyJobOutputCollectively("logFilesForCloseTask", snappyJobLogFilesForCloseTask, "snappyJobCollectiveOutputForCloseTask.log");
+    }
+
+    protected void getSnappyJobOutputCollectively(String logFilekey, Set<String> snappyJobLogFiles, String fileName) {
+        int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.doneExecution);
+        if (num == 1) {
+            try {
+                Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+                for (String key : keys) {
+                    if (key.startsWith(logFilekey)) {
+                        String logFilename = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
+                        Log.getLogWriter().info("Key Found...." + logFilename);
+                        snappyJobLogFiles.add(logFilename);
+                    }
+                }
+                Log.getLogWriter().info("snappyJobLogFiles size is :" + snappyJobLogFiles.size());
+                Log.getLogWriter().info("snappyJobLogFiles are :" + snappyJobLogFiles.toString());
+                File dir = new File(".");
+                String dest = dir.getCanonicalPath() + File.separator + fileName;
+                FileWriter fstream = new FileWriter(dest, true);
+                BufferedWriter bw = new BufferedWriter(fstream);
+                Iterator<String> itr = snappyJobLogFiles.iterator();
+                while (itr.hasNext()) {
+                    Log.getLogWriter().info("SS - Inside loop in stdin for getting snappyJob Log files and collecting the output in a single file");
+                    String userScript = itr.next();
+                    Log.getLogWriter().info("SS - user job outfile is :: " + userScript);
+                    String threadID = userScript.substring(userScript.lastIndexOf("_"), userScript.indexOf("."));
+                    Log.getLogWriter().info("Thread ID is ::" + threadID);
+                    String threadInfo = "Thread" + threadID + " output:";
+                    bw.write(threadInfo);
+                    Log.getLogWriter().info("SS - Thread Info added successfully");
+                    bw.newLine();
+                    String fileInput = snappyTest.getLogDir() + File.separator + userScript;
+                    Log.getLogWriter().info("snappyJob Log file location for thread_" + threadID + "is::" + fileInput);
+                    File fin = new File(fileInput);
+                    FileInputStream fis = new FileInputStream(fin);
+                    BufferedReader in = new BufferedReader(new InputStreamReader(fis));
+                    String line = null;
+                    while ((line = in.readLine()) != null) {
+                        bw.write(line);
+                        bw.newLine();
+                    }
+                    in.close();
+                }
+                bw.close();
+            } catch (IOException e) {
+                throw new TestException("Following error occurred while executing " + e.getMessage());
+            }
         }
     }
 
