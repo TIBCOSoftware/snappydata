@@ -805,6 +805,6 @@ gradle.taskGraph.whenReady({ graph ->
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports//, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }
