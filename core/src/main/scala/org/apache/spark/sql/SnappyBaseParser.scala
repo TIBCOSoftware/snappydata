@@ -247,7 +247,7 @@ object SnappyParserConsts {
 
   final val keywords: mutable.Set[String] = mutable.Set[String]()
 
-  private def keyword(s: String): Keyword = {
+  private[sql] def keyword(s: String): Keyword = {
     val k = new Keyword(s)
     keywords += k.upper
     k

@@ -20,6 +20,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.DDLParser
@@ -32,6 +33,8 @@ trait SnappyContextFunctions {
 
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution
+
+  def getAQPRuleExecutor(context: SQLContext): RuleExecutor[SparkPlan]
 
   def createTopK(context: SnappyContext, topKName: String,
       keyColumnName: String, inputDataSchema: StructType,

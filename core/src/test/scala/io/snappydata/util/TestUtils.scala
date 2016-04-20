@@ -35,6 +35,11 @@ object TestUtils {
         // drop all the stream tables that can have dependents at the end
         // also drop parents in colocated chain last (assuming chain length = 1)
         val streams = snc.catalog.getDataSourceTables(Seq(ExternalTableType.Stream))
+        val samples = snc.catalog.getDataSourceTables(Seq(ExternalTableType.Sample))
+        // Sample tables need to be dropped first as they depend on Base tables for datasource resolution
+        // Temp fix. We need to add parent child relationship between them
+        samples.foreach(s => snc.dropTable(s.toString(), ifExists = true))
+
         val parents = mutable.HashSet[String]()
         val allTables = snc.catalog.getTables(None)
         val allRegions = mutable.HashSet[String]()
