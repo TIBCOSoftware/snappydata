@@ -438,7 +438,7 @@ class SnappyParser(caseSensitive: Boolean)
   }
 
   protected final def sortDirection: Rule1[SortDirection] = rule {
-    (ASC ~> (() => Ascending) | DESC ~> (() => Descending))
+    ASC ~> (() => Ascending) | DESC ~> (() => Descending)
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {

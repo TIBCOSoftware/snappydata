@@ -428,7 +428,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = {
     if (tempTables.contains(tableIdent)) {
-      context.truncateTable(tableIdent)
+      context.truncateTable(tableIdent, ignoreIfUnsupported = true)
       tempTables -= tableIdent
     }
   }
