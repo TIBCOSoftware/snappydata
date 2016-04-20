@@ -88,6 +88,8 @@ test.dependsOn ':cleanJUnit'
 check.dependsOn test, scalaTest
 
 shadowJar {
+  zip64 = true
+
   mergeServiceFiles()
   exclude 'log4j.properties'
 
