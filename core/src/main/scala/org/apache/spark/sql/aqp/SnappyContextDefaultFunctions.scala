@@ -20,6 +20,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
+import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DDLParser, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
@@ -31,7 +32,17 @@ import org.apache.spark.util.Utils
 
 object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
+
+  def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
+    new RuleExecutor[SparkPlan] {
+      val batches = Seq(
+        Batch("Add exchange", Once, EnsureRequirements(sqlContext)),
+        Batch("Add row converters", Once, EnsureRowFormats)
+      )
+    }
+
   override def registerAQPErrorFunctions(context: SnappyContext){}
+
 
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution =

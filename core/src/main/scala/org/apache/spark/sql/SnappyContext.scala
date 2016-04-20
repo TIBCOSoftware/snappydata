@@ -31,14 +31,17 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
-import org.apache.spark.sql.catalyst.ParserDialect
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubQueries}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
-import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.plans.logical.{Project, Union}
+import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.rules.{RuleExecutor, Rule}
+import org.apache.spark.sql.catalyst.{ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils}
+import org.apache.spark.sql.execution.{SparkPlan}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool}
@@ -101,6 +104,11 @@ class SnappyContext protected[spark](
   GemFireXDDialect.init()
   GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
+
+
+
+
+  override val prepareForExecution: RuleExecutor[SparkPlan] = snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
