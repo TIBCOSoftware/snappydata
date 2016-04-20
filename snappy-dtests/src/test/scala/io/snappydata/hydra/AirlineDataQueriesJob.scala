@@ -28,8 +28,7 @@ object AirlineDataQueriesJob extends SnappySQLJob {
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     // scalastyle:off println
-    //    val pw = new PrintWriter("AirlineDataJob.out")
-    val pw = new PrintWriter(new FileOutputStream(new File("AirlineDataQueriesJob.out"), true));
+    val pw = new PrintWriter(new FileOutputStream(new File(jobConfig.getString("logFileName")), true));
     Try {
       snc.sql("set spark.sql.shuffle.partitions=6")
       // Get the already created tables
@@ -105,28 +104,28 @@ object AirlineDataQueriesJob extends SnappySQLJob {
       val result5 = Query4Result.collect()
       totalTimeQuery5 += (System.currentTimeMillis - startTimeQuery5)
       query5ExecutionCount += 1
-
       //      startTime = System.currentTimeMillis
-      pw.println(s"\n****** startTime is " + startTime + "ms And endTime is " + EndTime + "****")
+//      pw.println(s"\n****** startTime is " + startTime + " ms And endTime is " + EndTime + " ms****")
+//      pw.flush()
     }
     pw.println(s"\n****** countQueryWithGroupByOrderBy Execution " +
-      s"took ${totalTimeQuery1}ms******")
+      s"took ${totalTimeQuery1} ms******")
     pw.println(s"\n****** countQueryWithGroupByOrderBy Execution " +
       s"count is :: ${query1ExecutionCount} ******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForScheduleQuery Execution " +
-      s"took ${totalTimeQuery2}ms******")
+      s"took ${totalTimeQuery2} ms******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForScheduleQuery Execution " +
       s"count is :: ${query2ExecutionCount} ******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByWithJoinForScheduleQuery Execution " +
-      s"took ${totalTimeQuery3}ms******")
+      s"took ${totalTimeQuery3} ms******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByWithJoinForScheduleQuery Execution " +
       s"count is :: ${query3ExecutionCount} ******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForTrendAnalysisQuery Execution " +
-      s"took ${totalTimeQuery4}ms******")
+      s"took ${totalTimeQuery4} ms******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForTrendAnalysisQuery Execution " +
       s"count is :: ${query4ExecutionCount} ******")
     pw.println(s"\n****** sumWeatherDelayWithGroupByWithLimitQuery Execution " +
-      s"took ${totalTimeQuery5}ms******")
+      s"took ${totalTimeQuery5} ms******")
     pw.println(s"\n****** sumWeatherDelayWithGroupByWithLimitQuery Execution " +
       s"count is :: ${query5ExecutionCount} ******")
   }
