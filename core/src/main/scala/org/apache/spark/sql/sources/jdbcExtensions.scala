@@ -46,7 +46,7 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
    * @param md The metadata
    * @return The new JdbcType if there is an override for this DataType
    */
-  override def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType] =
+  def getJDBCType(dataType: DataType, md: Metadata): Option[JdbcType] =
     getJDBCType(dataType)
 
   /** Create a new schema. */
