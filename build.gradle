@@ -512,6 +512,10 @@ task product {
         into "${snappyProductDir}/python"
       }
       copy {
+        from "${rootDir}/python" 
+        into "${snappyProductDir}/python"
+      }
+      copy {
         from "${project(':snappy-spark').projectDir}/data"
         into "${snappyProductDir}/data"
       }

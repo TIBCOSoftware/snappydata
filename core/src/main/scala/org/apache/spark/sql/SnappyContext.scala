@@ -27,12 +27,12 @@ import scala.util.{Failure, Success, Try}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{SnappyDaemons, Constant, Property}
 
-import org.apache.spark.annotation.DeveloperApi
+import org.apache.spark.annotation.{Experimental, DeveloperApi}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.analysis.{EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, GenericRow}
 import org.apache.spark.sql.catalyst.plans.logical.{Project, Union}
 import org.apache.spark.sql.catalyst.analysis.Analyzer
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
@@ -55,7 +55,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
-
+import scala.collection.JavaConverters._
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -139,7 +139,8 @@ class SnappyContext protected[spark](
 
   /**
    * :: DeveloperApi ::
-   * @todo do we need this anymore? If useful functionality, make this
+    *
+    * @todo do we need this anymore? If useful functionality, make this
    *       private to sql package ... SchemaDStream should use the data source
    *       API?
    *              Tagging as developer API, for now
@@ -200,14 +201,16 @@ class SnappyContext protected[spark](
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-   * @param tableName full table name to be truncated
+    *
+    * @param tableName full table name to be truncated
    */
   def truncateTable(tableName: String): Unit =
     truncateTable(catalog.newQualifiedTableName(tableName))
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-   * @param tableIdent qualified name of table to be truncated
+    *
+    * @param tableIdent qualified name of table to be truncated
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
       ignoreIfUnsupported: Boolean = false): Unit = {
@@ -226,7 +229,8 @@ class SnappyContext protected[spark](
 
   /**
    * Create a stratified sample table.
-   * @todo provide lot more details and examples to explain creating and
+    *
+    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
    * @param schema
@@ -245,7 +249,8 @@ class SnappyContext protected[spark](
 
   /**
    * Create approximate structure to query top-K with time series support.
-   * @todo provide lot more details and examples to explain creating and
+    *
+    * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
    * @param keyColumnName
@@ -273,7 +278,8 @@ class SnappyContext protected[spark](
    * val airlineDF = snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
    *
    * }}}
-   * @param tableName Name of the table
+    *
+    * @param tableName Name of the table
    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param options Properties for table creation
    * @return DataFrame for the table
@@ -289,6 +295,29 @@ class SnappyContext protected[spark](
     DataFrame(self, plan)
   }
 
+  /**
+    * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
+    * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
+    * API creates a persistent catalog entry.
+    *
+    * {{{
+    *
+    * val airlineDF = snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
+    *
+    * }}}
+    *
+    * @param tableName Name of the table
+    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
+    * @param options Properties for table creation
+    * @return DataFrame for the table
+    */
+  @Experimental
+  def createTable(
+      tableName: String,
+      provider: String,
+      options: java.util.Map[String, String]): DataFrame = {
+    createTable(tableName, provider, options.asScala.toMap)
+  }
   /**
    * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
    * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
@@ -324,6 +353,37 @@ class SnappyContext protected[spark](
   }
 
   /**
+    * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
+    * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
+    * API creates a persistent catalog entry.
+    *
+    * {{{
+    *
+    *    case class Data(col1: Int, col2: Int, col3: Int)
+    *    val props = Map.empty[String, String]
+    *    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    *    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    *    val dataDF = snc.createDataFrame(rdd)
+    *    snappyContext.createTable(tableName, "column", dataDF.schema, props)
+    *
+    * }}}
+    *
+    * @param tableName Name of the table
+    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
+    * @param schema   Table schema
+    * @param options  Properties for table creation. See options list for different tables.
+    *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+    * @return DataFrame for the table
+    */
+  @Experimental
+  def createTable(
+      tableName: String,
+      provider: String,
+      schema: StructType,
+      options: java.util.Map[String, String]): DataFrame = {
+    createTable(tableName, provider, schema, options.asScala.toMap)
+  }
+  /**
    * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
    * should adhere to syntax of underlying JDBC store. SnappyData ships with inbuilt JDBC store ,
    * which can be accessed by Row format data store.
@@ -339,8 +399,8 @@ class SnappyContext protected[spark](
    * "password" -> "app"
    * )
    *
-
-   * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+    *
+    * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
    * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
    *
    * Any DataFrame of the same schema can be inserted into the JDBC table using
@@ -379,7 +439,56 @@ class SnappyContext protected[spark](
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
+  /**
+    * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
+    * should adhere to syntax of underlying JDBC store. SnappyData ships with inbuilt JDBC store ,
+    * which can be accessed by Row format data store.
+    * The option parameter can take connection details.
+    * Unlike SqlContext.createExternalTable this API creates a persistent catalog entry.
+    *
+    * {{{
+    *    val props = Map(
+    * "url" -> s"jdbc:derby:$path",
+    * "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
+    * "poolImpl" -> "tomcat",
+    * "user" -> "app",
+    * "password" -> "app"
+    * )
+    *
+    *
+    * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+    * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
+    *
+    * Any DataFrame of the same schema can be inserted into the JDBC table using
+    * DataFrameWriter Api.
+    *
+    * e.g.
+    *
+    * case class Data(col1: Int, col2: Int, col3: Int)
+    *
+    * val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    * val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    * val dataDF = snc.createDataFrame(rdd)
+    * dataDF.write.format("jdbc").mode(SaveMode.Append).saveAsTable("jdbcTable")
+    *
+    * }}}
+    *
+    * @param tableName Name of the table
+    * @param provider  Provider name 'ROW' and 'JDBC'.
+    * @param schemaDDL Table schema as a string interpreted by provider
+    * @param options   Properties for table creation. See options list for different tables.
+    * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+    * @return DataFrame for the table
+    */
 
+  @Experimental
+  def createTable(
+      tableName: String,
+      provider: String,
+      schemaDDL: String,
+      options: java.util.Map[String, String]): DataFrame = {
+    createTable(tableName , provider , schemaDDL , options.asScala.toMap)
+  }
 
   /**
     * Create a table with given options.
@@ -497,7 +606,8 @@ class SnappyContext protected[spark](
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
-   * @param tableName table to be dropped
+    *
+    * @param tableName table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
   def dropTable(tableName: String, ifExists: Boolean = false): Unit =
@@ -505,7 +615,8 @@ class SnappyContext protected[spark](
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
-   * @param tableIdent table to be dropped
+    *
+    * @param tableIdent table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
   private[sql] def dropTable(tableIdent: QualifiedTableName,
@@ -558,7 +669,8 @@ class SnappyContext protected[spark](
 
   /**
    * Create Index on a SnappyData table (created by a call to createTable).
-   * @todo how can the user invoke this? sql?
+    *
+    * @todo how can the user invoke this? sql?
    */
   private[sql] def createIndexOnTable(tableIdent: QualifiedTableName,
       sql: String): Unit = {
@@ -610,7 +722,8 @@ class SnappyContext protected[spark](
    *            ("MyTable", x.toSeq)
    *         )
    *       }}}
-   * @param tableName
+    *
+    * @param tableName
    * @param rows
    * @return number of rows inserted
    */
@@ -624,6 +737,29 @@ class SnappyContext protected[spark](
   }
 
   /**
+    * Insert one or more [[org.apache.spark.sql.Row]] into an existing table
+    * A user can insert a DataFrame using foreachPartition...
+    * {{{
+    *         someDataFrame.foreachPartition (x => snappyContext.insert
+    *            ("MyTable", x.toSeq)
+    *         )
+    * }}}
+    *
+    * @param tableName
+    * @param rows
+    * @return number of rows inserted
+    */
+  @Experimental
+  def insert(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
+    val convertedRowSeq: Seq[Row] = rows.asScala.map(row => convertListToRow(row)).toSeq
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+      case LogicalRelation(r: RowInsertableRelation, _) => r.insert(convertedRowSeq)
+      case _ => throw new AnalysisException(
+        s"$tableName is not a row insertable table")
+    }
+  }
+
+  /**
    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
    * upsert a DataFrame using foreachPartition...
    *       {{{
@@ -631,7 +767,8 @@ class SnappyContext protected[spark](
    *            ("MyTable", x.toSeq)
    *         )
    *       }}}
-   * @param tableName
+    *
+    * @param tableName
    * @param rows
    * @return
    */
@@ -649,7 +786,8 @@ class SnappyContext protected[spark](
    * {{{
    *   snappyContext.update("jdbcTable", "ITEMREF = 3" , Row(99) , "ITEMREF" )
    * }}}
-   * @param tableName    table name which needs to be updated
+    *
+    * @param tableName    table name which needs to be updated
    * @param filterExpr    SQL WHERE criteria to select rows that will be updated
    * @param newColumnValues  A single Row containing all updated column
    *                         values. They MUST match the updateColumn list
@@ -669,6 +807,55 @@ class SnappyContext protected[spark](
   }
 
   /**
+    * Update all rows in table that match passed filter expression
+    * {{{
+    *   snappyContext.update("jdbcTable", "ITEMREF = 3" , Row(99) , "ITEMREF" )
+    * }}}
+    *
+    * @param tableName       table name which needs to be updated
+    * @param filterExpr      SQL WHERE criteria to select rows that will be updated
+    * @param newColumnValues A list containing all the updated column
+    *                        values. They MUST match the updateColumn list
+    *                        passed
+    * @param updateColumns   List of all column names being updated
+    * @return
+    */
+  @Experimental
+  def update(tableName: String, filterExpr: String, newColumnValues: java.util.ArrayList[_],
+      updateColumns: java.util.ArrayList[String]): Int = {
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+      case LogicalRelation(u: UpdatableRelation, _) =>
+        u.update(filterExpr, convertListToRow(newColumnValues), updateColumns.asScala.toSeq)
+      case _ => throw new AnalysisException(
+        s"$tableName is not an updatable table")
+    }
+  }
+
+  /**
+    * Upsert one or more [[org.apache.spark.sql.Row]] into an existing table
+    * upsert a DataFrame using foreachPartition...
+    * {{{
+    *         someDataFrame.foreachPartition (x => snappyContext.put
+    *            ("MyTable", x.toSeq)
+    *         )
+    * }}}
+    *
+    * @param tableName
+    * @param rows
+    * @return
+    */
+  @Experimental
+  def put(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
+    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+      case LogicalRelation(r: RowPutRelation, _) =>
+        r.put(rows.asScala.map(row => convertListToRow(row)).toSeq)
+      case _ => throw new AnalysisException(
+        s"$tableName is not a row upsertable table")
+    }
+  }
+
+
+  /**
    * Delete all rows in table that match passed filter expression
    *
    * @param tableName  table name
@@ -682,6 +869,11 @@ class SnappyContext protected[spark](
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }
+  }
+
+  private def convertListToRow(row: java.util.ArrayList[_]): Row = {
+    val rowAsArray: Array[Any] = row.asScala.toArray
+    new GenericRow(rowAsArray)
   }
 
   @transient
@@ -698,11 +890,11 @@ class SnappyContext protected[spark](
    * and associate this to a base table (i.e. the full data set). The time
    * interval specified here should not be less than the minimum time interval
    * used when creating the TopK synopsis.
-   * @todo provide an example and explain the returned DataFrame. Key is the
+    *
+    * @todo provide an example and explain the returned DataFrame. Key is the
    *       attribute stored but the value is a struct containing
    *       count_estimate, and lower, upper bounds? How many elements are
    *       returned if K is not specified?
-    *
     * @param topKName - The topK structure that is to be queried.
     * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
     *                  If passed as null, oldest interval is considered as the start interval.
