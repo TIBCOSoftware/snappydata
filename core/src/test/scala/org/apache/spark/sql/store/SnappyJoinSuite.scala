@@ -17,16 +17,32 @@
 package org.apache.spark.sql.store
 
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.{FileCleaner, RefData, TestData2}
-import org.scalatest.{BeforeAndAfterAll, FunSuite}
+import io.snappydata.core.{RefData, TestData2}
+import org.scalatest.BeforeAndAfterAll
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.joins.LocalJoin
 import org.apache.spark.sql.execution.{Exchange, PartitionedPhysicalRDD, PhysicalRDD, QueryExecution}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
-import org.apache.spark.{Logging, SparkContext}
 
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    this.stopAll()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    this.stopAll()
+  }
+
+  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+    val conf = super.newSparkConf(addOn)
+    conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
+    conf
+  }
 
   val props = Map.empty[String, String]
 
