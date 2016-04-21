@@ -25,26 +25,23 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyDaemons, Constant, Property}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
-import org.apache.spark.sql.catalyst.analysis.{EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, GenericRow}
-import org.apache.spark.sql.catalyst.plans.logical.{Project, Union}
-import org.apache.spark.sql.catalyst.analysis.Analyzer
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
-import org.apache.spark.sql.catalyst.rules.{RuleExecutor, Rule}
-import org.apache.spark.sql.catalyst.{ParserDialect}
+import org.apache.spark.sql.catalyst.ParserDialect
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
+import org.apache.spark.sql.catalyst.expressions.{GenericRow, Alias, Cast}
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
+import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils}
-import org.apache.spark.sql.execution.{SparkPlan}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
-import org.apache.spark.sql.execution.{CacheManager, ConnectionPool}
+import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -139,8 +136,7 @@ class SnappyContext protected[spark](
 
   /**
    * :: DeveloperApi ::
-    *
-    * @todo do we need this anymore? If useful functionality, make this
+   * @todo do we need this anymore? If useful functionality, make this
    *       private to sql package ... SchemaDStream should use the data source
    *       API?
    *              Tagging as developer API, for now
@@ -201,16 +197,14 @@ class SnappyContext protected[spark](
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-    *
-    * @param tableName full table name to be truncated
+   * @param tableName full table name to be truncated
    */
   def truncateTable(tableName: String): Unit =
     truncateTable(catalog.newQualifiedTableName(tableName))
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
-    *
-    * @param tableIdent qualified name of table to be truncated
+   * @param tableIdent qualified name of table to be truncated
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
       ignoreIfUnsupported: Boolean = false): Unit = {
@@ -229,8 +223,7 @@ class SnappyContext protected[spark](
 
   /**
    * Create a stratified sample table.
-    *
-    * @todo provide lot more details and examples to explain creating and
+   * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
    * @param schema
@@ -249,8 +242,7 @@ class SnappyContext protected[spark](
 
   /**
    * Create approximate structure to query top-K with time series support.
-    *
-    * @todo provide lot more details and examples to explain creating and
+   * @todo provide lot more details and examples to explain creating and
    *       using TopK with time series
    * @param topKName the qualified name of the top-K structure
    * @param keyColumnName
@@ -278,8 +270,7 @@ class SnappyContext protected[spark](
    * val airlineDF = snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
    *
    * }}}
-    *
-    * @param tableName Name of the table
+   * @param tableName Name of the table
    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param options Properties for table creation
    * @return DataFrame for the table
@@ -322,8 +313,6 @@ class SnappyContext protected[spark](
    * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
    * supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
    * API creates a persistent catalog entry.
-   *
-   * {{{
    *
    *    case class Data(col1: Int, col2: Int, col3: Int)
    *    val props = Map.empty[String, String]
@@ -399,8 +388,8 @@ class SnappyContext protected[spark](
    * "password" -> "app"
    * )
    *
-    *
-    * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+
+   * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
    * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
    *
    * Any DataFrame of the same schema can be inserted into the JDBC table using
@@ -439,6 +428,7 @@ class SnappyContext protected[spark](
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
+
   /**
     * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
     * should adhere to syntax of underlying JDBC store. SnappyData ships with inbuilt JDBC store ,
@@ -606,8 +596,7 @@ class SnappyContext protected[spark](
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
-    *
-    * @param tableName table to be dropped
+   * @param tableName table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
   def dropTable(tableName: String, ifExists: Boolean = false): Unit =
@@ -615,8 +604,7 @@ class SnappyContext protected[spark](
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
-    *
-    * @param tableIdent table to be dropped
+   * @param tableIdent table to be dropped
    * @param ifExists  attempt drop only if the table exists
    */
   private[sql] def dropTable(tableIdent: QualifiedTableName,
@@ -669,8 +657,7 @@ class SnappyContext protected[spark](
 
   /**
    * Create Index on a SnappyData table (created by a call to createTable).
-    *
-    * @todo how can the user invoke this? sql?
+   * @todo how can the user invoke this? sql?
    */
   private[sql] def createIndexOnTable(tableIdent: QualifiedTableName,
       sql: String): Unit = {
@@ -722,8 +709,7 @@ class SnappyContext protected[spark](
    *            ("MyTable", x.toSeq)
    *         )
    *       }}}
-    *
-    * @param tableName
+   * @param tableName
    * @param rows
    * @return number of rows inserted
    */
@@ -767,8 +753,7 @@ class SnappyContext protected[spark](
    *            ("MyTable", x.toSeq)
    *         )
    *       }}}
-    *
-    * @param tableName
+   * @param tableName
    * @param rows
    * @return
    */
@@ -786,8 +771,7 @@ class SnappyContext protected[spark](
    * {{{
    *   snappyContext.update("jdbcTable", "ITEMREF = 3" , Row(99) , "ITEMREF" )
    * }}}
-    *
-    * @param tableName    table name which needs to be updated
+   * @param tableName    table name which needs to be updated
    * @param filterExpr    SQL WHERE criteria to select rows that will be updated
    * @param newColumnValues  A single Row containing all updated column
    *                         values. They MUST match the updateColumn list
@@ -890,11 +874,11 @@ class SnappyContext protected[spark](
    * and associate this to a base table (i.e. the full data set). The time
    * interval specified here should not be less than the minimum time interval
    * used when creating the TopK synopsis.
-    *
-    * @todo provide an example and explain the returned DataFrame. Key is the
+   * @todo provide an example and explain the returned DataFrame. Key is the
    *       attribute stored but the value is a struct containing
    *       count_estimate, and lower, upper bounds? How many elements are
    *       returned if K is not specified?
+    *
     * @param topKName - The topK structure that is to be queried.
     * @param startTime start time as string of the format "yyyy-mm-dd hh:mm:ss".
     *                  If passed as null, oldest interval is considered as the start interval.
