@@ -115,8 +115,15 @@ trait ParentRelation extends BaseRelation {
   def removeDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean
 
-  /** Get the dependent child relations. */
+  /** Get the dependent child. */
   def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String]
+
+  /**
+   * Recover/Re-create the dependent child relations. This callback
+   * is to recreate Dependent relations when the ParentRelation is
+   * being created.
+   */
+  def recoverDependentsRelation(): Unit
 }
 
 @DeveloperApi

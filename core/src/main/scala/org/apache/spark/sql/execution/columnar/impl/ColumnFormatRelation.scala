@@ -434,6 +434,8 @@ class ColumnFormatRelation(
     _context)
   with ParentRelation {
 
+  recoverDependentsRelation()
+
   override def addDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean =
     DependencyCatalog.addDependent(table, dependent.name)
@@ -454,6 +456,24 @@ class ColumnFormatRelation(
   override def getDependents(
       catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(table)
+
+  override def recoverDependentsRelation(): Unit = {
+    var indexes: Array[String] = Array()
+    try {
+      val options = new CaseInsensitiveMutableHashMap(this.origOptions)
+      indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
+    } catch {
+      case e: NoSuchElementException =>
+    }
+
+    indexes.foreach(index => {
+      val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
+      val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
+        case LogicalRelation(r: DependentRelation, _) => r
+      }
+      addDependent(dr, sncCatalog)
+    })
+  }
 
   /**
     * Index table is same as the column table apart from how it is
@@ -665,23 +685,6 @@ final class DefaultSource extends ColumnarRelationProvider {
 
     try {
       relation.createTable(mode)
-      if (relation.isInstanceOf[ColumnFormatRelation]) {
-        var indexes: Array[String] = Array()
-        try {
-          val options = new CaseInsensitiveMutableHashMap(relation.origOptions)
-          indexes = options(ExternalStoreUtils.INDEX_NAME).split(",")
-        } catch {
-          case e: NoSuchElementException =>
-        }
-
-        indexes.foreach(index => {
-          val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
-          val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
-            case LogicalRelation(r: DependentRelation, _) => r
-          }
-          relation.asInstanceOf[ColumnFormatRelation].addDependent(dr, sncCatalog)
-        })
-      }
       success = true
       relation
     } finally {

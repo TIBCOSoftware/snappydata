@@ -26,6 +26,7 @@ import org.apache.hadoop.hive.metastore.api.{Index, Table}
 import org.apache.hadoop.hive.ql.index.{TableBasedIndexHandler, HiveIndexQueryContext}
 import org.apache.hadoop.hive.ql.parse.ParseContext
 import org.apache.hadoop.hive.ql.plan.ExprNodeDesc
+import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -745,6 +746,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   def getTableType(relation: BaseRelation): ExternalTableType.Type = {
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
+      case x: IndexColumnFormatRelation => ExternalTableType.Index
       case x: JDBCAppendableRelation => ExternalTableType.Column
       case x: StreamPlan => ExternalTableType.Stream
       case _ => ExternalTableType.Row
@@ -830,6 +832,7 @@ object ExternalTableType extends Enumeration {
 
   val Row = Value("ROW")
   val Column = Value("COLUMN")
+  val Index = Value("INDEX")
   val Stream = Value("STREAM")
   val Sample = Value("SAMPLE")
   val TopK = Value("TOPK")
