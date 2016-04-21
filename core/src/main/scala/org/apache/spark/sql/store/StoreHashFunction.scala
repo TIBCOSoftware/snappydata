@@ -18,13 +18,16 @@
 
 package org.apache.spark.sql.store
 
-import java.util.Calendar
-
 import com.pivotal.gemfirexd.internal.iapi.types._
 
 import org.apache.spark.sql.CatalystHashFunction
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.types.Decimal
 
-
+/**
+ * A partitioner that helps store to collocate data with Spark's
+ * partitions. Each store layer hash computation invokes this to get their bucket information.
+ */
 class StoreHashFunction extends CatalystHashFunction {
 
   override def computeHash(key: Any): Int = {
@@ -44,22 +47,48 @@ class StoreHashFunction extends CatalystHashFunction {
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
           case str: java.lang.String => utfStringHashCode(str.getBytes("utf-8"))
+          case timeStamp : java.sql.Timestamp => hashJavaSqlTimestamp(timeStamp)
+          case date : java.util.Date => hashJavaDate(date)
           //Custom type checks for Store
           case sb: SQLBoolean => if (sb.getBoolean) 0 else 1
-          case sd: SQLDate => sd.getDate(Calendar.getInstance()).hashCode()
-          case sd: SQLBit => java.util.Arrays.hashCode(sd.getBytes())
+          case sd: SQLDate => hashSQLDate(sd)
+          case sd: SQLBit => {
+            val bytes = sd.getBytes()
+            if(bytes == null ) 0 else java.util.Arrays.hashCode(bytes)
+          }
           case sf: SQLReal => java.lang.Float.floatToIntBits(sf.getFloat)
           case clob: SQLClob => hashClob(clob.getCharArray(true))
           case varchar: SQLVarchar => hashClob(varchar.getCharArray(true))
-          case time: SQLTimestamp => time.getTimestamp(Calendar.getInstance()).hashCode()
-          case decimal: SQLDecimal => decimal.getObject().hashCode()
+          case time: SQLTimestamp => hashSQLTimestamp(time)
+          case decimal: SQLDecimal => hashSQLDecimal(decimal)
           case other => other.hashCode()
         }
       }
     update
   }
 
-  def hashClob(data: Array[Char]): Int = {
+
+  private def hashSQLDate(sd: SQLDate): Int = {
+    computeHash(DateTimeUtils.millisToDays(sd.getTimeInMillis(null)))
+  }
+
+  // This is a suboptimal code and neew to create an Object for hash computation. TODO SNAP-711
+  private def hashSQLDecimal(decimal: SQLDecimal): Int = {
+    val javaBigDecimal = decimal.getObject()
+    if (javaBigDecimal == null) 0 else computeHash(Decimal(javaBigDecimal.asInstanceOf[java.math
+    .BigDecimal]))
+  }
+
+  /**
+   * Returns the number of micros since epoch from java.sql.Timestamp.
+   * Same code as CatalystConverter for timestamp .
+   */
+  private def hashSQLTimestamp(time: SQLTimestamp): Int = {
+    val ht = time.getEpochTime(null) * 1000L + (time.getNanos().toLong / 1000)
+    computeHash(ht)
+  }
+
+  private def hashClob(data: Array[Char]): Int = {
     var result = 1
     var b = 0.toByte
     for (index <- 0 to data.length - 1) {

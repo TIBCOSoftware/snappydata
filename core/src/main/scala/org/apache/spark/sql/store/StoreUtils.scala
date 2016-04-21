@@ -190,7 +190,11 @@ object StoreUtils extends Logging {
       val primaryKey = {
         v match {
           case PRIMARY_KEY => ""
-          case _ => s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"
+          //case _ => s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
+          case _ => s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)" // Removing partition column for
+          // primary key. This has been done as we dont have support for CLOB in primary key in
+          // desrailized form. Once that's fixed we should uncomment the above line and comment
+          // this line
         }
       }
       primaryKey

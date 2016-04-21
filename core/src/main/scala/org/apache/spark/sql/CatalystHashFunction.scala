@@ -18,12 +18,13 @@
 
 package org.apache.spark.sql
 
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
+
 /**
  * This class acts as a public interface to the hashcode logic implemented at catalyst layer.
  * It ensures Spark's partitioning and store's partitioning follows the same logic.
- * This helps in reducing shuffle operations when Spark's datafarme is joined with store data.
- *
- *
+ * This helps in reducing shuffle operations when Spark's DataFrame is joined with store data.
+ * PairRDD's can also use this partitioner to colocate their data with Store tables/DataFrames.
  */
 class CatalystHashFunction {
 
@@ -44,12 +45,25 @@ class CatalystHashFunction {
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
           case str: java.lang.String => utfStringHashCode(str.getBytes("utf-8"))
+          case timeStamp : java.sql.Timestamp => hashJavaSqlTimestamp(timeStamp)
+          case date : java.util.Date => hashJavaDate(date)
           case other => other.hashCode()
         }
       }
     update
   }
 
+
+  def hashJavaDate(sd: java.util.Date): Int = {
+    computeHash(DateTimeUtils.millisToDays(sd.getTime))
+  }
+
+  def hashJavaSqlTimestamp(time: java.sql.Timestamp): Int = {
+    val ht = DateTimeUtils.fromJavaTimestamp(time)
+    computeHash(ht)
+  }
+
+  // This is a suboptimal code and neew to create an Object for hash computation. TODO SNAP-710
   def utfStringHashCode(a: Array[Byte]): Int = {
     var result = 1
     val numBytes = a.length
@@ -61,10 +75,8 @@ class CatalystHashFunction {
       }
 
       i += 1;
-      i - 1
     }
-
-    return result
+    result
   }
 
 

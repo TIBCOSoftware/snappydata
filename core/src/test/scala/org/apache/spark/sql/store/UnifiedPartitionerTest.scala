@@ -1,22 +1,21 @@
 package org.apache.spark.sql.store
 
-import java.math.{BigInteger, BigDecimal}
+import java.math.{BigDecimal, BigInteger}
 import java.sql.DriverManager
-import java.util.Date
 
-import com.gemstone.gemfire.cache.{PartitionResolver, RegionAttributes, Region, CacheFactory, Cache}
+import com.gemstone.gemfire.cache.{PartitionResolver, Region, RegionAttributes}
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.iapi.types._
 import io.snappydata.SnappyFunSuite
-import io.snappydata.core.{Data1, TestData2}
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfter}
+import io.snappydata.core.{Data1, Data4, TestData2}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.ColumnName
-import org.apache.spark.sql.catalyst.expressions.{GenericInternalRow, GenericMutableRow}
-import org.apache.spark.sql.execution.QueryExecution
+import org.apache.spark.sql.catalyst.CatalystTypeConverters
+import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
@@ -64,7 +63,12 @@ with BeforeAndAfterAll {
     val rpr: GfxdPartitionByExpressionResolver = pr.asInstanceOf[GfxdPartitionByExpressionResolver]
     assert(rpr != null)
 
-    def createRow(values: Any*): GenericInternalRow = new GenericInternalRow(values.toArray)
+    def createRow(values: Any*): GenericInternalRow = {
+      val newVals = values map { v => CatalystTypeConverters.convertToCatalyst(v)}
+/*      println(" new val = "+ newVals)
+      println("hashcode " + newVals.seq(0).getClass)*/
+      new GenericInternalRow(newVals.toArray)
+    }
 
     // Check All Datatypes
     var row = createRow(200)
@@ -85,10 +89,6 @@ with BeforeAndAfterAll {
     dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
-    row = createRow(new java.util.Date(1, 1, 2011))
-    dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
-
 
     val ipaddr: Array[Byte] = Array(192.toByte, 168.toByte, 1.toByte, 9.toByte)
     row = createRow(ipaddr)
@@ -104,19 +104,17 @@ with BeforeAndAfterAll {
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLVarchar("xxxx");
-    row = createRow(UTF8String.fromString("xxxx")) // As catalyst converts String to UtfString
+    row = createRow(UTF8String.fromString("xxxx")) // As
+    // catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLClob("xxxxx")
-    row = createRow(UTF8String.fromString("xxxxx")) // As catalyst converts String to UtfString
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
-
-    dvd = new SQLTimestamp(new java.sql.Timestamp(System.currentTimeMillis()))
-    row = createRow(new java.sql.Timestamp(System.currentTimeMillis()))
+    row = createRow(UTF8String.fromString("xxxxx")) // As
+    // catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLSmallint(5)
-    row = createRow( 5)
+    row = createRow(5)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLTinyint(2)
@@ -126,7 +124,15 @@ with BeforeAndAfterAll {
 
     dvd = new SQLDecimal(new BigDecimal(32000.05f))
     row = createRow(new BigDecimal(32000.05f))
+    val hash = row.hashCode
+    assert(rpr.getRoutingKeyForColumn(dvd) == hash )
+
+    val r1 = new java.sql.Timestamp(System.currentTimeMillis())
+    dvd = new SQLTimestamp(r1)
+    row = createRow(r1)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+
+
 
 
     // Tests for external partitioner like Kafka partitioner
@@ -307,6 +313,35 @@ with BeforeAndAfterAll {
         s"ON P.OrderId=R.pk")
     assert(count.count() === 1000)
   }
+
+  test("Test Row PR for String type multiple column primary key") {
+
+    snc.sql(s"CREATE TABLE $ColumnTableName1(ItemRef VARCHAR(100), " +
+        s"rowid INT, OrderId INT, PRIMARY KEY (ItemRef, rowid)) " +
+        "USING row " +
+        "options " +
+        "(" +
+        "PARTITION_BY 'ItemRef, rowid'," +
+        "PERSISTENT 'ASYNCHRONOUS')")
+
+    val rdd = sc.parallelize(
+      (1 to 1000).map(i => Data4(i.toString(), i*100, i)))
+
+    val dataDF = snc.createDataFrame(rdd)
+
+    val rep = dataDF.repartition(11, new ColumnName("sk"), new ColumnName("pk1"))
+
+    rep.registerTempTable("ColumnTable1Temp")
+
+    dataDF.write.insertInto(ColumnTableName1)
+
+    val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R " +
+        s"ON P.ItemRef=R.sk and P.rowid=R.pk1")
+    assert(count.count() === 1000)
+  }
+
+
+
 
   test("Test row PR with jdbc connection") {
     val serverHostPort = TestUtil.startNetServer()
