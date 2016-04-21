@@ -207,8 +207,10 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
     bootProperties.clear()
-    SnappyContext.stop()
     // TODO: [soubhik] find a way to stop jobserver.
+		if (SnappyContext.globalSparkContext != null && !SnappyContext.globalSparkContext.isStopped) {
+			SnappyContext.globalSparkContext.stop
+		}
     sparkContext = null
     super.stop(shutdownCredentials)
   }

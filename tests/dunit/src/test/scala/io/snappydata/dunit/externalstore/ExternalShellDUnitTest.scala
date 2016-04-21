@@ -325,7 +325,7 @@ object ExternalShellDUnitTest {
   }
 
   def stopSparkCluster(): Unit = {
-    SnappyContext.stop()
+    SnappyContext.globalSparkContext.stop
     (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/stop-all.sh") !!
   }
 }

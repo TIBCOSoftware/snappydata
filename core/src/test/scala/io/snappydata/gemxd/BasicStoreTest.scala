@@ -97,7 +97,7 @@ class BasicStoreTest(s: String) extends TestUtil(s) {
     doPrint("=============== RESULTS START ===============")
     result.collect().foreach(verifyRows)
     doPrint("=============== RESULTS END ===============")
-    SnappyContext.stop()
+    SnappyContext.globalSparkContext.stop
   }
 
   def verifyRows(r: Row): Unit = {

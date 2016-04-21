@@ -110,8 +110,9 @@ abstract class SnappyFunSuite
 
   def stopAll(): Unit = {
     // GemFireXD stop for local mode is now done by SnappyContext.stop()
-    println(" Stopping spark context = " + SnappyContext.globalSparkContext)
-    SnappyContext.stop()
+    if (SnappyContext.globalSparkContext != null && !SnappyContext.globalSparkContext.isStopped) {
+      SnappyContext.globalSparkContext.stop()
+    }
   }
 
   def createDir(fileName: String): String = {

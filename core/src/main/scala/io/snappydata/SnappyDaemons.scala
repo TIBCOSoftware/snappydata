@@ -50,25 +50,22 @@ object SnappyAnalyticsService extends Logging {
 				.getOrElse(DEFAULT_ANALYTICS_SERVICE_INTERVAL).toString
 		connProperties =
 				ExternalStoreUtils.validateAndGetAllProps(sc, mutable.Map.empty[String, String])
-		getScheduledExecutor.scheduleWithFixedDelay(
-			getTotalMemoryUsagePerTable, ZERO,
-			delayInMillisconds.toLong, TimeUnit.MILLISECONDS)
+		if (analyticsExecutor == null || analyticsExecutor.isShutdown) {
+			analyticsExecutor =	newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
+			analyticsExecutor.scheduleWithFixedDelay(
+				getTotalMemoryUsagePerTable, ZERO,
+				delayInMillisconds.toLong, TimeUnit.MILLISECONDS)
+		}
+
 	}
 
-
 	def stop: Unit = {
-		if (!getScheduledExecutor.isShutdown) {
-			analyticsExecutor.shutdownNow()
+		if (!analyticsExecutor.isShutdown) {
+			analyticsExecutor.shutdown()
 			analyticsExecutor.awaitTermination(DEFAULT_ANALYTICS_SERVICE_INTERVAL, TimeUnit.MILLISECONDS)
 		}
 	}
 
-	private def getScheduledExecutor: ScheduledExecutorService = {
-		if (analyticsExecutor == null || analyticsExecutor.isShutdown) {
-			analyticsExecutor =	newDaemonSingleThreadScheduledExecutor("SnappyAnalyticsService")
-		}
-		analyticsExecutor
-	}
 	private def getTotalMemoryUsagePerTable = new Runnable {
 		override def run(): Unit = {
 			tryExecute(conn => getMemoryAnalyticsdetails(conn))

@@ -16,11 +16,8 @@
  */
 package io.snappydata.tools
 
-import java.util.Properties
-
 import scala.collection.mutable.ArrayBuffer
 
-import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
 import io.snappydata.impl.LeadImpl
 import io.snappydata.{Constant, LocalizedMessages, Property}
 import org.scalatest.{Matchers, WordSpec}
@@ -90,7 +87,10 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           // Stop if already any present
-          SnappyContext.stop()
+          if (SnappyContext.globalSparkContext != null &&
+              !SnappyContext.globalSparkContext.isStopped) {
+            SnappyContext.globalSparkContext.stop
+          }
 
           val l = new LeadImpl
           val conf = (new SparkConf).

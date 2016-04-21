@@ -231,7 +231,9 @@ object ClusterManagerTestBase {
   def stopSpark(): Unit = {
     // cleanup metastore
     cleanupTestData(null, null)
-    SnappyContext.stop()
+    if (SnappyContext.globalSparkContext != null && !SnappyContext.globalSparkContext.isStopped) {
+      SnappyContext.globalSparkContext.stop
+    }
   }
 
   def stopNetworkServers(): Unit = {
