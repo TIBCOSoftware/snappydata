@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyDaemons, Constant, Property}
+import io.snappydata.{Constant, Property, SnappyDaemons}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.java.JavaSparkContext
@@ -35,14 +35,13 @@ import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
-import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.{SQLListener, SnappyStatsTab}
-import org.apache.spark.scheduler.{SparkListener , SparkListenerApplicationEnd}
-import org.apache.spark.sql.execution.{CacheManager, ConnectionPool}
+import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -53,6 +52,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
@@ -102,6 +102,11 @@ class SnappyContext protected[spark](
   GemFireXDDialect.init()
   SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
+
+
+
+
+  override val prepareForExecution: RuleExecutor[SparkPlan] = snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -202,15 +207,16 @@ class SnappyContext protected[spark](
    * Empties the contents of the table without deleting the catalog entry.
    * @param tableIdent qualified name of table to be truncated
    */
-  private[sql] def truncateTable(tableIdent: QualifiedTableName): Unit = {
+  private[sql] def truncateTable(tableIdent: QualifiedTableName,
+      ignoreIfUnsupported: Boolean = false): Unit = {
     val plan = catalog.lookupRelation(tableIdent)
+    cacheManager.tryUncacheQuery(DataFrame(self, plan))
     plan match {
       case LogicalRelation(br, _) =>
-        cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ =>
+      case _ => if (!ignoreIfUnsupported)
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
     }
   }
@@ -752,7 +758,6 @@ object SnappyContext extends Logging {
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
-
   private[this] val contextLock = new AnyRef
 
   val COLUMN_SOURCE = "column"
@@ -844,8 +849,7 @@ object SnappyContext extends Logging {
 
   /**
    * Returns an existing SnappyContext or create one if does not exists
-    *
-    * @param jsc
+   * @param jsc
    * @return SnappyContext
    */
   def getOrCreate(jsc: JavaSparkContext): SnappyContext = {
@@ -923,7 +927,6 @@ object SnappyContext extends Logging {
       }
     }
   }
-
   private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
@@ -939,7 +942,7 @@ object SnappyContext extends Logging {
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-      SnappyContext.stop()
+      stop()
     }
   }
 
@@ -968,8 +971,8 @@ object SnappyContext extends Logging {
   }
 
   /**
-   * Shut down and cleanup and SnappyData artifacts.
-   */
+    * Shut down and cleanup and SnappyData artifacts.
+    */
   private def stop(): Unit = {
     val sc = globalSparkContext
     SnappyDaemons.stop

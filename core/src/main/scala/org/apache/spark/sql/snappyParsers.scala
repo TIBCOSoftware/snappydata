@@ -435,7 +435,7 @@ class SnappyParser(caseSensitive: Boolean)
   }
 
   protected final def sortDirection: Rule1[SortDirection] = rule {
-    (ASC ~> (() => Ascending) | DESC ~> (() => Descending))
+    ASC ~> (() => Ascending) | DESC ~> (() => Descending)
   }
 
   protected final def ordering: Rule1[Seq[SortOrder]] = rule {
@@ -629,7 +629,7 @@ class SnappyParser(caseSensitive: Boolean)
  * Snappy dialect uses a much more optimized parser and adds SnappyParser
  * additions to the standard "sql" dialect.
  */
-private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
+private[sql] class SnappyParserDialect(caseSensitive: Boolean)
     extends ParserDialect {
 
   private[sql] val sqlParser = new SnappyParser(caseSensitive)
