@@ -128,7 +128,7 @@ object SnappyAnalyticsService extends Logging {
 	}
 
 	def getUIInfo: Seq[UIAnalytics] = {
-		val currentTableStats = tableStats.get()
+		val currentTableStats = tableStats.get().clone()
 		if ( currentTableStats == null ) {
 			return Seq.empty
 		}
