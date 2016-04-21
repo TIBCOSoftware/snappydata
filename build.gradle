@@ -739,8 +739,9 @@ task runQuickstart(dependsOn: product) {
       def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
       println "${startSparkResult}"
 
+      def hostname = "hostname".execute().text.trim()
       def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit",
-              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://localhost:7077",
+              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://${hostname}:7077",
                "--conf", "snappydata.store.locators=localhost:10334", "--conf", "spark.ui.port=4041",
                "${snappyProductDir}/lib/${exampleArchiveName}"]);
 
