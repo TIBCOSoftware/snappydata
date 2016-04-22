@@ -25,20 +25,23 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property}
+import io.snappydata.{SnappyDaemons, Constant, Property}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
-import org.apache.spark.sql.catalyst.ParserDialect
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
+import org.apache.spark.sql.catalyst.analysis.{EliminateSubQueries}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
-import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.plans.logical.{Project, Union}
+import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan}
+import org.apache.spark.sql.catalyst.rules.{RuleExecutor, Rule}
+import org.apache.spark.sql.catalyst.{ParserDialect}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
+import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils}
+import org.apache.spark.sql.execution.{SparkPlan}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool}
@@ -83,16 +86,18 @@ import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
 class SnappyContext protected[spark](
     @transient override val sparkContext: SparkContext,
     override val listener: SQLListener,
-    override val isRootContext: Boolean,
-    val snappyContextFunctions: SnappyContextFunctions =
-    GlobalSnappyInit.getSnappyContextFunctionsImpl)
+    override val isRootContext: Boolean)
     extends SQLContext(sparkContext, new CacheManager, listener, isRootContext)
     with Serializable with Logging {
 
   self =>
+
   protected[spark] def this(sc: SparkContext) {
     this(sc, SQLContext.createListenerAndUI(sc), true)
   }
+
+  @transient private[spark] lazy val snappyContextFunctions:
+      SnappyContextFunctions = GlobalSnappyInit.getSnappyContextFunctionsImpl
 
   // initialize GemFireXDDialect so that it gets registered
 
@@ -100,13 +105,18 @@ class SnappyContext protected[spark](
   GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
+
+
+
+  override val prepareForExecution: RuleExecutor[SparkPlan] = snappyContextFunctions.getAQPRuleExecutor(this)
+
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
   }
 
   override def newSession(): SnappyContext = {
-    new SnappyContext(this.sparkContext, this.listener, false, this.snappyContextFunctions)
+    new SnappyContext(this.sparkContext, this.listener, false)
   }
 
   @transient
@@ -199,15 +209,16 @@ class SnappyContext protected[spark](
    * Empties the contents of the table without deleting the catalog entry.
    * @param tableIdent qualified name of table to be truncated
    */
-  private[sql] def truncateTable(tableIdent: QualifiedTableName): Unit = {
+  private[sql] def truncateTable(tableIdent: QualifiedTableName,
+      ignoreIfUnsupported: Boolean = false): Unit = {
     val plan = catalog.lookupRelation(tableIdent)
+    cacheManager.tryUncacheQuery(DataFrame(self, plan))
     plan match {
       case LogicalRelation(br, _) =>
-        cacheManager.tryUncacheQuery(DataFrame(self, plan))
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ =>
+      case _ => if (!ignoreIfUnsupported)
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
     }
   }
@@ -768,14 +779,18 @@ object GlobalSnappyInit {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+       // SnappyDaemons.start(sc)
       case SnappyShellMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+      //  SnappyDaemons.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+       // SnappyDaemons.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
+       // SnappyDaemons.start(sc)
       case _ => // ignore
     }
   }

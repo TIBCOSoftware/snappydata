@@ -109,6 +109,9 @@ object Utils {
   def getHostExecutorId(blockId: BlockManagerId) =
     TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
+  def classForName(className: String): Class[_] =
+    org.apache.spark.util.Utils.classForName(className)
+
   def ERROR_NO_QCS(module: String) = s"$module: QCS is empty"
 
   def qcsOf(qa: Array[String], cols: Array[String],

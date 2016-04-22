@@ -162,15 +162,8 @@ class ColumnFormatRelation(
     //in order to replace UUID
     // if number of rows are greater than columnBatchSize then store otherwise store locally
     if (batch.numRows >= columnBatchSize) {
-      //TODO - rddID should be passed to the executors so that cachedBatch size can be shown be correctly even for non embedded mode
-      val id = {
-        StoreCallbacksImpl.stores.get(table) match {
-          case Some((_, _, rddId)) => rddId
-          case _ => -1
-        }
-      }
       val uuid = externalStore.storeCachedBatch(ColumnFormatRelation.
-          cachedBatchTableName(table), batch, rddId = id)
+          cachedBatchTableName(table), batch)
       accumulated += uuid
     } else {
       //TODO: can we do it before compressing. Might save a bit
@@ -260,9 +253,6 @@ class ColumnFormatRelation(
       externalStore.tryExecute(table, conn => {
         JdbcExtendedUtils.truncateTable(conn, table, dialect)
       })
-      // remove info from UI
-      unregisterRDDInfoForUI()
-      registerRDDInfoForUI()
     }
   }
 
@@ -339,18 +329,6 @@ class ColumnFormatRelation(
         structField.name + " blob").mkString(" ", ",", " ") +
         s", $primarykey) $partitionStrategy $colocationClause $ddlExtensionForShadowTable",
         tableName, dropIfExists = false)
-
-    registerRDDInfoForUI()
-  }
-
-  def registerRDDInfoForUI(): Unit = {
-    StoreUtils.registerRDDInfoForUI(sqlContext.sparkContext, table,
-      numPartitions)
-  }
-
-  def unregisterRDDInfoForUI(): Unit = {
-    StoreUtils.unregisterRDDInfoForUI(sqlContext.sparkContext, table,
-      numPartitions)
   }
 
   //TODO: Suranjan make sure that this table doesn't evict to disk by
@@ -423,8 +401,6 @@ class ColumnFormatRelation(
 object ColumnFormatRelation extends Logging with StoreCallback {
   // register the call backs with the JDBCSource so that
   // bucket region can insert into the column table
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
-  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
 
   def flushLocalBuckets(resolvedName: String): Unit = {
     val pr = Misc.getRegionForTable(resolvedName, false)
@@ -443,20 +419,16 @@ object ColumnFormatRelation extends Logging with StoreCallback {
   def registerStoreCallbacks(sqlContext: SQLContext, table: String,
       userSchema: StructType, externalStore: ExternalStore) = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
-      externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression,
-      StoreInitRDD.getRddIdForTable(table, sqlContext.sparkContext))
+      externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression)
   }
 
-  final def cachedBatchTableName(table: String) = {
-
-    val tableName = if (table.indexOf('.') > 0) {
-      table.replace(".", "__")
-    } else {
-      table
-    }
-    INTERNAL_SCHEMA_NAME + "." + tableName +
-        SHADOW_TABLE_SUFFIX
+  private def removePool(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    Iterator.empty
   }
+
+  final def cachedBatchTableName(table: String): String =
+    JDBCAppendableRelation.cachedBatchTableName(table)
 }
 
 final class DefaultSource extends ColumnarRelationProvider {

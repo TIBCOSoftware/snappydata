@@ -566,33 +566,36 @@ class ColumnTableTest
       val pi = new ParserImpl(cc)
       val pd = new ParseDriver
 
-      println(s"Warmup runs ...")
-      for (i <- 0 until 20) {
-        plan1 = SqlParser.parse(sqlText)
-        plan2 = snc.getSQLDialect().parse(sqlText)
-        // assert (plan1 === plan2)
-        pi.parseStatement(sqlText)
-        pd.parse(sqlText)
-      }
-      println(s"Done with warmup runs")
-
       // timed runs for the parsers
       var start: Double = 0.0
       var end: Double = 0.0
       var elapsed: Double = 0.0
-      val timedRuns = 50
-      println(s"===============  Comparing $timedRuns runs  ===============")
-      println()
+      val warmupRuns = 2000
+      val timedRuns = 5000
 
+      println(s"Warmup runs for SparkSQL parser ...")
+      for (i <- 0 until 20) {
+        plan1 = SqlParser.parse(sqlText)
+      }
+      println(s"Done with warmup runs")
       start = System.nanoTime()
-      for (i <- 0 until timedRuns) {
+      for (i <- 0 until 30) {
         plan1 = SqlParser.parse(sqlText)
       }
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0
-      println(s"Time taken by SparkSQL parser = ${elapsed}ms " +
-          s"average=${elapsed / timedRuns}ms")
+      println(s"Time taken by SparkSQL parser for 30 runs = ${elapsed}ms " +
+          s"average=${elapsed / 30}ms")
+      println()
 
+      println(s"===============  Comparing $timedRuns runs  ===============")
+      println()
+
+      println(s"Warmup runs for Snappy parser ...")
+      for (i <- 0 until warmupRuns) {
+        plan2 = snc.getSQLDialect().parse(sqlText)
+      }
+      println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until timedRuns) {
         plan2 = snc.getSQLDialect().parse(sqlText)
@@ -601,7 +604,13 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Snappy parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
+      println()
 
+      println(s"Warmup runs for GemXD parser ...")
+      for (i <- 0 until warmupRuns) {
+        pi.parseStatement(sqlText)
+      }
+      println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until timedRuns) {
         pi.parseStatement(sqlText)
@@ -610,7 +619,13 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by GemXD parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
+      println()
 
+      println(s"Warmup runs for Hive parser ...")
+      for (i <- 0 until warmupRuns) {
+        pd.parse(sqlText)
+      }
+      println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until timedRuns) {
         pd.parse(sqlText)
