@@ -92,6 +92,8 @@ if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
 fi
 
+MEMBERS_FILE=members.txt
+
 function startComponent() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
 
@@ -141,6 +143,8 @@ function startComponent() {
     ssh $SPARK_SSH_OPTS "$host" $"${@// /\\ } ${args}" < /dev/null \
       2>&1 | sed "s/^/$host: /"
   fi
+
+  echo "${host} ${dirfolder}" >> $MEMBERS_FILE
 }
 
 index=1
