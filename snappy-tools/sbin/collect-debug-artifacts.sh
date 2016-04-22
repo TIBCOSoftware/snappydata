@@ -135,6 +135,12 @@ function collect_on_remote {
   collector_dir="$6"
   verbose="$7"
 
+  tmp_dir="$(mktemp -d --tmpdir="`pwd`" data.XXXX)"
+  retval=$?
+  if [ ! -d ${tmp_dir} ]; then
+    echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
+  fi
+
   # first get the pid. The latest log file with the header will have the pid
   host=`hostname`
   if [ ! -d "$data_dir" ]; then
@@ -143,79 +149,87 @@ function collect_on_remote {
 
   cd "$data_dir"
 
-  logs_sorted_reverse=`ls *.log | sed 's/\([0-9]\)/;\1/' | sort -r -n -t\; -k2,2 | tr -d ';'`
-
-  arr=($logs_sorted_reverse)
-  latest_log=${arr[-1]}
-  unset arr[${#arr[@]}-1]
-
-  all_logs=()
-  all_logs+=($latest_log)
-  all_logs+=("${arr[@]}")
-
-  files=()
-  last_restart_log=""
-  for l in "${all_logs[@]}"
-  do
-    # If last log is got, get the one before that as well
-    if [ ! -z "$last_restart_log" ]; then
+  if [ "${get_all}" = "1" ]; then
+    for l in $( ls *.log 2> /dev/null )
+    do
       files+=($l)
-      break
-    fi
-    copyright_headers=`grep 'Copyright (C)' ${l}`
-    if [ ! -z "$copyright_headers" ]; then
-      # also check for the pid line and get the pid
-      proc_id=`sed -n 's/.*Process ID: \([0-9]\+\)$/\1/p' ${l}`
-      if [ "${verbose}" = "1" ]; then
-        echo "Adding file ${l} to the array"
+    done
+    for l in $( ls *.gfs 2> /dev/null )
+    do
+      files+=($l)
+    done
+  else
+    logs_sorted_reverse=`ls *.log | sed 's/\([0-9]\)/;\1/' | sort -r -n -t\; -k2,2 | tr -d ';'`
+
+    arr=($logs_sorted_reverse)
+    latest_log=${arr[-1]}
+    unset arr[${#arr[@]}-1]
+
+    all_logs=()
+    all_logs+=($latest_log)
+    all_logs+=("${arr[@]}")
+
+    files=()
+    last_restart_log=""
+    for l in "${all_logs[@]}"
+    do
+      # If last log is got, get the one before that as well
+      if [ ! -z "$last_restart_log" ]; then
+        if [ "${verbose}" = "1" ]; then
+          echo "Adding the last file ${l} to the array"
+        fi
+        files+=($l)
+        break
       fi
-      files+=($l)
-      last_restart_log="$l"
-    fi
-  done
+      copyright_headers=`grep 'Copyright (C)' ${l}`
+      if [ ! -z "$copyright_headers" ]; then
+        # also check for the pid line and get the pid
+        proc_id=`sed -n 's/.*Process ID: \([0-9]\+\)$/\1/p' ${l}`
+        if [ "${verbose}" = "1" ]; then
+          echo "Adding file ${l} to the array"
+        fi
+        files+=($l)
+        last_restart_log="$l"
+      fi
+    done
 
-  if [ -z "${proc_id}" ]; then
-    echo "No valid process id could be obtained from logs on ${host}"
-    exit 1
+    # get all the gfs files as well
+    for l in $( ls *.gfs 2> /dev/null )
+    do
+      files+=($l)
+    done
   fi
 
   # get the stack dumps first
-  dump_num=1
-  for i in {1..${num_stack_dumps}}
-  do
-    dump_num=`expr ${dump_num} + 1`
-    kill -URG $proc_id
-    sleep $int_stack_dumps
-  done
-
-  if [ "${get_all}" = "1" ]; then
-    tar cvzf "${data_dir}.tar.gz" "$data_dir" && \
-    rsync -av "${data_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
-    rm -f "${data_dir}.tar.gz"
-  else
-    # get the latest log and the latest with the copyright headers
-    for l in $( ls -t *.log )
+  if [ "${num_stack_dumps}" -gt 0 ]; then
+    dump_num=1
+    for i in `seq 1 ${num_stack_dumps}`
     do
-      files+=($l)
-      if [ "${l}" = "${last_restart_log}" ]; then
-        break
-      fi
-    done
-    # get the latest stats file
-    for l in $( ls -t *.gfs 2> /dev/null )
-    do
+      dump_num=`expr ${dump_num} + 1`
       if [ "${verbose}" = "1" ]; then
-        echo "Adding file ${l} to the array"
+        echo "Taking the dump for on ${host} -- count ${i}"
       fi
-      files+=($l)
+      kill -URG $proc_id
+      sleep $int_stack_dumps
     done
   fi
+
+  for f in "${files[@]}"
+  do
+    if [ "${verbose}" = "1" ]; then
+      echo "copying file ${f} in dir ${tmp_dir}"
+    fi
+    cp $f "${tmp_dir}/"
+  done
+
   if [ "${verbose}" = "1" ]; then
     echo "FILES=${files[@]} will be rsynced to ${collector_host}:$collector_dir}"
   fi
-  tar cvzf "${data_dir}.tar.gz" "$data_dir" && \
-  rsync -av "${data_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
-  rm -f "${data_dir}.tar.gz"
+
+  cd "${tmp_dir}/.."
+  tar cvzf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
+    rsync -av "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
+      rm -f "${tmp_dir}.tar.gz"
 }
 
 check_configs
@@ -224,8 +238,8 @@ check_configs
 
 all_pids=()
 # Make output directory
-TS=`date +%F-%R-%s`
-OUT_DIR="${SCRIPT_DIR}/debug_data-/${TS}"
+TS=`date +%m.%d.%H.%M.%S`
+OUT_DIR="${SCRIPT_DIR}/debug_data_${TS}"
 
 mkdir "$OUT_DIR"
 
@@ -254,4 +268,6 @@ do
 done
 
 # make zipped tar ball
-#tar -zcf debug_data.tar.gz debug_data
+cd "${OUT_DIR}/.."
+tar -cf "${OUT_DIR}.tar" $(basename $OUT_DIR)
+rm -rf ${OUT_DIR}
