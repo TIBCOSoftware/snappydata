@@ -122,8 +122,8 @@ function collect_data {
     INTERVAL_BETWEEN_DUMPS=0
   fi
 
-  typeset -f | ssh $host "$(cat);collect_on_remote ${wd} ${NO_OF_STACK_DUMPS} \\
-      ${INTERVAL_BETWEEN_DUMPS} ${GET_EVERYTHING} ${collector_host} ${out_dir} ${VERBOSE}"
+  typeset -f | ssh $host "$(cat);collect_on_remote \"${wd}\" \"${NO_OF_STACK_DUMPS}\" \\
+      \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \"${out_dir}\" \"${VERBOSE}\""
 }
 
 function collect_on_remote {
@@ -181,7 +181,7 @@ function collect_on_remote {
         files+=($l)
         break
       fi
-      copyright_headers=`grep 'Copyright (C)' ${l}`
+      copyright_headers=`grep 'Copyright [ ]*([ ]*.[ ]*)' ${l}`
       if [ ! -z "$copyright_headers" ]; then
         # also check for the pid line and get the pid
         proc_id=`sed -n 's/.*Process ID: \([0-9]\+\)$/\1/p' ${l}`
@@ -267,7 +267,7 @@ do
   wait $p 2> /dev/null
 done
 
-# make zipped tar ball
+# make tar ball
 cd "${OUT_DIR}/.."
 tar -cf "${OUT_DIR}.tar" $(basename $OUT_DIR)
 rm -rf ${OUT_DIR}
