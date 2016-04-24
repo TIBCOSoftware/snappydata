@@ -44,9 +44,9 @@ class CatalystHashFunction {
             val b = java.lang.Double.doubleToLongBits(d)
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
-          case str: java.lang.String => utfStringHashCode(str)
-          case timeStamp : java.sql.Timestamp => hashJavaSqlTimestamp(timeStamp)
-          case date : java.util.Date => hashJavaDate(date)
+          case str: java.lang.String => computeHashCode(str)
+          case timeStamp : java.sql.Timestamp => computeHashCode(timeStamp)
+          case date : java.util.Date => computeHashCode(date)
           case other => other.hashCode()
         }
       }
@@ -54,25 +54,26 @@ class CatalystHashFunction {
   }
 
 
-  def hashJavaDate(sd: java.util.Date): Int = {
+  def computeHashCode(sd: java.util.Date): Int = {
     computeHash(DateTimeUtils.millisToDays(sd.getTime))
   }
 
-  def hashJavaSqlTimestamp(time: java.sql.Timestamp): Int = {
+  def computeHashCode(time: java.sql.Timestamp): Int = {
     val ht = DateTimeUtils.fromJavaTimestamp(time)
     computeHash(ht)
   }
 
 
-  def utfStringHashCode(str: String): Int = {
+  def computeHashCode(str: String): Int = {
     var result = 1
     val end = str.length
 
     def addToHash(value: Int) {
-      result = 31 * result + value
+      result = 31 * result + value.toByte
     }
 
-    for (index <- 0 to end - 1) {
+    var index = 0
+    while (index <= end - 1) {
       val c: Char = str.charAt(index)
       if (c < 0x80) {
         addToHash(c)
@@ -85,7 +86,9 @@ class CatalystHashFunction {
         if (!Character.isSurrogatePair(high, low)) {
           throw new Exception("Something is not right")
         }
-        // Now we know we have a *valid* surrogate pair, we can consume the low surrogate.
+        // A valid surrogate pair. Get the supplementary code
+
+        index = index + 1
 
         val sch = Character.toCodePoint(high, low)
 
@@ -99,6 +102,7 @@ class CatalystHashFunction {
         addToHash(((c >> 6) & 0x3f) | 0x80)
         addToHash((c & 0x3f) | 0x80)
       }
+      index = index + 1
     }
 
     result

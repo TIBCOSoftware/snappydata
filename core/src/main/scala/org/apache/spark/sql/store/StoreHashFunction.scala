@@ -23,7 +23,7 @@ import com.pivotal.gemfirexd.internal.iapi.types._
 import org.apache.spark.sql.CatalystHashFunction
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.types.Decimal
-
+import scala.util.control.Breaks._
 /**
  * A partitioner that helps store to collocate data with Spark's
  * partitions. Each store layer hash computation invokes this to get their bucket information.
@@ -46,21 +46,21 @@ class StoreHashFunction extends CatalystHashFunction {
             val b = java.lang.Double.doubleToLongBits(d)
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
-          case str: java.lang.String => utfStringHashCode(str)
-          case timeStamp : java.sql.Timestamp => hashJavaSqlTimestamp(timeStamp)
-          case date : java.util.Date => hashJavaDate(date)
+          case string: java.lang.String => computeHashCode(string)
+          case timeStamp : java.sql.Timestamp => computeHashCode(timeStamp)
+          case date : java.util.Date => computeHashCode(date)
           //Custom type checks for Store
-          case sb: SQLBoolean => if (sb.getBoolean) 0 else 1
-          case sd: SQLDate => hashSQLDate(sd)
-          case sd: SQLBit => {
-            val bytes = sd.getBytes()
+          case boolean: SQLBoolean => if (boolean.getBoolean) 0 else 1
+          case sqlDate: SQLDate => computeHashCode(sqlDate)
+          case sqlBit: SQLBit => {
+            val bytes = sqlBit.getBytes()
             if(bytes == null ) 0 else java.util.Arrays.hashCode(bytes)
           }
-          case sf: SQLReal => java.lang.Float.floatToIntBits(sf.getFloat)
-          case clob: SQLClob => hashClob(clob.getCharArray(true))
-          case varchar: SQLVarchar => hashClob(varchar.getCharArray(true))
-          case time: SQLTimestamp => hashSQLTimestamp(time)
-          case decimal: SQLDecimal => hashSQLDecimal(decimal)
+          case sqlReal: SQLReal => java.lang.Float.floatToIntBits(sqlReal.getFloat)
+          case clob: SQLClob => computeHashCode(clob.getCharArray(true))
+          case varchar: SQLVarchar => computeHashCode(varchar.getCharArray(true))
+          case time: SQLTimestamp => computeHashCode(time)
+          case decimal: SQLDecimal => computeHashCode(decimal)
           case other => other.hashCode()
         }
       }
@@ -68,12 +68,12 @@ class StoreHashFunction extends CatalystHashFunction {
   }
 
 
-  private def hashSQLDate(sd: SQLDate): Int = {
+  private def computeHashCode(sd: SQLDate): Int = {
     computeHash(DateTimeUtils.millisToDays(sd.getTimeInMillis(null)))
   }
 
   // This is a suboptimal code and neew to create an Object for hash computation. TODO SNAP-711
-  private def hashSQLDecimal(decimal: SQLDecimal): Int = {
+  private def computeHashCode(decimal: SQLDecimal): Int = {
     val javaBigDecimal = decimal.getObject()
     if (javaBigDecimal == null) 0 else computeHash(Decimal(javaBigDecimal.asInstanceOf[java.math
     .BigDecimal]))
@@ -83,21 +83,20 @@ class StoreHashFunction extends CatalystHashFunction {
    * Returns the number of micros since epoch from java.sql.Timestamp.
    * Same code as CatalystConverter for timestamp .
    */
-  private def hashSQLTimestamp(time: SQLTimestamp): Int = {
+  private def computeHashCode(time: SQLTimestamp): Int = {
     val ht = time.getEpochTime(null) * 1000L + (time.getNanos().toLong / 1000)
     computeHash(ht)
   }
 
-
-  private def hashClob(data: Array[Char]): Int = {
+  private def computeHashCode(data: Array[Char]): Int = {
     var result = 1
     val end = data.length
-
     def addToHash(value: Int) {
-      result = 31 * result + value
+      result = 31 * result + value.toByte
     }
 
-    for (index <- 0 to end - 1) {
+    var index = 0
+    while (index <= end - 1) {
       {
         val c: Char = data(index)
         if (c < 0x80) {
@@ -108,26 +107,29 @@ class StoreHashFunction extends CatalystHashFunction {
         } else if (Character.isSurrogate(c)) {
           val high: Char = c
           val low: Char = if (index + 1 != end) data(index + 1) else 0
-          if(!Character.isSurrogatePair(high, low)){
+          if (!Character.isSurrogatePair(high, low)) {
             throw new Exception("Something is not right")
           }
-          // Now we know we have a *valid* surrogate pair, we can consume the low surrogate.
+          // A valid surrogate pair. Get the supplementary code
+
+          index = index + 1
 
           val sch = Character.toCodePoint(high, low)
-
+          //4 Byte Int
           addToHash((sch >> 18) | 0xf0)
           addToHash(((sch >> 12) & 0x3f) | 0x80)
           addToHash(((sch >> 6) & 0x3f) | 0x80)
           addToHash((sch & 0x3f) | 0x80)
         }
-        else {
+        else { //3 Byte Int
           addToHash((c >> 12) | 0xe0)
           addToHash(((c >> 6) & 0x3f) | 0x80)
           addToHash((c & 0x3f) | 0x80)
         }
+        index = index + 1
       }
     }
+
     return result
   }
-
 }
