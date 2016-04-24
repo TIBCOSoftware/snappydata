@@ -46,7 +46,7 @@ class StoreHashFunction extends CatalystHashFunction {
             val b = java.lang.Double.doubleToLongBits(d)
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
-          case str: java.lang.String => utfStringHashCode(str.getBytes("utf-8"))
+          case str: java.lang.String => utfStringHashCode(str)
           case timeStamp : java.sql.Timestamp => hashJavaSqlTimestamp(timeStamp)
           case date : java.util.Date => hashJavaDate(date)
           //Custom type checks for Store
@@ -88,29 +88,42 @@ class StoreHashFunction extends CatalystHashFunction {
     computeHash(ht)
   }
 
+
   private def hashClob(data: Array[Char]): Int = {
     var result = 1
-    var b = 0.toByte
-    for (index <- 0 to data.length - 1) {
+    val end = data.length
+
+    def addToHash(value: Int) {
+      result = 31 * result + value
+    }
+
+    for (index <- 0 to end - 1) {
       {
-        val c: Int = data(index)
-        if ((c >= 0x0001) && (c <= 0x007F)) {
-          b = (c & 0xFF).toByte
-          result = 31 * result + b
-        }
-        else if (c > 0x07FF) {
-          b = (0xE0 | ((c >> 12) & 0x0F)).toByte
-          result = 31 * result + b
-          b = (0x80 | ((c >> 6) & 0x3F)).toByte
-          result = 31 * result + b
-          b = (0x80 | ((c >> 0) & 0x3F)).toByte
-          result = 31 * result + b
+        val c: Char = data(index)
+        if (c < 0x80) {
+          addToHash(c)
+        } else if (c < 0x800) {
+          addToHash((c >> 6) | 0xc0)
+          addToHash((c & 0x3f) | 0x80)
+        } else if (Character.isSurrogate(c)) {
+          val high: Char = c
+          val low: Char = if (index + 1 != end) data(index + 1) else 0
+          if(!Character.isSurrogatePair(high, low)){
+            throw new Exception("Something is not right")
+          }
+          // Now we know we have a *valid* surrogate pair, we can consume the low surrogate.
+
+          val sch = Character.toCodePoint(high, low)
+
+          addToHash((sch >> 18) | 0xf0)
+          addToHash(((sch >> 12) & 0x3f) | 0x80)
+          addToHash(((sch >> 6) & 0x3f) | 0x80)
+          addToHash((sch & 0x3f) | 0x80)
         }
         else {
-          b = (0xC0 | ((c >> 6) & 0x1F)).toByte
-          result = 31 * result + b
-          b = (0x80 | ((c >> 0) & 0x3F)).toByte
-          result = 31 * result + b
+          addToHash((c >> 12) | 0xe0)
+          addToHash(((c >> 6) & 0x3f) | 0x80)
+          addToHash((c & 0x3f) | 0x80)
         }
       }
     }
