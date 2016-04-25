@@ -17,7 +17,9 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
+import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
@@ -33,7 +35,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{GenericRow, Alias, Cast}
+import org.apache.spark.sql.catalyst.expressions.{GenericRow, Alias, Cast, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -43,7 +45,7 @@ import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCas
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.GemFireXDDialect
+import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -654,41 +656,114 @@ class SnappyContext protected[spark](
     }
   }
 
+  /**
+    * Create an index on a table.
+    * @param indexName Index name which goes in the catalog
+    * @param baseTable Fully qualified name of table on which the index is created.
+    * @param indexColumns Columns on which the index has to be created
+    * @param options Options for indexes. For e.g.
+    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    */
+  def createIndex(indexName: String,
+      baseTable: String,
+      indexColumns: java.util.Map[String, Option[SortDirection]],
+      options: java.util.Map[String, String]): Unit = {
+    createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
+  }
 
   /**
-   * Create Index on a SnappyData table (created by a call to createTable).
-   * @todo how can the user invoke this? sql?
-   */
-  private[sql] def createIndexOnTable(tableIdent: QualifiedTableName,
-      sql: String): Unit = {
-    //println("create-index" + " tablename=" + tableName    + " ,sql=" + sql)
+    * Create an index on a table.
+    * @param indexName Index name which goes in the catalog
+    * @param baseTable Fully qualified name of table on which the index is created.
+    * @param indexColumns Columns on which the index has to be created with the
+    *                     direction of sorting. Direction can be specified as None.
+    * @param options Options for indexes. For e.g.
+    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    */
+  def createIndex(indexName: String,
+      baseTable: String,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
 
+    val tableIdent = catalog.newQualifiedTableName(baseTable)
+    val indexIdent = catalog.newQualifiedTableName(indexName)
+
+    if (indexIdent.database != tableIdent.database) {
+      throw new AnalysisException(
+        s"Index and table have different databases " +
+          s"specified ${indexIdent.database} and ${tableIdent.database}")
+    }
     if (!catalog.tableExists(tableIdent)) {
       throw new AnalysisException(
-        s"$tableIdent is not an indexable table")
+        s"Could not find $tableIdent in catalog")
     }
-
-    //println("qualifiedTable=" + qualifiedTable)
+    import scala.collection.JavaConverters._
     catalog.lookupRelation(tableIdent) match {
-      case LogicalRelation(i: IndexableRelation, _) =>
-        i.createIndex(tableIdent.toString, sql)
+      case LogicalRelation(ir: IndexableRelation, _) =>
+        ir.createIndex(indexIdent,
+          tableIdent,
+          indexColumns,
+          options)
+
       case _ => throw new AnalysisException(
         s"$tableIdent is not an indexable table")
     }
   }
 
+  private[sql] def getIndexTable(indexIdent: QualifiedTableName): QualifiedTableName = {
+    new QualifiedTableName(Some(Constant.INTERNAL_SCHEMA_NAME),
+      indexIdent.table)
+  }
+
+  private def constructDropSQL(indexName: String,
+      ifExists : Boolean): String = {
+
+    val ifExistsClause = if (ifExists) "IF EXISTS" else ""
+
+    return s"DROP INDEX $ifExistsClause $indexName"
+  }
+
   /**
-   * Drop Index of a SnappyData table (created by a call to createIndexOnTable).
-   */
-  private[sql] def dropIndexOfTable(sql: String): Unit = {
+    * Drops an index on a table
+    * @param indexName Index name which goes in catalog
+    * @param ifExists Drop if exists, else exit gracefully
+    */
+  def dropIndex(indexName: String, ifExists: Boolean): Unit = {
+
+    val indexIdent = getIndexTable(catalog.newQualifiedTableName(indexName))
+
+    // Since the index does not exist in catalog, it may be a row table index.
+    if (!catalog.tableExists(indexIdent)) {
+      dropRowStoreIndex(indexName, ifExists)
+    } else {
+      catalog.lookupRelation(indexIdent) match {
+        case LogicalRelation(dr: DependentRelation, _) =>
+          // Remove the index from the bse table props
+          val baseTableIdent = catalog.newQualifiedTableName(dr.baseTable.get)
+          catalog.lookupRelation(baseTableIdent) match {
+            case LogicalRelation(cr: ColumnFormatRelation, _) =>
+              cr.removeDependent(dr, catalog)
+              cr.dropIndex(indexIdent, baseTableIdent, ifExists)
+          }
+
+        case _ => if (!ifExists) throw new AnalysisException(
+          s"No index found for $indexName")
+      }
+    }
+  }
+
+  private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
       sparkContext, new mutable.HashMap[String, String])
     val conn = JdbcUtils.createConnectionFactory(connProperties.url,
       connProperties.connProps)()
     try {
+      val sql = constructDropSQL(indexName, ifExists)
       JdbcExtendedUtils.executeUpdate(sql, conn)
     } catch {
-      case sqle: java.sql.SQLException =>
+      case sqle: SQLException =>
         if (sqle.getMessage.contains("No suitable driver found")) {
           throw new AnalysisException(s"${sqle.getMessage}\n" +
             "Ensure that the 'driver' option is set appropriately and " +
