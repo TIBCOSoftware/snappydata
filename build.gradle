@@ -24,7 +24,7 @@ buildscript {
 }
 
 allprojects {
-  // We want to see all test results.  This is equivalatent to setting --continue
+  // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
   gradle.startParameter.continueOnFailure = true
 

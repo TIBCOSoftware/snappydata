@@ -32,13 +32,14 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.ExecutorLocalShellPartition
+import org.apache.spark.sql.collection.{Utils, ExecutorLocalShellPartition}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.types.{StructField, DataType}
 
 final class SparkShellRDDHelper {
 
@@ -177,5 +178,12 @@ object SparkShellRDDHelper {
       case r => sys.error("unexpected region with dataPolicy=" +
           s"${r.getAttributes.getDataPolicy} attributes: ${r.getAttributes}")
     }
+  }
+
+  def getDataType(tp: java.lang.Object): DataType = tp match {
+    case d: DataType => d
+    case s: StructField => s.dataType
+    case _ => throw Utils.analysisException(
+      s"Expected DataType object for the compound type but got $tp")
   }
 }
