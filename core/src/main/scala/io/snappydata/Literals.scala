@@ -16,6 +16,10 @@
  */
 package io.snappydata
 
+import java.util.Properties
+
+import org.apache.spark.SparkConf
+
 /**
  * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
@@ -37,6 +41,10 @@ object Constant {
   val PROPERTY_PREFIX = "snappydata."
 
   val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
+
+  val SPARK_PREFIX = "spark."
+
+  val SPARK_STORE_PREFIX = SPARK_PREFIX + STORE_PROPERTY_PREFIX
 
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
@@ -63,19 +71,58 @@ object Constant {
  * http://docs.scala-lang.org/style/naming-conventions.html
  * i.e. upper camel case.
  */
-object Property {
+object Property extends Enumeration {
 
-  val locators = s"${Constant.STORE_PROPERTY_PREFIX}locators"
+  final class ValueAlt(name: String, altName: String)
+      extends Property.Val(name) {
 
-  val mcastPort = s"${Constant.STORE_PROPERTY_PREFIX}mcast-port"
+    def getOption(conf: SparkConf): Option[String] = if (altName == null) {
+      conf.getOption(name)
+    } else {
+      conf.getOption(name).orElse(conf.getOption(altName))
+    }
 
-  val jobserverEnabled = s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled"
+    def getProperty(properties: Properties): String = if (altName == null) {
+      properties.getProperty(name)
+    } else {
+      val v = properties.getProperty(name)
+      if (v != null) v else properties.getProperty(altName)
+    }
 
-  val jobserverConfigFile = s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile"
+    def apply(): String = name
 
-  val embedded = s"${Constant.PROPERTY_PREFIX}embedded"
+    def unapply(key: String): Boolean = name.equals(key) ||
+        (altName != null && altName.equals(key))
 
-  val metastoreDBURL = s"${Constant.PROPERTY_PREFIX}metastore-db-url"
+    override def toString(): String =
+      if (altName == null) name else name + '/' + altName
+  }
 
-  val metastoreDriver = s"${Constant.PROPERTY_PREFIX}metastore-db-driver"
+  type Type = ValueAlt
+
+  protected final def Val(name: String): ValueAlt =
+    new ValueAlt(name, null)
+
+  protected final def Val(name: String, prefix: String): ValueAlt =
+    new ValueAlt(name, prefix + name)
+
+  val Locators = Val(s"${Constant.STORE_PROPERTY_PREFIX}locators",
+    Constant.SPARK_PREFIX)
+
+  val McastPort = Val(s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+    Constant.SPARK_PREFIX)
+
+  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled")
+
+  val JobserverConfigFile =
+    Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile")
+
+  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
+    Constant.SPARK_PREFIX)
+
+  val MetastoreDBURL = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+    Constant.SPARK_PREFIX)
+
+  val MetastoreDriver = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+    Constant.SPARK_PREFIX)
 }
