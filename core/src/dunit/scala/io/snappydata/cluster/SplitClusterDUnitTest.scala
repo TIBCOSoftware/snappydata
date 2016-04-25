@@ -17,6 +17,7 @@
 package io.snappydata.cluster
 
 import java.io.PrintWriter
+import java.nio.file.{Paths, Files}
 import java.sql.{Connection, DriverManager, Statement, Timestamp}
 import java.util.Properties
 
@@ -102,9 +103,9 @@ class SplitClusterDUnitTest(s: String)
 
     println(s"Stopping snappy cluster in $snappyProductDir/work")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
-    //Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
-    //Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
-    //Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
   }
 
   private def writeToFile(str: String, fileName: String): Unit = {
