@@ -207,13 +207,14 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
     def changeOrAppend(attr: String, value: String,
         overwrite: Boolean = false, ignoreIfPresent: Boolean = false,
-        checkSparkPrefix: Boolean = true): Unit = {
-      conf.getOption(attr) match {
-        case None => if (checkSparkPrefix) {
-          changeOrAppend(Constant.SPARK_PREFIX + attr, value, overwrite,
-            ignoreIfPresent, checkSparkPrefix = false)
+        sparkPrefix: String = null): Unit = {
+      val attrKey = if (sparkPrefix == null) attr else sparkPrefix + attr
+      conf.getOption(attrKey) match {
+        case None => if (sparkPrefix == null) {
+          changeOrAppend(attr, value, overwrite, ignoreIfPresent,
+            sparkPrefix = Constant.SPARK_PREFIX)
         } else conf.set(attr, value)
-        case v if ignoreIfPresent => ; // skip setting property.
+        case v if ignoreIfPresent => // skip setting property
         case v if overwrite => conf.set(attr, value)
         case Some(x) => conf.set(attr, x ++ s""",$value""")
       }
