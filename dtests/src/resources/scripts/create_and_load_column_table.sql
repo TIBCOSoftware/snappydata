@@ -4,7 +4,7 @@ DROP TABLE IF EXISTS AIRLINE ;
 
 ----- CREATE TEMPORARY STAGING TABLE TO LOAD PARQUET FORMATTED DATA -----
 CREATE TABLE STAGING_AIRLINE
-    USING parquet OPTIONS(path '/home/swati/snappy-commons/snappy-dtests/src/resources/data/airlineParquetData');
+    USING parquet OPTIONS(path '/home/swati/snappy-commons/dtests/src/resources/data/airlineParquetData');
 --  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData');
 -- Use below line to work with larger data set
 --  USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData_2007-15');

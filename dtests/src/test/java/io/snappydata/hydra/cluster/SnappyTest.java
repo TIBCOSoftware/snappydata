@@ -313,7 +313,7 @@ public class SnappyTest implements Serializable {
     protected String getUserScriptLocation(String scriptName) {
         String scriptPath = null;
         try {
-            scriptPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep + "snappy-dtests" + sep + "src" + sep + "resources" + sep + "scripts" + sep + scriptName;
+            scriptPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep + "src" + sep + "resources" + sep + "scripts" + sep + scriptName;
             Log.getLogWriter().info("SS - Inside getUserScriptLocation - scriptPath is ::" + scriptPath);
         } catch (Exception e) {
             throw e;
@@ -324,7 +324,7 @@ public class SnappyTest implements Serializable {
     protected String getUserAppJarLocation(String userAppJar) {
         String jarPath = null;
         try {
-            jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep + "snappy-dtests" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep + userAppJar;
+            jarPath = hd.getGemFireHome() + sep + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep + userAppJar;
             Log.getLogWriter().info("SS - Inside getUserAppJarLocation - jarPath is ::" + jarPath);
         } catch (Exception e) {
             throw e;

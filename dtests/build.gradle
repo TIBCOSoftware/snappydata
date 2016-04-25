@@ -35,7 +35,7 @@ dependencies {
         exclude(group: 'org.scala-lang', module: 'scala-compiler')
     }
     compile project(':snappy-core_' + scalaBinaryVersion)
-    if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
+    if (new File(rootDir, "spark/build.gradle").exists()) {
         compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
         compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
         compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
@@ -47,7 +47,7 @@ dependencies {
         compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
     }
 
-    if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+    if (new File(rootDir, "store/build.gradle").exists()) {
         testCompile project(':snappy-store:gemfirexd-client')
         testCompile project(':snappy-store:gemfirexd-core')
         testCompile project(':snappy-store:gemfirexd-tools')
@@ -64,8 +64,8 @@ dependencies {
         testCompile group: 'io.snappydata', name: 'gemfire-core', version: gemfireXDVersion
         testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
     }
-    testRuntime project(':snappy-tools_' + scalaBinaryVersion)
-    testCompile project(':snappy-tools_' + scalaBinaryVersion)
+    testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
+    testCompile project(':snappy-cluster_' + scalaBinaryVersion)
     testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
     testRuntime 'org.pegdown:pegdown:1.1.0'
 //    testRuntime group: 'org.datanucleus', name: 'datanucleus-core', version:'3.2.10'
@@ -93,12 +93,12 @@ testClasses.doLast {
 
 copy {
     def osDir = osName.getFamilyName().replace(" ", "").toLowerCase()
-    from (rootDir.getAbsolutePath() + '/snappy-dtests/src/test/java') {
+    from (rootDir.getAbsolutePath() + '/dtests/src/test/java') {
         include '**/*.bt'
         include '**/*.conf'
         include '**/*.inc'
         include '**/*.sql'
     }
-    into rootDir.getAbsolutePath() + '/snappy-store/tests/sql/build-artifacts/' + osDir + '/classes/main'
+    into rootDir.getAbsolutePath() + '/store/tests/sql/build-artifacts/' + osDir + '/classes/main'
 }
 
