@@ -22,8 +22,8 @@ import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.AvailablePort
 import com.gemstone.gemfire.internal.cache.CacheServerLauncher
-import com.pivotal.gemfirexd.{TestUtil, FabricService, Attribute}
 import com.pivotal.gemfirexd.tools.GfxdDistributionLocator
+import com.pivotal.gemfirexd.{Attribute, FabricService, TestUtil}
 import io.snappydata._
 import org.scalatest.BeforeAndAfterAll
 
@@ -63,7 +63,7 @@ class LeaderLauncherSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val props = TestUtil.doCommonSetup(null)
 
-    props.setProperty(Property.locators, s"localhost[${availablePort}]")
+    props.setProperty(Property.Locators(), s"localhost[$availablePort]")
     props.setProperty(Attribute.SYS_PERSISTENT_DIR, dirname)
     fs.start(props)
 

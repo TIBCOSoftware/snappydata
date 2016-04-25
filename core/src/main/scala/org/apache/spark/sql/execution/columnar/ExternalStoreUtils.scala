@@ -28,18 +28,17 @@ import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SpecificMutableRow
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.Utils._
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
 import org.apache.spark.sql.row.{GemFireXDClientDialect, GemFireXDDialect}
-import org.apache.spark.sql.sources.{ConnectionProperties}
+import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 
 /**
@@ -152,7 +151,7 @@ object ExternalStoreUtils {
       case SnappyEmbeddedMode(_, _) =>
         // Already connected to SnappyData in embedded mode.
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;mcast-port=0"
-      case SnappyShellMode(_, _) =>
+      case SplitClusterMode(_, _) =>
         ServiceUtils.getLocatorJDBCURL(sc) + "/route-query=false"
       case ExternalEmbeddedMode(_, url) =>
         Constant.DEFAULT_EMBEDDED_URL + ";host-data=false;" + url
@@ -166,7 +165,7 @@ object ExternalStoreUtils {
 
   def isShellOrLocalMode(sparkContext: SparkContext): Boolean = {
     SnappyContext.getClusterMode(sparkContext) match {
-      case SnappyShellMode(_, _) | LocalMode(_, _) => true
+      case SplitClusterMode(_, _) | LocalMode(_, _) => true
       case _ => false
     }
   }

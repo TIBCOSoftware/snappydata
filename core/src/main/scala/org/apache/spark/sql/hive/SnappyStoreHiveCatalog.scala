@@ -250,22 +250,23 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
     val sc = context.sparkContext
     val sparkConf = sc.conf
-    val url = sparkConf.get(Property.metastoreDBURL, null)
-    if (url != null) {
-      val driver = sparkConf.get(Property.metastoreDriver, null)
-      (false, url, driver)
-    } else SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
-           LocalMode(_, _) =>
-        (true, ExternalStoreUtils.defaultStoreURL(sc) +
-            ";disable-streaming=true;default-persistent=true",
-            Constant.JDBC_EMBEDDED_DRIVER)
-      case SnappyShellMode(_, props) =>
-        (true, Constant.DEFAULT_EMBEDDED_URL +
-            ";host-data=false;disable-streaming=true;default-persistent=true;" +
-            props, Constant.JDBC_EMBEDDED_DRIVER)
-      case ExternalClusterMode(_, _) =>
-        (false, null, null)
+    Property.MetastoreDBURL.getOption(sparkConf) match {
+      case Some(url) =>
+        val driver = Property.MetastoreDriver.getOption(sparkConf).orNull
+        (false, url, driver)
+      case None => SnappyContext.getClusterMode(sc) match {
+        case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+             LocalMode(_, _) =>
+          (true, ExternalStoreUtils.defaultStoreURL(sc) +
+              ";disable-streaming=true;default-persistent=true",
+              Constant.JDBC_EMBEDDED_DRIVER)
+        case SplitClusterMode(_, props) =>
+          (true, Constant.DEFAULT_EMBEDDED_URL +
+              ";host-data=false;disable-streaming=true;default-persistent=true;" +
+              props, Constant.JDBC_EMBEDDED_DRIVER)
+        case ExternalClusterMode(_, _) =>
+          (false, null, null)
+      }
     }
   }
 

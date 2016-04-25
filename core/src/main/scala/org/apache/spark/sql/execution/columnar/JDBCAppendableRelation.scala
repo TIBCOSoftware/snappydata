@@ -18,8 +18,6 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
-import org.apache.spark.sql.catalyst.expressions.SortDirection
-
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
@@ -29,8 +27,8 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -69,7 +67,8 @@ case class JDBCAppendableRelation(
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
 
-  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table, true)
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table,
+    isColumnTable = true)
 
   protected final def dialect = connProperties.dialect
 
@@ -314,11 +313,6 @@ object JDBCAppendableRelation extends Logging {
     }
 
     INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
-  }
-
-  private def removePool(table: String): () => Iterator[Unit] = () => {
-    ConnectionPool.removePoolReference(table)
-    Iterator.empty
   }
 }
 
