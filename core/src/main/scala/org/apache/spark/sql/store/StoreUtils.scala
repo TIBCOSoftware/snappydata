@@ -186,12 +186,12 @@ object StoreUtils extends Logging {
           v match {
             case PRIMARY_KEY =>
               if (isRowTable) {
-                s"hash $PRIMARY_KEY"
+                s"sparkhash $PRIMARY_KEY"
               } else {
                 throw new DDLException("Column table cannot be partitioned on" +
                     " PRIMARY KEY as no primary key")
               }
-            case _ =>  s"hash COLUMN($v)"
+            case _ =>  s"sparkhash COLUMN($v)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "
