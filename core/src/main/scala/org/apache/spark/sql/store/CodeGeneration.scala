@@ -27,11 +27,11 @@ import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodeGenContext, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-import org.apache.spark.sql.collection.WrappedRow
+import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
+import org.apache.spark.sql.collection.{Utils, WrappedRow}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.jdbc.JdbcDialect
 import org.apache.spark.sql.types._
@@ -45,38 +45,32 @@ import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
  * This is both more efficient and allows better code reuse with the code
  * generation facilities of Spark (esp for complex types like ArrayType).
  */
-trait CodeGeneration {
-
-  @throws[java.sql.SQLException]
-  def executeStatement(stmt: PreparedStatement, multipleRows: Boolean,
-      rows: java.util.Iterator[InternalRow], batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int
-}
-
-private final class ExecuteKey(val name: String,
-    val schema: Array[StructField], val dialect: JdbcDialect) {
-
-  override def hashCode(): Int = name.hashCode
-
-  override def equals(other: Any): Boolean = other match {
-    case o: ExecuteKey => name == o.name
-    case s: String => name == s
-    case _ => false
-  }
-}
-
 object CodeGeneration extends Logging {
 
   /**
-   * A loading cache of generated <code>CodeGeneration</code>s.
+   * A loading cache of generated <code>GeneratedStatement</code>s.
    */
   private[this] val cache = CacheBuilder.newBuilder().maximumSize(200).build(
-    new CacheLoader[ExecuteKey, CodeGeneration]() {
+    new CacheLoader[ExecuteKey, GeneratedStatement]() {
       override def load(key: ExecuteKey) = {
         val start = System.nanoTime()
         val result = compilePreparedUpdate(key.name, key.schema, key.dialect)
         def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
         logInfo(s"Expression code generated in $elapsed ms")
+        result
+      }
+    })
+
+  /**
+   * A loading cache of generated <code>SerializeComplexType</code>s.
+   */
+  private[this] val typeCache = CacheBuilder.newBuilder().maximumSize(100).build(
+    new CacheLoader[DataType, SerializeComplexType]() {
+      override def load(key: DataType) = {
+        val start = System.nanoTime()
+        val result = compileComplexType(key)
+        def elapsed: Double = (System.nanoTime() - start).toDouble / 1000000.0
+        logInfo(s"Serializer code generated in $elapsed ms")
         result
       }
     })
@@ -103,9 +97,8 @@ object CodeGeneration extends Logging {
   }
 
   private[this] def generateComplexTypeCode(method: Method,
-      typeArgs: Object*): String = {
-    method.invoke(GenerateUnsafeProjection, typeArgs:_*).asInstanceOf[String]
-  }
+      typeArgs: Object*): String =
+    method.invoke(GenerateUnsafeProjection, typeArgs: _*).asInstanceOf[String]
 
   private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
       dialect: JdbcDialect, ctx: CodeGenContext,
@@ -139,7 +132,7 @@ object CodeGeneration extends Logging {
         stmt.setBigDecimal(${col + 1},
           row.getDecimal($col, ${d.precision}, ${d.scale}).toJavaBigDecimal());"""
       case a: ArrayType => s"""
-        ArrayData arr = row.getArray($col);
+        final ArrayData arr = row.getArray($col);
         if ($buffHolderVar == null) {
           $buffHolderVar = new BufferHolder();
         } else {
@@ -150,7 +143,7 @@ object CodeGeneration extends Logging {
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
             $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
       case m: MapType => s"""
-        MapData map = row.getMap($col);
+        final MapData map = row.getMap($col);
         if ($buffHolderVar == null) {
           $buffHolderVar = new BufferHolder();
         } else {
@@ -161,7 +154,7 @@ object CodeGeneration extends Logging {
         stmt.setBytes(${col + 1}, java.util.Arrays.copyOf(
            $buffHolderVar.buffer, $buffHolderVar.totalSize()));"""
       case s: StructType => s"""
-        InternalRow struct = row.getStruct($col, ${s.length});
+        final InternalRow struct = row.getStruct($col, ${s.length});
         if ($buffHolderVar == null) {
           $buffHolderVar = new BufferHolder();
         } else {
@@ -179,7 +172,7 @@ object CodeGeneration extends Logging {
   }
 
   private[this] def compilePreparedUpdate(table: String,
-      schema: Array[StructField], dialect: JdbcDialect): CodeGeneration = {
+      schema: Array[StructField], dialect: JdbcDialect): GeneratedStatement = {
     val ctx = new CodeGenContext
     val bufferHolderVar = ctx.freshName("bufferHolder")
     val bufferHolderClass = classOf[BufferHolder].getName
@@ -213,7 +206,7 @@ object CodeGeneration extends Logging {
       classOf[UnsafeMapData].getName,
       classOf[MutableRow].getName))
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates map { case (javaType, name, init) =>
+    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
     }
     val expression = s"""
@@ -244,23 +237,80 @@ object CodeGeneration extends Logging {
       return result;"""
 
     // logInfo(s"DEBUG: For table=table generated code=$expression")
-    evaluator.createFastEvaluator(expression, classOf[CodeGeneration],
+    evaluator.createFastEvaluator(expression, classOf[GeneratedStatement],
       Array("stmt", "multipleRows", "rows", "batchSize", "schema",
-        "dialect")).asInstanceOf[CodeGeneration]
+        "dialect")).asInstanceOf[GeneratedStatement]
+  }
+
+  private[this] def compileComplexType(
+      dataType: DataType): SerializeComplexType = {
+    val ctx = new CodeGenContext
+    val inputVar = "value"
+    val bufferHolderVar = "bufferHolder"
+    val typeConversion = dataType match {
+      case a: ArrayType => s"""
+        final ArrayData arr = (ArrayData)$inputVar;
+        ${generateComplexTypeCode(generateArrayCodeMethod, ctx, "arr",
+          a.elementType, bufferHolderVar)}
+      """
+      case m: MapType => s"""
+        final MapData map = (MapData)$inputVar;
+        ${generateComplexTypeCode(generateMapCodeMethod, ctx, "map",
+          m.keyType, m.valueType, bufferHolderVar)}
+      """
+      case s: StructType => s"""
+        final InternalRow struct = (InternalRow)$inputVar;
+        ${generateComplexTypeCode(generateStructCodeMethod, ctx, "struct",
+          s.fields.map(_.dataType).toSeq, bufferHolderVar)}
+      """
+      case _ => throw Utils.analysisException(
+        s"compound type conversion: unexpected type $dataType")
+    }
+
+    val evaluator = new CompilerFactory().newScriptEvaluator()
+    evaluator.setClassName("io.snappydata.execute.GeneratedSerialization")
+    evaluator.setParentClassLoader(getClass.getClassLoader)
+    evaluator.setDefaultImports(Array(classOf[Platform].getName,
+      classOf[InternalRow].getName,
+      classOf[UnsafeRow].getName,
+      classOf[UTF8String].getName,
+      classOf[Decimal].getName,
+      classOf[CalendarInterval].getName,
+      classOf[ArrayData].getName,
+      classOf[UnsafeArrayData].getName,
+      classOf[MapData].getName,
+      classOf[UnsafeMapData].getName,
+      classOf[MutableRow].getName))
+    val separator = "\n      "
+    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
+      s"$javaType $name;$separator${init.replace("this.", "")}"
+    }
+    val expression = s"""
+      ${varDeclarations.mkString(separator)}
+      $typeConversion"""
+
+    // logInfo(s"DEBUG: For type=$dataType generated code=$expression")
+    evaluator.createFastEvaluator(expression, classOf[SerializeComplexType],
+      Array(inputVar, bufferHolderVar)).asInstanceOf[SerializeComplexType]
+  }
+
+  private[this] def executeUpdate(name: String, stmt: PreparedStatement,
+      rows: java.util.Iterator[InternalRow], multipleRows: Boolean,
+      batchSize: Int, schema: Array[StructField], dialect: JdbcDialect): Int = {
+    val result = cache.get(new ExecuteKey(name, schema, dialect))
+    result.executeStatement(stmt, multipleRows, rows, batchSize,
+      schema, dialect)
   }
 
   def executeUpdate(name: String, stmt: PreparedStatement,
       rows: Iterator[InternalRow], multipleRows: Boolean, batchSize: Int,
-      schema: Array[StructField], dialect: JdbcDialect): Int = {
-    val result = cache.get(new ExecuteKey(name, schema, dialect))
-    result.executeStatement(stmt, multipleRows, rows.asJava, batchSize,
+      schema: Array[StructField], dialect: JdbcDialect): Int =
+    executeUpdate(name, stmt, rows.asJava, multipleRows, batchSize,
       schema, dialect)
-  }
 
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
       dialect: JdbcDialect): Int = {
-    val result = cache.get(new ExecuteKey(name, schema, dialect))
     val iterator = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
@@ -276,21 +326,54 @@ object CodeGeneration extends Logging {
       override def remove(): Unit =
         throw new UnsupportedOperationException("remove not supported")
     }
-    result.executeStatement(stmt, multipleRows, iterator, batchSize,
+    executeUpdate(name, stmt, iterator, multipleRows, batchSize,
       schema, dialect)
   }
 
   def executeUpdate(name: String, stmt: PreparedStatement, row: Row,
       schema: Array[StructField], dialect: JdbcDialect): Int = {
-    val result = cache.get(new ExecuteKey(name, schema, dialect))
     val internalRow = new WrappedRow(schema)
     internalRow.row = row
-    result.executeStatement(stmt, multipleRows = false, Collections.singleton(
-      internalRow.asInstanceOf[InternalRow]).iterator(), 0, schema, dialect)
+    executeUpdate(name, stmt, Collections.singleton(
+      internalRow.asInstanceOf[InternalRow]).iterator(), multipleRows = false,
+      0, schema, dialect)
+  }
+
+  def getComplexTypeSerializer(
+      dataType: DataType): (SerializeComplexType, Any => Any) = {
+    // lookup and obtain cached conversion code
+    val serializer = typeCache.get(dataType)
+    (serializer, CatalystTypeConverters.createToCatalystConverter(dataType))
   }
 
   def removeCache(name: String): Unit =
     cache.invalidate(new ExecuteKey(name, null, null))
 
+  def removeCache(dataType: DataType): Unit = cache.invalidate(dataType)
+
   def clearCache(): Unit = cache.invalidateAll()
+}
+
+trait GeneratedStatement {
+
+  @throws[java.sql.SQLException]
+  def executeStatement(stmt: PreparedStatement, multipleRows: Boolean,
+      rows: java.util.Iterator[InternalRow], batchSize: Int,
+      schema: Array[StructField], dialect: JdbcDialect): Int
+}
+
+trait SerializeComplexType {
+  def serialize(value: Any, bufferHolder: BufferHolder): Unit
+}
+
+private final class ExecuteKey(val name: String,
+    val schema: Array[StructField], val dialect: JdbcDialect) {
+
+  override def hashCode(): Int = name.hashCode
+
+  override def equals(other: Any): Boolean = other match {
+    case o: ExecuteKey => name == o.name
+    case s: String => name == s
+    case _ => false
+  }
 }

@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -29,23 +28,24 @@ import scala.util.{Failure, Success, Try}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 
-import org.apache.spark.annotation.{Experimental, DeveloperApi}
+import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{GenericRow, Alias, Cast, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -54,7 +54,6 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
-import scala.collection.JavaConverters._
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -699,7 +698,6 @@ class SnappyContext protected[spark](
       throw new AnalysisException(
         s"Could not find $tableIdent in catalog")
     }
-    import scala.collection.JavaConverters._
     catalog.lookupRelation(tableIdent) match {
       case LogicalRelation(ir: IndexableRelation, _) =>
         ir.createIndex(indexIdent,
@@ -1031,7 +1029,7 @@ object GlobalSnappyInit {
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
        // SnappyDaemons.start(sc)
-      case SnappyShellMode(_, _) =>
+      case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
       //  SnappyDaemons.start(sc)
       case ExternalEmbeddedMode(_, url) =>
@@ -1204,17 +1202,17 @@ object SnappyContext extends Logging {
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
     } else {
       val conf = sc.conf
-      val embedded = conf.getOption(Property.embedded).exists(_.toBoolean)
-      conf.getOption(Property.locators).collectFirst {
+      val embedded = Property.Embedded.getOption(conf).exists(_.toBoolean)
+      Property.Locators.getOption(conf).collectFirst {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SnappyShellMode(sc, url)
-      }.orElse(conf.getOption(Property.mcastPort).collectFirst {
+          else SplitClusterMode(sc, url)
+      }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SnappyShellMode(sc, url)
+          else SplitClusterMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
@@ -1400,7 +1398,7 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * this one is a separate local/Spark/Yarn/Mesos cluster fetching data from
  * the snappy cluster on demand that just remains like an external datastore.
  */
-case class SnappyShellMode(override val sc: SparkContext,
+case class SplitClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
 /**
