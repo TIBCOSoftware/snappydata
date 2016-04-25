@@ -1,0 +1,110 @@
+apply plugin: 'scala'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.java.srcDirs = []
+
+dependencies {
+  provided 'org.scala-lang:scala-library:' + scalaVersion
+  provided 'org.scala-lang:scala-reflect:' + scalaVersion
+  provided 'org.scala-lang:scala-compiler:' + scalaVersion
+
+  // always use stock spark so that snappy extensions don't get accidently
+  // included here in snappy-core code.
+  provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-streaming-kafka_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-streaming-twitter_${scalaBinaryVersion}:${sparkVersion}")
+  provided("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
+  provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:gemfirexd-client')
+    compile project(':snappy-store:gemfirexd-core')
+    compile project(':snappy-store:gemfirexd-tools')
+    testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+  } else {
+    compile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
+  }
+
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2") {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+  compile 'org.apache.tomcat:tomcat-jdbc:8.0.32'
+  compile 'com.zaxxer:HikariCP:2.4.4'
+  provided 'com.rabbitmq:amqp-client:3.5.7'
+
+  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+
+  testCompile 'org.scala-lang:scala-actors:' + scalaVersion
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+
+  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
+  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
+
+  testRuntime 'org.pegdown:pegdown:1.1.0'
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+}
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+test.dependsOn ':cleanJUnit'
+check.dependsOn test, scalaTest
+
+shadowJar {
+  zip64 = true
+
+  mergeServiceFiles()
+  exclude 'log4j.properties'
+
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = "SnappyData Build Team"
+  } else {
+    createdBy = System.getProperty("user.name")
+  }
+  manifest {
+    attributes(
+      "Manifest-Version"  : "1.0",
+      "Created-By"        : createdBy,
+      "Title"             : "snappydata-core_${scalaBinaryVersion}",
+      "Version"           : version,
+      "Vendor"            : "SnappyData, Inc."
+    )
+  }
+}
