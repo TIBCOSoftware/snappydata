@@ -136,7 +136,7 @@ with BeforeAndAfterAll {
     //Test supplementary unicode chars
     val txt = "功能 絶\uD84C\uDFB4顯示廣告"
     dvd = new SQLVarchar(txt);
-    row = createRow(UTF8String.fromString(txt)) 
+    row = createRow(UTF8String.fromString(txt))
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 

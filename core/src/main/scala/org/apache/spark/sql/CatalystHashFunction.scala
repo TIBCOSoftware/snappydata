@@ -84,7 +84,7 @@ class CatalystHashFunction {
         val high: Char = c
         val low: Char = if (index + 1 != end) str.charAt(index + 1) else 0
         if (!Character.isSurrogatePair(high, low)) {
-          throw new Exception("Something is not right")
+          throw new RuntimeException("The supplementary unicode is not in proper format")
         }
         // A valid surrogate pair. Get the supplementary code
 
