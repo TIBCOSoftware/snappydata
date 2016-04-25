@@ -50,6 +50,10 @@ abstract class StreamBaseRelation(options: Map[String, String])
   override def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String] =
     DependencyCatalog.getDependents(tableName)
 
+  override def recoverDependentsRelation(): Unit = {
+    throw new UnsupportedOperationException(
+      "Recovery of dependents' relation not possible")
+  }
   val storageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)
       .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
