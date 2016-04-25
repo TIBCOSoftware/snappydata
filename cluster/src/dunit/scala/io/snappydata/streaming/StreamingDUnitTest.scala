@@ -1,8 +1,8 @@
-package io.snappydata.dunit.streaming
+package io.snappydata.streaming
 
 import java.sql.{Connection, DriverManager}
 
-import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
@@ -34,7 +34,7 @@ class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
         "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
         "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
-        "rowConverter 'io.snappydata.dunit.streaming.TweetToRowsConverter')")
+        "rowConverter 'io.snappydata.streaming.TweetToRowsConverter')")
     s.execute("streaming start")
     s.execute("streaming start")
     s.execute("streaming stop")

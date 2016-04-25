@@ -1,4 +1,4 @@
-package io.snappydata.dunit.cluster
+package io.snappydata.cluster
 
 import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Statement}
 

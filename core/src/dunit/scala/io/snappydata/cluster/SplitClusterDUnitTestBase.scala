@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.dunit.externalstore
+package io.snappydata.cluster
 
 import java.net.InetAddress
 import java.sql.Timestamp
@@ -25,8 +25,7 @@ import scala.language.postfixOps
 import scala.sys.process._
 import scala.util.Random
 
-import io.snappydata.dunit.cluster.ClusterManagerTestBase
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.VM
 import io.snappydata.test.util.TestException
 
 import org.apache.spark.sql.store.StoreUtils
@@ -37,165 +36,97 @@ import org.apache.spark.{SparkConf, SparkContext}
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
-class ExternalShellDUnitTest(s: String)
-    extends ClusterManagerTestBase(s) with Serializable {
+trait SplitClusterDUnitTestBase {
 
-  import ExternalShellDUnitTest._
+  def vm0: VM
+  def vm1: VM
+  def vm2: VM
+  def vm3: VM
 
-  override val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
+  protected def startArgs: Array[AnyRef]
 
-  override def beforeClass(): Unit = {
-    super.beforeClass()
-    vm3.invoke(this.getClass, "startSparkCluster")
-  }
+  protected def testObject: SplitClusterDUnitTestObject
 
-  override def afterClass(): Unit = {
-    super.afterClass()
-    vm3.invoke(this.getClass, "stopSparkCluster")
-  }
+  protected def props = testObject.props
+
+  protected def productDir: String
+
+  protected def locatorProperty: String
+
+  protected def startNetworkServers(num: Int): Unit
 
   def testColumnTableCreation(): Unit = {
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
+    startNetworkServers(3)
 
     // Embedded Cluster Operations
-    createTablesAndInsertData("column")
+    testObject.createTablesAndInsertData("column")
 
     // StandAlone Spark Cluster Operations
-    vm3.invoke(this.getClass, "verifyEmbeddedTablesAndCreateNewInShell",
-      startArgs :+ "column" :+ Boolean.box(false) :+ props)
+    vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
+      startArgs :+ "column" :+ Boolean.box(false) :+ props :+ locatorProperty)
 
     // Embedded Cluster Verifying the Spark Cluster Operations
-    verifyShellModeOperations("column", isComplex = false, props)
+    testObject.verifySplitModeOperations("column", isComplex = false, props)
 
     println("Test Completed Successfully")
   }
 
   def testRowTableCreation(): Unit = {
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
+    startNetworkServers(2)
 
     // Embedded Cluster Operations
-    createTablesAndInsertData("row")
+    testObject.createTablesAndInsertData("row")
 
     // StandAlone Spark Cluster Operations
-    vm3.invoke(this.getClass, "verifyEmbeddedTablesAndCreateNewInShell",
-      startArgs :+ "row" :+ Boolean.box(false) :+ props)
+    vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
+      startArgs :+ "row" :+ Boolean.box(false) :+ props :+ locatorProperty)
 
     // Embedded Cluster Verifying the Spark Cluster Operations
-    verifyShellModeOperations("row", isComplex = false, props)
+    testObject.verifySplitModeOperations("row", isComplex = false, props)
 
     println("Test Completed Successfully")
   }
 
   def testComplexTypesForColumnTables_SNAP643(): Unit = {
-    vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
+    startNetworkServers(3)
 
     // Embedded Cluster Operations
-    val snc = SnappyContext(sc)
-
     val props = Map("buckets" -> "7")
-    createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable1",
-      "column", props)
-    selectFromTable(snc, "embeddedModeTable1", 1005)
-
-    createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable2",
-      "column", props)
-    selectFromTable(snc, "embeddedModeTable2", 1005)
-
-    println("Successful")
+    testObject.createComplexTablesAndInsertData(props)
 
     // StandAlone Spark Cluster Operations
-    vm3.invoke(this.getClass, "verifyEmbeddedTablesAndCreateNewInShell",
-      startArgs :+ "column" :+ Boolean.box(true) :+ props)
+    vm3.invoke(getClass, "verifyEmbeddedTablesAndCreateInSplitMode",
+      startArgs :+ "column" :+ Boolean.box(true) :+ props :+ locatorProperty)
 
     // Embedded Cluster Verifying the Spark Cluster Operations
-    verifyShellModeOperations("column", isComplex = true, props)
+    testObject.verifySplitModeOperations("column", isComplex = true, props)
 
     println("Test Completed Successfully")
   }
 }
 
-object ExternalShellDUnitTest {
-
-  def sc = ClusterManagerTestBase.sc
+trait SplitClusterDUnitTestObject {
 
   val props = Map.empty[String, String]
 
-  def createTablesAndInsertData(tableType: String): Unit = {
-    val snc = SnappyContext(sc)
+  def createTablesAndInsertData(tableType: String): Unit
 
-    createTableUsingDataSourceAPI(snc, "embeddedModeTable1", tableType)
-    selectFromTable(snc, "embeddedModeTable1", 1005)
+  def createComplexTablesAndInsertData(props: Map[String, String]): Unit
 
-    createTableUsingDataSourceAPI(snc, "embeddedModeTable2", tableType)
-    selectFromTable(snc, "embeddedModeTable2", 1005)
+  def verifySplitModeOperations(tableType: String, isComplex: Boolean,
+      props: Map[String, String]): Unit
 
-    println("Successful")
-  }
-
-  def verifyShellModeOperations(tableType: String, isComplex: Boolean,
-      props: Map[String, String]): Unit = {
-    // embeddedModeTable1 is dropped in shell mode. recreate it
-    val snc = SnappyContext(sc)
-    // remove below once SNAP-653 is fixed
-    val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "EMBEDDEDMODETABLE1", numPartitions,
-      registerDestroy = true)
-    if (isComplex) {
-      createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable1",
-        tableType, props)
-    } else {
-      createTableUsingDataSourceAPI(snc, "embeddedModeTable1",
-        tableType, props)
-    }
-    selectFromTable(snc, "embeddedModeTable1", 1005)
-
-    snc.dropTable("embeddedModeTable1", ifExists = true)
-
-    // embeddedModeTable2 still exists drop it
-    snc.dropTable("embeddedModeTable2", ifExists = true)
-
-    // read data from shellModeTable1
-    selectFromTable(snc, "shellModeTable1", 1005)
-
-    // drop table created in shell mode
-    snc.dropTable("shellModeTable1", ifExists = true)
-
-    // recreate the dropped table
-    if (isComplex) {
-      createComplexTableUsingDataSourceAPI(snc, "shellModeTable1",
-        tableType, props)
-    } else {
-      createTableUsingDataSourceAPI(snc, "shellModeTable1",
-        tableType, props)
-    }
-    selectFromTable(snc, "shellModeTable1", 1005)
-    snc.dropTable("shellModeTable1", ifExists = true)
-
-    println("Successful")
-  }
-
-  def verifyEmbeddedTablesAndCreateNewInShell(locatorPort: Int,
+  def verifyEmbeddedTablesAndCreateInSplitMode(locatorPort: Int,
       prop: Properties, tableType: String, isComplex: Boolean,
-      props: Map[String, String]): Unit = {
+      props: Map[String, String], locatorProp: String): Unit = {
 
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
     val hostName = InetAddress.getLocalHost.getHostName
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("snappydata.store.locators", s"localhost:$locatorPort")
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
 
@@ -218,7 +149,8 @@ object ExternalShellDUnitTest {
     }
     assert(tableAlreadyExistException != null)
     assert(tableAlreadyExistException.getMessage.toLowerCase.contains(
-      "Table embeddedModeTable1 already exists.".toLowerCase))
+      "Table embeddedModeTable1 already exists.".toLowerCase),
+      tableAlreadyExistException.getMessage)
 
     // select the data from table created in embedded mode
     selectFromTable(snc, "embeddedModeTable1", 1005)
@@ -231,17 +163,17 @@ object ExternalShellDUnitTest {
 
     // remove below once SNAP-653 is fixed
     val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "SHELLMODETABLE1", numPartitions,
+    StoreUtils.removeCachedObjects(snc, "SPLITMODETABLE1", numPartitions,
       registerDestroy = true)
-    // create a table in shell mode
+    // create a table in split mode
     if (isComplex) {
-      createComplexTableUsingDataSourceAPI(snc, "shellModeTable1",
+      createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
         tableType, props)
     } else {
-      createTableUsingDataSourceAPI(snc, "shellModeTable1",
+      createTableUsingDataSourceAPI(snc, "splitModeTable1",
         tableType, props)
     }
-    selectFromTable(snc, "shellModeTable1", 1005)
+    selectFromTable(snc, "splitModeTable1", 1005)
 
     println("Successful")
   }
@@ -320,15 +252,19 @@ object ExternalShellDUnitTest {
     value
   }
 
-  def startSparkCluster(): Unit = {
-    (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/start-all.sh") !!
+  def startSparkCluster(productDir: String): Unit = {
+    println(s"Starting spark cluster in $productDir/work")
+    (productDir + "/sbin/start-all.sh") !!
   }
 
-  def stopSparkCluster(): Unit = {
+  def stopSparkCluster(productDir: String): Unit = {
+    println(s"Stopping spark cluster in $productDir/work")
     SnappyContext.stop()
-    (getEnvironmentVariable("SNAPPY_HOME") + "/sbin/stop-all.sh") !!
+    (productDir + "/sbin/stop-all.sh") !!
   }
 }
+
+case class Data(col1: Int, col2: Int, col3: Int)
 
 case class ComplexData(col1: Int, col2: Array[Decimal], col3: String,
     col4: Map[Timestamp, Data], col5: Double, col6: Data, col7: Decimal,

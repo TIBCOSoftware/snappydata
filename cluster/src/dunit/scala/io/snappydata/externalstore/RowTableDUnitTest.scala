@@ -1,6 +1,6 @@
-package io.snappydata.dunit.externalstore
+package io.snappydata.externalstore
 
-import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.ClusterManagerTestBase
 
 import org.apache.spark.sql.SaveMode
 

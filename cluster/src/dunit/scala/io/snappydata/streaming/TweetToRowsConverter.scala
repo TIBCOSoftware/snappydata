@@ -1,4 +1,4 @@
-package io.snappydata.dunit.streaming
+package io.snappydata.streaming
 
 import twitter4j.Status
 

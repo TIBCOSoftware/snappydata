@@ -1,4 +1,4 @@
-package io.snappydata.dunit.externalstore
+package io.snappydata.externalstore
 
 import scala.collection.JavaConversions
 import scala.util.Random
@@ -6,7 +6,7 @@ import scala.util.Random
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
-import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableCallable
 
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation

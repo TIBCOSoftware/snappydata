@@ -1,12 +1,11 @@
-package io.snappydata.dunit
+package io.snappydata
 
 import java.util.Properties
 
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import io.snappydata.dunit.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
-import io.snappydata.{Property, ServiceManager}
 
 import org.apache.spark.sql.collection.ReusableRow
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -146,10 +145,10 @@ object HiveMetastoreClientAccessDUnitTest {
 
     val conf = new org.apache.spark.SparkConf().setAppName("HiveMetastoreTest")
         .set("spark.logConf", "true")
-        .set(Property.locators, locStr)
+        .set(Property.Locators(), locStr)
 
     if (setMaster != null) {
-      conf.setMaster(setMaster).set(Property.embedded, "true")
+      conf.setMaster(setMaster).set(Property.Embedded(), "true")
     }
 
     val sc = new org.apache.spark.SparkContext(conf)

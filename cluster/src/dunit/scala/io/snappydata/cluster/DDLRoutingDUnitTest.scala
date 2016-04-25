@@ -1,4 +1,4 @@
-package io.snappydata.dunit.cluster
+package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
 
@@ -71,7 +71,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     truncateTableXD(conn, tableName)
     insertDataXD(conn, tableName)
     queryData(tableName)
-    
+
     createTempTableXD(conn)
 
     queryDataXD(conn, tableName)

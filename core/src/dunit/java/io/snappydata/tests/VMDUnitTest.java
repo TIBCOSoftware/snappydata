@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.dunit.tests;
+package io.snappydata.tests;
 
 import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,7 +67,7 @@ public class VMDUnitTest extends DistributedTestBase {
     Host host = Host.getHost(0);
     VM vm = host.getVM(0);
     assertEquals(BOOLEAN_VALUE,
-                 vm.invokeBoolean(VMDUnitTest.class, "remoteBooleanMethod")); 
+                 vm.invokeBoolean(VMDUnitTest.class, "remoteBooleanMethod"));
   }
 
   /**
@@ -86,7 +86,7 @@ public class VMDUnitTest extends DistributedTestBase {
       fail("Should have thrown an IllegalArgumentException");
 
     } catch (IllegalArgumentException ex) {
-      
+      // ignore
     }
   }
 
@@ -94,7 +94,7 @@ public class VMDUnitTest extends DistributedTestBase {
     Host host = Host.getHost(0);
     VM vm = host.getVM(0);
     assertEquals(LONG_VALUE,
-                 vm.invokeLong(VMDUnitTest.class, "remoteLongMethod")); 
+                 vm.invokeLong(VMDUnitTest.class, "remoteLongMethod"));
   }
 
   /**
@@ -113,7 +113,7 @@ public class VMDUnitTest extends DistributedTestBase {
       fail("Should have thrown an IllegalArgumentException");
 
     } catch (IllegalArgumentException ex) {
-      
+      // ignore
     }
   }
 
@@ -180,7 +180,7 @@ public class VMDUnitTest extends DistributedTestBase {
       assertTrue(ex.getCause() instanceof BasicDUnitTest.BasicTestException);
     }
   }
-  
+
   private static final AtomicInteger COUNTER = new AtomicInteger();
   public static Integer getAndIncStaticCount() {
     return new Integer(COUNTER.getAndIncrement());
@@ -222,7 +222,7 @@ public class VMDUnitTest extends DistributedTestBase {
     a1 = vm.invokeAsync(getClass(), "incStaticCount");
     a1.join();
     assertNull(a1.getReturnValue());
-    // Assert that previous null returns are over-written 
+    // Assert that previous null returns are over-written
     a1 = vm.invokeAsync(getClass(), "getAndIncStaticCount");
     a1.join();
     assertEquals(new Integer(4), a1.getReturnValue());

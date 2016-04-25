@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.dunit.tests;
+package io.snappydata.tests;
 
 import java.io.File;
 import java.io.IOException;
