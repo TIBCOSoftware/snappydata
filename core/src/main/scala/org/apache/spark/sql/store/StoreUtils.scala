@@ -28,9 +28,10 @@ import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.DDLException
+import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext}
+import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
 import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
 import org.apache.spark.{Logging, Partition, SparkContext}
 
@@ -158,17 +159,43 @@ object StoreUtils extends Logging {
     }
   }
 
-  def getPrimaryKeyClause(parameters: mutable.Map[String, String]): String = {
+  val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
+
+  def getPrimaryKeyClause(parameters: mutable.Map[String, String],
+      schema: StructType,
+      context: SQLContext): String = {
     val sb = new StringBuilder()
     sb.append(parameters.get(PARTITION_BY).map(v => {
       val primaryKey = {
         v match {
           case PRIMARY_KEY => ""
-          //case _ => s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
-          case _ => s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)" // Removing partition column for
-          // primary key. This has been done as we dont have support for CLOB in primary key in
-          // desrailized form. Once that's fixed we should uncomment the above line and comment
-          // this line
+          case _ => {
+            val normalizedSchema = context.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+                .normalizeSchema(schema)
+            val schemaFields = Utils.schemaFields(normalizedSchema)
+            val cols = v.split(",") map (_.trim)
+            val normalizedCols = cols map { c =>
+                if(context.conf.caseSensitiveAnalysis){
+                  c
+                }else{
+                  if (Utils.hasLowerCase(c))
+                    Utils.toUpperCase(c)
+                  else
+                    c
+                }
+            }
+            val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields, normalizedCols)
+
+            val b = for (field <- prunedSchema.fields)
+              yield !pkDisallowdTypes.contains(field.dataType)
+
+            val includeInPK = b.foldLeft(true)(_ && _)
+            if (includeInPK) {
+              s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
+            } else {
+              s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"
+            }
+          }
         }
       }
       primaryKey

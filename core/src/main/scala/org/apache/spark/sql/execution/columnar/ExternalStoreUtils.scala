@@ -287,12 +287,11 @@ object ExternalStoreUtils {
       columns: Array[String]): StructType = {
     new StructType(columns.map { col =>
       fieldMap.getOrElse(col, fieldMap.getOrElse(col,
-        throw new AnalysisException("JDBCAppendableRelation: Cannot resolve " +
+        throw new AnalysisException("Cannot resolve " +
             s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
       ))
     })
   }
-
 
   def columnIndicesAndDataTypes(requestedSchema: StructType,
       schema : StructType): (Seq[Int], Seq[DataType]) = {
