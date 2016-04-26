@@ -19,18 +19,16 @@ package io.snappydata
 import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServiceImpl
 import com.pivotal.gemfirexd.{FabricLocator, FabricService, TestUtil}
-import org.scalatest.BeforeAndAfterAll
-
 import org.apache.spark.sql.SnappyContext
+import org.scalatest.BeforeAndAfterAll
 
 class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   var props: Properties = null
 
   override def beforeAll(): Unit = {
-    if (SnappyContext.globalSparkContext != null && !SnappyContext.globalSparkContext.isStopped) {
-      SnappyContext.globalSparkContext.stop()
-    }
+    SnappyContext.stop()
     props = TestUtil.doCommonSetup(null)
     GemFireXDUtils.IS_TEST_MODE = true
   }

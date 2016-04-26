@@ -79,7 +79,6 @@ object LocalSparkConf {
         setAppName(getClass.getName)
     conf.set("snappy.store.optimization", "true")
     conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
-    conf.set("spark.snappy.analyticsService.interval" , "1000")
     if (addOn != null) {
       addOn(conf)
     }

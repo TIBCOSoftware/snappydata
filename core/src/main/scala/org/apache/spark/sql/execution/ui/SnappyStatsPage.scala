@@ -31,52 +31,52 @@ import org.apache.spark.util.Utils
 
 /** Page showing list of tables currently stored in the cluster */
 private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
-		extends WebUIPage("") with Logging {
-	def render(request: HttpServletRequest): Seq[Node] = {
-		val uiDetails = SnappyAnalyticsService.getUIInfo
-		val snappyRowTable = UIUtils.listingTable(
-			rowHeader, rowTable, uiDetails.filter(row => !row.isColumnTable))
-		val snappyColumnTable = UIUtils.listingTable(
-			columnHeader, columnTable, uiDetails.filter(row => row.isColumnTable))
+    extends WebUIPage("") with Logging {
+  def render(request: HttpServletRequest): Seq[Node] = {
+    val uiDetails = SnappyAnalyticsService.getUIInfo
+    val snappyRowTable = UIUtils.listingTable(
+      rowHeader, rowTable, uiDetails.filter(row => !row.isColumnTable))
+    val snappyColumnTable = UIUtils.listingTable(
+      columnHeader, columnTable, uiDetails.filter(row => row.isColumnTable))
 
-		val content =
-			<span>
-				<h4>Snappy Row Tables</h4>{snappyRowTable}<h4>Snappy Column Tables</h4>{snappyColumnTable}
-			</span>
+    val content =
+      <span>
+        <h4>Snappy Row Tables</h4>{snappyRowTable}<h4>Snappy Column Tables</h4>{snappyColumnTable}
+      </span>
 
-		UIUtils.headerSparkPage("Snappy", content, parent, Some(500))
-	}
+    UIUtils.headerSparkPage("Snappy", content, parent, Some(500))
+  }
 
-	private def rowHeader = Seq("TableName", "TotalSize")
+  private def rowHeader = Seq("TableName", "TotalSize")
 
-	private def columnHeader = Seq("TableName", "Row Buffer Size", "Column Store Size", "TotalSize")
+  private def columnHeader = Seq("TableName", "Row Buffer Size", "Column Store Size", "TotalSize")
 
-	private def rowTable(stats: UIAnalytics) = {
-		<tr>
-			<td>
-				{stats.tableName}
-			</td>
-			<td sorttable_customkey={stats.rowBufferSize.toString}>
-				{Utils.bytesToString(stats.rowBufferSize)}
-			</td>
-		</tr>
-	}
+  private def rowTable(stats: UIAnalytics) = {
+    <tr>
+      <td>
+        {stats.tableName}
+      </td>
+      <td sorttable_customkey={stats.rowBufferSize.toString}>
+        {Utils.bytesToString(stats.rowBufferSize)}
+      </td>
+    </tr>
+  }
 
-	private def columnTable(stats: UIAnalytics) = {
-		val totalSize = stats.rowBufferSize + stats.columnBufferSize
-		<tr>
-			<td>
-				{stats.tableName}
-			</td>
-			<td sorttable_customkey={stats.rowBufferSize.toString}>
-				{Utils.bytesToString(stats.rowBufferSize)}
-			</td>
-			<td sorttable_customkey={stats.columnBufferSize.toString}>
-				{Utils.bytesToString(stats.columnBufferSize)}
-			</td>
-			<td sorttable_customkey={totalSize.toString}>
-				{Utils.bytesToString(totalSize)}
-			</td>
-		</tr>
-	}
+  private def columnTable(stats: UIAnalytics) = {
+    val totalSize = stats.rowBufferSize + stats.columnBufferSize
+    <tr>
+      <td>
+        {stats.tableName}
+      </td>
+      <td sorttable_customkey={stats.rowBufferSize.toString}>
+        {Utils.bytesToString(stats.rowBufferSize)}
+      </td>
+      <td sorttable_customkey={stats.columnBufferSize.toString}>
+        {Utils.bytesToString(stats.columnBufferSize)}
+      </td>
+      <td sorttable_customkey={totalSize.toString}>
+        {Utils.bytesToString(totalSize)}
+      </td>
+    </tr>
+  }
 }

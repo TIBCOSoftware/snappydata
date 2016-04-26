@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
+import org.apache.spark.scheduler.{SparkListenerApplicationEnd, SparkListener}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 import scala.collection.JavaConverters._
@@ -27,7 +28,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property}
+import io.snappydata.{SnappyDaemons, Constant, Property}
 
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
 import org.apache.spark.api.java.JavaSparkContext
@@ -42,7 +43,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
-import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.ui.{SnappyStatsTab, SQLListener}
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
@@ -101,7 +102,7 @@ class SnappyContext protected[spark](
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
+  SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
 
@@ -390,7 +391,7 @@ class SnappyContext protected[spark](
    * "password" -> "app"
    * )
    *
-
+   *
    * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
    * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
    *
@@ -1004,54 +1005,13 @@ object GlobalSnappyInit {
       case Failure(_) => SnappyContextDefaultFunctions
     }
   }
-
-  @volatile private[this] var _globalSNContextInitialized: Boolean = false
-  private[this] val contextLock = new AnyRef
-
-  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
-    if (!_globalSNContextInitialized ) {
-      contextLock.synchronized {
-        if (!_globalSNContextInitialized) {
-          invokeServices(sc)
-          _globalSNContextInitialized = true
-        }
-      }
-    }
-  }
-
-  private[sql] def resetGlobalSNContext(): Unit =
-    _globalSNContextInitialized = false
-
-  private def invokeServices(sc: SparkContext): Unit = {
-    SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) =>
-        // NOTE: if Property.jobServer.enabled is true
-        // this will trigger SnappyContext.apply() method
-        // prior to `new SnappyContext(sc)` after this
-        // method ends.
-        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-       // SnappyDaemons.start(sc)
-      case SnappyShellMode(_, _) =>
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-      //  SnappyDaemons.start(sc)
-      case ExternalEmbeddedMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-       // SnappyDaemons.start(sc)
-      case LocalMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-       // SnappyDaemons.start(sc)
-      case _ => // ignore
-    }
-  }
 }
 
 object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
-
+  @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
 
   val COLUMN_SOURCE = "column"
@@ -1221,39 +1181,80 @@ object SnappyContext extends Logging {
       }
     }
   }
+  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
+    if (!_globalSNContextInitialized) {
+      contextLock.synchronized {
+        if (!_globalSNContextInitialized) {
+          invokeServices(sc)
+          sc.addSparkListener(new SparkContextListener)
+          sc.ui.foreach(new SnappyStatsTab(_))
+          _globalSNContextInitialized = true
+        }
+      }
+    }
+  }
+
+  private class SparkContextListener extends SparkListener {
+    override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+      stop(false)
+    }
+  }
+
+  private def invokeServices(sc: SparkContext): Unit = {
+    SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) =>
+        // NOTE: if Property.jobServer.enabled is true
+        // this will trigger SnappyContext.apply() method
+        // prior to `new SnappyContext(sc)` after this
+        // method ends.
+        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+        SnappyDaemons.start(sc)
+      case SnappyShellMode(_, _) =>
+        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        SnappyDaemons.start(sc)
+      case ExternalEmbeddedMode(_, url) =>
+        SnappyContext.urlToConf(url, sc)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        SnappyDaemons.start(sc)
+      case LocalMode(_, url) =>
+        SnappyContext.urlToConf(url, sc)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = true)
+        SnappyDaemons.start(sc)
+      case _ => // ignore
+    }
+  }
 
   /**
-   * Shut down and cleanup the SparkContext and SnappyData artifacts.
-   * Prefer this over SparkContext.stop() when dealing with SnappyContext.
-   * <p>
-   * This method is not synchronized and is required to be executed by a single
-   * thread in a "quiet" state when no other threads are performing operations.
-   */
-  def stop(): Unit = {
+    * Shut down and cleanup and SnappyData artifacts.
+    */
+  def stop(stopSparkContext: Boolean = true): Unit = {
     val sc = globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      // clean up the connection pool and caches on executors first
-      Utils.mapExecutors(sc, { (tc, p) =>
-        clearStaticArtifacts()
-        Iterator.empty
-      }).count()
+    if (stopSparkContext) {
+      if (sc != null && !sc.isStopped) {
+        // clear current hive catalog connection before stopping the sc
+        SnappyStoreHiveCatalog.closeCurrent()
+        sc.stop()
+      }
+    } else {
+      stopSnappyContext(sc)
+    }
+  }
+
+  private def stopSnappyContext(sc: SparkContext): Unit = {
+    if (_globalSNContextInitialized) {
+      SnappyDaemons.stop
       // then on the driver
       clearStaticArtifacts()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
       if (ExternalStoreUtils.isShellOrLocalMode(sc)) {
-        try {
-          ServiceUtils.invokeStopFabricServer(sc)
-        } catch {
-          case se: SQLException if se.getCause.getMessage.indexOf(
-            "No connection to the distributed system") != -1 => // ignore
-        }
+        ServiceUtils.invokeStopFabricServer(sc)
       }
-      sc.stop()
     }
     _clusterMode = null
     _anySNContext = null
-    GlobalSnappyInit.resetGlobalSNContext()
+    _globalSNContextInitialized = false
+
   }
 
   /** Cleanup static artifacts on this lead/executor. */

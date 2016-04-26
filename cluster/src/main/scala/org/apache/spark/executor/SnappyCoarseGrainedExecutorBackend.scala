@@ -15,6 +15,7 @@
  * LICENSE file.
  */
 package org.apache.spark.executor
+
 import java.net.URL
 
 import io.snappydata.cluster.ExecutorInitiator
@@ -25,18 +26,18 @@ import org.apache.spark.rpc.RpcEnv
 import org.apache.spark.sql.SnappyContext
 
 class SnappyCoarseGrainedExecutorBackend(
-                                          override val rpcEnv: RpcEnv,
-                                          driverUrl: String,
-                                          executorId: String,
-                                          hostPort: String,
-                                          cores: Int,
-                                          userClassPath: Seq[URL],
-                                          env: SparkEnv)
-  extends CoarseGrainedExecutorBackend(rpcEnv, driverUrl,
-    executorId, hostPort, cores, userClassPath, env) {
+    override val rpcEnv: RpcEnv,
+    driverUrl: String,
+    executorId: String,
+    hostPort: String,
+    cores: Int,
+    userClassPath: Seq[URL],
+    env: SparkEnv)
+    extends CoarseGrainedExecutorBackend(rpcEnv, driverUrl,
+      executorId, hostPort, cores, userClassPath, env) {
 
   override def onStop() {
-   SnappyContext.clearStaticArtifacts
+    SnappyContext.clearStaticArtifacts()
     exitWithoutRestart()
   }
 
@@ -60,7 +61,7 @@ class SnappyCoarseGrainedExecutorBackend(
     ExecutorInitiator.restartExecutor()
   }
 
-  def exitWithoutRestart() : Unit = {
+  def exitWithoutRestart(): Unit = {
     if (executor != null) {
       // kill all the running tasks
       // InterruptThread is set as true.

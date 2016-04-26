@@ -21,6 +21,8 @@ import java.io.File
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{FileCleaner, LocalSparkConf}
+import io.snappydata.test.dunit.DistributedTestBase
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.util.TestUtils
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
 
@@ -108,11 +110,31 @@ abstract class SnappyFunSuite
     baseCleanup()
   }
 
+  /**
+   * Wait until given criterion is met
+   *
+   * @param check          Function criterion to wait on
+   * @param ms             total time to wait, in milliseconds
+   * @param interval       pause interval between waits
+   * @param throwOnTimeout if false, don't generate an error
+   */
+  def waitForCriterion(check: => Boolean, description: String, ms: Long, interval: Long,
+      throwOnTimeout: Boolean) {
+    val criterion = new WaitCriterion {
+
+      override def done: Boolean = {
+        check
+      }
+
+      override def description() = description
+    }
+    DistributedTestBase.waitForCriterion(criterion, ms, interval, throwOnTimeout)
+  }
+
   def stopAll(): Unit = {
     // GemFireXD stop for local mode is now done by SnappyContext.stop()
-    if (SnappyContext.globalSparkContext != null && !SnappyContext.globalSparkContext.isStopped) {
-      SnappyContext.globalSparkContext.stop()
-    }
+    println(" Stopping spark context = " + SnappyContext.globalSparkContext)
+    SnappyContext.stop()
   }
 
   def createDir(fileName: String): String = {
