@@ -19,6 +19,8 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
+import org.apache.spark.sql.{Row, SQLContext}
+
 import scala.language.implicitConversions
 
 import org.parboiled2._
@@ -40,6 +42,7 @@ import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 
 class SnappyParser(caseSensitive: Boolean)
     extends SnappyBaseParser(caseSensitive) {
@@ -695,6 +698,12 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected val TRUNCATE = Keyword("TRUNCATE")
   protected val INDEX = Keyword("INDEX")
   protected val ON = Keyword("ON")
+  protected val GLOBAL = Keyword("GLOBAL")
+  protected val HASH = Keyword("HASH")
+  protected val UNIQUE = Keyword("UNIQUE")
+  protected val ASC = Keyword("ASC")
+  protected val DESC = Keyword("DESC")
+
 
   protected override lazy val className: Parser[String] =
     repsep(ident, ".") ^^ { case s =>
@@ -799,16 +808,42 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> INDEX ~> tableIdentifier) ~ (ON ~> tableIdentifier) ~ wholeInput ^^ {
-      case indexName ~ tableName ~ sql =>
-        CreateIndex(tableName, sql)
+    (CREATE ~> (GLOBAL ~ HASH | UNIQUE).? <~ INDEX) ~
+      (tableIdentifier) ~ (ON ~> tableIdentifier) ~
+      colWithDirection ~ (OPTIONS ~> options).? ^^ {
+      case indexType ~ indexName ~ tableName ~ cols ~ opts =>
+        val parameters = opts.getOrElse(Map.empty[String, String])
+        if (indexType.isDefined) {
+          val typeString = indexType match {
+            case Some("unique") =>
+              "unique"
+            case Some(x) if x.toString.equals("(global~hash)") =>
+              "global hash"
+          }
+          CreateIndex(indexName.toString, tableName,
+            cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
+        } else {
+          CreateIndex(indexName.toString, tableName, cols, parameters)
+        }
+
     }
 
+  protected lazy val colWithDirection: Parser[Map[String, Option[SortDirection]]] =
+    ("(" ~> repsep(ident ~ direction.?, ",") <~ ")")  ^^ {
+    case exp => exp.map(pair => (pair._1, pair._2) ).toMap
+  }
+
   protected lazy val dropIndex: Parser[LogicalPlan] =
-    (DROP ~> INDEX ~> tableIdentifier) ~ wholeInput ^^ {
-      case indexName ~ sql =>
-        DropIndex(sql)
+    DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
+      case ifExists ~ indexName =>
+        DropIndex(indexName.toString, ifExists.isDefined)
     }
+
+  protected lazy val direction: Parser[SortDirection] =
+    ( ASC  ^^^ Ascending
+      | DESC ^^^ Descending
+    )
+
 
   protected lazy val dropTable: Parser[LogicalPlan] =
     (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ tableIdentifier ^^ {
@@ -934,23 +969,26 @@ private[sql] case class TruncateTable(
   }
 }
 
-private[sql] case class CreateIndex(
-    tableIdent: QualifiedTableName,
-    sql: String) extends RunnableCommand {
+private[sql] case class CreateIndex(indexName: String,
+    baseTable: QualifiedTableName,
+    indexColumns: Map[String, Option[SortDirection]],
+    options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnTable(tableIdent, sql)
+    snc.createIndex(indexName, baseTable.toString,
+      indexColumns, options)
     Seq.empty
   }
 }
 
 private[sql] case class DropIndex(
-    sql: String) extends RunnableCommand {
+    indexName: String,
+    ifExists : Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndexOfTable(sql)
+    snc.dropIndex(indexName, ifExists)
     Seq.empty
   }
 }

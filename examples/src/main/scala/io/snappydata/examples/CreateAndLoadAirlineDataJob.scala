@@ -29,10 +29,10 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       // scalastyle:off println
 
       // Drop tables if already exists
-      snc.dropTable(colTable, true)
-      snc.dropTable(rowTable, true)
-      snc.dropTable(sampleTable, true)
-      snc.dropTable(stagingAirline, true)
+      snc.dropTable(sampleTable, ifExists = true)
+      snc.dropTable(colTable, ifExists = true)
+      snc.dropTable(rowTable, ifExists = true)
+      snc.dropTable(stagingAirline, ifExists = true)
 
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
