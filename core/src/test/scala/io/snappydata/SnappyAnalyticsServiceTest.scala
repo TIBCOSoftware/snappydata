@@ -57,12 +57,9 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
     snc.dropTable(rowTableName, ifExists = true)
   }
 
-  def localAddOn(conf: SparkConf): SparkConf = {
-    conf.set("spark.snappy.analyticsService.interval", serviceInterval)
-  }
-
   override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
-    super.newSparkConf(localAddOn)
+    val sparkConf = super.newSparkConf(addOn)
+    sparkConf.set("spark.snappy.analyticsService.interval", serviceInterval)
   }
 
   test("Test Stats for Row Table") {
