@@ -51,7 +51,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.2-SNAPSHOT'
+  version = '0.3-SNAPSHOT'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -301,12 +301,6 @@ subprojects {
       visible true
     }
 
-    nospark {
-      description 'a dependency for creating jar without spark dependencies'
-      visible true
-      transitive true
-    }
-
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
@@ -441,6 +435,7 @@ task generateSources {
 }
 
 task product {
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
@@ -470,11 +465,21 @@ task product {
       into "${snappyProductDir}/docs"
     }
 
+    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
     def examplesProject = project(":snappy-examples_${scalaBinaryVersion}")
+    def coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     def baseName = 'snappydata-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     def exampleArchiveName = "quickstart-${version}.jar"
+    // first copy the snappy-core shadow jar
+    copy {
+      from("${coreProject.buildDir}/libs")
+      into "${rootProject.buildDir}/distributions"
+      include "${coreProject.shadowJar.archiveName}"
+      rename { filename -> coreName }
+    }
+    // next the full product starting with snappy-cluster shadow jar
     copy {
       from("${clusterProject.buildDir}/libs")
       into "${snappyProductDir}/lib"
@@ -504,6 +509,10 @@ task product {
       }
       copy {
         from "${project(':snappy-spark').projectDir}/python"
+        into "${snappyProductDir}/python"
+      }
+      copy {
+        from "${rootDir}/python" 
         into "${snappyProductDir}/python"
       }
       copy {
@@ -734,8 +743,9 @@ task runQuickstart(dependsOn: product) {
       def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
       println "${startSparkResult}"
 
+      def hostname = "hostname".execute().text.trim()
       def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit",
-              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://localhost:7077",
+              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://${hostname}:7077",
                "--conf", "snappydata.store.locators=localhost:10334", "--conf", "spark.ui.port=4041",
                "${snappyProductDir}/lib/${exampleArchiveName}"]);
 
@@ -800,6 +810,6 @@ gradle.taskGraph.whenReady({ graph ->
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports//, runQuickstart
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
   dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }

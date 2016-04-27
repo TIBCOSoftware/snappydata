@@ -18,17 +18,22 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
+import org.apache.spark.sql.catalyst.expressions.SortDirection
+
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+
+import _root_.io.snappydata.SnappyAnalyticsService
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
 import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
@@ -47,12 +52,13 @@ case class JDBCAppendableRelation(
     origOptions: Map[String, String],
     externalStore: ExternalStore,
     @transient override val sqlContext: SQLContext)
-    extends BaseRelation
-    with PrunedFilteredScan
-    with InsertableRelation
-    with DestroyRelation
-    with Logging
-    with Serializable {
+  extends BaseRelation
+  with PrunedFilteredScan
+  with InsertableRelation
+  with DestroyRelation
+  with IndexableRelation
+  with Logging
+  with Serializable {
 
   self =>
 
@@ -62,6 +68,8 @@ case class JDBCAppendableRelation(
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
+
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table, true)
 
   protected final def dialect = connProperties.dialect
 
@@ -138,8 +146,8 @@ case class JDBCAppendableRelation(
 
   def uuidBatchAggregate(accumulated: ArrayBuffer[UUIDRegionKey],
       batch: CachedBatch): ArrayBuffer[UUIDRegionKey] = {
-    //TODO - currently using the length from the part Object but it needs to be handled more generically
-    //in order to replace UUID
+    // TODO - currently using the length from the part Object but
+    // it needs to be handled more generically in order to replace UUID
     val uuid = externalStore.storeCachedBatch(table, batch)
     accumulated += uuid
   }
@@ -231,7 +239,7 @@ case class JDBCAppendableRelation(
   }
 
   def createTable(externalStore: ExternalStore, tableStr: String,
-      tableName: String, dropIfExists: Boolean) = {
+      tableName: String, dropIfExists: Boolean): Unit = {
 
     externalStore.tryExecute(tableName,
       conn => {
@@ -276,6 +284,42 @@ case class JDBCAppendableRelation(
   def flushRowBuffer(): Unit = {
     // nothing by default
   }
+
+  override def createIndex(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit = {
+    throw new UnsupportedOperationException("Indexes are not supported")
+  }
+
+  override def dropIndex(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      ifExists: Boolean): Unit = {
+    throw new UnsupportedOperationException("Indexes are not supported")
+  }
+
+  private[sql] def externalColumnTableName: String = JDBCAppendableRelation.
+      cachedBatchTableName(table)
+}
+
+object JDBCAppendableRelation extends Logging {
+  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
+
+  private[sql] final def cachedBatchTableName(table: String): String = {
+    val tableName = if (table.indexOf('.') > 0) {
+      table.replace(".", "__")
+    } else {
+      table
+    }
+
+    INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
+  }
+
+  private def removePool(table: String): () => Iterator[Unit] = () => {
+    ConnectionPool.removePoolReference(table)
+    Iterator.empty
+  }
 }
 
 final class DefaultSource extends ColumnarRelationProvider
@@ -285,7 +329,7 @@ class ColumnarRelationProvider
     with CreatableRelationProvider {
 
   def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], schema: StructType) = {
+      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
     val parameters = new mutable.HashMap[String, String]
     parameters ++= options
 
@@ -319,7 +363,7 @@ class ColumnarRelationProvider
   }
 
   override def createRelation(sqlContext: SQLContext,
-      options: Map[String, String], schema: StructType) = {
+      options: Map[String, String], schema: StructType): JDBCAppendableRelation = {
 
     val allowExisting = options.get(JdbcExtendedUtils
         .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
@@ -330,7 +374,7 @@ class ColumnarRelationProvider
   }
 
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
-      options: Map[String, String], data: DataFrame): BaseRelation = {
+      options: Map[String, String], data: DataFrame): JDBCAppendableRelation = {
     val rel = getRelation(sqlContext, options)
     val relation = rel.createRelation(sqlContext, mode, options, data.schema)
     var success = false

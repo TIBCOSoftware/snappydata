@@ -18,8 +18,8 @@ package org.apache.spark.sql.sources
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.catalyst.expressions.{SortDirection, Attribute}
+import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode}
 
 @DeveloperApi
@@ -115,8 +115,15 @@ trait ParentRelation extends BaseRelation {
   def removeDependent(dependent: DependentRelation,
       catalog: SnappyStoreHiveCatalog): Boolean
 
-  /** Get the dependent child relations. */
+  /** Get the dependent child. */
   def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String]
+
+  /**
+   * Recover/Re-create the dependent child relations. This callback
+   * is to recreate Dependent relations when the ParentRelation is
+   * being created.
+   */
+  def recoverDependentsRelation(): Unit
 }
 
 @DeveloperApi
@@ -180,11 +187,31 @@ trait DestroyRelation {
 
 @DeveloperApi
 trait IndexableRelation {
+  /**
+    * Create an index on a table.
+    * @param indexIdent Index Identifier which goes in the catalog
+    * @param tableIdent Table identifier on which the index is created.
+    * @param indexColumns Columns on which the index has to be created with the
+    *                     direction of sorting. Direction can be specified as None.
+    * @param options Options for indexes. For e.g.
+    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+    */
+  def createIndex(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      indexColumns: Map[String, Option[SortDirection]],
+      options: Map[String, String]): Unit
 
   /**
-   * Create an index on a table.
-   */
-  def createIndex(tableName: String, sql: String): Unit
+    * Drops an index on this table
+    * @param indexIdent Index identifier
+    * @param tableIdent Table identifier
+    * @param ifExists Drop if exists
+    */
+  def dropIndex(indexIdent: QualifiedTableName,
+      tableIdent: QualifiedTableName,
+      ifExists: Boolean): Unit
+
 }
 
 /**

@@ -19,6 +19,8 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
+import org.apache.spark.sql.{Row, SQLContext}
+
 import scala.language.implicitConversions
 
 import org.parboiled2._
@@ -35,20 +37,21 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DDLException, DDLParser, ResolvedDataSource}
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.sources.{PutIntoTable, ExternalSchemaRelationProvider}
+import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 import org.apache.spark.unsafe.types.CalendarInterval
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 
 class SnappyParser(caseSensitive: Boolean)
     extends SnappyBaseParser(caseSensitive) {
 
-  private[this] var _input: ParserInput = _
+  private[this] final var _input: ParserInput = _
 
   override final def input: ParserInput = _input
 
-  private[sql] def input_=(in: ParserInput): Unit = _input = in
+  private[sql] final def input_=(in: ParserInput): Unit = _input = in
 
   final def ALL = rule { keyword(SnappyParserConsts.ALL) }
   final def AND = rule { keyword(SnappyParserConsts.AND) }
@@ -175,17 +178,17 @@ class SnappyParser(caseSensitive: Boolean)
     }
   }
 
-  protected def booleanLiteral: Rule1[Literal] = rule {
+  protected final def booleanLiteral: Rule1[Literal] = rule {
     TRUE ~> (() => Literal.create(true, BooleanType)) |
     FALSE ~> (() => Literal.create(false, BooleanType))
   }
 
-  protected def numericLiteral: Rule1[Literal] = rule {
+  protected final def numericLiteral: Rule1[Literal] = rule {
     capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ ws ~>
         ((s: String) => toNumericLiteral(s))
   }
 
-  protected def literal: Rule1[Literal] = rule {
+  protected final def literal: Rule1[Literal] = rule {
     stringLiteral ~> ((s: String) => Literal.create(s, StringType)) |
     numericLiteral |
     booleanLiteral |
@@ -276,7 +279,7 @@ class SnappyParser(caseSensitive: Boolean)
     )
   }
 
-  protected def unsignedFloat: Rule1[String] = rule {
+  protected final def unsignedFloat: Rule1[String] = rule {
     capture(
       CharPredicate.Digit.* ~ '.' ~ CharPredicate.Digit.+ ~
           scientificNotation.? |
@@ -284,52 +287,57 @@ class SnappyParser(caseSensitive: Boolean)
     ) ~ ws
   }
 
-  protected def projection: Rule1[Expression] = rule {
-    expression ~ (AS ~ identifier).? ~> ((e: Expression, a: Option[String]) =>
-      if (a.isDefined) Alias(e, a.get)() else e)
+  protected final def projection: Rule1[Expression] = rule {
+    expression ~ (
+        AS.? ~ identifier ~> ((e: Expression, a: String) => Alias(e, a)()) |
+        MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
+    )
   }
 
-  protected def expression: Rule1[Expression] = rule {
+  protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
   }
 
-  protected def andExpression: Rule1[Expression] = rule {
+  protected final def andExpression: Rule1[Expression] = rule {
     notExpression ~ (AND ~ notExpression ~>
         ((e1: Expression, e2: Expression) => And(e1, e2))).*
   }
 
-  protected def notExpression: Rule1[Expression] = rule {
-    NOT ~ comparisonExpression ~> ((e: Expression) => Not(e)) |
-    comparisonExpression
+  protected final def notExpression: Rule1[Expression] = rule {
+    (NOT ~> trueFn).? ~ comparisonExpression ~> ((not: Option[Boolean],
+        e: Expression) => if (not.isEmpty) e else Not(e))
   }
 
-  protected def comparisonExpression: Rule1[Expression] = rule {
+  protected final def comparisonExpression: Rule1[Expression] = rule {
     termExpression ~ (
         '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => EqualTo(e1, e2)) |
-        ">=" ~ ws ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => GreaterThanOrEqual(e1, e2)) |
-        '>' ~ ws ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => GreaterThan(e1, e2)) |
-        "<>" ~ ws ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
-        "<=>" ~ ws ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => EqualNullSafe(e1, e2)) |
-        "<=" ~ ws ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => LessThanOrEqual(e1, e2)) |
-        '<' ~ ws ~ termExpression ~>
-            ((e1: Expression, e2: Expression) => LessThan(e1, e2)) |
-        "!=" ~ ws ~ termExpression ~>
+        '>' ~ (
+          '=' ~ ws ~ termExpression ~>
+              ((e1: Expression, e2: Expression) => GreaterThanOrEqual(e1, e2)) |
+          ws ~ termExpression ~>
+              ((e1: Expression, e2: Expression) => GreaterThan(e1, e2))
+        ) |
+        '<' ~ (
+          "=>" ~ ws ~ termExpression ~>
+              ((e1: Expression, e2: Expression) => EqualNullSafe(e1, e2)) |
+          '=' ~ ws  ~ termExpression ~>
+              ((e1: Expression, e2: Expression) => LessThanOrEqual(e1, e2)) |
+          '>' ~ ws ~ termExpression ~>
+              ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
+          ws ~ termExpression ~>
+              ((e1: Expression, e2: Expression) => LessThan(e1, e2))
+        ) |
+        '!' ~ '=' ~ ws ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Not(EqualTo(e1, e2))) |
         IN ~ '(' ~ ws ~ (termExpression * (',' ~ ws)) ~ ')' ~ ws ~>
             ((e1: Expression, e2: Seq[Expression]) => In(e1, e2)) |
         LIKE ~ termExpression ~>
             ((e1: Expression, e2: Expression) => Like(e1, e2)) |
-        IS ~ NULL ~>
-            ((e: Expression) => IsNull(e)) |
-        IS ~ NOT ~ NULL ~>
-            ((e: Expression) => IsNotNull(e)) |
+        IS ~ (NOT ~> trueFn).? ~ NULL ~>
+            ((e: Expression, not: Option[Boolean]) =>
+              if (not.isEmpty) IsNull(e) else IsNotNull(e)) |
         BETWEEN ~ termExpression ~ AND ~ termExpression ~>
             ((e: Expression, el: Expression, eu: Expression) =>
               And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))) |
@@ -342,26 +350,24 @@ class SnappyParser(caseSensitive: Boolean)
                 ((e: Expression, el: Expression, eu: Expression) =>
                   Not(And(GreaterThanOrEqual(e, el), LessThanOrEqual(e, eu))))
         ) |
-        extraComparisonExpression |
-        MATCH ~> ((e: Expression) => e)
+        comparisonExpression1 |
+        MATCH.asInstanceOf[Rule[Expression::HNil, Expression::HNil]]
     )
   }
 
-  protected def extraComparisonExpression: Rule[Expression :: HNil,
+  protected def comparisonExpression1: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
-    RLIKE ~ termExpression ~>
-        ((e1: Expression, e2: Expression) => RLike(e1, e2)) |
-    REGEXP ~ termExpression ~>
+    (RLIKE | REGEXP) ~ termExpression ~>
         ((e1: Expression, e2: Expression) => RLike(e1, e2))
   }
 
-  protected def termExpression: Rule1[Expression] = rule {
+  protected final def termExpression: Rule1[Expression] = rule {
     productExpression ~ (capture(plusOrMinus) ~ ws ~ productExpression ~>
         ((e1: Expression, op: String, e2: Expression) =>
           if (op.charAt(0) == '+') Add(e1, e2) else Subtract(e1, e2))).*
   }
 
-  protected def productExpression: Rule1[Expression] = rule {
+  protected final def productExpression: Rule1[Expression] = rule {
     baseExpression ~ (
         "||" ~ ws ~ baseExpression ~> ((e1: Expression, e2: Expression) =>
           e1 match {
@@ -384,7 +390,7 @@ class SnappyParser(caseSensitive: Boolean)
             ordinal: Expression) => UnresolvedExtractValue(base, ordinal)) |
         '.' ~ ws ~ identifier ~> ((base: Expression, fieldName: String) =>
           UnresolvedExtractValue(base, Literal(fieldName)))
-        ).*
+    ).*
   }
 
   protected def durationUnit: Rule1[Duration] = rule {
@@ -401,7 +407,7 @@ class SnappyParser(caseSensitive: Boolean)
         ((d: Duration, s: Option[Duration]) => (d, s))
   }
 
-  protected def relationFactor: Rule1[LogicalPlan] = rule {
+  protected final def relationFactor: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ windowOptions.? ~ (AS.? ~ identifier).? ~>
         ((tableIdent: QualifiedTableName,
             window: Option[(Duration, Option[Duration])],
@@ -419,11 +425,11 @@ class SnappyParser(caseSensitive: Boolean)
         })
   }
 
-  protected def joinConditions: Rule1[Expression] = rule {
+  protected final def joinConditions: Rule1[Expression] = rule {
     ON ~ expression
   }
 
-  protected def joinType: Rule1[JoinType] = rule {
+  protected final def joinType: Rule1[JoinType] = rule {
     INNER ~> (() => Inner) |
     LEFT ~ SEMI ~> (() => LeftSemi) |
     LEFT ~ OUTER.? ~> (() => LeftOuter) |
@@ -431,25 +437,25 @@ class SnappyParser(caseSensitive: Boolean)
     FULL ~ OUTER.? ~> (() => FullOuter)
   }
 
-  protected def sortDirection: Rule1[Option[SortDirection]] = rule {
-    (ASC ~> (() => Ascending) | DESC ~> (() => Descending)).?
+  protected final def sortDirection: Rule1[SortDirection] = rule {
+    ASC ~> (() => Ascending) | DESC ~> (() => Descending)
   }
 
-  protected def ordering: Rule1[Seq[SortOrder]] = rule {
-    ((expression ~ sortDirection ~> ((e: Expression,
+  protected final def ordering: Rule1[Seq[SortOrder]] = rule {
+    ((expression ~ sortDirection.? ~> ((e: Expression,
         d: Option[SortDirection]) => (e, d))) + (',' ~ ws)) ~>
         ((exps: Seq[(Expression, Option[SortDirection])]) =>
           exps.map(pair => SortOrder(pair._1, pair._2.getOrElse(Ascending))))
   }
 
-  protected def sortType: Rule1[LogicalPlan => LogicalPlan] = rule {
+  protected final def sortType: Rule1[LogicalPlan => LogicalPlan] = rule {
     ORDER ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
       (l: LogicalPlan) => Sort(o, global = true, l)) |
     SORT ~ BY ~ ordering ~> ((o: Seq[SortOrder]) =>
       (l: LogicalPlan) => Sort(o, global = false, l))
   }
 
-  protected def relation: Rule1[LogicalPlan] = rule {
+  protected final def relation: Rule1[LogicalPlan] = rule {
     relationFactor ~ (
         (joinType.? ~ JOIN ~ relationFactor ~
             joinConditions.? ~> ((t: Option[JoinType], r: LogicalPlan,
@@ -458,11 +464,11 @@ class SnappyParser(caseSensitive: Boolean)
           joins.foldLeft(r1) { case (lhs, (jt, rhs, cond)) =>
             Join(lhs, rhs, joinType = jt.getOrElse(Inner), cond)
           }) |
-        MATCH ~> ((l: LogicalPlan) => l)
+        MATCH.asInstanceOf[Rule[LogicalPlan::HNil, LogicalPlan::HNil]]
     )
   }
 
-  protected def relations: Rule1[LogicalPlan] = rule {
+  protected final def relations: Rule1[LogicalPlan] = rule {
     (relation + (',' ~ ws)) ~> ((joins: Seq[LogicalPlan]) =>
       if (joins.size == 1) joins.head
       else joins.tail.foldLeft(joins.head) {
@@ -470,12 +476,12 @@ class SnappyParser(caseSensitive: Boolean)
       })
   }
 
-  protected def cast: Rule1[Expression] = rule {
+  protected final def cast: Rule1[Expression] = rule {
     CAST ~ '(' ~ ws ~ expression ~ AS ~ dataType ~ ')' ~ ws ~>
         ((exp: Expression, t: DataType) => Cast(exp, t))
   }
 
-  protected def whenThenElse: Rule1[Seq[Expression]] = rule {
+  protected final def whenThenElse: Rule1[Seq[Expression]] = rule {
     (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
         t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
         ((altPart: Seq[(Expression, Expression)], elsePart: Option[Expression]) =>
@@ -503,15 +509,15 @@ class SnappyParser(caseSensitive: Boolean)
 
   protected def primary: Rule1[Expression] = rule {
     identifier ~ (
-        '(' ~ (
-            ws ~ '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
+        '(' ~ ws ~ (
+            '*' ~ ws ~ ')' ~ ws ~> ((udfName: String) =>
               if (udfName == "COUNT") {
                 AggregateExpression(Count(Literal(1)), mode = Complete,
                   isDistinct = false)
               } else {
                 throw Utils.analysisException(s"invalid expression $udfName(*)")
               }) |
-            ws ~ (DISTINCT ~> trueFn).? ~ (expression * (',' ~ ws)) ~ ')' ~ ws ~>
+            (DISTINCT ~> trueFn).? ~ (expression * (',' ~ ws)) ~ ')' ~ ws ~>
                 ((udfName: String, d: Option[Boolean], exprs: Seq[Expression]) =>
               if (d.isEmpty) {
                 UnresolvedFunction(udfName, exprs, isDistinct = false)
@@ -521,11 +527,11 @@ class SnappyParser(caseSensitive: Boolean)
                 UnresolvedFunction(udfName, exprs, isDistinct = true)
               })
         ) |
-        '.' ~ (
-            ws ~ identifier ~ ('.' ~ ws ~ identifier).* ~>
+        '.' ~ ws ~ (
+            identifier ~ ('.' ~ ws ~ identifier).* ~>
                 ((i1: String, i2: String, rest: Seq[String]) =>
                   UnresolvedAttribute(Seq(i1, i2) ++ rest)) |
-            ws ~ (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~>
+            (identifier ~ '.' ~ ws).* ~ '*' ~ ws ~>
                 ((i1: String, target: Seq[String]) =>
                   UnresolvedStar(Option(i1 +: target)))
         ) |
@@ -539,12 +545,12 @@ class SnappyParser(caseSensitive: Boolean)
     '~' ~ ws ~ expression ~> BitwiseNot
   }
 
-  protected def signedPrimary: Rule1[Expression] = rule {
+  protected final def signedPrimary: Rule1[Expression] = rule {
     capture(plusOrMinus) ~ ws ~ primary ~> ((s: String, e: Expression) =>
       if (s.charAt(0) == '-') UnaryMinus(e) else e)
   }
 
-  protected def baseExpression: Rule1[Expression] = rule {
+  protected final def baseExpression: Rule1[Expression] = rule {
     '*' ~ ws ~> (() => UnresolvedStar(None)) |
     primary
   }
@@ -626,7 +632,7 @@ class SnappyParser(caseSensitive: Boolean)
  * Snappy dialect uses a much more optimized parser and adds SnappyParser
  * additions to the standard "sql" dialect.
  */
-private[sql] final class SnappyParserDialect(caseSensitive: Boolean)
+private[sql] class SnappyParserDialect(caseSensitive: Boolean)
     extends ParserDialect {
 
   private[sql] val sqlParser = new SnappyParser(caseSensitive)
@@ -692,6 +698,12 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected val TRUNCATE = Keyword("TRUNCATE")
   protected val INDEX = Keyword("INDEX")
   protected val ON = Keyword("ON")
+  protected val GLOBAL = Keyword("GLOBAL")
+  protected val HASH = Keyword("HASH")
+  protected val UNIQUE = Keyword("UNIQUE")
+  protected val ASC = Keyword("ASC")
+  protected val DESC = Keyword("DESC")
+
 
   protected override lazy val className: Parser[String] =
     repsep(ident, ".") ^^ { case s =>
@@ -796,16 +808,42 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   protected lazy val createIndex: Parser[LogicalPlan] =
-    (CREATE ~> INDEX ~> tableIdentifier) ~ (ON ~> tableIdentifier) ~ wholeInput ^^ {
-      case indexName ~ tableName ~ sql =>
-        CreateIndex(tableName, sql)
+    (CREATE ~> (GLOBAL ~ HASH | UNIQUE).? <~ INDEX) ~
+      (tableIdentifier) ~ (ON ~> tableIdentifier) ~
+      colWithDirection ~ (OPTIONS ~> options).? ^^ {
+      case indexType ~ indexName ~ tableName ~ cols ~ opts =>
+        val parameters = opts.getOrElse(Map.empty[String, String])
+        if (indexType.isDefined) {
+          val typeString = indexType match {
+            case Some("unique") =>
+              "unique"
+            case Some(x) if x.toString.equals("(global~hash)") =>
+              "global hash"
+          }
+          CreateIndex(indexName.toString, tableName,
+            cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
+        } else {
+          CreateIndex(indexName.toString, tableName, cols, parameters)
+        }
+
     }
 
+  protected lazy val colWithDirection: Parser[Map[String, Option[SortDirection]]] =
+    ("(" ~> repsep(ident ~ direction.?, ",") <~ ")")  ^^ {
+    case exp => exp.map(pair => (pair._1, pair._2) ).toMap
+  }
+
   protected lazy val dropIndex: Parser[LogicalPlan] =
-    (DROP ~> INDEX ~> tableIdentifier) ~ wholeInput ^^ {
-      case indexName ~ sql =>
-        DropIndex(sql)
+    DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
+      case ifExists ~ indexName =>
+        DropIndex(indexName.toString, ifExists.isDefined)
     }
+
+  protected lazy val direction: Parser[SortDirection] =
+    ( ASC  ^^^ Ascending
+      | DESC ^^^ Descending
+    )
+
 
   protected lazy val dropTable: Parser[LogicalPlan] =
     (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ tableIdentifier ^^ {
@@ -931,23 +969,26 @@ private[sql] case class TruncateTable(
   }
 }
 
-private[sql] case class CreateIndex(
-    tableIdent: QualifiedTableName,
-    sql: String) extends RunnableCommand {
+private[sql] case class CreateIndex(indexName: String,
+    baseTable: QualifiedTableName,
+    indexColumns: Map[String, Option[SortDirection]],
+    options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndexOnTable(tableIdent, sql)
+    snc.createIndex(indexName, baseTable.toString,
+      indexColumns, options)
     Seq.empty
   }
 }
 
 private[sql] case class DropIndex(
-    sql: String) extends RunnableCommand {
+    indexName: String,
+    ifExists : Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndexOfTable(sql)
+    snc.dropIndex(indexName, ifExists)
     Seq.empty
   }
 }

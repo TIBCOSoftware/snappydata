@@ -63,6 +63,13 @@ object ServiceUtils {
       properties.setProperty("persist-dd", "false")
     }
     ServerManager.getServerInstance.start(properties)
+
+    // initialize cluster callbacks if possible by reflection
+    try {
+      Utils.classForName("io.snappydata.gemxd.ClusterCallbacksImpl$")
+    } catch {
+      case _: ClassNotFoundException => // ignore if failed to load
+    }
   }
 
   def invokeStopFabricServer(sc: SparkContext): Unit = {
@@ -91,7 +98,6 @@ object ServiceUtils {
   }
 
   def clearStaticArtifacts(): Unit = {
-    StoreInitRDD.tableToIdMap.clear()
     StoreCallbacksImpl.stores.clear()
   }
 }

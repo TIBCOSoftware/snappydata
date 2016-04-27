@@ -33,6 +33,10 @@ case class Data1(pk: Int, sk: String)
 
 case class Data2(pk: Int, Year: Int)
 
+case class Data3(pk1: Int, sk: String , pk2 : Int)
+
+case class Data4(sk: String , pk1: Int, pk2 : Int)
+
 case class RefData(ref: Int, description: String)
 
 case class TRIPDATA(
@@ -79,6 +83,7 @@ object LocalSparkConf {
         setAppName(getClass.getName)
     conf.set("snappy.store.optimization", "true")
     conf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
+    conf.set("spark.snappy.analyticsService.interval" , "3")
     if (addOn != null) {
       addOn(conf)
     }

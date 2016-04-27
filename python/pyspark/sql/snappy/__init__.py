@@ -1,5 +1,3 @@
-#!/usr/bin/env bash
-
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -15,33 +13,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-
-if [ -z "${SPARK_HOME}" ]; then
-  export SPARK_HOME="$(cd "`dirname "$0"`"/..; pwd)"
-fi
-export SNAPPY_HOME=${SPARK_HOME}
-# disable randomized hash for string in Python 3.3+
-export PYTHONHASHSEED=0
-
-if [ "$JAVA_ARGS" != "" ]
-then
-  echo "Using JAVA_ARGS=$JAVA_ARGS"
-fi
 
 
-function setnewargs() { newargs="$@"; }
+"""
+Important classes of Snappy SQL and DataFrames:
 
-if echo $@ | grep -qw "rowstore"; then
-  #using rowstore launcher
-  newargs=
-  for arg in "$@"; do
-    if [[ "$arg" != "rowstore" ]] ; then
-      setnewargs "$newargs" "$arg"
-    fi
-  done
-  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS com.pivotal.gemfirexd.tools.GfxdUtilLauncher $newargs
-else
-  #use snappy launcher
-  exec "$SPARK_HOME"/bin/spark-class $JAVA_ARGS io.snappydata.tools.SnappyUtilLauncher "$@"
-fi
+    - :class:`pyspark.sql.SQLContext`
+      Main entry point for :class:`DataFrame` and SQL functionality.
+    - :class:`pyspark.sql.snappy.SnappyContext`
+      Main entry point for accessing data stored in SnappyData.
+"""
+
+from __future__ import absolute_import
+
+from pyspark.sql.snappy.context import SnappyContext
+
+__all__ = ['SnappyContext']

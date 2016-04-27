@@ -41,15 +41,15 @@ abstract class SnappyBaseParser(caseSensitive: Boolean) extends Parser {
   protected final def ws: Rule0 = rule {
     quiet(
       SnappyParserConsts.whitespace |
-      '-' ~ '-' ~ noneOf(SnappyParserConsts.lineCommentDelimiters).* |
-      '/' ~ (
-          '/' ~ noneOf(SnappyParserConsts.lineCommentDelimiters).* |
-          '*' ~ (
-              commentBody |
-              fail("unclosed comment")
-          )
-      ) |
-      '#' ~ noneOf(SnappyParserConsts.lineCommentDelimiters).*
+      capture(SnappyParserConsts.commentChar) ~> ((c: String) =>
+        c.charAt(0) match {
+          case '-' =>
+            ch('-') ~ noneOf(SnappyParserConsts.lineCommentDelimiters).*
+          case '/' =>
+            ch('/') ~ noneOf(SnappyParserConsts.lineCommentDelimiters).* |
+            ch('*') ~ (commentBody | fail("unclosed comment"))
+          case '#' => noneOf(SnappyParserConsts.lineCommentDelimiters).*
+        })
     ).*
   }
 
@@ -225,9 +225,10 @@ final class Keyword(s: String) {
 object SnappyParserConsts {
   final val whitespace: CharPredicate = CharPredicate(
     ' ', '\t', '\n', '\r', '\f')
+  final val commentChar: CharPredicate = CharPredicate('-', '/', '#')
   final val delimiters: CharPredicate = whitespace ++ CharPredicate('@', '*',
     '+', '-', '<', '=', '!', '>', '/', '(', ')', ',', ';', '%', '{', '}', ':',
-    '[', ']', '.', '&', '|', '^', '~')
+    '[', ']', '.', '&', '|', '^', '~', '#')
   final val lineCommentDelimiters = "\n\r\f" + EOI
   final val singleQuotedString: CharPredicate = CharPredicate('\'').negated
   final val doubleQuotedString: CharPredicate = CharPredicate('"').negated
@@ -246,7 +247,7 @@ object SnappyParserConsts {
 
   final val keywords: mutable.Set[String] = mutable.Set[String]()
 
-  private def keyword(s: String): Keyword = {
+  private[sql] def keyword(s: String): Keyword = {
     val k = new Keyword(s)
     keywords += k.upper
     k

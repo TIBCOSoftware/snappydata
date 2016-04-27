@@ -16,8 +16,6 @@
  */
 package org.apache.spark.sql
 
-import scala.util.{Failure, Success}
-
 import org.parboiled2._
 import shapeless.{::, HNil}
 
@@ -25,7 +23,6 @@ import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Exists, InSubquery}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.QualifiedTableName
 
 /**
@@ -34,14 +31,14 @@ import org.apache.spark.sql.hive.QualifiedTableName
 class SnappyExtendedParser(caseSensitive: Boolean)
     extends SnappyParser(caseSensitive) {
 
-  override protected def extraComparisonExpression: Rule[Expression :: HNil,
+  override protected def comparisonExpression1: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
-    super.extraComparisonExpression |
+    super.comparisonExpression1 |
     IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
       InSubquery(e, subQuery, positive = true)) |
     NOT ~ IN ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
       InSubquery(e, subQuery, positive = false)) |
-    '=' ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
+    '=' ~ ws ~ query ~> ((e: Expression, subQuery: LogicalPlan) =>
       InSubquery(e, subQuery, positive = true))
   }
 
@@ -73,34 +70,5 @@ private[sql] final class SnappyExtendedParserDialect(caseSensitive: Boolean)
   override def parse(sqlText: String): LogicalPlan = synchronized {
     sqlParser.input = sqlText
     sqlParser.parse()
-  }
-
-  // parse expressions in a projection
-  override def parseExpression(sqlText: String): Expression = synchronized {
-    sqlParser.input = sqlText
-    sqlParser.expr.run() match {
-      case Success(plan) => plan
-      case Failure(e: ParseError) =>
-        throw Utils.analysisException(sqlParser.formatError(e))
-      case Failure(e) =>
-        val ae = Utils.analysisException(e.toString)
-        ae.initCause(e)
-        throw ae
-    }
-  }
-
-  // parse table identifiers
-  override def parseTableIdentifier(
-      sqlText: String): QualifiedTableName = synchronized {
-    sqlParser.input = sqlText
-    sqlParser.tableIdent.run() match {
-      case Success(plan) => plan
-      case Failure(e: ParseError) =>
-        throw Utils.analysisException(sqlParser.formatError(e))
-      case Failure(e) =>
-        val ae = Utils.analysisException(e.toString)
-        ae.initCause(e)
-        throw ae
-    }
   }
 }
