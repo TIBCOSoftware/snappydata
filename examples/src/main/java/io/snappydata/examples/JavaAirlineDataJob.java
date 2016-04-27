@@ -49,7 +49,7 @@ public class JavaAirlineDataJob {
     // Create a table in snappy store
     options.clear();
     options.put("buckets", "11");
-    snc.createTable(colTable, "column", updatedSchema, options);
+    snc.createTable(colTable, "column", updatedSchema, options, false);
 
     // Populate the table in snappy store
     airlineDF.write().mode(SaveMode.Append).saveAsTable(colTable);
@@ -60,7 +60,7 @@ public class JavaAirlineDataJob {
 
     // Create a table in snappy store
     snc.createTable(rowTable, "row",
-        airlinerefDF.schema(), Collections.<String, String>emptyMap());
+        airlinerefDF.schema(), Collections.<String, String>emptyMap(), false);
 
     // Populate the table in snappy store
     airlinerefDF.write().mode(SaveMode.Append).saveAsTable(rowTable);
@@ -75,7 +75,7 @@ public class JavaAirlineDataJob {
     options.put("strataReservoirSize", "50");
     options.put("basetable", "Airline");
 
-    snc.createSampleTable(sampleTable, options);
+    snc.createSampleTable(sampleTable, options, false);
 
 
     // Initiate the sampling from base table to sample table.

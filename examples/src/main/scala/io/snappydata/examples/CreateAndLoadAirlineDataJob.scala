@@ -68,7 +68,7 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
           "fraction" -> "0.03",
           "strataReservoirSize" -> "50",
           "basetable" -> "Airline"
-        ))
+        ), allowExisting = false)
 
       // Initiate the sampling from base table to sample table.
       snc.table(colTable).write.mode(SaveMode.Append).saveAsTable(sampleTable)
