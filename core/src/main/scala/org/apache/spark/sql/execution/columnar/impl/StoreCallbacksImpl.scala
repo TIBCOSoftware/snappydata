@@ -33,14 +33,19 @@ import io.snappydata.Constant
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.execution.columnar.{JDBCAppendableRelation, CachedBatchCreator, ExternalStore}
+import org.apache.spark.sql.execution.columnar.{CachedBatchCreator, ExternalStore}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.store.StoreHashFunction
 import org.apache.spark.sql.types._
 
 object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable {
 
   @transient private var sqlContext = None: Option[SQLContext]
   val stores = new TrieMap[String, (StructType, ExternalStore)]
+
+  val partioner = new StoreHashFunction
+
+
   var useCompression = false
   var cachedBatchSize = 0
 
@@ -123,6 +128,14 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     schemas.add(SnappyStoreHiveCatalog.HIVE_METASTORE)
     schemas.add(Constant.INTERNAL_SCHEMA_NAME)
     schemas
+  }
+
+  override def getHashCodeSnappy(dvd: scala.Any): Int = {
+    partioner.hashValue(dvd)
+  }
+
+  override def getHashCodeSnappy(dvds: scala.Array[Object]): Int = {
+    partioner.hashValue(dvds)
   }
 }
 
