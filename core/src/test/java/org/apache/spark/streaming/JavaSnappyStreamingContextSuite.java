@@ -42,6 +42,7 @@ import org.apache.spark.util.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -195,7 +196,7 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  @Test
+  @Ignore("ignoring due to SNAP-715 ")
   public void testGetActiveOrCreate() throws IOException{
 
     final SparkConf conf = new SparkConf().setMaster(master).setAppName(appName);
