@@ -55,7 +55,7 @@ done
 # Check configurations and assign defaults
 function check_configs {
   if [ -z "${CONF_FILE}" ]; then
-    CONF_FILE="${SCRIPT_DIR}/../conf/debug.conf.template"
+    CONF_FILE="${SCRIPT_DIR}/../conf/debug.conf"
   fi
 
   if [ ! -f "${CONF_FILE}" ]; then
@@ -139,12 +139,15 @@ function collect_on_remote {
   retval=$?
   if [ ! -d ${tmp_dir} ]; then
     echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
+    return 
+      
   fi
 
   # first get the pid. The latest log file with the header will have the pid
   host=`hostname`
   if [ ! -d "$data_dir" ]; then
     echo "${data_dir} not found on host: ${host}"
+    return   
   fi
 
   cd "$data_dir"
