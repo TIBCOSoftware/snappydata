@@ -8,7 +8,6 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
 
 import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
@@ -363,7 +362,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
       Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s =>
-      new Data(s(0), s(1), s(2)))
+      new Data(s(0), s(1).toString, s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.createTable(tableName, "column", dataDF.schema,
       Map.empty[String, String])
@@ -421,4 +420,4 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 }
 
-case class Data(col1: Int, col2: Int, col3: Int)
+case class Data(col1: Int, col2: String, col3: Int)

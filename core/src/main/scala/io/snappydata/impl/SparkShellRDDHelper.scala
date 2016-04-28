@@ -179,11 +179,4 @@ object SparkShellRDDHelper {
           s"${r.getAttributes.getDataPolicy} attributes: ${r.getAttributes}")
     }
   }
-
-  def getDataType(tp: java.lang.Object): DataType = tp match {
-    case d: DataType => d
-    case s: StructField => s.dataType
-    case _ => throw Utils.analysisException(
-      s"Expected DataType object for the compound type but got $tp")
-  }
 }

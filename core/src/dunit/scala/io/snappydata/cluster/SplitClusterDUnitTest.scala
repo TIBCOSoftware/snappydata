@@ -17,22 +17,22 @@
 package io.snappydata.cluster
 
 import java.io.PrintWriter
-import java.nio.file.{Paths, Files}
-import java.sql.{Connection, DriverManager, Statement, Timestamp}
+import java.nio.file.{Files, Paths}
+import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.language.postfixOps
+import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 import scala.util.Random
 
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
+import org.junit.Assert
 
-import org.apache.spark.sql.catalyst.ScalaReflection
-import org.apache.spark.sql.types.{Decimal, StructType}
+import org.apache.spark.sql.types.Decimal
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
@@ -153,10 +153,10 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val stmt = conn.createStatement()
 
     createComplexTableUsingJDBC("embeddedModeTable1", conn, stmt, props)
-    selectFromTableUsingJDBC("embeddedModeTable1", 1005, stmt)
+    selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1005, stmt)
 
     createComplexTableUsingJDBC("embeddedModeTable2", conn, stmt, props)
-    selectFromTableUsingJDBC("embeddedModeTable2", 1005, stmt)
+    selectFromComplexTypeTableUsingJDBC("embeddedModeTable2", 1005, stmt)
 
     stmt.close()
     conn.close()
@@ -177,10 +177,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     */
     if (isComplex) {
       createComplexTableUsingJDBC("embeddedModeTable1", conn, stmt, props)
+      selectFromComplexTypeTableUsingJDBC("embeddedModeTable1", 1005, stmt)
     } else {
       createTableUsingJDBC("embeddedModeTable1", tableType, conn, stmt, props)
+      selectFromTableUsingJDBC("embeddedModeTable1", 1005, stmt)
     }
-    selectFromTableUsingJDBC("embeddedModeTable1", 1005, stmt)
 
     stmt.execute("drop table if exists embeddedModeTable1")
 
@@ -188,7 +189,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     stmt.execute("drop table if exists embeddedModeTable2")
 
     // read data from splitModeTable1
-    selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
+    if (isComplex) {
+      selectFromComplexTypeTableUsingJDBC("splitModeTable1", 1005, stmt)
+    } else {
+      selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
+    }
 
     // drop table created in split mode
     stmt.execute("drop table if exists splitModeTable1")
@@ -196,10 +201,11 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     // recreate the dropped table
     if (isComplex) {
       createComplexTableUsingJDBC("splitModeTable1", conn, stmt, props)
+      selectFromComplexTypeTableUsingJDBC("splitModeTable1", 1005, stmt)
     } else {
       createTableUsingJDBC("splitModeTable1", tableType, conn, stmt, props)
+      selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
     }
-    selectFromTableUsingJDBC("splitModeTable1", 1005, stmt)
     stmt.execute("drop table if exists splitModeTable1")
 
     stmt.close()
@@ -219,22 +225,23 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
   def createTableUsingJDBC(tableName: String, tableType: String,
       conn: Connection, stmt: Statement,
       propsMap: Map[String, String] = props): Unit = {
-    val data = ArrayBuffer(Data(1, 2, 3), Data(7, 8, 9), Data(9, 2, 3),
-      Data(4, 2, 3), Data(5, 6, 7))
+    val data = ArrayBuffer(Data(1, "2", 3), Data(7, "8", 9), Data(9, "2", 3),
+      Data(4, "2", 3), Data(5, "6", 7))
     for (i <- 1 to 1000) {
-      data += Data(Random.nextInt(), Random.nextInt(), Random.nextInt())
+      data += Data(Random.nextInt(), Integer.toString(Random.nextInt()),
+        Random.nextInt())
     }
 
     stmt.execute(s"""
         CREATE TABLE $tableName (
-          col1 Int, col2 Int, col3 Int
+          col1 Int, col2 String, col3 Int
         ) USING $tableType${getPropertiesAsSQLString(propsMap)}""")
 
     val pstmt = conn.prepareStatement(
       s"insert into $tableName values (?, ?, ?)")
     for (d <- data) {
       pstmt.setInt(1, d.col1)
-      pstmt.setInt(2, d.col2)
+      pstmt.setString(2, d.col2)
       pstmt.setInt(3, d.col3)
       pstmt.addBatch()
     }
@@ -250,19 +257,19 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val ts = Array(new Timestamp(time), new Timestamp(time + 123456L),
       new Timestamp(0L), new Timestamp(time - 12246L), new Timestamp(-1L))
     val m1 = Map(
-      ts(0) -> Data(3, 8, 1),
-      ts(1) -> Data(5, 3, 0),
-      ts(2) -> Data(8, 2, 1))
+      ts(0) -> Data(3, "8", 1),
+      ts(1) -> Data(5, "3", 0),
+      ts(2) -> Data(8, "2", 1))
     val m2 = Map(
-      ts(3) -> Data(8, 3, 1),
-      ts(0) -> Data(7, 5, 7),
-      ts(4) -> Data(4, 8, 9))
+      ts(3) -> Data(8, "3", 1),
+      ts(0) -> Data(7, "5", 7),
+      ts(4) -> Data(4, "8", 9))
     val data = ArrayBuffer[ComplexData]()
-    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, 8, 3), dec1(0), ts(0))
-    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, 4, 9), dec2(0), ts(1))
-    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, 1, 7), dec1(1), ts(2))
-    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, 3, 4), dec2(1), ts(3))
-    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, 8, 1), dec2(2), ts(4))
+    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, "8", 3), dec1(0), ts(0))
+    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", 9), dec2(0), ts(1))
+    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", 7), dec1(1), ts(2))
+    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, "3", 4), dec2(1), ts(3))
+    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", 1), dec2(2), ts(4))
     for (i <- 1 to 1000) {
       val rnd = Random.nextLong()
       val rnd1 = rnd.asInstanceOf[Int]
@@ -270,44 +277,48 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       val dec = if ((rnd1 % 2) == 0) dec1 else dec2
       val map = if ((rnd2 % 2) == 0) m1 else m2
       data += ComplexData(rnd1, dec, rnd2.toString,
-        map, Random.nextDouble(), Data(rnd1, rnd2, rnd1), dec(1),
-        ts(math.abs(rnd1) % 5))
+        map, Random.nextDouble(), Data(rnd1, Integer.toString(rnd2), rnd1),
+        dec(1), ts(math.abs(rnd1) % 5))
     }
     stmt.execute(s"""
         CREATE TABLE $tableName (
           col1 Int,
           col2 Array<Decimal>,
           col3 String,
-          col4 Map<Timestamp, Struct<col1: Int, col2: Int>>,
+          col4 Map<Timestamp, Struct<col1: Int, col2: String, col3: Int>>,
           col5 Double,
-          col6 Struct<col1: Int, col2: Int>,
+          col6 Struct<col1: Int, col2: String, col3: Int>,
           col7 Decimal,
           col8 Timestamp
         ) USING column${getPropertiesAsSQLString(propsMap)}""")
 
-    val schema = ScalaReflection.schemaFor[ComplexData].dataType
-        .asInstanceOf[StructType]
     val pstmt = conn.prepareStatement(
       s"insert into $tableName values (?, ?, ?, ?, ?, ?, ?, ?)")
-    val serializer1 = ComplexTypeSerializer.create(schema(1))
-    val serializer2 = ComplexTypeSerializer.create(schema(3))
-    val serializer3 = ComplexTypeSerializer.create(schema(5))
+    val serializer1 = ComplexTypeSerializer.create(tableName, "col2", conn)
+    val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
+    val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
+
+    // check failures with incompatible serialization first
+    checkSerializationMetadata(ts, dec1, m2,
+      Array(serializer1, serializer2, serializer3))
+
+    // proper inserts
     for (d <- data) {
       pstmt.setInt(1, d.col1)
-      pstmt.setBytes(2, serializer1.getBytes(d.col2))
+      pstmt.setBytes(2, serializer1.serialize(d.col2))
       pstmt.setString(3, d.col3)
-      pstmt.setBytes(4, serializer2.getBytes(d.col4))
+      pstmt.setBytes(4, serializer2.serialize(d.col4))
       pstmt.setDouble(5, d.col5)
       // test with Product, Array, int[], Seq and Collection
       Random.nextInt(5) match {
-        case 0 => pstmt.setBytes(6, serializer3.getBytes(d.col6))
-        case 1 => pstmt.setBytes(6, serializer3.getBytes(
+        case 0 => pstmt.setBytes(6, serializer3.serialize(d.col6))
+        case 1 => pstmt.setBytes(6, serializer3.serialize(
           d.col6.productIterator.toArray))
-        case 2 => pstmt.setBytes(6, serializer3.getBytes(
+        case 2 => pstmt.setBytes(6, serializer3.serialize(
           Array(d.col6.col1, d.col6.col2, d.col6.col3)))
-        case 3 => pstmt.setBytes(6, serializer3.getBytes(
+        case 3 => pstmt.setBytes(6, serializer3.serialize(
           d.col6.productIterator.toSeq))
-        case 4 => pstmt.setBytes(6, serializer3.getBytes(
+        case 4 => pstmt.setBytes(6, serializer3.serialize(
           d.col6.productIterator.toSeq.asJava))
       }
       pstmt.setBigDecimal(7, d.col7.toJavaBigDecimal)
@@ -318,6 +329,125 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     pstmt.close()
   }
 
+  private def checkSerializationMetadata(ts: Array[Timestamp],
+      dec1: Array[Decimal], m2: Map[Timestamp, Data],
+      serializers: Array[ComplexTypeSerializer]): Unit = {
+    val m3 = Map(
+      ts(3) -> Data3(8, 3, 1),
+      ts(0) -> Data3(7, 5, 7),
+      ts(4) -> Data3(4, 8, 9))
+    val data2 = ComplexData2(1, dec1, "3", m3, 7.56, Data(2, "8", 3),
+      dec1(0), ts(0))
+    val data3 = ComplexData3(1, dec1, "3", m2, 7.56, Data2(2, "8", "3"),
+      dec1(0), ts(0))
+
+    val dec3 = Array(Decimal("4.92"), "51.98")
+    val dec4 = Array("4.92", "51.98")
+    try {
+      serializers(0).serialize(dec3)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    try {
+      serializers(0).serialize(dec4)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    try {
+      serializers(1).serialize(data2.col4)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    try {
+      serializers(2).serialize(data3.col6)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+
+    // check validateAll and clearing of "validated" flag and reset for failures
+
+    // for ARRAY serializers(0)
+    serializers(0).serialize(dec1)
+    try {
+      serializers(0).serialize(dec4)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    try {
+      serializers(0).serialize(dec4, true)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    try {
+      serializers(0).serialize(dec3, true)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+
+    // for MAP serializers(1)
+    serializers(1).serialize(data3.col4)
+    try {
+      serializers(1).serialize(data2.col4, false)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    try {
+      serializers(1).serialize(data2.col4, true)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+
+    // STRUCT serializers(2) will succeed for incorrect calls without validation
+    // since identity serializer for INT will accept a String just fine
+    serializers(2).serialize(data2.col6)
+    // no validation for next (incorrect) call but will still fail with
+    // ClassCastException in generated code
+    try {
+      serializers(2).serialize(data3.col6)
+      Assert.fail("Expected a ClassCastException")
+    } catch {
+      case _: ClassCastException => // expected
+    }
+    // ... but same should fail properly with validateAll
+    try {
+      serializers(2).serialize(data3.col6, true)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    // after an exception, validation should turn on again for next call
+    try {
+      serializers(2).serialize(data3.col6, false)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    // ... and remain on
+    try {
+      serializers(2).serialize(data3.col6, false)
+      Assert.fail("Expected an IllegalArgumentException")
+    } catch {
+      case _: IllegalArgumentException => // expected
+    }
+    // ... and clear out again
+    serializers(2).serialize(data2.col6)
+    try {
+      serializers(2).serialize(data3.col6)
+      Assert.fail("Expected a ClassCastException")
+    } catch {
+      case _: ClassCastException => // expected
+    }
+  }
+
   def selectFromTableUsingJDBC(tableName: String,
       expectedLength: Int, stmt: Statement): Unit = {
     val rs = stmt.executeQuery(s"SELECT * FROM $tableName")
@@ -326,4 +456,100 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     assert(numResults == expectedLength,
       s"Expected $expectedLength but got $numResults")
   }
+
+  private implicit def clobString(clob: Clob): String =
+    clob.getSubString(1L, clob.length().toInt)
+
+  def selectFromComplexTypeTableUsingJDBC(tableName: String,
+      expectedLength: Int, stmt: Statement): Unit = {
+    val conn = stmt.getConnection
+    val serializer1 = ComplexTypeSerializer.create(tableName, "col2", conn)
+    val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
+    val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
+
+    val rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    var numResults = 0
+    while (rs.next()) {
+      // check access to complex types in different ways
+      val res11 = serializer1.deserialize(rs.getBytes(2))
+      val res12 = serializer2.deserialize(rs.getBytes("col4"))
+      val res13 = serializer3.deserialize(rs.getBytes(6))
+
+      val res21 = serializer1.deserialize(rs.getObject("col2")
+          .asInstanceOf[Blob])
+      val res22 = serializer2.deserialize(rs.getObject("col4")
+          .asInstanceOf[Blob])
+      val res23 = serializer3.deserialize(rs.getObject(6)
+          .asInstanceOf[Blob])
+
+      val res31 = serializer1.deserialize(rs.getBlob("col2"))
+      val res32 = serializer2.deserialize(rs.getBlob(4))
+      val res33 = serializer3.deserialize(rs.getBlob("col6"))
+
+      numResults match {
+        case 0 =>
+          println(s"Row1: Col2 = $res11 Col4 = $res12 Col6 = $res13")
+        case 1 =>
+          println(s"Row2: Col2 = $res21 Col4 = $res22 Col6 = $res23")
+        case 2 =>
+          println(s"Row3: Col2 = $res31 Col4 = $res32 Col6 = $res33")
+        case _ =>
+      }
+      numResults += 1
+    }
+    assert(numResults == expectedLength,
+      s"Expected $expectedLength but got $numResults")
+
+    /*
+    // also check access to complex types as string
+    rs = stmt.executeQuery(
+      s"SELECT * FROM $tableName --+ complexTypeAsClob(1)")
+    checkComplexTypesAsClob(rs, expectedLength)
+    rs = stmt.executeQuery(
+      s"SELECT * /*+ complexTypeAsClob( true ) */ FROM $tableName")
+    checkComplexTypesAsClob(rs, expectedLength)
+    */
+  }
+
+  private def checkComplexTypesAsClob(rs: ResultSet, expectedLength: Int): Unit = {
+    var numResults = 0
+    while (rs.next()) {
+      // check access to complex types in different ways
+      val res11 = rs.getString(2)
+      val res12 = rs.getString("col4")
+      val res13 = rs.getString(6)
+
+      val res21: String = rs.getObject("col2").asInstanceOf[Clob]
+      val res22: String = rs.getObject("col4").asInstanceOf[Clob]
+      val res23: String = rs.getObject(6).asInstanceOf[Clob]
+
+      val res31: String = rs.getClob("col2")
+      val res32: String = rs.getClob(4)
+      val res33: String = rs.getClob("col6")
+
+      numResults match {
+        case 0 =>
+          println(s"CRow1: Col2 = $res11 Col4 = $res12 Col6 = $res13")
+        case 1 =>
+          println(s"CRow2: Col2 = $res21 Col4 = $res22 Col6 = $res23")
+        case 2 =>
+          println(s"CRow3: Col2 = $res31 Col4 = $res32 Col6 = $res33")
+        case _ =>
+      }
+
+      numResults += 1
+    }
+    assert(numResults == expectedLength,
+      s"Expected $expectedLength but got $numResults")
+  }
 }
+
+case class Data2(col1: Int, col2: String, col3: String)
+case class Data3(col1: Int, col2: Int, col3: Int)
+
+case class ComplexData2(col1: Int, col2: Array[Decimal], col3: String,
+    col4: Map[Timestamp, Data3], col5: Double, col6: Data, col7: Decimal,
+    col8: Timestamp)
+case class ComplexData3(col1: Int, col2: Array[Decimal], col3: String,
+    col4: Map[Timestamp, Data], col5: Double, col6: Data2, col7: Decimal,
+    col8: Timestamp)

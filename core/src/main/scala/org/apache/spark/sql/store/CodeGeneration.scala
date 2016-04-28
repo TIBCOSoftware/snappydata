@@ -27,10 +27,10 @@ import org.codehaus.janino.CompilerFactory
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodeGenContext, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.collection.{Utils, WrappedRow}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.jdbc.JdbcDialect
@@ -264,7 +264,7 @@ object CodeGeneration extends Logging {
           s.fields.map(_.dataType).toSeq, bufferHolderVar)}
       """
       case _ => throw Utils.analysisException(
-        s"compound type conversion: unexpected type $dataType")
+        s"complex type conversion: unexpected type $dataType")
     }
 
     val evaluator = new CompilerFactory().newScriptEvaluator()
@@ -339,12 +339,8 @@ object CodeGeneration extends Logging {
       0, schema, dialect)
   }
 
-  def getComplexTypeSerializer(
-      dataType: DataType): (SerializeComplexType, Any => Any) = {
-    // lookup and obtain cached conversion code
-    val serializer = typeCache.get(dataType)
-    (serializer, CatalystTypeConverters.createToCatalystConverter(dataType))
-  }
+  def getComplexTypeSerializer(dataType: DataType): SerializeComplexType =
+    typeCache.get(dataType)
 
   def removeCache(name: String): Unit =
     cache.invalidate(new ExecuteKey(name, null, null))
