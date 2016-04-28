@@ -105,10 +105,8 @@ class SnappyContext protected[spark](
   SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
-
-
-
-  override val prepareForExecution: RuleExecutor[SparkPlan] = snappyContextFunctions.getAQPRuleExecutor(this)
+  override val prepareForExecution: RuleExecutor[SparkPlan] =
+    snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -133,6 +131,10 @@ class SnappyContext protected[spark](
 
   override protected[sql] def executePlan(plan: LogicalPlan) =
     snappyContextFunctions.executePlan(this, plan)
+
+  private[sql] var queryHints: Map[String, String] = _
+
+  def getLastParseQueryHints = queryHints
 
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)

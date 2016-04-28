@@ -42,14 +42,17 @@ import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
 import org.apache.spark.unsafe.types.CalendarInterval
 
-class SnappyParser(caseSensitive: Boolean)
-    extends SnappyBaseParser(caseSensitive) {
+class SnappyParser(context: SnappyContext)
+    extends SnappyBaseParser(context) {
 
   private[this] final var _input: ParserInput = _
 
   override final def input: ParserInput = _input
 
-  private[sql] final def input_=(in: ParserInput): Unit = _input = in
+  private[sql] final def input_=(in: ParserInput): Unit = {
+    reset()
+    _input = in
+  }
 
   final def ALL = rule { keyword(SnappyParserConsts.ALL) }
   final def AND = rule { keyword(SnappyParserConsts.AND) }
@@ -630,14 +633,21 @@ class SnappyParser(caseSensitive: Boolean)
  * Snappy dialect uses a much more optimized parser and adds SnappyParser
  * additions to the standard "sql" dialect.
  */
-private[sql] class SnappyParserDialect(caseSensitive: Boolean)
+private[sql] class SnappyParserDialect(context: SnappyContext)
     extends ParserDialect {
 
-  private[sql] val sqlParser = new SnappyParser(caseSensitive)
+  @transient private[sql] val sqlParser = new SnappyParser(context)
 
   override def parse(sqlText: String): LogicalPlan = synchronized {
+    val sqlParser = this.sqlParser
     sqlParser.input = sqlText
-    sqlParser.parse()
+    val plan = sqlParser.parse()
+    if (sqlParser.queryHints.isEmpty) {
+      context.queryHints = null
+    } else {
+      context.queryHints = sqlParser.queryHints.toMap
+    }
+    plan
   }
 }
 

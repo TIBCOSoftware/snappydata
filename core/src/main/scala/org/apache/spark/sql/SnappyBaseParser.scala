@@ -31,25 +31,45 @@ import org.apache.spark.sql.types._
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
  */
-abstract class SnappyBaseParser(caseSensitive: Boolean) extends Parser {
+abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
+
+  val caseSensitive = context.conf.caseSensitiveAnalysis
+
+  private[sql] final val queryHints = new mutable.HashMap[String, String]
+
+  protected def reset(): Unit = queryHints.clear()
 
   protected final def commentBody: Rule0 = rule {
     "*/" | ANY ~ commentBody
+  }
+
+  protected final def commentBodyOrHint: Rule0 = rule {
+    '+' ~ (SnappyParserConsts.whitespace.* ~ capture(CharPredicate.Alpha ~
+        SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
+        '(' ~ capture(noneOf(")*" + EOI).*) ~ ')' ~>
+        ((k: String, v: String) => queryHints += (k -> v): Unit)).+ ~
+        commentBody | commentBody
+  }
+
+  protected final def lineHintOrComment: Rule0 = rule {
+    '+' ~ (SnappyParserConsts.space.* ~ capture(CharPredicate.Alpha ~
+        SnappyParserConsts.identifier.*) ~ SnappyParserConsts.space.* ~
+        '(' ~ capture(noneOf(SnappyParserConsts.lineHintEnd).*) ~ ')' ~>
+        ((k: String, v: String) => queryHints += (k -> v): Unit)).+ ~
+        noneOf(SnappyParserConsts.lineCommentEnd).* |
+    noneOf(SnappyParserConsts.lineCommentEnd).*
   }
 
   /** The recognized whitespace characters and comments. */
   protected final def ws: Rule0 = rule {
     quiet(
       SnappyParserConsts.whitespace |
-      capture(SnappyParserConsts.commentChar) ~> ((c: String) =>
-        c.charAt(0) match {
-          case '-' =>
-            ch('-') ~ noneOf(SnappyParserConsts.lineCommentDelimiters).*
-          case '/' =>
-            ch('/') ~ noneOf(SnappyParserConsts.lineCommentDelimiters).* |
-            ch('*') ~ (commentBody | fail("unclosed comment"))
-          case '#' => noneOf(SnappyParserConsts.lineCommentDelimiters).*
-        })
+      '-' ~ '-' ~ lineHintOrComment |
+      '/' ~ (
+          '/' ~ lineHintOrComment |
+          '*' ~ (commentBodyOrHint | fail("unclosed comment"))
+      ) |
+      '#' ~ lineHintOrComment
     ).*
   }
 
@@ -223,13 +243,14 @@ final class Keyword(s: String) {
 }
 
 object SnappyParserConsts {
+  final val space: CharPredicate = CharPredicate(' ', '\t')
   final val whitespace: CharPredicate = CharPredicate(
     ' ', '\t', '\n', '\r', '\f')
-  final val commentChar: CharPredicate = CharPredicate('-', '/', '#')
   final val delimiters: CharPredicate = whitespace ++ CharPredicate('@', '*',
     '+', '-', '<', '=', '!', '>', '/', '(', ')', ',', ';', '%', '{', '}', ':',
     '[', ']', '.', '&', '|', '^', '~', '#')
-  final val lineCommentDelimiters = "\n\r\f" + EOI
+  final val lineCommentEnd = "\n\r\f" + EOI
+  final val lineHintEnd = ")\n\r\f" + EOI
   final val singleQuotedString: CharPredicate = CharPredicate('\'').negated
   final val doubleQuotedString: CharPredicate = CharPredicate('"').negated
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++
