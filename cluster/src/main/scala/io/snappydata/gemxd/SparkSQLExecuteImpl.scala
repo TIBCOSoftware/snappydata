@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import com.pivotal.gemfirexd.internal.iapi.types.DataValueDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
+import io.snappydata.QueryHint
 import io.snappydata.util.StringUtils
 
 import org.apache.spark.rdd.RDD
@@ -65,6 +66,14 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
 
+  // check for query hint to serialize complex types as CLOBs
+  private[this] val complexTypeAsClob = snc.getLastParseQueryHints != null && {
+    snc.getLastParseQueryHints.get(QueryHint.ComplexTypeAsClob.toString) match {
+      case Some(v) => Misc.parseBoolean(v)
+      case None => false
+    }
+  }
+
   override def packRows(msg: LeadNodeExecutorMsg,
       snappyResultHolder: SnappyResultHolder): Unit = {
 
@@ -72,7 +81,7 @@ class SparkSQLExecuteImpl(val sql: String,
     val isLocalExecution = msg.isLocallyExecuted
     val bm = SparkEnv.get.blockManager
     val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
-    val serializeComplexType = schema.exists(
+    val serializeComplexType = !complexTypeAsClob && schema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
@@ -215,7 +224,8 @@ class SparkSQLExecuteImpl(val sql: String,
         // the ID here is different from CLOB because serialization of CLOB
         // uses full UTF8 like in UTF8String while below is still modified
         // UTF8 (no code for full UTF8 yet -- change when full UTF8 code added)
-        (StoredFormatIds.SQL_BLOB_ID, -1, -1)
+        if (complexTypeAsClob) (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
+        else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
     }
