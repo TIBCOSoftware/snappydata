@@ -56,11 +56,14 @@ final class SparkShellRDDHelper {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
     val par = split.index
+
+    if (!useLocatorURL) {
+      val ps = conn.createStatement()
+      ps.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+      ps.close()
+    }
+
     val statement = conn.createStatement()
-
-    if (!useLocatorURL)
-      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
-
     val rs = statement.executeQuery(query)
     (statement, rs)
   }
@@ -149,6 +152,8 @@ object SparkShellRDDHelper {
         ClientAttribute.LOAD_BALANCE + "=false"
     val membersToNetServers = GemFireXDUtils.getGfxdAdvisor.
         getAllDRDAServersAndCorrespondingMemberMapping
+    var availableNetUrls = ArrayBuffer.empty[(String, String)]
+    val orphanBuckets = ArrayBuffer.empty[Int]
     Misc.getRegionForTable(resolvedName, true).asInstanceOf[Region[_, _]] match {
       case pr: PartitionedRegion =>
         val bidToAdvisorMap = pr.getRegionAdvisor.
@@ -163,7 +168,21 @@ object SparkShellRDDHelper {
           val netUrls = ArrayBuffer.empty[(String, String)]
           bOwners.asScala.foreach(fillNetUrlsForServer(_,
             membersToNetServers, urlPrefix, urlSuffix, netUrls))
-          allNetUrls(bid) = netUrls
+
+          if (netUrls.isEmpty) {
+            // Save the bucket which does not have a neturl, and later assign available ones to it.
+            orphanBuckets += bid
+          } else {
+            for (e <- netUrls) {
+              if (!availableNetUrls.contains(e)) {
+                availableNetUrls += e
+              }
+            }
+            allNetUrls(bid) = netUrls
+          }
+        }
+        for (bucket <- orphanBuckets) {
+          allNetUrls(bucket) = availableNetUrls
         }
         allNetUrls
 

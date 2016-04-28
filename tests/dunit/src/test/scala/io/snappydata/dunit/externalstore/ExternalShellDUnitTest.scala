@@ -54,13 +54,16 @@ class ExternalShellDUnitTest(s: String)
     vm3.invoke(this.getClass, "stopSparkCluster")
   }
 
-  def testColumnTableCreation(): Unit = {
+  def doTestColumnTableCreation(skewTaskDistribution : Boolean = false): Unit = {
     vm0.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
     vm1.invoke(classOf[ClusterManagerTestBase], "startNetServer",
       AvailablePortHelper.getRandomAvailableTCPPort)
-    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
-      AvailablePortHelper.getRandomAvailableTCPPort)
+    if (!skewTaskDistribution) {
+      vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer",
+        AvailablePortHelper.getRandomAvailableTCPPort)
+    }
+    StoreUtils.skewTaskDistributionForTests = skewTaskDistribution
 
     // Embedded Cluster Operations
     createTablesAndInsertData("column")
@@ -73,6 +76,14 @@ class ExternalShellDUnitTest(s: String)
     verifyShellModeOperations("column", isComplex = false, props)
 
     println("Test Completed Successfully")
+  }
+
+  def testColumnTableCreation(): Unit = {
+    doTestColumnTableCreation()
+  }
+
+  def testRemoteIteratorSNAP652(): Unit = {
+    doTestColumnTableCreation(true)
   }
 
   def testRowTableCreation(): Unit = {
