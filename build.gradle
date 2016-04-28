@@ -51,11 +51,25 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.2-SNAPSHOT'
+  version = '0.3-SNAPSHOT'
 
   // apply compiler options
-  compileJava.options.encoding = 'UTF-8'
-  compileJava.options.compilerArgs << '-Xlint:all,-serial,-path'
+  tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.incremental = true
+    options.compilerArgs << '-Xlint:-serial,-path,-deprecation,-unchecked,-rawtypes'
+    options.compilerArgs << '-XDignore.symbol.file'
+    options.fork = true
+    options.forkOptions.executable = 'javac'
+  }
+  tasks.withType(ScalaCompile) {
+    // scalaCompileOptions.optimize = true
+    scalaCompileOptions.useAnt = false
+    scalaCompileOptions.deprecation = false
+    scalaCompileOptions.additionalParameters = [ '-feature' ]
+    options.encoding = 'UTF-8'
+  }
+
   javadoc.options.charSet = 'UTF-8'
 
   gradle.taskGraph.whenReady( { graph ->
@@ -68,12 +82,13 @@ allprojects {
   ext {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
-    sparkVersion = '1.6.0-BETA2'
+    sparkVersion = '1.6.1'
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    gemfireXDVersion = '1.5.0-BETA2'
+    jettyVersion = '8.1.14.v20131031'
+    gemfireXDVersion = '1.5.0-SNAPSHOT'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -153,7 +168,7 @@ task cleanAllReports << {
 }
 
 task publishDocs(type:Exec) {
-  dependsOn ':snappy-tools_' + scalaBinaryVersion + ':docs'
+  dependsOn ':snappy-cluster_' + scalaBinaryVersion + ':docs'
   //on linux
   commandLine './publish-site.sh'
 }
@@ -286,12 +301,6 @@ subprojects {
       visible true
     }
 
-    nospark {
-      description 'a dependency for creating jar without spark dependencies'
-      visible true
-      transitive true
-    }
-
     testOutput {
       extendsFrom testCompile
       description 'a dependency that exposes test artifacts'
@@ -404,18 +413,18 @@ subprojects {
 }
 
 task publishLocal {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
-    p.name != 'gemfirexd-prebuild' &&
-    p.name != 'gemfirexd' && p.name != 'gemfirexd-tests' }.collect {
-    it.getTasksByName('install', false).collect { it.path }
+  dependsOn subprojects.findAll { p -> !p.name.contains('tests-dunit') &&
+    p.name != 'gemfirexd-native' && p.name != 'gemfirexd-prebuild' &&
+    p.name != 'gemfirexd' }.collect {
+      it.getTasksByName('install', false).collect { it.path }
   }
 }
 
 task publishMaven {
-  dependsOn subprojects.findAll { p -> p.name != 'gemfirexd-native' &&
-    p.name != 'gemfirexd-prebuild' && p.name != 'snappy-store' &&
-    p.name != 'gemfirexd' && p.name != 'gemfirexd-tests' }.collect {
-    it.getTasksByName('uploadArchives', false).collect { it.path }
+  dependsOn subprojects.findAll { p -> !p.name.contains('tests-dunit') &&
+    p.name != 'gemfirexd-native' && p.name != 'gemfirexd-prebuild' &&
+    p.name != 'snappy-store' && p.name != 'gemfirexd' }.collect {
+      it.getTasksByName('uploadArchives', false).collect { it.path }
   }
 }
 
@@ -426,10 +435,11 @@ task generateSources {
 }
 
 task product {
-  dependsOn ":snappy-tools_${scalaBinaryVersion}:shadowJar"
-  dependsOn ':snappy-examples:jar'
-  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
-    dependsOn ':snappy-aqp:jar'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
+  dependsOn ":snappy-cluster_${scalaBinaryVersion}:shadowJar"
+  dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+    dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
   }
 
   doFirst {
@@ -455,27 +465,33 @@ task product {
       into "${snappyProductDir}/docs"
     }
 
-    def toolsProject = project(":snappy-tools_${scalaBinaryVersion}")
-    def examplesProject = project(':snappy-examples')
+    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
+    def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
+    def examplesProject = project(":snappy-examples_${scalaBinaryVersion}")
+    def coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     def baseName = 'snappydata-assembly'
     def archiveName = "${baseName}_${scalaBinaryVersion}-${version}-hadoop${hadoopVersion}.jar"
     def exampleArchiveName = "quickstart-${version}.jar"
+    // first copy the snappy-core shadow jar
     copy {
-      from("${toolsProject.buildDir}/libs")
+      from("${coreProject.buildDir}/libs")
+      into "${rootProject.buildDir}/distributions"
+      include "${coreProject.shadowJar.archiveName}"
+      rename { filename -> coreName }
+    }
+    // next the full product starting with snappy-cluster shadow jar
+    copy {
+      from("${clusterProject.buildDir}/libs")
       into "${snappyProductDir}/lib"
-      include "${toolsProject.shadowJar.archiveName}"
+      include "${clusterProject.shadowJar.archiveName}"
       rename { filename -> archiveName }
     }
     // copy datanucleus jars specifically since they don't work as part of fat jar
-    // copy hbase jar as required for GFXD HDFS support (needs to be explicitly added to SPARK_DIST_CLASSPATH)
     // copy bin, sbin, data etc from spark
-    if (new File(rootDir, "snappy-spark/build.gradle").exists()) {
+    if (new File(rootDir, 'spark/build.gradle').exists()) {
       copy {
         from project(":snappy-spark:snappy-spark-hive_${scalaBinaryVersion}").configurations.runtime.filter {
           it.getName().contains('datanucleus')
-        }
-        from project(":snappy-store:gemfire-core").configurations.provided.filter {
-          it.getName().contains('hbase')
         }
         into "${snappyProductDir}/lib"
       }
@@ -496,6 +512,10 @@ task product {
         into "${snappyProductDir}/python"
       }
       copy {
+        from "${rootDir}/python" 
+        into "${snappyProductDir}/python"
+      }
+      copy {
         from "${project(':snappy-spark').projectDir}/data"
         into "${snappyProductDir}/data"
       }
@@ -509,12 +529,12 @@ task product {
       }
     } else {
       copy {
-        from project(':snappy-examples').configurations.testRuntime.filter {
+        from examplesProject.configurations.testRuntime.filter {
           it.getName().contains('datanucleus')
         }
         into "${snappyProductDir}/lib"
       }
-      def snappySparkJar = project(':snappy-examples').configurations.testRuntime.findResult {
+      def snappySparkJar = examplesProject.configurations.testRuntime.findResult {
         it.getName().startsWith("snappy-spark-${sparkVersion}") ? it.getPath() : null
       }
       if (snappySparkJar != null) {
@@ -531,15 +551,15 @@ task product {
       }
     }
     // copy GemFireXD shared libraries for optimized JNI calls
-    if (new File(rootDir, "snappy-store/build.gradle").exists()) {
+    if (new File(rootDir, 'store/build.gradle').exists()) {
       copy {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
         into "${snappyProductDir}/lib"
       }
     }
     // copy AQP jar
-    if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
-      def aqpProject = project(':snappy-aqp')
+    if (new File(rootDir, 'aqp/build.gradle').exists()) {
+      def aqpProject = project(":snappy-aqp_${scalaBinaryVersion}")
       copy {
         from("${aqpProject.buildDir}/libs")
         into "${snappyProductDir}/lib"
@@ -547,7 +567,7 @@ task product {
       }
     } else {
       copy {
-        from project(':snappy-examples').configurations.testRuntime.filter {
+        from examplesProject.configurations.testRuntime.filter {
           it.getName().contains('snappy-aqp')
         }
         into "${snappyProductDir}/lib"
@@ -560,15 +580,15 @@ task product {
       rename { filename -> exampleArchiveName }
     }
     copy {
-      from("${toolsProject.projectDir}/bin")
+      from("${clusterProject.projectDir}/bin")
       into "${snappyProductDir}/bin"
     }
     copy {
-      from("${toolsProject.projectDir}/sbin")
+      from("${clusterProject.projectDir}/sbin")
       into "${snappyProductDir}/sbin"
     }
     copy {
-      from("${toolsProject.projectDir}/conf")
+      from("${clusterProject.projectDir}/conf")
       into "${snappyProductDir}/conf"
     }
     copy {
@@ -576,9 +596,16 @@ task product {
       into "${snappyProductDir}/quickstart"
     }
     copy {
-      from("${toolsProject.projectDir}/benchmark")
+      from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
+  }
+}
+
+if (rootProject.hasProperty('copyToDir')) {
+  task copyProduct(type: Copy, dependsOn: product) {
+    from snappyProductDir
+    into copyToDir
   }
 }
 
@@ -607,7 +634,7 @@ def copyTestsCommonResources(def bdir) {
   file(outdir).mkdirs()
 
   copy {
-    from "${rootDir}/tests-common/src/main/resources"
+    from "${rootDir}/tests/common/src/main/resources"
     into outdir
   }
 }
@@ -716,8 +743,9 @@ task runQuickstart(dependsOn: product) {
       def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
       println "${startSparkResult}"
 
+      def hostname = "hostname".execute().text.trim()
       def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit",
-              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://localhost:7077",
+              ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://${hostname}:7077",
                "--conf", "snappydata.store.locators=localhost:10334", "--conf", "spark.ui.port=4041",
                "${snappyProductDir}/lib/${exampleArchiveName}"]);
 
@@ -738,10 +766,10 @@ task runQuickstart(dependsOn: product) {
 
 task copyResourcesAll << {
   copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
-  copyTestsCommonResources(project(":snappy-tools_${scalaBinaryVersion}").buildDir)
-  copyTestsCommonResources(project(':snappy-dunits').buildDir)
-  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
-    copyTestsCommonResources(project(":snappy-aqp").buildDir)
+  copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
+  copyTestsCommonResources(project(":tests-dunit_${scalaBinaryVersion}").buildDir)
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+    copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
   }
 }
 
@@ -756,9 +784,11 @@ task buildAll {
   mustRunAfter cleanAll
 }
 task checkAll {
-  dependsOn  ":snappy-core_${scalaBinaryVersion}:check", ":snappy-tools_${scalaBinaryVersion}:check", ':snappy-dunits:test'
-  if (new File(rootDir, "snappy-aqp/build.gradle").exists()) {
-    dependsOn ':snappy-aqp:check'
+  dependsOn ":snappy-core_${scalaBinaryVersion}:check",
+            ":snappy-cluster_${scalaBinaryVersion}:check",
+            ":tests-dunit_${scalaBinaryVersion}:test"
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+    dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
   if (project.hasProperty('spark')) {
     dependsOn ':snappy-spark:check'
@@ -780,6 +810,6 @@ gradle.taskGraph.whenReady({ graph ->
 
 
 task precheckin {
-  dependsOn cleanAll, buildAll, checkAll, allReports//, runQuickstart
-  dependsOn ':snappy-spark:scalaStyle', ":snappy-tools_${scalaBinaryVersion}:docs"
+  dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
+  dependsOn ':snappy-spark:scalaStyle', ":snappy-cluster_${scalaBinaryVersion}:docs"
 }
