@@ -28,13 +28,6 @@ public class SnappyBB extends Blackboard {
     }
 
     /**
-     * initialize SnappyBB
-     */
-    public static void initialize() {
-        getBB().printSharedCounters();
-    }
-
-    /**
      * Zero-arg constructor for remote method invocations.
      */
     public SnappyBB() {

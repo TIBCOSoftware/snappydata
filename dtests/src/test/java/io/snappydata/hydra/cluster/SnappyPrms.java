@@ -16,6 +16,12 @@ public class SnappyPrms extends BasePrms {
     public static Long sqlScriptNamesForInitTask;
 
     /**
+     * Parameter used to get the user specified param List for INITTASK.
+     * (VectosetValuesr of Strings) A list of values for parameters to be replaced in the sql scripts.
+     */
+    public static Long sqlScriptParamsForInitTask;
+
+    /**
      * Parameter used to get the user specified script names for TASK.
      * (VectosetValuesr of Strings) A list of values for script Names to execute.
      */
@@ -43,11 +49,6 @@ public class SnappyPrms extends BasePrms {
      * (boolean) for testing HA
      */
     public static Long cycleVms;
-
-    /**
-     * (boolean) for running streaming job
-     */
-    public static Long streamingJob;
 
     /**
      * (String) cycleVMTarget - which node to be cycled "store, lead" etc
@@ -92,6 +93,11 @@ public class SnappyPrms extends BasePrms {
 
     public static Vector getSQLScriptNamesForInitTask() {
         Long key = sqlScriptNamesForInitTask;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    }
+
+    public static Vector getSQLScriptParamsForInitTask() {
+        Long key = sqlScriptParamsForInitTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
