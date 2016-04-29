@@ -643,9 +643,9 @@ private[sql] class SnappyParserDialect(context: SnappyContext)
     sqlParser.input = sqlText
     val plan = sqlParser.parse()
     if (sqlParser.queryHints.isEmpty) {
-      context.queryHints = null
+      context.queryHints.clear()
     } else {
-      context.queryHints = sqlParser.queryHints.toMap
+      context.queryHints ++= sqlParser.queryHints
     }
     plan
   }

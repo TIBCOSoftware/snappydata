@@ -67,11 +67,10 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
 
   // check for query hint to serialize complex types as CLOBs
-  private[this] val complexTypeAsClob = snc.getLastParseQueryHints != null && {
-    snc.getLastParseQueryHints.get(QueryHint.ComplexTypeAsClob.toString) match {
-      case Some(v) => Misc.parseBoolean(v)
-      case None => false
-    }
+  private[this] val complexTypeAsClob = snc.getPreviousQueryHints.get(
+    QueryHint.ComplexTypeAsClob.toString) match {
+    case Some(v) => Misc.parseBoolean(v)
+    case None => false
   }
 
   override def packRows(msg: LeadNodeExecutorMsg,
