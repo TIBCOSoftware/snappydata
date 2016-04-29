@@ -19,7 +19,6 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
-import org.apache.spark.sql.{Row, SQLContext}
 
 import scala.language.implicitConversions
 
