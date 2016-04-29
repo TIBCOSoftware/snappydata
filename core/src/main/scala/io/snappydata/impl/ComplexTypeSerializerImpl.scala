@@ -44,7 +44,7 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
     val stmt = connection.prepareCall("CALL SYS.GET_COLUMN_TABLE_SCHEMA(?, ?)")
     try {
       stmt.setString(1, table)
-      stmt.registerOutParameter(2, Types.LONGVARCHAR)
+      stmt.registerOutParameter(2, Types.CLOB)
       stmt.execute()
       DataType.fromJson(stmt.getString(2)).asInstanceOf[StructType]
     } finally {
