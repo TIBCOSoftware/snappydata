@@ -44,6 +44,8 @@ object Constant {
 
   val SPARK_PREFIX = "spark."
 
+  val SPARK_SNAPPY_PREFIX = SPARK_PREFIX + PROPERTY_PREFIX
+
   val SPARK_STORE_PREFIX = SPARK_PREFIX + STORE_PROPERTY_PREFIX
 
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."

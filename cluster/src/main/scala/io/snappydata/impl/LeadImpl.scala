@@ -69,9 +69,13 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private[snappydata] val snappyProperties = Utils.getFields(Property).collect {
     case (_, propVal: Property.Type) =>
-      if (propVal().startsWith(Constant.PROPERTY_PREFIX) &&
-          !propVal().startsWith(Constant.STORE_PROPERTY_PREFIX)) {
-        propVal().substring(Constant.PROPERTY_PREFIX.length)
+      val prop = propVal()
+      if (prop.startsWith(Constant.PROPERTY_PREFIX) &&
+          !prop.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
+        prop.substring(Constant.PROPERTY_PREFIX.length)
+      } else if (prop.startsWith(Constant.SPARK_SNAPPY_PREFIX) &&
+          !prop.startsWith(Constant.SPARK_STORE_PREFIX)) {
+        prop.substring(Constant.SPARK_SNAPPY_PREFIX.length)
       } else {
         ""
       }
