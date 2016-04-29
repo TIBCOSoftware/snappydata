@@ -51,7 +51,7 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
         commentBody | commentBody
   }
 
-  protected final def lineHintOrComment: Rule0 = rule {
+  protected final def lineCommentOrHint: Rule0 = rule {
     '+' ~ (SnappyParserConsts.space.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.space.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.lineHintEnd).*) ~ ')' ~>
@@ -64,12 +64,12 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
   protected final def ws: Rule0 = rule {
     quiet(
       SnappyParserConsts.whitespace |
-      '-' ~ '-' ~ lineHintOrComment |
+      '-' ~ '-' ~ lineCommentOrHint |
       '/' ~ (
-          '/' ~ lineHintOrComment |
+          '/' ~ lineCommentOrHint |
           '*' ~ (commentBodyOrHint | fail("unclosed comment"))
       ) |
-      '#' ~ lineHintOrComment
+      '#' ~ lineCommentOrHint
     ).*
   }
 
