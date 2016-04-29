@@ -531,7 +531,7 @@ class ColumnFormatRelation(
       snc.catalog.alterTableToAddIndexProp(
         tableIdent, snc.getIndexTable(indexIdent))
     } catch {
-      case e =>
+      case e : Throwable =>
         snc.dropTable(indexIdent, ifExists = false)
         throw e
     }
