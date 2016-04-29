@@ -79,14 +79,28 @@ object Property extends Enumeration {
     def getOption(conf: SparkConf): Option[String] = if (altName == null) {
       conf.getOption(name)
     } else {
-      conf.getOption(name).orElse(conf.getOption(altName))
+      conf.getOption(name) match {
+        case s: Some => // check if altName also present and fail if so
+          if (conf.contains(altName)) {
+            throw new IllegalArgumentException(
+              s"Both $name and $altName specified. Only one should be set.")
+          } else s
+        case None => conf.getOption(altName)
+      }
     }
 
     def getProperty(properties: Properties): String = if (altName == null) {
       properties.getProperty(name)
     } else {
       val v = properties.getProperty(name)
-      if (v != null) v else properties.getProperty(altName)
+      if (v != null) {
+        // check if altName also present and fail if so
+        if (properties.getProperty(altName) != null) {
+          throw new IllegalArgumentException(
+            s"Both $name and $altName specified. Only one should be set.")
+        }
+        v
+      } else properties.getProperty(altName)
     }
 
     def apply(): String = name
