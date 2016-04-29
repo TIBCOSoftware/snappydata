@@ -228,6 +228,9 @@ class SparkSQLExecuteImpl(val sql: String,
         else (StoredFormatIds.SQL_BLOB_ID, -1, -1)
       // TODO: KN add varchar when that data type is identified
       // case VarCharType => StoredFormatIds.SQL_VARCHAR_ID
+
+      // send across rest as CLOBs
+      case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
     }
   }
 }
