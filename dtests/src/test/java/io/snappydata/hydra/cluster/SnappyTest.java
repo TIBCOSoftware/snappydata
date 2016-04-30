@@ -65,9 +65,8 @@ public class SnappyTest implements Serializable {
     public static void HydraTask_initializeSnappy() {
         SparkContext sc = null;
         snc = SnappyContext.getOrCreate(sc);
-        Log.getLogWriter().info("SnappyContext initialized successfully");
-    }
 
+    }
 
     public static void HydraTask_stopSnappy() {
         snc.stop();
@@ -183,19 +182,19 @@ public class SnappyTest implements Serializable {
             File serversFile = new File(serversFilePath);
             File leadsFile = new File(leadsFilePath);
             if (dirPath.contains("locator")) {
-                String locatorLogDir = localHost + " -dir=" + dirPath;
+                String locatorLogDir = localHost + " -dir=" + dirPath + " -J-Xmx1G";
                 if (!locatorsFileContent.contains(locatorLogDir)) {
                     locatorsFileContent.add(locatorLogDir);
                     snappyTest.writeToFile(locatorLogDir, locatorsFile);
                 }
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
-                String serverLogDir = localHost + " -dir=" + dirPath;
+                String serverLogDir = localHost + " -dir=" + dirPath + " -J-Xmx4G";
                 if (!serversFileContent.contains(serverLogDir)) {
                     serversFileContent.add(serverLogDir);
                     snappyTest.writeToFile(serverLogDir, serversFile);
                 }
             } else if (dirPath.contains("lead")) {
-                String leadLogDir = localHost + " -dir=" + dirPath;
+                String leadLogDir = localHost + " -dir=" + dirPath + " -J-Xmx2G";
                 if (leadHost == null) {
                     leadHost = localHost;
                 }
