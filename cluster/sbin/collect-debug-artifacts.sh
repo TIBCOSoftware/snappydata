@@ -21,7 +21,8 @@
 
 usage="Usage: collect-debug-artifacts \
         [ -c confifile|--conf=conffile|--config=conffile ] [ -h|--help ] \
-        [ -a|--all ] [ -v|--verbose ]"
+        [ -a|--all ] [ -v|--verbose ] [ -s starttimestamp|--start=starttimestamp ] \
+        [ -e endtimestamp|--end=endtimestamp ]"
 
 SCRIPT_DIR="`dirname "$0"`"
 SCRIPT_DIR="`cd "$SCRIPT_DIR" && pwd`"
@@ -35,6 +36,16 @@ while [ "$1" != "" ]; do
       shift ;;
     --conf=*|--config=*)
       CONF_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+    -s)
+      START_TIME="$2"
+      shift ;;
+    --start=*)
+      START_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+    -e)
+      END_TIME="$2"
+      shift ;;
+    --end=*)
+      END_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
     -h|--help)
     echo $usage
     exit 0
@@ -51,6 +62,8 @@ while [ "$1" != "" ]; do
   esac
   shift # past argument or value
 done
+
+num_regex='^[0-9]+$'
 
 # Check configurations and assign defaults
 function check_configs {
@@ -88,6 +101,28 @@ function check_configs {
     echo NUM_STACK_DUMPS=$NO_OF_STACK_DUMPS
     echo INTERVAL_BETWEEN_DUMPS=$INTERVAL_BETWEEN_DUMPS
     echo GET_EVERYTHING=${GET_EVERYTHING}
+    echo START TIME = "${START_TIME}"
+    echo END   TIME = "${END_TIME}"
+  fi
+
+  if [ -z "${START_TIME}" ]; then
+    START_EPOCH=0
+  else
+    START_EPOCH=$(date +%s --date "${START_TIME}" 2>/dev/null)
+    if ! [[ "$START_EPOCH" =~ $num_regex ]] ; then
+      echo "${START_TIME} error: Not expected date format" 
+      exit 1
+    fi
+  fi
+
+  if [ -z "${END_TIME}" ]; then
+    END_EPOCH=0
+  else
+    END_EPOCH=`date +%s --date "${END_TIME}" 2>/dev/null`
+    if ! [[ $END_EPOCH =~ $num_regex ]] ; then
+      echo "${END_TIME} error: Not expected date format" 
+      exit 1
+    fi
   fi
 }
 
@@ -123,7 +158,8 @@ function collect_data {
   fi
 
   typeset -f | ssh $host "$(cat);collect_on_remote \"${wd}\" \"${NO_OF_STACK_DUMPS}\" \\
-      \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \"${out_dir}\" \"${VERBOSE}\""
+      \"${INTERVAL_BETWEEN_DUMPS}\" \"${GET_EVERYTHING}\" \"${collector_host}\" \"${out_dir}\" \\
+      \"${VERBOSE}\" \"${START_EPOCH}\" \"${END_EPOCH}\""
 }
 
 function collect_on_remote {
@@ -134,25 +170,29 @@ function collect_on_remote {
   collector_host="$5"
   collector_dir="$6"
   verbose="$7"
+  start_epoch="$8"
+  end_epoch="$9"
 
-  tmp_dir="$(mktemp -d --tmpdir="`pwd`" data.XXXX)"
+  tmp_dir="$(mktemp -d --tmpdir="$data_dir" data.XXXX)"
   retval=$?
   if [ ! -d ${tmp_dir} ]; then
     echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
-    return 
-      
+    return
   fi
 
   # first get the pid. The latest log file with the header will have the pid
   host=`hostname`
   if [ ! -d "$data_dir" ]; then
     echo "${data_dir} not found on host: ${host}"
-    return   
+    return
   fi
 
   cd "$data_dir"
 
   if [ "${get_all}" = "1" ]; then
+    if [ "${verbose}" = "1" ]; then
+      echo "collecting everything in the working dir"
+    fi
     for l in $( ls *.log 2> /dev/null )
     do
       files+=($l)
@@ -161,8 +201,11 @@ function collect_on_remote {
     do
       files+=($l)
     done
-  else
-    logs_sorted_reverse=`ls *.log | sed 's/\([0-9]\)/;\1/' | sort -r -n -t\; -k2,2 | tr -d ';'`
+  elif [ "${START_EPOCH}" = "0" ]; then
+    if [ "${verbose}" = "1" ]; then
+      echo "collecting latest log files and all stats file"
+    fi
+    logs_sorted_reverse=`ls *.log | sed 's/[0-9]\+\(-[0-9]\+\)\?\.log$/;\0/' | sort -r -n -t\; -k2,2 | tr -d ';'`
 
     arr=($logs_sorted_reverse)
     latest_log=${arr[-1]}
@@ -200,6 +243,34 @@ function collect_on_remote {
     for l in $( ls *.gfs 2> /dev/null )
     do
       files+=($l)
+    done
+  else 
+    if [ "${verbose}" = "1" ]; then
+      echo "collecting files based on modified time"
+    fi
+    files=()
+    for l in $( ls -t *.log 2>/dev/null )
+    do
+      file_mod_epoch=`date +%s --date "$(ls  -l --time-style=long-iso $l | cut -d' ' -f6-7)"`
+      if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
+        if [ "${verbose}" = "1" ]; then
+          echo "${l} MOD TIME = ${file_mod_epoch}"
+          echo "Adding file ${l} to the array"
+        fi
+        files+=($l)
+      fi
+    done
+
+    for l in $( ls -t *.gfs 2>/dev/null )
+    do
+      file_mod_epoch=`date +%s --date "$(ls  -l --time-style=long-iso $l | cut -d' ' -f6-7)"`
+      if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
+        if [ "${verbose}" = "1" ]; then
+          echo "${l} MOD TIME = ${file_mod_epoch}"
+          echo "Adding file ${l} to the array"
+        fi
+        files+=($l)
+      fi
     done
   fi
 
