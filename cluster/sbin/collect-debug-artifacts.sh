@@ -193,28 +193,21 @@ function collect_on_remote {
     if [ "${verbose}" = "1" ]; then
       echo "collecting everything in the working dir"
     fi
-    for l in $( ls *.log 2> /dev/null )
+    for l in $( ls *.log* 2> /dev/null )
     do
       files+=($l)
     done
-    for l in $( ls *.gfs 2> /dev/null )
+    for l in $( ls *.gfs* 2> /dev/null )
     do
       files+=($l)
     done
-  elif [ "${START_EPOCH}" = "0" ]; then
+  elif [ "${start_epoch}" = "0" ]; then
     if [ "${verbose}" = "1" ]; then
       echo "collecting latest log files and all stats file"
     fi
-    logs_sorted_reverse=`ls *.log | sed 's/[0-9]\+\(-[0-9]\+\)\?\.log$/;\0/' | sort -r -n -t\; -k2,2 | tr -d ';'`
+    logs_latest_first=`ls -t *.log*`
 
-    arr=($logs_sorted_reverse)
-    latest_log=${arr[-1]}
-    unset arr[${#arr[@]}-1]
-
-    all_logs=()
-    all_logs+=($latest_log)
-    all_logs+=("${arr[@]}")
-
+    all_logs=($logs_latest_first)
     files=()
     last_restart_log=""
     for l in "${all_logs[@]}"
@@ -232,15 +225,20 @@ function collect_on_remote {
         # also check for the pid line and get the pid
         proc_id=`sed -n 's/.*Process ID: \([0-9]\+\)$/\1/p' ${l}`
         if [ "${verbose}" = "1" ]; then
-          echo "Adding file ${l} to the array"
+          echo "Adding latest copyright header file ${l} to the array"
         fi
         files+=($l)
         last_restart_log="$l"
+      else
+        if [ "${verbose}" = "1" ]; then
+          echo "Adding file ${l} to the array"
+        fi
+        files+=($l)
       fi
     done
 
     # get all the gfs files as well
-    for l in $( ls *.gfs 2> /dev/null )
+    for l in $( ls *.gfs* 2> /dev/null )
     do
       files+=($l)
     done
@@ -249,7 +247,7 @@ function collect_on_remote {
       echo "collecting files based on modified time"
     fi
     files=()
-    for l in $( ls -t *.log 2>/dev/null )
+    for l in $( ls -t *.log* 2>/dev/null )
     do
       file_mod_epoch=`date +%s --date "$(ls  -l --time-style=long-iso $l | cut -d' ' -f6-7)"`
       if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
@@ -261,7 +259,7 @@ function collect_on_remote {
       fi
     done
 
-    for l in $( ls -t *.gfs 2>/dev/null )
+    for l in $( ls -t *.gfs* 2>/dev/null )
     do
       file_mod_epoch=`date +%s --date "$(ls  -l --time-style=long-iso $l | cut -d' ' -f6-7)"`
       if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
@@ -303,7 +301,7 @@ function collect_on_remote {
   cd "${tmp_dir}/.."
   tar cvzf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
     rsync -av "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
-      rm -f "${tmp_dir}.tar.gz"
+      rm -f "${tmp_dir}.tar.gz" && rm -rf "${tmp_dir}"
 }
 
 check_configs
