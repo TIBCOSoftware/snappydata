@@ -10,7 +10,8 @@ A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.
 
 
 ##### Using SnappyContext to create table and query data 
-Here is an example to create a SnappyContext from SparkContext. 
+Below are examples to create a SnappyContext from SparkContext.
+###### Scala
 ```scala
   val conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
@@ -20,9 +21,20 @@ Here is an example to create a SnappyContext from SparkContext.
   // get the SnappyContext
   val snc = org.apache.spark.sql.SnappyContext(sc)
 ```
+###### Java
+```java
+  SparkConf conf = new org.apache.spark.SparkConf()
+               .setAppName("ExampleTest")
+               .setMaster("local[*]");
+
+  JavaSparkContext sc = new JavaSparkContext(conf);
+  // get the SnappyContext
+  SnappyContext snc = SnappyContext.getOrCreate(sc);
+```
 
 Create columnar tables using API. Other than `create`, `drop` table rest is all based on the Spark SQL Data Source APIs. 
 
+###### Scala
 ```scala
   val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -43,6 +55,46 @@ Create columnar tables using API. Other than `create`, `drop` table rest is all 
   val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
   println("contents of column table are:")
   results1.foreach(println)
+
+```
+
+###### Java
+
+```java
+
+    Map<String, String> props1 = new HashMap<>();
+    props1.put("buckets", "11");
+
+    JavaRDD<Row> jrdd = jsc.parallelize(Arrays.asList(
+        RowFactory.create(1,2,3),
+        RowFactory.create(7,8,9),
+        RowFactory.create(9,2,3),
+        RowFactory.create(4,2,3),
+        RowFactory.create(5,6,7)
+    ));
+
+    StructType schema = new StructType(new StructField[]{
+        new StructField("col1", DataTypes.IntegerType, false, Metadata.empty()),
+        new StructField("col2", DataTypes.IntegerType, false, Metadata.empty()),
+        new StructField("col3", DataTypes.IntegerType, false, Metadata.empty()),
+    });
+
+    DataFrame dataDF = snc.createDataFrame(jrdd, schema);
+
+    // create a column table
+    snc.dropTable("COLUMN_TABLE", true);
+
+    // "column" is the table format (that is row or column)
+    // dataDF.schema provides the schema for table
+    snc.createTable("COLUMN_TABLE", "column", dataDF.schema(), props1, false);
+    // append dataDF into the table
+    dataDF.write().insertInto("COLUMN_TABLE");
+
+    DataFrame results1 = snc.sql("SELECT * FROM COLUMN_TABLE");
+    System.out.println("contents of column table are:");
+    for (Row r : results1.select("col1", "col2", "col3"). collect()) {
+        System.out.println(r);
+    }
 
 ```
 
