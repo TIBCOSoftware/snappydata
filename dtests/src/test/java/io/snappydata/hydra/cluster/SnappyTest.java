@@ -69,7 +69,7 @@ public class SnappyTest implements Serializable {
     }
 
     public static void HydraTask_stopSnappy() {
-        snc.stop();
+        snc.stop(true);
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 
