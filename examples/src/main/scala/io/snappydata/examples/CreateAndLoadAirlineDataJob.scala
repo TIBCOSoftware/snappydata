@@ -29,10 +29,10 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       // scalastyle:off println
 
       // Drop tables if already exists
-      snc.dropTable(colTable, true)
-      snc.dropTable(rowTable, true)
-      snc.dropTable(sampleTable, true)
-      snc.dropTable(stagingAirline, true)
+      snc.dropTable(sampleTable, ifExists = true)
+      snc.dropTable(colTable, ifExists = true)
+      snc.dropTable(rowTable, ifExists = true)
+      snc.dropTable(stagingAirline, ifExists = true)
 
       pw.println(s"****** CreateAndLoadAirlineDataJob ******")
 
@@ -62,13 +62,13 @@ object CreateAndLoadAirlineDataJob extends SnappySQLJob {
       pw.println(s"Created and imported data in $rowTable table")
 
       // Create a sample table sampling parameters.
-      snc.createSampleTable(sampleTable, None,
+      snc.createSampleTable(sampleTable,
         Map("buckets" -> "7",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
           "strataReservoirSize" -> "50",
           "basetable" -> "Airline"
-        ))
+        ), allowExisting = false)
 
       // Initiate the sampling from base table to sample table.
       snc.table(colTable).write.mode(SaveMode.Append).saveAsTable(sampleTable)

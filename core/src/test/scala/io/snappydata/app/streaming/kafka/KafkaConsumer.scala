@@ -60,11 +60,12 @@ object KafkaConsumer {
     val tableStream = ssnc.getSchemaDStream("tweetstreamtable")
 
 
-    ssnc.snappyContext.createSampleTable("tweetstreamtable_sampled", None, Map(
+    ssnc.snappyContext.createSampleTable("tweetstreamtable_sampled", Map(
       "qcs" -> "hashtag",
       "fraction" -> "0.05",
       "strataReservoirSize" -> "300",
-      "timeInterval" -> "3m", "baseTable" -> "tweetstreamtable"))
+      "timeInterval" -> "3m", "baseTable" -> "tweetstreamtable"),
+      allowExisting = false)
 
     ssnc.snappyContext.saveStream(tableStream, Seq("tweetstreamtable_sampled"), None)
 

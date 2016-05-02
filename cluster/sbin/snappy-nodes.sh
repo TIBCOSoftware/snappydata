@@ -150,7 +150,7 @@ function startComponent() {
 index=1
 
 if [ -n "${HOSTLIST}" ]; then
-  while read -r slave; do
+  while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
     args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
