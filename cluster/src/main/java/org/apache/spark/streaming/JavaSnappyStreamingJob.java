@@ -14,29 +14,32 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql;
+package org.apache.spark.streaming;
+
 
 import com.typesafe.config.Config;
+import org.apache.spark.sql.JSparkJobValidation;
+import org.apache.spark.sql.JavaJobValidate;
+import org.apache.spark.sql.streaming.SnappyStreamingJob;
+import org.apache.spark.streaming.api.JavaSnappyStreamingContext;
 import spark.jobserver.SparkJobValidation;
 
-/**
- * This class acts as a helper class to implement Java jobs in Spark job server with
- * SnappyContext implicitly provided.
- */
-public abstract class JavaSnappySQLJob  implements SnappySQLJob {
+public abstract class JavaSnappyStreamingJob implements SnappyStreamingJob {
 
-  abstract public  Object runJavaJob(SnappyContext snc, Config jobConfig);
+  abstract public  Object runJavaJob(JavaSnappyStreamingContext snc, Config jobConfig);
 
-  abstract public JSparkJobValidation isValidJob(SnappyContext snc, Config jobConfig);
+  abstract public JSparkJobValidation isValidJob(JavaSnappyStreamingContext snc,
+      Config jobConfig);
 
   @Override
   public Object runJob(Object sc, Config jobConfig) {
-    return runJavaJob((SnappyContext)sc, jobConfig);
+    return runJavaJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), jobConfig);
   }
 
   @Override
   public SparkJobValidation validate(Object sc, Config config) {
-    JSparkJobValidation  status = isValidJob((SnappyContext)sc, config);
+    JSparkJobValidation  status =
+        isValidJob(new JavaSnappyStreamingContext((SnappyStreamingContext)sc), config);
     return JavaJobValidate.validate(status);
   }
 }
