@@ -16,3 +16,16 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
+package org.apache.spark.sql.execution.ui
+
+import org.apache.spark.Logging
+import org.apache.spark.ui.{SparkUI, SparkUITab}
+
+/** Web UI showing storage status of all Snappy Tables */
+private[sql] class SnappyStatsTab(sparkUI: SparkUI)
+    extends SparkUITab(sparkUI, "Snappy") with Logging {
+  val parent = sparkUI
+  attachPage(new SnappyStatsPage(this))
+  parent.attachTab(this)
+}

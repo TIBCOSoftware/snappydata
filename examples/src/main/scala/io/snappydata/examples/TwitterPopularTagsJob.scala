@@ -96,7 +96,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     // Create TopK table on the base stream table which is hashtagtable
     // TopK object is automatically populated from the stream table
     snsc.snappyContext.createApproxTSTopK("topktable", "hashtag",
-      Some(schema), topKOption)
+      schema, topKOption)
 
     val tableName = "retweetStore"
 

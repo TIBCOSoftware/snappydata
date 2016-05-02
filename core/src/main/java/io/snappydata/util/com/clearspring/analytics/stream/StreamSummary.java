@@ -17,7 +17,7 @@ package io.snappydata.util.com.clearspring.analytics.stream;
  */
 
 /*
- * Changes for SnappyData additions and modifications.
+ * Changes for SnappyData data platform.
  *
  * Portions Copyright (c) 2010-2016 SnappyData, Inc. All rights reserved.
  *
