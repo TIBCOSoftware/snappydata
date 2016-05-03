@@ -531,7 +531,7 @@ class ColumnFormatRelation(
       snc.catalog.alterTableToAddIndexProp(
         tableIdent, snc.getIndexTable(indexIdent))
     } catch {
-      case e =>
+      case e : Throwable =>
         snc.dropTable(indexIdent, ifExists = false)
         throw e
     }
@@ -619,7 +619,7 @@ final class DefaultSource extends ColumnarRelationProvider {
     val parametersForShadowTable = new CaseInsensitiveMutableHashMap(parameters)
 
     val partitioningColumn = StoreUtils.getPartitioningColumn(parameters)
-    val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters)
+    val primaryKeyClause = StoreUtils.getPrimaryKeyClause(parameters, schema, sqlContext)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = false, isShadowTable = false)
 
