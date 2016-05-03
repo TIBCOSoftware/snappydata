@@ -3,6 +3,7 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
+
 import hydra.*;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -11,6 +12,10 @@ import org.apache.spark.sql.SnappyContext;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.io.*;
 import java.io.BufferedReader;
@@ -56,6 +61,7 @@ public class SnappyTest implements Serializable {
     public static Long waitTimeBeforeJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForCloseTask, 6000);
+    private static Boolean logDirExists = false;
 
 
     public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
@@ -173,40 +179,165 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    public static synchronized void HydraTask_generateSnappyConfig() {
-        locatorsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "locators";
-        serversFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "servers";
-        leadsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "leads";
-        try {
+    public static synchronized void HydraTask_generateSnappyConfig() throws NullPointerException {
+        if (logDirExists) return;
+        else {
+            locatorsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "locators";
+            serversFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "servers";
+            leadsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "leads";
+            String addr = HostHelper.getHostAddress();
+            int port = PortHelper.getRandomPort();
+            String endpoint = addr + ":" + port;
+            String clientPort = " -client-port=";
+            String locators = "-locators=";
+            String locatorHost = null;
             String dirPath = snappyTest.getLogDir();
             File locatorsFile = new File(locatorsFilePath);
             File serversFile = new File(serversFilePath);
             File leadsFile = new File(leadsFilePath);
             if (dirPath.contains("locator")) {
-                String locatorLogDir = localHost + " -dir=" + dirPath;
-                if (!locatorsFileContent.contains(locatorLogDir)) {
-                    locatorsFileContent.add(locatorLogDir);
-                    snappyTest.writeToFile(locatorLogDir, locatorsFile);
-                }
+                String locatorLogDir = localHost + " -dir=" + dirPath + clientPort + port;
+                locatorsFileContent.add(locatorLogDir);
+                String portString = port + "";
+                SnappyBB.getBB().getSharedMap().put("locatorHost", localHost);
+                SnappyBB.getBB().getSharedMap().put("locatorPort", portString);
+                snappyTest.writeToFile(locatorLogDir, locatorsFile);
+                Log.getLogWriter().info("Generated peer locator endpoint: " + endpoint);
+                SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
-                String serverLogDir = localHost + " -dir=" + dirPath;
-                if (!serversFileContent.contains(serverLogDir)) {
-                    serversFileContent.add(serverLogDir);
-                    snappyTest.writeToFile(serverLogDir, serversFile);
-                }
+                locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+                String serverLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                Log.getLogWriter().info("serverLogDir" + serverLogDir);
+                serversFileContent.add(serverLogDir);
+                snappyTest.writeToFile(serverLogDir, serversFile);
+                Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
+                SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
-                String leadLogDir = localHost + " -dir=" + dirPath;
+                locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                leadsFileContent.add(leadLogDir);
                 if (leadHost == null) {
                     leadHost = localHost;
                 }
-                Log.getLogWriter().info("Lead host is: " + leadHost);
-                if (!leadsFileContent.contains(leadLogDir)) {
-                    leadsFileContent.add(leadLogDir);
-                    snappyTest.writeToFile(leadLogDir, leadsFile);
-                }
+                snappyTest.writeToFile(leadLogDir, leadsFile);
             }
+            logDirExists = true;
+        }
+    }
+
+    /**
+     * Returns all network locator endpoints from the {@link
+     * SnappyNetworkServerBB} map, a possibly empty list.  This includes all
+     * network servers that have ever started, regardless of their distributed
+     * system or current active status.
+     */
+    public static List getNetworkLocatorEndpoints() {
+        return getEndpoints("locator");
+    }
+
+    /**
+     * Returns all network server endpoints from the {@link
+     * SnappyNetworkServerBB} map, a possibly empty list.  This includes all
+     * network servers that have ever started, regardless of their distributed
+     * system or current active status.
+     */
+    public static List getNetworkServerEndpoints() {
+        return getEndpoints("server");
+    }
+
+    protected int getClientPort() {
+        try {
+            List<String> endpoints = getNetworkLocatorEndpoints();
+            if (endpoints.size() == 0) {
+                String s = "No network server endpoints found";
+                throw new TestException(s);
+            }
+            String endpoint = endpoints.get(0);
+            String port = endpoint.substring(endpoint.indexOf(":") + 1);
+            Log.getLogWriter().info("port string is:" + port);
+            int clientPort = Integer.parseInt(port);
+            Log.getLogWriter().info("Client Port is :" + clientPort);
+            return clientPort;
         } catch (Exception e) {
-            throw new TestException("Following error occurred while executing " + e.getStackTrace());
+            String s = "No client port found";
+            throw new TestException(s);
+        }
+    }
+
+
+    /**
+     * Returns all endpoints of the given type.
+     */
+    private static synchronized List<String> getEndpoints(String type) {
+        List<String> endpoints = new ArrayList();
+        Set<String> keys = SnappyNetworkServerBB.getBB().getSharedMap().getMap().keySet();
+        Log.getLogWriter().info("Complete endpoint list contains: " + keys);
+        for (String key : keys) {
+            if (key.startsWith(type.toString())) {
+                String endpoint = (String) SnappyNetworkServerBB.getBB().getSharedMap().getMap().get(key);
+                Log.getLogWriter().info("endpoint Found...." + endpoint);
+                endpoints.add(endpoint);
+            }
+        }
+        Log.getLogWriter().info("Returning endpoint list: " + endpoints);
+        return endpoints;
+    }
+
+
+    public static void HydraTask_getClientConnection() throws SQLException {
+        getLocatorConnection();
+    }
+
+    /**
+     * Gets Client connection.
+     */
+    public static Connection getLocatorConnection() throws SQLException {
+        List<String> endpoints = getNetworkLocatorEndpoints();
+        if (endpoints.size() == 0) {
+            String s = "No network locator endpoints found";
+            throw new TestException(s);
+        }
+        String url = "jdbc:snappydata://" + endpoints.get(0); //+ "/";
+        Log.getLogWriter().info("url is " + url);
+        return getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+    }
+
+    private static Connection getConnection(String protocol, String driver) throws SQLException {
+        Log.getLogWriter().info("Creating connection using " + driver + " with " + protocol);
+        loadDriver(driver);
+        Connection conn = DriverManager.getConnection(protocol);
+        return conn;
+    }
+
+    /**
+     * The JDBC driver is loaded by loading its class.  If you are using JDBC 4.0
+     * (Java SE 6) or newer, JDBC drivers may be automatically loaded, making
+     * this code optional.
+     * <p/>
+     * In an embedded environment, any static Derby system properties
+     * must be set before loading the driver to take effect.
+     */
+    public static void loadDriver(String driver) {
+        try {
+            Class.forName(driver).newInstance();
+        } catch (ClassNotFoundException e) {
+            String s = "Problem loading JDBC driver: " + driver;
+            throw new TestException(s, e);
+        } catch (InstantiationException e) {
+            String s = "Problem loading JDBC driver: " + driver;
+            throw new TestException(s, e);
+        } catch (IllegalAccessException e) {
+            String s = "Problem loading JDBC driver: " + driver;
+            throw new TestException(s, e);
+        }
+    }
+
+    public static void runQuery() throws SQLException {
+        Connection conn = getLocatorConnection();
+        String query1 = "SELECT count(*) FROM airline";
+        ResultSet rs = conn.createStatement().executeQuery(query1);
+        while (rs.next()) {
+            Log.getLogWriter().info("SS - Qyery executed successfully and query result is ::" + rs.getLong(1));
         }
     }
 
@@ -241,7 +372,8 @@ public class SnappyTest implements Serializable {
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsInitTaskResult.log";
                 File logFile = new File(dest);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file, "-param:path=" + path);
+                int clientPort = snappyTest.getClientPort();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file, "-param:path=" + path, "-client-port=" + clientPort);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (Exception e1) {
@@ -346,7 +478,8 @@ public class SnappyTest implements Serializable {
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsTaskResult.log";
                 File logFile = new File(dest);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file);
+                int clientPort = snappyTest.getClientPort();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + file, "-client-port=" + clientPort);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (Exception e1) {
@@ -660,6 +793,7 @@ public class SnappyTest implements Serializable {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
         }
     }
+
 
     /**
      * Create and start snappy server.
