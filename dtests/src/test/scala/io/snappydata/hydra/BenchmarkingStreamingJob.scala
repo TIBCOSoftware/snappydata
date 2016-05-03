@@ -17,6 +17,8 @@
 
 package io.snappydata.hydra
 
+import java.io.PrintWriter
+
 import com.typesafe.config.Config
 import org.apache.spark.sql._
 import org.apache.spark.sql.streaming.SnappyStreamingJob
@@ -27,6 +29,16 @@ import spark.jobserver.{SparkJobValid, SparkJobValidation}
 class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
   override def runJob(snsc: C, jobConfig: Config): Any = {
+    val st = s"StartJob-${System.currentTimeMillis()}.out"
+    // scalastyle:off println
+
+    val pw_st = new PrintWriter(st)
+    pw_st.println(jobConfig.getInt("maxRecPerSecond"))
+    pw_st.println(jobConfig.getInt("numWarehouses"))
+    pw_st.println(jobConfig.getInt("numDistrictsPerWarehouse"))
+    pw_st.println(jobConfig.getInt("numCustomersPerDistrict"))
+    pw_st.println(jobConfig.getInt("numItems"))
+    pw_st.close()
     val stream = snsc.receiverStream[ClickStreamCustomer](
       new BenchmarkingReceiver(jobConfig.getInt("maxRecPerSecond"),
       jobConfig.getInt("numWarehouses"),
@@ -42,18 +54,31 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
       .add("cs_i_id", IntegerType)
       .add("cs_click_d", TimestampType)
 
+    val rows = stream.map(v => Row(v.w_id,
+      v.d_id, v.c_id, v.i_id, new java.sql.Timestamp(System.currentTimeMillis)))
 
-    val rows = stream.map(v => Row(new java.sql.Timestamp(System.currentTimeMillis), v.w_id,
-      v.d_id, v.c_id, v.i_id))
-    val window_rows = rows.window(new Duration(30*100), new Duration(5*1000))
+    val window_rows = rows.window(new Duration(30*1000), new Duration(6*1000))
 
     val windowStreamAsTable = snsc.createSchemaDStream(window_rows, schema)
-    val logStreamAsTable = snsc.createSchemaDStream(rows, schema)
 
     snsc.snappyContext.createTable("clickstream_col", "column", schema,
       Map("buckets" -> "41"))
 
-    windowStreamAsTable.foreachDataFrame(_.agg( Map( "" -> "")))
+    import org.apache.spark.sql.functions._
+    windowStreamAsTable.foreachDataFrame(df =>
+      {
+        val outFileName = s"BenchmarkingStreamingJob-${System.currentTimeMillis()}.out"
+
+        val pw = new PrintWriter(outFileName)
+        // Find out top items in this window
+        val start = System.currentTimeMillis()
+        df.groupBy(df.col("cs_i_id")).agg(count("cs_i_id").alias("itemcount")).
+          orderBy(desc("itemcount")).collect().foreach(pw.println)
+
+        pw.println(s"Time taken ${System.currentTimeMillis() - start}")
+        pw.close()
+      })
+
 
     snsc.start()
     Thread.sleep(jobConfig.getInt("streamTime"))

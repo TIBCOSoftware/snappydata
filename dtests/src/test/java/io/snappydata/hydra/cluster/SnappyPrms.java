@@ -128,7 +128,7 @@ public class SnappyPrms extends BasePrms {
 
     public static String getCommaSepAPPProps() {
         Long key = appPropsForJobServer;
-        return BasePrms.tasktab().getString(key, BasePrms.tab().getString(key, null));
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
 

@@ -277,7 +277,7 @@ public class SnappyTest implements Serializable {
             assert p.getInputStream().read() == -1;
             int rc = p.waitFor();
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getMessage());
+            throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
         }
     }
 
@@ -403,9 +403,14 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    /**
-     * Executes snappy Streaming Jobs in Task.
-     */
+    public static void HydraTask_executeSnappyStreamingJob_benchmarking() {
+        snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNamesForTask(),
+                "snappyStreamingJobTaskResult" + System.currentTimeMillis() + ".log");
+    }
+
+        /**
+         * Executes snappy Streaming Jobs in Task.
+         */
 
     public static void HydraTask_executeSnappyStreamingJob() {
         Runnable fileStreaming = new Runnable() {
@@ -450,6 +455,8 @@ public class SnappyTest implements Serializable {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
                 pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":8090", "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar), "--stream");
+                java.util.Map<String, String> env = pb.environment();
+                env.put("APP_PROPS",  SnappyPrms.getCommaSepAPPProps());
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
@@ -458,7 +465,7 @@ public class SnappyTest implements Serializable {
 //            sleep(waitTimeBeforeJobStatus);
             snappyTest.getSnappyJobsStatus(snappyJobScript, logFile);
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getMessage());
+            throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
         }
     }
 

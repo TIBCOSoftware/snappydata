@@ -50,7 +50,7 @@ class BenchmarkingReceiver (val maxRecPerSecond: Int,
       var i = 0;
       for (i <- 1 to maxRecPerSecond) {
         store(generateClickStream())
-        if (!isStopped()) {
+        if (isStopped()) {
           return
         }
       }
@@ -58,7 +58,8 @@ class BenchmarkingReceiver (val maxRecPerSecond: Int,
       // before queueing more.
       val remainingtime = 1000 - (System.currentTimeMillis() - start)
       if (remainingtime > 0) {
-        Thread.sleep(remainingtime)}
+        Thread.sleep(remainingtime)
+      }
     }
   }
 
@@ -77,4 +78,4 @@ class BenchmarkingReceiver (val maxRecPerSecond: Int,
 class ClickStreamCustomer (val w_id: Int,
                           val d_id: Int,
                           val c_id: Int,
-                          val i_id: Int)
+                          val i_id: Int) extends Serializable
