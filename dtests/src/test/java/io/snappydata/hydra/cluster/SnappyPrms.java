@@ -90,6 +90,11 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long waitTimeBeforeNextCycleVM;
 
+    /**
+     * App Props that are passed to the job
+     */
+    public static Long appPropsForJobServer;
+
 
     public static Vector getSQLScriptNamesForInitTask() {
         Long key = sqlScriptNamesForInitTask;
@@ -120,6 +125,12 @@ public class SnappyPrms extends BasePrms {
         Long key = jobClassNamesForCloseTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
+
+    public static String getCommaSepAPPProps() {
+        Long key = appPropsForJobServer;
+        return BasePrms.tasktab().getString(key, BasePrms.tab().getString(key, null));
+    }
+
 
     static {
         BasePrms.setValues(SnappyPrms.class);

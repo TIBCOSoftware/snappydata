@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package io.snappydata.hydra
 
 import java.io.PrintWriter
@@ -154,7 +171,8 @@ object SnappyOlapQueries {
 
   // Modified the group by and order by clauses
   val Q8 = "SELECT YEAR (o_entry_d) AS l_year, " +
-    "sum(CASE WHEN n2.n_name = 'Germany' THEN ol_amount ELSE 0 END) / sum(ol_amount) AS mkt_share " +
+    "sum(CASE WHEN n2.n_name = 'Germany' THEN ol_amount ELSE 0 END) / " +
+    "sum(ol_amount) AS mkt_share " +
     "FROM item, " +
     "supplier, " +
     "stock, " +
@@ -395,11 +413,12 @@ object OLAPQueries extends SnappySQLJob {
           val start: Long = System.currentTimeMillis
           try {
             snsc.sql(q._2).collect()
-          }catch {
+          } catch {
             case e => pw.println(s"Exception for query ${q._1}:  " + e)
           }
           val end: Long = System.currentTimeMillis - start
-          pw.println(s"${new java.util.Date(System.currentTimeMillis())} Time taken by ${q._1} is $end")
+          pw.println(s"${new java.util.Date(System.currentTimeMillis())} " +
+            s"Time taken by ${q._1} is $end")
         }
         pw.close()
       }

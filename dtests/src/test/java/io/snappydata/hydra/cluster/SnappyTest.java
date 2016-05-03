@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.hydra.cluster;
 
 
@@ -69,7 +86,7 @@ public class SnappyTest implements Serializable {
     }
 
     public static void HydraTask_stopSnappy() {
-        snc.stop(true);
+        SnappyContext.stop(true);
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 
@@ -453,7 +470,11 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String APP_PROPS = "\"logFileName=" + logFileName + "\"";
+                String APP_PROPS  = SnappyPrms.getCommaSepAPPProps();
+                if (APP_PROPS == null)
+                    APP_PROPS = "\"logFileName=" + logFileName + "\"";
+                else
+                    APP_PROPS = "\"" + APP_PROPS + ",logFileName=" + logFileName + "\"";
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
                 pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
