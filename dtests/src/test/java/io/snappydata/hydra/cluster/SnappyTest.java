@@ -76,7 +76,7 @@ public class SnappyTest implements Serializable {
 
 
     public static void HydraTask_stopSnappy() {
-        snc.stop();
+        SnappyContext.stop(true);
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 
@@ -337,7 +337,7 @@ public class SnappyTest implements Serializable {
         String query1 = "SELECT count(*) FROM airline";
         ResultSet rs = conn.createStatement().executeQuery(query1);
         while (rs.next()) {
-            Log.getLogWriter().info("SS - Qyery executed successfully and query result is ::" + rs.getLong(1));
+            Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
         }
     }
 
@@ -706,7 +706,8 @@ public class SnappyTest implements Serializable {
         if (this.logFile == null) {
             HostDescription hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
-            String name = TestConfig.tab().stringAt(ClientPrms.gemfireNames, "gemfire1");
+//            String name = TestConfig.tab().stringAt(ClientPrms.gemfireNames, "gemfire1");
+            Vector<String> names = TestConfig.tab().vecAt(ClientPrms.gemfireNames);
             String dirname = hd.getUserDir() + File.separator
                     + "vm_" + RemoteTestModule.getMyVmid()
                     + "_" + RemoteTestModule.getMyClientName()
@@ -718,8 +719,14 @@ public class SnappyTest implements Serializable {
             try {
                 FileUtil.mkdir(dir);
                 try {
-                    RemoteTestModule.Master.recordDir(hd,
-                            name, fullname);
+                    for (String name : names) {
+                        String[] splitedName = name.split("gemfire");
+                        String newName = splitedName[0] + splitedName[1];
+                        if (newName.equals(RemoteTestModule.getMyClientName())) {
+                            RemoteTestModule.Master.recordDir(hd,
+                                    name, fullname);
+                        }
+                    }
                 } catch (RemoteException e) {
                     String s = "Unable to access master to record directory: " + dir;
                     throw new HydraRuntimeException(s, e);
