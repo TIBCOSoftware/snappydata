@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 group = 'io.snappydata'
-version = '1.0.3-SNAPSHOT'
+version = '1.0.3'
 
 compileJava.options.encoding = 'UTF-8'
 
