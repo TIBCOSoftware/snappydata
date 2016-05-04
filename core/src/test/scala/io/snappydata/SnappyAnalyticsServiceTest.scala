@@ -99,10 +99,12 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
     val analyticsColumnBuffer = queryMemoryAnalytics(
       ColumnFormatRelation.cachedBatchTableName(columnTableName))
 
-    def check(expectedValueSize: Long, expectedRowSize: Long, expectedColumnSize: Long): Boolean = {
-      val mValueSize = SnappyAnalyticsService.getTableSize(s"APP.$columnTableName")
+    def check(expectedValueSize: Long, expectedRowSize: Long,
+        expectedColumnSize: Long): Boolean = {
+      val fullTableName = s"APP.$columnTableName"
+      val mValueSize = SnappyAnalyticsService.getTableSize(fullTableName)
       val uiDetails = SnappyAnalyticsService.getUIInfo
-          .filter(_.tableName.equals(s"APP.$columnTableName")).head
+          .filter(_.tableName == fullTableName).head
       expectedValueSize == mValueSize &&
           expectedRowSize == uiDetails.rowBufferSize &&
           expectedColumnSize == uiDetails.columnBufferSize
