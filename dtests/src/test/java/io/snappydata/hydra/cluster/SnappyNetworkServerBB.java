@@ -30,7 +30,7 @@ public class SnappyNetworkServerBB extends Blackboard {
     public static synchronized SnappyNetworkServerBB getBB() {
         if (blackboard == null) {
             blackboard =
-                    new SnappyNetworkServerBB("NetworkServerBlackboard", "rmi");
+                    new SnappyNetworkServerBB("SnappyNetworkServerBB", "rmi");
         }
         return blackboard;
     }
