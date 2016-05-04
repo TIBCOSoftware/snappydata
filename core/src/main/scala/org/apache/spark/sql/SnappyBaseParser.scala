@@ -46,8 +46,8 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
   protected final def commentBodyOrHint: Rule0 = rule {
     '+' ~ (SnappyParserConsts.whitespace.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.whitespace.* ~
-        '(' ~ capture(noneOf(")*" + EOI).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v): Unit)).+ ~
+        '(' ~ capture(noneOf(SnappyParserConsts.hintValueEnd).*) ~ ')' ~>
+        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
         commentBody | commentBody
   }
 
@@ -55,7 +55,7 @@ abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
     '+' ~ (SnappyParserConsts.space.* ~ capture(CharPredicate.Alpha ~
         SnappyParserConsts.identifier.*) ~ SnappyParserConsts.space.* ~
         '(' ~ capture(noneOf(SnappyParserConsts.lineHintEnd).*) ~ ')' ~>
-        ((k: String, v: String) => queryHints += (k -> v): Unit)).+ ~
+        ((k: String, v: String) => queryHints += (k -> v.trim): Unit)).+ ~
         noneOf(SnappyParserConsts.lineCommentEnd).* |
     noneOf(SnappyParserConsts.lineCommentEnd).*
   }
@@ -251,6 +251,7 @@ object SnappyParserConsts {
     '[', ']', '.', '&', '|', '^', '~', '#')
   final val lineCommentEnd = "\n\r\f" + EOI
   final val lineHintEnd = ")\n\r\f" + EOI
+  final val hintValueEnd = ")*" + EOI
   final val singleQuotedString: CharPredicate = CharPredicate('\'').negated
   final val doubleQuotedString: CharPredicate = CharPredicate('"').negated
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++
