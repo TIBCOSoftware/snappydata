@@ -204,6 +204,7 @@ public class SnappyTest implements Serializable {
             String locatorHost = null;
             String dirPath = snappyTest.getLogDir();
             if (dirPath.contains("locator")) {
+                port = 1527;
                 String locatorLogDir = localHost + " -dir=" + dirPath + clientPort + port;
                 SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
                 String portString = port + "";
