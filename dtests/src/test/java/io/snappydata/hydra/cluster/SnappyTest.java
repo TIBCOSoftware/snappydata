@@ -32,6 +32,7 @@ import scala.collection.immutable.Map;
 
 import util.TestException;
 
+import static java.lang.Thread.currentThread;
 import static java.lang.Thread.sleep;
 
 public class SnappyTest implements Serializable {
@@ -45,9 +46,6 @@ public class SnappyTest implements Serializable {
     private static String logFile = null;
     private static String localHost = null;
 
-    private static Set<String> serversFileContent = new LinkedHashSet<String>();
-    private static Set<String> locatorsFileContent = new LinkedHashSet<String>();
-    private static Set<String> leadsFileContent = new LinkedHashSet<String>();
     private static Set<String> snappyJobLogFilesForTask = new LinkedHashSet<String>();
     private static Set<String> snappyJobLogFilesForCloseTask = new LinkedHashSet<String>();
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
@@ -182,9 +180,6 @@ public class SnappyTest implements Serializable {
     public static synchronized void HydraTask_generateSnappyConfig() throws NullPointerException {
         if (logDirExists) return;
         else {
-            locatorsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "locators";
-            serversFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "servers";
-            leadsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "leads";
             String addr = HostHelper.getHostAddress();
             int port = PortHelper.getRandomPort();
             String endpoint = addr + ":" + port;
@@ -192,36 +187,79 @@ public class SnappyTest implements Serializable {
             String locators = "-locators=";
             String locatorHost = null;
             String dirPath = snappyTest.getLogDir();
-            File locatorsFile = new File(locatorsFilePath);
-            File serversFile = new File(serversFilePath);
-            File leadsFile = new File(leadsFilePath);
             if (dirPath.contains("locator")) {
                 String locatorLogDir = localHost + " -dir=" + dirPath + clientPort + port;
-                locatorsFileContent.add(locatorLogDir);
+                SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
                 String portString = port + "";
                 SnappyBB.getBB().getSharedMap().put("locatorHost", localHost);
                 SnappyBB.getBB().getSharedMap().put("locatorPort", portString);
-                snappyTest.writeToFile(locatorLogDir, locatorsFile);
-                Log.getLogWriter().info("Generated peer locator endpoint: " + endpoint);
+                Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String serverLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
-                Log.getLogWriter().info("serverLogDir" + serverLogDir);
-                serversFileContent.add(serverLogDir);
-                snappyTest.writeToFile(serverLogDir, serversFile);
+                SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + snappyTest.getMyTid(), serverLogDir);
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
-                leadsFileContent.add(leadLogDir);
+                SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
                 if (leadHost == null) {
                     leadHost = localHost;
                 }
-                snappyTest.writeToFile(leadLogDir, leadsFile);
+                Log.getLogWriter().info("Lead host is: " + leadHost);
             }
             logDirExists = true;
+        }
+    }
+
+    protected static Set<String> getFileContents(String userKey, Set<String> fileContents) {
+        Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+        for (String key : keys) {
+            if (key.startsWith(userKey)) {
+                Log.getLogWriter().info("Key Found..." + key);
+                String value = (String) SnappyBB.getBB().getSharedMap().get(key);
+                fileContents.add(value);
+            }
+        }
+        return fileContents;
+    }
+
+    public static void HydraTask_writeConfigDataToFiles() throws NullPointerException {
+        locatorsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "locators";
+        serversFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "servers";
+        leadsFilePath = snappyTest.getSnappyPath() + sep + "conf" + sep + "leads";
+        File locatorsFile = new File(locatorsFilePath);
+        File serversFile = new File(serversFilePath);
+        File leadsFile = new File(leadsFilePath);
+        Set<String> locatorsFileContent = new LinkedHashSet<String>();
+        Set<String> serversFileContent = new LinkedHashSet<String>();
+        Set<String> leadsFileContent = new LinkedHashSet<String>();
+
+        locatorsFileContent = snappyTest.getFileContents("locatorLogDir", locatorsFileContent);
+        serversFileContent = snappyTest.getFileContents("serverLogDir", serversFileContent);
+        leadsFileContent = snappyTest.getFileContents("leadLogDir", leadsFileContent);
+        if (locatorsFileContent.size() == 0) {
+            String s = "Empty locatorsFileContent";
+            throw new TestException(s);
+        }
+        for (String s : locatorsFileContent) {
+            snappyTest.writeToFile(s, locatorsFile);
+        }
+        if (serversFileContent.size() == 0) {
+            String s = "Empty serversFileContent";
+            throw new TestException(s);
+        }
+        for (String s : serversFileContent) {
+            snappyTest.writeToFile(s, serversFile);
+        }
+        if (leadsFileContent.size() == 0) {
+            String s = "Empty leadsFileContent";
+            throw new TestException(s);
+        }
+        for (String s : leadsFileContent) {
+            snappyTest.writeToFile(s, leadsFile);
         }
     }
 
@@ -706,7 +744,6 @@ public class SnappyTest implements Serializable {
         if (this.logFile == null) {
             HostDescription hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
-//            String name = TestConfig.tab().stringAt(ClientPrms.gemfireNames, "gemfire1");
             Vector<String> names = TestConfig.tab().vecAt(ClientPrms.gemfireNames);
             String dirname = hd.getUserDir() + File.separator
                     + "vm_" + RemoteTestModule.getMyVmid()

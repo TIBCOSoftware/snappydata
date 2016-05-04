@@ -2,8 +2,6 @@ package io.snappydata.hydra.cluster;
 
 import hydra.blackboard.Blackboard;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by swati on 22/3/16.
