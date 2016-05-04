@@ -51,7 +51,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.3-SNAPSHOT'
+  version = '0.3.0-PREVIEW'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
