@@ -32,21 +32,20 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.Constant
 
 import org.apache.spark.Partition
-import org.apache.spark.sql.collection.{Utils, ExecutorLocalShellPartition}
+import org.apache.spark.sql.collection.ExecutorLocalShellPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStore, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.store.StoreUtils
-import org.apache.spark.sql.types.{StructField, DataType}
 
 final class SparkShellRDDHelper {
 
   var useLocatorURL: Boolean = false
 
-  def getSQLStatement(resolvedTableName: String, requiredColumns: Array[String], partitionId: Int)
-  : String = {
+  def getSQLStatement(resolvedTableName: String,
+      requiredColumns: Array[String], partitionId: Int): String = {
     val whereClause = if (useLocatorURL) s" where bucketId = $partitionId" else ""
     "select " + requiredColumns.mkString(", ") +
         ", numRows, stats from " + resolvedTableName + whereClause
