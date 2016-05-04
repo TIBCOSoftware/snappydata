@@ -65,6 +65,8 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
     snsc.snappyContext.createTable("clickstream_col", "column", schema,
       Map("buckets" -> "41"))
 
+    snsc.sql("set spark.sql.shuffle.partitions=20")
+
     import org.apache.spark.sql.functions._
     windowStreamAsTable.foreachDataFrame(df =>
       {
