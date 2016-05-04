@@ -71,11 +71,15 @@ class BenchmarkingReceiver (val maxRecPerSecond: Int,
     val districtID: Int = rand.nextInt(this.numDistrictsPerWarehouse)
     val customerID: Int = rand.nextInt(this.numCustomersPerDistrict)
     val itemId: Int = rand.nextInt(this.itemCount)
-    new ClickStreamCustomer(warehouseID, districtID, customerID, itemId)
+    // timespent on website is 100 -500 seconds
+    val timespent: Int = rand.nextInt(400) + 100
+
+    new ClickStreamCustomer(warehouseID, districtID, customerID, itemId, timespent)
   }
 }
 
 class ClickStreamCustomer (val w_id: Int,
                           val d_id: Int,
                           val c_id: Int,
-                          val i_id: Int) extends Serializable
+                          val i_id: Int,
+                          val c_ts: Int) extends Serializable

@@ -52,12 +52,13 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
       .add("cs_c_d_id", IntegerType)
       .add("cs_c_id", IntegerType)
       .add("cs_i_id", IntegerType)
+      .add("cs_timespent", IntegerType)
       .add("cs_click_d", TimestampType)
 
     val rows = stream.map(v => Row(v.w_id,
-      v.d_id, v.c_id, v.i_id, new java.sql.Timestamp(System.currentTimeMillis)))
+      v.d_id, v.c_id, v.i_id, v.c_ts, new java.sql.Timestamp(System.currentTimeMillis)))
 
-    val window_rows = rows.window(new Duration(30*1000), new Duration(6*1000))
+    val window_rows = rows.window(new Duration(30*1000), new Duration(10*1000))
 
     val windowStreamAsTable = snsc.createSchemaDStream(window_rows, schema)
 
@@ -71,11 +72,37 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
         val pw = new PrintWriter(outFileName)
         // Find out top items in this window
-        val start = System.currentTimeMillis()
-        df.groupBy(df.col("cs_i_id")).agg(count("cs_i_id").alias("itemcount")).
-          orderBy(desc("itemcount")).collect().foreach(pw.println)
 
-        pw.println(s"Time taken ${System.currentTimeMillis() - start}")
+        val clickstreamlog = "benchmarking" + System.currentTimeMillis()
+        df.registerTempTable(clickstreamlog)
+        val resultdfQ1 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
+          s"From $clickstreamlog, oorder_col, order_line_col " +
+          s"Where ol_i_id = cs_i_id " +
+          s"And ol_w_id = o_w_id" +
+          s" And ol_d_id = o_d_id " +
+          s"And ol_o_id = o_id " +
+          s"Group by cs_i_id " +
+          s"Order by cnt " )
+
+        val resultdfQ2 = snsc.sql(s" select avg(cs_timespent) as avgtimespent " +
+          s"from $clickstreamlog  group by cs_i_id order by avgtimespent")
+
+        val output = if (jobConfig.getBoolean("printResults")){
+          val sq1 = System.currentTimeMillis()
+          resultdfQ1.limit(10).collect().foreach(pw.println)
+          val endq1 = System.currentTimeMillis()
+          resultdfQ2.collect().foreach(pw.println)
+          val endq2 = System.currentTimeMillis()
+          s"Q1 ${endq1 - sq1} Q2 ${endq2 -endq1}"
+        } else {
+          val sq1 = System.currentTimeMillis()
+          resultdfQ1.limit(10).collect()
+          val endq1 = System.currentTimeMillis()
+          resultdfQ2.collect()
+          val endq2 = System.currentTimeMillis()
+          s"Q1 ${endq1 - sq1} Q2 ${endq2 -endq1}"
+        }
+        pw.println(s"Time taken $output")
         pw.close()
       })
 
