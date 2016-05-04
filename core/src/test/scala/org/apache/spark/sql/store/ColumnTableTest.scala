@@ -80,7 +80,7 @@ class ColumnTableTest
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
-      snc.createTable(tableName, "column", props)
+      snc.createTable(tableName, "column", props, allowExisting = false)
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
