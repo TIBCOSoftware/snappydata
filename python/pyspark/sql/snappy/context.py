@@ -130,20 +130,20 @@ class SnappyContext(SQLContext):
         else:
             raise TypeError("rows should be tuple or a list")
 
-    def update(self, tableName, filterExpr, newColumnValues, *updateColumns):
+    def update(self, tableName, filterExpr, newColumnValues, updateColumns):
         """
         update all rows in table that match passed filter expression
         :param tableName: Table name which needs to be updated
         :param filterExpr: SQL WHERE criteria to select rows that will be updated
-        :param newColumnValues:  single Row containing all updated column values.
+        :param newColumnValues:  single list containing all updated column values.
         They MUST match the updateColumn list
         :param updateColumns   List of all column names being updated
         :return: List of all column names being updated
         """
-        if isinstance(newColumnValues, tuple):
+        if isinstance(newColumnValues, list) and isinstance(updateColumns, list):
             return self._ssql_ctx.update(tableName, filterExpr, newColumnValues, updateColumns)
         else:
-            raise TypeError("newColumnValues should be tuple")
+            raise TypeError("newColumnValues and updateColumns should be list")
 
     def delete(self, tableName, filterExpr):
         """
