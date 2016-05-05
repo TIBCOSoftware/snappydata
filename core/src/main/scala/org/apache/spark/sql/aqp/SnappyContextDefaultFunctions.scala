@@ -114,9 +114,10 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
         .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
   }
 
-  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog =
+  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog = {
+    SnappyStoreHiveCatalog.closeCurrent()
     new SnappyStoreHiveCatalog(context)
-
+  }
   def getSnappyDDLParser(context: SnappyContext,
       planGenerator: String => LogicalPlan): DDLParser =
     new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)

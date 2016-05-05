@@ -36,7 +36,7 @@ import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.streaming.SchemaDStream;
-import org.apache.spark.streaming.api.JavaSnappyStreamingContext;
+import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.util.Utils;
 import org.junit.After;
