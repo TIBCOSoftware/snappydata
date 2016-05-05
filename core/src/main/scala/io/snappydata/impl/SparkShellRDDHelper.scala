@@ -56,11 +56,11 @@ final class SparkShellRDDHelper {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
     val par = split.index
-
     val statement = conn.createStatement()
 
     if (!useLocatorURL)
       statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+
     val rs = statement.executeQuery(query)
     (statement, rs)
   }
