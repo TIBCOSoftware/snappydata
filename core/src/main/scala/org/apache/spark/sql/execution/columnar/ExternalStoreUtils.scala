@@ -410,14 +410,13 @@ object ExternalStoreUtils {
       cachedBatches: Iterator[CachedBatch],
       requestedColumns: Array[String],
       schema: StructType): Iterator[InternalRow] = {
-    /* TODO: (native code gen does not work for some reason)
     // check and compare with InMemoryColumnarTableScan
     val numColumns = requestedColumns.length
     val columnIndices = new Array[Int](numColumns)
     val columnDataTypes = new Array[DataType](numColumns)
     for (index <- 0 until numColumns) {
       val fieldIndex = schema.fieldIndex(requestedColumns(index))
-      columnIndices(index) = fieldIndex
+      columnIndices(index) = index
       schema.fields(fieldIndex).dataType match {
         case udt: UserDefinedType[_] => columnDataTypes(index) = udt.sqlType
         case other => columnDataTypes(index) = other
@@ -425,14 +424,9 @@ object ExternalStoreUtils {
     }
     // TODO: partition pruning like in InMemoryColumnarTableScan?
     val columnarIterator = GenerateColumnAccessor.generate(columnDataTypes)
-    columnarIterator.initialize(cacheBatches, columnDataTypes, columnIndices)
+    columnarIterator.initialize(cachedBatches, columnDataTypes, columnIndices)
     columnarIterator
-    */
-    val (requestedColumnIndices, requestedColumnDataTypes) = requestedColumns.map { a =>
-      schema.getFieldIndex(a).get -> schema(a).dataType
-    }.unzip
-    cachedBatchesToRows(cachedBatches, requestedColumnIndices,
-      requestedColumnDataTypes, schema)
+
   }
 
   final def cachedBatchesToRows(
