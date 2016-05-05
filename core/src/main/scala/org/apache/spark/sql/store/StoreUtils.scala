@@ -81,6 +81,7 @@ object StoreUtils extends Logging {
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
 
+  var skewTaskDistributionForTests = false
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -101,7 +102,11 @@ object StoreUtils extends Logging {
     val partitions = new Array[Partition](numPartitions)
 
     for (p <- 0 until numPartitions) {
-      val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
+      val num = skewTaskDistributionForTests match {
+        case true => 0
+        case _ => p
+      }
+      val distMembers = region.getRegionAdvisor.getBucketOwners(num).asScala
       val prefNodes = distMembers.map(
         m => blockMap.get(m)
       )
