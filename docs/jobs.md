@@ -10,7 +10,8 @@ A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.
 
 
 ##### Using SnappyContext to create table and query data 
-Here is an example to create a SnappyContext from SparkContext. 
+Below are examples to create a SnappyContext from SparkContext.
+###### Scala
 ```scala
   val conf = new org.apache.spark.SparkConf()
                .setAppName("ExampleTest")
@@ -20,9 +21,20 @@ Here is an example to create a SnappyContext from SparkContext.
   // get the SnappyContext
   val snc = org.apache.spark.sql.SnappyContext(sc)
 ```
+###### Java
+```java
+  SparkConf conf = new org.apache.spark.SparkConf()
+               .setAppName("ExampleTest")
+               .setMaster("local[*]");
+
+  JavaSparkContext sc = new JavaSparkContext(conf);
+  // get the SnappyContext
+  SnappyContext snc = SnappyContext.getOrCreate(sc);
+```
 
 Create columnar tables using API. Other than `create`, `drop` table rest is all based on the Spark SQL Data Source APIs. 
 
+###### Scala
 ```scala
   val props1 = Map("BUCKETS" -> "2")  // Number of partitions to use in the SnappyStore
   case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -43,6 +55,46 @@ Create columnar tables using API. Other than `create`, `drop` table rest is all 
   val results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
   println("contents of column table are:")
   results1.foreach(println)
+
+```
+
+###### Java
+
+```java
+
+    Map<String, String> props1 = new HashMap<>();
+    props1.put("buckets", "11");
+
+    JavaRDD<Row> jrdd = jsc.parallelize(Arrays.asList(
+        RowFactory.create(1,2,3),
+        RowFactory.create(7,8,9),
+        RowFactory.create(9,2,3),
+        RowFactory.create(4,2,3),
+        RowFactory.create(5,6,7)
+    ));
+
+    StructType schema = new StructType(new StructField[]{
+        new StructField("col1", DataTypes.IntegerType, false, Metadata.empty()),
+        new StructField("col2", DataTypes.IntegerType, false, Metadata.empty()),
+        new StructField("col3", DataTypes.IntegerType, false, Metadata.empty()),
+    });
+
+    DataFrame dataDF = snc.createDataFrame(jrdd, schema);
+
+    // create a column table
+    snc.dropTable("COLUMN_TABLE", true);
+
+    // "column" is the table format (that is row or column)
+    // dataDF.schema provides the schema for table
+    snc.createTable("COLUMN_TABLE", "column", dataDF.schema(), props1, false);
+    // append dataDF into the table
+    dataDF.write().insertInto("COLUMN_TABLE");
+
+    DataFrame results1 = snc.sql("SELECT * FROM COLUMN_TABLE");
+    System.out.println("contents of column table are:");
+    for (Row r : results1.select("col1", "col2", "col3"). collect()) {
+        System.out.println(r);
+    }
 
 ```
 
@@ -87,6 +139,9 @@ Create row tables using API, update the contents of row table
 > Note: Above simple example uses local mode(i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster.
 
 To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
+
+###### Scala
+
 ```scala
 class SnappySampleJob implements SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
@@ -97,6 +152,19 @@ class SnappySampleJob implements SnappySQLJob {
 }
 ```
 
+###### Java
+```java
+class SnappySampleJob extends JavaSnappySQLJob {
+  /** Snappy uses this as an entry point to execute Snappy jobs. **/
+  public Object runJavaJob(SnappyContext snc, Config jobConfig) {//Implementation}
+
+  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  public JSparkJobValidation isValidJob(SnappyContext snc, Config config) {//validate}
+}
+
+```
+
+###### Scala
 ```scala
 class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
@@ -107,11 +175,29 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
 }
 ```
 
+###### Java
+```java
+class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
+  /** Snappy uses this as an entry point to execute Snappy jobs. **/
+  public Object runJavaJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
+
+  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  public JSparkJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig)
+  {//validate}
+}
+```
+
 > The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
-• ```runJob``` contains the implementation of the Job. The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
+• ```runJob```/```runJavaJob``` contains the implementation of the Job.
+The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
 
-• ```validate``` allows for an initial validation of the context and any provided configuration. If the context and configuration are OK to run the job, returning spark.jobserver.SparkJobValid will let the job execute, otherwise returning spark.jobserver.SparkJobInvalid(reason) prevents the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an HTTP/1.1 400 Bad Request status code. validate helps you preventing running jobs that will eventually fail due to missing or wrong configuration and save both time and resources.
+• ```validate```/```isValidJob``` allows for an initial validation of the context and any provided configuration.
+ If the context and configuration are OK to run the job, returning spark.jobserver.SparkJobValid
+ (org.apache.spark.sql.JSparkJobValid for Java)
+  will let the job execute, otherwise returning spark.jobserver.SparkJobInvalid(reason)
+  (org.apache.spark.sql.JSparkJobInvalid for Java) prevents
+   the job from running and provides means to convey the reason of failure. In this case, the call immediately returns an HTTP/1.1 400 Bad Request status code. validate helps you preventing running jobs that will eventually fail due to missing or wrong configuration and save both time and resources.
 
 See [examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) for Spark and spark streaming jobs. 
 

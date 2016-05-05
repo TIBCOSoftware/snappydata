@@ -25,13 +25,14 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.api.java.function.{Function => JFunction, Function0 => JFunction0, Function2 => JFunction2}
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.{SnappyContext, DataFrame}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.streaming.api.java.{JavaDStream, JavaStreamingContext}
 import org.apache.spark.streaming.{Checkpoint, CheckpointReader, Duration, SnappyStreamingContext, StreamingContext}
 
 class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext) extends JavaStreamingContext(snsc) {
 
+  def snappyContext = snsc.snappyContext
 
   /**
    * Create a JavaSnappyStreamingContext using an existing SparkContext.
@@ -102,7 +103,9 @@ class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext) extends JavaS
    */
   override def start(): Unit = snsc.start()
 
-  override def stop(stopSparkContext: Boolean, stopGracefully: Boolean): Unit = snsc.stop()
+  override def stop(stopSparkContext: Boolean, stopGracefully: Boolean): Unit = {
+    snsc.stop(stopSparkContext, stopGracefully)
+  }
 
   def sql(sqlText: String): DataFrame = snsc.sql(sqlText)
 
