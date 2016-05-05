@@ -22,6 +22,8 @@ import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
 import hydra.*;
+import io.snappydata.Server;
+import io.snappydata.ServiceManager;
 import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SnappyContext;
@@ -883,6 +885,46 @@ public class SnappyTest implements Serializable {
             }
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage());
+        }
+    }
+
+    static Server fs = null;
+    public static synchronized void HydraTask_startFabricServer() {
+        try {
+            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.peerClientStarted);
+            if (num == 1) {
+                fs = ServiceManager.getServerInstance();
+                java.util.Properties props = new Properties();
+                props.setProperty("host-data",
+                        "false");
+                props.setProperty("persist-dd",
+                        "false");
+                props.setProperty("locators",
+                        "localhost:10334");
+                fs.start(props);
+            }
+        } catch (Exception e1) {
+            throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
+        }
+    }
+    public static synchronized void HydraTask_stopFabricServer() {
+        try {
+            if (fs != null) {
+                fs.stop(new Properties());
+                fs = null;
+            }
+        } catch (Exception e1) {
+            throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
+        }
+    }
+    public static void HydraTask_getPeerClientConnection() {
+        try {
+            if (fs != null) {
+                fs.stop(new Properties());
+                fs = null;
+            }
+        } catch (Exception e1) {
+            throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
         }
     }
 
