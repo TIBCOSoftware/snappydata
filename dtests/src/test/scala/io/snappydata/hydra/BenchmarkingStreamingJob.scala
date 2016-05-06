@@ -78,13 +78,18 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
         val clickstreamlog = "benchmarking" + System.currentTimeMillis()
         df.registerTempTable(clickstreamlog)
         val resultdfQ1 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
-          s"From $clickstreamlog, oorder_col, order_line_col " +
+          s"From oorder_col, order_line_col, $clickstreamlog " +
           s"Where ol_i_id = cs_i_id " +
           s"And ol_w_id = o_w_id" +
           s" And ol_d_id = o_d_id " +
           s"And ol_o_id = o_id " +
           s"Group by cs_i_id " +
           s"Order by cnt " )
+
+        /*val resultdfQ1 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
+        s"From $clickstreamlog " +
+        s"Group by cs_i_id " +
+        s"Order by cnt " ) */
 
         val resultdfQ2 = snsc.sql(s" select avg(cs_timespent) as avgtimespent " +
           s"from $clickstreamlog  group by cs_i_id order by avgtimespent")

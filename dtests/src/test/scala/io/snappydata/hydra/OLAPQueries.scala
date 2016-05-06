@@ -113,30 +113,31 @@ object SnappyOlapQueries {
       "ORDER BY o_ol_cnt "
 
   val Q5: String = "SELECT n_name, " +
-      "sum(ol_amount) AS revenue " +
-      "FROM customer, " +
-      "oorder_col, " +
-      "order_line_col, " +
-      "stock, " +
-      "supplier, " +
-      "nation, " +
-      "region " +
-      "WHERE c_id = o_c_id " +
-      "AND c_w_id = o_w_id " +
-      "AND c_d_id = o_d_id " +
-      "AND ol_o_id = o_id " +
-      "AND ol_w_id = o_w_id " +
-      "AND ol_d_id=o_d_id " +
-      "AND ol_w_id = s_w_id " +
-      "AND ol_i_id = s_i_id " +
-      "AND pMOD((s_w_id * s_i_id), 10000) = su_suppkey " +
-      "AND ascii(substr(c_state, 1, 1)) = su_nationkey " +
-      "AND su_nationkey = n_nationkey " +
-      "AND n_regionkey = r_regionkey " +
-      "AND r_name = 'Europe' " +
-      "AND o_entry_d >= '2007-01-02 00:00:00.000000' " +
-      "GROUP BY n_name " +
-      "ORDER BY revenue DESC"
+   "sum(ol_amount) AS revenue " +
+   "FROM" +
+   "oorder_col, " +
+   "order_line_col, " +
+   " customer, " +
+   "stock, " +
+   "supplier, " +
+   "nation, " +
+   "region " +
+   "WHERE c_id = o_c_id " +
+   "AND c_w_id = o_w_id " +
+   "AND c_d_id = o_d_id " +
+   "AND ol_o_id = o_id " +
+   "AND ol_w_id = o_w_id " +
+   "AND ol_d_id=o_d_id " +
+   "AND ol_w_id = s_w_id " +
+   "AND ol_i_id = s_i_id " +
+   "AND pMOD((s_w_id * s_i_id), 10000) = su_suppkey " +
+   "AND ascii(substr(c_state, 1, 1)) = su_nationkey " +
+   "AND su_nationkey = n_nationkey " +
+   "AND n_regionkey = r_regionkey " +
+   "AND r_name = 'Europe' " +
+   "AND o_entry_d >= '2007-01-02 00:00:00.000000' " +
+   "GROUP BY n_name " +
+   "ORDER BY revenue DESC"
 
   val Q6: String = "SELECT sum(ol_amount) AS revenue " +
       "FROM order_line_col " +
@@ -146,118 +147,121 @@ object SnappyOlapQueries {
 
   // Select, GroupBY and OrderClause of Q7 has been MOdified
   val Q7: String = "SELECT su_nationkey AS supp_nation, " +
-      "n2.n_nationkey AS cust_nation, " +
-      "YEAR(o_entry_d) AS l_year, " +
-      "sum(ol_amount) AS revenue " +
-      "FROM supplier, " +
-      "stock, " +
-      "order_line_col, " +
-      "oorder_col, " +
-      "customer, " +
-      "nation n1, " +
-      "nation n2 " +
-      "WHERE ol_supply_w_id = s_w_id " +
-      "AND ol_i_id = s_i_id " +
-      "AND pMOD ((s_w_id * s_i_id), 10000) = su_suppkey " +
-      "AND ol_w_id = o_w_id " +
-      "AND ol_d_id = o_d_id " +
-      "AND ol_o_id = o_id " +
-      "AND c_id = o_c_id " +
-      "AND c_w_id = o_w_id " +
-      "AND c_d_id = o_d_id " +
-      "AND su_nationkey = n1.n_nationkey " +
-      "AND ascii(substr(c_state,1, 1)) = n2.n_nationkey " +
-      "AND ((n1.n_name = 'Germany' " +
-      "AND n2.n_name = 'Cambodia') " +
-      "OR (n1.n_name = 'Cambodia' " +
-      "AND n2.n_name = 'Germany')) " +
-      "GROUP BY su_nationkey, " +
-      "n2.n_nationkey, " +
-      "YEAR(o_entry_d) " +
-      "ORDER BY su_nationkey, " +
-      "n2.n_nationkey, " +
-      "YEAR(o_entry_d)"
+    "n2.n_nationkey AS cust_nation, " +
+    "YEAR(o_entry_d) AS l_year, " +
+    "sum(ol_amount) AS revenue " +
+    "FROM " +
+    "order_line_col, " +
+    "oorder_col, " +
+    "supplier, " +
+    "stock, " +
+    "customer, " +
+    "nation n1, " +
+    "nation n2 " +
+    "WHERE ol_supply_w_id = s_w_id " +
+    "AND ol_i_id = s_i_id " +
+    "AND pMOD ((s_w_id * s_i_id), 10000) = su_suppkey " +
+    "AND ol_w_id = o_w_id " +
+    "AND ol_d_id = o_d_id " +
+    "AND ol_o_id = o_id " +
+    "AND c_id = o_c_id " +
+    "AND c_w_id = o_w_id " +
+    "AND c_d_id = o_d_id " +
+    "AND su_nationkey = n1.n_nationkey " +
+    "AND ascii(substr(c_state,1, 1)) = n2.n_nationkey " +
+    "AND ((n1.n_name = 'Germany' " +
+    "AND n2.n_name = 'Cambodia') " +
+    "OR (n1.n_name = 'Cambodia' " +
+    "AND n2.n_name = 'Germany')) " +
+    "GROUP BY su_nationkey, " +
+    "n2.n_nationkey, " +
+    "YEAR(o_entry_d) " +
+    "ORDER BY su_nationkey, " +
+    "n2.n_nationkey, " +
+    "YEAR(o_entry_d)"
 
   // Modified the group by and order by clauses
   val Q8 = "SELECT YEAR (o_entry_d) AS l_year, " +
-      "sum(CASE WHEN n2.n_name = 'Germany' THEN ol_amount ELSE 0 END) / " +
-      "sum(ol_amount) AS mkt_share " +
-      "FROM item, " +
-      "supplier, " +
-      "stock, " +
-      "order_line_col, " +
-      "oorder_col, " +
-      "customer, " +
-      "nation n1, " +
-      "nation n2, " +
-      "region " +
-      "WHERE i_id = s_i_id " +
-      "AND ol_i_id = s_i_id  " +
-      "AND ol_supply_w_id = s_w_id " +
-      "AND pMOD ((s_w_id * s_i_id), 10000) = su_suppkey " +
-      "AND ol_w_id = o_w_id " +
-      "AND ol_d_id = o_d_id " +
-      "AND ol_o_id = o_id " +
-      "AND c_id = o_c_id " +
-      "AND c_w_id = o_w_id " +
-      "AND c_d_id = o_d_id " +
-      "AND n1.n_nationkey = ascii(substr(c_state, 1, 1)) " +
-      "AND n1.n_regionkey = r_regionkey " +
-      "AND ol_i_id < 1000 " +
-      "AND r_name = 'Europe' " +
-      "AND su_nationkey = n2.n_nationkey " +
-      "AND i_data LIKE '%b' " +
-      "AND i_id = ol_i_id " +
-      "GROUP BY YEAR(o_entry_d) " +
-      " ORDER BY YEAR(o_entry_d)"
-
+    "sum(CASE WHEN n2.n_name = 'Germany' THEN ol_amount ELSE 0 END) / " +
+    "sum(ol_amount) AS mkt_share " +
+    "FROM " +
+    "order_line_col, " +
+    "oorder_col, " +
+    "item, " +
+    "supplier, " +
+    "stock, " +
+    "customer, " +
+    "nation n1, " +
+    "nation n2, " +
+    "region " +
+    "WHERE i_id = s_i_id " +
+    "AND ol_i_id = s_i_id  " +
+    "AND ol_supply_w_id = s_w_id " +
+    "AND pMOD ((s_w_id * s_i_id), 10000) = su_suppkey " +
+    "AND ol_w_id = o_w_id " +
+    "AND ol_d_id = o_d_id " +
+    "AND ol_o_id = o_id " +
+    "AND c_id = o_c_id " +
+    "AND c_w_id = o_w_id " +
+    "AND c_d_id = o_d_id " +
+    "AND n1.n_nationkey = ascii(substr(c_state, 1, 1)) " +
+    "AND n1.n_regionkey = r_regionkey " +
+    "AND ol_i_id < 1000 " +
+    "AND r_name = 'Europe' " +
+    "AND su_nationkey = n2.n_nationkey " +
+    "AND i_data LIKE '%b' " +
+    "AND i_id = ol_i_id " +
+    "GROUP BY YEAR(o_entry_d) " +
+    " ORDER BY YEAR(o_entry_d)"
 
   // Modified the group by and order by clauses
   val Q9 = "SELECT n_name, YEAR(o_entry_d) AS l_year, " +
-      "sum(ol_amount) AS sum_profit " +
-      "FROM item, stock, supplier, " +
-      "order_line_col, " +
-      "oorder_col, " +
-      "nation " +
-      "WHERE ol_i_id = s_i_id " +
-      "AND ol_supply_w_id = s_w_id " +
-      "AND pMOD ((s_w_id * s_i_id), 10000) = su_suppkey " +
-      "AND ol_w_id = o_w_id " +
-      "AND ol_d_id = o_d_id " +
-      "AND ol_o_id = o_id " +
-      "AND ol_i_id = i_id " +
-      "AND su_nationkey = n_nationkey " +
-      "AND i_data LIKE '%bb' " +
-      "GROUP BY n_name, " +
-      "YEAR(o_entry_d) " +
-      "ORDER BY n_name, " +
-      "YEAR(o_entry_d) DESC"
+    "sum(ol_amount) AS sum_profit " +
+    "FROM " +
+    "order_line_col, " +
+    "oorder_col, " +
+    "item, stock, supplier, " +
+    "nation " +
+    "WHERE ol_i_id = s_i_id " +
+    "AND ol_supply_w_id = s_w_id " +
+    "AND pMOD ((s_w_id * s_i_id), 10000) = su_suppkey " +
+    "AND ol_w_id = o_w_id " +
+    "AND ol_d_id = o_d_id " +
+    "AND ol_o_id = o_id " +
+    "AND ol_i_id = i_id " +
+    "AND su_nationkey = n_nationkey " +
+    "AND i_data LIKE '%bb' " +
+    "GROUP BY n_name, " +
+    "YEAR(o_entry_d) " +
+    "ORDER BY n_name, " +
+    "YEAR(o_entry_d) DESC"
 
   val Q10 = "SELECT c_id, " +
       "c_last, " +
-      "sum(ol_amount) AS revenue, " +
-      "c_city, " +
-      "c_phone, " +
-      "n_name " +
-      "FROM customer, " +
-      "oorder_col, " +
-      "order_line_col, " +
-      "nation " +
-      "WHERE c_id = o_c_id " +
-      "AND c_w_id = o_w_id " +
-      "AND c_d_id = o_d_id " +
-      "AND ol_w_id = o_w_id " +
-      "AND ol_d_id = o_d_id " +
-      "AND ol_o_id = o_id " +
-      "AND o_entry_d >= '2007-01-02 00:00:00.000000' " +
-      "AND o_entry_d <= ol_delivery_d " +
-      "AND n_nationkey = ascii(substr(c_state, 1, 1)) " +
-      "GROUP BY c_id, " +
-      "c_last, " +
-      "c_city, " +
-      "c_phone, " +
-      "n_name " +
-      "ORDER BY revenue DESC"
+          "sum(ol_amount) AS revenue, " +
+          "c_city, " +
+          "c_phone, " +
+          "n_name " +
+          "FROM " +
+          "oorder_col, " +
+          "order_line_col, " +
+          "customer, " +
+          "nation " +
+          "WHERE c_id = o_c_id " +
+          "AND c_w_id = o_w_id " +
+          "AND c_d_id = o_d_id " +
+          "AND ol_w_id = o_w_id " +
+          "AND ol_d_id = o_d_id " +
+          "AND ol_o_id = o_id " +
+          "AND o_entry_d >= '2007-01-02 00:00:00.000000' " +
+          "AND o_entry_d <= ol_delivery_d " +
+          "AND n_nationkey = ascii(substr(c_state, 1, 1)) " +
+          "GROUP BY c_id, " +
+          "c_last, " +
+          "c_city, " +
+          "c_phone, " +
+          "n_name " +
+          "ORDER BY revenue DESC"
 
   val Q11a = "SELECT sum(s_order_cnt) * .005 " +
       "FROM stock, " +
@@ -368,28 +372,29 @@ object SnappyOlapQueries {
       "AND ol_quantity < t.a"
 
   val Q18 = "              SELECT c_last, " +
-      "c_id, " +
-      "o_id, " +
-      "o_entry_d, " +
-      "o_ol_cnt, " +
-      "sum(ol_amount) AS amount_sum " +
-      "FROM customer, " +
-      "oorder_col, " +
-      "order_line_col " +
-      "WHERE c_id = o_c_id " +
-      "AND c_w_id = o_w_id " +
-      "AND c_d_id = o_d_id " +
-      "AND ol_w_id = o_w_id " +
-      "AND ol_d_id = o_d_id " +
-      "AND ol_o_id = o_id " +
-      "GROUP BY o_id, " +
-      "o_w_id, " +
-      "o_d_id, " +
-      "c_id, " +
-      "c_last, " +
-      "o_entry_d, " +
-      "o_ol_cnt HAVING sum(ol_amount) > 200 " +
-      "ORDER BY amount_sum DESC, o_entry_d"
+    "c_id, " +
+    "o_id, " +
+    "o_entry_d, " +
+    "o_ol_cnt, " +
+    "sum(ol_amount) AS amount_sum " +
+    "FROM " +
+    "oorder_col, " +
+    "order_line_col, " +
+    "customer " +
+    "WHERE c_id = o_c_id " +
+    "AND c_w_id = o_w_id " +
+    "AND c_d_id = o_d_id " +
+    "AND ol_w_id = o_w_id " +
+    "AND ol_d_id = o_d_id " +
+    "AND ol_o_id = o_id " +
+    "GROUP BY o_id, " +
+    "o_w_id, " +
+    "o_d_id, " +
+    "c_id, " +
+    "c_last, " +
+    "o_entry_d, " +
+    "o_ol_cnt HAVING sum(ol_amount) > 200 " +
+    "ORDER BY amount_sum DESC, o_entry_d"
 
   val Q19 = " SELECT sum(ol_amount) AS revenue " +
       "FROM order_line_col, " +
