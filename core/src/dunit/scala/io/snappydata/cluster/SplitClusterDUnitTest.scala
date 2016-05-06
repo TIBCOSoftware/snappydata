@@ -467,7 +467,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val serializer2 = ComplexTypeSerializer.create(tableName, "col4", conn)
     val serializer3 = ComplexTypeSerializer.create(tableName, "col6", conn)
 
-    val rs = stmt.executeQuery(s"SELECT * FROM $tableName")
+    var rs = stmt.executeQuery(s"SELECT * FROM $tableName")
     var numResults = 0
     while (rs.next()) {
       // check access to complex types in different ways
@@ -500,7 +500,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     assert(numResults == expectedLength,
       s"Expected $expectedLength but got $numResults")
 
-    /*
     // also check access to complex types as string
     rs = stmt.executeQuery(
       s"SELECT * FROM $tableName --+ complexTypeAsClob(1)")
@@ -508,7 +507,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     rs = stmt.executeQuery(
       s"SELECT * /*+ complexTypeAsClob( true ) */ FROM $tableName")
     checkComplexTypesAsClob(rs, expectedLength)
-    */
   }
 
   private def checkComplexTypesAsClob(rs: ResultSet, expectedLength: Int): Unit = {

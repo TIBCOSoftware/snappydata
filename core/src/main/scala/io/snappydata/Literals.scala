@@ -126,3 +126,27 @@ object Property extends Enumeration {
   val MetastoreDriver = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
     Constant.SPARK_PREFIX)
 }
+
+/**
+ * SQL query hints as interpreted by the SnappyData SQL parser. The format
+ * mirrors closely the format used by Hive,Oracle query hints with a comment
+ * followed immediately by a '+' and then "key(value)" for the hint. Example:
+ * <p>
+ * SELECT * /*+ hint(value) */ FROM t1
+ */
+object QueryHint extends Enumeration {
+
+  type Type = Value
+
+  /**
+   * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
+   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * than as serialized blobs to display better in external tools.
+   * <p>
+   * Possible values are 'true/1' or 'false/0'
+   * <p>
+   * Example:<br>
+   * SELECT * FROM t1 --+ complexTypeAsClob(1)
+   */
+  val ComplexTypeAsClob = Value("complexTypeAsClob")
+}
