@@ -188,7 +188,7 @@ trait SplitClusterDUnitTestObject {
       data += Array.fill(3)(Random.nextInt())
     }
     val rdd = context.parallelize(data, data.length).map(s =>
-      Data(s(0), s(1), s(2)))
+      Data(s(0), Integer.toString(s(1)), s(2)))
 
     val dataDF = snc.createDataFrame(rdd)
 
@@ -214,19 +214,19 @@ trait SplitClusterDUnitTestObject {
     val ts = Array(new Timestamp(time), new Timestamp(time + 123456L),
       new Timestamp(0L), new Timestamp(time - 12246L), new Timestamp(-1L))
     val m1 = Map(
-      ts(0) -> Data(3, 8, 1),
-      ts(1) -> Data(5, 3, 0),
-      ts(2) -> Data(8, 2, 1))
+      ts(0) -> Data(3, "8", 1),
+      ts(1) -> Data(5, "3", 0),
+      ts(2) -> Data(8, "2", 1))
     val m2 = Map(
-      ts(3) -> Data(8, 3, 1),
-      ts(0) -> Data(7, 5, 7),
-      ts(4) -> Data(4, 8, 9))
+      ts(3) -> Data(8, "3", 1),
+      ts(0) -> Data(7, "5", 7),
+      ts(4) -> Data(4, "8", 9))
     val data = ArrayBuffer[ComplexData]()
-    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, 8, 3), dec1(0), ts(0))
-    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, 4, 9), dec2(0), ts(1))
-    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, 1, 7), dec1(1), ts(2))
-    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, 3, 4), dec2(1), ts(3))
-    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, 8, 1), dec2(2), ts(4))
+    data += ComplexData(1, dec1, "3", m2, 7.56, Data(2, "8", 3), dec1(0), ts(0))
+    data += ComplexData(7, dec1, "8", m1, 8.45, Data(7, "4", 9), dec2(0), ts(1))
+    data += ComplexData(9, dec2, "2", m2, 12.33, Data(3, "1", 7), dec1(1), ts(2))
+    data += ComplexData(4, dec2, "2", m1, 92.85, Data(9, "3", 4), dec2(1), ts(3))
+    data += ComplexData(5, dec2, "7", m1, 5.28, Data(4, "8", 1), dec2(2), ts(4))
     1 to 1000 foreach { _ =>
       val rnd = Random.nextLong()
       val rnd1 = rnd.asInstanceOf[Int]
@@ -234,8 +234,8 @@ trait SplitClusterDUnitTestObject {
       val dec = if ((rnd1 % 2) == 0) dec1 else dec2
       val map = if ((rnd2 % 2) == 0) m1 else m2
       data += ComplexData(rnd1, dec, rnd2.toString,
-        map, Random.nextDouble(), Data(rnd1, rnd2, rnd1), dec(1),
-        ts(math.abs(rnd1) % 5))
+        map, Random.nextDouble(), Data(rnd1, Integer.toString(rnd2), rnd1),
+        dec(1), ts(math.abs(rnd1) % 5))
     }
     val rdd = context.parallelize(data, data.length)
     val dataDF = snc.createDataFrame(rdd)
@@ -264,7 +264,7 @@ trait SplitClusterDUnitTestObject {
   }
 }
 
-case class Data(col1: Int, col2: Int, col3: Int)
+case class Data(col1: Int, col2: String, col3: Int)
 
 case class ComplexData(col1: Int, col2: Array[Decimal], col3: String,
     col4: Map[Timestamp, Data], col5: Double, col6: Data, col7: Decimal,

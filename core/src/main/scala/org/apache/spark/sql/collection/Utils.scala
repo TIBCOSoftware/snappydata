@@ -34,7 +34,7 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalBackend
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
+import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
@@ -385,7 +385,7 @@ object Utils {
     k
   }
 
-  def schemaFields(schema : StructType): Map[String, StructField] = {
+  def schemaFields(schema: StructType): Map[String, StructField] = {
     Map(schema.fields.flatMap { f =>
       val name = if (f.metadata.contains("name")) f.metadata.getString("name")
       else f.name
@@ -462,78 +462,84 @@ object Utils {
   def dataTypeStringBuilder(dataType: DataType,
       result: StringBuilder): Any => Unit = value => {
     dataType match {
-      case utype: UserDefinedType[_] =>
+      case TimestampType => value match {
+        case l: Long => result.append(DateTimeUtils.toJavaTimestamp(l))
+        case _ => result.append(value)
+      }
+      case DateType => value match {
+        case i: Int => result.append(DateTimeUtils.toJavaDate(i))
+        case _ => result.append(value)
+      }
+      case ArrayType(elementType, _) => value match {
+        case data: ArrayData =>
+          result.append('[')
+          val len = data.numElements()
+          if (len > 0) {
+            val elementBuilder = dataTypeStringBuilder(elementType, result)
+            elementBuilder(data.get(0, elementType))
+            var index = 1
+            while (index < len) {
+              result.append(", ")
+              elementBuilder(data.get(index, elementType))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case MapType(keyType, valueType, _) => value match {
+        case data: MapData =>
+          result.append('[')
+          val len = data.numElements()
+          if (len > 0) {
+            val keyBuilder = dataTypeStringBuilder(keyType, result)
+            val valueBuilder = dataTypeStringBuilder(valueType, result)
+            val keys = data.keyArray()
+            val values = data.valueArray()
+            keyBuilder(keys.get(0, keyType))
+            result.append('=')
+            valueBuilder(values.get(0, valueType))
+            var index = 1
+            while (index < len) {
+              result.append(", ")
+              keyBuilder(keys.get(index, keyType))
+              result.append('=')
+              valueBuilder(values.get(index, valueType))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case StructType(fields) => value match {
+        case data: InternalRow =>
+          result.append('[')
+          val len = fields.length
+          if (len > 0) {
+            val e0type = fields(0).dataType
+            dataTypeStringBuilder(e0type, result)(data.get(0, e0type))
+            var index = 1
+            while (index < len) {
+              result.append(", ")
+              val elementType = fields(index).dataType
+              dataTypeStringBuilder(elementType, result)(
+                data.get(index, elementType))
+              index += 1
+            }
+          }
+          result.append(']')
+
+        case _ => result.append(value)
+      }
+      case udt: UserDefinedType[_] =>
         // check if serialized
-        if (value != null && !utype.userClass.isInstance(value)) {
-          result.append(utype.deserialize(value))
+        if (value != null && !udt.userClass.isInstance(value)) {
+          result.append(udt.deserialize(value))
         } else {
           result.append(value)
         }
-      case atype: ArrayType => value match {
-        case data: ArrayData =>
-          result.append('[')
-          val etype = atype.elementType
-          val len = data.numElements()
-          if (len > 0) {
-            val ebuilder = dataTypeStringBuilder(etype, result)
-            ebuilder(data.get(0, etype))
-            var index = 1
-            while (index < len) {
-              result.append(',')
-              ebuilder(data.get(index, etype))
-              index += 1
-            }
-          }
-          result.append(']')
-
-        case _ => result.append(value)
-      }
-      case mtype: MapType => value match {
-        case data: MapData =>
-          result.append('[')
-          val ktype = mtype.keyType
-          val vtype = mtype.valueType
-          val len = data.numElements()
-          if (len > 0) {
-            val kbuilder = dataTypeStringBuilder(ktype, result)
-            val vbuilder = dataTypeStringBuilder(vtype, result)
-            val keys = data.keyArray()
-            val values = data.valueArray()
-            kbuilder(keys.get(0, ktype))
-            result.append('=')
-            vbuilder(values.get(0, ktype))
-            var index = 1
-            while (index < len) {
-              result.append(',')
-              kbuilder(keys.get(index, ktype))
-              result.append('=')
-              vbuilder(values.get(index, ktype))
-              index += 1
-            }
-          }
-          result.append(']')
-
-        case _ => result.append(value)
-      }
-      case stype: StructType => value match {
-        case data: InternalRow =>
-          result.append('[')
-          val len = data.numFields
-          if (len > 0) {
-            val etype = stype.fields(0).dataType
-            dataTypeStringBuilder(etype, result)(data.get(0, etype))
-            var index = 1
-            while (index < len) {
-              result.append(',')
-              val etype = stype.fields(index).dataType
-              dataTypeStringBuilder(etype, result)(data.get(index, etype))
-              index += 1
-            }
-          }
-          result.append(']')
-
-        case _ => result.append(value)
-      }
       case _ => result.append(value)
     }
   }
@@ -568,6 +574,14 @@ object Utils {
       queryExecution: QueryExecution)(body: => T): T = {
     SQLExecution.withNewExecutionId(ctx, queryExecution)(body)
   }
+
+  def createScalaConverter(dataType: DataType): Any => Any =
+    CatalystTypeConverters.createToScalaConverter(dataType)
+
+  def createCatalystConverter(dataType: DataType): Any => Any =
+    CatalystTypeConverters.createToCatalystConverter(dataType)
+
+  def getGenericRowValues(row: GenericRow): Array[Any] = row.values
 }
 
 class ExecutorLocalRDD[T: ClassTag](
