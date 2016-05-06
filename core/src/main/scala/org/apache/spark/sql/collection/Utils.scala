@@ -19,7 +19,7 @@ package org.apache.spark.sql.collection
 import java.io.ObjectOutputStream
 import java.sql.DriverManager
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 import scala.collection.{Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
@@ -575,6 +575,39 @@ object Utils {
     SQLExecution.withNewExecutionId(ctx, queryExecution)(body)
   }
 
+  def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
+
+    private[this] val map = m
+
+    override def size = map.size
+
+    override def -(elem: A) = {
+      if (map.contains(elem)) {
+        val builder = Map.newBuilder[A, B]
+        for (pair <- map) if (pair._1 != elem) {
+          builder += pair
+        }
+        builder.result()
+      } else this
+    }
+
+    override def +[B1 >: B](kv: (A, B1)): Map[A, B1] = {
+      val builder = Map.newBuilder[A, B1]
+      val newKey = kv._1
+      for (pair <- map) if (pair._1 != newKey) {
+        builder += pair
+      }
+      builder += kv
+      builder.result()
+    }
+
+    override def iterator = map.iterator
+
+    override def foreach[U](f: ((A, B)) => U) = map.foreach(f)
+
+    override def get(key: A) = map.get(key)
+  }
+
   def createScalaConverter(dataType: DataType): Any => Any =
     CatalystTypeConverters.createToScalaConverter(dataType)
 
@@ -697,7 +730,7 @@ private[spark] class CoGroupExecutorLocalPartition(
 }
 
 class ExecutorLocalShellPartition(override val index: Int,
-    val hostList: ArrayBuffer[(String, String)]) extends Partition {
+    val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
   override def toString = s"ExecutorLocalShellPartition($index, $hostList"
 }
 
