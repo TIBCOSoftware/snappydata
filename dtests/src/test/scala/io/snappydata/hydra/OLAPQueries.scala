@@ -71,9 +71,9 @@ object SnappyOlapQueries {
     "   sum(ol_amount) AS revenue, " +
     "   o_entry_d " +
     "             FROM " +
-    " customer, " +
     " oorder_col, " +
     " order_line_col," +
+    " customer, " +
     " new_order" +
     "             WHERE c_state LIKE 'A%' " +
     "            AND c_id = o_c_id " +
@@ -105,9 +105,10 @@ object SnappyOlapQueries {
 
  val Q5: String = "SELECT n_name, " +
    "sum(ol_amount) AS revenue " +
-   "FROM customer, " +
+   "FROM" +
    "oorder_col, " +
    "order_line_col, " +
+   " customer, " +
    "stock, " +
    "supplier, " +
    "nation, " +
@@ -140,10 +141,11 @@ object SnappyOlapQueries {
     "n2.n_nationkey AS cust_nation, " +
     "YEAR(o_entry_d) AS l_year, " +
     "sum(ol_amount) AS revenue " +
-    "FROM supplier, " +
-    "stock, " +
+    "FROM " +
     "order_line_col, " +
     "oorder_col, " +
+    "supplier, " +
+    "stock, " +
     "customer, " +
     "nation n1, " +
     "nation n2 " +
@@ -173,11 +175,12 @@ object SnappyOlapQueries {
   val Q8 = "SELECT YEAR (o_entry_d) AS l_year, " +
     "sum(CASE WHEN n2.n_name = 'Germany' THEN ol_amount ELSE 0 END) / " +
     "sum(ol_amount) AS mkt_share " +
-    "FROM item, " +
-    "supplier, " +
-    "stock, " +
+    "FROM " +
     "order_line_col, " +
     "oorder_col, " +
+    "item, " +
+    "supplier, " +
+    "stock, " +
     "customer, " +
     "nation n1, " +
     "nation n2, " +
@@ -205,9 +208,10 @@ object SnappyOlapQueries {
   // Modified the group by and order by clauses
   val Q9 = "SELECT n_name, YEAR(o_entry_d) AS l_year, " +
     "sum(ol_amount) AS sum_profit " +
-    "FROM item, stock, supplier, " +
+    "FROM " +
     "order_line_col, " +
     "oorder_col, " +
+    "item, stock, supplier, " +
     "nation " +
     "WHERE ol_i_id = s_i_id " +
     "AND ol_supply_w_id = s_w_id " +
@@ -229,9 +233,10 @@ object SnappyOlapQueries {
     "c_city, " +
     "c_phone, " +
     "n_name " +
-    "FROM customer, " +
+    "FROM " +
     "oorder_col, " +
     "order_line_col, " +
+    "customer, " +
     "nation " +
     "WHERE c_id = o_c_id " +
     "AND c_w_id = o_w_id " +
@@ -321,9 +326,10 @@ object SnappyOlapQueries {
     "o_entry_d, " +
     "o_ol_cnt, " +
     "sum(ol_amount) AS amount_sum " +
-    "FROM customer, " +
+    "FROM " +
     "oorder_col, " +
-    "order_line_col " +
+    "order_line_col, " +
+    "customer " +
     "WHERE c_id = o_c_id " +
     "AND c_w_id = o_w_id " +
     "AND c_d_id = o_d_id " +
