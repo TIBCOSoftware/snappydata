@@ -44,7 +44,7 @@ object SnappyOlapQueries {
       "            su_address, " +
       "            su_phone, " +
       "            su_comment " +
-      "            FROM item, stock, supplier, nation, region " +
+      "            FROM item, stock, supplier, nation, region, " +
       "            (SELECT s_i_id AS m_i_id, MIN(s_quantity) AS m_s_quantity " +
       "            FROM stock, " + "            supplier, " +
       "            nation, " + "            region " +
