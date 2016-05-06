@@ -28,7 +28,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.collection.UUIDRegionKey
+import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.datasources.ResolvedDataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
@@ -72,11 +72,7 @@ case class JDBCAppendableRelation(
 
   protected final def dialect = connProperties.dialect
 
-  val schemaFields = Map(userSchema.fields.flatMap { f =>
-    val name = if (f.metadata.contains("name")) f.metadata.getString("name")
-    else f.name
-    Iterator((name, f))
-  }: _*)
+  val schemaFields = Utils.schemaFields(userSchema)
 
   final lazy val executorConnector = ExternalStoreUtils.getConnector(table,
     connProperties, forExecutor = true)

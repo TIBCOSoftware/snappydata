@@ -17,22 +17,21 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
-import org.apache.spark.scheduler.{SparkListenerApplicationEnd, SparkListener}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
-import scala.collection.JavaConverters._
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{SnappyDaemons, Constant, Property}
+import io.snappydata.{Constant, Property, SnappyDaemons}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
@@ -44,7 +43,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
-import org.apache.spark.sql.execution.ui.{SnappyStatsTab, SQLListener}
+import org.apache.spark.sql.execution.ui.{SQLListener, SnappyStatsTab}
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
@@ -105,10 +104,8 @@ class SnappyContext protected[spark](
   SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
-
-
-
-  override val prepareForExecution: RuleExecutor[SparkPlan] = snappyContextFunctions.getAQPRuleExecutor(this)
+  override val prepareForExecution: RuleExecutor[SparkPlan] =
+    snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -133,6 +130,10 @@ class SnappyContext protected[spark](
 
   override protected[sql] def executePlan(plan: LogicalPlan) =
     snappyContextFunctions.executePlan(this, plan)
+
+  private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
+
+  def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
 
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)

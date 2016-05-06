@@ -18,8 +18,8 @@
 package org.apache.spark.sql.collection
 
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.BaseGenericInternalRow
-import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.types.{DataType, StructField}
 
 /**
@@ -32,7 +32,7 @@ final class WrappedRow(override val numFields: Int,
   private val cache = new Array[Any](numFields)
 
   def this(schema: Array[StructField]) = this(schema.length, schema.map { f =>
-    CatalystTypeConverters.createToCatalystConverter(f.dataType)
+    Utils.createCatalystConverter(f.dataType)
   })
 
   def row = _row

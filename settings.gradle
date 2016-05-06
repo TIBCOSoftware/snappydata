@@ -5,12 +5,10 @@ include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-examples_' + scalaBinaryVersion
 include 'dunit'
-include ':tests-dunit_' + scalaBinaryVersion
 
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
-project(':tests-dunit_' + scalaBinaryVersion).projectDir = "$rootDir/tests/dunit" as File
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
