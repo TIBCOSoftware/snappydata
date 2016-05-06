@@ -114,7 +114,7 @@ object SnappyOlapQueries {
 
   val Q5: String = "SELECT n_name, " +
    "sum(ol_amount) AS revenue " +
-   "FROM" +
+   "FROM " +
    "oorder_col, " +
    "order_line_col, " +
    " customer, " +
