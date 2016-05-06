@@ -173,7 +173,7 @@ object ExecutorInitiator extends Logging {
                     // TODO: Hemant: add executor specific properties from local
                     // TODO: conf to this conf that was received from driver.
                     // use Snappy static memory manager
-                    driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
+                    // driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
 
                     val cores = driverConf.getInt("spark.executor.cores",
                       Runtime.getRuntime.availableProcessors() * 2)
