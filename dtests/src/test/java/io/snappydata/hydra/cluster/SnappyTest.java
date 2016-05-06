@@ -222,7 +222,7 @@ public class SnappyTest implements Serializable {
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -spark.sql.autoBroadcastJoinThreshold=-1";
                 SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
                 if (leadHost == null) {
                     leadHost = localHost;

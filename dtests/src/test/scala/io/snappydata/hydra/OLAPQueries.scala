@@ -44,7 +44,7 @@ object SnappyOlapQueries {
     "            su_address, " +
     "            su_phone, " +
     "            su_comment " +
-    "            FROM item, supplier, stock, nation, region, " +
+    "            FROM item, stock, supplier, nation, region, " +
     "            (SELECT s_i_id AS m_i_id, MIN(s_quantity) AS m_s_quantity " +
     "            FROM stock, " + "            supplier, " +
     "            nation, " + "            region " +
@@ -144,9 +144,9 @@ object SnappyOlapQueries {
     "FROM " +
     "order_line_col, " +
     "oorder_col, " +
-    "supplier, " +
-    "stock, " +
     "customer, " +
+    "stock, " +
+    "supplier, " +
     "nation n1, " +
     "nation n2 " +
     "WHERE ol_supply_w_id = s_w_id " +
@@ -179,8 +179,8 @@ object SnappyOlapQueries {
     "order_line_col, " +
     "oorder_col, " +
     "item, " +
-    "supplier, " +
     "stock, " +
+    "supplier, " +
     "customer, " +
     "nation n1, " +
     "nation n2, " +
