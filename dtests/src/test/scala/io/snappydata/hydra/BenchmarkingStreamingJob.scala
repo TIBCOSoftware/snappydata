@@ -93,7 +93,7 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
         // Find out which district's customer are currently more online active to
         // stop tv commercials in those districts
-        val resultdfQ2 = snsc.sql(s" select avg(cs_timespent), cs_c_d_id as avgtimespent " +
+        val resultdfQ2 = snsc.sql(s" select avg(cs_timespent) as avgtimespent , cs_c_d_id " +
           s"from $clickstreamlog  group by cs_c_d_id order by avgtimespent")
 
         val output = if (jobConfig.getBoolean("printResults")){
