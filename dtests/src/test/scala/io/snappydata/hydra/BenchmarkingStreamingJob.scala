@@ -62,9 +62,6 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
     val windowStreamAsTable = snsc.createSchemaDStream(window_rows, schema)
 
-    snsc.snappyContext.createTable("clickstream_col", "column", schema,
-      Map("buckets" -> "41"))
-
     snsc.sql("set spark.sql.shuffle.partitions=64")
 
     import org.apache.spark.sql.functions._
@@ -88,11 +85,11 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
         // Find out the items in the clickstream with
         // price range greater than a particular amount.
-        val resultdfQ1 = snsc.sql(s"select i_id, count(i_id) from" +
-          s"         $clickstreamlog, item" +
-          s"        where i_id = cs_i_id" +
-          s"        AND i_price > 50" +
-          s"        GROUP BY i_id");
+        val resultdfQ1 = snsc.sql(s"select i_id, count(i_id) from " +
+          s" $clickstreamlog, item " +
+          s" where i_id = cs_i_id " +
+          s" AND i_price > 50 " +
+          s" GROUP BY i_id ");
 
         val resultdfQ3 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
         s"From $clickstreamlog " +
