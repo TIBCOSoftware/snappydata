@@ -77,14 +77,22 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
         val clickstreamlog = "benchmarking" + System.currentTimeMillis()
         df.registerTempTable(clickstreamlog)
-        val resultdfQ1 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
-          s"From oorder_col, order_line_col, $clickstreamlog " +
-          s"Where ol_i_id = cs_i_id " +
-          s"And ol_w_id = o_w_id" +
-          s" And ol_d_id = o_d_id " +
-          s"And ol_o_id = o_id " +
-          s"Group by cs_i_id " +
-          s"Order by cnt " )
+//        val resultdfQ1 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
+//          s"From oorder_col, order_line_col, $clickstreamlog " +
+//          s"Where ol_i_id = cs_i_id " +
+//          s"And ol_w_id = o_w_id" +
+//          s" And ol_d_id = o_d_id " +
+//          s"And ol_o_id = o_id " +
+//          s"Group by cs_i_id " +
+//          s"Order by cnt " )
+
+        // Find out the items in the clickstream with
+        // price range greater than a particular amount.
+        val resultdfQ1 = snsc.sql(s"select i_id, count(i_id) from" +
+          s"         $clickstreamlog, item" +
+          s"        where i_id = cs_i_id" +
+          s"        AND i_price > 50" +
+          s"        GROUP BY i_id");
 
         val resultdfQ3 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
         s"From $clickstreamlog " +
