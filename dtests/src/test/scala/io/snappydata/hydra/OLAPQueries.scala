@@ -509,7 +509,7 @@ object OLAPQueries extends SnappySQLJob {
 
     // scalastyle:off println
     var stream: DStream[_] = null
-    snsc.sql("set spark.sql.shuffle.partitions=20")
+    snsc.sql("set spark.sql.shuffle.partitions=64")
 
     var i: Int = 0
     // Let it run for unlimited time. The Lead will anyway be

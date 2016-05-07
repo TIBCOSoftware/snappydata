@@ -58,14 +58,14 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
     val rows = stream.map(v => Row(v.w_id,
       v.d_id, v.c_id, v.i_id, v.c_ts, new java.sql.Timestamp(System.currentTimeMillis)))
 
-    val window_rows = rows.window(new Duration(30*1000), new Duration(10*1000))
+    val window_rows = rows.window(new Duration(20*1000), new Duration(20*1000))
 
     val windowStreamAsTable = snsc.createSchemaDStream(window_rows, schema)
 
     snsc.snappyContext.createTable("clickstream_col", "column", schema,
       Map("buckets" -> "41"))
 
-    snsc.sql("set spark.sql.shuffle.partitions=20")
+    snsc.sql("set spark.sql.shuffle.partitions=64")
 
     import org.apache.spark.sql.functions._
     windowStreamAsTable.foreachDataFrame(df =>
@@ -86,10 +86,10 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
           s"Group by cs_i_id " +
           s"Order by cnt " )
 
-        /*val resultdfQ1 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
+        val resultdfQ3 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
         s"From $clickstreamlog " +
         s"Group by cs_i_id " +
-        s"Order by cnt " ) */
+        s"Order by cnt " )
 
         val resultdfQ2 = snsc.sql(s" select avg(cs_timespent) as avgtimespent " +
           s"from $clickstreamlog  group by cs_i_id order by avgtimespent")
@@ -107,7 +107,9 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
           val endq1 = System.currentTimeMillis()
           resultdfQ2.collect()
           val endq2 = System.currentTimeMillis()
-          s"Q1 ${endq1 - sq1} Q2 ${endq2 -endq1}"
+          resultdfQ3.collect()
+          val endq3 = System.currentTimeMillis()
+          s"Q1 ${endq1 - sq1} Q2 ${endq2 -endq1} Q3 ${endq3 -endq2}"
         }
         pw.println(s"Time taken $output")
         pw.close()
