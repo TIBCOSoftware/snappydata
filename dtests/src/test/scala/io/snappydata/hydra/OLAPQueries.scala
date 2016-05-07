@@ -269,7 +269,7 @@ object SnappyOlapQueries {
       "nation " +
       "WHERE pmod((s_w_id * s_i_id), 10000) = su_suppkey " +
       "AND su_nationkey = n_nationkey " +
-      "AND n_name = 'Germany'"
+      "AND trim(n_name) = 'Germany'"
 
   val Q11b = "SELECT s_i_id, " +
       "sum(s_order_cnt) AS ordercount " +
@@ -278,7 +278,7 @@ object SnappyOlapQueries {
       "nation " +
       "WHERE pmod((s_w_id * s_i_id), 10000) = su_suppkey " +
       "AND su_nationkey = n_nationkey " +
-      "AND n_name = 'Germany' " +
+      "AND trim(n_name) = 'Germany' " +
       "GROUP BY s_i_id HAVING sum(s_order_cnt) > ? " +
       "ORDER BY ordercount DESC"
 
@@ -330,7 +330,7 @@ object SnappyOlapQueries {
       "   AND ol_delivery_d >= '2007-01-02 00:00:00.000000' " +
       "GROUP BY pmod((s_w_id * s_i_id),10000)"
 
-  val Q15b = "select max(total_revenue) from revenue"
+  val Q15b = "select max(total_revenue) as mxRevenue from revenue"
 
   val Q15c = "SELECT su_suppkey, " +
       "              su_name, " +
@@ -527,17 +527,20 @@ object OLAPQueries extends SnappySQLJob {
             case "Q11" =>
               val ret = snsc.sql(SnappyOlapQueries.Q11a).collect()
               assert(ret.length == 1)
-              val paramVal = ret(0).getInt(0)
+              val paramVal = ret(0).getDouble(0)
               val qry = q._2.replace("?", paramVal.toString)
               snsc.sql(qry).collect()
             case "Q15" =>
               var ret = snsc.sql(SnappyOlapQueries.Q15a)
               ret.registerTempTable("revenue")
-              snsc.sql(q._2).collect()
+              val maxV = snsc.sql(SnappyOlapQueries.Q15b).collect()
+              val paramVal = maxV(0).getDouble(0)
+              val qry = q._2.replace("?", paramVal.toString)
+              snsc.sql(qry).collect()
             case "Q22" =>
               val ret = snsc.sql(SnappyOlapQueries.Q22a).collect()
               assert(ret.length == 1)
-              val paramVal = ret(0).getDecimal(0)
+              val paramVal = ret(0).getDouble(0)
               val qry = q._2.replace("?", paramVal.toString)
               snsc.sql(qry).collect()
             case _ =>
