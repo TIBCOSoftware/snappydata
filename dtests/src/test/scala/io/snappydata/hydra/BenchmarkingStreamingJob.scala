@@ -91,13 +91,10 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
           s" AND i_price > 50 " +
           s" GROUP BY i_id ");
 
-        val resultdfQ3 = snsc.sql(s"Select cs_i_id, count(cs_i_id) as cnt " +
-        s"From $clickstreamlog " +
-        s"Group by cs_i_id " +
-        s"Order by cnt " )
-
-        val resultdfQ2 = snsc.sql(s" select avg(cs_timespent) as avgtimespent " +
-          s"from $clickstreamlog  group by cs_i_id order by avgtimespent")
+        // Find out which district's customer are currently more online active to
+        // stop tv commercials in those districts
+        val resultdfQ2 = snsc.sql(s" select avg(cs_timespent), cs_c_d_id as avgtimespent " +
+          s"from $clickstreamlog  group by cs_c_d_id order by avgtimespent")
 
         val output = if (jobConfig.getBoolean("printResults")){
           val sq1 = System.currentTimeMillis()
@@ -112,9 +109,7 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
           val endq1 = System.currentTimeMillis()
           resultdfQ2.collect()
           val endq2 = System.currentTimeMillis()
-          resultdfQ3.collect()
-          val endq3 = System.currentTimeMillis()
-          s"Q1 ${endq1 - sq1} Q2 ${endq2 -endq1} Q3 ${endq3 -endq2}"
+          s"Q1 ${endq1 - sq1} Q2 ${endq2 -endq1}"
         }
         pw.println(s"Time taken $output")
         pw.close()
