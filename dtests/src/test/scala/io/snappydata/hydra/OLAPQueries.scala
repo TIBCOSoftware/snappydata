@@ -512,7 +512,9 @@ object OLAPQueries extends SnappySQLJob {
     snsc.sql("set spark.sql.shuffle.partitions=20")
 
     var i: Int = 0
-    while (i < 4) {
+    // Let it run for unlimited time. The Lead will anyway be
+    // stopped when the test is over.
+    while (i < 1000) {
       val outFileName = s"OLAPQueries-${i}.out"
 
       val pw = new PrintWriter(outFileName)
