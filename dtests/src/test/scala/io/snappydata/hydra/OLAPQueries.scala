@@ -543,6 +543,10 @@ object OLAPQueries extends SnappySQLJob {
               val paramVal = ret(0).getDouble(0)
               val qry = q._2.replace("?", paramVal.toString)
               snsc.sql(qry).collect()
+            case "Q16" | "Q20" | "Q21" =>
+              pw.println("Not running " + q._1)
+              pw.flush()
+            //cc.sql(q._2).collect()
             case _ =>
               snsc.sql(q._2).collect()
           }
