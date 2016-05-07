@@ -57,6 +57,7 @@ trait SplitClusterDUnitTestBase {
 
   def testColumnTableCreation(): Unit = {
     startNetworkServers(3)
+    StoreUtils.skewTaskDistributionForTests = skewTaskDistribution
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("column")
@@ -69,6 +70,14 @@ trait SplitClusterDUnitTestBase {
     testObject.verifySplitModeOperations("column", isComplex = false, props)
 
     println("Test Completed Successfully")
+  }
+
+  def testColumnTableCreation(): Unit = {
+    doTestColumnTableCreation()
+  }
+
+  def testRemoteIteratorSNAP652(): Unit = {
+    doTestColumnTableCreation(true)
   }
 
   def testRowTableCreation(): Unit = {

@@ -547,6 +547,10 @@ task product {
         into "${snappyProductDir}/python"
       }
       copy {
+        from("${examplesProject.projectDir}/src/main/python")
+        into "${examplesProject.buildDir}"
+      }
+      copy {
         from "${project(':snappy-spark').projectDir}/data"
         into "${snappyProductDir}/data"
       }
@@ -783,6 +787,17 @@ task runQuickstart(dependsOn: product) {
       println "${airlineappresult}"
       if (airlineappresult.toLowerCase().contains("exception")) {
         throw new GradleException("Failed to submit AirlineDataSparkApp")
+      }
+
+      def examplesdir = project(":snappy-examples_${scalaBinaryVersion}")
+
+      def airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit",
+          ["--master", "spark://${hostname}:7077", "--conf", "snappydata.store.locators=localhost:10334",
+           "--conf", "spark.ui.port=4042", "${examplesdir.buildDir}/AirlineDataPythonApp.py"]);
+
+      println "${airlinepythonappresult}"
+      if (airlinepythonappresult.toLowerCase().contains("exception")) {
+        throw new GradleException("Failed to submit airlinepythonappresult")
       }
 
     } finally {
