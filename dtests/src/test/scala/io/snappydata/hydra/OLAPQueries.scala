@@ -267,7 +267,7 @@ object SnappyOlapQueries {
       "FROM stock, " +
       "supplier, " +
       "nation " +
-      "WHERE mod((s_w_id * s_i_id), 10000) = su_suppkey " +
+      "WHERE pmod((s_w_id * s_i_id), 10000) = su_suppkey " +
       "AND su_nationkey = n_nationkey " +
       "AND n_name = 'Germany'"
 
@@ -276,7 +276,7 @@ object SnappyOlapQueries {
       "FROM stock, " +
       "supplier, " +
       "nation " +
-      "WHERE mod((s_w_id * s_i_id), 10000) = su_suppkey " +
+      "WHERE pmod((s_w_id * s_i_id), 10000) = su_suppkey " +
       "AND su_nationkey = n_nationkey " +
       "AND n_name = 'Germany' " +
       "GROUP BY s_i_id HAVING sum(s_order_cnt) > ? " +
@@ -444,7 +444,7 @@ object SnappyOlapQueries {
       "  AND ol_d_id = o_d_id   " +
       "  AND ol_w_id = s_w_id   " +
       "  AND ol_i_id = s_i_id   " +
-      "  AND mod((s_w_id * s_i_id),10000) = su_suppkey   " +
+      "  AND pmod((s_w_id * s_i_id),10000) = su_suppkey   " +
       "  AND l1.ol_delivery_d > o_entry_d   " +
       "  AND NOT EXISTS   " +
       "     (SELECT *   " +
@@ -546,6 +546,7 @@ object OLAPQueries extends SnappySQLJob {
         val end: Long = System.currentTimeMillis - start
         pw.println(s"${new java.util.Date(System.currentTimeMillis())} " +
             s"Time taken by ${q._1} is $end")
+        pw.flush()
       }
       pw.close()
     }
