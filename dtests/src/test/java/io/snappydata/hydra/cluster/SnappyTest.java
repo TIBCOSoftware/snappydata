@@ -216,13 +216,13 @@ public class SnappyTest implements Serializable {
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String serverLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                String serverLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx25G";
                 SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + snappyTest.getMyTid(), serverLogDir);
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -spark.sql.autoBroadcastJoinThreshold=-1";
+                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=5" + " -spark.driver.maxResultSize=3g"+" -dir=" + dirPath + clientPort + port + " -J-Xmx10G" + " -spark.sql.autoBroadcastJoinThreshold=-1";
                 SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
                 if (leadHost == null) {
                     leadHost = localHost;
@@ -868,14 +868,14 @@ public class SnappyTest implements Serializable {
         }
     }
 
-
+    static int serversStarted = 0;
     /**
      * Create and start snappy server.
      */
     public static synchronized void HydraTask_createAndStartSnappyServers() {
         try {
-            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
-            if (num == 1) {
+             int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
+             if (num == 1) {
                 ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
@@ -891,8 +891,9 @@ public class SnappyTest implements Serializable {
     static Server fs = null;
     public static synchronized void HydraTask_startFabricServer() {
         try {
-            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.peerClientStarted);
-            if (num == 1) {
+            serversStarted++;
+            if (serversStarted == 1) {
+
                 fs = ServiceManager.getServerInstance();
                 java.util.Properties props = new Properties();
                 props.setProperty("host-data",
@@ -900,23 +901,36 @@ public class SnappyTest implements Serializable {
                 props.setProperty("persist-dd",
                         "false");
                 props.setProperty("locators",
-                        "localhost:10334");
+                        "172.31.26.147:10334");
                 fs.start(props);
             }
         } catch (Exception e1) {
             throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
         }
     }
+    static int serverStopped = 0;
     public static synchronized void HydraTask_stopFabricServer() {
         try {
-            if (fs != null) {
-                fs.stop(new Properties());
-                fs = null;
+            serverStopped++;
+            if (serverStopped == 1) {
+                Thread t = new Thread () {
+                    @Override
+                    public void run() {
+                        try {
+                            fs.stop(new Properties());
+                            fs = null;
+                        } catch (Exception e) {
+
+                        }
+                    }
+                };
+                t.start();
             }
         } catch (Exception e1) {
-            throw new TestException("Following error occurred while executing " + e1.getMessage(), e1);
+            throw new TestException("Follo:qwing error occurred while executing " + e1.getMessage(), e1);
         }
     }
+
     public static void HydraTask_getPeerClientConnection() {
         try {
             if (fs != null) {

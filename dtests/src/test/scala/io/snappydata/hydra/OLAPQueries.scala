@@ -44,7 +44,7 @@ object SnappyOlapQueries {
       "            su_address, " +
       "            su_phone, " +
       "            su_comment " +
-      "            FROM item, supplier, stock, nation, region, " +
+      "            FROM item, stock, supplier, nation, region, " +
       "            (SELECT s_i_id AS m_i_id, MIN(s_quantity) AS m_s_quantity " +
       "            FROM stock, " + "            supplier, " +
       "            nation, " + "            region " +
@@ -434,11 +434,12 @@ object SnappyOlapQueries {
 
   val Q21 = "SELECT su_name,   " +
       "          count(*) AS numwait   " +
-      "FROM supplier,   " +
+      "FROM " +
       "      order_line l1,   " +
       "      oorder,   " +
       "      stock,   " +
-      "      nation   " +
+    " supplier,   " +
+    "      nation   " +
       "WHERE ol_o_id = o_id   " +
       "  AND ol_w_id = o_w_id   " +
       "  AND ol_d_id = o_d_id   " +
