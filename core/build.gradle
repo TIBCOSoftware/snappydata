@@ -55,7 +55,7 @@ dependencies {
 
   testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
-  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.6'
 
   testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")

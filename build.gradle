@@ -17,8 +17,8 @@ buildscript {
     jcenter()
   }
   dependencies {
-    classpath "com.github.maiflai:gradle-scalatest:0.10"
-    classpath "org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2"
+    classpath 'com.github.maiflai:gradle-scalatest:0.13'
+    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2'
     classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
   }
 }
@@ -172,6 +172,11 @@ task cleanAllReports << {
   delete workingDir
   file(workingDir).mkdirs()
 }
+task cleanQuickstart << {
+  def workingDir = "${testResultsBase}/quickstart"
+  delete workingDir
+  file(workingDir).mkdirs()
+}
 
 task publishDocs(type:Exec) {
   dependsOn ':snappy-cluster_' + scalaBinaryVersion + ':docs'
@@ -205,8 +210,20 @@ subprojects {
 
     List<String> suites = []
     extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
-    extensions.add("suite", { String name -> suites.add(name) } )
-    extensions.add("suites", { String... name -> suites.addAll(name) } )
+    extensions.add('suite', { String name -> suites.add(name) } )
+    extensions.add('suites', { String... name -> suites.addAll(name) } )
+
+    def result = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
+    extensions.add('testResult', { String name -> result.append(name) } )
+
+    def output = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
+    extensions.add('testOutput', { String name -> output.append(name) } )
+
+    def errorOutput = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
+    extensions.add('testError', { String name -> errorOutput.append(name) } )
 
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
@@ -214,6 +231,9 @@ subprojects {
     }
     workingDir = "${testResultsBase}/scalatest"
 
+    testResult '/dev/tty'
+    testOutput "${workingDir}/output.txt"
+    testError "${workingDir}/error.txt"
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
@@ -244,6 +264,7 @@ subprojects {
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError', '-XX:MaxPermSize=384m', '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC', '-XX:CMSInitiatingOccupancyFraction=50', '-XX:+CMSClassUnloadingEnabled', '-ea']
 
     include '**/*DUnitTest.class'
+    exclude '**/*Suite.class'
 
     workingDir = "${testResultsBase}/dunit"
 
@@ -403,10 +424,10 @@ subprojects {
           beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
           repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-            authentication(userName: ossrhUsername, password: ossrhPassword)
+            authentication(userName: propOrDefault('ossrhUsername'), password: propOrDefault('ossrhPassword'))
           }
           snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-            authentication(userName: ossrhUsername, password: ossrhPassword)
+            authentication(userName: propOrDefault('ossrhUsername'), password: propOrDefault('ossrhPassword'))
           }
 
           pom.project {
@@ -674,19 +695,20 @@ def copyTestsCommonResources(def bdir) {
   }
 }
 
-def runScript(def execName, def param) {
-def stdout = new ByteArrayOutputStream()
-    exec{
-      executable "${execName}"
-      args  (param)
-      standardOutput = stdout;
-    }
+def runScript(def execName, def workDir, def param) {
+  def stdout = new ByteArrayOutputStream()
+  exec {
+    executable "${execName}"
+    workingDir = workDir
+    args (param)
+    standardOutput = stdout
+  }
   return "$stdout"
 }
 
-def runSQLScript(def fileName) {
+def runSQLScript(def fileName, def workDir) {
   println("Executing ${fileName}")
-  def queryoutput = runScript("${snappyProductDir}/bin/snappy-shell",
+  def queryoutput = runScript("${snappyProductDir}/bin/snappy-shell", workDir,
           ["run", "-file=${snappyProductDir}/quickstart/scripts/${fileName}"]);
   println "${queryoutput}"
   if (queryoutput.contains("ERROR") || queryoutput.contains("Failed")) {
@@ -700,10 +722,10 @@ def writeToFile(def fileName) {
   }
 }
 
-def runSubmitQuery(def jobName, def appName) {
+def runSubmitQuery(def jobName, def appName, def workDir) {
   println "Running job $jobName"
   def exampleArchiveName = "quickstart-${version}.jar"
-  def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
+  def submitjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh", workDir,
       ["submit", "--lead", "localhost:8090", "--app-name", appName + System.currentTimeMillis(),
        "--class", jobName, "--app-jar",
        "${snappyProductDir}/lib/${exampleArchiveName}"]);
@@ -727,7 +749,7 @@ def runSubmitQuery(def jobName, def appName) {
   while (status == "RUNNING") {
     Thread.sleep(3000)
     def statusjobairline = runScript("${snappyProductDir}/bin/snappy-job.sh",
-        ["status", "--lead", "localhost:8090", "--job-id", "${jobid}"]);
+        workDir, ["status", "--lead", "localhost:8090", "--job-id", "${jobid}"]);
     println "${statusjobairline}"
 
     def statusjson = new JsonSlurper().parseText("${statusjobairline}")
@@ -744,42 +766,49 @@ def runSubmitQuery(def jobName, def appName) {
   }
 }
 
-task runQuickstart(dependsOn: product) {
+task runQuickstart {
+  dependsOn cleanQuickstart
+  dependsOn product
   mustRunAfter 'buildAll'
   def exampleArchiveName = "quickstart-${version}.jar"
+  def workingDir = "${testResultsBase}/quickstart"
   doLast {
     try {
       writeToFile("${snappyProductDir}/conf/servers")
-      def startoutput = runScript("${snappyProductDir}/sbin/snappy-start-all.sh", []);
+      def startoutput = runScript("${snappyProductDir}/sbin/snappy-start-all.sh",
+          workingDir, []);
       println "${startoutput}"
       if (!startoutput.contains("Distributed system now has 4 members")) {
         throw new GradleException("Failed to start Snappy cluster")
       }
-      runSQLScript("create_and_load_column_table.sql")
+      runSQLScript("create_and_load_column_table.sql", workingDir)
 
-      runSQLScript("create_and_load_row_table.sql")
+      runSQLScript("create_and_load_row_table.sql", workingDir)
       
-      runSQLScript("create_and_load_sample_table.sql")
+      runSQLScript("create_and_load_sample_table.sql", workingDir)
 
-      runSQLScript("status_queries.sql")
+      runSQLScript("status_queries.sql", workingDir)
 
-      runSQLScript("olap_queries.sql")
+      runSQLScript("olap_queries.sql", workingDir)
 
-      runSQLScript("oltp_queries.sql")
+      runSQLScript("oltp_queries.sql", workingDir)
 
-      runSQLScript("olap_queries.sql")
+      runSQLScript("olap_queries.sql", workingDir)
       
-      runSQLScript("olap_approx_queries.sql")
+      runSQLScript("olap_approx_queries.sql", workingDir)
 
-      runSubmitQuery("io.snappydata.examples.CreateAndLoadAirlineDataJob", "createJob")
+      runSubmitQuery("io.snappydata.examples.CreateAndLoadAirlineDataJob",
+          "createJob", workingDir)
 
-      runSubmitQuery("io.snappydata.examples.AirlineDataJob", "processjob")
+      runSubmitQuery("io.snappydata.examples.AirlineDataJob",
+          "processjob", workingDir)
 
-      def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh", [])
+      def startSparkResult = runScript("${snappyProductDir}/sbin/start-all.sh",
+          workingDir, [])
       println "${startSparkResult}"
 
       def hostname = "hostname".execute().text.trim()
-      def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit",
+      def airlineappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
               ["--class", "io.snappydata.examples.AirlineDataSparkApp", "--master", "spark://${hostname}:7077",
                "--conf", "snappydata.store.locators=localhost:10334", "--conf", "spark.ui.port=4041",
                "${snappyProductDir}/lib/${exampleArchiveName}"]);
@@ -791,7 +820,7 @@ task runQuickstart(dependsOn: product) {
 
       def examplesdir = project(":snappy-examples_${scalaBinaryVersion}")
 
-      def airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit",
+      def airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
           ["--master", "spark://${hostname}:7077", "--conf", "snappydata.store.locators=localhost:10334",
            "--conf", "spark.ui.port=4042", "${examplesdir.buildDir}/AirlineDataPythonApp.py"]);
 
@@ -801,8 +830,8 @@ task runQuickstart(dependsOn: product) {
       }
 
     } finally {
-      println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", []);
-      println runScript("${snappyProductDir}/sbin/stop-all.sh", []);
+      println runScript("${snappyProductDir}/sbin/snappy-stop-all.sh", workingDir, []);
+      println runScript("${snappyProductDir}/sbin/stop-all.sh", workingDir, []);
       def conffile = new File("${snappyProductDir}/conf/servers")
       if (conffile.exists())
         conffile.delete()
