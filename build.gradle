@@ -17,7 +17,7 @@ buildscript {
     jcenter()
   }
   dependencies {
-    classpath 'com.github.maiflai:gradle-scalatest:0.13'
+    classpath 'com.github.maiflai:gradle-scalatest:0.11'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2'
     classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
   }
@@ -213,27 +213,12 @@ subprojects {
     extensions.add('suite', { String name -> suites.add(name) } )
     extensions.add('suites', { String... name -> suites.addAll(name) } )
 
-    def result = new StringBuilder()
-    extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
-    extensions.add('testResult', { String name -> result.append(name) } )
-
-    def output = new StringBuilder()
-    extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
-    extensions.add('testOutput', { String name -> output.append(name) } )
-
-    def errorOutput = new StringBuilder()
-    extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
-    extensions.add('testError', { String name -> errorOutput.append(name) } )
-
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
       suite singleSuite
     }
     workingDir = "${testResultsBase}/scalatest"
 
-    testResult '/dev/tty'
-    testOutput "${workingDir}/output.txt"
-    testError "${workingDir}/error.txt"
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
