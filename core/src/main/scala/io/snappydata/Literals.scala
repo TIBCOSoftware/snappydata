@@ -82,10 +82,10 @@ object Property extends Enumeration {
       conf.getOption(name)
     } else {
       conf.getOption(name) match {
-        case s: Some => // check if altName also present and fail if so
+        case s: Some[String] => // check if altName also present and fail if so
           if (conf.contains(altName)) {
             throw new IllegalArgumentException(
-              s"Both $name and $altName specified. Only one should be set.")
+              s"Both $name and $altName configured. Only one should be set.")
           } else s
         case None => conf.getOption(altName)
       }

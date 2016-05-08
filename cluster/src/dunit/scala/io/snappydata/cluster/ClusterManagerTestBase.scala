@@ -7,13 +7,12 @@ import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.{FabricService, TestUtil}
-import io.snappydata.test.dunit.{VM, DistributedTestBase, Host, SerializableRunnable}
+import io.snappydata.test.dunit.{DistributedTestBase, Host, SerializableRunnable, VM}
 import io.snappydata.util.TestUtils
 import io.snappydata.{Locator, Server, ServiceManager}
 import org.slf4j.LoggerFactory
 
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -126,8 +125,6 @@ class ClusterManagerTestBase(s: String) extends DistributedTestBase(s) {
   override def tearDown2(): Unit = {
     super.tearDown2()
     GemFireXDUtils.IS_TEST_MODE = false
-    StoreUtils.skewTaskDistributionForTests = false
-    println("Successfully reset the flag StoreUtils.skewTaskDistributionForTests")
     cleanupTestData(getClass.getName, getName)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
       Array[AnyRef](getClass.getName, getName)))

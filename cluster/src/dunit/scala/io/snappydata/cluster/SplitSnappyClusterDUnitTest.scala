@@ -68,8 +68,16 @@ class SplitSnappyClusterDUnitTest(s: String)
   override protected def testObject = SplitSnappyClusterDUnitTest
 
   override def testColumnTableCreation(): Unit = {
-    // skip this test here since it is already run in Spark+Snappy mode
-    // and testComplexTypesForColumnTables... is more comprehensive
+    // skip the non-skewed test since it is already run in Spark+Snappy mode
+    doTestColumnTableCreation(skewServerDistribution = true)
+  }
+
+  override def testRowTableCreation(): Unit = {
+    doTestRowTableCreation(skewServerDistribution = true)
+  }
+
+  override def testComplexTypesForColumnTables_SNAP643(): Unit = {
+    doTestComplexTypesForColumnTables_SNAP643(skewServerDistribution = true)
   }
 }
 

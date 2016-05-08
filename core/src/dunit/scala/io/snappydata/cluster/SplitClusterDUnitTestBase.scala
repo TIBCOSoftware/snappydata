@@ -39,8 +39,11 @@ import org.apache.spark.{SparkConf, SparkContext}
 trait SplitClusterDUnitTestBase {
 
   def vm0: VM
+
   def vm1: VM
+
   def vm2: VM
+
   def vm3: VM
 
   protected def startArgs: Array[AnyRef]
@@ -55,9 +58,12 @@ trait SplitClusterDUnitTestBase {
 
   protected def startNetworkServers(num: Int): Unit
 
-  def testColumnTableCreation(): Unit = {
-    startNetworkServers(3)
-    StoreUtils.skewTaskDistributionForTests = skewTaskDistribution
+  def doTestColumnTableCreation(skewServerDistribution: Boolean): Unit = {
+    if (skewServerDistribution) {
+      startNetworkServers(2)
+    } else {
+      startNetworkServers(3)
+    }
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("column")
@@ -72,16 +78,12 @@ trait SplitClusterDUnitTestBase {
     println("Test Completed Successfully")
   }
 
-  def testColumnTableCreation(): Unit = {
-    doTestColumnTableCreation()
-  }
-
-  def testRemoteIteratorSNAP652(): Unit = {
-    doTestColumnTableCreation(true)
-  }
-
-  def testRowTableCreation(): Unit = {
-    startNetworkServers(2)
+  def doTestRowTableCreation(skewServerDistribution: Boolean): Unit = {
+    if (skewServerDistribution) {
+      startNetworkServers(2)
+    } else {
+      startNetworkServers(3)
+    }
 
     // Embedded Cluster Operations
     testObject.createTablesAndInsertData("row")
@@ -96,8 +98,13 @@ trait SplitClusterDUnitTestBase {
     println("Test Completed Successfully")
   }
 
-  def testComplexTypesForColumnTables_SNAP643(): Unit = {
-    startNetworkServers(3)
+  def doTestComplexTypesForColumnTables_SNAP643(
+      skewServerDistribution: Boolean): Unit = {
+    if (skewServerDistribution) {
+      startNetworkServers(2)
+    } else {
+      startNetworkServers(3)
+    }
 
     // Embedded Cluster Operations
     val props = Map("buckets" -> "7")
@@ -111,6 +118,18 @@ trait SplitClusterDUnitTestBase {
     testObject.verifySplitModeOperations("column", isComplex = true, props)
 
     println("Test Completed Successfully")
+  }
+
+  def testColumnTableCreation(): Unit = {
+    doTestColumnTableCreation(skewServerDistribution = false)
+  }
+
+  def testRowTableCreation(): Unit = {
+    doTestRowTableCreation(skewServerDistribution = false)
+  }
+
+  def testComplexTypesForColumnTables_SNAP643(): Unit = {
+    doTestComplexTypesForColumnTables_SNAP643(skewServerDistribution = false)
   }
 }
 
