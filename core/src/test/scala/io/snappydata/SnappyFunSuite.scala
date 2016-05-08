@@ -118,17 +118,18 @@ abstract class SnappyFunSuite
    * @param interval       pause interval between waits
    * @param throwOnTimeout if false, don't generate an error
    */
-  def waitForCriterion(check: => Boolean, description: String, ms: Long, interval: Long,
-      throwOnTimeout: Boolean) {
+  def waitForCriterion(check: => Boolean, desc: String, ms: Long,
+      interval: Long, throwOnTimeout: Boolean): Unit = {
     val criterion = new WaitCriterion {
 
       override def done: Boolean = {
         check
       }
 
-      override def description() = description
+      override def description() = desc
     }
-    DistributedTestBase.waitForCriterion(criterion, ms, interval, throwOnTimeout)
+    DistributedTestBase.waitForCriterion(criterion, ms, interval,
+      throwOnTimeout)
   }
 
   def stopAll(): Unit = {
