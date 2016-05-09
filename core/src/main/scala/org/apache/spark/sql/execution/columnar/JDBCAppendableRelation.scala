@@ -68,7 +68,7 @@ case class JDBCAppendableRelation(
     connProperties.url, connProperties.connProps)
 
   override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table,
-    isColumnTable = true)
+    isColumnTable = true).getOrElse(sqlContext.conf.defaultSizeInBytes)
 
   protected final def dialect = connProperties.dialect
 
