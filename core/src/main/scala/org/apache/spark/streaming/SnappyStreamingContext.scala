@@ -54,7 +54,7 @@ class SnappyStreamingContext protected[spark](
         "both SparkContext and checkpoint as null")
   }
 
-  val snappyContext = SnappyContext.getOrCreate(sc_)
+  val snappyContext = SnappyContext(sc_)
 
   super.remember(Milliseconds(300 * 1000)) // Why needed . check with Yogesh
 

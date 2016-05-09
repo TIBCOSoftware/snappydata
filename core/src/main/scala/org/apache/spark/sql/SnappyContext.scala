@@ -1218,35 +1218,6 @@ object SnappyContext extends Logging {
     }
   }
 
-  /**
-   * @todo document me
-   * @param sc
-   * @return
-   */
-  def getOrCreate(sc: SparkContext): SnappyContext = {
-    val gnc = _anySNContext
-    if (gnc != null) gnc
-    else contextLock.synchronized {
-      val gnc = _anySNContext
-      if (gnc != null) gnc
-      else {
-        apply(sc)
-      }
-    }
-  }
-
-  /**
-   * Returns an existing SnappyContext or create one if does not exists
-   * @param jsc
-   * @return SnappyContext
-   */
-  def getOrCreate(jsc: JavaSparkContext): SnappyContext = {
-    if (jsc != null) {
-      getOrCreate(jsc.sc)
-    } else {
-      getOrCreate(null: SparkContext)
-    }
-  }
 
   /**
    * @todo document me
