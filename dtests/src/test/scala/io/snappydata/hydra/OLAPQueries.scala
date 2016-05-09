@@ -476,7 +476,7 @@ object SnappyOlapQueries {
       "GROUP BY substring(c_state,1,1)   " +
       "ORDER BY substring(c_state,1,1)"
 
-  val queries = Map("Q1" -> Q1,
+  val queries = List("Q1" -> Q1,
     "Q2" -> Q2,
     "Q3" -> Q3,
     "Q4" -> Q4,
@@ -486,17 +486,17 @@ object SnappyOlapQueries {
     "Q8" -> Q8,
     "Q9" -> Q9,
     "Q10" -> Q10,
-    "Q11" -> Q11b,
     "Q12" -> Q12,
     "Q13" -> Q13,
     "Q14" -> Q14,
-    "Q15" -> Q15c,
     "Q16" -> Q16,
     "Q17" -> Q17,
     "Q18" -> Q18,
     "Q19" -> Q19,
     "Q20" -> Q20,
     "Q21" -> Q21,
+    "Q11" -> Q11b,
+    "Q15" -> Q15c,
     "Q22" -> Q22b
   )
 }
