@@ -76,7 +76,7 @@ class SnappyAnalyticsServiceTest
     val analytics = queryMemoryAnalytics(fullTableName)
 
     def check(expectedValueSize: Long, expectedTotalSize: Long): Boolean = {
-      val mValueSize = SnappyAnalyticsService.getTableSize(fullTableName)
+      val mValueSize = SnappyAnalyticsService.getTableSize(snc, fullTableName)
       val uiDetails = SnappyAnalyticsService.getUIInfo
           .filter(_.tableName == fullTableName)
       if (uiDetails.nonEmpty) {
@@ -109,7 +109,7 @@ class SnappyAnalyticsServiceTest
     def check(expectedValueSize: Long, expectedRowSize: Long,
         expectedColumnSize: Long): Boolean = {
       val fullTableName = s"APP.$columnTableName"
-      val mValueSize = SnappyAnalyticsService.getTableSize(fullTableName)
+      val mValueSize = SnappyAnalyticsService.getTableSize(snc, fullTableName)
       val uiDetails = SnappyAnalyticsService.getUIInfo
           .filter(_.tableName == fullTableName)
       if (uiDetails.nonEmpty) {

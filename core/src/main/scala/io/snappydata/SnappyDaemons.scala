@@ -30,6 +30,7 @@ import scala.reflect.ClassTag
 import com.google.common.util.concurrent.ThreadFactoryBuilder
 import io.snappydata.Constant._
 
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -111,21 +112,26 @@ object SnappyAnalyticsService extends Logging {
     tablename.startsWith(INTERNAL_SCHEMA_NAME) && tablename.endsWith(SHADOW_TABLE_SUFFIX)
 
 
-  def getTableSize(tableName: String, isColumnTable: Boolean = false): Long = {
+  def getTableSize(sqlContext: SQLContext, tableName: String, isColumnTable: Boolean = false):
+  Long = {
     val currentTableStats = tableStats
     if (currentTableStats == null || !currentTableStats.contains(tableName)) {
-      defaultStats.valueSize
+      defaultSizeForPlanning(sqlContext)
     }
     else {
       if (isColumnTable) {
         currentTableStats.get(ColumnFormatRelation.cachedBatchTableName(tableName))
-            .getOrElse(defaultStats).valueSize
+            .getOrElse(defaultSizeForPlanning(sqlContext))
         +currentTableStats.get(tableName).get.valueSize
       } else {
         currentTableStats.get(tableName).get.valueSize
       }
     }
   }
+
+  def defaultSizeForPlanning(sqlContext: SQLContext) : Long =
+    (sqlContext.getConf("spark.sql.autoBroadcastJoinThreshold") + 1).toLong
+
 
   def getUIInfo: Seq[UIAnalytics] = {
     val currentTableStats = tableStats
