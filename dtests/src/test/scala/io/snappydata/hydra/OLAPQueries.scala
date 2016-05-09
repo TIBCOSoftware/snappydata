@@ -71,9 +71,9 @@ object SnappyOlapQueries {
       "   sum(ol_amount) AS revenue, " +
       "   o_entry_d " +
       "             FROM " +
-      " customer, " +
       " oorder_col, " +
       " order_line_col," +
+      " customer, " +
       " new_order" +
       "             WHERE c_state LIKE 'A%' " +
       "            AND c_id = o_c_id " +
@@ -527,14 +527,14 @@ object OLAPQueries extends SnappySQLJob {
             case "Q11" =>
               val ret = snsc.sql(SnappyOlapQueries.Q11a).collect()
               assert(ret.length == 1)
-              val paramVal = ret(0).getDouble(0)
+              val paramVal = ret(0).getDecimal(0)
               val qry = q._2.replace("?", paramVal.toString)
               snsc.sql(qry).collect()
             case "Q15" =>
               var ret = snsc.sql(SnappyOlapQueries.Q15a)
               ret.registerTempTable("revenue")
               val maxV = snsc.sql(SnappyOlapQueries.Q15b).collect()
-              val paramVal = maxV(0).getDouble(0)
+              val paramVal = maxV(0).getDecimal(0)
               val qry = q._2.replace("?", paramVal.toString)
               snsc.sql(qry).collect()
             case "Q22" =>
@@ -543,7 +543,7 @@ object OLAPQueries extends SnappySQLJob {
               val paramVal = ret(0).getDouble(0)
               val qry = q._2.replace("?", paramVal.toString)
               snsc.sql(qry).collect()
-            case "Q16" | "Q20" | "Q21" =>
+            case "Q21" =>
               pw.println("Not running " + q._1)
               pw.flush()
             //cc.sql(q._2).collect()
