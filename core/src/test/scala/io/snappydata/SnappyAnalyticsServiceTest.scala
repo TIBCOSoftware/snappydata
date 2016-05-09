@@ -77,10 +77,11 @@ class SnappyAnalyticsServiceTest
 
     def check(expectedValueSize: Long, expectedTotalSize: Long): Boolean = {
       val mValueSize = SnappyAnalyticsService.getTableSize(fullTableName)
+
       val uiDetails = SnappyAnalyticsService.getUIInfo
           .filter(_.tableName == fullTableName)
       if (uiDetails.nonEmpty) {
-        expectedValueSize == mValueSize &&
+        expectedValueSize == mValueSize.get &&
             expectedTotalSize == uiDetails.head.rowBufferSize
       } else {
         false
@@ -114,7 +115,7 @@ class SnappyAnalyticsServiceTest
           .filter(_.tableName == fullTableName)
       if (uiDetails.nonEmpty) {
         val tableUIDetails = uiDetails.head
-        expectedValueSize == mValueSize &&
+        expectedValueSize == mValueSize.get &&
             expectedRowSize == tableUIDetails.rowBufferSize &&
             expectedColumnSize == tableUIDetails.columnBufferSize
       } else {
