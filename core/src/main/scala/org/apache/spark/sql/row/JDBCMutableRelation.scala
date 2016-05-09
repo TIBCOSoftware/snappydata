@@ -58,7 +58,8 @@ class JDBCMutableRelation(
 
   override val needConversion: Boolean = false
 
-  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(sqlContext, table)
+  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table).
+      getOrElse(sqlContext.conf.defaultSizeInBytes)
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 

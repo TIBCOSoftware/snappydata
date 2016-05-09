@@ -112,25 +112,25 @@ object SnappyAnalyticsService extends Logging {
     tablename.startsWith(INTERNAL_SCHEMA_NAME) && tablename.endsWith(SHADOW_TABLE_SUFFIX)
 
 
-  def getTableSize(sqlContext: SQLContext, tableName: String, isColumnTable: Boolean = false):
-  Long = {
+  def getTableSize(tableName: String, isColumnTable: Boolean = false):
+  Option[Long] = {
     val currentTableStats = tableStats
     if (currentTableStats == null || !currentTableStats.contains(tableName)) {
-      defaultSizeForPlanning(sqlContext)
+      None
     }
     else {
       if (isColumnTable) {
-        currentTableStats.get(ColumnFormatRelation.cachedBatchTableName(tableName))
-            .getOrElse(defaultSizeForPlanning(sqlContext))
-        +currentTableStats.get(tableName).get.valueSize
+        val optStat = currentTableStats.get(ColumnFormatRelation.cachedBatchTableName(tableName))
+        if (optStat.isDefined) {
+          Some(optStat.get.valueSize + currentTableStats.get(tableName).get.valueSize)
+        } else {
+          None
+        }
       } else {
-        currentTableStats.get(tableName).get.valueSize
+        Some(currentTableStats.get(tableName).get.valueSize)
       }
     }
   }
-
-  def defaultSizeForPlanning(sqlContext: SQLContext) : Long =
-    (sqlContext.getConf("spark.sql.autoBroadcastJoinThreshold") + 1).toLong
 
 
   def getUIInfo: Seq[UIAnalytics] = {
