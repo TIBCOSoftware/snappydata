@@ -28,7 +28,6 @@ import io.snappydata.{Constant, Property, ServerManager}
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
-import org.apache.spark.sql.store.StoreInitRDD
 
 /**
  * Common utility methods for store services.
@@ -37,25 +36,30 @@ object ServiceUtils {
 
   val LOCATOR_URL_PATTERN = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
+  private[snappydata] def getStoreProperties(
+      confProps: Array[(String, String)]): Properties = {
+    val storeProps = new Properties()
+    confProps.foreach {
+      case (Property.Locators(), v) =>
+        if (!LOCATOR_URL_PATTERN.matcher(v).matches()) {
+          throw Utils.analysisException(s"locators property $v should " +
+              "be provided in the format host[port] or host:port")
+        }
+        storeProps.setProperty("locators", v)
+      case (k, v) if k.startsWith(Constant.STORE_PROPERTY_PREFIX) =>
+        storeProps.setProperty(k.trim.replaceFirst(
+          Constant.STORE_PROPERTY_PREFIX, ""), v)
+      case (k, v) if k.startsWith(Constant.SPARK_STORE_PREFIX) =>
+        storeProps.setProperty(k.trim.replaceFirst(
+          Constant.SPARK_STORE_PREFIX, ""), v)
+      case _ => // ignore rest
+    }
+    storeProps
+  }
+
   def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
-    val properties = new Properties()
-    sc.getConf.getAll.filter(
-      confProperty => confProperty._1.startsWith(Constant.STORE_PROPERTY_PREFIX)).
-        foreach(storeProperty => storeProperty._1 match {
-          case Property.locators =>
-            if (!LOCATOR_URL_PATTERN.matcher(storeProperty._2).matches()) {
-              throw Utils.analysisException(s"locators property " +
-                  storeProperty._2 + " should " +
-                  "be provided in the format host[port] or host:port")
-            }
-            properties.setProperty("locators", storeProperty._2)
-
-          case _ =>
-            properties.setProperty(storeProperty._1.trim.replaceFirst
-            (Constant.STORE_PROPERTY_PREFIX, ""), storeProperty._2)
-        }
-        )
+    val properties = getStoreProperties(sc.getConf.getAll)
     // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")

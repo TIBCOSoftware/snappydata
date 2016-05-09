@@ -4,8 +4,11 @@ apply plugin: 'com.github.johnrengelman.shadow'
 compileScala.options.encoding = 'UTF-8'
 
 // fix scala+java mix to all use compileScala which uses correct dependency order
-sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.scala.srcDir 'src/main/java'
+sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
+                                  'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = [ ]
 
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
@@ -51,8 +54,17 @@ dependencies {
     compile group: 'io.snappydata', name: 'spark-jobserver_' + scalaBinaryVersion, version: '0.6.1'
   }
 
+  testCompile project(':dunit')
   testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
-  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+  //Uncomment after AQP merge
+/*
+  if (new File(rootDir, 'aqp/build.gradle').exists()) {
+    testCompile project(":snappy-aqp_${scalaBinaryVersion}")
+  } else {
+    testCompile "io.snappydata:snappy-aqp_${scalaBinaryVersion}:${version}"
+  }
+*/
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.6'
 
   testRuntime 'org.pegdown:pegdown:1.1.0'
 }
@@ -120,9 +132,6 @@ def copyDirs(def srcDir, def destDir) {
 
 test.dependsOn ':cleanJUnit'
 scalaTest {
-  // This property is a temporary fix for scala tests to not use default-persistent
-  // connection property in SnappyHiveCatalog
-  systemProperty "scalaTest", "true"
   dependsOn ':cleanScalaTest'
   doFirst {
     // cleanup files since scalatest plugin does not honour workingDir yet
@@ -133,7 +142,7 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn ':product', test, scalaTest
+check.dependsOn test, scalaTest, dunitTest
 
 shadowJar {
   zip64 = true
