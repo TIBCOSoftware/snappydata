@@ -35,8 +35,10 @@ import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
+import org.apache.spark.sql.types.StructType;
 import org.apache.thrift.TException;
 
 public class SnappyHiveCatalog implements ExternalCatalog {
@@ -68,11 +70,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       }
     };
     hmsQueriesExecutorService = Executors.newFixedThreadPool(1, hmsClientThreadFactory);
-    // just run a task to initialize the HMC for the thread. Assumption is that this should be outside
-    // any lock
+    // just run a task to initialize the HMC for the thread.
+    // Assumption is that this should be outside any lock
     HMSQuery q = getHMSQuery();
     q.resetValues(HMSQuery.INIT, null, null, true);
-    Future<Boolean> ret = hmsQueriesExecutorService.submit(q);
+    Future<Object> ret = hmsQueriesExecutorService.submit(q);
     try {
       ret.get();
     } catch (Exception e) {
@@ -82,16 +84,27 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   public boolean isColumnTable(String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, DEFAULT_DB_NAME, skipLocks);
-    Future<Boolean> f = this.hmsQueriesExecutorService.submit(q);
-    return handleFutureResult(f);
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName,
+        DEFAULT_DB_NAME, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (Boolean)handleFutureResult(f);
   }
 
   public boolean isRowTable(String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName, DEFAULT_DB_NAME, skipLocks);
-    Future<Boolean> f = this.hmsQueriesExecutorService.submit(q);
-    return handleFutureResult(f);
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName,
+        DEFAULT_DB_NAME, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (Boolean)handleFutureResult(f);
+  }
+
+  public String getColumnTableSchemaAsJson(String tableName,
+      boolean skipLocks) {
+    HMSQuery q = getHMSQuery();
+    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA, tableName,
+        DEFAULT_DB_NAME, skipLocks);
+    Future<Object> f = this.hmsQueriesExecutorService.submit(q);
+    return (String)handleFutureResult(f);
   }
 
   @Override
@@ -113,7 +126,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     return q;
   }
 
-  private boolean handleFutureResult(Future<Boolean> f) {
+  private <T> T handleFutureResult(Future<T> f) {
     try {
       return f.get();
     } catch (Exception e) {
@@ -121,7 +134,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
-  private class HMSQuery implements Callable<Boolean> {
+  private class HMSQuery implements Callable<Object> {
 
     private int qType;
     private String tableName;
@@ -131,14 +144,16 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     private static final int INIT = 0;
     private static final int ISROWTABLE_QUERY = 1;
     private static final int ISCOLUMNTABLE_QUERY = 2;
-    // private static final int CLOSE_HMC = 3;
+    private static final int COLUMNTABLE_SCHEMA = 3;
+    // private static final int CLOSE_HMC = 4;
 
     // More to be added later
 
     HMSQuery() {
     }
 
-    public void resetValues(int queryType, String tableName, String dbName, boolean skipLocks) {
+    public void resetValues(int queryType, String tableName,
+        String dbName, boolean skipLocks) {
       this.qType = queryType;
       this.tableName = tableName;
       this.dbName = dbName;
@@ -146,7 +161,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     @Override
-    public Boolean call() throws Exception {
+    public Object call() throws Exception {
       try {
         if (this.skipLock) {
           GfxdDataDictionary.SKIP_LOCKS.set(true);
@@ -166,6 +181,10 @@ public class SnappyHiveCatalog implements ExternalCatalog {
           type = getType(hmc);
           return !type.equalsIgnoreCase(ExternalTableType.Row().toString());
 
+        case COLUMNTABLE_SCHEMA:
+          hmc = SnappyHiveCatalog.this.hmClients.get();
+          return getSchema(hmc);
+
         default:
           throw new IllegalStateException("HiveMetaStoreClient:unknown query option");
       }
@@ -180,13 +199,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
 
     private void initHMC() {
-      // for unit tests we are not using default-persistent=true as tables of different types
-      // with same test name is causing problems with Hive metastore configured with gemfirexd.
-      // Need to see proper cleanup of the metastore entries between tests. Will put a proper
-      // cleanup soon.
-      boolean snappyFunSuite = Boolean.getBoolean("scalaTest");
-      String url = "jdbc:snappydata:;user=" + SnappyStoreHiveCatalog.HIVE_METASTORE()
-          + ";disable-streaming=true" + (snappyFunSuite ? "" : ";default-persistent=true");
+      String url = "jdbc:snappydata:;user=" +
+          SnappyStoreHiveCatalog.HIVE_METASTORE() +
+          ";disable-streaming=true;default-persistent=true";
       HiveConf metadataConf = new HiveConf();
       metadataConf.setVar(HiveConf.ConfVars.METASTORECONNECTURLKEY, url);
       metadataConf.setVar(HiveConf.ConfVars.METASTORE_CONNECTION_DRIVER,
@@ -201,16 +216,42 @@ public class SnappyHiveCatalog implements ExternalCatalog {
       }
     }
 
-    private String getType(HiveMetaStoreClient hmc) throws SQLException {
+    private Table getTable(HiveMetaStoreClient hmc,
+        String dbName, String tableName) throws SQLException {
       try {
-        Table t = hmc.getTable(this.dbName, this.tableName);
-        return t.getParameters().get("EXTERNAL");
-      } catch (NoSuchObjectException nsoe) {
-        // assume ROW type in GemFireXD
-        return ExternalTableType.Row().toString();
+        return hmc.getTable(dbName, tableName);
+      } catch (NoSuchObjectException ignored) {
+        return null;
       } catch (TException te) {
         throw Util.generateCsSQLException(SQLState.TABLE_NOT_FOUND,
-            this.tableName, te);
+            tableName, te);
+      }
+    }
+
+    private String getType(HiveMetaStoreClient hmc) throws SQLException {
+      Table t = getTable(hmc, this.dbName, this.tableName);
+      if (t != null) {
+        return t.getParameters().get("EXTERNAL");
+      } else {
+        // assume ROW type in GemFireXD
+        return ExternalTableType.Row().toString();
+      }
+    }
+
+    private String getSchema(HiveMetaStoreClient hmc) throws SQLException {
+      Table table = null;
+      try {
+        table = getTable(hmc, this.dbName, this.tableName);
+      } catch (SQLException sqle) {
+        // try with upper-case name
+      }
+      if (table == null) {
+        table = getTable(hmc, this.dbName, Utils.toUpperCase(this.tableName));
+      }
+      if (table != null) {
+        return SnappyStoreHiveCatalog.getSchemaStringFromHiveTable(table);
+      } else {
+        return null;
       }
     }
   }

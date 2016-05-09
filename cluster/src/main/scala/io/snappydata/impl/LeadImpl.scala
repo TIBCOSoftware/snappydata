@@ -30,6 +30,7 @@ import com.pivotal.gemfirexd.FabricService.State
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
 import com.pivotal.gemfirexd.{FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ServiceManager}
 import spark.jobserver.JobServer
 
@@ -66,18 +67,19 @@ class LeadImpl extends ServerImpl with Lead with Logging {
     LOCK_SERVICE_NAME, DistributedMemberLock.NON_EXPIRING_LEASE,
     DistributedMemberLock.LockReentryPolicy.PREVENT_SILENTLY)
 
-  private[snappydata] val snappyProperties = Utils.getFields(Property).
-      map({
-        case (_, propName: String) =>
-          if (propName.startsWith(Constant.PROPERTY_PREFIX) &&
-              !propName.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
-            propName.substring(Constant.PROPERTY_PREFIX.length)
-          } else {
-            ""
-          }
-        case (propField, _) => s"Property Field=$propField non string"
-      }).toSet
-
+  private[snappydata] val snappyProperties = Utils.getFields(Property).collect {
+    case (_, propVal: Property.Type) =>
+      val prop = propVal()
+      if (prop.startsWith(Constant.PROPERTY_PREFIX) &&
+          !prop.startsWith(Constant.STORE_PROPERTY_PREFIX)) {
+        prop.substring(Constant.PROPERTY_PREFIX.length)
+      } else if (prop.startsWith(Constant.SPARK_SNAPPY_PREFIX) &&
+          !prop.startsWith(Constant.SPARK_STORE_PREFIX)) {
+        prop.substring(Constant.SPARK_SNAPPY_PREFIX.length)
+      } else {
+        ""
+      }
+  }.toSet
 
   var _directApiInvoked: Boolean = false
 
@@ -93,15 +95,14 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       val locator = {
         bootProperties.getProperty(DistributionConfig.LOCATORS_NAME) match {
           case v if v != null => v
-          case _ =>
-            bootProperties.getProperty(Property.locators)
+          case _ => Property.Locators.getProperty(bootProperties)
         }
       }
 
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
-          set(Property.jobserverEnabled, "true")
+          set(Property.JobserverEnabled(), "true")
 
       // inspect user input and add appropriate prefixes
       // if property doesn't contain '.'
@@ -146,14 +147,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
         + conf.toDebugString)
 
     val confProps = conf.getAll
-    val storeProps = new Properties()
-
-    val filteredProp = confProps.filter {
-      case (k, _) => k.startsWith(Constant.STORE_PROPERTY_PREFIX)
-    }.map {
-      case (k, v) => (k.replaceFirst(Constant.STORE_PROPERTY_PREFIX, ""), v)
-    }
-    storeProps.putAll(filteredProp.toMap.asJava)
+    val storeProps = ServiceUtils.getStoreProperties(confProps)
 
     logInfo("passing store properties as " + storeProps)
     super.start(storeProps, false)
@@ -216,24 +210,26 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   private[snappydata] def initStartupArgs(conf: SparkConf, sc: SparkContext = null) = {
 
     def changeOrAppend(attr: String, value: String,
-        overwrite: Boolean = false,
-        ignoreIfPresent: Boolean = false) = {
-      val x = conf.getOption(attr).orNull
-      x match {
-        case null =>
-          conf.set(attr, value)
-        case v if ignoreIfPresent => ; // skip setting property.
+        overwrite: Boolean = false, ignoreIfPresent: Boolean = false,
+        sparkPrefix: String = null): Unit = {
+      val attrKey = if (sparkPrefix == null) attr else sparkPrefix + attr
+      conf.getOption(attrKey) match {
+        case None => if (sparkPrefix == null) {
+          changeOrAppend(attr, value, overwrite, ignoreIfPresent,
+            sparkPrefix = Constant.SPARK_PREFIX)
+        } else conf.set(attr, value)
+        case v if ignoreIfPresent => // skip setting property
         case v if overwrite => conf.set(attr, value)
-        case v => conf.set(attr, x ++ s""",$value""")
+        case Some(x) => conf.set(attr, x ++ s""",$value""")
       }
     }
 
     changeOrAppend(Constant.STORE_PROPERTY_PREFIX +
         com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, LeadImpl.LEADER_SERVERGROUP)
 
-    assert(conf.getOption(Property.locators).isDefined ||
-        conf.getOption(Property.mcastPort).isDefined,
-      s"Either ${Property.locators} or ${Property.mcastPort} " +
+    assert(Property.Locators.getOption(conf).orElse(
+      Property.McastPort.getOption(conf)).isDefined,
+      s"Either ${Property.Locators} or ${Property.McastPort} " +
           s"must be defined for SnappyData cluster to start")
     import org.apache.spark.sql.collection.Utils
     // skip overriding host-data if loner VM.
@@ -249,7 +245,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
           com.pivotal.gemfirexd.Attribute.GFXD_PERSIST_DD,
         "false", overwrite = true)
     }
-    changeOrAppend(Property.jobserverEnabled, "false", ignoreIfPresent = true)
+    changeOrAppend(Property.JobserverEnabled(), "false", ignoreIfPresent = true)
 
     conf
   }
@@ -268,7 +264,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       internalStart(sc)
     }
 
-    val jobServerEnabled = bootProperties.getProperty(Property.jobserverEnabled).toBoolean
+    val jobServerEnabled = Property.JobserverEnabled.getProperty(
+      bootProperties).toBoolean
     if (_directApiInvoked) {
       assert(jobServerEnabled,
         "JobServer must have been enabled with lead.start(..) invocation")

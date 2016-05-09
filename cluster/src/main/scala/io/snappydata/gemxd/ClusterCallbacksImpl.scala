@@ -84,7 +84,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       numPartialCols)
   }
 
-  override def clearSnappyContextForConnection(connectionId: Long): Unit = {
+  override def clearSnappyContextForConnection(
+      connectionId: java.lang.Long): Unit = {
     SnappyContextPerConnection.removeSnappyContext(connectionId)
   }
 }
