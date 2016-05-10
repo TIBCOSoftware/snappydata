@@ -703,6 +703,7 @@ def runScript(def execName, def workDir, def param) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.9-src.zip:${snappyProductDir}/python"
   }
   return "$stdout"
 }
