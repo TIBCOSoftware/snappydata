@@ -23,7 +23,6 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.scheduler.SparkListenerUnpersistRDD
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
@@ -31,8 +30,8 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
-import org.apache.spark.storage.{BlockManagerId, RDDInfo, StorageLevel}
+import org.apache.spark.sql.{AnalysisException, SQLContext}
+import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
@@ -80,7 +79,6 @@ object StoreUtils extends Logging {
   val SHADOW_COLUMN_NAME = "rowid"
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
-
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -169,7 +167,7 @@ object StoreUtils extends Logging {
       val primaryKey = {
         v match {
           case PRIMARY_KEY => ""
-          case _ => {
+          case _ =>
             val normalizedSchema = context.catalog.asInstanceOf[SnappyStoreHiveCatalog]
                 .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
@@ -189,13 +187,12 @@ object StoreUtils extends Logging {
             val b = for (field <- prunedSchema.fields)
               yield !pkDisallowdTypes.contains(field.dataType)
 
-            val includeInPK = b.foldLeft(true)(_ && _)
+            val includeInPK = b.forall(identity)
             if (includeInPK) {
               s"$PRIMARY_KEY ($v, $SHADOW_COLUMN_NAME)"
             } else {
               s"$PRIMARY_KEY ($SHADOW_COLUMN_NAME)"
             }
-          }
         }
       }
       primaryKey

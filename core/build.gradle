@@ -4,7 +4,10 @@ apply plugin: 'com.github.johnrengelman.shadow'
 compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
+                                  'src/dunit/java', 'src/dunit/scala' ]
 sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = [ ]
 
 dependencies {
   provided 'org.scala-lang:scala-library:' + scalaVersion
@@ -50,8 +53,9 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
 
+  testCompile project(':dunit')
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
-  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+  testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.6'
 
   testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
   testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
@@ -84,8 +88,27 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
+
+task getApacheSparkDist(type: Exec) {
+  mkdir(sparkDistDir)
+
+  outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
+  workingDir "${sparkDistDir}"
+
+  commandLine 'wget', '-c', "https://www.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz",
+              '-O', "${sparkDistName}.tgz"
+
+  doLast {
+    exec {
+      workingDir "${sparkDistDir}"
+      commandLine 'tar', 'xzf', "${sparkDistName}.tgz"
+    }
+  }
+}
+
 test.dependsOn ':cleanJUnit'
-check.dependsOn test, scalaTest
+dunitTest.dependsOn getApacheSparkDist
+check.dependsOn test, scalaTest, dunitTest
 
 shadowJar {
   zip64 = true

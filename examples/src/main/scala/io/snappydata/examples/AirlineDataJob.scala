@@ -8,7 +8,7 @@ import com.typesafe.config.Config
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 import org.apache.spark.sql.snappy._
-import org.apache.spark.sql.{DataFrame, SnappySQLJob}
+import org.apache.spark.sql.{SnappyContext, DataFrame, SnappySQLJob}
 
 /**
  * Fetches already created tables. Airline table is already persisted in
@@ -19,7 +19,7 @@ import org.apache.spark.sql.{DataFrame, SnappySQLJob}
  */
 object AirlineDataJob extends SnappySQLJob {
 
-  override def runJob(snc: C, jobConfig: Config): Any = {
+  override def runJob(snc: SnappyContext, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
     val rowTable = "AIRLINEREF"

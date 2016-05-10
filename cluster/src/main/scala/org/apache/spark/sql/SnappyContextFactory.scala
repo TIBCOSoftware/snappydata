@@ -19,13 +19,29 @@ package org.apache.spark.sql
 import com.typesafe.config.Config
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
-import spark.jobserver.{ContextLike, SparkJobBase}
+import spark.jobserver.{SparkJobValid, SparkJobInvalid, SparkJobValidation, SparkJob, ContextLike, SparkJobBase}
 
-import org.apache.spark.SparkConf
+import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.streaming.api.java.JavaDStream
+import org.apache.spark.{SparkContext, SparkConf}
 
 trait SnappySQLJob extends SparkJobBase {
   type C = SnappyContext
 }
+
+object JavaJobValidate{
+  def validate(status :JSparkJobValidation) : SparkJobValidation ={
+    status match {
+      case j : JSparkJobValid => SparkJobValid
+      case j : JSparkJobInvalid => SparkJobInvalid(j.reason)
+      case _ => SparkJobInvalid("isValid method is not correct")
+    }
+  }
+}
+trait JSparkJobValidation
+case class JSparkJobValid extends JSparkJobValidation
+case class JSparkJobInvalid(reason : String) extends JSparkJobValidation
+
 
 class SnappyContextFactory extends SparkContextFactory {
 

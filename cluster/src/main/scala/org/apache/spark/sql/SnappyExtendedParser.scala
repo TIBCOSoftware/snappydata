@@ -28,8 +28,8 @@ import org.apache.spark.sql.hive.QualifiedTableName
 /**
  * SnappyData extensions to SQL grammar. Currently subquery in WHERE support.
  */
-class SnappyExtendedParser(caseSensitive: Boolean)
-    extends SnappyParser(caseSensitive) {
+class SnappyExtendedParser(context: SnappyContext)
+    extends SnappyParser(context) {
 
   override protected def comparisonExpression1: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
@@ -62,13 +62,9 @@ class SnappyExtendedParser(caseSensitive: Boolean)
 /**
  * Snappy extended dialect additions to the standard "sql" dialect.
  */
-private[sql] final class SnappyExtendedParserDialect(caseSensitive: Boolean)
-    extends ParserDialect {
+private[sql] final class SnappyExtendedParserDialect(context: SnappyContext)
+    extends SnappyParserDialect(context) {
 
-  private[sql] val sqlParser = new SnappyExtendedParser(caseSensitive)
-
-  override def parse(sqlText: String): LogicalPlan = synchronized {
-    sqlParser.input = sqlText
-    sqlParser.parse()
-  }
+  @transient private[sql] override val sqlParser =
+    new SnappyExtendedParser(context)
 }
