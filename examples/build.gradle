@@ -32,6 +32,10 @@ if (rootProject.hasProperty('enablePublish')) {
 }
 
 task productExamples(dependsOn: 'jar') << {
+  copy {
+    from "src/main/python/*"
+    into "${buildDir}" }
+
   def productDir = file("${rootProject.buildDir}/snappy")
   productDir.mkdirs()
   def exampleArchiveName = "quickstart-${version}.jar"
