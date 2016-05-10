@@ -41,7 +41,8 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
         {
 
           val l = new LeadImpl
-          val opts = l.initStartupArgs((new SparkConf).set(Property.mcastPort, "4958"))
+          val opts = l.initStartupArgs((new SparkConf).set(
+            Property.McastPort(), "4958"))
 
           val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
               com.pivotal.gemfirexd.Attribute.GFXD_HOST_DATA)
@@ -52,7 +53,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeadImpl
-          val p = (new SparkConf).set(Property.mcastPort, "4958")
+          val p = (new SparkConf).set(Property.McastPort(), "4958")
           p.set("host-data", "true")
 
           val opts = l.initStartupArgs(p)
@@ -95,7 +96,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
           val l = new LeadImpl
           val conf = (new SparkConf).
               setMaster("local[3]").setAppName("with local master")
-          conf.set(Property.mcastPort, "0")
+          conf.set(Property.McastPort(), "0")
           conf.set(Constant.STORE_PROPERTY_PREFIX + "host-data", "false")
           val sc = new SparkContext(conf)
           try {
@@ -116,7 +117,8 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
       "always add implicit server group" in {
         {
           val l = new LeadImpl
-          val opts = l.initStartupArgs((new SparkConf).set(Property.mcastPort, "4958"))
+          val opts = l.initStartupArgs((new SparkConf).set(
+            Property.McastPort(), "4958"))
 
           val hdProp = opts.get(Constant.STORE_PROPERTY_PREFIX +
               com.pivotal.gemfirexd.Attribute.SERVER_GROUPS)
@@ -127,7 +129,7 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           val l = new LeadImpl
-          val p = (new SparkConf).set(Property.mcastPort, "4958")
+          val p = (new SparkConf).set(Property.McastPort(), "4958")
           p.set(Constant.STORE_PROPERTY_PREFIX +
               com.pivotal.gemfirexd.Attribute.SERVER_GROUPS, "DUMMY,GRP")
           val opts = l.initStartupArgs(p)
