@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import java.lang
 import java.sql.SQLException
 import org.apache.spark.scheduler.{SparkListenerApplicationEnd, SparkListener}
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -37,7 +38,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{GenericRow, Alias, Cast, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{SortDirection, Descending, Ascending, GenericRow, Alias, Cast}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -796,16 +797,32 @@ class SnappyContext protected[spark](
     * Create an index on a table.
     * @param indexName Index name which goes in the catalog
     * @param baseTable Fully qualified name of table on which the index is created.
-    * @param indexColumns Columns on which the index has to be created
+    * @param indexColumns Columns on which the index has to be created along with the
+   *                     sorting direction.The direction of index will be ascending
+   *                     if value is true and descending when value is false.
+   *                     Direction can be specified as null
     * @param options Options for indexes. For e.g.
     *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
     *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
     */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, Option[SortDirection]],
+      indexColumns: java.util.Map[String, lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-    createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
+
+    val indexCol:mutable.Map[String,Option[SortDirection]]=mutable.Map();
+
+    indexColumns.asScala.toMap.foreach(kv =>
+
+      if(kv._2 == null){
+        indexCol.put(kv._1,None)
+      } else if(kv._2){
+        indexCol.put(kv._1,Some(Ascending))
+      }else{
+        indexCol.put(kv._1,Some(Descending))
+      }
+    )
+    createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
   }
 
   /**
