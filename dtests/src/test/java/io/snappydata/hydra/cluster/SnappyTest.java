@@ -56,6 +56,7 @@ public class SnappyTest implements Serializable {
     private static String logFile = null;
 
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
+    //    private static Set<String> hdList = new LinkedHashSet<String>();
     private static String locatorsFilePath = null;
     private static String serversFilePath = null;
     private static String leadsFilePath = null;
@@ -317,6 +318,23 @@ public class SnappyTest implements Serializable {
     }
 
 
+    /**
+     * Returns PIDs for all the processes started in the test, e.g. locator, server, lead .
+     */
+    private static synchronized List<String> getPidList() {
+        List<String> pidList = new ArrayList();
+        Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+        for (String key : keys) {
+            if (key.startsWith("pid")) {
+                String pid = (String) SnappyBB.getBB().getSharedMap().getMap().get(key);
+                pidList.add(pid);
+            }
+        }
+        Log.getLogWriter().info("Returning pid list: " + pidList);
+        return pidList;
+    }
+
+
     public static void HydraTask_getClientConnection() throws SQLException {
         getLocatorConnection();
     }
@@ -393,13 +411,13 @@ public class SnappyTest implements Serializable {
         Vector scriptNames, paramList = null;
         File log = null, logFile = null;
         scriptNames = SnappyPrms.getSQLScriptNamesForInitTask();
-        if (scriptNames.size() == 0) {
+        if (scriptNames == null) {
             String s = "No Script names provided for executing in INITTASK";
             throw new TestException(s);
         }
         paramList = SnappyPrms.getSQLScriptParamsForInitTask();
-        if (paramList.size() == 0) {
-            String s = "Required Parameters not found for executing scripts in INITTASK";
+        if (paramList == null) {
+            String s = "Required Parameter(sqlScriptParamsForInitTask) not found for executing scripts in INITTASK.";
             throw new TestException(s);
         }
         try {
@@ -416,7 +434,6 @@ public class SnappyTest implements Serializable {
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }
     }
@@ -432,13 +449,10 @@ public class SnappyTest implements Serializable {
             assert p.getInputStream().read() == -1;
             int rc = p.waitFor();
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("Exception occurred while starting the process:" + pb + "\nError Message:" + e.getMessage());
         } catch (InterruptedException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("Exception occurred while waiting for the process execution:" + p + "\nError Message:" + e.getMessage());
         }
-
     }
 
     protected void recordSnappyProcessIDinNukeRun(String pName) {
@@ -464,9 +478,9 @@ public class SnappyTest implements Serializable {
                     if (pids.contains(pid)) {
                         Log.getLogWriter().info("Pid is already recorded with Master" + pid);
                     } else {
-//                        SnappyBB.getBB().getSharedMap().put("PIDs", pid);
                         pids.add(pid);
                         RemoteTestModule.Master.recordPID(hd, pid);
+                        SnappyBB.getBB().getSharedMap().put("pid" + "_" + str, str);
                     }
                 } catch (RemoteException e) {
                     String s = "Unable to access master to record PID: " + pid;
@@ -476,48 +490,60 @@ public class SnappyTest implements Serializable {
             }
             br.close();
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while starting the process : " + pr;
             throw new TestException(s, e);
         } catch (InterruptedException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Exception occurred while waiting for the process execution : " + pr;
             throw new TestException(s, e);
         }
     }
 
-    protected void removeSnappyProcessIDinNukeRun() {
-        File pidFile = null;
+    /**
+     * Task(ENDTASK) for cleaning up snappy processes, because they are not stopped by Hydra in case of Test failure.
+     */
+    public static void HydraTask_cleanUpSnappyProcessesOnFailure() {
+        Process pr = null;
+        ProcessBuilder pb = null;
+        File logFile = null, log = null, nukeRunOutput = null;
         try {
-            hd = TestConfig.getInstance().getMasterDescription()
+            List<String> pidList = new ArrayList();
+            HostDescription hd = TestConfig.getInstance().getMasterDescription()
                     .getVmDescription().getHostDescription();
-            File log = new File(".");
-            String dest = log.getCanonicalPath() + File.separator + "PIDs.log";
-            pidFile = new File(dest);
-            FileInputStream fis = new FileInputStream(pidFile);
-            BufferedReader br = new BufferedReader(new InputStreamReader(fis));
-            String str = null;
-            while ((str = br.readLine()) != null) {
-                int pid = Integer.parseInt(str);
+            pidList = snappyTest.getPidList();
+            log = new File(".");
+            String nukerun = log.getCanonicalPath() + File.separator + "snappyNukeRun.sh";
+            logFile = new File(nukerun);
+            String nukeRunOutputString = log.getCanonicalPath() + File.separator + "nukeRunOutput.log";
+            nukeRunOutput = new File(nukeRunOutputString);
+            FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
+            BufferedWriter bw = new BufferedWriter(fw);
+            for (String pidString : pidList) {
+                int pid = Integer.parseInt(pidString);
+                bw.write("/bin/kill -KILL " + pid);
+                bw.newLine();
                 try {
                     RemoteTestModule.Master.removePID(hd, pid);
                 } catch (RemoteException e) {
                     String s = "Failed to remove PID from nukerun script: " + pid;
                     throw new HydraRuntimeException(s, e);
                 }
-                Log.getLogWriter().info("pid value successfully removed from nukerun script");
             }
-            br.close();
-        } catch (FileNotFoundException e) {
-            String s = "Unable to find file: " + pidFile;
-            throw new TestException(s);
+            bw.close();
+            fw.close();
+            Log.getLogWriter().info("Done writing to snappyNukeRun file... ");
+            logFile.setExecutable(true);
+            pb = new ProcessBuilder(nukerun);
+            pb.redirectErrorStream(true);
+            pb.redirectOutput(ProcessBuilder.Redirect.appendTo(nukeRunOutput));
+            pr = pb.start();
+            pr.waitFor();
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
-            String s = "Problem while reading the file : " + pidFile;
+            throw new TestException("IOException occurred while retriving logFile path " + log + "\nError Message:" + e.getMessage());
+        } catch (InterruptedException e) {
+            String s = "Exception occurred while waiting for the process execution : " + pr;
             throw new TestException(s, e);
         }
     }
-
 
     /**
      * Executes user scripts for InitTask.
@@ -526,7 +552,7 @@ public class SnappyTest implements Serializable {
         Vector scriptNames = null;
         File log = null;
         scriptNames = SnappyPrms.getSQLScriptNamesForTask();
-        if (scriptNames.size() == 0) {
+        if (scriptNames == null) {
             String s = "No Script names provided for executing in TASK";
             throw new TestException(s);
         }
@@ -542,7 +568,6 @@ public class SnappyTest implements Serializable {
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             throw new TestException("IOException occurred while retriving logFile path " + log + "\nError Message:" + e.getMessage());
         }
     }
@@ -635,8 +660,8 @@ public class SnappyTest implements Serializable {
             String s = "Missing userAppJar parameter.";
             throw new TestException(s);
         }
-        if (jobClassNames.size() == 0) {
-            String s = "Missing streamingJobClassNamesForTask parameter.";
+        if (jobClassNames == null) {
+            String s = "Missing JobClassNames parameter for required TASK/CLOSETASK.";
             throw new TestException(s);
         }
     }
@@ -726,7 +751,6 @@ public class SnappyTest implements Serializable {
             String s = "Unable to find file: " + fin;
             throw new TestException(s);
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while writing to the file : " + fin;
             throw new TestException(s, e);
         }
@@ -775,7 +799,6 @@ public class SnappyTest implements Serializable {
             String s = "Unable to find file: " + logFile;
             throw new TestException(s);
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while reading the file : " + logFile;
             throw new TestException(s, e);
         }
@@ -940,11 +963,9 @@ public class SnappyTest implements Serializable {
             int rc = p.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while starting the process : " + p;
             throw new TestException(s, e);
         } catch (InterruptedException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Exception occurred while waiting for the process execution : " + p;
             throw new TestException(s, e);
         }
@@ -960,11 +981,9 @@ public class SnappyTest implements Serializable {
             int rc = p.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while starting the process : " + p;
             throw new TestException(s, e);
         } catch (InterruptedException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Exception occurred while waiting for the process execution : " + p;
             throw new TestException(s, e);
         }
@@ -980,11 +999,9 @@ public class SnappyTest implements Serializable {
             int rc = p.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while starting the process : " + p;
             throw new TestException(s, e);
         } catch (InterruptedException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Exception occurred while waiting for the process execution : " + p;
             throw new TestException(s, e);
         }
@@ -997,11 +1014,9 @@ public class SnappyTest implements Serializable {
             int rc = p.waitFor();
             System.out.printf("Script executed with exit code %d\n", rc);
         } catch (IOException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Problem while starting the process : " + p;
             throw new TestException(s, e);
         } catch (InterruptedException e) {
-            snappyTest.removeSnappyProcessIDinNukeRun();
             String s = "Exception occurred while waiting for the process execution : " + p;
             throw new TestException(s, e);
         }
