@@ -31,7 +31,16 @@ Below are examples to create a SnappyContext from SparkContext.
   // get the SnappyContext
   SnappyContext snc = SnappyContext.getOrCreate(sc);
 ```
+###### Python
+```python
+from pyspark.sql.snappy import SnappyContext
+from pyspark import SparkContext, SparkConf
 
+conf = SparkConf().setAppName("ExampleTest").setMaster("local[*]")
+sc = SparkContext(conf=conf)
+# get the SnappyContext
+snc = SnappyContext(sc)
+```
 Create columnar tables using API. Other than `create`, `drop` table rest is all based on the Spark SQL Data Source APIs. 
 
 ###### Scala
@@ -97,6 +106,33 @@ Create columnar tables using API. Other than `create`, `drop` table rest is all 
     }
 
 ```
+###### Python
+
+```python
+from pyspark.sql.types import *
+
+data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
+rdd = sc.parallelize(data)
+schema=StructType([StructField("col1", IntegerType()), 
+                   StructField("col2", IntegerType()), 
+                   StructField("col3", IntegerType())])
+
+dataDF = snc.createDataFrame(rdd, schema)
+
+# create a column table
+snc.dropTable("COLUMN_TABLE", True)
+#"column" is the table format (that is row or column)
+#dataDF.schema provides the schema for table
+snc.createTable("COLUMN_TABLE", "column", dataDF.schema, True, buckets="11")
+
+#append dataDF into the table
+dataDF.write.insertInto("COLUMN_TABLE")
+results1 = snc.sql("SELECT * FROM COLUMN_TABLE")
+
+print("contents of column table are:")
+results1.select("col1", "col2", "col3"). show()
+```
+
 
 The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster was expanded) a bucket is the smallest unit that can be moved around. For more details about the properties ('props1' map in above example) and createTable API refer to documentation for [row and column tables](rowAndColumnTables.md)
 
@@ -136,7 +172,7 @@ Create row tables using API, update the contents of row table
 
 ### Running Spark programs inside the database
 
-> Note: Above simple example uses local mode(i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster.
+> Note: Above simple example uses local mode(i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster.This mode is supported in both Java and Scala. Support for Python is yet not added.
 
 To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
 
