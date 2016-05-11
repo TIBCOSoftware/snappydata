@@ -56,7 +56,6 @@ public class SnappyTest implements Serializable {
     private static String logFile = null;
 
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
-    //    private static Set<String> hdList = new LinkedHashSet<String>();
     private static String locatorsFilePath = null;
     private static String serversFilePath = null;
     private static String leadsFilePath = null;

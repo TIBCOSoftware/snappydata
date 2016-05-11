@@ -43,7 +43,7 @@ object FileStreamingJob extends SnappyStreamingJob {
 
     // Register continuous queries on the tables and specify window clauses
     val retweetStream: SchemaDStream = snsc.registerCQ("SELECT * FROM retweettable " +
-      "WINDOW (DURATION '2' SECONDS, SLIDE '2' SECONDS)")
+      "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
 
     val tableName = "retweetStore"
 
