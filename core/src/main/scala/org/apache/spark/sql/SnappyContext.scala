@@ -794,34 +794,29 @@ class SnappyContext protected[spark](
   }
 
   /**
-    * Create an index on a table.
-    * @param indexName Index name which goes in the catalog
-    * @param baseTable Fully qualified name of table on which the index is created.
-    * @param indexColumns Columns on which the index has to be created along with the
+   * Create an index on a table.
+   * @param indexName Index name which goes in the catalog
+   * @param baseTable Fully qualified name of table on which the index is created.
+   * @param indexColumns Columns on which the index has to be created along with the
    *                     sorting direction.The direction of index will be ascending
    *                     if value is true and descending when value is false.
    *                     Direction can be specified as null
-    * @param options Options for indexes. For e.g.
-    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
-    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
-    */
+   * @param options Options for indexes. For e.g.
+   *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+   *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+   */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, lang.Boolean],
+      indexColumns: java.util.Map[String, java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
 
-    val indexCol:mutable.Map[String,Option[SortDirection]]=mutable.Map();
 
-    indexColumns.asScala.toMap.foreach(kv =>
+    val indexCol = indexColumns.asScala.mapValues {
+      case null => None
+      case java.lang.Boolean.TRUE => Some(Ascending)
+      case java.lang.Boolean.FALSE => Some(Descending)
+    }
 
-      if(kv._2 == null){
-        indexCol.put(kv._1,None)
-      } else if(kv._2){
-        indexCol.put(kv._1,Some(Ascending))
-      }else{
-        indexCol.put(kv._1,Some(Descending))
-      }
-    )
     createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
   }
 
