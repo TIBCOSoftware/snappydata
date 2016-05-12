@@ -91,6 +91,7 @@ allprojects {
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
     gemfireXDVersion = '1.5.0-SNAPSHOT'
+    pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -882,6 +883,36 @@ task allReports(type: TestReport) {
 gradle.taskGraph.whenReady({ graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
 })
+
+task packagePulse {
+  def pulseWarName = "pulse-${pulseVersion}.war"
+  def pulseDir = System.env.PULSEDIR
+
+  if (pulseDir == null || pulseDir.length() == 0) {
+    pulseDir = "${projectDir}/../pulse"
+  }
+
+  if (!file(pulseDir).canWrite()){
+    throw  new Exception(" Pulse directroy can not be empty while building product")
+  }
+
+  println "Using Pulse location ${pulseDir}"
+
+  runScript("${pulseDir}/build.sh", pulseDir, ["clean", "build-all"])
+
+  doFirst {
+    delete "${snappyProductDir}/lib/pulse.war"
+  }
+
+  doLast {
+    copy {
+      from "${pulseDir}/build-artifacts/linux/dist/${pulseWarName}"
+      into "${snappyProductDir}/lib/"
+      include "${pulseWarName}"
+      rename { filename -> "pulse.war" }
+    }
+  }
+}
 
 
 task precheckin {
