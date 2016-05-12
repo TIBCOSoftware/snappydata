@@ -120,7 +120,7 @@ trait SplitClusterDUnitTestBase {
     println("Test Completed Successfully")
   }
 
-/*  def testColumnTableCreation(): Unit = {
+  def testColumnTableCreation(): Unit = {
     doTestColumnTableCreation(skewServerDistribution = false)
   }
 
@@ -130,7 +130,7 @@ trait SplitClusterDUnitTestBase {
 
   def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643(skewServerDistribution = false)
-  }*/
+  }
 }
 
 trait SplitClusterDUnitTestObject {
