@@ -103,11 +103,7 @@ class BaseColumnFormatRelation(
   }
 
   override def partitionColumns: Seq[String] = {
-    connectionType match {
-      case ConnectionType.Embedded => partitioningColumns
-      // TODO: [sumedh] is the issue in comment below being tracked somewhere??
-      case _ => partitioningColumns
-    }
+    partitioningColumns
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
