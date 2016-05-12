@@ -106,7 +106,7 @@ class BaseColumnFormatRelation(
     connectionType match {
       case ConnectionType.Embedded => partitioningColumns
       // TODO: [sumedh] is the issue in comment below being tracked somewhere??
-      case _ => Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
+      case _ => partitioningColumns
     }
   }
 

@@ -16,10 +16,16 @@
  */
 package io.snappydata.cluster
 
+import java.net.InetAddress
+import java.util.Properties
+
 import scala.language.postfixOps
 
+import io.snappydata.core.TestData2
+import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
 
+import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.store.StoreUtils
 
@@ -67,6 +73,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override protected def testObject = SplitSnappyClusterDUnitTest
 
+/*
   override def testColumnTableCreation(): Unit = {
     // skip the non-skewed test since it is already run in Spark+Snappy mode
     doTestColumnTableCreation(skewServerDistribution = true)
@@ -78,6 +85,13 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   override def testComplexTypesForColumnTables_SNAP643(): Unit = {
     doTestComplexTypesForColumnTables_SNAP643(skewServerDistribution = true)
+  }
+*/
+
+  def testCollocatedJoinInSplitMode(): Unit = {
+    startNetworkServers(3)
+    testObject.createTableForCollocatedJoin()
+    vm3.invoke(getClass, "checkCollocatedJoins", startArgs :+ locatorProperty)
   }
 }
 
@@ -152,5 +166,57 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     snc.dropTable("splitModeTable1", ifExists = true)
 
     println("Successful")
+  }
+
+  def createTableForCollocatedJoin(): Unit = {
+
+    val snc = SnappyContext(sc)
+    val dimension1 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i % 10 + 1)))
+    val refDf = snc.createDataFrame(dimension1)
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE1")
+
+    snc.sql("CREATE TABLE PR_TABLE1(OrderId INT NOT NULL,description String, " +
+        "OrderRef INT) USING row " +
+        "options (" +
+        "PARTITION_BY 'OrderId, OrderRef')")
+
+    refDf.write.insertInto("PR_TABLE1")
+
+    snc.sql("DROP TABLE IF EXISTS PR_TABLE2")
+
+    snc.sql("CREATE TABLE PR_TABLE2(OrderId INT NOT NULL,description String, " +
+        "OrderRef INT) USING row options (" +
+        "PARTITION_BY 'OrderId,OrderRef'," +
+        "COLOCATE_WITH 'PR_TABLE1')")
+
+    val dimension2 = sc.parallelize(
+      (1 to 1000).map(i => TestData2(i, i.toString, i % 5 + 1)))
+
+    val dimensionDf = snc.createDataFrame(dimension2)
+    dimensionDf.write.insertInto("PR_TABLE2")
+
+
+  }
+
+  def checkCollocatedJoins(locatorPort: Int, prop: Properties, locatorProp: String): Unit ={
+    // Test setting locators property via environment variable.
+    // Also enables checking for "spark." or "snappydata." prefix in key.
+    System.setProperty(locatorProp, s"localhost:$locatorPort")
+    val hostName = InetAddress.getLocalHost.getHostName
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+
+    val sc = SparkContext.getOrCreate(conf)
+    val snc = SnappyContext(sc)
+
+    val testJoins = new ClusterSnappyJoinSuite()
+    testJoins.partitionToPartitionJoinAssertions(snc, "PR_TABLE1", "PR_TABLE2")
+
+    println("Successful")
+
   }
 }
