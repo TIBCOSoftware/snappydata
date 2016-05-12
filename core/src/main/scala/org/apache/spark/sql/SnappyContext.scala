@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import java.lang
 import java.sql.SQLException
 
 import scala.collection.JavaConverters._
@@ -35,7 +36,7 @@ import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{SortDirection, Descending, Ascending, GenericRow, Alias, Cast}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -793,19 +794,30 @@ class SnappyContext protected[spark](
   }
 
   /**
-    * Create an index on a table.
-    * @param indexName Index name which goes in the catalog
-    * @param baseTable Fully qualified name of table on which the index is created.
-    * @param indexColumns Columns on which the index has to be created
-    * @param options Options for indexes. For e.g.
-    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
-    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
-    */
+   * Create an index on a table.
+   * @param indexName Index name which goes in the catalog
+   * @param baseTable Fully qualified name of table on which the index is created.
+   * @param indexColumns Columns on which the index has to be created along with the
+   *                     sorting direction.The direction of index will be ascending
+   *                     if value is true and descending when value is false.
+   *                     Direction can be specified as null
+   * @param options Options for indexes. For e.g.
+   *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+   *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+   */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, Option[SortDirection]],
+      indexColumns: java.util.Map[String, java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-    createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
+
+
+    val indexCol = indexColumns.asScala.mapValues {
+      case null => None
+      case java.lang.Boolean.TRUE => Some(Ascending)
+      case java.lang.Boolean.FALSE => Some(Descending)
+    }
+
+    createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
   }
 
   /**

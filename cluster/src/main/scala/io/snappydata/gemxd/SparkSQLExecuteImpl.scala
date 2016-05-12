@@ -122,6 +122,8 @@ class SparkSQLExecuteImpl(val sql: String,
           }
           logTrace(s"Sent one batch for result, current partition $p.")
           hdos.clearForReuse()
+          assert(metaDataSent)
+          hdos.writeByte(0x00)
         }
 
         // clear persisted block

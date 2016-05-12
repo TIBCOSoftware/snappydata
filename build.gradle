@@ -15,9 +15,10 @@ buildscript {
   repositories {
     maven { url "https://plugins.gradle.org/m2" }
     jcenter()
+    maven { url "https://oss.sonatype.org/content/repositories/staging" }
   }
   dependencies {
-    classpath 'com.github.maiflai:gradle-scalatest:0.11'
+    classpath 'io.snappydata:gradle-scalatest:0.13-1'
     classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.10:0.8.2'
     classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.3'
   }
@@ -51,7 +52,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.3-SNAPSHOT'
+  version = '0.3.1-SNAPSHOT'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -90,6 +91,7 @@ allprojects {
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
     gemfireXDVersion = '1.5.0-SNAPSHOT'
+    pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
   }
@@ -213,12 +215,27 @@ subprojects {
     extensions.add('suite', { String name -> suites.add(name) } )
     extensions.add('suites', { String... name -> suites.addAll(name) } )
 
+    def result = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
+    extensions.add('testResult', { String name -> result.append(name) } )
+
+    def output = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
+    extensions.add('testOutput', { String name -> output.append(name) } )
+
+    def errorOutput = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
+    extensions.add('testError', { String name -> errorOutput.append(name) } )
+
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
       suite singleSuite
     }
     workingDir = "${testResultsBase}/scalatest"
 
+    testResult '/dev/tty'
+    testOutput "${workingDir}/output.txt"
+    testError "${workingDir}/error.txt"
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
@@ -687,6 +704,7 @@ def runScript(def execName, def workDir, def param) {
     workingDir = workDir
     args (param)
     standardOutput = stdout
+    environment 'PYTHONPATH', "${snappyProductDir}/python/lib/py4j-0.9-src.zip:${snappyProductDir}/python"
   }
   return "$stdout"
 }
@@ -865,6 +883,36 @@ task allReports(type: TestReport) {
 gradle.taskGraph.whenReady({ graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
 })
+
+task packagePulse {
+  def pulseWarName = "pulse-${pulseVersion}.war"
+  def pulseDir = System.env.PULSEDIR
+
+  if (pulseDir == null || pulseDir.length() == 0) {
+    pulseDir = "${projectDir}/../pulse"
+  }
+
+  if (!file(pulseDir).canWrite()){
+    throw  new Exception(" Pulse directroy can not be empty while building product")
+  }
+
+  println "Using Pulse location ${pulseDir}"
+
+  runScript("${pulseDir}/build.sh", pulseDir, ["clean", "build-all"])
+
+  doFirst {
+    delete "${snappyProductDir}/lib/pulse.war"
+  }
+
+  doLast {
+    copy {
+      from "${pulseDir}/build-artifacts/linux/dist/${pulseWarName}"
+      into "${snappyProductDir}/lib/"
+      include "${pulseWarName}"
+      rename { filename -> "pulse.war" }
+    }
+  }
+}
 
 
 task precheckin {
