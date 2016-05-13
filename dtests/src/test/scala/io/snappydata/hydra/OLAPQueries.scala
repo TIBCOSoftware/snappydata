@@ -32,7 +32,7 @@ object SnappyOlapQueries {
       "            avg(ol_quantity) AS avg_qty, " +
       "            avg(ol_amount) AS avg_amount, " +
       "            count(*) AS count_order " +
-      "            FROM order_line" +
+      "            FROM order_line_col" +
       "            WHERE ol_delivery_d > '2007-01-02 00:00:00.000000' " +
       "            GROUP BY ol_number " + "            ORDER BY ol_number"
 
@@ -323,7 +323,7 @@ object SnappyOlapQueries {
       "         pmod((s_w_id * s_i_id),10000) as supplier_no, " +
       "         sum(ol_amount) as total_revenue " +
       "FROM " +
-      "  order_line, stock " +
+      "  order_line_col, stock " +
       "WHERE " +
       "   ol_i_id = s_i_id " +
       "   AND ol_supply_w_id = s_w_id " +
@@ -435,8 +435,8 @@ object SnappyOlapQueries {
   val Q21 = "SELECT su_name,   " +
       "          count(*) AS numwait   " +
       "FROM " +
-      "      order_line l1,   " +
-      "      oorder,   " +
+      "      order_line_col l1,   " +
+      "      oorder_col,   " +
       "      stock,   " +
     " supplier,   " +
     "      nation   " +
@@ -449,7 +449,7 @@ object SnappyOlapQueries {
       "  AND l1.ol_delivery_d > o_entry_d   " +
       "  AND NOT EXISTS   " +
       "     (SELECT *   " +
-      "      FROM order_line l2   " +
+      "      FROM order_line_col l2   " +
       "      WHERE l2.ol_o_id = l1.ol_o_id   " +
       "       AND l2.ol_w_id = l1.ol_w_id   " +
       "       AND l2.ol_d_id = l1.ol_d_id   " +
