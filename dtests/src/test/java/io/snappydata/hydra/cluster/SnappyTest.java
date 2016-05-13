@@ -5,7 +5,6 @@ import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
 import hydra.*;
-import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 
 import java.nio.file.Files;
@@ -35,24 +34,25 @@ import static java.lang.Thread.sleep;
 
 public class SnappyTest implements Serializable {
 
-    private static transient SnappyContext snc;
+    private static transient SnappyContext snc = SnappyContext.getOrCreate(SnappyContext.globalSparkContext());
     protected static SnappyTest snappyTest;
-    private static char sep;
-    private static HostDescription hd;
-    private static String gemfireHome = null;
-    private static String productDir = null;
-    private static String productConfDirPath = null;
-    private static String productLibsDir = null;
-    private static String productSbinDir = null;
-    private static String productBinDir = null;
-    private static String SnappyShellPath = null;
-    private static String dtests = null;
-    private static String dtestsLibsDir = null;
-    private static String dtestsResourceLocation = null;
-    private static String dtestsScriptLocation = null;
-    private static String dtestsDataLocation = null;
-    private static String quickstartScriptLocation = null;
-    private static String quickstartDataLocation = null;
+    private static HostDescription hd = TestConfig.getInstance().getMasterDescription()
+            .getVmDescription().getHostDescription();
+    private static char sep = hd.getFileSep();
+    private static String gemfireHome = hd.getGemFireHome() + sep;
+    private static String productDir = gemfireHome + ".." + sep + "snappy" + sep;
+    private static String productConfDirPath = productDir + "conf" + sep;
+    private static String productLibsDir = productDir + "lib" + sep;
+    private static String productSbinDir = productDir + "sbin" + sep;
+    private static String productBinDir = productDir + "bin" + sep;
+    private static String SnappyShellPath = productBinDir + "snappy-shell";
+    private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
+    private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
+    private static String dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
+    private static String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
+    private static String quickstartScriptLocation = productDir + "quickstart" + sep + "scripts" + sep;
+    private static String quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
     private static String logFile = null;
 
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
@@ -73,13 +73,6 @@ public class SnappyTest implements Serializable {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
     }
 
-    public static void HydraTask_initializeSnappy() {
-        SparkContext sc = null;
-        snc = SnappyContext.getOrCreate(sc);
-        Log.getLogWriter().info("SnappyContext initialized successfully");
-    }
-
-
     public static void HydraTask_stopSnappy() {
         SnappyContext.stop(true);
         Log.getLogWriter().info("SnappyContext stopped successfully");
@@ -88,32 +81,17 @@ public class SnappyTest implements Serializable {
     public static void HydraTask_initializeSnappyTest() {
         if (snappyTest == null) {
             snappyTest = new SnappyTest();
-            snappyTest.populateDirectories();
+            snappyTest.getClientHostDescription();
             snappyTest.generateConfig("locators");
             snappyTest.generateConfig("servers");
             snappyTest.generateConfig("leads");
         }
     }
 
-    protected void populateDirectories() {
+    protected void getClientHostDescription() {
         hd = TestConfig.getInstance()
                 .getClientDescription(RemoteTestModule.getMyClientName())
                 .getVmDescription().getHostDescription();
-        sep = hd.getFileSep();
-        gemfireHome = hd.getGemFireHome() + sep;
-        productDir = gemfireHome + ".." + sep + "snappy" + sep;
-        productConfDirPath = productDir + "conf" + sep;
-        productLibsDir = productDir + "lib" + sep;
-        productSbinDir = productDir + "sbin" + sep;
-        productBinDir = productDir + "bin" + sep;
-        SnappyShellPath = productBinDir + "snappy-shell";
-        dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
-        dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
-        dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
-        dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
-        dtestsDataLocation = dtestsResourceLocation + "data" + sep;
-        quickstartScriptLocation = productDir + "quickstart" + sep + "scripts" + sep;
-        quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
     }
 
     protected String getUserAppJarLocation(String userAppJar) {
@@ -132,15 +110,13 @@ public class SnappyTest implements Serializable {
             return paramName;
         } else {
             scriptPath = quickstartDataLocation + paramName;
-            if (!new File(scriptPath).exists()) {
-                scriptPath = dtestsDataLocation + paramName;
-            }
-            if (!new File(scriptPath).exists()) {
+            if (new File(scriptPath).exists()) return scriptPath;
+            else scriptPath = dtestsDataLocation + paramName;
+            if (new File(scriptPath).exists()) return scriptPath;
+            else {
                 String s = "Data doesn't exists at any expected location.";
                 throw new TestException(s);
             }
-            Log.getLogWriter().info("Data file path " + scriptPath);
-            return scriptPath;
         }
     }
 
@@ -149,16 +125,17 @@ public class SnappyTest implements Serializable {
         scriptPath = productSbinDir + scriptName;
         if (!new File(scriptPath).exists()) {
             scriptPath = productBinDir + scriptName;
-        }
-        if (!new File(scriptPath).exists()) {
-            scriptPath = dtestsScriptLocation + scriptName;
-        }
-        if (!new File(scriptPath).exists()) {
-            scriptPath = quickstartScriptLocation + scriptName;
-        }
-        if (!new File(scriptPath).exists()) {
-            String s = "Unable to find the script at any expected location.";
-            throw new TestException(s);
+            if (new File(scriptPath).exists()) return scriptPath;
+            else
+                scriptPath = dtestsScriptLocation + scriptName;
+            if (new File(scriptPath).exists()) return scriptPath;
+            else
+                scriptPath = quickstartScriptLocation + scriptName;
+            if (new File(scriptPath).exists()) return scriptPath;
+            else {
+                String s = "Unable to find the script at any expected location.";
+                throw new TestException(s);
+            }
         }
         return scriptPath;
     }
@@ -168,7 +145,7 @@ public class SnappyTest implements Serializable {
         snappyTest.generateSnappyConfig();
     }
 
-    protected void generateSnappyConfig() throws NullPointerException {
+    protected void generateSnappyConfig() {
         if (logDirExists) return;
         else {
             String addr = HostHelper.getHostAddress();
@@ -180,6 +157,10 @@ public class SnappyTest implements Serializable {
             String dirPath = snappyTest.getLogDir();
             if (dirPath.contains("locator")) {
                 String locatorLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port;
+                if (locatorLogDir == null) {
+                    String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the locators file under conf directory";
+                    throw new TestException(s);
+                }
                 SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
                 String portString = port + "";
                 SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
@@ -189,12 +170,20 @@ public class SnappyTest implements Serializable {
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                if (serverLogDir == null) {
+                    String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the servers file under conf directory";
+                    throw new TestException(s);
+                }
                 SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + snappyTest.getMyTid(), serverLogDir);
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                if (leadLogDir == null) {
+                    String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the leads file under conf directory";
+                    throw new TestException(s);
+                }
                 SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
                 if (leadHost == null) {
                     leadHost = HostHelper.getLocalHost();
@@ -236,21 +225,21 @@ public class SnappyTest implements Serializable {
         serversFileContent = snappyTest.getFileContents("serverLogDir", serversFileContent);
         leadsFileContent = snappyTest.getFileContents("leadLogDir", leadsFileContent);
         if (locatorsFileContent.size() == 0) {
-            String s = "Empty locatorsFileContent";
+            String s = "No data found for writing to locators file under conf directory";
             throw new TestException(s);
         }
         for (String s : locatorsFileContent) {
             snappyTest.writeToFile(s, locatorsFile);
         }
         if (serversFileContent.size() == 0) {
-            String s = "Empty serversFileContent";
+            String s = "No data found for writing to servers file under conf directory";
             throw new TestException(s);
         }
         for (String s : serversFileContent) {
             snappyTest.writeToFile(s, serversFile);
         }
         if (leadsFileContent.size() == 0) {
-            String s = "Empty leadsFileContent";
+            String s = "No data found for writing to leads file under conf directory";
             throw new TestException(s);
         }
         for (String s : leadsFileContent) {
@@ -757,16 +746,17 @@ public class SnappyTest implements Serializable {
 
     protected void simulateStream() {
         ProcessBuilder pb = null;
-        File log = null, logFile = null;
-        simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder);
-        if (simulateStreamScriptDestinationFolder == null) {
-            String s = "Unable to find Folder location to copy the File Straming data.";
-            throw new TestException(s);
-        }
-        String streamScriptName = snappyTest.getScriptLocation(simulateStreamScriptName);
+        File logFile = null;
+        File log = new File(".");
         try {
+            simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder);
+            if (simulateStreamScriptDestinationFolder == null) {
+                Log.getLogWriter().info("Unable to find Folder location to copy the File Straming data. Hence using " + log.getCanonicalPath() + " to copy the data generated by simulateStream script.");
+                simulateStreamScriptDestinationFolder = log.getCanonicalPath() + File.separator;
+                Log.getLogWriter().info("simulateStreamScriptDestinationFolder:" + simulateStreamScriptDestinationFolder);
+            }
+            String streamScriptName = snappyTest.getScriptLocation(simulateStreamScriptName);
             pb = new ProcessBuilder(streamScriptName, simulateStreamScriptDestinationFolder, productDir);
-            log = new File(".");
             String dest = log.getCanonicalPath() + File.separator + "simulateFileStreamResult.log";
             logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
@@ -850,7 +840,6 @@ public class SnappyTest implements Serializable {
         return this.logFile;
     }
 
-
     protected synchronized void generateConfig(String fileName) {
         File file = null;
         try {
@@ -909,7 +898,6 @@ public class SnappyTest implements Serializable {
         }
     }
 
-
     /**
      * Create and start snappy server.
      */
@@ -956,16 +944,15 @@ public class SnappyTest implements Serializable {
      * Stops snappy lead.
      */
     public static synchronized void HydraTask_stopSnappyLeader() {
-        Process p = null;
+        File log = null;
         try {
-            p = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"), "stop").start();
-            int rc = p.waitFor();
-            System.out.printf("Script executed with exit code %d\n", rc);
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"), "stop");
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
-            String s = "Problem while starting the process : " + p;
-            throw new TestException(s, e);
-        } catch (InterruptedException e) {
-            String s = "Exception occurred while waiting for the process execution : " + p;
+            String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
     }
@@ -974,16 +961,15 @@ public class SnappyTest implements Serializable {
      * Stops snappy server/servers.
      */
     public static synchronized void HydraTask_stopSnappyServers() {
-        Process p = null;
+        File log = null;
         try {
-            p = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop").start();
-            int rc = p.waitFor();
-            System.out.printf("Script executed with exit code %d\n", rc);
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop");
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
-            String s = "Problem while starting the process : " + p;
-            throw new TestException(s, e);
-        } catch (InterruptedException e) {
-            String s = "Exception occurred while waiting for the process execution : " + p;
+            String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
     }
@@ -992,31 +978,29 @@ public class SnappyTest implements Serializable {
      * Stops a snappy locator.
      */
     public static synchronized void HydraTask_stopSnappyLocator() {
-        Process p = null;
+        File log = null;
         try {
-            p = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "stop").start();
-            int rc = p.waitFor();
-            System.out.printf("Script executed with exit code %d\n", rc);
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "stop");
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
-            String s = "Problem while starting the process : " + p;
-            throw new TestException(s, e);
-        } catch (InterruptedException e) {
-            String s = "Exception occurred while waiting for the process execution : " + p;
+            String s = "problem occurred while retriving destination logFile path " + log;
             throw new TestException(s, e);
         }
     }
 
     public static synchronized void HydraTask_stopSnappyCluster() {
-        Process p = null;
+        File log = null;
         try {
-            p = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh")).start();
-            int rc = p.waitFor();
-            System.out.printf("Script executed with exit code %d\n", rc);
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
-            String s = "Problem while starting the process : " + p;
-            throw new TestException(s, e);
-        } catch (InterruptedException e) {
-            String s = "Exception occurred while waiting for the process execution : " + p;
+            String s = "problem occurred while retriving destination logFile path " + log;
             throw new TestException(s, e);
         }
     }
