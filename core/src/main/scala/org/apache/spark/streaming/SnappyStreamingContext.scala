@@ -153,7 +153,7 @@ class SnappyStreamingContext protected[spark](
    * @return
    */
   def registerCQ(queryStr: String): SchemaDStream = {
-    val plan = sql(queryStr).queryExecution.logical
+    val plan = sql(queryStr).queryExecution.optimizedPlan
     val dStream = new SchemaDStream(self, plan)
     // register a dummy task so that the DStream gets started
     // TODO: need to remove once we add proper registration of registerCQ
