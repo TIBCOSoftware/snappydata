@@ -84,7 +84,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     // Register continuous queries on the tables and specify window clauses
     val retweetStream: SchemaDStream = snsc.registerCQ("SELECT * FROM retweettable " +
-      "WINDOW (DURATION '2' SECONDS, SLIDE '2' SECONDS)")
+      "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
 
     val topKOption = Map(
         "epoch" -> System.currentTimeMillis().toString,
@@ -96,7 +96,7 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     // Create TopK table on the base stream table which is hashtagtable
     // TopK object is automatically populated from the stream table
     snsc.snappyContext.createApproxTSTopK("topktable", "hashtag",
-      Some(schema), topKOption)
+      schema, topKOption)
 
     val tableName = "retweetStore"
 

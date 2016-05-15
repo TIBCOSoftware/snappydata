@@ -157,8 +157,7 @@ class SnappyContextTests(ReusedPySparkTestCase):
 
     def update_table(self):
         sqlcontext = SnappyContext.getOrCreate(self.sc)
-        newColumnvalues = Row(col1=7L)
-        modifiedrows = sqlcontext.update(SnappyContextTests.tablename, "COL2 =2", newColumnvalues, "COL1")
+        modifiedrows = sqlcontext.update(SnappyContextTests.tablename, "COL2 =2", [7L], ["COL1"])
         self.assertTrue(modifiedrows == 3)
 
     def truncate_table(self):

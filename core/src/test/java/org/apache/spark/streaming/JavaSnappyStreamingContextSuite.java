@@ -195,8 +195,7 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
     snsc = null;
   }
 
-  @SuppressWarnings("unchecked")
-  @Ignore("ignoring due to SNAP-715 ")
+  @Test
   public void testGetActiveOrCreate() throws IOException{
 
     final SparkConf conf = new SparkConf().setMaster(master).setAppName(appName);
@@ -231,7 +230,7 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
 
     JavaDStream<String> input = snsc.textFileStream(testDir.toString());
     JavaTestUtils.attachTestOutputStream(input);
-    List<List<String>> result = JavaTestUtils.runStreams(snsc, 1, 1);
+    snsc.start();
 
 
     JavaSnappyStreamingContext returnedSsc = JavaSnappyStreamingContext.getActiveOrCreate

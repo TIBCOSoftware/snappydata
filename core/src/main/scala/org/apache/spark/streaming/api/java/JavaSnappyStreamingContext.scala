@@ -25,6 +25,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.api.java.function.{Function => JFunction, Function0 => JFunction0, Function2 => JFunction2}
 import org.apache.spark.deploy.SparkHadoopUtil
+import org.apache.spark.sql.{SnappyContext, DataFrame}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.streaming.{Checkpoint, CheckpointReader, Duration, SnappyStreamingContext, StreamingContext}
@@ -32,6 +33,7 @@ import org.apache.spark.streaming.{Checkpoint, CheckpointReader, Duration, Snapp
 class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext)
     extends JavaStreamingContext(snsc) {
 
+  def snappyContext = snsc.snappyContext
 
   /**
    * Create a JavaSnappyStreamingContext using an existing SparkContext.

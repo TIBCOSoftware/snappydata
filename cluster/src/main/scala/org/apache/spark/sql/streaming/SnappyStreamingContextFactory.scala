@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.streaming
 
-import com.typesafe.config.Config
+import com.typesafe.config.{ConfigException, Config}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.{ContextLike, SparkJobBase}
@@ -41,8 +41,12 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappyStreamingJob]
 
       override def stop(): Unit = {
-        val stopGracefully = config.getBoolean("streaming.stopGracefully")
-        stop(stopSparkContext = false, stopGracefully = stopGracefully)
+        try {
+          val stopGracefully = config.getBoolean("streaming.stopGracefully")
+          stop(stopSparkContext = false, stopGracefully = stopGracefully)
+        } catch {
+          case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
+        }
       }
     }
   }

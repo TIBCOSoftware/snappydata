@@ -16,7 +16,7 @@
  */
 
 /*
- * Changes for SnappyData additions and modifications.
+ * Changes for SnappyData data platform.
  *
  * Portions Copyright (c) 2016 SnappyData, Inc. All rights reserved.
  *
@@ -44,7 +44,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
-class SnappyAnalyticsServiceTest extends SnappyFunSuite
+class SnappyAnalyticsServiceTest
+    extends SnappyFunSuite
     with BeforeAndAfter
     with BeforeAndAfterAll {
 
@@ -66,22 +67,29 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
     val dataDF = getDF
 
     snc.sql(s"Create Table $rowTableName (a INT, b INT, c INT)")
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable(s"$rowTableName")
+    dataDF.write.insertInto(s"$rowTableName")
 
     val result = snc.sql(s"SELECT * FROM $rowTableName")
-    assert(result.collect.length == 5)
+    assert(result.collect().length == 5)
 
-    val analytics = queryMemoryAnalytics(s"APP.$rowTableName")
+    val fullTableName = s"APP.$rowTableName"
+    val analytics = queryMemoryAnalytics(fullTableName)
 
     def check(expectedValueSize: Long, expectedTotalSize: Long): Boolean = {
-      val mValueSize = SnappyAnalyticsService.getTableSize(s"APP.$rowTableName")
-      val mtotalSize = SnappyAnalyticsService.getUIInfo
-          .filter(_.tableName.equals(s"APP.$rowTableName")).head.rowBufferSize
-      expectedValueSize == mValueSize && expectedTotalSize == mtotalSize
+      val mValueSize = SnappyAnalyticsService.getTableSize(fullTableName)
+
+      val uiDetails = SnappyAnalyticsService.getUIInfo
+          .filter(_.tableName == fullTableName)
+      if (uiDetails.nonEmpty) {
+        expectedValueSize == mValueSize.get &&
+            expectedTotalSize == uiDetails.head.rowBufferSize
+      } else {
+        false
+      }
     }
     waitForCriterion(check(analytics.valueSize, analytics.totalSize),
       "Comparing the results of MemoryAnalytics with Snappy Service",
-      serviceInterval.toInt * 2, serviceInterval.toInt, true)
+      serviceInterval.toInt * 2, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.sql(s"drop table $rowTableName")
   }
@@ -89,38 +97,43 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
   test("Test Stats for Column Table") {
     val dataDF = getDF
     snc.createTable(columnTableName, "column", dataDF.schema, Map.empty[String, String])
-    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(s"$columnTableName")
+    dataDF.write.insertInto(s"$columnTableName")
 
     val result = snc.sql("SELECT * FROM " + columnTableName)
-    val r = result.collect
+    val r = result.collect()
     assert(r.length == 5)
 
     val analyticsRowBuffer = queryMemoryAnalytics(s"APP.$columnTableName")
     val analyticsColumnBuffer = queryMemoryAnalytics(
       ColumnFormatRelation.cachedBatchTableName(columnTableName))
 
-    def check(expectedValueSize: Long, expectedRowSize: Long, expectedColumnSize: Long): Boolean = {
-      val mValueSize = SnappyAnalyticsService.getTableSize(s"APP.$columnTableName")
+    def check(expectedValueSize: Long, expectedRowSize: Long,
+        expectedColumnSize: Long): Boolean = {
+      val fullTableName = s"APP.$columnTableName"
+      val mValueSize = SnappyAnalyticsService.getTableSize(fullTableName)
       val uiDetails = SnappyAnalyticsService.getUIInfo
-          .filter(_.tableName.equals(s"APP.$columnTableName")).head
-      expectedValueSize == mValueSize &&
-          expectedRowSize == uiDetails.rowBufferSize &&
-          expectedColumnSize == uiDetails.columnBufferSize
+          .filter(_.tableName == fullTableName)
+      if (uiDetails.nonEmpty) {
+        val tableUIDetails = uiDetails.head
+        expectedValueSize == mValueSize.get &&
+            expectedRowSize == tableUIDetails.rowBufferSize &&
+            expectedColumnSize == tableUIDetails.columnBufferSize
+      } else {
+        false
+      }
     }
-
 
     waitForCriterion(check(analyticsRowBuffer.valueSize + analyticsColumnBuffer.valueSize,
       analyticsRowBuffer.totalSize,
       analyticsColumnBuffer.totalSize),
       "Comparing the results of MemoryAnalytics with Snappy Service",
-      serviceInterval.toInt * 2, serviceInterval.toInt, true)
-
+      serviceInterval.toInt * 2, serviceInterval.toInt, throwOnTimeout = true)
   }
 
   private def getDF = {
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).
-        map(s => new io.snappydata.core.Data(s(0), s(1), s(2)))
+        map(s => new io.snappydata.core.Data(s.head, s(1), s(2)))
     snc.createDataFrame(rdd)
   }
 
@@ -136,7 +149,7 @@ class SnappyAnalyticsServiceTest extends SnappyFunSuite
       totalSize = (rs.getString(2).toDouble * 1024).toLong
     }
 
-    return new MemoryAnalytics(0, 0, valueSize, 0, totalSize)
+    new MemoryAnalytics(0, 0, valueSize, 0, totalSize)
   }
 
 }

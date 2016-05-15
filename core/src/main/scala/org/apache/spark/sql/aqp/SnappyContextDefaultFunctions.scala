@@ -98,12 +98,11 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
     try {
       val clazz = Utils.classForName(
         "org.apache.spark.sql.SnappyExtendedParserDialect")
-      clazz.getConstructor(classOf[Boolean]).newInstance(
-        Boolean.box(context.conf.caseSensitiveAnalysis))
+      clazz.getConstructor(classOf[SnappyContext]).newInstance(context)
           .asInstanceOf[ParserDialect]
     } catch {
       case _: Exception =>
-        new SnappyParserDialect(context.conf.caseSensitiveAnalysis)
+        new SnappyParserDialect(context)
     }
   }
 
