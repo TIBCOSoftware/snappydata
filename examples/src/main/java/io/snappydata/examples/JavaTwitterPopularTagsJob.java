@@ -16,7 +16,7 @@ import org.apache.spark.sql.streaming.SchemaDStream;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.JavaSnappyStreamingJob;
-import org.apache.spark.streaming.api.JavaSnappyStreamingContext;
+import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 
 import static org.apache.spark.sql.types.DataTypes.StringType;
