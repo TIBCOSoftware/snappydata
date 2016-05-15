@@ -59,7 +59,7 @@ class SnappyContext(SQLContext):
     def _get_snappy_ctx(self):
         return self._jvm.SnappyContext(self._jsc.sc())
 
-    def createTable(self, tableName, provider=None, schema=None,  **options):
+    def createTable(self, tableName, provider=None, schema=None, allowExisting=True, **options):
         """
         Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
         supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
@@ -68,21 +68,23 @@ class SnappyContext(SQLContext):
         :param provider  Provider name 'ROW' and 'JDBC'.
         :param schema Table schema either as a StructType or  String
                 schemaStringExample = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+        :param allowExisting When set to true it will ignore if a table with the same name is
+                          present , else it will throw table exist exception
         :param options   Properties for table creation. See options list for different tables.
         :return: :class:`DataFrame`
          """
         if provider is None:
             provider = self.getConf("spark.sql.sources.default", "org.apache.spark.sql.parquet")
         if schema is None:
-            df = self._ssql_ctx.createTable(tableName, provider, options)
+            df = self._ssql_ctx.createTable(tableName, provider, allowExisting, options)
         else:
             if isinstance(schema, str):
-                df = self._ssql_ctx.createTable(tableName, provider, schema, options)
+                df = self._ssql_ctx.createTable(tableName, provider, schema, options, allowExisting)
             elif not isinstance(schema, StructType):
                 raise TypeError("schema should be StructType or a String")
             else:
                 scala_datatype = self._ssql_ctx.parseDataType(schema.json())
-                df = self._ssql_ctx.createTable(tableName, provider, scala_datatype, options)
+                df = self._ssql_ctx.createTable(tableName, provider, scala_datatype, options, allowExisting)
 
         return DataFrame(df, self)
 
