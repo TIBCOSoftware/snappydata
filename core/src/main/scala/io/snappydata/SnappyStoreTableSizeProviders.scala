@@ -51,7 +51,7 @@ object StoreTableValueSizeProviderService extends Logging {
           .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
     timer = new SystemTimer(Misc.getGemFireCache.getDistributedSystem,
       true, Misc.getGemFireCache.getLoggerI18n)
-    timer.schedule(calculateTableSizeTask, 0, delay)
+    timer.schedule(calculateTableSizeTask(sc), delay, delay)
   }
 
   def stop: Unit = {
@@ -60,10 +60,9 @@ object StoreTableValueSizeProviderService extends Logging {
     }
   }
 
-  def calculateTableSizeTask: SystemTimer.SystemTimerTask = {
+  def calculateTableSizeTask(sc: SparkContext): SystemTimer.SystemTimerTask = {
     new SystemTimer.SystemTimerTask {
       override def run2(): Unit = {
-        val sc = SnappyContext.globalSparkContext
         val snc = SnappyContext.getOrCreate(sc)
         val sizeInfoPerRegionAcc = sc.accumulableCollection(mutable.ArrayBuffer[TableSizeInfo]())
         val currentTableSizeInfo = mutable.HashMap[String, Long]()
@@ -71,7 +70,7 @@ object StoreTableValueSizeProviderService extends Logging {
           Misc.getGemFireCache.getPartitionedRegions.asScala.foreach(region => {
             val valueSizeOfRegion = getSizeForAllPrimaryBucketsOfRegion(region)
             sizeInfoPerRegionAcc += new TableSizeInfo(
-              region.getFullPath.replaceFirst("/" , "").replaceAll("/" , "."), valueSizeOfRegion)
+              region.getFullPath.replaceFirst("/", "").replaceAll("/", "."), valueSizeOfRegion)
           })
           Iterator.empty
         }).count()
@@ -150,8 +149,7 @@ object StoreTableSizeProvider {
   }
 
 
-
-  private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String , Long] = {
+  private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String, Long] = {
     val currentTableStats = mutable.Map[String, Long]()
     val stmt = "select TABLE_NAME," +
         "SUM(TOTAL_SIZE)" +
@@ -161,7 +159,7 @@ object StoreTableSizeProvider {
     while (rs.next()) {
       val name = rs.getString(1)
       val totalSize = convertToBytes(rs.getString(2))
-      currentTableStats.put(name , totalSize)
+      currentTableStats.put(name, totalSize)
     }
     currentTableStats
   }
@@ -206,5 +204,6 @@ object StoreTableSizeProvider {
 
 
 case class TableSizeInfo(tableName: String, totalSize: Long)
+
 case class UIAnalytics(tableName: String, rowBufferSize: Long,
     columnBufferSize: Long, isColumnTable: Boolean)
