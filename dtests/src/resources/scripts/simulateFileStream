@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+#set -vx
+
+# This script helps to simulate twitter stream as a file stream. It copies 
+# tweet files from one folder to another folder on which a file stream can be
+# created for about 10 mins.
+
+if [ $# -ne 2 ]; then
+    echo "ERROR: incorrect argument specified: " "$@"
+    echo "Usage:./simulateFileStream.sh <DESTINATION_FOLDER> <SNAPPYDATA_BUILD_PATH>"
+    exit 1
+fi
+
+# Removing directories from user specified location if exists and creating new ones.
+rm -rf "$1"/twitterdata
+rm -rf "$1"/copiedtwitterdata
+mkdir -p "$1"/twitterdata
+mkdir -p "$1"/copiedtwitterdata
+
+# Extract preloaded tweets
+tar -zxf "$2"/quickstart/data/tweetdata.tgz -C "$1"/twitterdata
+FILES="$1"/twitterdata/tweets_*/tweets-*
+
+# Copy tweets to a folder to simulate a file stream.
+for file in $FILES
+do
+echo "Copying tweet file $file"
+cp $file "$1"/copiedtwitterdata
+count=0
+start=$(date +%s%3N)
+end=$((start+10000))
+while [ "$start" -lt "$end" ]; do
+start=$(date +%s%3N)
+count=$((count+1))
+sleep 0.4
+echo "Copying tweet file $file in $1/copiedtwitterdata/myFile$start"
+cp $file "$1"/copiedtwitterdata/"myFile"$start
+done
+sleep 1
+done
+echo "Data copying done"
