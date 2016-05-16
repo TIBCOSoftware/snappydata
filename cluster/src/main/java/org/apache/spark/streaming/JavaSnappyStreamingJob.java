@@ -21,7 +21,7 @@ import com.typesafe.config.Config;
 import org.apache.spark.sql.JSparkJobValidation;
 import org.apache.spark.sql.JavaJobValidate;
 import org.apache.spark.sql.streaming.SnappyStreamingJob;
-import org.apache.spark.streaming.api.JavaSnappyStreamingContext;
+import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import spark.jobserver.SparkJobValidation;
 
 public abstract class JavaSnappyStreamingJob implements SnappyStreamingJob {
