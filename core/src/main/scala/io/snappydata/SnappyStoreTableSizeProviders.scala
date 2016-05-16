@@ -31,7 +31,7 @@ import com.gemstone.gemfire.internal.SystemTimer
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 
-import org.apache.spark.Logging
+import org.apache.spark.{SparkContext, Logging}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
@@ -43,21 +43,24 @@ object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
   private var timer: SystemTimer = null
-  private val delayInMillisconds =
-    SnappyContext.globalSparkContext.getConf.getOption("spark.snappy.calcTableSizeInterval")
-        .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
 
-  def start: Unit = {
+
+  def start(sc: SparkContext): Unit = {
+    val delay =
+      sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
+          .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
     timer = new SystemTimer(Misc.getGemFireCache.getDistributedSystem,
       true, Misc.getGemFireCache.getLoggerI18n)
-    timer.schedule(calculateTableSizeTask, 0 , delayInMillisconds)
+    timer.schedule(calculateTableSizeTask, 0, delay)
   }
 
   def stop: Unit = {
-    timer.cancel()
+    if (timer != null) {
+      timer.cancel()
+    }
   }
 
-  val calculateTableSizeTask = {
+  def calculateTableSizeTask: SystemTimer.SystemTimerTask = {
     new SystemTimer.SystemTimerTask {
       override def run2(): Unit = {
         val sc = SnappyContext.globalSparkContext

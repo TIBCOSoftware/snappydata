@@ -29,7 +29,6 @@ class SnappyStoreTableSizeProviderTest
     extends SnappyFunSuite
         with BeforeAndAfter
         with BeforeAndAfterAll {
-
   val columnTableName = "COLUMNTABLE"
   val rowTableName = "ROWTABLE"
   val serviceInterval = "3"
@@ -63,6 +62,8 @@ class SnappyStoreTableSizeProviderTest
       serviceInterval.toInt * 3, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.sql(s"drop table $rowTableName")
+
+
   }
 
   test("Test Column Table Size for all the values") {
@@ -107,7 +108,7 @@ class SnappyStoreTableSizeProviderTest
     val analytics = queryMemoryAnalytics(fullTableName)
 
     def check(expectedTotalSize: Long): Boolean = {
-      val row = OnDemandTableSizeProvider.getTableSizes.
+      val row = StoreTableSizeProvider.getTableSizes.
           filter(uiAnalytics => uiAnalytics.tableName == fullTableName).head
       expectedTotalSize == row.rowBufferSize
     }
@@ -136,7 +137,7 @@ class SnappyStoreTableSizeProviderTest
 
     def check(expectedRowSize: Long,
         expectedColumnSize: Long): Boolean = {
-      val sizeList = OnDemandTableSizeProvider.getTableSizes
+      val sizeList = StoreTableSizeProvider.getTableSizes
       val currentTable = sizeList.filter(uiDetails => uiDetails.tableName == fullTableName)
 
       !currentTable.isEmpty &&

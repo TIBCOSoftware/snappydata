@@ -1353,17 +1353,17 @@ object SnappyContext extends Logging {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        StoreTableValueSizeProviderService.start
+        StoreTableValueSizeProviderService.start(sc)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        StoreTableValueSizeProviderService.start
+        StoreTableValueSizeProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        StoreTableValueSizeProviderService.start
+        StoreTableValueSizeProviderService.start(sc)
       case _ => // ignore
     }
   }
