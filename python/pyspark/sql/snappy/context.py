@@ -1,18 +1,19 @@
 #
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
+# Copyright (c) 2016 SnappyData, Inc. All rights reserved.
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+# Licensed under the Apache License, Version 2.0 (the "License"); you
+#
+# may not use this file except in compliance with the License. You
+# may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+# implied. See the License for the specific language governing
+# permissions and limitations under the License. See accompanying
+# LICENSE file.
 
 from py4j.protocol import Py4JError
 from pyspark.sql.context import SQLContext
@@ -58,7 +59,7 @@ class SnappyContext(SQLContext):
     def _get_snappy_ctx(self):
         return self._jvm.SnappyContext(self._jsc.sc())
 
-    def createTable(self, tableName, provider=None, schema=None,  **options):
+    def createTable(self, tableName, provider=None, schema=None, allowExisting=True, **options):
         """
         Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
         supported by Spark & Snappy can be created here. Unlike SqlContext.createExternalTable this
@@ -67,21 +68,23 @@ class SnappyContext(SQLContext):
         :param provider  Provider name 'ROW' and 'JDBC'.
         :param schema Table schema either as a StructType or  String
                 schemaStringExample = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
+        :param allowExisting When set to true it will ignore if a table with the same name is
+                          present , else it will throw table exist exception
         :param options   Properties for table creation. See options list for different tables.
         :return: :class:`DataFrame`
          """
         if provider is None:
             provider = self.getConf("spark.sql.sources.default", "org.apache.spark.sql.parquet")
         if schema is None:
-            df = self._ssql_ctx.createTable(tableName, provider, options)
+            df = self._ssql_ctx.createTable(tableName, provider, allowExisting, options)
         else:
             if isinstance(schema, str):
-                df = self._ssql_ctx.createTable(tableName, provider, schema, options)
+                df = self._ssql_ctx.createTable(tableName, provider, schema, options, allowExisting)
             elif not isinstance(schema, StructType):
                 raise TypeError("schema should be StructType or a String")
             else:
                 scala_datatype = self._ssql_ctx.parseDataType(schema.json())
-                df = self._ssql_ctx.createTable(tableName, provider, scala_datatype, options)
+                df = self._ssql_ctx.createTable(tableName, provider, scala_datatype, options, allowExisting)
 
         return DataFrame(df, self)
 

@@ -56,9 +56,6 @@ class SnappyStreamingContext protected[spark](
 
   val snappyContext = SnappyContext.getOrCreate(sc_)
 
-  super.remember(Milliseconds(300 * 1000)) // Why needed . check with Yogesh
-
-
   SnappyStreamingContext.setInstanceContext(self)
 
   /**
@@ -126,15 +123,10 @@ class SnappyStreamingContext protected[spark](
   override def stop(stopSparkContext: Boolean,
       stopGracefully: Boolean): Unit = {
     try {
-      super.stop(false, stopGracefully)
-      if(stopSparkContext) {
-        SnappyContext.stop()
-      }
-
+      super.stop(stopSparkContext, stopGracefully)
       SnappyStreamingContext.setActiveContext(null)
-      SnappyStreamingContext.setInstanceContext(null)// A stopped instance can not be restartred. Hence removing
+      SnappyStreamingContext.setInstanceContext(null)
     } finally {
-      // force invalidate all the cached relations to remove any stale streams
       snappyContext.clearCache()
       StreamSqlHelper.registerRelationDestroy() //Not sure why we need this @TODO
       StreamSqlHelper.clearStreams()
@@ -153,7 +145,7 @@ class SnappyStreamingContext protected[spark](
    * @return
    */
   def registerCQ(queryStr: String): SchemaDStream = {
-    val plan = sql(queryStr).queryExecution.logical
+    val plan = sql(queryStr).queryExecution.optimizedPlan
     val dStream = new SchemaDStream(self, plan)
     // register a dummy task so that the DStream gets started
     // TODO: need to remove once we add proper registration of registerCQ
@@ -177,6 +169,8 @@ class SnappyStreamingContext protected[spark](
   def createSchemaDStream(rowStream: DStream[Row], schema: StructType): SchemaDStream = {
     StreamSqlHelper.createSchemaDStream(self, rowStream, schema)
   }
+
+
 }
 
 object SnappyStreamingContext extends Logging {
@@ -302,4 +296,14 @@ object SnappyStreamingContext extends Logging {
 
 }
 
-	
+
+private class SnappyStreamingContextPythonHelper {
+  /**
+   * This is a private method only for Python to implement `getOrCreate`.
+   */
+  def tryRecoverFromCheckpoint(checkpointPath: String): Option[SnappyStreamingContext] = {
+    val checkpointOption = CheckpointReader.read(
+      checkpointPath, new SparkConf(), SparkHadoopUtil.get.conf, false)
+    checkpointOption.map(new SnappyStreamingContext(null, _, null))
+  }
+}
