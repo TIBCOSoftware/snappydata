@@ -59,7 +59,7 @@ class SnappyStoreTableSizeProviderTest
     waitForCriterion(StoreTableValueSizeProviderService.getTableSize(fullTableName).
         getOrElse(0) == 140,
       s"Comparing the value Size of $rowTableName with ApproxTableSizeCalculator",
-      serviceInterval.toInt * 3, serviceInterval.toInt, throwOnTimeout = true)
+      serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.sql(s"drop table $rowTableName")
 
@@ -89,7 +89,7 @@ class SnappyStoreTableSizeProviderTest
       rowBufferSize + colBufferSize == totalSize
     },
       s"Comparing the value Size of $columnTableName with ApproxTableSizeCalculator",
-      serviceInterval.toInt * 3, serviceInterval.toInt, throwOnTimeout = true)
+      serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
     snc.sql(s"drop table $columnTableName")
   }
 
