@@ -23,7 +23,7 @@ import javax.servlet.http.HttpServletRequest
 
 import scala.xml.Node
 
-import io.snappydata.{UIAnalytics, SnappyAnalyticsService}
+import io.snappydata.{StoreTableSizeProvider, UIAnalytics}
 
 import org.apache.spark.Logging
 import org.apache.spark.ui.{UIUtils, WebUIPage}
@@ -33,7 +33,7 @@ import org.apache.spark.util.Utils
 private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
     extends WebUIPage("") with Logging {
   def render(request: HttpServletRequest): Seq[Node] = {
-    val uiDetails = SnappyAnalyticsService.getUIInfo
+    val uiDetails = StoreTableSizeProvider.getTableSizes
     val snappyRowTable = UIUtils.listingTable(
       rowHeader, rowTable, uiDetails.filter(row => !row.isColumnTable))
     val snappyColumnTable = UIUtils.listingTable(
@@ -44,7 +44,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
         <h4>Snappy Row Tables</h4>{snappyRowTable}<h4>Snappy Column Tables</h4>{snappyColumnTable}
       </span>
 
-    UIUtils.headerSparkPage("Snappy", content, parent, Some(500))
+    UIUtils.headerSparkPage("Snappy Store", content, parent, Some(500))
   }
 
   private def rowHeader = Seq("TableName", "TotalSize")

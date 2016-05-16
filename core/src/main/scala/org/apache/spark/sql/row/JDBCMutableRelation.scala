@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.SnappyAnalyticsService
+import io.snappydata.{StoreTableValueSizeProviderService}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -57,9 +57,8 @@ class JDBCMutableRelation(
     with Logging {
 
   override val needConversion: Boolean = false
-
-  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table).
-      getOrElse(sqlContext.conf.defaultSizeInBytes)
+  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table).
+      getOrElse(super.sizeInBytes)
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 

@@ -59,10 +59,10 @@ object Constant {
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_ANALYTICS_SERVICE_INTERVAL: Long = 10000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
 
   // Internal Column table store schema
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
+  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL_"
 
   // Internal Column table store suffix
   final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
