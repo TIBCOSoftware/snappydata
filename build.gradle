@@ -571,7 +571,7 @@ task product {
       }
       copy {
         from("${examplesProject.projectDir}/src/main/python")
-        into "${examplesProject.buildDir}"
+        into  "${snappyProductDir}/python/examples"
       }
       copy {
         from "${project(':snappy-spark').projectDir}/data"
@@ -825,7 +825,7 @@ task runQuickstart {
 
       def airlinepythonappresult = runScript("${snappyProductDir}/bin/spark-submit", workingDir,
           ["--master", "spark://${hostname}:7077", "--conf", "snappydata.store.locators=localhost:10334",
-           "--conf", "spark.ui.port=4042", "${examplesdir.buildDir}/AirlineDataPythonApp.py"]);
+           "--conf", "spark.ui.port=4042", "${snappyProductDir}/python/examples/AirlineDataPythonApp.py"]);
 
       println "${airlinepythonappresult}"
       if (airlinepythonappresult.toLowerCase().contains("exception")) {
