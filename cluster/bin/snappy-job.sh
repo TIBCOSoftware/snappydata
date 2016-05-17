@@ -231,7 +231,7 @@ fi
 jobServerURL="$hostnamePort/${cmdLine}"
 
 case $cmd in
-  jobs | context)
+  jobs | newcontext)
     if [[ $appjar != "" ]]; then
       curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
     fi
