@@ -230,10 +230,8 @@ fi
 
 jobServerURL="$hostnamePort/${cmdLine}"
 
-echo "jobserverURL $jobServerURL"
-
 case $cmd in
-  jobs | context | listcontexts)
+  jobs | context)
     if [[ $appjar != "" ]]; then
       curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
     fi
@@ -247,6 +245,10 @@ case $cmd in
 
   status)
     curl ${jobServerURL} $CURL_OPTS
+  ;;
+
+  listcontexts)
+    curl -X GET ${jobServerURL} $CURL_OPTS
   ;;
 
   stop | stopcontext)
