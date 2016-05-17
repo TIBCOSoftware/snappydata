@@ -20,10 +20,18 @@
 #set -vx 
 
 usage=$'Usage: 
-       snappy-job.sh newcontext <context-name> --factory <factory class name> [--app-jar <jar-path> --app-name <app-name>]
+       # Create a new context using the provided context factory
+       snappy-job.sh newcontext <context-name> --factory <factory class name> [--lead <hostname:port>] [--app-jar <jar-path> --app-name <app-name>]
+       # Submit a job, optionally with a provided context or create a streaming-context and use it with the job
        snappy-job.sh submit --lead <hostname:port> --app-name <app-name> --class <job-class> [--app-jar <jar-path>] [--context <context-name> | --stream]
+       # Get status of the job with the given job-id
        snappy-job.sh status --lead <hostname:port> --job-id <job-id>
-       snappy-job.sh stop --lead <hostname:port> --job-id <job-id>'
+       # Stop a job with the given job-id
+       snappy-job.sh stop --lead <hostname:port> --job-id <job-id>
+       # List all the current contexts
+       snappy-job.sh listcontexts --lead <hostname:port>
+       # Stop a context with the given name
+       snappy-job.sh stopcontext <context-name> [--lead <hostname:port>]'
 
 function showUsage {
   echo "ERROR: incorrect argument specified: " "$@"
@@ -54,7 +62,7 @@ while (( "$#" )); do
       cmd="stop"
     ;;
     newcontext)
-      cmd="context"
+      cmd="newcontext"
       shift
       contextName="${1:-$TOK_EMPTY}"
     ;;
@@ -93,6 +101,14 @@ while (( "$#" )); do
       newContext="yes"
       contextName="snappyStreamingContext"$(date +%s%N)
       contextFactory="org.apache.spark.sql.streaming.SnappyStreamingContextFactory"
+    ;;
+    listcontexts)
+      cmd="listcontexts"
+    ;;
+    stopcontext)
+      cmd="stopcontext"
+      shift
+      contextName="${1:-$TOK_EMPTY}"
     ;;
     *)
       showUsage $1
@@ -158,7 +174,7 @@ case $cmd in
      cmdLine="jobs/${jobID}"
   ;;
 
-  context)
+  newcontext)
     if validateArg $contextName ; then
       showUsage "newcontext <context-name>"
     elif validateArg $contextFactory ; then
@@ -169,6 +185,17 @@ case $cmd in
       showUsage "--app-name"
     fi
     cmdLine="contexts/${contextName}?context-factory=${contextFactory}"
+  ;;
+
+  listcontexts)
+    cmdLine="contexts"
+  ;;
+
+  stopcontext)
+    if validateArg $contextName ; then
+      showUsage "stopcontext <context-name>"
+    fi
+    cmdLine="contexts/${contextName}"
   ;;
 
   *)
@@ -186,7 +213,7 @@ buildCommand
 
 # build command for new context, if needed.
 if [[ -n $newContext ]]; then
-  cmd="context"
+  cmd="newcontext"
   jobsCommand=$cmdLine
   buildCommand
   newContext=$cmdLine
@@ -202,8 +229,11 @@ fi
 # invoke command
 
 jobServerURL="$hostnamePort/${cmdLine}"
-case $cmd in 
-  jobs | context)
+
+echo "jobserverURL $jobServerURL"
+
+case $cmd in
+  jobs | context | listcontexts)
     if [[ $appjar != "" ]]; then
       curl --data-binary @$appjar $hostnamePort\/jars\/$appName $CURL_OPTS
     fi
@@ -219,7 +249,7 @@ case $cmd in
     curl ${jobServerURL} $CURL_OPTS
   ;;
 
-  stop)
+  stop | stopcontext)
     curl -X DELETE ${jobServerURL} $CURL_OPTS
   ;;
 esac
