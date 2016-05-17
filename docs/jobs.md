@@ -295,6 +295,15 @@ $ bin/snappy-job.sh submit  \
 ```
 The status of this job can be queried in the same manner as shown above. The result of the this job will return a file path that has the query results. 
 
+Python users can also submit the python script using spark-submit in split cluster mode. For example below script can be used to read the data loaded by the CreateAndLoadAirlineDataJob. "snappydata.store.locators" propery specified the locator url of the snappy cluster and it is used to connect to the snappy cluster.
+```
+$ bin/spark-submit \
+  --master spark://pnq-nthanvi02:7077 \
+  --conf snappydata.store.locators=localhost:10334 \
+  --conf spark.ui.port=4042  
+  python/examples/AirlineDataPythonApp.py
+```
+
 
 #### Streaming jobs
 
