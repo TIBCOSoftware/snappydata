@@ -281,7 +281,7 @@ subprojects {
   gradle.taskGraph.whenReady({ graph ->
     tasks.withType(Jar).each { pack ->
       if (pack.name == 'packageTests') {
-        pack.from(pack.project.sourceSets.test.output.classesDir)
+        pack.from(pack.project.sourceSets.test.output.classesDir, sourceSets.test.resources.srcDirs)
       }
     }
     tasks.withType(Test).each { test ->
@@ -892,15 +892,14 @@ task packagePulse {
     pulseDir = "${projectDir}/../pulse"
   }
 
-  if (!file(pulseDir).canWrite()){
-    throw  new Exception(" Pulse directroy can not be empty while building product")
-  }
-
-  println "Using Pulse location ${pulseDir}"
-
-  runScript("${pulseDir}/build.sh", pulseDir, ["clean", "build-all"])
-
   doFirst {
+    if (!file(pulseDir).canWrite()){
+      throw  new Exception(" Pulse directroy can not be empty while building product")
+    }
+    println "Using Pulse location ${pulseDir}"
+
+    runScript("${pulseDir}/build.sh", pulseDir, ["clean", "build-all"])
+
     delete "${snappyProductDir}/lib/pulse.war"
   }
 

@@ -16,17 +16,6 @@
 # LICENSE file.
 
 
-"""
-Important classes of Snappy SQL and DataFrames:
+from pyspark.streaming.snappy.context import SnappyStreamingContext
 
-    - :class:`pyspark.sql.SQLContext`
-      Main entry point for :class:`DataFrame` and SQL functionality.
-    - :class:`pyspark.sql.snappy.SnappyContext`
-      Main entry point for accessing data stored in SnappyData.
-"""
-
-from __future__ import absolute_import
-
-from pyspark.sql.snappy.context import SnappyContext
-
-__all__ = ['SnappyContext']
+__all__ = ['SnappyStreamingContext']

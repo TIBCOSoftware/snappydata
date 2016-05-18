@@ -5,10 +5,14 @@ include ':snappy-core_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-examples_' + scalaBinaryVersion
 include 'dunit'
+include ':tests-dunit_' + scalaBinaryVersion
+include ':snappy-dtests_' + scalaBinaryVersion
 
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
+project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
+project(':tests-dunit_' + scalaBinaryVersion).projectDir = "$rootDir/tests/dunit" as File
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
@@ -122,3 +126,4 @@ if (new File(rootDir, 'aqp/build.gradle').exists()) {
   include ':snappy-aqp_' + scalaBinaryVersion
   project(':snappy-aqp_' + scalaBinaryVersion).projectDir = "$rootDir/aqp" as File
 }
+

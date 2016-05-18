@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 
-package org.apache.spark.streaming.api
+package org.apache.spark.streaming.api.java
 
 import com.google.common.base.Optional
 import org.apache.hadoop.conf.Configuration
@@ -27,10 +27,11 @@ import org.apache.spark.api.java.function.{Function => JFunction, Function0 => J
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.{SnappyContext, DataFrame}
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
-import org.apache.spark.streaming.api.java.{JavaDStream, JavaStreamingContext}
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.streaming.{Checkpoint, CheckpointReader, Duration, SnappyStreamingContext, StreamingContext}
 
-class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext) extends JavaStreamingContext(snsc) {
+class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext)
+    extends JavaStreamingContext(snsc) {
 
   def snappyContext = snsc.snappyContext
 
@@ -117,18 +118,27 @@ class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext) extends JavaS
    */
   def registerCQ(queryStr: String): SchemaDStream = snsc.registerCQ(queryStr)
 
+  /**
+   * Registers and executes given SQL query and
+   * returns [[SchemaDStream]] to consume the results
+   * @param queryStr
+   */
+ def registerPythonCQ(queryStr: String): JavaDStream[Row] = {
+    val dstream = registerCQ(queryStr)
+    JavaDStream.fromDStream(dstream)
+  }
+
   def createSchemaDStream(rowStream: JavaDStream[_], beanClass: Class[_]
-      ): SchemaDStream = {
+  ): SchemaDStream = {
     StreamSqlHelper.createSchemaDStream(snsc, rowStream, beanClass)
   }
 
   def getSchemaDStream(tableName: String): SchemaDStream = {
     StreamSqlHelper.getSchemaDStream(snsc, tableName)
   }
+
 }
-
 object JavaSnappyStreamingContext {
-
 
   private def jcontextOptionToOptional[T](option: Option[SnappyStreamingContext]
       ): Optional[JavaSnappyStreamingContext] =
@@ -227,7 +237,8 @@ object JavaSnappyStreamingContext {
       hadoopConf: Configuration = SparkHadoopUtil.get.conf,
       createOnError: Boolean = false
       ): JavaSnappyStreamingContext = {
-    val snsc = SnappyStreamingContext.getOrCreate(checkpointPath, () => creatingFunc.call().snsc, hadoopConf,
+    val snsc = SnappyStreamingContext.getOrCreate(
+      checkpointPath, () => creatingFunc.call().snsc, hadoopConf,
       createOnError)
 
     new JavaSnappyStreamingContext(snsc)
