@@ -1356,6 +1356,7 @@ object SnappyContext extends Logging {
         StoreTableValueSizeProviderService.start(sc)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        StoreTableValueSizeProviderService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)

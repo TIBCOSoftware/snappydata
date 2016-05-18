@@ -20,24 +20,26 @@
 package io.snappydata
 
 import java.sql.Connection
+import java.util.ArrayList
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.ClassTag
 
+import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.{RegionSizeCalculatorFunction, GfxdListResultCollector, GfxdMessage}
+import io.snappydata.Constant._
 
-import org.apache.spark.{SparkContext, Logging}
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import io.snappydata.Constant._
+import org.apache.spark.{Logging, SparkContext}
+import java.util.HashMap
 
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
@@ -63,43 +65,29 @@ object StoreTableValueSizeProviderService extends Logging {
   def calculateTableSizeTask(sc: SparkContext): SystemTimer.SystemTimerTask = {
     new SystemTimer.SystemTimerTask {
       override def run2(): Unit = {
-        val snc = SnappyContext.getOrCreate(sc)
-        val sizeInfoPerRegionAcc = sc.accumulableCollection(mutable.ArrayBuffer[TableSizeInfo]())
         val currentTableSizeInfo = mutable.HashMap[String, Long]()
-        Utils.mapExecutors(snc, () => {
-          Misc.getGemFireCache.getPartitionedRegions.asScala.foreach(region => {
-            val valueSizeOfRegion = getSizeForAllPrimaryBucketsOfRegion(region)
-            sizeInfoPerRegionAcc += new TableSizeInfo(
-              region.getFullPath.replaceFirst("/", "").replaceAll("/", "."), valueSizeOfRegion)
-          })
-          Iterator.empty
-        }).count()
 
-        sizeInfoPerRegionAcc.value.map(tableInfo => {
-          var totalSize: Long = 0
-          if (currentTableSizeInfo.contains(tableInfo.tableName)) {
-            totalSize = currentTableSizeInfo.get(tableInfo.tableName).get + tableInfo.totalSize
-          }
-          else {
-            totalSize = tableInfo.totalSize
-          }
-          currentTableSizeInfo.put(tableInfo.tableName, totalSize)
-        })
+        val result =
+          FunctionService.onMembers(GfxdMessage.getAllGfxdServers())
+              .withCollector(new GfxdListResultCollector())
+              .execute(RegionSizeCalculatorFunction.ID).getResult()
 
-        tableSizeInfo = currentTableSizeInfo.toMap
+        result.asInstanceOf[ArrayList[HashMap[String, Long]]]
+            .asScala.foreach(_.asScala.foreach(row => {
+          var totalSize: Long = row._2
+          if (currentTableSizeInfo.contains(row._1)) {
+            totalSize = currentTableSizeInfo.get(row._1).get + row._2
+          }
+          currentTableSizeInfo.put(row._1, totalSize)
+        }))
+
+          tableSizeInfo = currentTableSizeInfo.toMap
       }
 
       override def getLoggerI18n: LogWriterI18n = {
         return Misc.getGemFireCache.getLoggerI18n
       }
     }
-  }
-
-  def getSizeForAllPrimaryBucketsOfRegion(region: PartitionedRegion): Long = {
-    var sizeOfRegion: Long = 0
-    region.getDataStore.getAllLocalPrimaryBucketRegions.asScala.foreach(bucketRegion =>
-      sizeOfRegion = sizeOfRegion + bucketRegion.getTotalBytes)
-    sizeOfRegion
   }
 
   def getTableSize(tableName: String, isColumnTable: Boolean = false):
@@ -201,9 +189,6 @@ object StoreTableSizeProvider {
   }
 
 }
-
-
-case class TableSizeInfo(tableName: String, totalSize: Long)
 
 case class UIAnalytics(tableName: String, rowBufferSize: Long,
     columnBufferSize: Long, isColumnTable: Boolean)

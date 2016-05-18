@@ -29,8 +29,8 @@ class SnappyStoreTableSizeProviderTest
     extends SnappyFunSuite
         with BeforeAndAfter
         with BeforeAndAfterAll {
-  val columnTableName = "COLUMNTABLE"
-  val rowTableName = "ROWTABLE"
+  val columnTableName = "COLUMNTABLE_TEST"
+  val rowTableName = "ROWTABLE_TEST"
   val serviceInterval = "3"
 
   after {
@@ -38,17 +38,23 @@ class SnappyStoreTableSizeProviderTest
     snc.dropTable(rowTableName, ifExists = true)
   }
 
+  override def beforeAll(): Unit = {
+    baseCleanup()
+    stopAll()
+  }
+
   override protected def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
     val sparkConf = super.newSparkConf(addOn)
     sparkConf.set("spark.snappy.calcTableSizeInterval", serviceInterval)
-    sparkConf.set("spark.sql.inMemoryColumnarStorage.batchSize", "3")
   }
 
   test("Test Row Table Size for all the values") {
+    snc.dropTable(rowTableName, ifExists = true)
+    snc.dropTable(columnTableName, ifExists = true)
     val dataDF = getDF
-
     snc.sql("CREATE TABLE " + rowTableName + " (a INT, b INT, c INT) " +
         "USING row  OPTIONS (PARTITION_BY 'a')")
+
     dataDF.write.insertInto(s"$rowTableName")
 
     val result = snc.sql(s"SELECT * FROM $rowTableName")
@@ -56,19 +62,19 @@ class SnappyStoreTableSizeProviderTest
 
     val fullTableName = s"APP.$rowTableName"
 
-    waitForCriterion(StoreTableValueSizeProviderService.getTableSize(fullTableName).
-        getOrElse(0) == 140,
-      s"Comparing the value Size of $rowTableName with ApproxTableSizeCalculator",
+    waitForCriterion({StoreTableValueSizeProviderService.getTableSize(fullTableName).
+        getOrElse(0) == 140},
+      s"Comparing the value Size of $rowTableName with StoreTableValueSizeProviderService",
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
 
     snc.sql(s"drop table $rowTableName")
 
-
   }
 
   test("Test Column Table Size for all the values") {
+    snc.dropTable(rowTableName, ifExists = true)
+    snc.dropTable(columnTableName, ifExists = true)
     val dataDF = getDF
-
     snc.sql(s"Create Table $columnTableName (a INT, b INT, c INT) " +
         s"using column options(buckets '1')")
     dataDF.write.format("column").mode(SaveMode.Append).saveAsTable(columnTableName)
@@ -88,7 +94,7 @@ class SnappyStoreTableSizeProviderTest
           getTableSize(fullTableName, true).getOrElse(0)
       rowBufferSize + colBufferSize == totalSize
     },
-      s"Comparing the value Size of $columnTableName with ApproxTableSizeCalculator",
+      s"Comparing the value Size of $columnTableName with StoreTableValueSizeProviderService",
       serviceInterval.toInt * 5, serviceInterval.toInt, throwOnTimeout = true)
     snc.sql(s"drop table $columnTableName")
   }

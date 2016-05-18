@@ -45,7 +45,16 @@ class ColumnTableTest
 
   after {
     snc.dropTable(tableName, ifExists = true)
-    snc.dropTable("ColumnTable2", ifExists = true)
+    snc.dropTable("ROW_TABLE2", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE1", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE2", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE4", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE5", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE6", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE7", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE8", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE9", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE10", ifExists = true)
   }
 
   val tableName: String = "ColumnTable"
