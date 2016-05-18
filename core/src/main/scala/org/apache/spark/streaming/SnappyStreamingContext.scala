@@ -128,6 +128,7 @@ class SnappyStreamingContext protected[spark](
       SnappyStreamingContext.setInstanceContext(null)
     } finally {
       snappyContext.clearCache()
+      snappyContext.clear()
       StreamSqlHelper.registerRelationDestroy() //Not sure why we need this @TODO
       StreamSqlHelper.clearStreams()
 
