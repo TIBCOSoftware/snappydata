@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.DDLParser
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 
 trait SnappyContextFunctions {
@@ -33,6 +34,7 @@ trait SnappyContextFunctions {
 
   def registerAQPErrorFunctions(context: SnappyContext)
 
+  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit
 
   protected[sql] def executePlan(context: SnappyContext,
       plan: LogicalPlan): QueryExecution
