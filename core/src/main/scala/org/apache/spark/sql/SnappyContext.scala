@@ -139,6 +139,10 @@ class SnappyContext protected[spark](
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
+
+  def clear(): Unit = {
+    snappyContextFunctions.clear()
+  }
   /**
    * :: DeveloperApi ::
    * @todo do we need this anymore? If useful functionality, make this
@@ -670,6 +674,7 @@ class SnappyContext protected[spark](
     val plan = LogicalRelation(resolved.relation)
     catalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
       source, params, resolved.relation)
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     plan
   }
 
@@ -730,6 +735,7 @@ class SnappyContext protected[spark](
       catalog.registerDataSourceTable(tableIdent, Some(data.schema),
         partitionColumns, source, params, resolved.relation)
     }
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     LogicalRelation(resolved.relation)
   }
 
