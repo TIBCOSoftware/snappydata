@@ -112,10 +112,10 @@ class SnappyStreamingContext protected[spark](
    * @throws IllegalStateException if the StreamingContext is already stopped
    */
   override def start(): Unit = synchronized {
-    if (getState() == StreamingContextState.INITIALIZED) {
+   /* if (getState() == StreamingContextState.INITIALIZED) {
       // register population of AQP tables from stream tables
       snappyContext.snappyContextFunctions.aqpTablePopulator(snappyContext)
-    }
+    }*/
     super.start()
     SnappyStreamingContext.setActiveContext(self)
   }
@@ -128,6 +128,7 @@ class SnappyStreamingContext protected[spark](
       SnappyStreamingContext.setInstanceContext(null)
     } finally {
       snappyContext.clearCache()
+      snappyContext.clear()
       StreamSqlHelper.registerRelationDestroy() //Not sure why we need this @TODO
       StreamSqlHelper.clearStreams()
 

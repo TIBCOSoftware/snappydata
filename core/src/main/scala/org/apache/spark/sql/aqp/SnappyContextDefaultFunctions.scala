@@ -33,6 +33,7 @@ import org.apache.spark.util.Utils
 object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
 
+  def clear(): Unit = {}
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(

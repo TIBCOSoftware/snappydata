@@ -139,6 +139,10 @@ class SnappyContext protected[spark](
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
+
+  def clear(): Unit = {
+    snappyContextFunctions.clear()
+  }
   /**
    * :: DeveloperApi ::
    * @todo do we need this anymore? If useful functionality, make this
