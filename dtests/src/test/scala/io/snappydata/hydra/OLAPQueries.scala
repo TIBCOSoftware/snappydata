@@ -485,7 +485,6 @@ object SnappyOlapQueries {
     "Q7" -> Q7,
     "Q8" -> Q8,
     "Q9" -> Q9,
-    "Q10" -> Q10,
     "Q12" -> Q12,
     "Q13" -> Q13,
     "Q14" -> Q14,
@@ -509,7 +508,7 @@ object OLAPQueries extends SnappySQLJob {
 
     // scalastyle:off println
     var stream: DStream[_] = null
-    snsc.sql("set spark.sql.shuffle.partitions=64")
+    snsc.sql("set spark.sql.shuffle.partitions=53")
 
     var i: Int = 0
     // Let it run for unlimited time. The Lead will anyway be

@@ -216,13 +216,13 @@ public class SnappyTest implements Serializable {
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String serverLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx25G";
+                String serverLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx56G -conserve-sockets=false";
                 SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + snappyTest.getMyTid(), serverLogDir);
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=5" + " -spark.driver.maxResultSize=3g"+" -dir=" + dirPath + clientPort + port + " -J-Xmx10G" + " -spark.sql.autoBroadcastJoinThreshold=-1";
+                String leadLogDir = localHost + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=6" + " -spark.driver.maxResultSize=10g"+" -dir=" + dirPath + clientPort + port + " -J-Xmx56G" + " -spark.sql.autoBroadcastJoinThreshold=-1 " + "-spark.scheduler.mode=FAIR -spark.sql.inMemoryColumnarStorage.compressed=false -conserve-sockets=false " ;
                 SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
                 if (leadHost == null) {
                     leadHost = localHost;
@@ -901,7 +901,7 @@ public class SnappyTest implements Serializable {
                 props.setProperty("persist-dd",
                         "false");
                 props.setProperty("locators",
-                        "172.31.26.147:10334");
+                        "172.31.19.173:10334");
                 fs.start(props);
             }
         } catch (Exception e1) {

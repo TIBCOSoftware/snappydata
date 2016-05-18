@@ -58,11 +58,11 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
     val rows = stream.map(v => Row(v.w_id,
       v.d_id, v.c_id, v.i_id, v.c_ts, new java.sql.Timestamp(System.currentTimeMillis)))
 
-    val window_rows = rows.window(new Duration(20*1000), new Duration(20*1000))
+    val window_rows = rows.window(new Duration(60*1000), new Duration(60*1000))
 
     val windowStreamAsTable = snsc.createSchemaDStream(window_rows, schema)
 
-    snsc.sql("set spark.sql.shuffle.partitions=64")
+    snsc.sql("set spark.sql.shuffle.partitions=53")
 
     import org.apache.spark.sql.functions._
     windowStreamAsTable.foreachDataFrame(df =>
