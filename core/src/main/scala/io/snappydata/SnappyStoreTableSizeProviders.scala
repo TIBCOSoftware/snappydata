@@ -35,12 +35,11 @@ import com.pivotal.gemfirexd.internal.engine.distributed.{RegionSizeCalculatorFu
 import io.snappydata.Constant._
 
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.{Logging, SparkContext}
 import java.util.HashMap
-
+import org.apache.spark.sql.collection.Utils
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
@@ -51,7 +50,7 @@ object StoreTableValueSizeProviderService extends Logging {
     val delay =
       sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
           .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
-      Misc.getGemFireCache.getCCPTimer().schedule(calculateTableSizeTask(sc), delay, delay)
+    Misc.getGemFireCache.getCCPTimer().schedule(calculateTableSizeTask(sc), delay, delay)
   }
 
   def calculateTableSizeTask(sc: SparkContext): SystemTimer.SystemTimerTask = {
@@ -66,14 +65,11 @@ object StoreTableValueSizeProviderService extends Logging {
 
         result.asInstanceOf[ArrayList[HashMap[String, Long]]]
             .asScala.foreach(_.asScala.foreach(row => {
-          var totalSize: Long = row._2
-          if (currentTableSizeInfo.contains(row._1)) {
-            totalSize = currentTableSizeInfo.get(row._1).get + row._2
-          }
-          currentTableSizeInfo.put(row._1, totalSize)
+          currentTableSizeInfo += (row._1 ->
+              currentTableSizeInfo.get(row._1).map(value => value + row._2).getOrElse(row._2))
         }))
 
-          tableSizeInfo = currentTableSizeInfo.toMap
+        tableSizeInfo = Utils.immutableMap(currentTableSizeInfo)
       }
 
       override def getLoggerI18n: LogWriterI18n = {
@@ -88,20 +84,14 @@ object StoreTableValueSizeProviderService extends Logging {
     if (currentTableSizeInfo == null || !currentTableSizeInfo.contains(tableName)) {
       None
     }
-    else {
-      if (isColumnTable) {
-        val optStat = currentTableSizeInfo.get(ColumnFormatRelation.cachedBatchTableName(tableName))
-        if (optStat.isDefined) {
-          Some(optStat.get + currentTableSizeInfo.get(tableName).get)
-        } else {
-          None
-        }
-      } else {
-        Some(currentTableSizeInfo.get(tableName).get)
-      }
+    else currentTableSizeInfo.get(tableName) match {
+      case v if isColumnTable =>
+        val size: Long = v.getOrElse(0)
+        currentTableSizeInfo.get(ColumnFormatRelation.cachedBatchTableName(tableName)).
+            map(value => value + size)
+      case v => v
     }
   }
-
 }
 
 object StoreTableSizeProvider {
@@ -111,22 +101,15 @@ object StoreTableSizeProvider {
     if (currentTableStats == null) {
       return Seq.empty
     }
-    val internalColumnTables = currentTableStats.filter(entry => isColumnTable(entry._1))
+    currentTableStats.filter(entry => !isColumnTable(entry._1)).map(details => {
+      val columnTableName = ColumnFormatRelation.cachedBatchTableName(details._1)
+      val columnTableSize: Long = currentTableStats.getOrElse(columnTableName, 0)
+      val isColumnTable = currentTableStats.contains(columnTableName)
+      new UIAnalytics(details._1, details._2, columnTableSize, isColumnTable)
+    }).toSeq
 
-    var columnTableNames = scala.collection.mutable.Seq[String]()
-
-    (internalColumnTables.map(entry => {
-      val rowBuffer = getRowBufferName(entry._1)
-      val rowBufferSize = currentTableStats.get(rowBuffer).get
-      columnTableNames = columnTableNames.+:(rowBuffer).+:(entry._1)
-      new UIAnalytics(rowBuffer, rowBufferSize, entry._2, true)
-    })
-        ++ currentTableStats.filter(
-      entry => {
-        !columnTableNames.contains(entry._1)
-      }).map(rowEntry =>
-      new UIAnalytics(rowEntry._1, rowEntry._2, 0, false))).toSeq
   }
+
 
 
   private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String, Long] = {
@@ -162,11 +145,14 @@ object StoreTableSizeProvider {
 
   final def tryExecute[T: ClassTag](f: Connection => T,
       closeOnSuccess: Boolean = true): T = {
+
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(SnappyContext.globalSparkContext
       , mutable.Map.empty[String, String])
-    val conn = ConnectionPool.getPoolConnection("SYS.MEMORYANALYTICS",
-      connProperties.dialect, connProperties.poolProps, connProperties.connProps,
-      connProperties.hikariCP)
+    val getConnection: () => Connection =
+      ExternalStoreUtils.getConnector("SYS.MEMORYANALYTICS", connProperties, false)
+
+    val conn: Connection = getConnection()
+
     var isClosed = false
     try {
       f(conn)
