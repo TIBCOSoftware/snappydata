@@ -18,7 +18,7 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.JavaConverters._
@@ -33,6 +33,7 @@ import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.Logging
@@ -60,7 +61,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override val conf = context.conf
 
-  val tempTables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
+  val tempTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
 
   /**
    * The version of the hive client that will be used to communicate
@@ -123,7 +124,9 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] var client: ClientWrapper =
     newClient().asInstanceOf[ClientWrapper]
 
-  private def newClient(): ClientInterface = {
+
+
+  private def newClient(): ClientInterface = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
@@ -435,21 +438,21 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       lookupRelation(newQualifiedTableName(tableIdent)))
   }
 
-  override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
+  override def tableExists(tableIdentifier: TableIdentifier): Boolean = withSessionState {
     tableExists(newQualifiedTableName(tableIdentifier))
   }
 
-  def tableExists(tableIdentifier: String): Boolean = {
+  def tableExists(tableIdentifier: String): Boolean = withSessionState{
     tableExists(newQualifiedTableName(tableIdentifier))
   }
 
-  def tableExists(tableName: QualifiedTableName): Boolean = {
+  def tableExists(tableName: QualifiedTableName): Boolean = withSessionState {
     tempTables.contains(tableName) ||
         tableName.getTableOption(client).isDefined
   }
 
   override def registerTable(tableIdentifier: TableIdentifier,
-      plan: LogicalPlan): Unit = {
+      plan: LogicalPlan): Unit = withSessionState {
     tempTables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
@@ -724,6 +727,23 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case x: StreamPlan => ExternalTableType.Stream
       case _ => ExternalTableType.Row
     }
+  }
+
+  def withSessionState[A](f: => A): A = {
+    var ss = SessionState.get()
+    // SessionState is lazy initialization, it can be null here
+    if (ss == null) {
+      val original = Thread.currentThread().getContextClassLoader
+      val conf = new HiveConf()
+      conf.setClassLoader(original)
+      ss = new SessionState(conf)
+      SessionState.start(ss)
+    }
+
+    val ret = try f finally {
+      //Do something if required
+    }
+    ret
   }
 }
 
