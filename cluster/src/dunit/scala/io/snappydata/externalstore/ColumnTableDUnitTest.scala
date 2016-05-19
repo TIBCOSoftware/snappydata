@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.externalstore
 
 import scala.collection.JavaConversions
@@ -9,7 +25,6 @@ import io.snappydata.Constant
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableCallable
 
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
@@ -160,8 +175,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val p = Map.empty[String, String]
     snc.createTable(tableName, "column", dataDF.schema, p)
 
-    val tName = s"${Constant.INTERNAL_SCHEMA_NAME}.${
-      tableName.toUpperCase}${Constant.SHADOW_TABLE_SUFFIX}"
+    val tName = ColumnFormatRelation.cachedBatchTableName(tableName.toUpperCase())
     // we don't expect any increase in put distribution stats
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {

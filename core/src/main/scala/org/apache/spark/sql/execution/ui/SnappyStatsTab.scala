@@ -24,7 +24,7 @@ import org.apache.spark.ui.{SparkUI, SparkUITab}
 
 /** Web UI showing storage status of all Snappy Tables */
 private[sql] class SnappyStatsTab(sparkUI: SparkUI)
-    extends SparkUITab(sparkUI, "Snappy") with Logging {
+    extends SparkUITab(sparkUI, "Snappy Store") with Logging {
   val parent = sparkUI
   attachPage(new SnappyStatsPage(this))
   parent.attachTab(this)
