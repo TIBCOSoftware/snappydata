@@ -51,15 +51,7 @@ object StoreTableValueSizeProviderService extends Logging {
     val delay =
       sc.getConf.getOption("spark.snappy.calcTableSizeInterval")
           .getOrElse(DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL).toString.toLong
-    timer = new SystemTimer(Misc.getGemFireCache.getDistributedSystem,
-      true, Misc.getGemFireCache.getLoggerI18n)
-    timer.schedule(calculateTableSizeTask(sc), delay, delay)
-  }
-
-  def stop: Unit = {
-    if (timer != null) {
-      timer.cancel()
-    }
+      Misc.getGemFireCache.getCCPTimer().schedule(calculateTableSizeTask(sc), delay, delay)
   }
 
   def calculateTableSizeTask(sc: SparkContext): SystemTimer.SystemTimerTask = {
@@ -158,8 +150,10 @@ object StoreTableSizeProvider {
 
 
   private def getRowBufferName(columnStoreName: String): String = {
-    (columnStoreName.replace(SHADOW_TABLE_SUFFIX, "").
-        replace(INTERNAL_SCHEMA_NAME, "")).trim
+    columnStoreName.replace(SHADOW_TABLE_SUFFIX, "").
+        replace(INTERNAL_SCHEMA_NAME, "").
+        replaceFirst(".", "").
+        replaceFirst("__", ".")
   }
 
   private def isColumnTable(tablename: String): Boolean =

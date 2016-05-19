@@ -25,7 +25,6 @@ import io.snappydata.Constant
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableCallable
 
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
 
@@ -176,8 +175,7 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val p = Map.empty[String, String]
     snc.createTable(tableName, "column", dataDF.schema, p)
 
-    val tName = s"${Constant.INTERNAL_SCHEMA_NAME}APP.${
-      tableName.toUpperCase}${Constant.SHADOW_TABLE_SUFFIX}"
+    val tName = ColumnFormatRelation.cachedBatchTableName(tableName.toUpperCase())
     // we don't expect any increase in put distribution stats
     val getTotalEntriesCount = new SerializableCallable[AnyRef] {
       override def call(): AnyRef = {

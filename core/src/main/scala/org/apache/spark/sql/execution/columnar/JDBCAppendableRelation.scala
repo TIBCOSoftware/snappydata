@@ -300,12 +300,12 @@ case class JDBCAppendableRelation(
 object JDBCAppendableRelation extends Logging {
 
   private[sql] final def cachedBatchTableName(table: String): String = {
-    val tableName = if (!table.contains(".")) {
-      Constant.DEFAULT_SCHEMA + "." + table
+    val tableName = if (table.indexOf('.') > 0) {
+      table.replace(".", "__")
     } else {
-      table
+      Constant.DEFAULT_SCHEMA + "__" + table
     }
-    Constant.INTERNAL_SCHEMA_NAME + tableName + Constant.SHADOW_TABLE_SUFFIX
+    Constant.INTERNAL_SCHEMA_NAME + "." +  tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 }
 

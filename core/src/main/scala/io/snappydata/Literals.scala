@@ -62,7 +62,7 @@ object Constant {
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
 
   // Internal Column table store schema
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL_"
+  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
 
   // Internal Column table store suffix
   final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"

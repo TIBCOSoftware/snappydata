@@ -1387,7 +1387,6 @@ object SnappyContext extends Logging {
 
   private def stopSnappyContext(sc: SparkContext): Unit = {
     if (_globalSNContextInitialized) {
-      StoreTableValueSizeProviderService.stop
       // then on the driver
       clearStaticArtifacts()
       // clear current hive catalog connection
