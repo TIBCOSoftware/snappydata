@@ -45,7 +45,7 @@ import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
  */
 object ExecutorInitiator extends Logging {
 
-  val SNAPPY_MEMORY_MANAGER = "org.apache.spark.memory.SnappyStaticMemoryManager"
+  val SNAPPY_MEMORY_MANAGER = "org.apache.spark.memory.SnappyUnifiedMemoryManager"
 
   var executorRunnable: ExecutorRunnable = new ExecutorRunnable
 
