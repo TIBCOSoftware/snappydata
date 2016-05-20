@@ -24,7 +24,7 @@ import io.snappydata.core.{FileCleaner, LocalSparkConf}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.util.TestUtils
-import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome}
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll, FunSuite, Outcome}
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkConf, SparkContext}
@@ -32,10 +32,32 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 /**
  * Base abstract class for all SnappyData tests similar to SparkFunSuite.
  */
+
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore
     with BeforeAndAfterAll
+    with BeforeAndAfter
     with Logging {
+
+  protected var snc: SnappyContext = null
+
+
+  def beforeFunction() = ()
+
+  def afterFunction() = ()
+
+  def newSnappyContext() =  SnappyContext(sc)
+
+  after {
+    afterFunction
+    snc = null
+  }
+  before {
+    beforeFunction
+    snc = newSnappyContext
+  }
+
+
 
   protected var testName: String = _
   protected val dirList = ArrayBuffer[String]()
@@ -56,7 +78,7 @@ abstract class SnappyFunSuite
     new SparkContext(newSparkConf(addOn))
   }
 
-  protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
+
 
   /**
    * Copied from SparkFunSuite.

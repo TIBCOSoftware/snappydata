@@ -55,7 +55,7 @@ class SnappyContextFactory extends SparkContextFactory {
 object SnappyContextFactory {
 
   private[this] val snappyContextLike =
-    SnappyContext.getOrCreate(LeadImpl.getInitializingSparkContext)
+    SnappyContext(LeadImpl.getInitializingSparkContext)
 
   protected def newSession(): SnappyContext with ContextLike =
     new SnappyContext(snappyContextLike.sparkContext,

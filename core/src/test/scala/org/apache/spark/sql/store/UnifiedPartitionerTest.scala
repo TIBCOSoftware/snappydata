@@ -24,16 +24,14 @@ import org.apache.spark.unsafe.types.UTF8String
  */
 class UnifiedPartitionerTest extends SnappyFunSuite
 with Logging
-with BeforeAndAfter
 with BeforeAndAfterAll {
 
-  after {
+
+  override def afterFunction() = {
     snc.dropTable(RowTableName2, ifExists = true)
     snc.dropTable(RowTableName1, ifExists = true)
     snc.dropTable(ColumnTableName2, ifExists = true)
     snc.dropTable(ColumnTableName1, ifExists = true)
-
-
   }
 
   val ColumnTableName1: String = "ColumnTable1"

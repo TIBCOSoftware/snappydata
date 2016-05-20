@@ -16,24 +16,15 @@
  */
 package org.apache.spark.streaming
 
-import java.io.File
-
-import scala.reflect.ClassTag
-
 import io.snappydata.SnappyFunSuite
-import org.apache.commons.io.FileUtils
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
-import org.scalatest.time.SpanSugar._
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.rdd.RDD
-import org.apache.spark.streaming.dstream.{InputDStream, DStream}
-import org.apache.spark.streaming.scheduler.StreamInputInfo
 import org.apache.spark.util.Utils
 import org.apache.spark.{SparkConf, SparkContext}
 
 
-class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with BeforeAndAfter with BeforeAndAfterAll{
+class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually  with BeforeAndAfterAll{
 
 
   def framework: String = this.getClass.getSimpleName
@@ -60,10 +51,10 @@ class SnappyStreamingContextSuite extends SnappyFunSuite with Eventually with Be
     stopAll()
   }
 
-  before {
+  override def beforeFunction {
   }
 
-  after {
+  override def afterFunction  {
     val activeSsc = SnappyStreamingContext.getActive()
     activeSsc match {
       case Some(x) => x.stop(stopSparkContext = true, stopGracefully = true)
