@@ -38,7 +38,7 @@ public class JavaCreateIndexTestSuite implements Serializable {
   private static final String appName = "SampleApp";
   private static final SparkConf conf = new SparkConf().setMaster(master).setAppName(appName);
   private static final JavaSparkContext context = new JavaSparkContext(conf);
-  private static final SnappyContext snc = SnappyContext.getOrCreate(context);
+  private static final SnappyContext snc = SnappyContext.apply(context);
 
   @Before
   public void setUp() {

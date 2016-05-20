@@ -34,7 +34,8 @@ import static java.lang.Thread.sleep;
 
 public class SnappyTest implements Serializable {
 
-    private static transient SnappyContext snc = SnappyContext.getOrCreate(SnappyContext.globalSparkContext());
+    private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
+        .globalSparkContext());
     protected static SnappyTest snappyTest;
     private static HostDescription hd = TestConfig.getInstance().getMasterDescription()
             .getVmDescription().getHostDescription();
