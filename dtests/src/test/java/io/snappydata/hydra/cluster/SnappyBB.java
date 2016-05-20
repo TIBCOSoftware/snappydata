@@ -42,7 +42,5 @@ public class SnappyBB extends Blackboard {
     public static int locatorsStarted;
     public static int leadsStarted;
     public static int doneExecution;
-    public static int peerClientStarted;
-
     public static int stopStartVms;
 }

@@ -62,11 +62,8 @@ object SnappyContextFactory {
       snappyContextLike.listener,
       false) with ContextLike {
     override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
-    override def stop(): Unit =
-    {
+    override def stop(): Unit = {
       // not stopping anything here because SQLContext doesn't have one.
     }
   }
-
 }
-

@@ -1,13 +1,30 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.cluster
 
 import java.sql.{Connection, DatabaseMetaData, DriverManager, SQLException, Statement}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import io.snappydata.Constant._
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
-
-import org.apache.spark.sql.execution.columnar.JDBCAppendableRelation
+import io.snappydata.Constant
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
@@ -337,12 +354,12 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     assert(foundTable)
 
-    val rSet2 = dbmd.getTables(null, JDBCAppendableRelation.INTERNAL_SCHEMA_NAME, null,
+    val rSet2 = dbmd.getTables(null, INTERNAL_SCHEMA_NAME , null,
       Array[String]("TABLE", "SYSTEM TABLE", "COLUMN TABLE"));
 
     foundTable = false
     while (rSet2.next()) {
-      if (s"${t + JDBCAppendableRelation.SHADOW_TABLE_SUFFIX}".
+      if (s"APP__${t + SHADOW_TABLE_SUFFIX}".
           equalsIgnoreCase(rSet2.getString("TABLE_NAME"))) {
         foundTable = true
         assert(rSet2.getString("TABLE_TYPE").equalsIgnoreCase("TABLE"))

@@ -24,32 +24,33 @@ object FileStreamingJob extends SnappyStreamingJob {
     val outFileName = s"FileStreamingJob-${System.currentTimeMillis}.out"
     val pw = new PrintWriter(outFileName)
     val schema = StructType(List(StructField("hashtag", StringType)))
-
+    val dataDir = jobConfig.getString("dataDirName")
     snsc.snappyContext.sql("DROP TABLE IF EXISTS hashtagtable")
     snsc.snappyContext.sql("DROP TABLE IF EXISTS retweettable")
 
     // Create file stream table
     pw.println("##### Running example with stored tweet data #####")
+
     snsc.sql("CREATE STREAM TABLE hashtagtable (hashtag STRING) USING file_stream " +
       "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
       "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow'," +
-      "directory '/home/swati/copiedtwitterdata')")
+      "directory '" + dataDir + "/copiedtwitterdata')")
 
     snsc.sql("CREATE STREAM TABLE retweettable (retweetId LONG, retweetCnt INT, " +
       "retweetTxt STRING) USING file_stream " +
       "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
       "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
-      "directory '/home/swati/copiedtwitterdata')")
+      "directory '" + dataDir + "/copiedtwitterdata')")
 
     // Register continuous queries on the tables and specify window clauses
     val retweetStream: SchemaDStream = snsc.registerCQ("SELECT * FROM retweettable " +
-      "WINDOW (DURATION '2' SECONDS, SLIDE '2' SECONDS)")
+      "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
 
     val tableName = "retweetStore"
 
     snsc.snappyContext.dropTable(tableName, true)
 
-    // Create row table to insert retweets based on retweetId as Primary key
+    // Create row table to insert retweets based on retweetId
     // When a tweet is retweeted multiple times, the previous entry of the tweet
     // is over written by the new retweet count.
     snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId BIGINT, " +

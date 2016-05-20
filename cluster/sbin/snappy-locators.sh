@@ -26,8 +26,8 @@ sbin="`cd "$sbin"; pwd`"
 . "$sbin/snappy-config.sh"
 
 
-. "$SPARK_PREFIX/bin/load-spark-env.sh"
-. "$SPARK_PREFIX/bin/load-snappy-env.sh"
+. "$SPARK_HOME/bin/load-spark-env.sh"
+. "$SPARK_HOME/bin/load-snappy-env.sh"
 
 # Launch the slaves
 if echo $@ | grep -qw start; then

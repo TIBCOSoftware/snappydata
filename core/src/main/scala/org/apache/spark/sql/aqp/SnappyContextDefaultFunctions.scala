@@ -24,7 +24,7 @@ import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DDLParser, ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.sources.StoreStrategy
+import org.apache.spark.sql.sources.{BaseRelation, StoreStrategy}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{execution => sparkexecution, _}
@@ -33,6 +33,8 @@ import org.apache.spark.util.Utils
 object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
 
+  def clear(): Unit = {}
+  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit ={}
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
@@ -113,9 +115,10 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
         .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
   }
 
-  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog =
+  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog = {
+    SnappyStoreHiveCatalog.closeCurrent()
     new SnappyStoreHiveCatalog(context)
-
+  }
   def getSnappyDDLParser(context: SnappyContext,
       planGenerator: String => LogicalPlan): DDLParser =
     new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)

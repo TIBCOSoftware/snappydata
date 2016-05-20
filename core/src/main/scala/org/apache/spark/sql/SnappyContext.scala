@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, SnappyDaemons}
+import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
@@ -35,7 +35,7 @@ import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, GenericRow, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Cast, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -138,6 +138,10 @@ class SnappyContext protected[spark](
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
+
+  def clear(): Unit = {
+    snappyContextFunctions.clear()
+  }
   /**
    * :: DeveloperApi ::
    * @todo do we need this anymore? If useful functionality, make this
@@ -421,7 +425,7 @@ class SnappyContext protected[spark](
     * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
     * @param options Properties for table creation
     * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
   @Experimental
@@ -452,7 +456,7 @@ class SnappyContext protected[spark](
    * @param options  Properties for table creation. See options list for different tables.
    *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
@@ -491,7 +495,7 @@ class SnappyContext protected[spark](
     * @param options  Properties for table creation. See options list for different tables.
     *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
     * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
   @Experimental
@@ -543,7 +547,7 @@ class SnappyContext protected[spark](
    * @param options   Properties for table creation. See options list for different tables.
    * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
@@ -604,7 +608,7 @@ class SnappyContext protected[spark](
     * @param options   Properties for table creation. See options list for different tables.
     * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
     * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
 
@@ -669,6 +673,7 @@ class SnappyContext protected[spark](
     val plan = LogicalRelation(resolved.relation)
     catalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
       source, params, resolved.relation)
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     plan
   }
 
@@ -729,6 +734,7 @@ class SnappyContext protected[spark](
       catalog.registerDataSourceTable(tableIdent, Some(data.schema),
         partitionColumns, source, params, resolved.relation)
     }
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     LogicalRelation(resolved.relation)
   }
 
@@ -793,19 +799,30 @@ class SnappyContext protected[spark](
   }
 
   /**
-    * Create an index on a table.
-    * @param indexName Index name which goes in the catalog
-    * @param baseTable Fully qualified name of table on which the index is created.
-    * @param indexColumns Columns on which the index has to be created
-    * @param options Options for indexes. For e.g.
-    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
-    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
-    */
+   * Create an index on a table.
+   * @param indexName Index name which goes in the catalog
+   * @param baseTable Fully qualified name of table on which the index is created.
+   * @param indexColumns Columns on which the index has to be created along with the
+   *                     sorting direction.The direction of index will be ascending
+   *                     if value is true and descending when value is false.
+   *                     Direction can be specified as null
+   * @param options Options for indexes. For e.g.
+   *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+   *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+   */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, Option[SortDirection]],
+      indexColumns: java.util.Map[String, java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-    createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
+
+
+    val indexCol = indexColumns.asScala.mapValues {
+      case null => None
+      case java.lang.Boolean.TRUE => Some(Ascending)
+      case java.lang.Boolean.FALSE => Some(Descending)
+    }
+
+    createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
   }
 
   /**
@@ -1342,18 +1359,18 @@ object SnappyContext extends Logging {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case _ => // ignore
     }
   }
@@ -1376,7 +1393,6 @@ object SnappyContext extends Logging {
 
   private def stopSnappyContext(sc: SparkContext): Unit = {
     if (_globalSNContextInitialized) {
-      SnappyDaemons.stop
       // then on the driver
       clearStaticArtifacts()
       // clear current hive catalog connection
