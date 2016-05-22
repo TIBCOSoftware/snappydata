@@ -124,7 +124,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] var client: ClientWrapper =
     newClient().asInstanceOf[ClientWrapper]
 
-
+  // As long as threads using same IsolatedClientLoader, they should
+  // use the cached Hive client and not create a new one. we will be setting the cached client as
+  // soon as the ClientWrapper is initialized, so that any thread accessing Hive client after
+  // that will get the cached client. This change will be redundant after Spark 2.0 merge. But
+  // for the time being it will avoid ThreadLocal access to set SessionState.
+  protected val internalHiveclient = this.client.client
 
   private def newClient(): ClientInterface = synchronized {
 
@@ -438,21 +443,21 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       lookupRelation(newQualifiedTableName(tableIdent)))
   }
 
-  override def tableExists(tableIdentifier: TableIdentifier): Boolean = withSessionState {
+  override def tableExists(tableIdentifier: TableIdentifier): Boolean = {
     tableExists(newQualifiedTableName(tableIdentifier))
   }
 
-  def tableExists(tableIdentifier: String): Boolean = withSessionState{
+  def tableExists(tableIdentifier: String): Boolean = {
     tableExists(newQualifiedTableName(tableIdentifier))
   }
 
-  def tableExists(tableName: QualifiedTableName): Boolean = withSessionState {
+  def tableExists(tableName: QualifiedTableName): Boolean = {
     tempTables.contains(tableName) ||
         tableName.getTableOption(client).isDefined
   }
 
   override def registerTable(tableIdentifier: TableIdentifier,
-      plan: LogicalPlan): Unit = withSessionState {
+      plan: LogicalPlan): Unit = {
     tempTables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
@@ -729,22 +734,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     }
   }
 
-  def withSessionState[A](f: => A): A = {
-    var ss = SessionState.get()
-    // SessionState is lazy initialization, it can be null here
-    if (ss == null) {
-      val original = Thread.currentThread().getContextClassLoader
-      val conf = new HiveConf()
-      conf.setClassLoader(original)
-      ss = new SessionState(conf)
-      SessionState.start(ss)
-    }
-
-    val ret = try f finally {
-      //Do something if required
-    }
-    ret
-  }
 }
 
 object SnappyStoreHiveCatalog {
