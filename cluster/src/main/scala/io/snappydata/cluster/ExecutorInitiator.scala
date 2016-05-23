@@ -172,8 +172,10 @@ object ExecutorInitiator extends Logging {
                     }
                     // TODO: Hemant: add executor specific properties from local
                     // TODO: conf to this conf that was received from driver.
-                    // use Snappy static memory manager
-                    driverConf.set("spark.memory.manager", SNAPPY_MEMORY_MANAGER)
+
+                    // If memory manager is not set, use Snappy unified memory manager
+                    driverConf.set("spark.memory.manager",
+                      driverConf.get("spark.memory.manager", SNAPPY_MEMORY_MANAGER))
 
                     val cores = driverConf.getInt("spark.executor.cores",
                       Runtime.getRuntime.availableProcessors() * 2)
@@ -181,9 +183,11 @@ object ExecutorInitiator extends Logging {
                     env = SparkCallbacks.createExecutorEnv(driverConf,
                       memberId, executorHost, port, cores, isLocal = false)
 
-                    // SparkEnv will set spark.executor.port if the rpc env is listening for incoming
-                    // connections (e.g., if it's using akka). Otherwise, the executor is running in
-                    // client mode only, and does not accept incoming connections.
+                    // SparkEnv will set spark.executor.port if the
+                    // rpc env is listening for incoming connections
+                    // (e.g., if it's using akka). Otherwise, the
+                    // executor is running in client mode only, and
+                    // does not accept incoming connections.
                     val sparkHostPort = env.conf.getOption("spark.executor.port").map { port =>
                       executorHost + ":" + port
                     }.orNull
