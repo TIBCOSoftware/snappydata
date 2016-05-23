@@ -328,7 +328,7 @@ $ bin/snappy-job.sh submit  \
 }
 ```
 
-User may use the same streaming context across multiple streaming jobs using ```--context <context-name>``` but needs to stop the currently running streaming job followed by its streaming context if the user intends to submit another streaming job with a new streaming context.
+User needs to stop the currently running streaming job followed by its streaming context if the user intends to submit another streaming job with a new streaming context.
 
 ```
 $ bin/snappy-job.sh stop  \
