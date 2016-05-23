@@ -307,7 +307,9 @@ $ bin/spark-submit \
 
 #### Streaming jobs
 
-An implementation of SnappyStreamingJob can be submitted to lead of SnappyData by specifying --stream as a parameter to the snappy-job.sh.  For example [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [snappy-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
+An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying ```--stream``` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as ```--context <context-name>``` with the submit command.
+
+For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [snappy-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
 
 ```
 $ bin/snappy-job.sh submit  \
@@ -316,19 +318,27 @@ $ bin/snappy-job.sh submit  \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
     --app-jar $SNAPPY_HOME/lib/quickstart-0.3.0-PREVIEW.jar \
     --stream
+
+{
+  "status": "STARTED",
+  "result": {
+    "jobId": "982ac142-3550-41e1-aace-6987cb39fec8",
+    "context": "snappyStreamingContext1463987084945028747"
+  }
+}
 ```
 
-User needs to stop the currently running streaming job followed by its streaming context before being able to submit a new streaming job.
+User needs to stop the currently running streaming job followed by its streaming context if the user intends to submit another streaming job with a new streaming context.
 
 ```
 $ bin/snappy-job.sh stop  \
     --lead hostNameOfLead:8090  \
-    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+    --job-id 982ac142-3550-41e1-aace-6987cb39fec8
 
 $ bin/snappy-job.sh listcontexts  \
     --lead hostNameOfLead:8090
-["snappyContext1452598154529305363"]
+["snappyContext1452598154529305363", "snappyStreamingContext1463987084945028747", "snappyStreamingContext"]
 
-$ bin/snappy-job.sh stopcontext snappyContext1452598154529305363  \
+$ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead hostNameOfLead:8090
 ```
