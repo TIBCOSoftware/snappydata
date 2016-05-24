@@ -1237,12 +1237,12 @@ object SnappyContext extends Logging {
 
   /**
    * @todo document me
-   * @param sc
+   * @param jsc
    * @return
    */
   def apply(jsc: JavaSparkContext): SnappyContext = {
     if (jsc != null) {
-      newSnappyContext(jsc.sc)
+      apply(jsc.sc)
     } else {
       apply()
     }
@@ -1331,7 +1331,7 @@ object SnappyContext extends Logging {
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-      stop(false)
+      stopSnappyContext
     }
   }
 
@@ -1359,23 +1359,8 @@ object SnappyContext extends Logging {
     }
   }
 
-  /**
-    * Shut down and cleanup and SnappyData artifacts.
-    */
-  def stop(stopSparkContext: Boolean = true): Unit = {
+  private def stopSnappyContext(): Unit = {
     val sc = globalSparkContext
-    if (stopSparkContext) {
-      if (sc != null && !sc.isStopped) {
-        // clear current hive catalog connection before stopping the sc
-        SnappyStoreHiveCatalog.closeCurrent()
-        sc.stop()
-      }
-    } else {
-      stopSnappyContext(sc)
-    }
-  }
-
-  private def stopSnappyContext(sc: SparkContext): Unit = {
     if (_globalSNContextInitialized) {
       // then on the driver
       clearStaticArtifacts()

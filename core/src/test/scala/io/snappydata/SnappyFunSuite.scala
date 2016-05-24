@@ -158,9 +158,10 @@ abstract class SnappyFunSuite
   }
 
   def stopAll(): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    println(" Stopping spark context = " + sparkContext)
+    if(sparkContext != null) sparkContext.stop()
     // GemFireXD stop for local mode is now done by SnappyContext.stop()
-    println(" Stopping spark context = " + SnappyContext.globalSparkContext)
-    SnappyContext.stop()
     cachedContext = null
   }
 
