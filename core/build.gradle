@@ -1,6 +1,9 @@
+plugins {
+  id "de.undercouch.download" version "3.0.0"
+}
+
 apply plugin: 'scala'
 apply plugin: 'com.github.johnrengelman.shadow'
-apply plugin: 'de.undercouch.download'
 
 compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
