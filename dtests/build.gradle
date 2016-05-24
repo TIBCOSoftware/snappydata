@@ -76,22 +76,21 @@ task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
     classifier = 'javadoc'
     from scaladoc
 }
+
+artifacts {
+  archives packageTests
+}
 if (rootProject.hasProperty('enablePublish')) {
     artifacts {
         archives packageScalaDocs, packageSources
     }
 }
 
-
-
 archivesBaseName = 'gemfirexd-scala-tests'
 
-
 testClasses.doLast {
-    copyTestsCommonResources(buildDir)
-}
-
-copy {
+  copyTestsCommonResources(buildDir)
+  copy {
     def osDir = osName.getFamilyName().replace(" ", "").toLowerCase()
     from (rootDir.getAbsolutePath() + '/dtests/src/test/java') {
         include '**/*.bt'
@@ -100,5 +99,5 @@ copy {
         include '**/*.sql'
     }
     into rootDir.getAbsolutePath() + '/store/tests/sql/build-artifacts/' + osDir + '/classes/main'
+  }
 }
-
