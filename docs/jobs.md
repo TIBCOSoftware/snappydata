@@ -342,3 +342,4 @@ $ bin/snappy-job.sh listcontexts  \
 $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead hostNameOfLead:8090
 ```
+
