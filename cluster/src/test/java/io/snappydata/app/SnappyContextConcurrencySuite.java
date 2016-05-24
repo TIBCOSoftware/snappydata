@@ -76,7 +76,7 @@ class SnappyQueryJob implements Callable<String>, Serializable {
     this.counter = ctr;
   }
 
-  public void actualWoark() {
+  public void actualWork() {
     for (int i = 0; i < 10; i++) {
 
       String tempTableName = threadId;
@@ -125,7 +125,7 @@ class SnappyQueryJob implements Callable<String>, Serializable {
 
   public String call() {
     try {
-      actualWoark();
+      actualWork();
     } catch (Throwable th) {
       th.printStackTrace();
     }
