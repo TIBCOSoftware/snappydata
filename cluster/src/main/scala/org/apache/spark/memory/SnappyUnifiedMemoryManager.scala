@@ -52,14 +52,23 @@ class SnappyUnifiedMemoryManager private[memory](
   }
   private val listener = Misc.getMemStoreBooting.thresholdListener()
 
+  /**
+   * if freeMemory has been invoked from acquireStorageMemory, return false if
+   * evictBlocksToFreeSpace fails and evictionUp is still true
+   * if freeMemory() has been invoked from acquireExecutionMemory then
+   * only fail if criticalUp is still true after evictBlocksToFreeSpace
+   */
   private def freeMemory(blockId: Option[BlockId], numBytes: Long,
-      evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)]): Boolean = {
+      evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)], storageMemory: Boolean): Boolean = {
     val freeMemory = Runtime.getRuntime.freeMemory()
     if (freeMemory < numBytes) {
-
-      storageMemoryPool.memoryStore.evictBlocksToFreeSpace(blockId,
-        numBytes - freeMemory,
-        evictedBlocks) || !listener.isCritical
+      val blocksEvicted = storageMemoryPool.memoryStore.evictBlocksToFreeSpace(blockId,
+        numBytes - freeMemory, evictedBlocks)
+      if (storageMemory) {
+        blocksEvicted || !listener.isEviction
+      } else {
+        !listener.isCritical
+      }
     }
     false
   }
@@ -73,7 +82,7 @@ class SnappyUnifiedMemoryManager private[memory](
       val evictedBlocks = new ArrayBuffer[(BlockId, BlockStatus)]
       // If free memory not available, let Spark
       // take a corrective action
-      if (!freeMemory(None, numBytes, evictedBlocks)) {
+      if (!freeMemory(None, numBytes, evictedBlocks, false)) {
         return 0
       }
     }
@@ -87,7 +96,7 @@ class SnappyUnifiedMemoryManager private[memory](
     if (listener.isEviction || listener.isCritical) {
       // If free memory not available, let Spark
       // take a corrective action
-      if (!freeMemory(Some(blockId), numBytes, evictedBlocks)){
+      if (!freeMemory(Some(blockId), numBytes, evictedBlocks, true)){
         return false
       }
     }
@@ -116,7 +125,7 @@ private object SnappyUnifiedMemoryManager {
     // GemFireXD is required to be already booted before constructing
     // snappy memory manager
     var evictFraction: Double = GemFireCacheImpl.getExisting.getResourceManager
-        .getEvictionHeapPercentage
+        .getEvictionHeapPercentage/100
     if (evictFraction <= 0.0) {
       evictFraction = 0.75
     }
