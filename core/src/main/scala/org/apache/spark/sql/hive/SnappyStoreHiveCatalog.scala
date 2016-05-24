@@ -18,7 +18,7 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 import java.util.concurrent.locks.ReentrantReadWriteLock
 
 import scala.collection.JavaConverters._
@@ -33,6 +33,7 @@ import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.Logging
@@ -60,7 +61,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override val conf = context.conf
 
-  val tempTables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
+  val tempTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
 
   /**
    * The version of the hive client that will be used to communicate
@@ -123,7 +124,14 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] var client: ClientWrapper =
     newClient().asInstanceOf[ClientWrapper]
 
-  private def newClient(): ClientInterface = {
+  // As long as threads using same IsolatedClientLoader, they should
+  // use the cached Hive client and not create a new one. we will be setting the cached client as
+  // soon as the ClientWrapper is initialized, so that any thread accessing Hive client after
+  // that will get the cached client. This change will be redundant after Spark 2.0 merge. But
+  // for the time being it will avoid ThreadLocal access to set SessionState.
+  protected val internalHiveclient = this.client.client
+
+  private def newClient(): ClientInterface = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
@@ -725,6 +733,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case _ => ExternalTableType.Row
     }
   }
+
 }
 
 object SnappyStoreHiveCatalog {
