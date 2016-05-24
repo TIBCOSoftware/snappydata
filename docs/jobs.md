@@ -1,6 +1,6 @@
 ## Building Snappy applications using Spark API
 
-SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs(like Spark ML). All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  So, we recommend getting to know the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](rowAndColumnTables.md).
+SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  So, we recommend getting to know the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](rowAndColumnTables.md).
 
 In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but, can also be reliably managed on disk. 
 
@@ -41,7 +41,7 @@ sc = SparkContext(conf=conf)
 # get the SnappyContext
 snc = SnappyContext(sc)
 ```
-Create columnar tables using API. Other than `create`, `drop` table rest is all based on the Spark SQL Data Source APIs. 
+Create columnar tables using API. Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs. 
 
 ###### Scala
 ```scala
@@ -172,7 +172,7 @@ Create row tables using API, update the contents of row table
 
 ### Running Spark programs inside the database
 
-> Note: Above simple example uses local mode(i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster.This mode is supported in both Java and Scala. Support for Python is yet not added.
+> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.
 
 To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job will look like:
 
@@ -273,7 +273,7 @@ This job ID can be used to query the status of the running job.
 ```
 $ bin/snappy-job.sh status  \
     --lead hostNameOfLead:8090  \
-    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48"
+    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 
 {
   "duration": "17.53 secs",
@@ -307,7 +307,7 @@ $ bin/spark-submit \
 
 #### Streaming jobs
 
-An implementation of SnappyStreamingJob can be submitted to lead of SnappyData by specifying --stream as a parameter to the snappy-job.sh.  For example [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [snappy-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) directory an be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
+An implementation of SnappyStreamingJob can be submitted to lead of SnappyData by specifying --stream as a parameter to the snappy-job.sh.  For example [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/snappy-examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [snappy-examples](https://github.com/SnappyDataInc/snappydata/tree/master/snappy-examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
 
 ```
 $ bin/snappy-job.sh submit  \
@@ -316,4 +316,19 @@ $ bin/snappy-job.sh submit  \
     --class  io.snappydata.examples.TwitterPopularTagsJob \
     --app-jar $SNAPPY_HOME/lib/quickstart-0.3.0-PREVIEW.jar \
     --stream
+```
+
+User needs to stop the currently running streaming job followed by its streaming context before being able to submit a new streaming job.
+
+```
+$ bin/snappy-job.sh stop  \
+    --lead hostNameOfLead:8090  \
+    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
+
+$ bin/snappy-job.sh listcontexts  \
+    --lead hostNameOfLead:8090
+["snappyContext1452598154529305363"]
+
+$ bin/snappy-job.sh stopcontext snappyContext1452598154529305363  \
+    --lead hostNameOfLead:8090
 ```

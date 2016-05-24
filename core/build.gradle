@@ -1,5 +1,6 @@
 apply plugin: 'scala'
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'de.undercouch.download'
 
 compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
@@ -89,19 +90,26 @@ scalaTest {
   }
 }
 
-task getApacheSparkDist(type: Exec) {
-  mkdir(sparkDistDir)
+task downloadApacheSparkDist(type: de.undercouch.gradle.tasks.download.Download) {
+  outputs.files "${sparkProductDir}.tgz"
+
+  src "https://www.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz"
+  dest sparkDistDir
+
+  doFirst {
+    mkdir(sparkDistDir)
+  }
+}
+
+task getApacheSparkDist {
+  dependsOn downloadApacheSparkDist
 
   outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
-  workingDir "${sparkDistDir}"
-
-  commandLine 'wget', '-c', "https://www.apache.org/dist/spark/spark-${sparkVersion}/${sparkDistName}.tgz",
-              '-O', "${sparkDistName}.tgz"
 
   doLast {
-    exec {
-      workingDir "${sparkDistDir}"
-      commandLine 'tar', 'xzf', "${sparkDistName}.tgz"
+    copy {
+      from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
+      into "${sparkDistDir}"
     }
   }
 }
