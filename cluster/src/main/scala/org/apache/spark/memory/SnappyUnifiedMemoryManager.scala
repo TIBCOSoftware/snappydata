@@ -116,7 +116,7 @@ private object SnappyUnifiedMemoryManager {
     // GemFireXD is required to be already booted before constructing
     // snappy memory manager
     var evictFraction: Double = GemFireCacheImpl.getExisting.getResourceManager
-        .getEvictionHeapPercentage
+        .getEvictionHeapPercentage/100
     if (evictFraction <= 0.0) {
       evictFraction = 0.75
     }
