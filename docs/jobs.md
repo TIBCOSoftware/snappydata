@@ -343,17 +343,3 @@ $ bin/snappy-job.sh stopcontext snappyStreamingContext1463987084945028747  \
     --lead hostNameOfLead:8090
 ```
 
-User needs to stop the currently running streaming job followed by its streaming context before being able to submit a new streaming job.
-
-```
-$ bin/snappy-job.sh stop  \
-    --lead hostNameOfLead:8090  \
-    --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
-
-$ bin/snappy-job.sh listcontexts  \
-    --lead hostNameOfLead:8090
-["snappyContext1452598154529305363"]
-
-$ bin/snappy-job.sh stopcontext snappyContext1452598154529305363  \
-    --lead hostNameOfLead:8090
-```
