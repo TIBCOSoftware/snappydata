@@ -47,9 +47,10 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
     UIUtils.headerSparkPage("Snappy Store", content, parent, Some(500))
   }
 
-  private def rowHeader = Seq("TableName", "TotalSize")
+  private def rowHeader = Seq("TableName", "TotalSize" , "TotalRows")
 
-  private def columnHeader = Seq("TableName", "Row Buffer Size", "Column Store Size", "TotalSize")
+  private def columnHeader = Seq("TableName", "Row Buffer Size", "Row Buffer Rows",
+    "Column Store Size", "Column Store Rows", "TotalSize")
 
   private def rowTable(stats: UIAnalytics) = {
     <tr>
@@ -58,6 +59,9 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
       </td>
       <td sorttable_customkey={stats.rowBufferSize.toString}>
         {Utils.bytesToString(stats.rowBufferSize)}
+      </td>
+      <td sorttable_customkey={stats.rowBufferCount.toString}>
+        {Utils.bytesToString(stats.rowBufferCount)}
       </td>
     </tr>
   }
@@ -71,8 +75,14 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
       <td sorttable_customkey={stats.rowBufferSize.toString}>
         {Utils.bytesToString(stats.rowBufferSize)}
       </td>
+      <td sorttable_customkey={stats.rowBufferCount.toString}>
+        {Utils.bytesToString(stats.rowBufferCount)}
+      </td>
       <td sorttable_customkey={stats.columnBufferSize.toString}>
         {Utils.bytesToString(stats.columnBufferSize)}
+      </td>
+      <td sorttable_customkey={stats.columnBufferCount.toString}>
+        {Utils.bytesToString(stats.columnBufferCount)}
       </td>
       <td sorttable_customkey={totalSize.toString}>
         {Utils.bytesToString(totalSize)}
