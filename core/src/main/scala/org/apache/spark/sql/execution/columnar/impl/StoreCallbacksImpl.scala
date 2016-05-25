@@ -16,8 +16,8 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.lang
 import java.util.{Collections, UUID}
+
 import scala.collection.JavaConversions
 import scala.collection.concurrent.TrieMap
 
@@ -138,11 +138,11 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     partioner.hashValue(dvds)
   }
 
-  override def haveRegisteredExternalStore(tableName: String): lang.Boolean = {
+  override def haveRegisteredExternalStore(tableName: String): Boolean = {
     // TODO -  remove below that deals with default schema and all
     // entries in store should come with fully qualified tableName
     val table = if (tableName.startsWith(Constant.DEFAULT_SCHEMA + ".")) {
-      tableName.split("\\.")(1)
+      tableName.substring(Constant.DEFAULT_SCHEMA.length + 1)
     } else tableName
     stores.contains(table)
   }
