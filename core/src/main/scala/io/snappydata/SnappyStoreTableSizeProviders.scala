@@ -40,11 +40,11 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.{Logging, SparkContext}
 import java.util.HashMap
 import org.apache.spark.sql.collection.Utils
+
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
   private var timer: SystemTimer = null
-
 
   def start(sc: SparkContext): Unit = {
     val delay =
@@ -73,18 +73,17 @@ object StoreTableValueSizeProviderService extends Logging {
       }
 
       override def getLoggerI18n: LogWriterI18n = {
-        return Misc.getGemFireCache.getLoggerI18n
+        Misc.getGemFireCache.getLoggerI18n
       }
     }
   }
 
-  def getTableSize(tableName: String, isColumnTable: Boolean = false):
-  Option[Long] = {
+  def getTableSize(tableName: String,
+      isColumnTable: Boolean = false): Option[Long] = {
     val currentTableSizeInfo = tableSizeInfo
-    if (currentTableSizeInfo == null || !currentTableSizeInfo.contains(tableName)) {
+    if (currentTableSizeInfo == null) {
       None
-    }
-    else currentTableSizeInfo.get(tableName) match {
+    } else currentTableSizeInfo.get(tableName) match {
       case v if isColumnTable =>
         val size: Long = v.getOrElse(0)
         currentTableSizeInfo.get(ColumnFormatRelation.cachedBatchTableName(tableName)).
@@ -101,16 +100,14 @@ object StoreTableSizeProvider {
     if (currentTableStats == null) {
       return Seq.empty
     }
-    currentTableStats.filter(entry => !isColumnTable(entry._1)).map(details => {
-      val columnTableName = ColumnFormatRelation.cachedBatchTableName(details._1)
-      val columnTableSize: Long = currentTableStats.getOrElse(columnTableName, 0)
-      val isColumnTable = currentTableStats.contains(columnTableName)
-      new UIAnalytics(details._1, details._2, columnTableSize, isColumnTable)
-    }).toSeq
-
+    currentTableStats.collect {
+      case (name, v) if !isColumnTable(name) =>
+        val columnTableName = ColumnFormatRelation.cachedBatchTableName(name)
+        val (tableSize, isColumnTable) = currentTableStats.get(columnTableName)
+            .map((_, true)).getOrElse((0L, false))
+        new UIAnalytics(name, v, tableSize, isColumnTable)
+    }.toSeq
   }
-
-
 
   private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String, Long] = {
     val currentTableStats = mutable.Map[String, Long]()
@@ -167,7 +164,6 @@ object StoreTableSizeProvider {
       }
     }
   }
-
 }
 
 case class UIAnalytics(tableName: String, rowBufferSize: Long,

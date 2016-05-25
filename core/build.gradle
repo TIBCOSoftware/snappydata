@@ -110,9 +110,18 @@ task getApacheSparkDist {
   outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
 
   doLast {
-    copy {
-      from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
-      into "${sparkDistDir}"
+    if (osName == 'win') {
+      copy {
+        from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
+        into sparkDistDir
+      }
+    } else {
+      // gradle tarTree does not preserve symlinks (GRADLE-2844)
+      exec {
+        executable 'tar'
+        args 'xfz', "${sparkDistDir}/${sparkDistName}.tgz"
+        workingDir = sparkDistDir
+      }
     }
   }
 }

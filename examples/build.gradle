@@ -9,13 +9,11 @@ dependencies {
 
   compile project(":snappy-cluster_${scalaBinaryVersion}")
 
-  /*
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     testRuntime project(":snappy-aqp_${scalaBinaryVersion}")
   } else {
     testRuntime "io.snappydata:snappy-aqp_${scalaBinaryVersion}:${version}"
   }
-  */
   // below dependency is for top-level product to easily find datanucleus jars
   // in the non-integrated build
   testRuntime group: 'org.datanucleus', name: 'datanucleus-core', version:'3.2.10'
