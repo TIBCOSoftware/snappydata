@@ -59,7 +59,7 @@ object StoreTableValueSizeProviderService extends Logging {
         val currentTableSizeInfo = mutable.HashMap[String, Long]()
 
         val result =
-          FunctionService.onMembers(GfxdMessage.getAllGfxdServers())
+          FunctionService.onMembers(GfxdMessage.getAllDataStores())
               .withCollector(new GfxdListResultCollector())
               .execute(RegionSizeCalculatorFunction.ID).getResult()
 
