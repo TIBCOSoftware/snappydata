@@ -5,6 +5,7 @@ import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
 import hydra.*;
+import org.apache.commons.io.FileUtils;
 import org.apache.spark.sql.SnappyContext;
 
 import java.nio.file.Files;
@@ -28,7 +29,13 @@ import scala.Tuple2;
 import scala.collection.JavaConverters;
 import scala.collection.immutable.Map;
 
+import sql.SQLBB;
+import sql.SQLHelper;
+import sql.SQLPrms;
+import sql.dmlStatements.DMLStmtIF;
+import sql.sqlutil.DMLStmtsFactory;
 import util.TestException;
+import util.TestHelper;
 
 import static java.lang.Thread.sleep;
 
@@ -62,12 +69,17 @@ public class SnappyTest implements Serializable {
     private static String userAppJar = null;
     private static String simulateStreamScriptName = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptName, "simulateFileStream");
     private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtestsResourceLocation);
+    public static boolean tableDefaultPartitioned = TestConfig.tab().booleanAt(SnappyPrms.tableDefaultPartitioned, false);  //default to false
     private static String leadHost = null;
     public static Long waitTimeBeforeJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForCloseTask, 6000);
     private static Boolean logDirExists = false;
-
+    private static Boolean diskDirExists = false;
+    private static Boolean runGemXDQuery = false;
+    protected static int[] dmlTables = SQLPrms.getTables();
+    public static final Random random = new Random(SQLPrms.getRandSeed());
+    protected static DMLStmtsFactory dmlFactory = new DMLStmtsFactory();
 
     public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
@@ -140,9 +152,32 @@ public class SnappyTest implements Serializable {
         return scriptPath;
     }
 
-
+    /**
+     * Generates the configuration data required to start the snappy members.
+     */
     public static synchronized void HydraTask_generateSnappyConfig() {
         snappyTest.generateSnappyConfig();
+    }
+
+    /**
+     * Generates the configuration data required to start the snappy locator.
+     */
+    public static synchronized void HydraTask_generateSnappyLocatorConfig() {
+        snappyTest.generateSnappyLocatorConfig();
+    }
+
+    /**
+     * Generates the configuration data required to start the snappy Server.
+     */
+    public static synchronized void HydraTask_generateSnappyServerConfig() {
+        snappyTest.generateSnappyServerConfig();
+    }
+
+    /**
+     * Generates the configuration data required to start the snappy Server.
+     */
+    public static synchronized void HydraTask_generateSnappyLeadConfig() {
+        snappyTest.generateSnappyLeadConfig();
     }
 
     protected void generateSnappyConfig() {
@@ -167,7 +202,7 @@ public class SnappyTest implements Serializable {
                 SnappyBB.getBB().getSharedMap().put("locatorPort", portString);
                 Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
-            } else if (dirPath.contains("Store") || dirPath.contains("server")) {
+            } else if (dirPath.contains("Store") || dirPath.contains("server") || dirPath.contains("store") || dirPath.contains("accessor")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
                 if (serverLogDir == null) {
@@ -190,6 +225,81 @@ public class SnappyTest implements Serializable {
                 }
                 Log.getLogWriter().info("Lead host is: " + leadHost);
             }
+            logDirExists = true;
+        }
+    }
+
+    protected void generateSnappyLocatorConfig() {
+        if (logDirExists) return;
+        else {
+            String addr = HostHelper.getHostAddress();
+            int port = PortHelper.getRandomPort();
+            String endpoint = addr + ":" + port;
+            String clientPort = " -client-port=";
+            String dirPath = snappyTest.getLogDir();
+            String locatorLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port;
+            if (locatorLogDir == null) {
+                String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the locators file under conf directory";
+                throw new TestException(s);
+            }
+            SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
+            String portString = port + "";
+            SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
+            SnappyBB.getBB().getSharedMap().put("locatorPort", portString);
+            Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
+            SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
+            logDirExists = true;
+        }
+    }
+
+    protected void generateSnappyServerConfig() {
+        if (logDirExists) return;
+        else {
+            String addr = HostHelper.getHostAddress();
+            int port = PortHelper.getRandomPort();
+            String endpoint = addr + ":" + port;
+            String clientPort = " -client-port=";
+            String locators = "-locators=";
+            String locatorHost = null;
+            String dirPath = snappyTest.getLogDir();
+            String serverLogDir = null;
+            locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+            if (tableDefaultPartitioned)
+                serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Dgemfirexd.table-default-partitioned=true";
+            else
+                serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+            if (serverLogDir == null) {
+                String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the servers file under conf directory";
+                throw new TestException(s);
+            }
+            SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + snappyTest.getMyTid(), serverLogDir);
+            Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
+            SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
+            logDirExists = true;
+        }
+    }
+
+    protected void generateSnappyLeadConfig() {
+        if (logDirExists) return;
+        else {
+            String addr = HostHelper.getHostAddress();
+            int port = PortHelper.getRandomPort();
+            String endpoint = addr + ":" + port;
+            String clientPort = " -client-port=";
+            String locators = "-locators=";
+            String locatorHost = null;
+            String dirPath = snappyTest.getLogDir();
+            locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+            String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+            if (leadLogDir == null) {
+                String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the leads file under conf directory";
+                throw new TestException(s);
+            }
+            SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
+            if (leadHost == null) {
+                leadHost = HostHelper.getLocalHost();
+            }
+            Log.getLogWriter().info("Lead host is: " + leadHost);
             logDirExists = true;
         }
     }
@@ -238,6 +348,69 @@ public class SnappyTest implements Serializable {
         for (String s : serversFileContent) {
             snappyTest.writeToFile(s, serversFile);
         }
+        if (leadsFileContent.size() == 0) {
+            String s = "No data found for writing to leads file under conf directory";
+            throw new TestException(s);
+        }
+        for (String s : leadsFileContent) {
+            snappyTest.writeToFile(s, leadsFile);
+        }
+    }
+
+    /**
+     * Write the configuration data required to start the snappy locator in locators file under conf directory at snappy build location.
+     */
+    public static void HydraTask_writeLocatorConfigData() {
+        snappyTest.writeLocatorConfigData();
+    }
+
+    /**
+     * Write the configuration data required to start the snappy server in servers file under conf directory at snappy build location.
+     */
+    public static void HydraTask_writeServerConfigData() {
+        snappyTest.writeServerConfigData();
+    }
+
+    /**
+     * Write the configuration data required to start the snappy lead in leads file under conf directory at snappy build location.
+     */
+    public static void HydraTask_writeLeadConfigData() {
+        snappyTest.writeLeadConfigData();
+    }
+
+    protected void writeLocatorConfigData() {
+        locatorsFilePath = productConfDirPath + "locators";
+        File locatorsFile = new File(locatorsFilePath);
+        Set<String> locatorsFileContent = new LinkedHashSet<String>();
+        locatorsFileContent = snappyTest.getFileContents("locatorLogDir", locatorsFileContent);
+        if (locatorsFileContent.size() == 0) {
+            String s = "No data found for writing to locators file under conf directory";
+            throw new TestException(s);
+        }
+        for (String s : locatorsFileContent) {
+            snappyTest.writeToFile(s, locatorsFile);
+        }
+    }
+
+    protected void writeServerConfigData() {
+        serversFilePath = productConfDirPath + "servers";
+        File serversFile = new File(serversFilePath);
+        Set<String> serversFileContent = new LinkedHashSet<String>();
+        serversFileContent = snappyTest.getFileContents("serverLogDir", serversFileContent);
+        if (serversFileContent.size() == 0) {
+            String s = "No data found for writing to servers file under conf directory";
+            throw new TestException(s);
+        }
+        for (String s : serversFileContent) {
+            snappyTest.writeToFile(s, serversFile);
+        }
+    }
+
+    protected void writeLeadConfigData() {
+        leadsFilePath = productConfDirPath + "leads";
+        File leadsFile = new File(leadsFilePath);
+        Set<String> leadsFileContent = new LinkedHashSet<String>();
+        leadsFileContent = snappyTest.getFileContents("leadLogDir", leadsFileContent);
         if (leadsFileContent.size() == 0) {
             String s = "No data found for writing to leads file under conf directory";
             throw new TestException(s);
@@ -322,9 +495,101 @@ public class SnappyTest implements Serializable {
         return pidList;
     }
 
-
     public static void HydraTask_getClientConnection() throws SQLException {
         getLocatorConnection();
+    }
+
+    public static synchronized void HydraTask_copyDiskFiles() {
+        if (diskDirExists) return;
+        else {
+            String dirName = snappyTest.generateLogDirName();
+            File destDir = new File(dirName);
+            String diskDirName = dirName.substring(0, dirName.lastIndexOf("_")) + "_disk";
+            Log.getLogWriter().info("diskDirName::" + diskDirName);
+            File dir = new File(diskDirName);
+            for (File srcFile : dir.listFiles()) {
+                try {
+                    if (srcFile.isDirectory()) {
+                        Log.getLogWriter().info("diskDirFile is a directory ::" + srcFile);
+                        FileUtils.copyDirectoryToDirectory(srcFile, destDir);
+                        Log.getLogWriter().info("Done copying diskDirFile directory from ::" + srcFile + "to " + destDir);
+                    } else {
+                        Log.getLogWriter().info("diskDirFile is::" + srcFile);
+                        FileUtils.copyFileToDirectory(srcFile, destDir);
+                        Log.getLogWriter().info("Done copying diskDirFile from ::" + srcFile + "to " + destDir);
+                    }
+                } catch (IOException e) {
+                    throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
+                }
+            }
+            diskDirExists = true;
+        }
+    }
+
+    public static void HydraTask_doDMLOp() {
+        snappyTest.doDMLOp();
+    }
+
+    protected void doDMLOp() {
+        runGemXDQuery = true;
+        try {
+            Connection conn = getLocatorConnection();
+            doDMLOp(conn);
+            closeConnection(conn);
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+    protected void doDMLOp(Connection conn) {
+        //No derby connection required for snappyTest. So providign the bull connection to existing methods
+        Connection dConn = null;
+//        protected void doDMLOp(Connection dConn, Connection gConn) {
+        //perform the opeartions
+        //randomly select a table to perform dml
+        //randomly select an operation to perform based on the dmlStmt (insert, update, delete, select)
+        Log.getLogWriter().info("doDMLOp-performing dmlOp, myTid is " + getMyTid());
+        int table = dmlTables[random.nextInt(dmlTables.length)]; //get random table to perform dml
+        DMLStmtIF dmlStmt = dmlFactory.createDMLStmt(table); //dmlStmt of a table
+        int numOfOp = random.nextInt(5) + 1;
+        int size = 1;
+
+        String operation = TestConfig.tab().stringAt(SQLPrms.dmlOperations);
+        Log.getLogWriter().info("doDMLOp-operation=" + operation + "  numOfOp=" + numOfOp);
+        if (operation.equals("insert")) {
+            for (int i = 0; i < numOfOp; i++) {
+                dmlStmt.insert(dConn, conn, size);
+                commit(conn);
+                Log.getLogWriter().info("SS: insert operation performed successfully....");
+                SnappyBB.getBB().getSharedCounters().increment(SnappyBB.insertCounter);
+            }
+        } else if (operation.equals("put")) {
+            for (int i = 0; i < numOfOp; i++) {
+                dmlStmt.put(dConn, conn, size);
+                commit(conn);
+                Log.getLogWriter().info("SS: put operation performed successfully....");
+                SnappyBB.getBB().getSharedCounters().increment(SnappyBB.insertCounter);
+            }
+        } else if (operation.equals("update")) {
+            for (int i = 0; i < numOfOp; i++) {
+                dmlStmt.update(dConn, conn, size);
+                commit(conn);
+                Log.getLogWriter().info("SS: update operation performed successfully....");
+                SnappyBB.getBB().getSharedCounters().increment(SnappyBB.updateCounter);
+            }
+        } else if (operation.equals("delete")) {
+            dmlStmt.delete(dConn, conn);
+            Log.getLogWriter().info("SS: delete operation performed successfully....");
+            SnappyBB.getBB().getSharedCounters().increment(SnappyBB.deleteCounter);
+        } else if (operation.equals("query")) {
+            dmlStmt.query(dConn, conn);
+            Log.getLogWriter().info("SS: query operation performed successfully....");
+            SnappyBB.getBB().getSharedCounters().increment(SnappyBB.queryCounter);
+
+        } else {
+            throw new TestException("Unknown entry operation: " + operation);
+        }
+        commit(conn);
     }
 
     /**
@@ -332,13 +597,21 @@ public class SnappyTest implements Serializable {
      */
     public static Connection getLocatorConnection() throws SQLException {
         List<String> endpoints = getNetworkLocatorEndpoints();
+        Connection conn = null;
         if (endpoints.size() == 0) {
             String s = "No network locator endpoints found";
             throw new TestException(s);
         }
-        String url = "jdbc:snappydata://" + endpoints.get(0);
-        Log.getLogWriter().info("url is " + url);
-        return getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+        if (!runGemXDQuery) {
+            String url = "jdbc:snappydata://" + endpoints.get(0);
+            Log.getLogWriter().info("url is " + url);
+            conn = getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+        } else {
+            String url = "jdbc:gemfirexd://" + endpoints.get(0);
+            Log.getLogWriter().info("url is " + url);
+            conn = getConnection(url, "com.pivotal.gemfirexd.jdbc.ClientDriver");
+        }
+        return conn;
     }
 
     private static Connection getConnection(String protocol, String driver) throws SQLException {
@@ -346,6 +619,25 @@ public class SnappyTest implements Serializable {
         loadDriver(driver);
         Connection conn = DriverManager.getConnection(protocol);
         return conn;
+    }
+
+    public static void closeConnection(Connection conn) {
+        try {
+            conn.close();
+        } catch (SQLException e) {
+            SQLHelper.printSQLException(e);
+            throw new TestException("Not able to release the connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+    public void commit(Connection conn) {
+        if (conn == null) return;
+        try {
+            Log.getLogWriter().info("committing the ops.. ");
+            conn.commit();
+        } catch (SQLException se) {
+            SQLHelper.handleSQLException(se);
+        }
     }
 
     /**
@@ -377,6 +669,199 @@ public class SnappyTest implements Serializable {
         ResultSet rs = conn.createStatement().executeQuery(query1);
         while (rs.next()) {
             Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+        }
+        closeConnection(conn);
+    }
+
+    public static void HydraTask_writeCountQueryResultsToSnappyBB() {
+        snappyTest.writeCountQueryResultsToBB();
+    }
+
+    public static void HydraTask_writeUpdatedCountQueryResultsToSnappyBB() {
+        snappyTest.writeUpdatedCountQueryResultsToBB();
+    }
+
+    public static void HydraTask_verifyUpdateQueryOnSnappyCluster() {
+        snappyTest.updateQuery();
+    }
+
+    public static void HydraTask_verifyDeleteQueryOnSnappyCluster() {
+        snappyTest.deleteQuery();
+    }
+
+    protected void deleteQuery() {
+        runGemXDQuery = true;
+        try {
+            Connection conn = getLocatorConnection();
+            String query1 = "select count(*) from trade.txhistory";
+            long rowCountBeforeDelete = runSelectQuery(conn, query1);
+            Log.getLogWriter().info("SS - rowCountBeforeDelete:" + rowCountBeforeDelete);
+            String query2 = "delete from trade.txhistory where type = 'buy'";
+            int rowCount = conn.createStatement().executeUpdate(query2);
+            commit(conn);
+            Log.getLogWriter().info("Deleted " + rowCount + " rows in trade.txhistory table in snappy.");
+            String query3 = "select count(*) from trade.txhistory";
+            String query4 = "select count(*) from trade.txhistory where type = 'buy'";
+            long rowCountAfterDelete = 0, rowCountForquery4;
+            rowCountAfterDelete = runSelectQuery(conn, query3);
+            Log.getLogWriter().info("SS - rowCountAfterDelete:" + rowCountAfterDelete);
+            long expectedRowCountAfterDelete = rowCountBeforeDelete - rowCount;
+            Log.getLogWriter().info("SS - expectedRowCountAfterDelete:" + expectedRowCountAfterDelete);
+            if (!(rowCountAfterDelete == expectedRowCountAfterDelete)) {
+                String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing delete ops should be : " + expectedRowCountAfterDelete + ", but it is : " + rowCountAfterDelete;
+                throw new TestException(misMatch);
+            }
+            rowCountForquery4 = runSelectQuery(conn, query4);
+            Log.getLogWriter().info("SS - rowCountForquery4:" + rowCountForquery4);
+            if (!(rowCountForquery4 == 0)) {
+                String misMatch = "Test Validation failed due to wrong row count value. Expected row count value is : 0, but found : " + rowCountForquery4;
+                throw new TestException(misMatch);
+            }
+            closeConnection(conn);
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+    protected void updateQuery() {
+        runGemXDQuery = true;
+        try {
+            Connection conn = getLocatorConnection();
+//            String query1 = "insert into trade.customers (cid, cust_name, since, addr, tid) values (5555,supriya,2004-04-02,address is wanwarie,96)";
+            String query1 = "select count(*) from trade.customers";
+            long rowCountBeforeUpdate = runSelectQuery(conn, query1);
+            Log.getLogWriter().info("SS - rowCountBeforeDelete:" + rowCountBeforeUpdate);
+            String query2 = "update trade.customers set addr = 'Pune' where tid = 30";
+            int rowCount = conn.createStatement().executeUpdate(query2);
+            commit(conn);
+            Log.getLogWriter().info("Updated " + rowCount + " rows in trade.customers table in snappy.");
+//            String query3 = "select addr from trade.customers where tid = 30";
+            String query4 = "select count(*) from trade.customers";
+            String query5 = "select count(*) from trade.customers where addr != 'Pune' and tid = 30 ";
+            String query6 = "select count(*) from trade.customers where addr = 'Pune' and tid = 30 ";
+            long rowCountAfterUpdate = 0, rowCountForquery5 = 0, rowCountForquery6 = 0;
+            rowCountAfterUpdate = runSelectQuery(conn, query4);
+            Log.getLogWriter().info("SS - rowCountAfterUpdate:" + rowCountAfterUpdate);
+            if (!(rowCountBeforeUpdate == rowCountAfterUpdate)) {
+                String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing update ops should be : " + rowCountBeforeUpdate + " , but it is : " + rowCountAfterUpdate;
+                throw new TestException(misMatch);
+            }
+            rowCountForquery6 = runSelectQuery(conn, query6);
+            Log.getLogWriter().info("SS - rowCountAfterUpdate:" + rowCountAfterUpdate);
+            if (!(rowCountForquery6 == rowCount)) {
+                String misMatch = "Test Validation failed due to mismatch in row count value. Row count after performing update ops should be : " + rowCount + " , but it is : " + rowCountForquery6;
+                throw new TestException(misMatch);
+            }
+            rowCountForquery5 = runSelectQuery(conn, query5);
+            Log.getLogWriter().info("SS - rowCountForquery5:" + rowCountForquery5);
+            if (!(rowCountForquery5 == 0)) {
+                String misMatch = "Test Validation failed due to wrong row count value. Expected row count value is : 0, but found : " + rowCountForquery5;
+                throw new TestException(misMatch);
+            }
+            closeConnection(conn);
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+    protected static Long runSelectQuery(Connection conn, String query) {
+        long rowCount = 0;
+        try {
+            ResultSet rs = conn.createStatement().executeQuery(query);
+            while (rs.next()) {
+                rowCount = rs.getLong(1);
+                Log.getLogWriter().info(query + " query executed successfully and query result is : " + rs.getLong(1));
+            }
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+        return rowCount;
+    }
+
+    protected static void writeCountQueryResultsToBB() {
+        runGemXDQuery = true;
+        try {
+            Connection conn = getLocatorConnection();
+            String selectQuery = "select count(*) from ";
+            ArrayList<String[]> tables = (ArrayList<String[]>) SQLBB.getBB().getSharedMap().get("tableNames");
+            for (String[] table : tables) {
+                String schemaTableName = table[0] + "." + table[1];
+                String query = selectQuery + schemaTableName.toLowerCase();
+                getCountQueryResult(conn, query, schemaTableName);
+            }
+            closeConnection(conn);
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+    protected static void writeUpdatedCountQueryResultsToBB() {
+        runGemXDQuery = true;
+        try {
+            Connection conn = getLocatorConnection();
+            String selectQuery = "select count(*) from ";
+            ArrayList<String[]> tables = (ArrayList<String[]>) SQLBB.getBB().getSharedMap().get("tableNames");
+            for (String[] table : tables) {
+                String schemaTableName = table[0] + "." + table[1];
+                String query = selectQuery + schemaTableName.toLowerCase();
+                getCountQueryResult(conn, query, schemaTableName + "AfterOps");
+            }
+            closeConnection(conn);
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+    protected static void getCountQueryResult(Connection conn, String query, String tableName) {
+        try {
+            ResultSet rs = conn.createStatement().executeQuery(query);
+            while (rs.next()) {
+                Log.getLogWriter().info("Query:: " + query + "\nResult in Snappy:: " + rs.getLong(1));
+                SnappyBB.getBB().getSharedMap().put(tableName, rs.getLong(1));
+            }
+        } catch (SQLException se) {
+            SQLHelper.handleSQLException(se);
+        }
+    }
+
+    public static void HydraTask_verifyCountQueryResults() {
+        ArrayList<String[]> tables = (ArrayList<String[]>) SQLBB.getBB().getSharedMap().get("tableNames");
+        for (String[] table1 : tables) {
+            String schemaTableName = table1[0] + "." + table1[1];
+            String tableName = schemaTableName;
+            Long countQueryResultInSnappy = (Long) SnappyBB.getBB().getSharedMap().get(tableName);
+            Log.getLogWriter().info("countQueryResult for table " + tableName + " in Snappy: " + countQueryResultInSnappy);
+            Long countQueryResultInGemXD = (Long) SQLBB.getBB().getSharedMap().get(tableName);
+            Log.getLogWriter().info("countQueryResult for table " + tableName + " in GemFireXD: " + countQueryResultInGemXD);
+            if (!(countQueryResultInSnappy.equals(countQueryResultInGemXD))) {
+                String misMatch = "Test Validation failed as countQuery result for table  " + tableName + " in GemFireXD: " + countQueryResultInGemXD + " did not match not match with countQuery result for table " + tableName + " in Snappy: " + countQueryResultInSnappy;
+                throw new TestException(misMatch);
+            }
+        }
+    }
+
+    public static void HydraTask_verifyInsertQueryOnSnappyCluster() {
+        int numInserts = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.insertCounter);
+        Log.getLogWriter().info("numInserts performed : " + numInserts);
+        ArrayList<String[]> tables = (ArrayList<String[]>) SQLBB.getBB().getSharedMap().get("tableNames");
+        long aggregatedCountQueryResultsAfterOps = 0, aggregatedCountQueryResultsBeforeOps = 0, countQueryResultsAfterAddingOps = 0;
+        for (String[] table1 : tables) {
+            String schemaTableName = table1[0] + "." + table1[1];
+            String tableName = schemaTableName;
+            Long countQueryResultBeforeOps = (Long) SnappyBB.getBB().getSharedMap().get(tableName);
+            aggregatedCountQueryResultsBeforeOps += countQueryResultBeforeOps.longValue();
+            Log.getLogWriter().info("countQueryResultBeforeOps for table " + tableName + " " + countQueryResultBeforeOps);
+            Long countQueryResultAfterOps = (Long) SnappyBB.getBB().getSharedMap().get(tableName + "AfterOps");
+            aggregatedCountQueryResultsAfterOps += countQueryResultAfterOps.longValue();
+            Log.getLogWriter().info("countQueryResultAfterOps for table " + tableName + " " + countQueryResultAfterOps);
+        }
+        Log.getLogWriter().info("aggregatedCountQueryResultsBeforeOps: " + aggregatedCountQueryResultsBeforeOps);
+        Log.getLogWriter().info("aggregatedCountQueryResultsAfterOps: " + aggregatedCountQueryResultsAfterOps);
+        countQueryResultsAfterAddingOps = aggregatedCountQueryResultsBeforeOps + numInserts;
+        Log.getLogWriter().info("aggregatedCountQueryResultsAfterOps: " + aggregatedCountQueryResultsAfterOps);
+        if (!(countQueryResultsAfterAddingOps == aggregatedCountQueryResultsAfterOps)) {
+            String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing insert ops should be : " + countQueryResultsAfterAddingOps + " , but it is : " + aggregatedCountQueryResultsAfterOps;
+            throw new TestException(misMatch);
         }
     }
 
@@ -804,14 +1289,15 @@ public class SnappyTest implements Serializable {
     */
     private synchronized String getLogDir() {
         if (this.logFile == null) {
-            HostDescription hd = TestConfig.getInstance().getMasterDescription()
-                    .getVmDescription().getHostDescription();
+            /*HostDescription hd = TestConfig.getInstance().getMasterDescription()
+                    .getVmDescription().getHostDescription();*/
             Vector<String> names = TestConfig.tab().vecAt(ClientPrms.gemfireNames);
-            String dirname = hd.getUserDir() + File.separator
+            /*String dirname = hd.getUserDir() + File.separator
                     + "vm_" + RemoteTestModule.getMyVmid()
                     + "_" + RemoteTestModule.getMyClientName()
                     + "_" + HostHelper.getLocalHost()
-                    + "_" + RemoteTestModule.getMyPid();
+                    + "_" + RemoteTestModule.getMyPid();*/
+            String dirname = generateLogDirName();
 //            this.localHost = HostHelper.getLocalHost();
             File dir = new File(dirname);
             String fullname = dir.getAbsolutePath();
@@ -841,6 +1327,15 @@ public class SnappyTest implements Serializable {
             log().info("logFile name is " + this.logFile);
         }
         return this.logFile;
+    }
+
+    private String generateLogDirName() {
+        String dirname = hd.getUserDir() + File.separator
+                + "vm_" + RemoteTestModule.getMyVmid()
+                + "_" + RemoteTestModule.getMyClientName()
+                + "_" + HostHelper.getLocalHost()
+                + "_" + RemoteTestModule.getMyPid();
+        return dirname;
     }
 
     protected synchronized void generateConfig(String fileName) {

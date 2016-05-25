@@ -66,6 +66,11 @@ public class SnappyPrms extends BasePrms {
     public static Long simulateStreamScriptDestinationFolder;
 
     /**
+     * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets the gemfirexd.table-default-partitioned to false.
+     */
+    public static Long tableDefaultPartitioned;
+
+    /**
      * (String) userAppJar containing the user snappy job class
      */
     public static Long userAppJar;
