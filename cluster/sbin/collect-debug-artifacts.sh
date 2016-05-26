@@ -265,15 +265,16 @@ function collect_on_remote {
           echo "Adding file ${l} to the array"
         fi
         files+=($l)
+        file_added=1
       fi
-      prev_file_mod_epoch=$file_mod_epoch
+      prev_file_mod_epoch=$file_mod_epocha
     done
 
     prev_file_mod_epoch=0
     for l in $( ls -tr *.gfs* 2>/dev/null )
     do
       file_mod_epoch=`stat -c %Y $l`
-      if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
+      if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${prev_file_mod_epoch}" -le "${end_epoch}" ]; then
         if [ "${verbose}" = "1" ]; then
           echo "${l} MOD TIME = ${file_mod_epoch}"
           echo "Adding file ${l} to the array"
@@ -286,6 +287,13 @@ function collect_on_remote {
 
   # get the stack dumps first
   if [ "${num_stack_dumps}" -gt 0 ]; then
+    # add the latest log file and keep it. Later after taking the dump take all the log files
+    # which got created after this one as stack dump can lead to rollover.
+
+    logs_latest_first=`ls -t *.log*`
+    all_logs=($logs_latest_first)
+    latest_log=${all_logs[0]}
+
     dump_num=1
     for i in `seq 1 ${num_stack_dumps}`
     do
@@ -294,9 +302,27 @@ function collect_on_remote {
         echo "Taking the dump for on ${host} -- count ${i}"
       fi
       kill -URG $proc_id
+      # record the last modified time of this log
+      if [ "$i" -eq "1" ]; then
+        first_dump_file_mod_epoch=`stat -c %Y $latest_log`
+      fi
+
       sleep $int_stack_dumps
     done
   fi
+
+  logs_latest_first=`ls -t *.log*`
+  all_logs=($logs_latest_first)
+  # add all the remaining whose modified time is greater than the last recorded
+  for l in "${all_logs[@]}"
+  do
+    mod_epoch=`stat -c %Y $l`
+    if [ "${mod_epoch}" -gt "${first_dump_file_mod_epoch}" ]; then
+      files+=($l)
+    else
+      break
+    fi
+  done
 
   for f in "${files[@]}"
   do
