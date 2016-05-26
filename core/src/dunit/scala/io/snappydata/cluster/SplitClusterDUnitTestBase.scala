@@ -286,8 +286,9 @@ trait SplitClusterDUnitTestObject {
   }
 
   def stopSparkCluster(productDir: String): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
     println(s"Stopping spark cluster in $productDir/work")
-    SnappyContext.stop()
+    if(sparkContext != null) sparkContext.stop()
     (productDir + "/sbin/stop-all.sh") !!
   }
 }

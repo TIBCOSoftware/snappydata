@@ -347,7 +347,7 @@ object TPCHColumnPartitionedTable  {
 
   def createAndPopulateOrderSampledTable(props: Map[String, String],
       sc: SparkContext, path: String): Unit = {
-    val snappyContext = SnappyContext.getOrCreate(sc)
+    val snappyContext = SnappyContext(sc)
     val orderDF = snappyContext.table("ORDERS")
     val orderSampled = orderDF.stratifiedSample(Map(
       "qcs" -> "O_ORDERDATE", // O_SHIPPRIORITY
@@ -361,7 +361,7 @@ object TPCHColumnPartitionedTable  {
 
   def createAndPopulateLineItemSampledTable(props: Map[String, String],
       sc: SparkContext, path: String): Unit = {
-    val snappyContext = SnappyContext.getOrCreate(sc)
+    val snappyContext = SnappyContext(sc)
     val lineOrderDF = snappyContext.table("LINEITEM")
     val lineOrderSampled = lineOrderDF.stratifiedSample(Map(
       "qcs" -> "L_SHIPDATE", // L_RETURNFLAG
