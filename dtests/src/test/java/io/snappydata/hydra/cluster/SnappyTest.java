@@ -5,6 +5,7 @@ import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
 import hydra.*;
+import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 
 import java.nio.file.Files;
@@ -34,7 +35,8 @@ import static java.lang.Thread.sleep;
 
 public class SnappyTest implements Serializable {
 
-    private static transient SnappyContext snc = SnappyContext.getOrCreate(SnappyContext.globalSparkContext());
+    private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
+        .globalSparkContext());
     protected static SnappyTest snappyTest;
     private static HostDescription hd = TestConfig.getInstance().getMasterDescription()
             .getVmDescription().getHostDescription();
@@ -74,7 +76,8 @@ public class SnappyTest implements Serializable {
     }
 
     public static void HydraTask_stopSnappy() {
-        SnappyContext.stop(true);
+        SparkContext sc = SnappyContext.globalSparkContext();
+        if(sc != null) sc.stop();
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 

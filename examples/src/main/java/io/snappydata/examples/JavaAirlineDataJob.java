@@ -28,7 +28,7 @@ public class JavaAirlineDataJob {
   public static void main(String[] args) throws Exception {
     SparkConf sparkConf = new SparkConf().setAppName("JavaSparkSQL").setMaster("local[2]");
     JavaSparkContext jsc = new JavaSparkContext(sparkConf);
-    SnappyContext snc = SnappyContext.getOrCreate(jsc);
+    SnappyContext snc = SnappyContext.apply(jsc);
 
     // Drop tables if already exists
     snc.dropTable(colTable, true);

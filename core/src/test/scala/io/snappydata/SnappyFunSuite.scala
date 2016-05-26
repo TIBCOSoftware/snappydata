@@ -40,23 +40,48 @@ abstract class SnappyFunSuite
   protected var testName: String = _
   protected val dirList = ArrayBuffer[String]()
 
+
   protected def sc: SparkContext = {
     val ctx = SnappyContext.globalSparkContext
-    if (ctx != null && !ctx.isStopped) ctx
-    else new SparkContext(newSparkConf())
+    if (ctx != null && !ctx.isStopped) {
+      ctx
+    } else {
+      cachedContext = null
+      new SparkContext(newSparkConf())
+    }
   }
 
   protected def sc(addOn: (SparkConf) => SparkConf): SparkContext = {
     val ctx = SnappyContext.globalSparkContext
-    if (ctx != null && !ctx.isStopped) ctx
-    else new SparkContext(newSparkConf(addOn))
+    if (ctx != null && !ctx.isStopped) {
+      ctx
+    }
+    else {
+      cachedContext = null
+      new SparkContext(newSparkConf(addOn))
+    }
   }
 
   protected def scWithConf(addOn: (SparkConf) => SparkConf): SparkContext = {
     new SparkContext(newSparkConf(addOn))
   }
 
-  protected def snc: SnappyContext = SnappyContext.getOrCreate(sc)
+  private var cachedContext : SnappyContext = null
+
+  def getOrCreate(sc: SparkContext): SnappyContext = {
+    val gnc = cachedContext
+    if (gnc != null) gnc
+    else synchronized {
+      val gnc = cachedContext
+      if (gnc != null) gnc
+      else {
+        cachedContext = SnappyContext(sc)
+        cachedContext
+      }
+    }
+  }
+
+  protected def snc: SnappyContext = getOrCreate(sc)
 
   /**
    * Copied from SparkFunSuite.
@@ -133,9 +158,11 @@ abstract class SnappyFunSuite
   }
 
   def stopAll(): Unit = {
+    val sparkContext = SnappyContext.globalSparkContext
+    println(" Stopping spark context = " + sparkContext)
+    if(sparkContext != null) sparkContext.stop()
     // GemFireXD stop for local mode is now done by SnappyContext.stop()
-    println(" Stopping spark context = " + SnappyContext.globalSparkContext)
-    SnappyContext.stop()
+    cachedContext = null
   }
 
   def createDir(fileName: String): String = {
