@@ -92,7 +92,7 @@ class SnappyContext protected[spark](
   self =>
 
   protected[spark] def this(sc: SparkContext) {
-    this(sc, SQLContext.createListenerAndUI(sc), true)
+    this(sc, SnappyContext.sqlListener(sc), true)
   }
 
   @transient private[spark] lazy val snappyContextFunctions:
@@ -1141,6 +1141,7 @@ object GlobalSnappyInit {
   private val aqpContextFunctionImplClass =
     "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
 
+
   private[spark] def getSnappyContextFunctionsImpl: SnappyContextFunctions = {
     Try {
       val mirror = u.runtimeMirror(getClass.getClassLoader)
@@ -1162,6 +1163,7 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
+
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
 
@@ -1193,11 +1195,26 @@ object SnappyContext extends Logging {
       throw new IllegalStateException("Invalid SparkConf")
   }
 
+
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
     SparkContext.getOrCreate(INVALID_CONF)
   } catch {
     case _: IllegalStateException => null
+  }
+
+
+  @volatile private[this] var _sqlListener : SQLListener = _
+
+  def sqlListener(sc : SparkContext) : SQLListener = {
+    if(_sqlListener == null){
+      synchronized {
+        if(_sqlListener == null) {
+          _sqlListener = SQLContext.createListenerAndUI(sc)
+        }
+      }
+    }
+    _sqlListener
   }
 
   private def newSnappyContext(sc: SparkContext) = {
@@ -1372,6 +1389,7 @@ object SnappyContext extends Logging {
     }
     _clusterMode = null
     _anySNContext = null
+    _sqlListener  = null
     _globalSNContextInitialized = false
 
   }
