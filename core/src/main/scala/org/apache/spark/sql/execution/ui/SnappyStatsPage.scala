@@ -32,6 +32,7 @@ import org.apache.spark.util.Utils
 /** Page showing list of tables currently stored in the cluster */
 private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
     extends WebUIPage("") with Logging {
+  val numFormatter = java.text.NumberFormat.getIntegerInstance
   def render(request: HttpServletRequest): Seq[Node] = {
     val uiDetails = StoreTableSizeProvider.getTableSizes
     val snappyRowTable = UIUtils.listingTable(
@@ -61,7 +62,7 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
         {Utils.bytesToString(stats.rowBufferSize)}
       </td>
       <td sorttable_customkey={stats.rowBufferCount.toString}>
-        {Utils.bytesToString(stats.rowBufferCount)}
+        {numFormatter.format(stats.rowBufferCount)}
       </td>
     </tr>
   }
@@ -76,13 +77,13 @@ private[ui] class SnappyStatsPage(parent: SnappyStatsTab)
         {Utils.bytesToString(stats.rowBufferSize)}
       </td>
       <td sorttable_customkey={stats.rowBufferCount.toString}>
-        {Utils.bytesToString(stats.rowBufferCount)}
+        {numFormatter.format(stats.rowBufferCount)}
       </td>
       <td sorttable_customkey={stats.columnBufferSize.toString}>
         {Utils.bytesToString(stats.columnBufferSize)}
       </td>
       <td sorttable_customkey={stats.columnBufferCount.toString}>
-        {Utils.bytesToString(stats.columnBufferCount)}
+        {numFormatter.format(stats.columnBufferCount)}
       </td>
       <td sorttable_customkey={totalSize.toString}>
         {Utils.bytesToString(totalSize)}
