@@ -24,6 +24,8 @@ usage="Usage: collect-debug-artifacts \
         [ -a|--all ] [ -v|--verbose ] [ -s starttimestamp|--start=starttimestamp ] \
         [ -e endtimestamp|--end=endtimestamp ]"
 
+timestamp_format="YYYY-MM-DD HH:MM[:SS]"
+
 SCRIPT_DIR="`dirname "$0"`"
 SCRIPT_DIR="`cd "$SCRIPT_DIR" && pwd`"
 
@@ -48,6 +50,8 @@ while [ "$1" != "" ]; do
       END_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
     -h|--help)
     echo $usage
+    echo 
+    echo "Timestamp format: ${timestamp_format}"
     exit 0
     ;;
     -a|--all)
@@ -110,7 +114,9 @@ function check_configs {
   else
     START_EPOCH=$(date +%s --date "${START_TIME}" 2>/dev/null)
     if ! [[ "$START_EPOCH" =~ $num_regex ]] ; then
-      echo "${START_TIME} error: Not expected date format" 
+      echo "Error: Not expected date format '${START_TIME}'"
+      echo 
+      echo "Expected Timestamp format: ${timestamp_format}"
       exit 1
     fi
   fi
@@ -120,7 +126,9 @@ function check_configs {
   else
     END_EPOCH=`date +%s --date "${END_TIME}" 2>/dev/null`
     if ! [[ $END_EPOCH =~ $num_regex ]] ; then
-      echo "${END_TIME} error: Not expected date format" 
+      echo "Error: Not expected date format '${END_TIME}'"
+      echo 
+      echo "Expected Timestamp format: ${timestamp_format}"
       exit 1
     fi
   fi
@@ -177,14 +185,14 @@ function collect_on_remote {
   retval=$?
   if [ ! -d ${tmp_dir} ]; then
     echo "FAILED TO CREATE tmp dir on ${host} at ${data_dir} with errno ${retval}"
-    return
+    exit 1
   fi
 
   # first get the pid. The latest log file with the header will have the pid
   host=`hostname`
   if [ ! -d "$data_dir" ]; then
     echo "${data_dir} not found on host: ${host}"
-    return
+    exit 1
   fi
 
   cd "$data_dir"
@@ -247,21 +255,24 @@ function collect_on_remote {
       echo "collecting files based on modified time"
     fi
     files=()
-    for l in $( ls -t *.log* 2>/dev/null )
+    prev_file_mod_epoch=0
+    for l in $( ls -tr *.log* 2>/dev/null )
     do
-      file_mod_epoch=`date +%s --date "$(ls  -l --time-style=long-iso $l | cut -d' ' -f6-7)"`
-      if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
+      file_mod_epoch=`stat -c %Y $l`
+      if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${prev_file_mod_epoch}" -le "${end_epoch}" ]; then
         if [ "${verbose}" = "1" ]; then
           echo "${l} MOD TIME = ${file_mod_epoch}"
           echo "Adding file ${l} to the array"
         fi
         files+=($l)
       fi
+      prev_file_mod_epoch=$file_mod_epoch
     done
 
-    for l in $( ls -t *.gfs* 2>/dev/null )
+    prev_file_mod_epoch=0
+    for l in $( ls -tr *.gfs* 2>/dev/null )
     do
-      file_mod_epoch=`date +%s --date "$(ls  -l --time-style=long-iso $l | cut -d' ' -f6-7)"`
+      file_mod_epoch=`stat -c %Y $l`
       if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${file_mod_epoch}" -le "${end_epoch}" ]; then
         if [ "${verbose}" = "1" ]; then
           echo "${l} MOD TIME = ${file_mod_epoch}"
@@ -269,6 +280,7 @@ function collect_on_remote {
         fi
         files+=($l)
       fi
+      prev_file_mod_epoch=$file_mod_epoch
     done
   fi
 
