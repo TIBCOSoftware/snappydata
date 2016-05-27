@@ -170,6 +170,75 @@ Create row tables using API, update the contents of row table
 ```
 
 
+### SnappyStreamingContext
+SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
+
+Below example shows how to use the SnappyStreaming Context to apply a schema to existing DStream and then query the schema Dstream with simple SQL. It also shows the SnappyStreaming Context ability to deal with sql queries.
+
+###### Scala
+```scala
+import org.apache.spark.sql._
+import org.apache.spark.streaming._
+import scala.collection.mutable
+import org.apache.spark.rdd._
+import org.apache.spark.sql.types._
+import scala.collection.immutable.Map
+
+  val snsc = new SnappyStreamingContext(sc, Duration(1))
+  val schema = StructType(List(StructField("id", IntegerType) ,StructField("text", StringType)))
+
+  case class ShowCaseSchemaStream (loc:Int, text:String)
+
+  snsc.snappyContext.dropTable("streamingExample", ifExists = true)
+  snsc.snappyContext.createTable("streamingExample", "column",  schema, Map.empty[String, String] , false)
+
+  def rddList(start:Int, end:Int) = sc.parallelize(start to end).map(i => ShowCaseSchemaStream( i, s"Text$i"))
+
+  val dstream = snsc.queueStream[ShowCaseSchemaStream](
+                mutable.Queue(rddList(1, 10), rddList(10, 20), rddList(20, 30)))
+
+  val schemaDStream = snsc.createSchemaDStream(dstream )
+
+  schemaDStream.foreachDataFrame(df => { 
+      df.write.format("column").
+      mode(SaveMode.Append).
+      options(Map.empty[String, String]).
+      saveAsTable("streamingExample")    })
+  
+  snsc.start()   
+  snsc.sql("select count(*) from streamingExample").show
+```
+
+###### Python
+```python
+from pyspark.streaming.snappy.context import SnappyStreamingContext
+from pyspark.sql.types import *
+
+def  rddList(start, end): 
+  return sc.parallelize(range(start,  end)).map(lambda i : ( i, "Text" + str(i)))
+
+def saveFunction(df):
+   df.write.format("column").mode("append").saveAsTable("streamingExample")
+  
+schema=StructType([StructField("loc", IntegerType()), 
+                   StructField("text", StringType())])
+
+snsc = SnappyStreamingContext(sc, 1)
+
+snsc.queueStream([rddList(1,10) , rddList(10,20), rddList(20,30)])
+
+snsc._snappycontext.dropTable("streamingExample" , True)
+snsc._snappycontext.createTable("streamingExample", "column", schema)
+
+dstream = snsc.queueStream(getQueueOfRDDs())
+schemadstream = snsc.createSchemaDStream(dstream, schema)
+schemadstream.foreachDataFrame(lambda df: saveFunction(df))
+snsc.start()
+
+snsc.sql("select count(*) from streamingExample").show()
+```
+The Snappy Python Streaming Api have limited features in compare to it's corresponding scala API. It does not support TopK structures and registerCQ.
+
 ### Running Spark programs inside the database
 
 > Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.
