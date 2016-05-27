@@ -67,7 +67,8 @@ public class SnappyTest implements Serializable {
     public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForCloseTask, 6000);
     private static Boolean logDirExists = false;
-
+    private Connection connection = null;
+    private static HydraThreadLocal localconnection = new HydraThreadLocal();
 
     public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
@@ -169,7 +170,10 @@ public class SnappyTest implements Serializable {
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("Store") || dirPath.contains("server")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                //String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+
+                String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets();
+
                 if (serverLogDir == null) {
                     String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the servers file under conf directory";
                     throw new TestException(s);
@@ -179,7 +183,12 @@ public class SnappyTest implements Serializable {
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
             } else if (dirPath.contains("lead")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                //String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+
+                String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores="+ SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize="+SnappyPrms.getDriverMaxResultSize()+" -dir=" + dirPath + clientPort + port + " -J-Xmx"+ SnappyPrms.getLeadMemory()
+                    + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() +" -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets();
+
+                Log.getLogWriter().info("KBKBKB : " + leadLogDir);
                 if (leadLogDir == null) {
                     String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the leads file under conf directory";
                     throw new TestException(s);
@@ -322,10 +331,44 @@ public class SnappyTest implements Serializable {
         return pidList;
     }
 
+    //TODO: SWATI can you please incorporate this hydrathreadlocal changes for your tests too. Here coonection is made threadlocal
+    protected void initHydraThreadLocals() {
+        this.connection = getConnection();
+    }
+
+    protected Connection getConnection() {
+        Connection connection = (Connection)localconnection.get();
+        return connection;
+    }
+
+    protected void setConnection(Connection connection) {
+        localconnection.set(connection);
+    }
+
+    protected void updateHydraThreadLocals() {
+        setConnection(this.connection);
+    }
+
+    public static void HydraTask_getClientConnection_Snappy() throws SQLException {
+        SnappyTest st = new SnappyTest();
+        st.connectThinClient();
+        st.updateHydraThreadLocals();
+    }
+
+    private void connectThinClient() throws SQLException {
+        connection = getLocatorConnection();
+    }
+
+    public static Connection getClientConnection(){
+        SnappyTest st = new SnappyTest();
+        st.initHydraThreadLocals();
+        return st.getConnection();
+    }
 
     public static void HydraTask_getClientConnection() throws SQLException {
         getLocatorConnection();
     }
+
 
     /**
      * Gets Client connection.
@@ -590,6 +633,12 @@ public class SnappyTest implements Serializable {
         }
     }
 
+    public static void HydraTask_executeSnappyStreamingJob_benchmarking() {
+        snappyTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNamesForTask(),
+            "snappyStreamingJobTaskResult" + System.currentTimeMillis() + ".log");
+    }
+
+
     /**
      * Executes snappy Streaming Jobs in Task.
      */
@@ -630,21 +679,26 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String APP_PROPS = "\"dataDirName=" + simulateStreamScriptDestinationFolder + "\"";
-                String contextName = "snappyStreamingContext" + System.currentTimeMillis();
-                String contextFactory = "org.apache.spark.sql.streaming.SnappyStreamingContextFactory";
-                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
-                String curlCommand2 = "curl -d  \"\"" + " '" + leadHost + ":8090/" + "contexts/" + contextName + "?context-factory=" + contextFactory + "'";
-                String curlCommand3 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "&context=" + contextName + "'";
-                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
+                pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":8090", "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar), "--stream");
+                java.util.Map<String, String> env = pb.environment();
+                env.put("APP_PROPS",  SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions="+SnappyPrms.getShufflePartitions());
                 log = new File(".");
+                //TODO : For Swati: For Ch benchmark testing we are reading Snappyprms-appPropsForJobServer. we need to decode them in nice way. crude way is given above.
+//                String APP_PROPS = "\"dataDirName=" + simulateStreamScriptDestinationFolder + "\"";
+//                String contextName = "snappyStreamingContext" + System.currentTimeMillis();
+//                String contextFactory = "org.apache.spark.sql.streaming.SnappyStreamingContextFactory";
+//                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
+//                String curlCommand2 = "curl -d  \"\"" + " '" + leadHost + ":8090/" + "contexts/" + contextName + "?context-factory=" + contextFactory + "'";
+//                String curlCommand3 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "&context=" + contextName + "'";
+//                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
+//                log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
                 snappyTest.executeProcess(pb, logFile);
-                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand2);
-                snappyTest.executeProcess(pb, logFile);
-                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand3);
-                snappyTest.executeProcess(pb, logFile);
+//                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand2);
+//                snappyTest.executeProcess(pb, logFile);
+//                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand3);
+//                snappyTest.executeProcess(pb, logFile);
             }
 //            sleep(waitTimeBeforeJobStatus);
             snappyTest.getSnappyJobsStatus(snappyJobScript, logFile);
@@ -673,7 +727,7 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String APP_PROPS = "\"logFileName=" + logFileName + "\"";
+                String APP_PROPS = "\"logFileName=" + logFileName + ",shufflePartitions="+SnappyPrms.getShufflePartitions()+"\"";
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
                 pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);

@@ -90,6 +90,76 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long waitTimeBeforeNextCycleVM;
 
+    /**
+     * TODO: It should be removed. Swati is working on this
+     */
+    public static Long  appPropsForJobServer;
+
+    /**
+     * TODO: Swati is gone add proper support for all below SnappyPrms.
+     */
+    public static Long executorCores;
+    public static int getExecutorCores() {
+        Long key = executorCores;
+        return tasktab().intAt(key, tab().intAt(key, 1));
+    }
+
+    public static Long driverMaxResultSize;
+    public static String getDriverMaxResultSize() {
+        Long key = driverMaxResultSize;
+        return tab().stringAt(key, "1g").toLowerCase();
+    }
+
+    public static Long locatorMemory;
+    public static String getLocatorMemory() {
+        Long key = locatorMemory;
+        return tab().stringAt(key, "1G");
+    }
+    public static Long serverMemory;
+    public static String getServerMemory() {
+        Long key = serverMemory;
+        return tab().stringAt(key, "1G");
+    }
+    public static Long leadMemory;
+    public static String getLeadMemory() {
+        Long key = leadMemory;
+        return tab().stringAt(key,"1G");
+    }
+
+    public static Long sparkSchedulerMode;
+    public static String getSparkSchedulerMode() {
+        Long key = sparkSchedulerMode;
+        return tab().stringAt(key, "FAIR");
+    }
+
+    public static Long sparkSqlBroadcastJoinThreshold;
+    public static int getSparkSqlBroadcastJoinThreshold() {
+        Long key = sparkSqlBroadcastJoinThreshold;
+        return tasktab().intAt(key, tab().intAt(key, -1));
+    }
+
+    public static Long compressedInMemoryColumnarStorage;
+    public static boolean getCompressedInMemoryColumnarStorage() {
+        Long key = compressedInMemoryColumnarStorage;
+        return tasktab().booleanAt(key, tab().booleanAt(key, false));
+    }
+
+    public static Long conserveSockets;
+    public static boolean getConserveSockets() {
+        Long key = conserveSockets;
+        return tasktab().booleanAt(key, tab().booleanAt(key, false));
+    }
+
+    public static Long shufflePartitions;
+    public static int getShufflePartitions() {
+        Long key = shufflePartitions;
+        return tasktab().intAt(key, tab().intAt(key, 1));
+    }
+
+    public static String getCommaSepAPPProps() {
+        Long key = appPropsForJobServer;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    }
 
     public static Vector getSQLScriptNamesForInitTask() {
         Long key = sqlScriptNamesForInitTask;

@@ -20,11 +20,12 @@ package io.snappydata.hydra
 import java.io.PrintWriter
 
 import com.typesafe.config.Config
+import spark.jobserver.{SparkJobValid, SparkJobValidation}
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.streaming.SnappyStreamingJob
-import org.apache.spark.sql.types.{TimestampType, IntegerType, LongType, StructType}
+import org.apache.spark.sql.types.{IntegerType, StructType, TimestampType}
 import org.apache.spark.streaming.Duration
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
@@ -62,9 +63,7 @@ class BenchmarkingStreamingJob extends SnappyStreamingJob {
 
     val windowStreamAsTable = snsc.createSchemaDStream(window_rows, schema)
 
-    snsc.sql("set spark.sql.shuffle.partitions=53")
-
-    import org.apache.spark.sql.functions._
+    snsc.sql("set spark.sql.shuffle.partitions="+ jobConfig.getInt("shufflePartitions"))
     windowStreamAsTable.foreachDataFrame(df =>
       {
         val outFileName = s"BenchmarkingStreamingJob-${System.currentTimeMillis()}.out"
