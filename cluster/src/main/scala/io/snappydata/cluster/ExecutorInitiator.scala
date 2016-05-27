@@ -21,17 +21,18 @@ import java.net.URL
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 
-import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import io.snappydata.gemxd.ClusterCallbacksImpl
-
 import scala.collection.mutable
+import scala.util.control.Breaks._
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.message.SnappyExecutorMessage
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
@@ -202,6 +203,8 @@ object ExecutorInitiator extends Logging {
                       cores, userClassPath, env)
 
                     rpcenv.setupEndpoint("Executor", executor)
+
+                    updateBlockId()
                   }
                 case None =>
                 // If driver url is none, already running executor is stopped.
@@ -235,6 +238,56 @@ object ExecutorInitiator extends Logging {
       case Some(x) => x
       case None => ""
     }
+  }
+
+  def updateBlockId(): Unit = {
+    // This wait is needed because the executor is created in another thread
+    // and we cannot send this message before we have the block manager id
+    if (!waitUntilBlockManagerIdInitialized()) {
+      logError("Block manager not initialized within 5000 ms.")
+      return
+    }
+
+    val msg: SnappyExecutorMessage = new SnappyExecutorMessage(SparkEnv.get.blockManager.blockManagerId)
+    var msgNotSent = true
+    var count = 0
+    while (msgNotSent) {
+      try {
+        msg.executeFunction(false, false, null, false)
+        msgNotSent = false
+        if (count > 0) {
+          logInfo(s"Successfully sent the block manager id to the driver.")
+        }
+      }
+      catch {
+        case e: Exception => {
+          logWarning(s"Failed to send the block manager id to the driver: ${e.getMessage}")
+          if (e.getMessage.contains("GemFireXD system shutdown.")) {
+            return
+          }
+          count += 1
+          if (count >= 5) {
+            // Do not fail the executor initiation
+            msgNotSent = false
+            logError(s"Failed to send the block manager id to the driver: ", e)
+          }
+        }
+      }
+    }
+  }
+
+  def waitUntilBlockManagerIdInitialized(): Boolean = {
+    var done = false
+    breakable {
+      for (i <- 0 until 100) {
+        Thread.sleep(50)
+        if (SparkEnv.get.blockManager.blockManagerId != null) {
+          done = true
+          break
+        }
+      }
+    }
+    done
   }
 
   /**

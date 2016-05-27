@@ -16,9 +16,10 @@
  */
 package io.snappydata.gemxd
 
-import java.lang.Long
+import java.io.Externalizable
 import java.util
 
+import com.gemstone.gemfire.distributed.DistributedMember
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.ByteArrayDataInput
 import com.gemstone.gemfire.internal.shared.Version
@@ -29,6 +30,8 @@ import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
+import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.storage.BlockManagerId
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -87,5 +90,10 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   override def clearSnappyContextForConnection(
       connectionId: java.lang.Long): Unit = {
     SnappyContextPerConnection.removeSnappyContext(connectionId)
+  }
+
+  override def updateBlockMap(dm: DistributedMember, blockId: Externalizable): Unit = {
+    StoreUtils.storeToBlockMap(dm.asInstanceOf[InternalDistributedMember]) =
+        blockId.asInstanceOf[BlockManagerId]
   }
 }

@@ -17,6 +17,7 @@
 package org.apache.spark.sql.store
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -32,7 +33,7 @@ import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{Logging, Partition, SparkContext}
+import org.apache.spark.{SparkEnv, Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
 
@@ -79,6 +80,9 @@ object StoreUtils extends Logging {
   val SHADOW_COLUMN_NAME = "rowid"
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
+
+  val storeToBlockMap: TrieMap[InternalDistributedMember, BlockManagerId] =
+    TrieMap.empty[InternalDistributedMember, BlockManagerId]
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -137,7 +141,12 @@ object StoreUtils extends Logging {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
     val blockMap = new StoreInitRDD(sqlContext, table,
       schema, partitions, connProperties).collect()
-    blockMap.toMap
+
+    // TODO ashetkar Place below if block somewhere else where it gets invoked just once.
+    if (Utils.isLoner(sqlContext.sparkContext)) {
+      storeToBlockMap(Misc.getGemFireCache.getMyId) = SparkEnv.get.blockManager.blockManagerId
+    }
+    storeToBlockMap.toMap
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,

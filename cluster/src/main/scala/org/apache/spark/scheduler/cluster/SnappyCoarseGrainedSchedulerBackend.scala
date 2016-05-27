@@ -16,14 +16,35 @@
  */
 package org.apache.spark.scheduler.cluster
 
+import java.util
+
+import com.gemstone.gemfire.distributed.internal.MembershipListener
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.TaskSchedulerImpl
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Logging, SparkEnv}
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {
 
   private val snappyAppId = "snappy-app-" + System.currentTimeMillis
+
+  val membershipListener = new MembershipListener {
+    override def quorumLost(failures: util.Set[InternalDistributedMember],
+        remaining: util.List[InternalDistributedMember]): Unit = {}
+
+    override def memberJoined(id: InternalDistributedMember): Unit = {}
+
+    override def memberSuspect(id: InternalDistributedMember,
+        whoSuspected: InternalDistributedMember): Unit = {}
+
+    override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
+      StoreUtils.storeToBlockMap -= id
+    }
+  }
 
   /**
    * Overriding the spark app id function to provide a snappy specific app id.
@@ -41,6 +62,8 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
     _driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
       RpcAddress(driverEndpoint.address.host, driverEndpoint.address.port),
       CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+    GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+        .addMembershipListener(membershipListener)
     logInfo(s"started with driverUrl $driverUrl")
   }
 
@@ -48,6 +71,8 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
     super.stop()
     _driverUrl = ""
     SnappyClusterManager.cm.map(_.stopLead()).isDefined
+    GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+        .removeMembershipListener(membershipListener)
     logInfo(s"stopped successfully")
   }
 
