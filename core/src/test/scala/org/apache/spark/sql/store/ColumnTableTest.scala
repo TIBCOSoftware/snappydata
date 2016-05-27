@@ -45,7 +45,16 @@ class ColumnTableTest
 
   after {
     snc.dropTable(tableName, ifExists = true)
-    snc.dropTable("ColumnTable2", ifExists = true)
+    snc.dropTable("ROW_TABLE2", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE1", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE2", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE4", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE5", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE6", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE7", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE8", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE9", ifExists = true)
+    snc.dropTable("COLUMN_TEST_TABLE10", ifExists = true)
   }
 
   val tableName: String = "ColumnTable"
@@ -80,7 +89,7 @@ class ColumnTableTest
   test("Test the creation/dropping of table using Snappy API") {
     //shouldn't be able to create without schema
     intercept[AnalysisException] {
-      snc.createTable(tableName, "column", props)
+      snc.createTable(tableName, "column", props, allowExisting = false)
     }
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))

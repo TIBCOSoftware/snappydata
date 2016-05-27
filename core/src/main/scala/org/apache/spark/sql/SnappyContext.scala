@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.sql.SQLException
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -27,25 +26,27 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property}
+import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
 
-import org.apache.spark.annotation.{Experimental, DeveloperApi}
+import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{GenericRow, Alias, Cast, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Cast, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
-import org.apache.spark.sql.execution.ui.SQLListener
+import org.apache.spark.sql.execution.ui.{SQLListener, SnappyStatsTab}
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.row.{JDBCMutableRelation, GemFireXDDialect}
+import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
@@ -54,7 +55,6 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
-import scala.collection.JavaConverters._
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -101,13 +101,11 @@ class SnappyContext protected[spark](
   // initialize GemFireXDDialect so that it gets registered
 
   GemFireXDDialect.init()
-  GlobalSnappyInit.initGlobalSnappyContext(sparkContext)
+  SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
-
-
-
-  override val prepareForExecution: RuleExecutor[SparkPlan] = snappyContextFunctions.getAQPRuleExecutor(this)
+  override val prepareForExecution: RuleExecutor[SparkPlan] =
+    snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -133,9 +131,17 @@ class SnappyContext protected[spark](
   override protected[sql] def executePlan(plan: LogicalPlan) =
     snappyContextFunctions.executePlan(this, plan)
 
+  private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
+
+  def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
+
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
+
+  def clear(): Unit = {
+    snappyContextFunctions.clear()
+  }
   /**
    * :: DeveloperApi ::
    * @todo do we need this anymore? If useful functionality, make this
@@ -228,19 +234,74 @@ class SnappyContext protected[spark](
    * @todo provide lot more details and examples to explain creating and
    *       using sample tables with time series and otherwise
    * @param tableName the qualified name of the table
-   * @param schema
-   * @param samplingOptions
-   * @param ifExists
-   */
-  def createSampleTable(tableName: String, schema: Option[StructType],
+   * @param samplingOptions sampling options like QCS, reservoir size etc.
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+    */
+  def createSampleTable(tableName: String,
       samplingOptions: Map[String, String],
-      ifExists: Boolean = false): DataFrame = {
+      allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
-      SnappyContext.SAMPLE_SOURCE, schema, schemaDDL = None,
-      SaveMode.ErrorIfExists, samplingOptions,
+      SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
+
+  /**
+   * Create a stratified sample table. Java friendly version.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
+   * @param samplingOptions sampling options like QCS, reservoir size etc.
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+   */
+  def createSampleTable(tableName: String,
+      samplingOptions: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createSampleTable(tableName, samplingOptions.asScala.toMap, allowExisting)
+  }
+
+
+  /**
+   * Create a stratified sample table.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
+   * @param schema schema of the table
+   * @param samplingOptions sampling options like QCS, reservoir size etc.
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+   */
+  def createSampleTable(tableName: String,
+      schema: StructType,
+      samplingOptions: Map[String, String],
+      allowExisting: Boolean = false): DataFrame = {
+    val plan = createTable(catalog.newQualifiedTableName(tableName),
+      SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
+      onlyBuiltIn = true, onlyExternal = false)
+    DataFrame(self, plan)
+  }
+
+  /**
+   * Create a stratified sample table. Java friendly version.
+   * @todo provide lot more details and examples to explain creating and
+   *       using sample tables with time series and otherwise
+   * @param tableName the qualified name of the table
+   * @param schema schema of the table
+   * @param samplingOptions sampling options like QCS, reservoir size etc.
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+   */
+  def createSampleTable(tableName: String,
+      schema: StructType,
+      samplingOptions: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createSampleTable(tableName, schema, samplingOptions.asScala.toMap, allowExisting)
+  }
+
 
   /**
    * Create approximate structure to query top-K with time series support.
@@ -250,16 +311,73 @@ class SnappyContext protected[spark](
    * @param keyColumnName
    * @param inputDataSchema
    * @param topkOptions
-   * @param ifExists
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
    */
   def createApproxTSTopK(topKName: String, keyColumnName: String,
-      inputDataSchema: Option[StructType], topkOptions: Map[String, String],
-      ifExists: Boolean = false): DataFrame = {
+      inputDataSchema: StructType, topkOptions: Map[String, String],
+      allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
-      SnappyContext.TOPK_SOURCE, inputDataSchema, schemaDDL = None,
-      SaveMode.ErrorIfExists, topkOptions + ("key" -> keyColumnName),
+      SnappyContext.TOPK_SOURCE, Some(inputDataSchema), schemaDDL = None,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      topkOptions + ("key" -> keyColumnName),
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
+  }
+
+  /**
+   * Create approximate structure to query top-K with time series support.
+   * Java friendly api.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   * @param keyColumnName
+   * @param inputDataSchema
+   * @param topkOptions
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+   */
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      inputDataSchema: StructType, topkOptions: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createApproxTSTopK(topKName, keyColumnName, inputDataSchema,
+      topkOptions.asScala.toMap, allowExisting)
+  }
+
+  /**
+   * Create approximate structure to query top-K with time series support.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   * @param keyColumnName
+   * @param topkOptions
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+   */
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      topkOptions: Map[String, String], allowExisting: Boolean): DataFrame = {
+    val plan = createTable(catalog.newQualifiedTableName(topKName),
+      SnappyContext.TOPK_SOURCE, None, schemaDDL = None,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      topkOptions + ("key" -> keyColumnName),
+      onlyBuiltIn = true, onlyExternal = false)
+    DataFrame(self, plan)
+  }
+
+  /**
+   * Create approximate structure to query top-K with time series support. Java
+   * friendly api.
+   * @todo provide lot more details and examples to explain creating and
+   *       using TopK with time series
+   * @param topKName the qualified name of the top-K structure
+   * @param keyColumnName
+   * @param topkOptions
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
+   */
+  def createApproxTSTopK(topKName: String, keyColumnName: String,
+      topkOptions: java.util.Map[String, String], allowExisting: Boolean): DataFrame = {
+    createApproxTSTopK(topKName, keyColumnName, topkOptions.asScala.toMap, allowExisting)
   }
 
   /**
@@ -275,15 +393,19 @@ class SnappyContext protected[spark](
    * @param tableName Name of the table
    * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param options Properties for table creation
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
       tableName: String,
       provider: String,
-      options: Map[String, String]): DataFrame = {
+      options: Map[String, String],
+      allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
-      SaveMode.ErrorIfExists, options,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
@@ -302,14 +424,17 @@ class SnappyContext protected[spark](
     * @param tableName Name of the table
     * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
     * @param options Properties for table creation
+    * @param allowExisting When set to true it will ignore if a table with the same name is
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
   @Experimental
   def createTable(
       tableName: String,
       provider: String,
-      options: java.util.Map[String, String]): DataFrame = {
-    createTable(tableName, provider, options.asScala.toMap)
+      options: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createTable(tableName, provider, options.asScala.toMap, allowExisting)
   }
   /**
    * Creates a Snappy managed table. Any relation providers (e.g. parquet, jdbc etc)
@@ -330,15 +455,20 @@ class SnappyContext protected[spark](
    * @param schema   Table schema
    * @param options  Properties for table creation. See options list for different tables.
    *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
       tableName: String,
       provider: String,
       schema: StructType,
-      options: Map[String, String]): DataFrame = {
+      options: Map[String, String],
+      allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
-      Some(schema), schemaDDL = None, SaveMode.ErrorIfExists, options,
+      Some(schema), schemaDDL = None,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
@@ -364,6 +494,8 @@ class SnappyContext protected[spark](
     * @param schema   Table schema
     * @param options  Properties for table creation. See options list for different tables.
     *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+    * @param allowExisting When set to true it will ignore if a table with the same name is
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
   @Experimental
@@ -371,8 +503,9 @@ class SnappyContext protected[spark](
       tableName: String,
       provider: String,
       schema: StructType,
-      options: java.util.Map[String, String]): DataFrame = {
-    createTable(tableName, provider, schema, options.asScala.toMap)
+      options: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createTable(tableName, provider, schema, options.asScala.toMap, allowExisting)
   }
   /**
    * Creates a Snappy managed JDBC table which takes a free format ddl string. The ddl string
@@ -390,7 +523,7 @@ class SnappyContext protected[spark](
    * "password" -> "app"
    * )
    *
-
+   *
    * val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
    * snappyContext.createTable("jdbcTable", "jdbc", schemaDDL, props)
    *
@@ -413,20 +546,24 @@ class SnappyContext protected[spark](
    * @param schemaDDL Table schema as a string interpreted by provider
    * @param options   Properties for table creation. See options list for different tables.
    * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   * @param allowExisting When set to true it will ignore if a table with the same name is
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
       tableName: String,
       provider: String,
       schemaDDL: String,
-      options: Map[String, String]): DataFrame = {
+      options: Map[String, String],
+      allowExisting: Boolean): DataFrame = {
     var schemaStr = schemaDDL.trim
     if (schemaStr.charAt(0) != '(') {
       schemaStr = "(" + schemaStr + ")"
     }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, Some(schemaStr),
-      SaveMode.ErrorIfExists, options,
+      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
@@ -470,6 +607,8 @@ class SnappyContext protected[spark](
     * @param schemaDDL Table schema as a string interpreted by provider
     * @param options   Properties for table creation. See options list for different tables.
     * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+    * @param allowExisting When set to true it will ignore if a table with the same name is
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
 
@@ -478,8 +617,9 @@ class SnappyContext protected[spark](
       tableName: String,
       provider: String,
       schemaDDL: String,
-      options: java.util.Map[String, String]): DataFrame = {
-    createTable(tableName , provider , schemaDDL , options.asScala.toMap)
+      options: java.util.Map[String, String],
+      allowExisting: Boolean): DataFrame = {
+    createTable(tableName , provider , schemaDDL , options.asScala.toMap, allowExisting)
   }
 
   /**
@@ -533,6 +673,7 @@ class SnappyContext protected[spark](
     val plan = LogicalRelation(resolved.relation)
     catalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
       source, params, resolved.relation)
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     plan
   }
 
@@ -593,6 +734,7 @@ class SnappyContext protected[spark](
       catalog.registerDataSourceTable(tableIdent, Some(data.schema),
         partitionColumns, source, params, resolved.relation)
     }
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     LogicalRelation(resolved.relation)
   }
 
@@ -657,19 +799,30 @@ class SnappyContext protected[spark](
   }
 
   /**
-    * Create an index on a table.
-    * @param indexName Index name which goes in the catalog
-    * @param baseTable Fully qualified name of table on which the index is created.
-    * @param indexColumns Columns on which the index has to be created
-    * @param options Options for indexes. For e.g.
-    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
-    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
-    */
+   * Create an index on a table.
+   * @param indexName Index name which goes in the catalog
+   * @param baseTable Fully qualified name of table on which the index is created.
+   * @param indexColumns Columns on which the index has to be created along with the
+   *                     sorting direction.The direction of index will be ascending
+   *                     if value is true and descending when value is false.
+   *                     Direction can be specified as null
+   * @param options Options for indexes. For e.g.
+   *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
+   *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
+   */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, Option[SortDirection]],
+      indexColumns: java.util.Map[String, java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-    createIndex(indexName, baseTable, indexColumns.asScala.toMap, options.asScala.toMap)
+
+
+    val indexCol = indexColumns.asScala.mapValues {
+      case null => None
+      case java.lang.Boolean.TRUE => Some(Ascending)
+      case java.lang.Boolean.FALSE => Some(Descending)
+    }
+
+    createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
   }
 
   /**
@@ -699,7 +852,6 @@ class SnappyContext protected[spark](
       throw new AnalysisException(
         s"Could not find $tableIdent in catalog")
     }
-    import scala.collection.JavaConverters._
     catalog.lookupRelation(tableIdent) match {
       case LogicalRelation(ir: IndexableRelation, _) =>
         ir.createIndex(indexIdent,
@@ -1004,54 +1156,13 @@ object GlobalSnappyInit {
       case Failure(_) => SnappyContextDefaultFunctions
     }
   }
-
-  @volatile private[this] var _globalSNContextInitialized: Boolean = false
-  private[this] val contextLock = new AnyRef
-
-  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
-    if (!_globalSNContextInitialized ) {
-      contextLock.synchronized {
-        if (!_globalSNContextInitialized) {
-          invokeServices(sc)
-          _globalSNContextInitialized = true
-        }
-      }
-    }
-  }
-
-  private[sql] def resetGlobalSNContext(): Unit =
-    _globalSNContextInitialized = false
-
-  private def invokeServices(sc: SparkContext): Unit = {
-    SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) =>
-        // NOTE: if Property.jobServer.enabled is true
-        // this will trigger SnappyContext.apply() method
-        // prior to `new SnappyContext(sc)` after this
-        // method ends.
-        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-       // SnappyDaemons.start(sc)
-      case SnappyShellMode(_, _) =>
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-      //  SnappyDaemons.start(sc)
-      case ExternalEmbeddedMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-       // SnappyDaemons.start(sc)
-      case LocalMode(_, url) =>
-        SnappyContext.urlToConf(url, sc)
-        ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-       // SnappyDaemons.start(sc)
-      case _ => // ignore
-    }
-  }
 }
 
 object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
-
+  @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
 
   val COLUMN_SOURCE = "column"
@@ -1204,56 +1315,96 @@ object SnappyContext extends Logging {
         sc.master.substring(Constant.JDBC_URL_PREFIX.length))
     } else {
       val conf = sc.conf
-      val embedded = conf.getOption(Property.embedded).exists(_.toBoolean)
-      conf.getOption(Property.locators).collectFirst {
+      val embedded = Property.Embedded.getOption(conf).exists(_.toBoolean)
+      Property.Locators.getOption(conf).collectFirst {
         case s if !s.isEmpty =>
           val url = "locators=" + s + ";mcast-port=0"
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SnappyShellMode(sc, url)
-      }.orElse(conf.getOption(Property.mcastPort).collectFirst {
+          else SplitClusterMode(sc, url)
+      }.orElse(Property.McastPort.getOption(conf).collectFirst {
         case s if s.toInt > 0 =>
           val url = "mcast-port=" + s
           if (embedded) ExternalEmbeddedMode(sc, url)
-          else SnappyShellMode(sc, url)
+          else SplitClusterMode(sc, url)
       }).getOrElse {
         if (Utils.isLoner(sc)) LocalMode(sc, "mcast-port=0")
         else ExternalClusterMode(sc, sc.master)
       }
     }
   }
+  private[sql] def initGlobalSnappyContext(sc: SparkContext) = {
+    if (!_globalSNContextInitialized) {
+      contextLock.synchronized {
+        if (!_globalSNContextInitialized) {
+          invokeServices(sc)
+          sc.addSparkListener(new SparkContextListener)
+          sc.ui.foreach(new SnappyStatsTab(_))
+          _globalSNContextInitialized = true
+        }
+      }
+    }
+  }
+
+  private class SparkContextListener extends SparkListener {
+    override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+      stop(false)
+    }
+  }
+
+  private def invokeServices(sc: SparkContext): Unit = {
+    SnappyContext.getClusterMode(sc) match {
+      case SnappyEmbeddedMode(_, _) =>
+        // NOTE: if Property.jobServer.enabled is true
+        // this will trigger SnappyContext.apply() method
+        // prior to `new SnappyContext(sc)` after this
+        // method ends.
+        ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
+        StoreTableValueSizeProviderService.start(sc)
+      case SplitClusterMode(_, _) =>
+        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        StoreTableValueSizeProviderService.start(sc)
+      case ExternalEmbeddedMode(_, url) =>
+        SnappyContext.urlToConf(url, sc)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = false)
+        StoreTableValueSizeProviderService.start(sc)
+      case LocalMode(_, url) =>
+        SnappyContext.urlToConf(url, sc)
+        ServiceUtils.invokeStartFabricServer(sc, hostData = true)
+        StoreTableValueSizeProviderService.start(sc)
+      case _ => // ignore
+    }
+  }
 
   /**
-   * Shut down and cleanup the SparkContext and SnappyData artifacts.
-   * Prefer this over SparkContext.stop() when dealing with SnappyContext.
-   * <p>
-   * This method is not synchronized and is required to be executed by a single
-   * thread in a "quiet" state when no other threads are performing operations.
-   */
-  def stop(): Unit = {
+    * Shut down and cleanup and SnappyData artifacts.
+    */
+  def stop(stopSparkContext: Boolean = true): Unit = {
     val sc = globalSparkContext
-    if (sc != null && !sc.isStopped) {
-      // clean up the connection pool and caches on executors first
-      Utils.mapExecutors(sc, { (tc, p) =>
-        clearStaticArtifacts()
-        Iterator.empty
-      }).count()
+    if (stopSparkContext) {
+      if (sc != null && !sc.isStopped) {
+        // clear current hive catalog connection before stopping the sc
+        SnappyStoreHiveCatalog.closeCurrent()
+        sc.stop()
+      }
+    } else {
+      stopSnappyContext(sc)
+    }
+  }
+
+  private def stopSnappyContext(sc: SparkContext): Unit = {
+    if (_globalSNContextInitialized) {
       // then on the driver
       clearStaticArtifacts()
       // clear current hive catalog connection
       SnappyStoreHiveCatalog.closeCurrent()
-      if (ExternalStoreUtils.isShellOrLocalMode(sc)) {
-        try {
-          ServiceUtils.invokeStopFabricServer(sc)
-        } catch {
-          case se: SQLException if se.getCause.getMessage.indexOf(
-            "No connection to the distributed system") != -1 => // ignore
-        }
+      if (ExternalStoreUtils.isSplitOrLocalMode(sc)) {
+        ServiceUtils.invokeStopFabricServer(sc)
       }
-      sc.stop()
     }
     _clusterMode = null
     _anySNContext = null
-    GlobalSnappyInit.resetGlobalSNContext()
+    _globalSNContextInitialized = false
+
   }
 
   /** Cleanup static artifacts on this lead/executor. */
@@ -1400,7 +1551,7 @@ case class SnappyEmbeddedMode(override val sc: SparkContext,
  * this one is a separate local/Spark/Yarn/Mesos cluster fetching data from
  * the snappy cluster on demand that just remains like an external datastore.
  */
-case class SnappyShellMode(override val sc: SparkContext,
+case class SplitClusterMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode
 
 /**

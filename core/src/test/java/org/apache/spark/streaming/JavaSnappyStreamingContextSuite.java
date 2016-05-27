@@ -36,12 +36,13 @@ import org.apache.spark.api.java.function.Function0;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.streaming.SchemaDStream;
-import org.apache.spark.streaming.api.JavaSnappyStreamingContext;
+import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 import org.apache.spark.util.Utils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 
@@ -194,7 +195,6 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
     snsc = null;
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testGetActiveOrCreate() throws IOException{
 
@@ -230,7 +230,7 @@ public class JavaSnappyStreamingContextSuite implements Serializable {
 
     JavaDStream<String> input = snsc.textFileStream(testDir.toString());
     JavaTestUtils.attachTestOutputStream(input);
-    List<List<String>> result = JavaTestUtils.runStreams(snsc, 1, 1);
+    snsc.start();
 
 
     JavaSnappyStreamingContext returnedSsc = JavaSnappyStreamingContext.getActiveOrCreate

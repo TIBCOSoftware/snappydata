@@ -16,6 +16,10 @@
  */
 package io.snappydata
 
+import java.util.Properties
+
+import org.apache.spark.SparkConf
+
 /**
  * Constant names suggested per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
@@ -38,18 +42,26 @@ object Constant {
 
   val STORE_PROPERTY_PREFIX = s"${PROPERTY_PREFIX}store."
 
+  val SPARK_PREFIX = "spark."
+
+  val SPARK_SNAPPY_PREFIX = SPARK_PREFIX + PROPERTY_PREFIX
+
+  val SPARK_STORE_PREFIX = SPARK_PREFIX + STORE_PROPERTY_PREFIX
+
   private[snappydata] val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
   val DEFAULT_SCHEMA = "APP"
 
   val DEFAULT_CONFIDENCE: Double = 0.95
 
+  val DEFAULT_ERROR: Double = 0.2
+
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_ANALYTICS_SERVICE_INTERVAL: Long = 5000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
 
   // Internal Column table store schema
   final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
@@ -63,19 +75,96 @@ object Constant {
  * http://docs.scala-lang.org/style/naming-conventions.html
  * i.e. upper camel case.
  */
-object Property {
+object Property extends Enumeration {
 
-  val locators = s"${Constant.STORE_PROPERTY_PREFIX}locators"
+  final class ValueAlt(name: String, altName: String)
+      extends Property.Val(name) {
 
-  val mcastPort = s"${Constant.STORE_PROPERTY_PREFIX}mcast-port"
+    def getOption(conf: SparkConf): Option[String] = if (altName == null) {
+      conf.getOption(name)
+    } else {
+      conf.getOption(name) match {
+        case s: Some[String] => // check if altName also present and fail if so
+          if (conf.contains(altName)) {
+            throw new IllegalArgumentException(
+              s"Both $name and $altName configured. Only one should be set.")
+          } else s
+        case None => conf.getOption(altName)
+      }
+    }
 
-  val jobserverEnabled = s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled"
+    def getProperty(properties: Properties): String = if (altName == null) {
+      properties.getProperty(name)
+    } else {
+      val v = properties.getProperty(name)
+      if (v != null) {
+        // check if altName also present and fail if so
+        if (properties.getProperty(altName) != null) {
+          throw new IllegalArgumentException(
+            s"Both $name and $altName specified. Only one should be set.")
+        }
+        v
+      } else properties.getProperty(altName)
+    }
 
-  val jobserverConfigFile = s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile"
+    def apply(): String = name
 
-  val embedded = s"${Constant.PROPERTY_PREFIX}embedded"
+    def unapply(key: String): Boolean = name.equals(key) ||
+        (altName != null && altName.equals(key))
 
-  val metastoreDBURL = s"${Constant.PROPERTY_PREFIX}metastore-db-url"
+    override def toString(): String =
+      if (altName == null) name else name + '/' + altName
+  }
 
-  val metastoreDriver = s"${Constant.PROPERTY_PREFIX}metastore-db-driver"
+  type Type = ValueAlt
+
+  protected final def Val(name: String): ValueAlt =
+    new ValueAlt(name, null)
+
+  protected final def Val(name: String, prefix: String): ValueAlt =
+    new ValueAlt(name, prefix + name)
+
+  val Locators = Val(s"${Constant.STORE_PROPERTY_PREFIX}locators",
+    Constant.SPARK_PREFIX)
+
+  val McastPort = Val(s"${Constant.STORE_PROPERTY_PREFIX}mcast-port",
+    Constant.SPARK_PREFIX)
+
+  val JobserverEnabled = Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}enabled")
+
+  val JobserverConfigFile =
+    Val(s"${Constant.JOBSERVER_PROPERTY_PREFIX}configFile")
+
+  val Embedded = Val(s"${Constant.PROPERTY_PREFIX}embedded",
+    Constant.SPARK_PREFIX)
+
+  val MetastoreDBURL = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-url",
+    Constant.SPARK_PREFIX)
+
+  val MetastoreDriver = Val(s"${Constant.PROPERTY_PREFIX}metastore-db-driver",
+    Constant.SPARK_PREFIX)
+}
+
+/**
+ * SQL query hints as interpreted by the SnappyData SQL parser. The format
+ * mirrors closely the format used by Hive,Oracle query hints with a comment
+ * followed immediately by a '+' and then "key(value)" for the hint. Example:
+ * <p>
+ * SELECT * /*+ hint(value) */ FROM t1
+ */
+object QueryHint extends Enumeration {
+
+  type Type = Value
+
+  /**
+   * Query hint for SQL queries to serialize complex types (ARRAY, MAP, STRUCT)
+   * as CLOBs (their string representation) for routed JDBC/ODBC queries rather
+   * than as serialized blobs to display better in external tools.
+   * <p>
+   * Possible values are 'true/1' or 'false/0'
+   * <p>
+   * Example:<br>
+   * SELECT * FROM t1 --+ complexTypeAsClob(1)
+   */
+  val ComplexTypeAsClob = Value("complexTypeAsClob")
 }

@@ -1,0 +1,104 @@
+group 'io.snappydata'
+version '0.1.0-SNAPSHOT'
+
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+
+
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir "src/main/java"
+sourceSets.main.java.srcDirs = []
+sourceSets.test.resources.srcDirs "src/resources"
+
+
+repositories {
+    mavenCentral()
+}
+
+ext {
+    subprojectBase = ':snappy-store:'
+    osName = org.gradle.internal.os.OperatingSystem.current()
+}
+
+dependencies {
+    compile 'org.scala-lang:scala-library:' + scalaVersion
+    compile 'org.scala-lang:scala-reflect:' + scalaVersion
+    compile 'org.scala-lang:scala-compiler:' + scalaVersion
+    compile project(subprojectBase + 'gemfire-core')
+    compile project(subprojectBase + 'gemfire-tests')
+
+    compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+        exclude(group: 'org.scala-lang', module: 'scala-library')
+        exclude(group: 'org.scala-lang', module: 'scala-reflect')
+        exclude(group: 'org.scala-lang', module: 'scala-compiler')
+    }
+    compile project(':snappy-core_' + scalaBinaryVersion)
+    if (new File(rootDir, "spark/build.gradle").exists()) {
+        compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+        compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+        compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
+        compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+    } else {
+        compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + sparkVersion
+        compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + sparkVersion
+        compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + sparkVersion
+        compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + sparkVersion
+    }
+
+    if (new File(rootDir, "store/build.gradle").exists()) {
+        testCompile project(':snappy-store:gemfirexd-client')
+        testCompile project(':snappy-store:gemfirexd-core')
+        testCompile project(':snappy-store:gemfirexd-tools')
+        testCompile project(':snappy-store:gemfirexd-tests')
+        testCompile project(':snappy-store:gemfire-tests')
+        testCompile project(':snappy-store:gemfire-core')
+        testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
+    } else {
+        testCompile group: 'io.snappydata', name: 'gemfirexd-client', version: gemfireXDVersion
+        testCompile group: 'io.snappydata', name: 'gemfirexd', version: gemfireXDVersion
+        testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion
+        testCompile group: 'io.snappydata', name: 'gemfirexd-tests', version: gemfireXDVersion
+        testCompile group: 'io.snappydata', name: 'gemfire-tests', version: gemfireXDVersion
+        testCompile group: 'io.snappydata', name: 'gemfire-core', version: gemfireXDVersion
+        testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: gemfireXDVersion, classifier: 'tests'
+    }
+    testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
+    testCompile project(':snappy-cluster_' + scalaBinaryVersion)
+    testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
+    testRuntime 'org.pegdown:pegdown:1.1.0'
+//    testRuntime group: 'org.datanucleus', name: 'datanucleus-core', version:'3.2.10'
+
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+    classifier = 'javadoc'
+    from scaladoc
+}
+
+artifacts {
+  archives packageTests
+}
+if (rootProject.hasProperty('enablePublish')) {
+    artifacts {
+        archives packageScalaDocs, packageSources
+    }
+}
+
+archivesBaseName = 'gemfirexd-scala-tests'
+
+testClasses.doLast {
+  copyTestsCommonResources(buildDir)
+  if (new File(rootDir, "store/build.gradle").exists()) {
+    copy {
+      from (sourceSets.test.java.srcDirs) {
+          include '**/*.bt'
+          include '**/*.conf'
+          include '**/*.inc'
+          include '**/*.sql'
+      }
+      into project(':snappy-store:gemfirexd-tests').sourceSets.main.output.classesDir
+    }
+  }
+}

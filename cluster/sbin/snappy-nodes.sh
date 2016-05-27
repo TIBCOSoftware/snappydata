@@ -60,8 +60,8 @@ then
   shift
 fi
 
-. "$SPARK_PREFIX/bin/load-spark-env.sh"
-. "$SPARK_PREFIX/bin/load-snappy-env.sh"
+. "$SPARK_HOME/bin/load-spark-env.sh"
+. "$SPARK_HOME/bin/load-snappy-env.sh"
 
 
 case $componentType in

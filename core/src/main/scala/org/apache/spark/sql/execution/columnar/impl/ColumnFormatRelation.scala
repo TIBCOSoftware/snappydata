@@ -18,9 +18,6 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.Connection
 
-import org.apache.spark.sql.catalyst.expressions.SortDirection
-import org.apache.spark.sql.execution.datasources.LogicalRelation
-
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -29,17 +26,19 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.columnar.{CachedBatch, ColumnarRelationProvider, ConnectionType, ExternalStore, ExternalStoreUtils, JDBCAppendableRelation}
+import org.apache.spark.sql.execution.columnar._
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatScanRDD
 import org.apache.spark.sql.execution.{ConnectionPool, PartitionedDataSourceScan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.row.GemFireXDDialect
-import org.apache.spark.sql.sources.{JdbcExtendedDialect, _}
-import org.apache.spark.sql.store.{CodeGeneration, StoreInitRDD, StoreUtils}
+import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, SQLContext, SaveMode, _}
+import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappyContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
@@ -104,11 +103,7 @@ class BaseColumnFormatRelation(
   }
 
   override def partitionColumns: Seq[String] = {
-    connectionType match {
-      case ConnectionType.Embedded => partitioningColumns
-      // TODO: [sumedh] is the issue in comment below being tracked somewhere??
-      case _ => Seq.empty[String] // Temporary fix till we fix Non-EMbededed join
-    }
+    partitioningColumns
   }
 
   override def scanTable(tableName: String, requiredColumns: Array[String],
@@ -490,7 +485,7 @@ class ColumnFormatRelation(
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
     val snc = _context.asInstanceOf[SnappyContext]
-    val indexTblName = snc.getIndexTable(indexIdent).toString
+    val indexTblName = snc.getIndexTable(indexIdent).toString()
     val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
     val tempOptions = caseInsensitiveMap.filterNot(pair => {
       pair._1.equals(Utils.toLowerCase(StoreUtils.PARTITION_BY)) ||
@@ -531,12 +526,13 @@ class ColumnFormatRelation(
       snc.catalog.alterTableToAddIndexProp(
         tableIdent, snc.getIndexTable(indexIdent))
     } catch {
-      case e =>
+      case e: Throwable =>
         snc.dropTable(indexIdent, ifExists = false)
         throw e
     }
   }
 }
+
 /**
   * Currently this is same as ColumnFormatRelation but has kept it as a separate class
   * to allow adding of any index specific functionality in future.
@@ -595,11 +591,6 @@ object ColumnFormatRelation extends Logging with StoreCallback {
       userSchema: StructType, externalStore: ExternalStore): Unit = {
     StoreCallbacksImpl.registerExternalStoreAndSchema(sqlContext, table, userSchema,
       externalStore, sqlContext.conf.columnBatchSize, sqlContext.conf.useCompression)
-  }
-
-  private def removePool(table: String): () => Iterator[Unit] = () => {
-    ConnectionPool.removePoolReference(table)
-    Iterator.empty
   }
 
   final def cachedBatchTableName(table: String): String =

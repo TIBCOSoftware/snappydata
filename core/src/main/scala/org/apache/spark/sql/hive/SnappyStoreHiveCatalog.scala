@@ -18,15 +18,8 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-import java.util.{NoSuchElementException, List}
-import java.util.concurrent.ExecutionException
+import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 import java.util.concurrent.locks.ReentrantReadWriteLock
-
-import org.apache.hadoop.hive.metastore.api.{Index, Table}
-import org.apache.hadoop.hive.ql.index.{TableBasedIndexHandler, HiveIndexQueryContext}
-import org.apache.hadoop.hive.ql.parse.ParseContext
-import org.apache.hadoop.hive.ql.plan.ExprNodeDesc
-import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -38,7 +31,9 @@ import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
+import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
+import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.Logging
@@ -47,6 +42,7 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.Catalog
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Subquery}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendableRelation}
 import org.apache.spark.sql.execution.datasources.{LogicalRelation, ResolvedDataSource}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
@@ -65,7 +61,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   override val conf = context.conf
 
-  val tempTables = new mutable.HashMap[QualifiedTableName, LogicalPlan]()
+  val tempTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
 
   /**
    * The version of the hive client that will be used to communicate
@@ -128,7 +124,14 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   protected[sql] var client: ClientWrapper =
     newClient().asInstanceOf[ClientWrapper]
 
-  private def newClient(): ClientInterface = {
+  // As long as threads using same IsolatedClientLoader, they should
+  // use the cached Hive client and not create a new one. we will be setting the cached client as
+  // soon as the ClientWrapper is initialized, so that any thread accessing Hive client after
+  // that will get the cached client. This change will be redundant after Spark 2.0 merge. But
+  // for the time being it will avoid ThreadLocal access to set SessionState.
+  protected val internalHiveclient = this.client.client
+
+  private def newClient(): ClientInterface = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
 
@@ -250,22 +253,23 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   private def resolveMetaStoreDBProps(): (Boolean, String, String) = {
     val sc = context.sparkContext
     val sparkConf = sc.conf
-    val url = sparkConf.get(Property.metastoreDBURL, null)
-    if (url != null) {
-      val driver = sparkConf.get(Property.metastoreDriver, null)
-      (false, url, driver)
-    } else SnappyContext.getClusterMode(sc) match {
-      case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
-           LocalMode(_, _) =>
-        (true, ExternalStoreUtils.defaultStoreURL(sc) +
-            ";disable-streaming=true;default-persistent=true",
-            Constant.JDBC_EMBEDDED_DRIVER)
-      case SnappyShellMode(_, props) =>
-        (true, Constant.DEFAULT_EMBEDDED_URL +
-            ";host-data=false;disable-streaming=true;default-persistent=true;" +
-            props, Constant.JDBC_EMBEDDED_DRIVER)
-      case ExternalClusterMode(_, _) =>
-        (false, null, null)
+    Property.MetastoreDBURL.getOption(sparkConf) match {
+      case Some(url) =>
+        val driver = Property.MetastoreDriver.getOption(sparkConf).orNull
+        (false, url, driver)
+      case None => SnappyContext.getClusterMode(sc) match {
+        case SnappyEmbeddedMode(_, _) | ExternalEmbeddedMode(_, _) |
+             LocalMode(_, _) =>
+          (true, ExternalStoreUtils.defaultStoreURL(sc) +
+              ";disable-streaming=true;default-persistent=true",
+              Constant.JDBC_EMBEDDED_DRIVER)
+        case SplitClusterMode(_, props) =>
+          (true, Constant.DEFAULT_EMBEDDED_URL +
+              ";host-data=false;disable-streaming=true;default-persistent=true;" +
+              props, Constant.JDBC_EMBEDDED_DRIVER)
+        case ExternalClusterMode(_, _) =>
+          (false, null, null)
+      }
     }
   }
 
@@ -276,32 +280,9 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       override def load(in: QualifiedTableName): LogicalRelation = {
         logDebug(s"Creating new cached data source for $in")
         val table = in.getTable(client)
-
-        def schemaStringFromParts: Option[String] = {
-          table.properties.get(HIVE_SCHEMA_NUMPARTS).map { numParts =>
-            val parts = (0 until numParts.toInt).map { index =>
-              val partProp = s"$HIVE_SCHEMA_PART.$index"
-              table.properties.get(partProp) match {
-                case Some(part) => part
-                case None => throw new AnalysisException("Could not read " +
-                    "schema from metastore because it is corrupted (missing " +
-                    s"part $index of the schema, $numParts parts expected).")
-              }
-            }
-            // Stick all parts back to a single schema string.
-            parts.mkString
-          }
-        }
-
-        // Originally, we used spark.sql.sources.schema to store the schema
-        // of a data source table. After SPARK-6024, this flag was removed.
-        // Still need to support the deprecated property.
-        val schemaString = table.properties.get(HIVE_SCHEMA_OLD)
-            .orElse(schemaStringFromParts)
-
-        val userSpecifiedSchema =
-          schemaString.map(s => DataType.fromJson(s).asInstanceOf[StructType])
-
+        val schemaString = getSchemaString(table.properties)
+        val userSpecifiedSchema = schemaString.map(s =>
+          DataType.fromJson(s).asInstanceOf[StructType])
         val partitionColumns = table.partitionColumns.map(_.name)
         val provider = table.properties(HIVE_PROVIDER)
         val options = table.serdeProperties
@@ -656,7 +637,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
     } else {
       client.alterTable(
         hiveTable.copy(serdeProperties = hiveTable.serdeProperties +
-          (ExternalStoreUtils.INDEX_NAME -> (newindexes)))
+          (ExternalStoreUtils.INDEX_NAME -> newindexes))
       )
     }
   }
@@ -752,6 +733,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       case _ => ExternalTableType.Row
     }
   }
+
 }
 
 object SnappyStoreHiveCatalog {
@@ -769,7 +751,6 @@ object SnappyStoreHiveCatalog {
   val HIVE_PROVIDER = "spark.sql.sources.provider"
   val HIVE_SCHEMA_NUMPARTS = "spark.sql.sources.schema.numParts"
   val HIVE_SCHEMA_PART = "spark.sql.sources.schema.part"
-  val HIVE_SCHEMA_OLD = "spark.sql.sources.schema"
   val HIVE_METASTORE = "HIVE_METASTORE"
 
   def processTableIdentifier(tableIdentifier: String, conf: SQLConf): String = {
@@ -797,6 +778,25 @@ object SnappyStoreHiveCatalog {
       sync.unlock()
     }
   }
+
+  private def getSchemaString(
+      tableProps: scala.collection.Map[String, String]): Option[String] = {
+    tableProps.get(HIVE_SCHEMA_NUMPARTS).map { numParts =>
+      (0 until numParts.toInt).map { index =>
+        val partProp = s"$HIVE_SCHEMA_PART.$index"
+        tableProps.get(partProp) match {
+          case Some(part) => part
+          case None => throw new AnalysisException("Could not read " +
+              "schema from metastore because it is corrupted (missing " +
+              s"part $index of the schema, $numParts parts expected).")
+        }
+        // Stick all parts back to a single schema string.
+      }.mkString
+    }
+  }
+
+  def getSchemaStringFromHiveTable(table: Table): String =
+    getSchemaString(table.getParameters.asScala).orNull
 
   def closeCurrent(): Unit = {
     Hive.closeCurrent()

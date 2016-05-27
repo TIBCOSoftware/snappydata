@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.SnappyAnalyticsService
+import io.snappydata.{StoreTableValueSizeProviderService}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -28,7 +28,6 @@ import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.jdbc._
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.jdbc._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -58,8 +57,8 @@ class JDBCMutableRelation(
     with Logging {
 
   override val needConversion: Boolean = false
-
-  override  def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table)
+  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table).
+      getOrElse(super.sizeInBytes)
 
   val driver = Utils.registerDriverUrl(connProperties.url)
 
@@ -295,10 +294,11 @@ class JDBCMutableRelation(
       options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {
-      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString, conn,
-        dialect, sqlContext)
+      val tableExists = JdbcExtendedUtils.tableExists(tableIdent.toString(),
+        conn, dialect, sqlContext)
 
-      val sql = constructSQL(indexIdent.toString, tableIdent.toString, indexColumns, options)
+      val sql = constructSQL(indexIdent.toString(), tableIdent.toString(),
+        indexColumns, options)
 
       // Create the Index if the table exists.
       if (tableExists) {
