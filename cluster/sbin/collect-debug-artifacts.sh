@@ -19,15 +19,30 @@
 
 #!/usr/bin/env bash
 
-usage="Usage: collect-debug-artifacts \
-        [ -c confifile|--conf=conffile|--config=conffile ] [ -h|--help ] \
-        [ -a|--all ] [ -v|--verbose ] [ -s starttimestamp|--start=starttimestamp ] \
-        [ -e endtimestamp|--end=endtimestamp ]"
-
 timestamp_format="YYYY-MM-DD HH:MM[:SS]"
+
+function usage {
+  echo
+  echo "Usage: collect-debug-artifacts"
+  echo "       [ -c confifile|--conf=conffile|--config=conffile ]"
+  echo "       [ -o resultdir|--out=resultdir|--outdir=resultdir ]"
+  echo "       [ -h|--help ]"
+  echo "       [ -a|--all ]"
+  echo "       [ -d|--dump ]"
+  echo "       [ -v|--verbose ]"
+  echo "       [ -s starttimestamp|--start=starttimestamp ]"
+  echo "       [ -e endtimestamp|--end=endtimestamp ]"
+  echo
+  echo "       Timestamp format: ${timestamp_format}"
+  echo
+}
 
 SCRIPT_DIR="`dirname "$0"`"
 SCRIPT_DIR="`cd "$SCRIPT_DIR" && pwd`"
+
+if [ -z "${SPARK_HOME}" ]; then
+  export SPARK_HOME="$(cd "`dirname "$0"`"/..; pwd)"
+fi
 
 while [ "$1" != "" ]; do
   option="$1"
@@ -38,6 +53,11 @@ while [ "$1" != "" ]; do
       shift ;;
     --conf=*|--config=*)
       CONF_FILE="`echo "$2" | sed 's/^[^=]*=//'`" ;;
+    -o)
+      OUTPUT_DIR="$2"
+      shift ;;
+    --out=*|--outdir=*)
+      OUTPUT_DIR="`echo "$2" | sed 's/^[^=]*=//'`" ;;
     -s)
       START_TIME="$2"
       shift ;;
@@ -49,9 +69,7 @@ while [ "$1" != "" ]; do
     --end=*)
       END_TIME="`echo "$2" | sed 's/^[^=]*=//'`" ;;
     -h|--help)
-    echo $usage
-    echo 
-    echo "Timestamp format: ${timestamp_format}"
+    usage
     exit 0
     ;;
     -a|--all)
@@ -72,7 +90,7 @@ num_regex='^[0-9]+$'
 # Check configurations and assign defaults
 function check_configs {
   if [ -z "${CONF_FILE}" ]; then
-    CONF_FILE="${SCRIPT_DIR}/../conf/debug.conf"
+    CONF_FILE="${SPARK_HOME}/conf/debug.conf.template"
   fi
 
   if [ ! -f "${CONF_FILE}" ]; then
@@ -107,6 +125,9 @@ function check_configs {
     echo GET_EVERYTHING=${GET_EVERYTHING}
     echo START TIME = "${START_TIME}"
     echo END   TIME = "${END_TIME}"
+    echo SCRIPT_DIR = "${SCRIPT_DIR}"
+    echo SPARK_HOME = "${SPARK_HOME}"
+    echo OUTPUT_DIR = "${OUTPUT_DIR}"
   fi
 
   if [ -z "${START_TIME}" ]; then
@@ -151,13 +172,16 @@ function collect_data {
 
   mkdir -p $out_dir 
   if [ "${VERBOSE}" = "1" ]; then
-    echo "Args Being passed"
-    echo "arg1 wd = ${wd}" 
+    echo "Args Being passed for host ${host}"
+    echo "arg1 working directory = ${wd}" 
     echo "arg2 num_stack_dumps = ${NO_OF_STACK_DUMPS}" 
     echo "arg3 interval_dumps = ${INTERVAL_BETWEEN_DUMPS}" 
-    echo "arg4 GET_EVERYTHING = ${GET_EVERYTHING}" 
+    echo "arg4 get_everything = ${GET_EVERYTHING}" 
     echo "arg5 collector_host = ${collector_host}" 
     echo "arg6 out dir = ${out_dir}"
+    echo "arg7 verbose = ${VERBOSE}"
+    echo "arg8 start epoch = ${START_EPOCH}"
+    echo "arg9 end epoch = ${END_EPOCH}"
   fi
 
   if [ "${DUMP_STACK}" != "1" ]; then
@@ -195,7 +219,9 @@ function collect_on_remote {
     exit 1
   fi
 
-  cd "$data_dir"
+  proc_id=""
+
+  cd $data_dir
 
   if [ "${get_all}" = "1" ]; then
     if [ "${verbose}" = "1" ]; then
@@ -214,7 +240,6 @@ function collect_on_remote {
       echo "collecting latest log files and all stats file"
     fi
     logs_latest_first=`ls -t *.log*`
-
     all_logs=($logs_latest_first)
     files=()
     last_restart_log=""
@@ -267,7 +292,7 @@ function collect_on_remote {
         files+=($l)
         file_added=1
       fi
-      prev_file_mod_epoch=$file_mod_epocha
+      prev_file_mod_epoch=$file_mod_epoch
     done
 
     prev_file_mod_epoch=0
@@ -285,25 +310,35 @@ function collect_on_remote {
     done
   fi
 
-  # get the stack dumps first
-  if [ "${num_stack_dumps}" -gt 0 ]; then
+  # get the stack dumps if required
+  if [ "$num_stack_dumps" -gt "0" ]; then
     # add the latest log file and keep it. Later after taking the dump take all the log files
-    # which got created after this one as stack dump can lead to rollover.
+    # which got created after this one as rollover would have taken place.
 
     logs_latest_first=`ls -t *.log*`
     all_logs=($logs_latest_first)
     latest_log=${all_logs[0]}
+    all_logs=($logs_latest_first)
+    for l in "${all_logs[@]}"
+    do
+      copyright_headers=`grep 'Copyright [ ]*([ ]*.[ ]*)' ${l}`
+      if [ ! -z "$copyright_headers" ]; then
+        # also check for the pid line and get the pid
+        proc_id=`sed -n 's/.*Process ID: \([0-9]\+\)$/\1/p' ${l}`
+        break
+      fi
+    done
 
     dump_num=1
     for i in `seq 1 ${num_stack_dumps}`
     do
       dump_num=`expr ${dump_num} + 1`
       if [ "${verbose}" = "1" ]; then
-        echo "Taking the dump for on ${host} -- count ${i}"
+        echo "Taking the dump of process ${proc_id} on ${host} -- count ${i}"
       fi
       kill -URG $proc_id
       # record the last modified time of this log
-      if [ "$i" -eq "1" ]; then
+      if [ "$i" = "1" ]; then
         first_dump_file_mod_epoch=`stat -c %Y $latest_log`
       fi
 
@@ -314,15 +349,17 @@ function collect_on_remote {
   logs_latest_first=`ls -t *.log*`
   all_logs=($logs_latest_first)
   # add all the remaining whose modified time is greater than the last recorded
-  for l in "${all_logs[@]}"
-  do
-    mod_epoch=`stat -c %Y $l`
-    if [ "${mod_epoch}" -gt "${first_dump_file_mod_epoch}" ]; then
-      files+=($l)
-    else
-      break
-    fi
-  done
+  if [ ! -z "${first_dump_file_mod_epoch}" ]; then
+    for l in "${all_logs[@]}"
+    do
+      mod_epoch=`stat -c %Y $l`
+      if [ "${mod_epoch}" -gt "${first_dump_file_mod_epoch}" ]; then
+        files+=($l)
+      else
+        break
+      fi
+    done
+  fi
 
   for f in "${files[@]}"
   do
@@ -337,9 +374,15 @@ function collect_on_remote {
   fi
 
   cd "${tmp_dir}/.."
-  tar cvzf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
-    rsync -av "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
-      rm -f "${tmp_dir}.tar.gz" && rm -rf "${tmp_dir}"
+  if [ "${verbose}" = "1" ]; then
+    tar cvzf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
+      rsync -av "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
+        rm -f "${tmp_dir}.tar.gz" && rm -rf "${tmp_dir}"
+  else
+    tar czf "${tmp_dir}.tar.gz" $(basename $tmp_dir) && \
+      rsync -a "${tmp_dir}.tar.gz" "${collector_host}:${collector_dir}/" && \
+        rm -f "${tmp_dir}.tar.gz" && rm -rf "${tmp_dir}"
+  fi
 }
 
 check_configs
@@ -349,9 +392,17 @@ check_configs
 all_pids=()
 # Make output directory
 TS=`date +%m.%d.%H.%M.%S`
-OUT_DIR="${SCRIPT_DIR}/debug_data_${TS}"
+if [ -z "${OUTPUT_DIR}" ]; then
+  out_dir="${SPARK_HOME}/work/debug_data_${TS}"
+else
+  out_dir="${OUTPUT_DIR}/debug_data_${TS}"
+fi
 
-mkdir "$OUT_DIR"
+mkdir -p $out_dir
+
+if [ "${VERBOSE}" = "1" ]; then
+  echo "Top Level output dir = ${out_dir}"
+fi
 
 serv_num=1
 while  read -r line || [[ -n "$line" ]]; do
@@ -364,7 +415,7 @@ while  read -r line || [[ -n "$line" ]]; do
     echo "host: $host pid: $pid and cwd: $cwd"
   fi
 
-  collect_data $host $cwd $serv_num $OUT_DIR &
+  collect_data $host $cwd $serv_num $out_dir &
   serv_num=`expr $serv_num + 1`
   all_pids+=($!)
 done < $MEMBERS_FILE
@@ -378,6 +429,9 @@ do
 done
 
 # make tar ball
-cd "${OUT_DIR}/.."
-tar -cf "${OUT_DIR}.tar" $(basename $OUT_DIR)
-rm -rf ${OUT_DIR}
+echo
+echo "Collected artifacts in tar file: ${out_dir}.tar"
+echo
+cd "${out_dir}/.."
+tar -cf "${out_dir}.tar" $(basename $out_dir)
+rm -rf ${out_dir}
