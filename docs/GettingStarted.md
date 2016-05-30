@@ -33,7 +33,7 @@
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation-1)
     * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
-    * [Step 6 - Submit a Scala/Java Spark App that interacts with SnappyData](#step-6---submit-a-scala-java-spark-app-that-interacts-with-snappydata)
+    * [Step 6 - Submit a Scala or Java Spark App that interacts with SnappyData](#step-6---submit-a-scala-java-spark-app-that-interacts-with-snappydata)
     * [Step 7 - Submit a Python Spark App that interacts with SnappyData](#step-7---submit-a-python-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
 
