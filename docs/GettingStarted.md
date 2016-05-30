@@ -33,7 +33,8 @@
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation-1)
     * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
-    * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
+    * [Step 6 - Submit a Scala/Java Spark App that interacts with SnappyData](#step-6---submit-a-scala-java-spark-app-that-interacts-with-snappydata)
+    * [Step 7 - Submit a Python Spark App that interacts with SnappyData](#step-7---submit-a-python-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
 
 ## Introduction
@@ -697,7 +698,7 @@ scala> val airlineDF = sqlContext.table("airline").show
 
 # you can now work with the dataframes to fetch the data.
 ```
-#### Step 6 - Submit a Spark App that interacts with SnappyData 
+#### Step 6 - Submit a Scala/Java Spark App that interacts with SnappyData 
 
 ```bash
 # Start the Spark standalone cluster.
@@ -706,6 +707,16 @@ $ sbin/start-all.sh
 $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.4.0-PREVIEW.jar
 
 # The results can be seen on the command line. 
+```
+
+#### Step 7 - Submit a Python Spark App that interacts with SnappyData 
+
+```bash
+# Start the Spark standalone cluster.
+$ sbin/start-all.sh 
+# Submit AirlineDataPythonApp to Spark Cluster with snappydata's locator host port.
+$ bin/spark-submit --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/python/examples/AirlineDataPythonApp.py
+
 ```
 
 #### Final Step - Stop the SnappyData Cluster
