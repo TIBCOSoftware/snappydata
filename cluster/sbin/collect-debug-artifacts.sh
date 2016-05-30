@@ -81,6 +81,9 @@ while [ "$1" != "" ]; do
     -d|--dump)
     DUMP_STACK=1
     ;;
+    *)
+    usage
+    exit 1 
   esac
   shift # past argument or value
 done
@@ -152,6 +155,15 @@ function check_configs {
       echo "Expected Timestamp format: ${timestamp_format}"
       exit 1
     fi
+  fi
+
+  if [ "${START_EPOCH}" = "0" -a "${END_EPOCH}" != "0" ] \
+    || [ "${START_EPOCH}" != "0" -a  "${END_EPOCH}" = "0" ]; then
+    echo
+    echo "Please verify start and end time both"
+    echo "Timestamp format: ${timestamp_format}"
+    usage
+    exit 1
   fi
 }
 
@@ -404,6 +416,11 @@ if [ "${VERBOSE}" = "1" ]; then
   echo "Top Level output dir = ${out_dir}"
 fi
 
+# get the uniq lines from the members file
+tmp_members_file="$(mktemp --tmpdir="$data_dir" tmp_mem.XXXX)"
+
+sort $MEMBERS_FILE | uniq >  $tmp_members_file
+
 serv_num=1
 while  read -r line || [[ -n "$line" ]]; do
   if [ "${VERBOSE}" = "1" ]; then
@@ -418,7 +435,9 @@ while  read -r line || [[ -n "$line" ]]; do
   collect_data $host $cwd $serv_num $out_dir &
   serv_num=`expr $serv_num + 1`
   all_pids+=($!)
-done < $MEMBERS_FILE
+done < $tmp_members_file
+
+rm -rf $tmp_members_file
 
 for p in "${all_pids[@]}"
 do
