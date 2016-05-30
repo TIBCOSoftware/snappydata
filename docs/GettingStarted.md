@@ -698,7 +698,7 @@ scala> val airlineDF = sqlContext.table("airline").show
 
 # you can now work with the dataframes to fetch the data.
 ```
-#### Step 6 - Submit a Scala-Java Spark App that interacts with SnappyData 
+#### Step 6 - Submit a Scala or Java Spark App that interacts with SnappyData 
 
 ```bash
 # Start the Spark standalone cluster.
