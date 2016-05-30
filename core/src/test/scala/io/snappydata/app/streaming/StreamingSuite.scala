@@ -45,7 +45,9 @@ class StreamingSuite
   def batchDuration: Duration = Seconds(1)
 
   def creatingFunc(): SnappyStreamingContext = {
-    new SnappyStreamingContext(sc, batchDuration)
+    val context = new SnappyStreamingContext(sc, batchDuration)
+    context.remember(Duration(3000))
+    context
   }
 
   before {

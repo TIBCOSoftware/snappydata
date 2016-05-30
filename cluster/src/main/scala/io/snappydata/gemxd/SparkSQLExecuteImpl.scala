@@ -483,7 +483,7 @@ object SnappyContextPerConnection {
     val context = connectionIdMap.get(connectionID)
     if (context != null) context
     else {
-      val snc = SnappyContext.getOrCreate(null: SparkContext).newSession()
+      val snc = SnappyContext(null: SparkContext)
       val oldContext = connectionIdMap.putIfAbsent(connectionID, snc)
       if (oldContext == null) snc else oldContext
     }

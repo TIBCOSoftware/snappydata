@@ -7,7 +7,7 @@
 * [Community Support](#community-support)
 * [Link with SnappyData Distribution](#link-with-snappydata-distribution)
 * [Building SnappyData from Source](#building-snappydata-from-source)
-* [Setting up passwordless SSH](#setting-up-passwordless-SSH)
+* [Setting up passwordless SSH](#setting-up-passwordless-ssh)
 * [Quick Start with SQL](#quick-start-with-sql)
 * [Quick Start with Scala/Spark/Snappy Programming](#quick-start-with-scalasparksnappy-programming)
 
@@ -19,7 +19,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* SnappyData Preview 0.3.0 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.3-preview/snappydata-0.3.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.3-preview/snappydata-0.3.0-PREVIEW-bin.zip)
+* SnappyData Preview 0.4.0 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.4-preview/snappydata-0.4.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.4-preview/snappydata-0.4.0-PREVIEW-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -27,27 +27,27 @@ SnappyData has been tested on Linux and Mac OSX. If not already installed, you w
 
 We monitor channels listed below for comments/questions.
 
-[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)    [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)        [Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)          [IRC](http://webchat.freenode.net/?randomnick=1&channels=%23snappydata&uio=d4) ![IRC](http://i.imgur.com/vbH3Zdx.png)             [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          [JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
+[Stackoverflow](http://stackoverflow.com/questions/tagged/snappydata) ![Stackoverflow](http://i.imgur.com/LPIdp12.png)    [Slack](http://snappydata-slackin.herokuapp.com/)![Slack](http://i.imgur.com/h3sc6GM.png)        [Gitter](https://gitter.im/SnappyDataInc/snappydata) ![Gitter](http://i.imgur.com/jNAJeOn.jpg)          [Mailing List](https://groups.google.com/forum/#!forum/snappydata-user) ![Mailing List](http://i.imgur.com/YomdH4s.png)             [Reddit](https://www.reddit.com/r/snappydata) ![Reddit](http://i.imgur.com/AB3cVtj.png)          [JIRA](https://jira.snappydata.io/projects/SNAP/issues) ![JIRA](http://i.imgur.com/E92zntA.png)
 
 ## Link with SnappyData distribution
 SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
 ```
 groupId: io.snappydata
 artifactId: snappy-core_2.10
-version: 0.3.0-PREVIEW
+version: 0.4.0-PREVIEW
 
 groupId: io.snappydata
 artifactId: snappy-cluster_2.10
-version: 0.3.0-PREVIEW
+version: 0.4.0-PREVIEW
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.3.0-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.4.0-PREVIEW"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.3.0-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.4.0-PREVIEW"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 

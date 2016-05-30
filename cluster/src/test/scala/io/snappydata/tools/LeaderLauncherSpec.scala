@@ -91,7 +91,8 @@ class LeaderLauncherSpec extends WordSpec with Matchers {
 
         {
           // Stop if already any present
-          SnappyContext.stop()
+          val sparkContext = SnappyContext.globalSparkContext
+          if(sparkContext != null) sparkContext.stop()
 
           val l = new LeadImpl
           val conf = (new SparkConf).
