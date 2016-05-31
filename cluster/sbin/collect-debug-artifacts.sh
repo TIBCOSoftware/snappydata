@@ -251,7 +251,7 @@ function collect_on_remote {
     if [ "${verbose}" = "1" ]; then
       echo "collecting latest log files and all stats file"
     fi
-    logs_latest_first=`ls -t *.log*`
+    logs_latest_first=`ls -t *.log* | grep -Ev '(^start_.+\.log|^locator.+views\.log|derby.log)'`
     all_logs=($logs_latest_first)
     files=()
     last_restart_log=""
@@ -293,7 +293,7 @@ function collect_on_remote {
     fi
     files=()
     prev_file_mod_epoch=0
-    for l in $( ls -tr *.log* 2>/dev/null )
+    for l in $( ls -tr *.log* | grep -Ev '(^start_.+\.log|^locator.+views\.log|derby.log)' 2>/dev/null )
     do
       file_mod_epoch=`stat -c %Y $l`
       if [ "${file_mod_epoch}" -ge "${start_epoch}" -a "${prev_file_mod_epoch}" -le "${end_epoch}" ]; then
@@ -327,7 +327,7 @@ function collect_on_remote {
     # add the latest log file and keep it. Later after taking the dump take all the log files
     # which got created after this one as rollover would have taken place.
 
-    logs_latest_first=`ls -t *.log*`
+    logs_latest_first=`ls -t *.log* | grep -Ev '(^start_.+\.log|^locator.+views\.log|derby.log)' 2>/dev/null`
     all_logs=($logs_latest_first)
     latest_log=${all_logs[0]}
     all_logs=($logs_latest_first)
@@ -358,7 +358,7 @@ function collect_on_remote {
     done
   fi
 
-  logs_latest_first=`ls -t *.log*`
+  logs_latest_first=`ls -t *.log* | grep -Ev '(^start_.+\.log|^locator.+views\.log|derby.log)' 2>/dev/null`
   all_logs=($logs_latest_first)
   # add all the remaining whose modified time is greater than the last recorded
   if [ ! -z "${first_dump_file_mod_epoch}" ]; then
