@@ -354,6 +354,9 @@ function collect_on_remote {
         first_dump_file_mod_epoch=`stat -c %Y $latest_log`
       fi
 
+      if [ "$i" -lt "${num_stack_dumps}" ]; then
+        echo "Sleeping for ${int_stack_dumps} seconds before taking next stack dump"
+      fi
       sleep $int_stack_dumps
     done
   fi
