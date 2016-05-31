@@ -92,7 +92,7 @@ if [ "$SPARK_SSH_OPTS" = "" ]; then
   SPARK_SSH_OPTS="-o StrictHostKeyChecking=no"
 fi
 
-MEMBERS_FILE=members.txt
+MEMBERS_FILE="$SPARK_HOME/work/members.txt"
 
 function startComponent() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
@@ -144,7 +144,26 @@ function startComponent() {
       2>&1 | sed "s/^/$host: /"
   fi
 
-  echo "${host} ${dirfolder}" >> $MEMBERS_FILE
+  df=${dirfolder}
+  if [ -z "${df}" ]; then
+    df=$(echo ${dirparam} | cut -d'=' -f2)
+  fi
+
+  if [ ! -d "${SPARK_HOME}/work" ]; then
+    mkdir -p "${SPARK_HOME}/work"
+    ret=$?
+    if [ "$ret" != "0" ]; then
+      echo "Could not create work directory ${SPARK_HOME}/work"
+      exit 1
+    fi
+  fi
+
+  if [ -z "${df}" ]; then
+    echo "No run directory identified for ${host}"
+    exit 1
+  fi
+
+  echo "${host} ${df}" >> $MEMBERS_FILE
 }
 
 index=1
