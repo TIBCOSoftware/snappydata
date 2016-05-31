@@ -173,7 +173,7 @@ Create row tables using API, update the contents of row table
 ### SnappyStreamingContext
 SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
 
-Below example shows how to use the SnappyStreaming Context to apply a schema to existing DStream and then query the schema Dstream with simple SQL. It also shows the SnappyStreaming Context ability to deal with sql queries.
+Below example shows how to use the SnappyStreamingContext to apply a schema to existing DStream and then query the SchemaDStream with simple SQL. It also shows the SnappyStreamingContext ability to deal with sql queries.
 
 ###### Scala
 ```scala
@@ -237,7 +237,7 @@ snsc.start()
 
 snsc.sql("select count(*) from streamingExample").show()
 ```
-The Snappy Python Streaming Api have limited features in compare to it's corresponding scala API. It does not support TopK structures and registerCQ.
+> Note - Currently Snappy dont have Python API's added for continuous queries and AQP/Sampling.
 
 ### Running Spark programs inside the database
 
