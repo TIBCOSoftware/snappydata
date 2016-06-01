@@ -24,7 +24,7 @@ timestamp_format="YYYY-MM-DD HH:MM[:SS]"
 function usage {
   echo
   echo "Usage: collect-debug-artifacts"
-  echo "       [ -c confifile|--conf=conffile|--config=conffile ]"
+  echo "       [ -c conffile|--conf=conffile|--config=conffile ]"
   echo "       [ -o resultdir|--out=resultdir|--outdir=resultdir ]"
   echo "       [ -h|--help ]"
   echo "       [ -a|--all ]"
