@@ -453,6 +453,9 @@ snappy> run './quickstart/scripts/twitter_streaming_query.sql';
 --- Stop the streaming 
 snappy> STREAMING STOP;
 ```
+
+We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
+
 ### Getting Started with Spark API 
 
 [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
@@ -728,6 +731,9 @@ localhost: The SnappyData Server has stopped.
 localhost: The SnappyData Locator has stopped.
 ```
 
+We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
+
 -----
+
 
 
