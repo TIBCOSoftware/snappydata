@@ -169,6 +169,8 @@ Next, we recommend going through more in-depth examples in [Getting Started](doc
 concepts and experience SnappyData’s AQP, Stream analytics functionality both using SQL and Spark API.
 You can also go through our very preliminary [docs](http://snappydatainc.github.io/snappydata/) and provide us your comments. 
 
+We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
+
 If you're interested in the Scala/Spark side of things, go through the [programming quick start below](#quick-start-with-scalasparksnappy-programming).
 
 If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
@@ -281,4 +283,6 @@ val results3 = snc.sql("SELECT * FROM ROW_TABLE")
 ````
 
 And voila! Mutations in Spark. This is a very simple, abbreviated example of what SnappyData can do. It becomes much more interesting when working on streaming data, joining streams with reference data, using approximate query processing and more. To learn more about these advanced use cases, check out our [Getting Started with the Spark API](https://github.com/SnappyDataInc/snappydata/blob/master/docs/GettingStarted.md#getting-started-with-spark-api) and [Developing apps using the Spark API](http://snappydatainc.github.io/snappydata/jobs/). To read more specifically about the SnappyContext check out our [SnappyContext Documentation](http://snappydatainc.github.io/snappydata/jobs/#snappycontext).
+
+We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
 
