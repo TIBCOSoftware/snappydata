@@ -36,7 +36,8 @@ import spark.jobserver.JobServer
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkConf, SparkContext}
+import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.internal.Logging
 
 class LeadImpl extends ServerImpl with Lead with Logging {
 

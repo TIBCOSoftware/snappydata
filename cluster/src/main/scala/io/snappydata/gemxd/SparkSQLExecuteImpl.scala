@@ -42,7 +42,8 @@ import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
-import org.apache.spark.{Logging, SparkContext, SparkEnv}
+import org.apache.spark.{SparkContext, SparkEnv}
+import org.apache.spark.internal.Logging
 
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.

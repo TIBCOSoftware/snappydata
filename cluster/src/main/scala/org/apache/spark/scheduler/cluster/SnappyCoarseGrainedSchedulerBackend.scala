@@ -18,7 +18,8 @@ package org.apache.spark.scheduler.cluster
 
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.TaskSchedulerImpl
-import org.apache.spark.{Logging, SparkEnv}
+import org.apache.spark.SparkEnv
+import org.apache.spark.internal.Logging
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
     extends CoarseGrainedSchedulerBackend(scheduler, rpcEnv) with Logging {

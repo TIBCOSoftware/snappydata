@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCa
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
-import org.apache.spark.Logging
+import org.apache.spark.internal.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 
 /**

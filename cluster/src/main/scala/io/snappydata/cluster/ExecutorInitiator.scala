@@ -36,7 +36,8 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
+import org.apache.spark.{SparkCallbacks, SparkConf, SparkEnv}
+import org.apache.spark.internal.Logging
 
 /**
  * This class is responsible for initiating the executor process inside
