@@ -102,7 +102,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       val conf = new SparkConf()
       conf.setMaster(Constant.SNAPPY_URL_PREFIX + s"$locator").
           setAppName("leaderLauncher").
-          set(Property.JobserverEnabled(), "true")
+          set(Property.JobserverEnabled(), "true").
+          set("spark.scheduler.mode", "FAIR")
 
       // inspect user input and add appropriate prefixes
       // if property doesn't contain '.'
@@ -201,7 +202,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
 
   private[snappydata] def internalStop(shutdownCredentials: Properties): Unit = {
     bootProperties.clear()
-    SnappyContext.stop()
+    val sc = SnappyContext.globalSparkContext
+    if(sc != null) sc.stop()
     // TODO: [soubhik] find a way to stop jobserver.
     sparkContext = null
     super.stop(shutdownCredentials)

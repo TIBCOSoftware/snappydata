@@ -30,7 +30,7 @@ object TestUtils {
   def dropAllTables(snc: => SnappyContext): Unit = {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
-      val snc = SnappyContext.getOrCreate(sc)
+      val snc = SnappyContext(sc)
       try {
         // drop all the stream tables that can have dependents at the end
         // also drop parents in colocated chain last (assuming chain length = 1)

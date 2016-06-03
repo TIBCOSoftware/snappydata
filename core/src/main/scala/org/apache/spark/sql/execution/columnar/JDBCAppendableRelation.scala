@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-import _root_.io.snappydata.SnappyAnalyticsService
+import _root_.io.snappydata.{Constant, StoreTableValueSizeProviderService}
 
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
@@ -37,6 +37,7 @@ import org.apache.spark.sql.row.GemFireXDBaseDialect
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.StructType
+
 
 /**
  * A LogicalPlan implementation for an external column table whose contents
@@ -59,7 +60,6 @@ case class JDBCAppendableRelation(
   with Serializable {
 
   self =>
-
   override val needConversion: Boolean = false
 
   protected final val connProperties = externalStore.connProperties
@@ -67,8 +67,8 @@ case class JDBCAppendableRelation(
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
 
-  override def sizeInBytes: Long = SnappyAnalyticsService.getTableSize(table,
-    isColumnTable = true).getOrElse(sqlContext.conf.defaultSizeInBytes)
+  override def sizeInBytes: Long = StoreTableValueSizeProviderService.getTableSize(table,
+    isColumnTable = true).getOrElse(super.sizeInBytes)
 
   protected final def dialect = connProperties.dialect
 
@@ -298,17 +298,14 @@ case class JDBCAppendableRelation(
 }
 
 object JDBCAppendableRelation extends Logging {
-  final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"
-  final val SHADOW_TABLE_SUFFIX = "_COLUMN_STORE_"
 
   private[sql] final def cachedBatchTableName(table: String): String = {
     val tableName = if (table.indexOf('.') > 0) {
       table.replace(".", "__")
     } else {
-      table
+      Constant.DEFAULT_SCHEMA + "__" + table
     }
-
-    INTERNAL_SCHEMA_NAME + "." + tableName + SHADOW_TABLE_SUFFIX
+    Constant.INTERNAL_SCHEMA_NAME + "." +  tableName + Constant.SHADOW_TABLE_SUFFIX
   }
 }
 

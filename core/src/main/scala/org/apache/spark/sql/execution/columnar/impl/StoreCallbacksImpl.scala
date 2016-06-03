@@ -137,6 +137,16 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   override def getHashCodeSnappy(dvds: scala.Array[Object]): Int = {
     partioner.hashValue(dvds)
   }
+
+  override def haveRegisteredExternalStore(tableName: String): Boolean = {
+    // TODO -  remove below that deals with default schema and all
+    // entries in store should come with fully qualified tableName
+    val table = if (tableName.startsWith(Constant.DEFAULT_SCHEMA + ".")) {
+      tableName.substring(Constant.DEFAULT_SCHEMA.length + 1)
+    } else tableName
+    stores.contains(table)
+  }
+
 }
 
 trait StoreCallback extends Serializable {

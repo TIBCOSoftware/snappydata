@@ -54,12 +54,14 @@ object Constant {
 
   val DEFAULT_CONFIDENCE: Double = 0.95
 
+  val DEFAULT_ERROR: Double = 0.2
+
   val COLUMN_MIN_BATCH_SIZE: Int = 200
 
   val DEFAULT_USE_HIKARICP = false
 
   // Interval in ms  to run the SnappyAnalyticsService
-  val DEFAULT_ANALYTICS_SERVICE_INTERVAL: Long = 10000
+  val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 10000
 
   // Internal Column table store schema
   final val INTERNAL_SCHEMA_NAME = "SNAPPYSYS_INTERNAL"

@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import java.lang
 import java.sql.SQLException
 
 import scala.collection.JavaConverters._
@@ -27,7 +26,7 @@ import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, SnappyDaemons}
+import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
@@ -36,7 +35,7 @@ import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
 import org.apache.spark.sql.catalyst.ParserDialect
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
-import org.apache.spark.sql.catalyst.expressions.{SortDirection, Descending, Ascending, GenericRow, Alias, Cast}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Cast, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -93,7 +92,7 @@ class SnappyContext protected[spark](
   self =>
 
   protected[spark] def this(sc: SparkContext) {
-    this(sc, SQLContext.createListenerAndUI(sc), true)
+    this(sc, SnappyContext.sqlListener(sc), true)
   }
 
   @transient private[spark] lazy val snappyContextFunctions:
@@ -139,6 +138,10 @@ class SnappyContext protected[spark](
   @transient
   override lazy val catalog = this.snappyContextFunctions.getSnappyCatalog(this)
 
+
+  def clear(): Unit = {
+    snappyContextFunctions.clear()
+  }
   /**
    * :: DeveloperApi ::
    * @todo do we need this anymore? If useful functionality, make this
@@ -422,7 +425,7 @@ class SnappyContext protected[spark](
     * @param provider  Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
     * @param options Properties for table creation
     * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
   @Experimental
@@ -453,7 +456,7 @@ class SnappyContext protected[spark](
    * @param options  Properties for table creation. See options list for different tables.
    *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
@@ -492,7 +495,7 @@ class SnappyContext protected[spark](
     * @param options  Properties for table creation. See options list for different tables.
     *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
     * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
   @Experimental
@@ -544,7 +547,7 @@ class SnappyContext protected[spark](
    * @param options   Properties for table creation. See options list for different tables.
    * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+   *                      present , else it will throw table exist exception
    * @return DataFrame for the table
    */
   def createTable(
@@ -605,7 +608,7 @@ class SnappyContext protected[spark](
     * @param options   Properties for table creation. See options list for different tables.
     * https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
     * @param allowExisting When set to true it will ignore if a table with the same name is
-                          present , else it will throw table exist exception
+    *                      present , else it will throw table exist exception
     * @return DataFrame for the table
     */
 
@@ -670,6 +673,7 @@ class SnappyContext protected[spark](
     val plan = LogicalRelation(resolved.relation)
     catalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
       source, params, resolved.relation)
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     plan
   }
 
@@ -730,6 +734,7 @@ class SnappyContext protected[spark](
       catalog.registerDataSourceTable(tableIdent, Some(data.schema),
         partitionColumns, source, params, resolved.relation)
     }
+    snappyContextFunctions.postRelationCreation(resolved.relation, this)
     LogicalRelation(resolved.relation)
   }
 
@@ -1136,6 +1141,7 @@ object GlobalSnappyInit {
   private val aqpContextFunctionImplClass =
     "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
 
+
   private[spark] def getSnappyContextFunctionsImpl: SnappyContextFunctions = {
     Try {
       val mirror = u.runtimeMirror(getClass.getClassLoader)
@@ -1157,6 +1163,7 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _anySNContext: SnappyContext = _
   @volatile private[this] var _clusterMode: ClusterMode = _
+
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] val contextLock = new AnyRef
 
@@ -1188,11 +1195,26 @@ object SnappyContext extends Logging {
       throw new IllegalStateException("Invalid SparkConf")
   }
 
+
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
     SparkContext.getOrCreate(INVALID_CONF)
   } catch {
     case _: IllegalStateException => null
+  }
+
+
+  @volatile private[this] var _sqlListener : SQLListener = _
+
+  def sqlListener(sc : SparkContext) : SQLListener = {
+    if(_sqlListener == null){
+      synchronized {
+        if(_sqlListener == null) {
+          _sqlListener = SQLContext.createListenerAndUI(sc)
+        }
+      }
+    }
+    _sqlListener
   }
 
   private def newSnappyContext(sc: SparkContext) = {
@@ -1232,33 +1254,17 @@ object SnappyContext extends Logging {
 
   /**
    * @todo document me
-   * @param sc
+   * @param jsc
    * @return
    */
-  def getOrCreate(sc: SparkContext): SnappyContext = {
-    val gnc = _anySNContext
-    if (gnc != null) gnc
-    else contextLock.synchronized {
-      val gnc = _anySNContext
-      if (gnc != null) gnc
-      else {
-        apply(sc)
-      }
+  def apply(jsc: JavaSparkContext): SnappyContext = {
+    if (jsc != null) {
+      apply(jsc.sc)
+    } else {
+      apply()
     }
   }
 
-  /**
-   * Returns an existing SnappyContext or create one if does not exists
-   * @param jsc
-   * @return SnappyContext
-   */
-  def getOrCreate(jsc: JavaSparkContext): SnappyContext = {
-    if (jsc != null) {
-      getOrCreate(jsc.sc)
-    } else {
-      getOrCreate(null: SparkContext)
-    }
-  }
 
   /**
    * @todo document me
@@ -1342,7 +1348,7 @@ object SnappyContext extends Logging {
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
-      stop(false)
+      stopSnappyContext
     }
   }
 
@@ -1354,41 +1360,25 @@ object SnappyContext extends Logging {
         // prior to `new SnappyContext(sc)` after this
         // method ends.
         ToolsCallbackInit.toolsCallback.invokeLeadStartAddonService(sc)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case SplitClusterMode(_, _) =>
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case ExternalEmbeddedMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = false)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case LocalMode(_, url) =>
         SnappyContext.urlToConf(url, sc)
         ServiceUtils.invokeStartFabricServer(sc, hostData = true)
-        SnappyDaemons.start(sc)
+        StoreTableValueSizeProviderService.start(sc)
       case _ => // ignore
     }
   }
 
-  /**
-    * Shut down and cleanup and SnappyData artifacts.
-    */
-  def stop(stopSparkContext: Boolean = true): Unit = {
+  private def stopSnappyContext(): Unit = {
     val sc = globalSparkContext
-    if (stopSparkContext) {
-      if (sc != null && !sc.isStopped) {
-        // clear current hive catalog connection before stopping the sc
-        SnappyStoreHiveCatalog.closeCurrent()
-        sc.stop()
-      }
-    } else {
-      stopSnappyContext(sc)
-    }
-  }
-
-  private def stopSnappyContext(sc: SparkContext): Unit = {
     if (_globalSNContextInitialized) {
-      SnappyDaemons.stop
       // then on the driver
       clearStaticArtifacts()
       // clear current hive catalog connection
@@ -1399,6 +1389,7 @@ object SnappyContext extends Logging {
     }
     _clusterMode = null
     _anySNContext = null
+    _sqlListener  = null
     _globalSNContextInitialized = false
 
   }

@@ -171,7 +171,7 @@ object ClusterManagerTestBase {
     // bootProps.setProperty("log-level", "fine")
     val conf: SparkConf = new SparkConf()
         .setMaster(s"snappydata://localhost[$locatorPort]")
-        .setAppName("myapp")
+        .setAppName("myapp").set("spark.testing.reservedMemory", "0")
 
     new File("./" + "driver").mkdir()
     new File("./" + "driver/events").mkdir()
@@ -231,7 +231,8 @@ object ClusterManagerTestBase {
   def stopSpark(): Unit = {
     // cleanup metastore
     cleanupTestData(null, null)
-    SnappyContext.stop()
+    val sparkContext = SnappyContext.globalSparkContext
+    if(sparkContext != null) sparkContext.stop()
   }
 
   def stopNetworkServers(): Unit = {

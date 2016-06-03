@@ -28,7 +28,8 @@ class ServerStartSuite extends SnappyFunSuite with BeforeAndAfterAll {
   var props: Properties = null
 
   override def beforeAll(): Unit = {
-    SnappyContext.stop()
+    val sparkContext = SnappyContext.globalSparkContext
+    if(sparkContext != null) sparkContext.stop()
     props = TestUtil.doCommonSetup(null)
     GemFireXDUtils.IS_TEST_MODE = true
   }
