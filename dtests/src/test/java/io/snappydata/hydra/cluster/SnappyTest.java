@@ -840,6 +840,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
+/*
     public static void HydraTask_verifyInsertQueryOnSnappyCluster() {
         int numInserts = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.insertCounter);
         Log.getLogWriter().info("numInserts performed : " + numInserts);
@@ -864,6 +865,47 @@ public class SnappyTest implements Serializable {
             throw new TestException(misMatch);
         }
     }
+*/
+
+    public static void HydraTask_verifyInsertQueryOnSnappyCluster() {
+        snappyTest.insertQuery();
+    }
+
+    protected void insertQuery() {
+        runGemXDQuery = true;
+        try {
+            Connection conn = getLocatorConnection();
+            String query1 = "select count(*) from trade.txhistory";
+            long rowCountBeforeDelete = runSelectQuery(conn, query1);
+            Log.getLogWriter().info("SS - rowCountBeforeDelete:" + rowCountBeforeDelete);
+            String query2 = "insert into trade.securities (sec_id, symbol, price, exchange, tid )values (234, 'sxjq32', 27.45, 'fse', 32)";
+            int rowCount = conn.createStatement().executeUpdate(query2);
+            commit(conn);
+            Log.getLogWriter().info("Deleted " + rowCount + " rows in trade.txhistory table in snappy.");
+            String query3 = "select count(*) from trade.txhistory";
+            String query4 = "select count(*) from trade.txhistory where type = 'buy'";
+            long rowCountAfterDelete = 0, rowCountForquery4;
+            rowCountAfterDelete = runSelectQuery(conn, query3);
+            Log.getLogWriter().info("SS - rowCountAfterDelete:" + rowCountAfterDelete);
+            long expectedRowCountAfterDelete = rowCountBeforeDelete - rowCount;
+            Log.getLogWriter().info("SS - expectedRowCountAfterDelete:" + expectedRowCountAfterDelete);
+            if (!(rowCountAfterDelete == expectedRowCountAfterDelete)) {
+                String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing delete ops should be : " + expectedRowCountAfterDelete + ", but it is : " + rowCountAfterDelete;
+                throw new TestException(misMatch);
+            }
+            rowCountForquery4 = runSelectQuery(conn, query4);
+            Log.getLogWriter().info("SS - rowCountForquery4:" + rowCountForquery4);
+            if (!(rowCountForquery4 == 0)) {
+                String misMatch = "Test Validation failed due to wrong row count value. Expected row count value is : 0, but found : " + rowCountForquery4;
+                throw new TestException(misMatch);
+            }
+            closeConnection(conn);
+        } catch (SQLException e) {
+            throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
+        }
+    }
+
+
 
     protected void writeToFile(String logDir, File file) {
         try {
