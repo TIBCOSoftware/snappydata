@@ -29,13 +29,11 @@ class SnappyCoarseGrainedExecutorBackend(
     override val rpcEnv: RpcEnv,
     driverUrl: String,
     executorId: String,
-    hostPort: String,
     cores: Int,
     userClassPath: Seq[URL],
     env: SparkEnv)
     extends CoarseGrainedExecutorBackend(rpcEnv, driverUrl,
-      executorId, hostPort, cores, userClassPath, env) {
-
+      executorId, cores, userClassPath, env) {
   override def onStop() {
     SnappyContext.clearStaticArtifacts()
     exitWithoutRestart()
@@ -51,7 +49,7 @@ class SnappyCoarseGrainedExecutorBackend(
    * but those functions will have to be brought in sync with CoarseGrainedExecutorBackend
    * after every merge.
    */
-  override def exitExecutor(): Unit = {
+  override def exitExecutor(code: Int): Unit = {
     exitWithoutRestart()
     // Executor may fail to connect to the driver because of
     // https://issues.apache.org/jira/browse/SPARK-9820 and

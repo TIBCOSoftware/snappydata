@@ -24,10 +24,10 @@ import org.apache.spark.storage.{BlockStatus, BlockId}
 private[spark] class SnappyStaticMemoryManager(
     override val conf: SparkConf,
     val maxExecutionMemory: Long,
-    override val maxStorageMemory: Long,
+    override val maxOnHeapStorageMemory: Long,
     numCores: Int)
     extends StaticMemoryManager(conf, maxExecutionMemory,
-      maxStorageMemory, numCores) {
+      maxOnHeapStorageMemory, numCores) {
 
   def this(conf: SparkConf, numCores: Int) {
     this(conf,
@@ -50,11 +50,11 @@ private[spark] class SnappyStaticMemoryManager(
   override def acquireStorageMemory(
       blockId: BlockId,
       numBytes: Long,
-      evictedBlocks: mutable.Buffer[(BlockId, BlockStatus)]): Boolean = synchronized {
+      memoryMode: MemoryMode): Boolean = synchronized {
     if (SnappyMemoryUtils.isCriticalUp || SnappyMemoryUtils.isEvictionUp) {
       false
     } else {
-      super.acquireStorageMemory(blockId, numBytes, evictedBlocks)
+      super.acquireStorageMemory(blockId, numBytes, memoryMode)
     }
   }
 }

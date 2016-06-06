@@ -16,7 +16,7 @@
  */
 package org.apache.spark.scheduler.cluster
 
-import org.apache.spark.rpc.{RpcAddress, RpcEnv}
+import org.apache.spark.rpc.{RpcEndpointAddress, RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.TaskSchedulerImpl
 import org.apache.spark.SparkEnv
 import org.apache.spark.internal.Logging
@@ -39,9 +39,10 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   override def start() {
 
     super.start()
-    _driverUrl = rpcEnv.uriOf(SparkEnv.driverActorSystemName,
-      RpcAddress(driverEndpoint.address.host, driverEndpoint.address.port),
-      CoarseGrainedSchedulerBackend.ENDPOINT_NAME)
+    _driverUrl = RpcEndpointAddress(
+      scheduler.sc.conf.get("spark.driver.host"),
+      scheduler.sc.conf.get("spark.driver.port").toInt,
+      CoarseGrainedSchedulerBackend.ENDPOINT_NAME).toString
     logInfo(s"started with driverUrl $driverUrl")
   }
 
