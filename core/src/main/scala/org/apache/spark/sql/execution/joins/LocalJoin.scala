@@ -16,24 +16,19 @@
  */
 package org.apache.spark.sql.execution.joins
 
-import java.io.{ObjectOutputStream, IOException}
-
-
-import scala.collection.concurrent.TrieMap
-import scala.collection.mutable.HashMap
-
-import com.google.common.cache.{CacheLoader, CacheBuilder}
+import java.io.{IOException, ObjectOutputStream}
 
 import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, Partitioning, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.execution.{BinaryNode, SparkPlan}
-import org.apache.spark.storage.{StorageLevel, RDDBlockId, BroadcastBlockId}
+import org.apache.spark.sql.execution.{BinaryExecNode, SparkPlan}
+import org.apache.spark.storage.{RDDBlockId, StorageLevel}
 import org.apache.spark.util.Utils
-import org.apache.spark.{SparkEnv, OneToOneDependency, Partition, SparkContext, TaskContext}
+import org.apache.spark.{OneToOneDependency, Partition, SparkContext, SparkEnv, TaskContext}
 
 
 /**
@@ -46,15 +41,17 @@ import org.apache.spark.{SparkEnv, OneToOneDependency, Partition, SparkContext, 
 case class LocalJoin(leftKeys: Seq[Expression],
     rightKeys: Seq[Expression],
     buildSide: BuildSide,
+    condition: Option[Expression],
+    joinType: JoinType,
     left: SparkPlan,
     right: SparkPlan)
-    extends BinaryNode with HashJoin {
+    extends BinaryExecNode with HashJoin {
 
 
   override private[sql] lazy val metrics = Map(
-    "numLeftRows" -> SQLMetrics.createLongMetric(sparkContext, "number of left rows"),
-    "numRightRows" -> SQLMetrics.createLongMetric(sparkContext, "number of right rows"),
-    "numOutputRows" -> SQLMetrics.createLongMetric(sparkContext, "number of output rows"))
+    "numLeftRows" -> SQLMetrics.createMetric(sparkContext, "number of left rows"),
+    "numRightRows" -> SQLMetrics.createMetric(sparkContext, "number of right rows"),
+    "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
 
   override def outputPartitioning: Partitioning = streamedPlan.outputPartitioning
 
@@ -72,9 +69,9 @@ case class LocalJoin(leftKeys: Seq[Expression],
       case BuildRight => (longMetric("numRightRows"), longMetric("numLeftRows"))
     }
     val numOutputRows = longMetric("numOutputRows")
-
+    val context = TaskContext.get()
     def hashedRelationIter(buildIter: Iterator[InternalRow]): HashedRelation = {
-      HashedRelation(buildIter, numBuildRows, buildSideKeyGenerator)
+      HashedRelation(buildIter, buildKeys, taskMemoryManager = context.taskMemoryManager())
     }
 
     val buildRDD = buildPlan.execute()
@@ -87,7 +84,7 @@ case class LocalJoin(leftKeys: Seq[Expression],
     narrowPartitions(hashedRDD, streamRDD, true) {
       (hashedIter, streamIter) => {
         val hashed = hashedIter.next()
-        hashJoin(streamIter, numStreamedRows, hashed, numOutputRows)
+        join(streamIter, hashed, numOutputRows)
       }
     }
   }

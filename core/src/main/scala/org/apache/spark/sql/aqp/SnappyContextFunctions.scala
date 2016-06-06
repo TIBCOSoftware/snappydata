@@ -25,6 +25,7 @@ import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.DDLParser
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
 
@@ -32,58 +33,53 @@ trait SnappyContextFunctions {
 
   def clear(): Unit
 
-  def registerAQPErrorFunctions(context: SnappyContext)
+  def registerAQPErrorFunctions(session: SnappySession)
 
-  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit
+  def postRelationCreation(relation: BaseRelation, session: SnappySession): Unit
 
-  protected[sql] def executePlan(context: SnappyContext,
-      plan: LogicalPlan): QueryExecution
+  def getAQPRuleExecutor(session: SnappySession): RuleExecutor[SparkPlan]
 
-  def getAQPRuleExecutor(context: SQLContext): RuleExecutor[SparkPlan]
-
-  def createTopK(context: SnappyContext, topKName: String,
+  def createTopK(session: SnappySession, topKName: String,
       keyColumnName: String, inputDataSchema: StructType,
       topkOptions: Map[String, String], ifExists: Boolean): Unit
 
-  def dropTopK(context: SnappyContext, topKName: String): Unit
+  def dropTopK(session: SnappySession, topKName: String): Unit
 
-  def insertIntoTopK(context: SnappyContext, rows: RDD[Row],
+  def insertIntoTopK(session: SnappySession, rows: RDD[Row],
       topKName: QualifiedTableName, time: Long): Unit
 
-  def queryTopK(context: SnappyContext, topKName: String,
+  def queryTopK(session: SnappySession, topKName: String,
       startTime: String = null, endTime: String = null,
       k: Int = -1): DataFrame
 
-  def queryTopK(context: SnappyContext, topK: String,
+  def queryTopK(session: SnappySession, topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame
 
-  def queryTopKRDD(context: SnappyContext, topK: String,
+  def queryTopKRDD(session: SnappySession, topK: String,
       startTime: String, endTime: String, schema: StructType): RDD[InternalRow]
 
-  protected[sql] def collectSamples(context: SnappyContext, rows: RDD[Row],
+  protected[sql] def collectSamples(session: SnappySession, rows: RDD[Row],
       aqpTables: Seq[String], time: Long): Unit
 
   def withErrorDataFrame(df: DataFrame, error: Double,
       confidence: Double): DataFrame
 
-  def createSampleDataFrameContract(context: SnappyContext,
+  def createSampleDataFrameContract(session: SnappySession,
       df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract
 
   def convertToStratifiedSample(options: Map[String, Any],
-      snc: SnappyContext, logicalPlan: LogicalPlan): LogicalPlan
+      session: SnappySession, logicalPlan: LogicalPlan): LogicalPlan
 
   def isStratifiedSample(logicalPlan: LogicalPlan): Boolean
 
-  def getPlanner(context: SnappyContext): SparkPlanner
 
-  def getSQLDialect(context: SnappyContext): ParserDialect
+  def getSQLDialect(session: SnappySession): ParserDialect
 
-  def aqpTablePopulator(context: SnappyContext): Unit
+  def aqpTablePopulator(session: SnappySession): Unit
 
-  def getSnappyCatalog(context: SnappyContext): SnappyStoreHiveCatalog
+  def getSnappyCatalog(session: SnappySession): SnappyStoreHiveCatalog
 
-  def getSnappyDDLParser(context: SnappyContext,
+  def getSnappyDDLParser(session: SnappySession,
       planGenerator: String => LogicalPlan): DDLParser
 
-  def createAnalyzer(context: SnappyContext): Analyzer
 }

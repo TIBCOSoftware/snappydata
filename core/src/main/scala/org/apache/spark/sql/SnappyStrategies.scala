@@ -22,6 +22,7 @@ import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOper
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.streaming._
 
@@ -57,12 +58,12 @@ private[sql] trait SnappyStrategies {
 
   /** Stream related strategies DDL stratgies */
   case class StreamDDLStrategy(sampleStreamCase: PartialFunction[LogicalPlan,
-          Seq[SparkPlan]]) extends Strategy {
+      Seq[SparkPlan]]) extends Strategy {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = {
 
       val x: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
         case StreamOperationsLogicalPlan(action, batchInterval) =>
-          ExecutedCommand(
+          ExecutedCommandExec(
             SnappyStreamingActionsCommand(action, batchInterval)) :: Nil
 
       }
@@ -70,14 +71,13 @@ private[sql] trait SnappyStrategies {
     }
   }
 
-    object LocalJoinStrategies extends Strategy {
-      def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-        case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, left, CanLocalJoin(right)) =>
-          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joins.BuildRight)
-        case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, CanLocalJoin(left), right) =>
-          makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joins.BuildLeft)
-        case _ => Nil
-      }
+  object LocalJoinStrategies extends Strategy {
+    def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
+      case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, left, CanLocalJoin(right)) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joins.BuildRight)
+      case ExtractEquiJoinKeys(Inner, leftKeys, rightKeys, condition, CanLocalJoin(left), right) =>
+        makeLocalHashJoin(leftKeys, rightKeys, left, right, condition, joins.BuildLeft)
+      case _ => Nil
     }
 
     object CanLocalJoin {
@@ -89,17 +89,20 @@ private[sql] trait SnappyStrategies {
       }
     }
 
-  private[this] def makeLocalHashJoin(
-                                       leftKeys: Seq[Expression],
-                                       rightKeys: Seq[Expression],
-                                       left: LogicalPlan,
-                                       right: LogicalPlan,
-                                       condition: Option[Expression],
-                                       side: joins.BuildSide): Seq[SparkPlan] = {
+    private[this] def makeLocalHashJoin(
+        leftKeys: Seq[Expression],
+        rightKeys: Seq[Expression],
+        left: LogicalPlan,
+        right: LogicalPlan,
+        condition: Option[Expression],
+        side: joins.BuildSide): Seq[SparkPlan] = {
 
-    val localHashJoin = execution.joins.LocalJoin(
-      leftKeys, rightKeys, side, planLater(left), planLater(right))
-    condition.map(Filter(_, localHashJoin)).getOrElse(localHashJoin) :: Nil
+      val localHashJoin = execution.joins.LocalJoin(
+        leftKeys, rightKeys, side, condition, Inner, planLater(left), planLater(right))
+      condition.map(FilterExec(_, localHashJoin)).getOrElse(localHashJoin) :: Nil
+    }
+
   }
+
 
 }

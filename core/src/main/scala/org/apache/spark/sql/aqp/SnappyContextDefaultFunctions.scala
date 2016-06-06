@@ -23,7 +23,10 @@ import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.datasources.{DDLParser, ResolveDataSource, StoreDataSourceStrategy}
+import org.apache.spark.sql.execution.exchange.EnsureRequirements
+import org.apache.spark.sql.execution.python.ExtractPythonUDFs
 import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{BaseRelation, StoreStrategy}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -38,17 +41,12 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
-        Batch("Add exchange", Once, EnsureRequirements(sqlContext)),
+        Batch("Add exchange", Once, EnsureRequirements(sqlContext.)),
         Batch("Add row converters", Once, EnsureRowFormats)
       )
     }
 
-  override def registerAQPErrorFunctions(context: SnappyContext){}
-
-
-  protected[sql] def executePlan(context: SnappyContext,
-      plan: LogicalPlan): QueryExecution =
-    new sparkexecution.QueryExecution(context, plan)
+  override def registerAQPErrorFunctions(session: SparkSession){}
 
   override def createTopK(context: SnappyContext, tableName: String,
       keyColumnName: String, schema: StructType,
@@ -93,8 +91,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
       confidence: Double): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
-  def getPlanner(context: SnappyContext): SparkPlanner =
-    new DefaultPlanner(context)
+
 
   def getSQLDialect(context: SnappyContext): ParserDialect = {
     try {
@@ -123,41 +120,5 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
       planGenerator: String => LogicalPlan): DDLParser =
     new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)
 
-  def createAnalyzer(context: SnappyContext): Analyzer =
-    new Analyzer(context.catalog, context.functionRegistry, context.conf) {
-      override val extendedResolutionRules =
-          ExtractPythonUDFs ::
-          PreInsertCheckCastAndRename ::
-          (if (context.conf.runSQLOnFile) new ResolveDataSource(context) :: Nil
-          else Nil)
-
-      override val extendedCheckRules = Seq(
-        sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
-    }
 }
 
-class DefaultPlanner(snappyContext: SnappyContext)
-    extends SparkPlanner(snappyContext) with SnappyStrategies {
-
-  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-    case _ => Nil
-  }
-  val sampleStreamCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-    case _ => Nil
-  }
-
-  // TODO temporary flag till we determine every thing works fine with the optimizations
-  val storeOptimization = snappyContext.sparkContext.getConf.get(
-    "snappy.store.optimization", "true").toBoolean
-
-  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
-    Seq(StoreDataSourceStrategy, LocalJoinStrategies)
-  else Nil
-
-  override def strategies: Seq[Strategy] =
-    Seq(SnappyStrategies,
-      StreamDDLStrategy(sampleStreamCase),
-      StoreStrategy, StreamQueryStrategy) ++
-        storeOptimizedRules ++
-        super.strategies
-}
