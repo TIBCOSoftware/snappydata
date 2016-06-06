@@ -65,6 +65,7 @@ public class SnappyTest implements Serializable {
     private static String logFile = null;
 
     private static Set<Integer> pids = new LinkedHashSet<Integer>();
+    private static Set<File> dirList = new LinkedHashSet<File>();
     private static String locatorsFilePath = null;
     private static String serversFilePath = null;
     private static String leadsFilePath = null;
@@ -77,6 +78,7 @@ public class SnappyTest implements Serializable {
     public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForCloseTask, 6000);
     private static Boolean logDirExists = false;
+    private static Boolean doneCopying = false;
     private static Boolean diskDirExists = false;
     private static Boolean runGemXDQuery = false;
     protected static int[] dmlTables = SQLPrms.getTables();
@@ -319,6 +321,19 @@ public class SnappyTest implements Serializable {
         return fileContents;
     }
 
+    protected static Set<File> getDirList(String userKey) {
+        Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+        for (String key : keys) {
+            if (key.startsWith(userKey)) {
+                Log.getLogWriter().info("Key Found..." + key);
+                File value = (File) SnappyBB.getBB().getSharedMap().get(key);
+                dirList.add(value);
+            }
+        }
+        Log.getLogWriter().info("dirList is :: " + dirList.toString());
+        return dirList;
+    }
+
     public static void HydraTask_writeConfigDataToFiles() {
         snappyTest.writeConfigDataToFiles();
     }
@@ -523,6 +538,47 @@ public class SnappyTest implements Serializable {
                     }
                 } catch (IOException e) {
                     throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
+                }
+            }
+            diskDirExists = true;
+        }
+    }
+
+    public static synchronized void HydraTask_copyDiskFiles_gemToSnappyCluster() {
+        Set<File> myDirList = getDirList("dirName_");
+        if (diskDirExists) return;
+        else {
+            String dirName = snappyTest.generateLogDirName();
+            File destDir = new File(dirName);
+            String[] splitedName = RemoteTestModule.getMyClientName().split("snappy");
+            String newName = splitedName[1];
+            Log.getLogWriter().info("newName is ::" + newName);
+            File currentDir = new File(".");
+            for (File srcFile1 : currentDir.listFiles()) {
+                if (!doneCopying) {
+                    if (srcFile1.getAbsolutePath().contains(newName) && srcFile1.getAbsolutePath().contains("_disk")) {
+                        if (myDirList.contains(srcFile1)) {
+                            Log.getLogWriter().info("List contains entry for the file... " + myDirList.toString());
+                        } else {
+                            SnappyBB.getBB().getSharedMap().put("dirName_" + RemoteTestModule.getMyPid() + "_" + snappyTest.getMyTid(), srcFile1);
+                            File dir = new File(srcFile1.getAbsolutePath());
+                            Log.getLogWriter().info("Match found for File Path: " + srcFile1.getAbsolutePath());
+                            for (File srcFile : dir.listFiles()) {
+                                try {
+                                    if (srcFile.isDirectory()) {
+                                        FileUtils.copyDirectoryToDirectory(srcFile, destDir);
+                                        Log.getLogWriter().info("Done copying diskDirFile directory from ::" + srcFile + "to " + destDir);
+                                    } else {
+                                        FileUtils.copyFileToDirectory(srcFile, destDir);
+                                        Log.getLogWriter().info("Done copying diskDirFile from ::" + srcFile + "to " + destDir);
+                                    }
+                                    doneCopying = true;
+                                } catch (IOException e) {
+                                    throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
+                                }
+                            }
+                        }
+                    }
                 }
             }
             diskDirExists = true;
