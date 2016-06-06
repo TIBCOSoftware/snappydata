@@ -42,6 +42,7 @@ import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
+import org.apache.spark.util.io.ChunkedByteBuffer
 import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.internal.Logging
 
@@ -58,7 +59,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
 
-  private[this] val df: DataFrame = snc.sql(sql)
+  private[this] val df = snc.sql(sql)
 
   private[this] val hdos = new GfxdHeapDataOutputStream(
     Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
@@ -98,7 +99,7 @@ class SparkSQLExecuteImpl(val sql: String,
       for (p <- partitionBlockIds if p != null) {
         logTrace("Sending data for partition id = " + p)
         val partitionData: ByteBuffer = bm.getLocalBytes(p) match {
-          case Some(block) => block
+          case Some(block) => block.toByteBuffer
           case None => throw new GemFireXDRuntimeException(
             s"SparkSQLExecuteImpl: packRows() block $p not found")
         }
@@ -467,7 +468,7 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
     if (block.length > 0) {
       val bm = SparkEnv.get.blockManager
       val blockId = RDDBlockId(rddId, partitionId)
-      bm.putBytes(blockId, ByteBuffer.wrap(block),
+      bm.putBytes(blockId, new ChunkedByteBuffer(ByteBuffer.wrap(block)),
         StorageLevel.MEMORY_AND_DISK_SER, tellMaster = false)
       partitionBlockIds(partitionId) = blockId
     }

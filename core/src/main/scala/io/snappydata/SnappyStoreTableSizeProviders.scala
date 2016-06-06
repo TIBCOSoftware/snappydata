@@ -37,7 +37,8 @@ import io.snappydata.Constant._
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.SparkContext
+import org.apache.spark.internal.Logging
 import java.util.HashMap
 import org.apache.spark.sql.collection.Utils
 object StoreTableValueSizeProviderService extends Logging {

@@ -30,6 +30,7 @@ import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
+import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
@@ -42,10 +43,11 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.execution.datasources.{LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation, PreInsertCastAndRename, ResolvedDataSource}
 import org.apache.spark.sql.execution.ui.{SQLListener, SnappyStatsTab}
 import org.apache.spark.sql.execution.{CacheManager, ConnectionPool, SparkPlan}
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
@@ -54,7 +56,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{SparkConf, SparkContext, SparkException}
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -82,11 +84,8 @@ import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
  * @todo Provide links to above descriptions
  *
  */
-class SnappyContext protected[spark](
-    @transient override val sparkContext: SparkContext,
-    override val listener: SQLListener,
-    override val isRootContext: Boolean)
-    extends SQLContext(sparkContext, new CacheManager, listener, isRootContext)
+class SnappyContext protected[spark](_sparkSession: SparkSession)
+    extends SQLContext(_sparkSession)
     with Serializable with Logging {
 
   self =>
@@ -130,6 +129,7 @@ class SnappyContext protected[spark](
 
   override protected[sql] def executePlan(plan: LogicalPlan) =
     snappyContextFunctions.executePlan(this, plan)
+
 
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
@@ -217,7 +217,7 @@ class SnappyContext protected[spark](
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
       ignoreIfUnsupported: Boolean = false): Unit = {
     val plan = catalog.lookupRelation(tableIdent)
-    cacheManager.tryUncacheQuery(DataFrame(self, plan))
+    cacheManager.tryUncacheQuery(Dataset.ofRows(sparkSession,plan))
     plan match {
       case LogicalRelation(br, _) =>
         br match {
@@ -245,7 +245,7 @@ class SnappyContext protected[spark](
       SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
       if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession,plan)
   }
 
   /**
@@ -282,7 +282,7 @@ class SnappyContext protected[spark](
       SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
       if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession,plan)
   }
 
   /**
@@ -322,7 +322,7 @@ class SnappyContext protected[spark](
       if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       topkOptions + ("key" -> keyColumnName),
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession,plan)
   }
 
   /**
@@ -361,7 +361,7 @@ class SnappyContext protected[spark](
       if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       topkOptions + ("key" -> keyColumnName),
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession,plan)
   }
 
   /**
@@ -407,7 +407,7 @@ class SnappyContext protected[spark](
       if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession,plan)
   }
 
   /**
@@ -470,7 +470,7 @@ class SnappyContext protected[spark](
       if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession,plan)
   }
 
   /**
@@ -562,10 +562,10 @@ class SnappyContext protected[spark](
     }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, Some(schemaStr),
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
       onlyBuiltIn = true, onlyExternal = false)
-    DataFrame(self, plan)
+    Dataset.ofRows(sparkSession, plan)
   }
 
   /**
@@ -690,7 +690,7 @@ class SnappyContext protected[spark](
       onlyBuiltIn: Boolean,
       onlyExternal: Boolean): LogicalPlan = {
 
-    var data = DataFrame(self, query)
+    var data = Dataset.ofRows(sparkSession,query)
     if (catalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
@@ -785,7 +785,7 @@ class SnappyContext protected[spark](
             }
           case _ => // ignore
         }
-        cacheManager.tryUncacheQuery(DataFrame(self, plan))
+        cacheManager.tryUncacheQuery(Dataset.ofRows(sparkSession,plan))
         catalog.unregisterDataSourceTable(tableIdent, Some(br))
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
@@ -793,7 +793,7 @@ class SnappyContext protected[spark](
         }
       case _ =>
         // assume a temporary table
-        cacheManager.tryUncacheQuery(DataFrame(self, plan))
+        cacheManager.tryUncacheQuery(Dataset.ofRows(sparkSession,plan))
         catalog.unregisterTable(tableIdent)
     }
   }
