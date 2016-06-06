@@ -32,8 +32,8 @@ import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftOuter, LeftSemi, RightOuter}
 import org.apache.spark.sql.catalyst.{ParserDialect, SqlLexical, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.RunnableCommand
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DDLException, DDLParser, ResolvedDataSource}
 import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
