@@ -59,7 +59,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     createTableAndInsertData()
     val conn = getANetConnection(netPort1)
     val s = conn.createStatement()
-    s.execute("select col1 from ColumnTableQR")
+    s.execute("select col1 from TEST.ColumnTableQR")
     var rs = s.getResultSet
     var cnt = 0
     while (rs.next()) {
@@ -72,10 +72,11 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 1)
     assert(md.getColumnName(1).equals("COL1"))
+    assert (md.getSchemaName(1).equals("TEST"))
     assert(md.getTableName(1).equals("COLUMNTABLEQR"))
 
     // 2nd query which compiles in gemxd too but needs to be routed
-    s.execute("select * from ColumnTableQR")
+    s.execute("select * from TEST.ColumnTableQR")
     rs = s.getResultSet
     cnt = 0
     while (rs.next()) {
@@ -89,6 +90,9 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     assert(md.getColumnName(1).equals("COL1"))
     assert(md.getColumnName(2).equals("COL2"))
     assert(md.getColumnName(3).equals("COL3"))
+    assert(md.getSchemaName(1).equals("TEST"))
+    assert(md.getSchemaName(2).equals("TEST"))
+    assert(md.getSchemaName(3).equals("TEST"))
     assert(md.getTableName(1).equals("COLUMNTABLEQR"))
     assert(md.getTableName(2).equals("COLUMNTABLEQR"))
     assert(md.getTableName(3).equals("COLUMNTABLEQR"))
@@ -96,7 +100,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable("ColumnTableQR", false))
+        assert(catalog.isColumnTable("TEST.ColumnTableQR", false))
       }
     })
 
@@ -109,7 +113,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
           throw sqe
         }
     }
-    s.execute("select col1, col2 from ColumnTableQR")
+    s.execute("select col1, col2 from TEST.ColumnTableQR")
     rs = s.getResultSet
     cnt = 0
     while (rs.next()) {
@@ -121,7 +125,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 2)
 
-    s.execute("select * from ColumnTableQR where col1 > 4")
+    s.execute("select * from TEST.ColumnTableQR where col1 > 4")
     rs = s.getResultSet
     cnt = 0
     while (rs.next()) {
@@ -129,7 +133,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     assert(cnt == 3)
 
-    s.execute("select col1 from ColumnTableQR where col1 > 0 order by col1 desc")
+    s.execute("select col1 from TEST.ColumnTableQR where col1 > 0 order by col1 desc")
     rs = s.getResultSet
     cnt = 0
     // 1, 7, 9, 4, 5
@@ -150,7 +154,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     setDMLMaxChunkSize(50L)
     val expectedResult : Array[Int] = Array(1, 7, 9, 4, 5)
     val actualResult : Array[Int] = new Array[Int](5)
-    s.execute("select col1 from ColumnTableQR order by col1")
+    s.execute("select col1 from TEST.ColumnTableQR order by col1")
     rs = s.getResultSet
     cnt = 0
     while(rs.next()) {
@@ -297,7 +301,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     createTableAndInsertData()
     val conn = getANetConnection(netPort1)
     try {
-      val ps = conn.prepareStatement("select col1 from ColumnTableQR where  col1 >?and col1 < ?")
+      val ps = conn.prepareStatement("select col1 from TEST.ColumnTableQR where  col1 >?and col1 < ?")
       ps.setInt(1, 1)
       ps.setInt(2, 1000)
       val rs = ps.executeQuery()
@@ -315,10 +319,11 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 //          md.getColumnName(1) + " col table name = " + md.getTableName(1))
       assert(md.getColumnCount == 1)
       assert(md.getColumnName(1).equalsIgnoreCase("col1"))
+      assert (md.getSchemaName(1).equalsIgnoreCase("test"))
       assert(md.getTableName(1).equalsIgnoreCase("columnTableqr"))
 
       // Test zero parameter
-      val ps2 = conn.prepareStatement("select col1 from ColumnTableQR where  col1 > 1 and col1 < 500")
+      val ps2 = conn.prepareStatement("select col1 from TEST.ColumnTableQR where  col1 > 1 and col1 < 500")
       val rs2 = ps2.executeQuery()
       var cnt2 = 0
       while (rs2.next()) {
@@ -374,7 +379,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   def createTableAndInsertData(): Unit = {
     val snc = SnappyContext(sc)
-    val tableName: String = "ColumnTableQR"
+    val tableName: String = "TEST.ColumnTableQR"
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3),
       Seq(4, 2, 3), Seq(5, 6, 7))

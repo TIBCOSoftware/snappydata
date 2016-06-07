@@ -22,6 +22,7 @@ import scala.collection.mutable
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.util.ServiceUtils
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -88,6 +89,20 @@ object StoreUtils extends Logging {
     }
     lookupName
   }
+
+  def lookupTable(tableName: String): SnappyTable = {
+    val indexOfDot = tableName.indexOf(".")
+    val defaultSchema = ServiceUtils.getDefaultDatabaseSchema()
+    if (tableName.indexOf('.') <= 0) {
+      SnappyTable(defaultSchema, tableName, lookupName(tableName, defaultSchema))
+    } else {
+      val schema = tableName.substring(0, indexOfDot)
+      val table = tableName.substring(indexOfDot + 1)
+      SnappyTable(schema, table, lookupName(table, schema))
+    }
+  }
+
+
 
   def getPartitionsPartitionedTable(sc: SparkContext,
       tableName: String, schema: String,
@@ -317,3 +332,5 @@ object StoreUtils extends Logging {
     })
   }
 }
+
+case class SnappyTable(schema: String, tableName: String, fullyQualifiedName: String)

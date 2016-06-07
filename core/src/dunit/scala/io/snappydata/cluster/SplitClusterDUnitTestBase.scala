@@ -95,7 +95,6 @@ trait SplitClusterDUnitTestBase {
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("row", isComplex = false, props)
 
-    println("Test Completed Successfully")
   }
 
   def doTestComplexTypesForColumnTables_SNAP643(
@@ -116,8 +115,6 @@ trait SplitClusterDUnitTestBase {
 
     // Embedded Cluster Verifying the Spark Cluster Operations
     testObject.verifySplitModeOperations("column", isComplex = true, props)
-
-    println("Test Completed Successfully")
   }
 
   def testColumnTableCreation(): Unit = {
@@ -177,7 +174,7 @@ trait SplitClusterDUnitTestObject {
     }
     assert(tableAlreadyExistException != null)
     assert(tableAlreadyExistException.getMessage.toLowerCase.contains(
-      "Table embeddedModeTable1 already exists.".toLowerCase),
+      "already exists.".toLowerCase),
       tableAlreadyExistException.getMessage)
 
     // select the data from table created in embedded mode
@@ -191,8 +188,9 @@ trait SplitClusterDUnitTestObject {
 
     // remove below once SNAP-653 is fixed
     val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "SPLITMODETABLE1", numPartitions,
+    StoreUtils.removeCachedObjects(snc, "APP.SPLITMODETABLE1", numPartitions,
       registerDestroy = true)
+
     // create a table in split mode
     if (isComplex) {
       createComplexTableUsingDataSourceAPI(snc, "splitModeTable1",
@@ -201,6 +199,7 @@ trait SplitClusterDUnitTestObject {
       createTableUsingDataSourceAPI(snc, "splitModeTable1",
         tableType, props)
     }
+
     selectFromTable(snc, "splitModeTable1", 1005)
 
     println("Successful")

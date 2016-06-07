@@ -682,6 +682,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   }
 
   override def parse(input: String, exceptionOnError: Boolean): LogicalPlan = {
+
     try {
       parse(input)
     } catch {
@@ -957,10 +958,9 @@ private[sql] case class DropTable(
     tableIdent: QualifiedTableName,
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
-
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropTable(tableIdent, ifExists)
+    snc.dropTable(snc.catalog.newQualifiedTableName(tableIdent), ifExists)
     Seq.empty
   }
 }
@@ -971,7 +971,7 @@ private[sql] case class TruncateTable(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.truncateTable(tableIdent)
+    snc.truncateTable(snc.catalog.newQualifiedTableName(tableIdent))
     Seq.empty
   }
 }

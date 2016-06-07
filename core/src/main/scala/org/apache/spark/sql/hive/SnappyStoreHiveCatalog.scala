@@ -18,8 +18,8 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -29,11 +29,12 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
+import io.snappydata.Constant.DEFAULT_SCHEMA
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.Logging
@@ -51,7 +52,6 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
-
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
  * stream/topK tables and returning LogicalPlan to materialize these entities.
@@ -370,11 +370,10 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   }
 
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName = {
-    tableIdent match {
-      case q: QualifiedTableName => q
-      case _ => new QualifiedTableName(tableIdent.database.map(
-        processTableIdentifier), processTableIdentifier(tableIdent.table))
-    }
+    new QualifiedTableName(
+      Some(processTableIdentifier(tableIdent.database.
+          getOrElse(ServiceUtils.getDefaultDatabaseSchema())))
+      , processTableIdentifier(tableIdent.table))
   }
 
   def newQualifiedTableName(tableIdent: String): QualifiedTableName = {
@@ -384,7 +383,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       new QualifiedTableName(Some(tableName.substring(0, dotIndex)),
         tableName.substring(dotIndex + 1))
     } else {
-      new QualifiedTableName(None, tableName)
+      new QualifiedTableName(Some(ServiceUtils.getDefaultDatabaseSchema()), tableName)
     }
   }
 
@@ -812,12 +811,12 @@ final class QualifiedTableName(_database: Option[String], _tableIdent: String)
   def getDatabase(client: ClientInterface): String =
     database.getOrElse(client.currentDatabase)
 
-  def getTableOption(client: ClientInterface) = _table.orElse {
+  def getTableOption(client: ClientInterface): Option[HiveTable] = _table.orElse {
     _table = client.getTableOption(getDatabase(client), table)
     _table
   }
 
-  def getTable(client: ClientInterface) =
+  def getTable(client: ClientInterface): HiveTable =
     getTableOption(client).getOrElse(throw new TableNotFoundException(
       s"Table Not Found: $table (in database: ${getDatabase(client)})"))
 
