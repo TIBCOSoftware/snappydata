@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import io.snappydata.Constant
 
 import org.apache.spark.sql.SampleDataFrameContract.ErrorRow
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.MultiColumnOpenHashMap
 import org.apache.spark.sql.execution.QueryExecution
@@ -27,9 +28,10 @@ import org.apache.spark.sql.sources.StatCounter
 
 import scala.collection.mutable
 
-final class SampleDataFrame(@transient override val sqlContext: SnappyContext,
+final class SampleDataFrame(@transient val snappySession: SnappySession,
     @transient override val logicalPlan: LogicalPlan)
-    extends DataFrame(sqlContext, logicalPlan) with Serializable {
+    extends DataFrame(snappySession, logicalPlan, DataFrameUtil.encoder(snappySession,
+      logicalPlan)) with Serializable {
 
   @transient var implementor: SampleDataFrameContract =
     createSampleDataFrameContract
@@ -46,19 +48,36 @@ final class SampleDataFrame(@transient override val sqlContext: SnappyContext,
     implementor.errorEstimateAverage(columnName, confidence, groupByColumns)
 
   private def createSampleDataFrameContract =
-    sqlContext.snappyContextFunctions.createSampleDataFrameContract(sqlContext,
+    snappySession.snappyContextFunctions.createSampleDataFrameContract(snappySession,
       this, logicalPlan)
 }
 
-final class DataFrameWithTime(@transient _sqlContext: SnappyContext,
+final class DataFrameWithTime(@transient snappySession: SnappySession,
     @transient _logicalPlan: LogicalPlan, val time: Long)
-    extends DataFrame(_sqlContext, _logicalPlan) with Serializable
+    extends DataFrame(snappySession, _logicalPlan, DataFrameUtil.encoder(snappySession,
+      _logicalPlan)) with Serializable
 
-case class AQPDataFrame(@transient override val sqlContext: SnappyContext,
-    @transient qe: QueryExecution) extends DataFrame(sqlContext, qe) {
+case class AQPDataFrame(@transient val snappySession: SnappySession,
+    @transient qe: QueryExecution) extends DataFrame(snappySession, qe, DataFrameUtil.encoder(snappySession,
+  qe)) {
 
   def withError(error: Double,
       confidence: Double = Constant.DEFAULT_CONFIDENCE): DataFrame =
-    sqlContext.snappyContextFunctions.withErrorDataFrame(this, error,
+    snappySession.snappyContextFunctions.withErrorDataFrame(this, error,
       confidence)
+}
+
+
+object DataFrameUtil {
+
+  def encoder(sparkSession: SparkSession, logicalPlan: LogicalPlan): ExpressionEncoder[Row] = {
+    val qe = sparkSession.sessionState.executePlan(logicalPlan)
+    qe.assertAnalyzed()
+    RowEncoder(qe.analyzed.schema)
+  }
+
+  def encoder(sparkSession: SparkSession, qe: QueryExecution): ExpressionEncoder[Row] = {
+    qe.assertAnalyzed()
+    RowEncoder(qe.analyzed.schema)
+  }
 }

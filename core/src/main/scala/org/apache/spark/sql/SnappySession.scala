@@ -71,7 +71,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   private[sql] lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
-  private val snappyContextFunctions = sessionState.asInstanceOf[SnappyContextFunctions]
+  private[sql] val snappyContextFunctions = sessionState.asInstanceOf[SnappyContextFunctions]
 
   /**
    * A wrapped version of this session in the form of a [[SQLContext]], for backward compatibility.

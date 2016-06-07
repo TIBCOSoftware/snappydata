@@ -81,11 +81,11 @@ class SnappySessionState(snappySession: SnappySession)
       sparkexecution.datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
 
-  def clear(): Unit = {}
+  override def clear(): Unit = {}
 
-  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit = {}
+  override def postRelationCreation(relation: BaseRelation, session: SnappySession): Unit = {}
 
-  def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
+  override def getAQPRuleExecutor(session: SnappySession): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
         Batch("Add exchange", Once, EnsureRequirements(conf))

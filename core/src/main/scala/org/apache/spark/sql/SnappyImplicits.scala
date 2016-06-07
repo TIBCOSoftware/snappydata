@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
 import org.apache.spark.TaskContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, Subquery}
+import org.apache.spark.sql.catalyst.plans.logical.{SubqueryAlias, LogicalPlan, Project}
 import org.apache.spark.sql.sources.PutIntoTable
 
 /**
@@ -33,16 +33,16 @@ object snappy extends Serializable {
 // scalastyle:on
 
   implicit def snappyOperationsOnDataFrame(df: DataFrame): SnappyDataFrameOperations = {
-    df.sqlContext match {
-      case sc: SnappyContext => SnappyDataFrameOperations(sc, df)
+    df.sparkSession match {
+      case sc: SnappySession => SnappyDataFrameOperations(sc, df)
       case sc => throw new AnalysisException("Extended snappy operations " +
           s"require SnappyContext and not ${sc.getClass.getSimpleName}")
     }
   }
 
   implicit def samplingOperationsOnDataFrame(df: DataFrame): SampleDataFrame = {
-    df.sqlContext match {
-      case sc: SnappyContext =>
+    df.sparkSession match {
+      case sc: SnappySession =>
         val plan = snappy.unwrapSubquery(df.logicalPlan)
         if (sc.snappyContextFunctions.isStratifiedSample(plan)) {
           new SampleDataFrame(sc, plan)
@@ -57,12 +57,12 @@ object snappy extends Serializable {
   }
 
   implicit def convertToAQPFrame(df: DataFrame): AQPDataFrame = {
-    AQPDataFrame(df.sqlContext.asInstanceOf[SnappyContext], df.queryExecution)
+    AQPDataFrame(df.sparkSession.asInstanceOf[SnappySession], df.queryExecution)
   }
 
   def unwrapSubquery(plan: LogicalPlan): LogicalPlan = {
     plan match {
-      case Subquery(_, child) => unwrapSubquery(child)
+      case SubqueryAlias(_, child) => unwrapSubquery(child)
       case _ => plan
     }
   }
@@ -144,8 +144,8 @@ object snappy extends Serializable {
      */
     def putInto(tableName: String): Unit = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
-      val context = df.sqlContext match {
-        case sc: SnappyContext => sc
+      val session = df.sparkSession match {
+        case sc: SnappySession => sc
         case _ => sys.error("Expected a SnappyContext for putInto operation")
       }
       val normalizedParCols = parColsMethod.invoke(writer)
@@ -161,15 +161,15 @@ object snappy extends Serializable {
         Project(inputDataCols ++ inputPartCols, df.logicalPlan)
       }.getOrElse(df.logicalPlan)
 
-      df.sqlContext.executePlan(
+      df.sparkSession.sessionState.executePlan(
         PutIntoTable(
-          UnresolvedRelation(context.catalog.newQualifiedTableName(tableName)),
+          UnresolvedRelation(session.sessionState.catalog.newQualifiedTableName(tableName)),
           input)).toRdd
     }
   }
 }
 
-private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
+private[sql] case class SnappyDataFrameOperations(session: SnappySession,
     df: DataFrame) {
 
 
@@ -180,8 +180,8 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * }}}
    */
   def stratifiedSample(options: Map[String, Any]): SampleDataFrame =
-    new SampleDataFrame(context, context.snappyContextFunctions.convertToStratifiedSample(
-      options, context, df.logicalPlan))
+    new SampleDataFrame(session, session.snappyContextFunctions.convertToStratifiedSample(
+      options, session, df.logicalPlan))
 
 
   /**
@@ -192,7 +192,7 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * @return
    */
   def withTime(time: Long): DataFrameWithTime =
-    new DataFrameWithTime(context, df.logicalPlan, time)
+    new DataFrameWithTime(session, df.logicalPlan, time)
 
 
   /**
@@ -200,6 +200,6 @@ private[sql] case class SnappyDataFrameOperations(context: SnappyContext,
    * Automatically uses #cacheQuery if not done already.
    */
   def appendToTempTableCache(tableName: String): Unit =
-    context.appendToTempTableCache(df, tableName)
+    session.appendToTempTableCache(df, tableName)
 }
 
