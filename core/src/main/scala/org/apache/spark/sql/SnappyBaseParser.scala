@@ -31,9 +31,9 @@ import org.apache.spark.sql.types._
 /**
  * Base parsing facilities for all SnappyData SQL parsers.
  */
-abstract class SnappyBaseParser(context: SnappyContext) extends Parser {
+abstract class SnappyBaseParser(session: SnappySession) extends Parser {
 
-  val caseSensitive = context.conf.caseSensitiveAnalysis
+  val caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints = new mutable.HashMap[String, String]
 

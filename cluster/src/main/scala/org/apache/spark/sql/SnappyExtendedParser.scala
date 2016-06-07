@@ -28,9 +28,11 @@ import org.apache.spark.sql.hive.QualifiedTableName
 /**
  * SnappyData extensions to SQL grammar. Currently subquery in WHERE support.
  */
-class SnappyExtendedParser(context: SnappyContext)
-    extends SnappyParser(context) {
+class SnappyExtendedParser(session: SnappySession)
+    extends SnappyParser(session) {
 
+
+  /*TODO: Hemant : Removed support of IN and Exists for now
   override protected def comparisonExpression1: Rule[Expression :: HNil,
       Expression :: HNil] = rule {
     super.comparisonExpression1 |
@@ -48,7 +50,8 @@ class SnappyExtendedParser(context: SnappyContext)
       Exists(subQuery, positive = true)) |
     NOT ~ EXISTS ~ query ~> ((subQuery: LogicalPlan) =>
       Exists(subQuery, positive = false))
-  }
+
+  }*/
 
   def expr: Rule1[Expression] = rule {
     ws ~ projection ~ EOI
@@ -62,9 +65,9 @@ class SnappyExtendedParser(context: SnappyContext)
 /**
  * Snappy extended dialect additions to the standard "sql" dialect.
  */
-private[sql] final class SnappyExtendedParserDialect(context: SnappyContext)
-    extends SnappyParserDialect(context) {
+private[sql] final class SnappyExtendedParserDialect(session: SnappySession)
+    extends SnappyParserDialect(session) {
 
   @transient private[sql] override val sqlParser =
-    new SnappyExtendedParser(context)
+    new SnappyExtendedParser(session)
 }

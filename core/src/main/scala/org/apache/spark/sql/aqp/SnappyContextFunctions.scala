@@ -18,12 +18,10 @@ package org.apache.spark.sql.aqp
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
-import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.execution._
-import org.apache.spark.sql.execution.datasources.DDLParser
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.StructType
@@ -76,7 +74,6 @@ trait SnappyContextFunctions {
 
   def aqpTablePopulator(session: SnappySession): Unit
 
-  def getSnappyCatalog(session: SnappySession): SnappyStoreHiveCatalog
 
   def getSnappyDDLParser(session: SnappySession,
       planGenerator: String => LogicalPlan): DDLParser

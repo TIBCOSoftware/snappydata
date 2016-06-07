@@ -14,6 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+
 package org.apache.spark.sql.internal
 
 
@@ -21,13 +22,15 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution.datasources.{ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.execution.python.ExtractPythonUDFs
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner}
-import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
+import org.apache.spark.sql.execution.{SparkSqlParser, QueryExecution, SparkPlan, SparkPlanner}
+import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog, QualifiedTableName}
 import org.apache.spark.sql.sources.{BaseRelation, StoreStrategy}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -41,9 +44,12 @@ class SnappySessionState(snappySession: SnappySession)
   self =>
 
 
-  private lazy val sharedState: SnappySharedState = {
+  private lazy val sharedState: SnappySharedState =
     snappySession.sharedState.asInstanceOf[SnappySharedState]
-  }
+
+  override lazy val sqlParser: ParserInterface =
+    new SnappySqlParser(conf, getSQLDialect(snappySession))
+
 
   /**
    * Internal catalog for managing table and database states.
@@ -133,16 +139,15 @@ class SnappySessionState(snappySession: SnappySession)
       confidence: Double): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
-
-  def getSQLDialect(session: SnappySession): ParserDialect = {
+  override def getSQLDialect(session: SnappySession): ParserDialect = {
     try {
       val clazz = Utils.classForName(
         "org.apache.spark.sql.SnappyExtendedParserDialect")
-      clazz.getConstructor(classOf[SnappyContext]).newInstance(snappySession.snappyContext)
+      clazz.getConstructor(classOf[SnappySession]).newInstance(session)
           .asInstanceOf[ParserDialect]
     } catch {
       case _: Exception =>
-        new SnappyParserDialect(snappySession.snappyContext)
+        new SnappyParserDialect(session)
     }
   }
 
@@ -159,7 +164,7 @@ class SnappySessionState(snappySession: SnappySession)
 }
 
 
-class DefaultPlanner(snappySession: SnappySession, conf : SQLConf, extraStrategies: Seq[Strategy])
+class DefaultPlanner(snappySession: SnappySession, conf: SQLConf, extraStrategies: Seq[Strategy])
     extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
     with SnappyStrategies {
 
