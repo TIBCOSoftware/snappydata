@@ -21,12 +21,13 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.SparkSqlAstBuilder
 import org.apache.spark.sql.internal.SQLConf
 
-class SnappySqlParser(conf: SQLConf, parserDialect: ParserDialect)  extends AbstractSqlParser{
+class SnappySqlParser(session: SnappySession,
+    parserDialect: ParserDialect)  extends AbstractSqlParser{
 
-  val astBuilder = new SparkSqlAstBuilder(conf)
+  val astBuilder = new SparkSqlAstBuilder(session.sessionState.conf)
 
   @transient
-  protected[sql] val ddlParser = new DDLParser(sqlParser.parse(_))
+  protected[sql] val ddlParser = new SnappyDDLParser(session, sqlParser.parse(_))
 
   @transient
   protected[sql] val sqlParser = new SparkSQLParser(parserDialect.parse(_))

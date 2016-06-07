@@ -31,18 +31,17 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
-import org.apache.spark.scheduler.local.LocalBackend
+import org.apache.spark.scheduler.local.LocalSchedulerBackendEndpoint
 import org.apache.spark.sql.catalyst.expressions.GenericRow
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
-import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
 import org.apache.spark.sql.execution.{QueryExecution, SQLExecution}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.CastLongTime
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SQLContext}
+import org.apache.spark.sql._
 import org.apache.spark.storage.BlockManagerId
 
 object Utils {
@@ -55,10 +54,10 @@ object Utils {
   final val Z95Squared = Z95Percent * Z95Percent
 
   implicit class StringExtensions(val s: String) extends AnyVal {
-    def normalize = toLowerCase(s)
+    def normalize: String = toLowerCase(s)
   }
 
-  def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int) = {
+  def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
     var index = start
     while (index < endP1) {
       a(index) = v
@@ -106,13 +105,13 @@ object Utils {
     if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
   }
 
-  def getHostExecutorId(blockId: BlockManagerId) =
+  def getHostExecutorId(blockId: BlockManagerId) : String =
     TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
 
   def classForName(className: String): Class[_] =
     org.apache.spark.util.Utils.classForName(className)
 
-  def ERROR_NO_QCS(module: String) = s"$module: QCS is empty"
+  def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
   def qcsOf(qa: Array[String], cols: Array[String],
       module: String): (Array[Int], Array[String]) = {
@@ -347,7 +346,7 @@ object Utils {
   }
 
   final def isLoner(sc: SparkContext): Boolean =
-    sc.schedulerBackend.isInstanceOf[LocalBackend]
+    sc.schedulerBackend.isInstanceOf[LocalSchedulerBackendEndpoint]
 
   def toLowerCase(k: String): String = {
     var index = 0
@@ -570,9 +569,9 @@ object Utils {
     driver
   }
 
-  def withNewExecutionId[T](ctx: SQLContext,
-      queryExecution: QueryExecution)(body: => T): T = {
-    SQLExecution.withNewExecutionId(ctx, queryExecution)(body)
+  def withNewExecutionId[T](session: SparkSession,
+    queryExecution: QueryExecution)(body: => T): T = {
+    SQLExecution.withNewExecutionId(session, queryExecution)(body)
   }
 
   def immutableMap[A, B](m: mutable.Map[A, B]): Map[A, B] = new Map[A, B] {
@@ -680,17 +679,17 @@ class FixedPartitionRDD[T: ClassTag](@transient _sc: SparkContext,
 class ExecutorLocalPartition(override val index: Int,
     val blockId: BlockManagerId) extends Partition {
 
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
 
-  override def toString = s"ExecutorLocalPartition($index, $blockId)"
+  override def toString: String = s"ExecutorLocalPartition($index, $blockId)"
 }
 
 class MultiExecutorLocalPartition(override val index: Int,
     val blockIds: Seq[BlockManagerId]) extends Partition {
 
-  def hostExecutorIds = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
+  def hostExecutorIds: Seq[String] = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
 
-  override def toString = s"MultiExecutorLocalPartition($index, $blockIds)"
+  override def toString: String = s"MultiExecutorLocalPartition($index, $blockIds)"
 }
 
 
@@ -701,7 +700,8 @@ private[spark] case class NarrowExecutorLocalSplitDep(
     ) extends Serializable {
 
   @throws[java.io.IOException]
-  private def writeObject(oos: ObjectOutputStream): Unit = org.apache.spark.util.Utils.tryOrIOException {
+  private def writeObject(oos: ObjectOutputStream): Unit =
+    org.apache.spark.util.Utils.tryOrIOException {
     // Update the reference to parent split at the time of task serialization
     split = rdd.partitions(splitIndex)
     oos.defaultWriteObject()
@@ -722,16 +722,16 @@ private[spark] class CoGroupExecutorLocalPartition(
 
   override val index: Int = idx
 
-  def hostExecutorId = Utils.getHostExecutorId(blockId)
+  def hostExecutorId: String = Utils.getHostExecutorId(blockId)
 
-  override def toString = s"CoGroupExecutorLocalPartition($index, $blockId)"
+  override def toString: String = s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
 }
 
 class ExecutorLocalShellPartition(override val index: Int,
     val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
-  override def toString = s"ExecutorLocalShellPartition($index, $hostList"
+  override def toString: String = s"ExecutorLocalShellPartition($index, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {
