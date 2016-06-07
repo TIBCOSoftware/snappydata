@@ -58,7 +58,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   }
 
-  private lazy val cacheManager = sharedState.cacheManager
+  private[sql] lazy val cacheManager = sharedState.cacheManager
 
   /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
