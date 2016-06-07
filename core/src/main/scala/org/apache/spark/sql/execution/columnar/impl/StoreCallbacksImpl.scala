@@ -101,8 +101,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             null, null, 0, null, null, 0, null)
 
           val batchCreator = new CachedBatchCreator(
-            ColumnFormatRelation.cachedBatchTableName(fullyQualifiedTableName),
-            fullyQualifiedTableName, schema,
+            ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
+            container.getQualifiedTableName, schema,
             externalStore, cachedBatchSize, useCompression)
           val keys = batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
