@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package org.apache.spark.sql.internal
 
 
@@ -5,12 +22,13 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.RuleExecutor
 import org.apache.spark.sql.execution.datasources.{ResolveDataSource, StoreDataSourceStrategy}
 import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.execution.python.ExtractPythonUDFs
-import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner}
+import org.apache.spark.sql.execution.{SparkSqlParser, QueryExecution, SparkPlan, SparkPlanner}
 import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog, QualifiedTableName}
 import org.apache.spark.sql.sources.{BaseRelation, StoreStrategy}
 import org.apache.spark.sql.streaming.StreamBaseRelation
@@ -19,13 +37,15 @@ import org.apache.spark.sql.{execution => sparkexecution, _}
 import org.apache.spark.util.Utils
 
 
-class SnappySessionState (sparkSession: SparkSession)
+class SnappySessionState (sparkSession: SnappySession)
     extends SessionState(sparkSession) with SnappyContextFunctions{
 
   self =>
 
   override def planner: SparkPlanner = new DefaultPlanner
 
+  override lazy val sqlParser: ParserInterface =
+    new SnappySqlParser(conf, getSQLDialect(sparkSession))
 
   override def executePlan(plan: LogicalPlan): QueryExecution =
     new sparkexecution.QueryExecution(catalog.sparkSession, plan)
@@ -86,7 +106,7 @@ class SnappySessionState (sparkSession: SparkSession)
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
-        Batch("Add exchange", Once, EnsureRequirements(sqlContext.)),
+        Batch("Add exchange", Once, EnsureRequirements(sqlContext.conf)),
         Batch("Add row converters", Once, EnsureRowFormats)
       )
     }
@@ -139,15 +159,15 @@ class SnappySessionState (sparkSession: SparkSession)
 
 
 
-  def getSQLDialect(session: SnappySession): ParserDialect = {
+  override def getSQLDialect(session: SnappySession): ParserDialect = {
     try {
       val clazz = Utils.classForName(
         "org.apache.spark.sql.SnappyExtendedParserDialect")
-      clazz.getConstructor(classOf[SnappyContext]).newInstance(context)
+      clazz.getConstructor(classOf[SnappySession]).newInstance(session)
           .asInstanceOf[ParserDialect]
     } catch {
       case _: Exception =>
-        new SnappyParserDialect(context)
+        new SnappyParserDialect(session)
     }
   }
 

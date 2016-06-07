@@ -41,7 +41,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
-        Batch("Add exchange", Once, EnsureRequirements(sqlContext.)),
+        Batch("Add exchange", Once, EnsureRequirements(sqlContext.conf)),
         Batch("Add row converters", Once, EnsureRowFormats)
       )
     }
@@ -93,15 +93,15 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
 
 
-  def getSQLDialect(context: SnappyContext): ParserDialect = {
+  def getSQLDialect(session: SnappySession): ParserDialect = {
     try {
       val clazz = Utils.classForName(
         "org.apache.spark.sql.SnappyExtendedParserDialect")
-      clazz.getConstructor(classOf[SnappyContext]).newInstance(context)
+      clazz.getConstructor(classOf[SnappySession]).newInstance(session)
           .asInstanceOf[ParserDialect]
     } catch {
       case _: Exception =>
-        new SnappyParserDialect(context)
+        new SnappyParserDialect(session)
     }
   }
 

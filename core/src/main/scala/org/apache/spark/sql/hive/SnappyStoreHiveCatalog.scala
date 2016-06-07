@@ -65,7 +65,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
 
   /**
    * The version of the hive client that will be used to communicate
-   * with the meta-store for catalog.
+   * with the meta-store forL catalog.
    */
   protected[sql] val hiveMetastoreVersion: String =
     context.getConf(HIVE_METASTORE_VERSION, hiveExecutionVersion)
