@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.aqp.DefaultPlanner
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalOperation}
 import org.apache.spark.sql.catalyst.plans.Inner

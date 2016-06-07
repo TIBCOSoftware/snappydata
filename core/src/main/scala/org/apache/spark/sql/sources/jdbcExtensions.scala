@@ -24,11 +24,11 @@ import scala.util.control.NonFatal
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.{CaseInsensitiveMap, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{DataSource, CaseInsensitiveMap, ResolvedDataSource}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode}
+import org.apache.spark.sql.{SnappySession, AnalysisException, DataFrame, SQLContext, SaveMode}
 
 /**
  * Some extensions to `JdbcDialect` used by Snappy implementation.
@@ -210,27 +210,28 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
-   * Create a [[ResolvedDataSource]] for an external DataSource schema DDL
+   * Create a [[DataSource]] for an external DataSource schema DDL
    * string specification.
    */
   def externalResolvedDataSource(
-      sqlContext: SQLContext,
+      snappySession: SnappySession,
       schemaString: String,
       provider: String,
       mode: SaveMode,
-      options: Map[String, String]): ResolvedDataSource = {
-    val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
+      options: Map[String, String]): DataSource = {
+    val dataSource = DataSource(snappySession, className = provider)
+    val clazz: Class[_] = dataSource.providingClass
     val relation = clazz.newInstance() match {
 
       case dataSource: ExternalSchemaRelationProvider =>
         // add schemaString as separate property for Hive persistence
-        dataSource.createRelation(sqlContext, mode, new CaseInsensitiveMap(
+        dataSource.createRelation(snappySession.snappyContext, mode, new CaseInsensitiveMap(
           options + (SCHEMA_PROPERTY -> schemaString)), schemaString)
 
       case _ => throw new AnalysisException(
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
     }
-    new ResolvedDataSource(clazz, relation)
+    dataSource
   }
 
   /**

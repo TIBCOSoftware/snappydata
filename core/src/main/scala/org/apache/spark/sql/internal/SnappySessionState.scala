@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package org.apache.spark.sql.internal
 
 
@@ -11,7 +27,7 @@ import org.apache.spark.sql.execution.datasources.{ResolveDataSource, StoreDataS
 import org.apache.spark.sql.execution.exchange.EnsureRequirements
 import org.apache.spark.sql.execution.python.ExtractPythonUDFs
 import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner}
-import org.apache.spark.sql.hive.{ExternalTableType, SnappyStoreHiveCatalog, QualifiedTableName}
+import org.apache.spark.sql.hive.{ExternalTableType, QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.{BaseRelation, StoreStrategy}
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -19,80 +35,60 @@ import org.apache.spark.sql.{execution => sparkexecution, _}
 import org.apache.spark.util.Utils
 
 
-class SnappySessionState (sparkSession: SparkSession)
-    extends SessionState(sparkSession) with SnappyContextFunctions{
+class SnappySessionState(snappySession: SnappySession)
+    extends SessionState(snappySession) with SnappyContextFunctions {
 
   self =>
 
-  override def planner: SparkPlanner = new DefaultPlanner
 
-
-  override def executePlan(plan: LogicalPlan): QueryExecution =
-    new sparkexecution.QueryExecution(catalog.sparkSession, plan)
-
-  @transient
-  override protected[sql] lazy val analyzer: Analyzer =  new Analyzer(catalog, catalog.conf) {
-    override val extendedResolutionRules =
-      ExtractPythonUDFs ::
-          PreInsertCheckCastAndRename ::
-          new ResolveDataSource(catalog.sparkSession) :: Nil
-
-    override val extendedCheckRules = Seq(
-      sparkexecution.datasources.PreWriteCheck(catalog.conf, catalog), PrePutCheck)
+  private lazy val sharedState: SnappySharedState = {
+    snappySession.sharedState.asInstanceOf[SnappySharedState]
   }
 
   /**
    * Internal catalog for managing table and database states.
    */
-  override lazy val catalog = new SnappySessionCatalog(
-    sparkSession.sharedState.externalCatalog,
-    sparkSession,
-    functionResourceLoader,
-    functionRegistry,
-    conf,
-    newHadoopConf())
+  override lazy val catalog =
+    new SnappyStoreHiveCatalog(
+      sharedState.externalCatalog,
+      snappySession,
+      functionResourceLoader,
+      functionRegistry,
+      conf,
+      newHadoopConf())
+
+  override def planner: SparkPlanner = new DefaultPlanner(snappySession, conf,
+    experimentalMethods.extraStrategies)
 
 
-  class DefaultPlanner
-      extends SparkPlanner(sparkSession.sparkContext, conf, experimentalMethods.extraStrategies)
-      with SnappyStrategies {
+  override def executePlan(plan: LogicalPlan): QueryExecution =
+    new sparkexecution.QueryExecution(snappySession, plan)
 
-    val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-      case _ => Nil
-    }
-    val sampleStreamCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
-      case _ => Nil
-    }
+  @transient
+  override protected[sql] lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+    override val extendedResolutionRules =
+      ExtractPythonUDFs ::
+          PreInsertCheckCastAndRename ::
+          new ResolveDataSource(catalog.snappySession) :: Nil
 
-    // TODO temporary flag till we determine every thing works fine with the optimizations
-    val storeOptimization =  conf.getConfString(
-      "snappy.store.optimization", "true").toBoolean
-
-    val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
-      Seq(StoreDataSourceStrategy, LocalJoinStrategies)
-    else Nil
-
-    override def strategies: Seq[Strategy] =
-      Seq(SnappyStrategies,
-        StreamDDLStrategy(sampleStreamCase),
-        StoreStrategy, StreamQueryStrategy) ++
-          storeOptimizedRules ++
-          super.strategies
+    override val extendedCheckRules = Seq(
+      sparkexecution.datasources.PreWriteCheck(conf, catalog), PrePutCheck)
   }
 
   def clear(): Unit = {}
-  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit ={}
+
+  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit = {}
 
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
-        Batch("Add exchange", Once, EnsureRequirements(sqlContext.)),
-        Batch("Add row converters", Once, EnsureRowFormats)
+        Batch("Add exchange", Once, EnsureRequirements(conf))
+        //Batch("Add row converters", Once, EnsureRowFormats) //@TODO check why not needed, may
+        // be because everything is expected in terms of unsafe row now
       )
     }
 
-
-  override def registerAQPErrorFunctions(session: SnappySession){}
+  override def registerAQPErrorFunctions(session: SnappySession) {}
 
   override def createTopK(session: SnappySession, tableName: String,
       keyColumnName: String, schema: StructType,
@@ -138,31 +134,54 @@ class SnappySessionState (sparkSession: SparkSession)
     throw new UnsupportedOperationException("missing aqp jar")
 
 
-
   def getSQLDialect(session: SnappySession): ParserDialect = {
     try {
       val clazz = Utils.classForName(
         "org.apache.spark.sql.SnappyExtendedParserDialect")
-      clazz.getConstructor(classOf[SnappyContext]).newInstance(context)
+      clazz.getConstructor(classOf[SnappyContext]).newInstance(snappySession.snappyContext)
           .asInstanceOf[ParserDialect]
     } catch {
       case _: Exception =>
-        new SnappyParserDialect(context)
+        new SnappyParserDialect(snappySession.snappyContext)
     }
   }
 
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start
-    val catalog = context.catalog
+
     catalog.getDataSourceRelations[StreamBaseRelation](Seq(ExternalTableType
         .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
   }
 
-  def getSnappyCatalog(session: SnappySession): SnappyStoreHiveCatalog = {
-    SnappyStoreHiveCatalog.closeCurrent()
-    new SnappyStoreHiveCatalog(context)
-  }
   def getSnappyDDLParser(session: SnappySession,
       planGenerator: String => LogicalPlan): DDLParser =
-    new SnappyDDLParser(context.conf.caseSensitiveAnalysis, planGenerator)
+    new SnappyDDLParser(conf.caseSensitiveAnalysis, planGenerator)
+}
+
+
+class DefaultPlanner(snappySession: SnappySession, conf : SQLConf, extraStrategies: Seq[Strategy])
+    extends SparkPlanner(snappySession.sparkContext, conf, extraStrategies)
+    with SnappyStrategies {
+
+  val sampleSnappyCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case _ => Nil
+  }
+  val sampleStreamCase: PartialFunction[LogicalPlan, Seq[SparkPlan]] = {
+    case _ => Nil
+  }
+
+  // TODO temporary flag till we determine every thing works fine with the optimizations
+  val storeOptimization = conf.getConfString(
+    "snappy.store.optimization", "true").toBoolean
+
+  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
+    Seq(StoreDataSourceStrategy, LocalJoinStrategies)
+  else Nil
+
+  override def strategies: Seq[Strategy] =
+    Seq(SnappyStrategies,
+      StreamDDLStrategy(sampleStreamCase),
+      StoreStrategy, StreamQueryStrategy) ++
+        storeOptimizedRules ++
+        super.strategies
 }

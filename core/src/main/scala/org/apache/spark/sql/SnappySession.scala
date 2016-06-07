@@ -20,9 +20,9 @@ import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.execution.datasources.LogicalRelation
+import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
-import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog, QualifiedTableName}
 import org.apache.spark.sql.internal.{SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
@@ -68,6 +68,8 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] lazy override val sessionState: SnappySessionState = {
     new SnappySessionState(this)
   }
+
+  private[sql] lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
   private val snappyContextFunctions = sessionState.asInstanceOf[SnappyContextFunctions]
 
@@ -153,16 +155,16 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def appendToTempTableCache(df: DataFrame, table: String,
       storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
-    val tableIdent = catalog.newQualifiedTableName(table)
-    val plan = catalog.lookupRelation(tableIdent, None)
+    val tableIdent = sessionCatalog.newQualifiedTableName(table)
+    val plan = sessionCatalog.lookupRelation(tableIdent, None)
     // cache the new DataFrame
     df.persist(storageLevel)
     // trigger an Action to materialize 'cached' batch
     if (df.count() > 0) {
       // create a union of the two plans and store that in catalog
       val union = Union(plan, df.logicalPlan)
-      catalog.unregisterTable(tableIdent)
-      catalog.registerTable(tableIdent, union)
+      sessionCatalog.unregisterTable(tableIdent)
+      sessionCatalog.registerTable(tableIdent, union)
     }
   }
 
@@ -171,7 +173,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * @param tableName full table name to be truncated
    */
   def truncateTable(tableName: String): Unit =
-    truncateTable(catalog.newQualifiedTableName(tableName))
+    truncateTable(sessionCatalog.newQualifiedTableName(tableName))
 
   /**
    * Empties the contents of the table without deleting the catalog entry.
@@ -179,8 +181,8 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   private[sql] def truncateTable(tableIdent: QualifiedTableName,
       ignoreIfUnsupported: Boolean = false): Unit = {
-    val plan = catalog.lookupRelation(tableIdent)
-    cacheManager.tryUncacheQuery(Dataset.ofRows(sparkSession, plan))
+    val plan = sessionCatalog.lookupRelation(tableIdent)
+    cacheManager.tryUncacheQuery(Dataset.ofRows(this, plan))
     plan match {
       case LogicalRelation(br, _) =>
         br match {
@@ -204,7 +206,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def createSampleTable(tableName: String,
       samplingOptions: Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    val plan = createTable(catalog.newQualifiedTableName(tableName),
+    val plan = createTable(sessionCatalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
@@ -241,7 +243,7 @@ class SnappySession(@transient private val sc: SparkContext,
       schema: StructType,
       samplingOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
-    val plan = createTable(catalog.newQualifiedTableName(tableName),
+    val plan = createTable(sessionCatalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
@@ -280,7 +282,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def createApproxTSTopK(topKName: String, keyColumnName: String,
       inputDataSchema: StructType, topkOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
-    val plan = createTable(catalog.newQualifiedTableName(topKName),
+    val plan = createTable(sessionCatalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, Some(inputDataSchema), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       topkOptions + ("key" -> keyColumnName),
@@ -319,7 +321,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   def createApproxTSTopK(topKName: String, keyColumnName: String,
       topkOptions: Map[String, String], allowExisting: Boolean): DataFrame = {
-    val plan = createTable(catalog.newQualifiedTableName(topKName),
+    val plan = createTable(sessionCatalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       topkOptions + ("key" -> keyColumnName),
@@ -365,7 +367,7 @@ class SnappySession(@transient private val sc: SparkContext,
       provider: String,
       options: Map[String, String],
       allowExisting: Boolean): DataFrame = {
-    val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
+    val plan = createTable(sessionCatalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
@@ -429,7 +431,7 @@ class SnappySession(@transient private val sc: SparkContext,
       schema: StructType,
       options: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
-    val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
+    val plan = createTable(sessionCatalog.newQualifiedTableName(tableName), provider,
       Some(schema), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
@@ -525,7 +527,7 @@ class SnappySession(@transient private val sc: SparkContext,
     if (schemaStr.charAt(0) != '(') {
       schemaStr = "(" + schemaStr + ")"
     }
-    val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
+    val plan = createTable(sessionCatalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, Some(schemaStr),
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
@@ -600,13 +602,13 @@ class SnappySession(@transient private val sc: SparkContext,
       onlyBuiltIn: Boolean,
       onlyExternal: Boolean): LogicalPlan = {
 
-    if (catalog.tableExists(tableIdent)) {
+    if (sessionCatalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
           throw new AnalysisException(
             s"createTable: Table $tableIdent already exists.")
         case _ =>
-          return catalog.lookupRelation(tableIdent, None)
+          return sessionCatalog.lookupRelation(tableIdent, None)
       }
     }
 
@@ -620,25 +622,28 @@ class SnappySession(@transient private val sc: SparkContext,
       options + (dbtableProp -> tableIdent.toString)
     }
 
-    val schema = userSpecifiedSchema.map(catalog.normalizeSchema)
+    val schema = userSpecifiedSchema.map(sessionCatalog.normalizeSchema)
     val source = if (onlyExternal) provider
     else SnappyContext.getProvider(provider, onlyBuiltIn)
 
-    val resolved = schemaDDL match {
+    val relation = schemaDDL match {
       case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params)
+        cols, source, mode, params).resolveRelation(true)
 
       case None =>
         // add allowExisting in properties used by some implementations
-        ResolvedDataSource(self, schema, Array.empty[String],
-          source, params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
-              (mode != SaveMode.ErrorIfExists).toString))
+        DataSource(
+          self,
+          userSpecifiedSchema = schema,
+          className = source,
+          options = params + (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY ->
+              (mode != SaveMode.ErrorIfExists).toString)).resolveRelation(true)
     }
 
-    val plan = LogicalRelation(resolved.relation)
-    catalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
-      source, params, resolved.relation)
-    snappyContextFunctions.postRelationCreation(resolved.relation, this)
+    val plan = LogicalRelation(relation)
+    sessionCatalog.registerDataSourceTable(tableIdent, schema, Array.empty[String],
+      source, params, relation)
+    snappyContextFunctions.postRelationCreation(relation, this)
     plan
   }
 
@@ -656,13 +661,13 @@ class SnappySession(@transient private val sc: SparkContext,
       onlyExternal: Boolean): LogicalPlan = {
 
     var data = Dataset.ofRows(this, query)
-    if (catalog.tableExists(tableIdent)) {
+    if (sessionCatalog.tableExists(tableIdent)) {
       mode match {
         case SaveMode.ErrorIfExists =>
           throw new AnalysisException(s"Table $tableIdent already exists. " +
               "If using SQL CREATE TABLE, you need to use the " +
               s"APPEND or OVERWRITE mode, or drop $tableIdent first.")
-        case SaveMode.Ignore => return catalog.lookupRelation(tableIdent, None)
+        case SaveMode.Ignore => return sessionCatalog.lookupRelation(tableIdent, None)
         case _ =>
           // existing table schema could have nullable columns
           val schema = data.schema
@@ -688,19 +693,24 @@ class SnappySession(@transient private val sc: SparkContext,
     val source = if (onlyExternal) provider
     else SnappyContext.getProvider(provider, onlyBuiltIn)
 
-    val resolved = ResolvedDataSource(self, source, partitionColumns,
-      mode, params, data)
 
-    if (catalog.tableExists(tableIdent) && mode == SaveMode.Overwrite) {
+
+    val relation =  DataSource(
+      self,
+      partitionColumns = partitionColumns,
+      className = source,
+      options = params).write(mode, data)
+
+    if (sessionCatalog.tableExists(tableIdent) && mode == SaveMode.Overwrite) {
       // uncache the previous results and don't register again
       cacheManager.tryUncacheQuery(data)
     }
     else {
-      catalog.registerDataSourceTable(tableIdent, Some(data.schema),
-        partitionColumns, source, params, resolved.relation)
+      sessionCatalog.registerDataSourceTable(tableIdent, Some(data.schema),
+        partitionColumns, source, params, relation)
     }
-    snappyContextFunctions.postRelationCreation(resolved.relation, this)
-    LogicalRelation(resolved.relation)
+    snappyContextFunctions.postRelationCreation(relation, this)
+    LogicalRelation(relation)
   }
 
   /**
@@ -709,7 +719,7 @@ class SnappySession(@transient private val sc: SparkContext,
    * @param ifExists  attempt drop only if the table exists
    */
   def dropTable(tableName: String, ifExists: Boolean = false): Unit =
-    dropTable(catalog.newQualifiedTableName(tableName), ifExists)
+    dropTable(sessionCatalog.newQualifiedTableName(tableName), ifExists)
 
   /**
    * Drop a SnappyData table created by a call to SnappyContext.createTable
@@ -719,7 +729,7 @@ class SnappySession(@transient private val sc: SparkContext,
   private[sql] def dropTable(tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
     val plan = try {
-      catalog.lookupRelation(tableIdent)
+      sessionCatalog.lookupRelation(tableIdent)
     } catch {
       case tnfe: TableNotFoundException =>
         if (ifExists) return else throw tnfe
@@ -727,7 +737,7 @@ class SnappySession(@transient private val sc: SparkContext,
         // table loading may fail due to an initialization exception
         // in relation, so try to remove from hive catalog in any case
         try {
-          catalog.unregisterDataSourceTable(tableIdent, None)
+          sessionCatalog.unregisterDataSourceTable(tableIdent, None)
           return
         } catch {
           case NonFatal(e) =>
@@ -742,7 +752,7 @@ class SnappySession(@transient private val sc: SparkContext,
         br match {
           case p: ParentRelation =>
             // fail if any existing dependents
-            val dependents = p.getDependents(catalog)
+            val dependents = p.getDependents(sessionCatalog)
             if (dependents.nonEmpty) {
               throw new AnalysisException(s"Object $tableIdent cannot be " +
                   "dropped because of dependent objects: " +
@@ -750,16 +760,16 @@ class SnappySession(@transient private val sc: SparkContext,
             }
           case _ => // ignore
         }
-        cacheManager.tryUncacheQuery(Dataset.ofRows(sparkSession, plan))
-        catalog.unregisterDataSourceTable(tableIdent, Some(br))
+        cacheManager.tryUncacheQuery(Dataset.ofRows(this, plan))
+        sessionCatalog.unregisterDataSourceTable(tableIdent, Some(br))
         br match {
           case d: DestroyRelation => d.destroy(ifExists)
           case _ => // Do nothing
         }
       case _ =>
         // assume a temporary table
-        cacheManager.tryUncacheQuery(Dataset.ofRows(sparkSession, plan))
-        catalog.unregisterTable(tableIdent)
+        cacheManager.tryUncacheQuery(Dataset.ofRows(this, plan))
+        sessionCatalog.unregisterTable(tableIdent)
     }
   }
 
@@ -805,19 +815,19 @@ class SnappySession(@transient private val sc: SparkContext,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
 
-    val tableIdent = catalog.newQualifiedTableName(baseTable)
-    val indexIdent = catalog.newQualifiedTableName(indexName)
+    val tableIdent = sessionCatalog.newQualifiedTableName(baseTable)
+    val indexIdent = sessionCatalog.newQualifiedTableName(indexName)
 
     if (indexIdent.database != tableIdent.database) {
       throw new AnalysisException(
         s"Index and table have different databases " +
             s"specified ${indexIdent.database} and ${tableIdent.database}")
     }
-    if (!catalog.tableExists(tableIdent)) {
+    if (!sessionCatalog.tableExists(tableIdent)) {
       throw new AnalysisException(
         s"Could not find $tableIdent in catalog")
     }
-    catalog.lookupRelation(tableIdent) match {
+    sessionCatalog.lookupRelation(tableIdent) match {
       case LogicalRelation(ir: IndexableRelation, _) =>
         ir.createIndex(indexIdent,
           tableIdent,
@@ -849,19 +859,19 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   def dropIndex(indexName: String, ifExists: Boolean): Unit = {
 
-    val indexIdent = getIndexTable(catalog.newQualifiedTableName(indexName))
+    val indexIdent = getIndexTable(sessionCatalog.newQualifiedTableName(indexName))
 
     // Since the index does not exist in catalog, it may be a row table index.
-    if (!catalog.tableExists(indexIdent)) {
+    if (!sessionCatalog.tableExists(indexIdent)) {
       dropRowStoreIndex(indexName, ifExists)
     } else {
-      catalog.lookupRelation(indexIdent) match {
+      sessionCatalog.lookupRelation(indexIdent) match {
         case LogicalRelation(dr: DependentRelation, _) =>
           // Remove the index from the bse table props
-          val baseTableIdent = catalog.newQualifiedTableName(dr.baseTable.get)
-          catalog.lookupRelation(baseTableIdent) match {
+          val baseTableIdent = sessionCatalog.newQualifiedTableName(dr.baseTable.get)
+          sessionCatalog.lookupRelation(baseTableIdent) match {
             case LogicalRelation(cr: ColumnFormatRelation, _) =>
-              cr.removeDependent(dr, catalog)
+              cr.removeDependent(dr, sessionCatalog)
               cr.dropIndex(indexIdent, baseTableIdent, ifExists)
           }
 
@@ -907,7 +917,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @DeveloperApi
   def insert(tableName: String, rows: Row*): Int = {
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
@@ -930,7 +940,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @Experimental
   def insert(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
     val convertedRowSeq: Seq[Row] = rows.asScala.map(row => convertListToRow(row)).toSeq
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(r: RowInsertableRelation, _) => r.insert(convertedRowSeq)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
@@ -951,7 +961,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @DeveloperApi
   def put(tableName: String, rows: Row*): Int = {
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(r: RowPutRelation, _) => r.put(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row upsertable table")
@@ -974,7 +984,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(u: UpdatableRelation, _) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
@@ -999,7 +1009,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @Experimental
   def update(tableName: String, filterExpr: String, newColumnValues: java.util.ArrayList[_],
       updateColumns: java.util.ArrayList[String]): Int = {
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(u: UpdatableRelation, _) =>
         u.update(filterExpr, convertListToRow(newColumnValues), updateColumns.asScala.toSeq)
       case _ => throw new AnalysisException(
@@ -1022,7 +1032,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @Experimental
   def put(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(r: RowPutRelation, _) =>
         r.put(rows.asScala.map(row => convertListToRow(row)).toSeq)
       case _ => throw new AnalysisException(
@@ -1040,7 +1050,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
-    catalog.lookupRelation(catalog.newQualifiedTableName(tableName)) match {
+    sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
       case LogicalRelation(d: DeletableRelation, _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
