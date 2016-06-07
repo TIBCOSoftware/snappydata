@@ -19,6 +19,9 @@ package org.apache.spark.sql
 import java.sql.SQLException
 import java.util.regex.Pattern
 
+import org.apache.spark.sql.execution.SubqueryExec
+import org.apache.spark.sql.internal.SnappySessionState
+
 import scala.language.implicitConversions
 
 import org.parboiled2._
@@ -30,13 +33,13 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, Complete, Count, HyperLogLogPlusPlus}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.{FullOuter, Inner, JoinType, LeftOuter, LeftSemi, RightOuter}
-import org.apache.spark.sql.catalyst.{ParserDialect, SqlLexical, TableIdentifier}
+import org.apache.spark.sql.catalyst.{TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command.RunnableCommand
-import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DDLException, DDLParser, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{DataSource, CreateTableUsing, CreateTableUsingAsSelect}
 import org.apache.spark.sql.hive.QualifiedTableName
-import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
+import org.apache.spark.sql.sources.{JdbcExtendedUtils, ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
 import org.apache.spark.streaming.{Duration, Milliseconds, Minutes, Seconds, SnappyStreamingContext}
@@ -420,9 +423,9 @@ class SnappyParser(session: SnappySession)
     '(' ~ ws ~ start ~ ')' ~ ws ~ windowOptions.? ~ AS.? ~ identifier ~>
         ((child: LogicalPlan, window: Option[(Duration, Option[Duration])],
             alias: String) => window match {
-          case None => Subquery(alias, child)
+          case None => SubqueryAlias(alias, child)
           case Some(win) => WindowLogicalPlan(win._1, win._2,
-            Subquery(alias, child))
+            SubqueryAlias(alias, child))
         })
   }
 
@@ -570,8 +573,8 @@ class SnappyParser(session: SnappySession)
         s: Option[LogicalPlan => LogicalPlan], l: Option[Expression]) =>
       val base = f.getOrElse(OneRowRelation)
       val withFilter = w.map(Filter(_, base)).getOrElse(base)
-      val withProjection = g.map(Aggregate(_, p.map(UnresolvedAlias),
-        withFilter)).getOrElse(Project(p.map(UnresolvedAlias), withFilter))
+      val withProjection = g.map(Aggregate(_, p.map(UnresolvedAlias(_, None)),
+        withFilter)).getOrElse(Project(p.map(UnresolvedAlias(_, None)), withFilter))
       val withDistinct =
         if (d.isEmpty) withProjection else Distinct(withProjection)
       val withHaving = h.map(Filter(_, withDistinct)).getOrElse(withDistinct)
@@ -615,7 +618,7 @@ class SnappyParser(session: SnappySession)
     WITH ~ ((identifier ~ AS ~ '(' ~ ws ~ query ~ ')' ~ ws ~>
         ((id: String, p: LogicalPlan) => (id, p))) + (',' ~ ws)) ~
         (query | insert) ~> ((r: Seq[(String, LogicalPlan)], s: LogicalPlan) =>
-        With(s, r.map(ns => (ns._1, Subquery(ns._1, ns._2))).toMap))
+        With(s, r.map(ns => (ns._1, SubqueryAlias(ns._1, ns._2))).toMap))
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
@@ -666,10 +669,10 @@ final class SnappyLexical(caseSensitive: Boolean) extends SqlLexical {
 /**
  * Snappy DDL extensions for streaming and sampling.
  */
-private[sql] class SnappyDDLParser(caseSensitive: Boolean,
+private[sql] class SnappyDDLParser(session: SnappySession,
     parseQuery: String => LogicalPlan) extends DDLParser(parseQuery) {
 
-  override val lexical = new SnappyLexical(caseSensitive)
+  override val lexical = new SnappyLexical(session.sessionState.conf.caseSensitiveAnalysis)
 
   override def parse(input: String): LogicalPlan = synchronized {
     // Initialize the Keywords.
@@ -746,7 +749,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
 
           if (temporary.isDefined) {
             CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
-              Array.empty[String], mode, options, queryPlan)
+              Array.empty[String], None, mode, options, queryPlan)
           } else {
             CreateMetastoreTableUsingSelect(tableIdent, provider,
               Array.empty[String], mode, options, queryPlan)
@@ -756,7 +759,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
           else {
             // check if provider class implements ExternalSchemaRelationProvider
             try {
-              val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
+              val clazz: Class[_] = DataSource(session, provider).providingClass
               classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
             } catch {
               case cnfe: ClassNotFoundException => throw new DDLException(cnfe.toString)
@@ -776,7 +779,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
 
           if (temporary.isDefined) {
             CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-              temporary = true, options, allowExisting.isDefined,
+              temporary = true, options, Array.empty[String], None, allowExisting.isDefined,
               managedIfNoPath = false)
           } else {
             CreateMetastoreTableUsing(tableIdent, userSpecifiedSchema,
@@ -872,7 +875,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         val provider = SnappyContext.getProvider(providerName,
           onlyBuiltin = false)
         // check that the provider is a stream relation
-        val clazz = ResolvedDataSource.lookupDataSource(provider)
+        val clazz = DataSource(session, provider).providingClass
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw Utils.analysisException(s"CREATE STREAM provider $providerName" +
               " does not implement StreamPlanProvider")
@@ -922,10 +925,11 @@ private[sql] case class CreateMetastoreTableUsing(
     options: Map[String, String],
     onlyExternal: Boolean = false) extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
-    snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
+    snc.createTable(
+      snc.sessionState.asInstanceOf[SnappySessionState].catalog.newQualifiedTableName(tableIdent), provider,
       userSpecifiedSchema, schemaDDL, mode, options,
       onlyBuiltIn = false, onlyExternal)
     Seq.empty
@@ -941,9 +945,9 @@ private[sql] case class CreateMetastoreTableUsingSelect(
     query: LogicalPlan,
     onlyExternal: Boolean = false) extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
-    val catalog = snc.catalog
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
+    val catalog = snc.sessionState.asInstanceOf[SnappySessionState].catalog
     val qualifiedName = catalog.newQualifiedTableName(tableIdent)
     snc.createTable(qualifiedName, provider, partitionColumns, mode,
       options, query, onlyBuiltIn = false, onlyExternal)
@@ -958,8 +962,8 @@ private[sql] case class DropTable(
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
     snc.dropTable(tableIdent, ifExists)
     Seq.empty
   }
@@ -969,8 +973,8 @@ private[sql] case class TruncateTable(
     tableIdent: QualifiedTableName,
     temporary: Boolean) extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
     snc.truncateTable(tableIdent)
     Seq.empty
   }
@@ -981,8 +985,8 @@ private[sql] case class CreateIndex(indexName: String,
     indexColumns: Map[String, Option[SortDirection]],
     options: Map[String, String]) extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
     snc.createIndex(indexName, baseTable.toString,
       indexColumns, options)
     Seq.empty
@@ -993,8 +997,8 @@ private[sql] case class DropIndex(
     indexName: String,
     ifExists : Boolean) extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+  override def run(session: SparkSession): Seq[Row] = {
+    val snc = session.asInstanceOf[SnappySession]
     snc.dropIndex(indexName, ifExists)
     Seq.empty
   }
@@ -1026,17 +1030,18 @@ private[sql] case class SnappyStreamingActionsCommand(action: Int,
     batchInterval: Option[Int])
     extends RunnableCommand {
 
-  override def run(sqlContext: SQLContext): Seq[Row] = {
+  override def run(session: SparkSession): Seq[Row] = {
 
     def creatingFunc(): SnappyStreamingContext = {
-      new SnappyStreamingContext(sqlContext.sparkContext, Seconds(batchInterval.get))
+      new SnappyStreamingContext(session.sparkContext, Seconds(batchInterval.get))
     }
 
     action match {
       case 0 =>
         val ssc = SnappyStreamingContext.getInstance()
         ssc match {
-          case Some(x) => // TODO .We should create a named Streaming Context and check if the configurations match
+          case Some(x) => // TODO .We should create a named Streaming
+          // Context and check if the configurations match
           case None => SnappyStreamingContext.getActiveOrCreate(creatingFunc)
         }
       case 1 =>

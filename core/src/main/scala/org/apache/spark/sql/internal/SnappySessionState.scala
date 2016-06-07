@@ -48,7 +48,7 @@ class SnappySessionState(snappySession: SnappySession)
     snappySession.sharedState.asInstanceOf[SnappySharedState]
 
   override lazy val sqlParser: ParserInterface =
-    new SnappySqlParser(conf, getSQLDialect(snappySession))
+    new SnappySqlParser(this.snappySession, getSQLDialect(snappySession))
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
@@ -161,10 +161,6 @@ class SnappySessionState(snappySession: SnappySession)
     catalog.getDataSourceRelations[StreamBaseRelation](Seq(ExternalTableType
         .Stream), None).foreach(_.rowStream.foreachRDD(rdd => Unit))
   }
-
-  def getSnappyDDLParser(session: SnappySession,
-      planGenerator: String => LogicalPlan): DDLParser =
-    new SnappyDDLParser(conf.caseSensitiveAnalysis, planGenerator)
 }
 
 

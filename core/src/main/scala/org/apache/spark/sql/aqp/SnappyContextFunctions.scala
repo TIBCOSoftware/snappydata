@@ -74,8 +74,4 @@ trait SnappyContextFunctions {
 
   def aqpTablePopulator(session: SnappySession): Unit
 
-
-  def getSnappyDDLParser(session: SnappySession,
-      planGenerator: String => LogicalPlan): DDLParser
-
 }

@@ -431,7 +431,7 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
     serializeComplexType: Boolean) extends Serializable {
 
   def apply(resultsRdd: RDD[InternalRow], df: DataFrame): Unit = {
-    Utils.withNewExecutionId(df.sqlContext, df.queryExecution) {
+    Utils.withNewExecutionId(df.sparkSession, df.queryExecution) {
       val sc = SnappyContext.globalSparkContext
       sc.runJob(resultsRdd, rowIter _, resultHandler _)
     }
