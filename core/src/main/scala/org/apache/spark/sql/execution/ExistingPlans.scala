@@ -33,7 +33,7 @@ private[sql] case class PartitionedPhysicalRDD(
     rdd: RDD[InternalRow],
     numPartitions: Int,
     partitionColumns: Seq[Expression],
-    extraInformation: String) extends LeafNode {
+    extraInformation: String) extends LeafExecNode {
 
   protected override def doExecute(): RDD[InternalRow] = rdd
 

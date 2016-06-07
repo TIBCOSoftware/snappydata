@@ -109,7 +109,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
     val sqlContext = relation.relation.sqlContext
 
     val joinedCols = partitionColumns.map(colName =>
-      relation.resolveQuoted(colName, sqlContext.analyzer.resolver).getOrElse {
+      relation.resolveQuoted(colName, sqlContext.sparkSession.sessionState.analyzer.resolver)
+          .getOrElse {
       throw new AnalysisException(
         s"""Cannot resolve column name "$colName" among (${relation.output})""")
     })
@@ -130,7 +131,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         joinedCols,
         scanBuilder(requestedColumns,candidatePredicates, pushedFilters),
         relation.relation)
-      filterCondition.map(execution.Filter(_, scan)).getOrElse(scan)
+      filterCondition.map(execution.FilterExec(_, scan)).getOrElse(scan)
     } else {
       val requestedColumns = (projectSet ++ filterSet).map(relation.attributeMap).toSeq
 
@@ -140,7 +141,8 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
         joinedCols,
         scanBuilder(requestedColumns, candidatePredicates, pushedFilters),
         relation.relation)
-      execution.Project(projects, filterCondition.map(execution.Filter(_, scan)).getOrElse(scan))
+      execution.ProjectExec(projects, filterCondition.map(execution.FilterExec(_, scan)).getOrElse
+      (scan))
     }
   }
 

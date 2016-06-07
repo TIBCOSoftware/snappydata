@@ -516,7 +516,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
       case dep: DependentRelation => dep.baseTable.foreach { t =>
         try {
           lookupRelation(newQualifiedTableName(t)) match {
-            case LogicalRelation(p: ParentRelation, _) =>
+            case LogicalRelation(p: ParentRelation, _, _) =>
               p.removeDependent(dep, this)
             case _ => // ignore
           }
@@ -570,7 +570,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     relation match {
       case dep: DependentRelation => dep.baseTable.foreach { t =>
         lookupRelation(newQualifiedTableName(t)) match {
-          case LogicalRelation(p: ParentRelation, _) =>
+          case LogicalRelation(p: ParentRelation, _, _) =>
             p.addDependent(dep, this)
           case _ => // ignore
         }

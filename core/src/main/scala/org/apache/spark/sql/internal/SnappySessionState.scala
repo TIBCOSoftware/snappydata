@@ -50,6 +50,10 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: ParserInterface =
     new SnappySqlParser(conf, getSQLDialect(snappySession))
 
+  protected[sql] override lazy val conf: SQLConf = new SQLConf {
+    override def caseSensitiveAnalysis: Boolean =
+      getConf(SQLConf.CASE_SENSITIVE, false)
+  }
 
   /**
    * Internal catalog for managing table and database states.

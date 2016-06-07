@@ -184,7 +184,7 @@ class SnappySession(@transient private val sc: SparkContext,
     val plan = sessionCatalog.lookupRelation(tableIdent)
     cacheManager.tryUncacheQuery(Dataset.ofRows(this, plan))
     plan match {
-      case LogicalRelation(br, _) =>
+      case LogicalRelation(br, _, _) =>
         br match {
           case d: DestroyRelation => d.truncate()
         }
@@ -748,7 +748,7 @@ class SnappySession(@transient private val sc: SparkContext,
     }
     // additional cleanup for external tables, if required
     plan match {
-      case LogicalRelation(br, _) =>
+      case LogicalRelation(br, _, _) =>
         br match {
           case p: ParentRelation =>
             // fail if any existing dependents
@@ -828,7 +828,7 @@ class SnappySession(@transient private val sc: SparkContext,
         s"Could not find $tableIdent in catalog")
     }
     sessionCatalog.lookupRelation(tableIdent) match {
-      case LogicalRelation(ir: IndexableRelation, _) =>
+      case LogicalRelation(ir: IndexableRelation, _, _) =>
         ir.createIndex(indexIdent,
           tableIdent,
           indexColumns,
@@ -866,11 +866,11 @@ class SnappySession(@transient private val sc: SparkContext,
       dropRowStoreIndex(indexName, ifExists)
     } else {
       sessionCatalog.lookupRelation(indexIdent) match {
-        case LogicalRelation(dr: DependentRelation, _) =>
+        case LogicalRelation(dr: DependentRelation, _, _) =>
           // Remove the index from the bse table props
           val baseTableIdent = sessionCatalog.newQualifiedTableName(dr.baseTable.get)
           sessionCatalog.lookupRelation(baseTableIdent) match {
-            case LogicalRelation(cr: ColumnFormatRelation, _) =>
+            case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
               cr.removeDependent(dr, sessionCatalog)
               cr.dropIndex(indexIdent, baseTableIdent, ifExists)
           }
@@ -918,7 +918,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def insert(tableName: String, rows: Row*): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(r: RowInsertableRelation, _) => r.insert(rows)
+      case LogicalRelation(r: RowInsertableRelation, _, _) => r.insert(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
@@ -941,7 +941,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def insert(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
     val convertedRowSeq: Seq[Row] = rows.asScala.map(row => convertListToRow(row)).toSeq
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(r: RowInsertableRelation, _) => r.insert(convertedRowSeq)
+      case LogicalRelation(r: RowInsertableRelation, _, _) => r.insert(convertedRowSeq)
       case _ => throw new AnalysisException(
         s"$tableName is not a row insertable table")
     }
@@ -962,7 +962,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def put(tableName: String, rows: Row*): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(r: RowPutRelation, _) => r.put(rows)
+      case LogicalRelation(r: RowPutRelation, _, _) => r.put(rows)
       case _ => throw new AnalysisException(
         s"$tableName is not a row upsertable table")
     }
@@ -985,7 +985,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def update(tableName: String, filterExpr: String, newColumnValues: Row,
       updateColumns: String*): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(u: UpdatableRelation, _) =>
+      case LogicalRelation(u: UpdatableRelation, _, _) =>
         u.update(filterExpr, newColumnValues, updateColumns)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
@@ -1010,7 +1010,7 @@ class SnappySession(@transient private val sc: SparkContext,
   def update(tableName: String, filterExpr: String, newColumnValues: java.util.ArrayList[_],
       updateColumns: java.util.ArrayList[String]): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(u: UpdatableRelation, _) =>
+      case LogicalRelation(u: UpdatableRelation, _, _) =>
         u.update(filterExpr, convertListToRow(newColumnValues), updateColumns.asScala.toSeq)
       case _ => throw new AnalysisException(
         s"$tableName is not an updatable table")
@@ -1033,7 +1033,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @Experimental
   def put(tableName: String, rows: java.util.ArrayList[java.util.ArrayList[_]]): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(r: RowPutRelation, _) =>
+      case LogicalRelation(r: RowPutRelation, _, _) =>
         r.put(rows.asScala.map(row => convertListToRow(row)).toSeq)
       case _ => throw new AnalysisException(
         s"$tableName is not a row upsertable table")
@@ -1051,7 +1051,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(d: DeletableRelation, _) => d.delete(filterExpr)
+      case LogicalRelation(d: DeletableRelation, _ ,_) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }

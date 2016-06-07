@@ -30,7 +30,9 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.aqp.SnappyContextFunctions
+import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
 import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -76,19 +78,14 @@ import org.apache.spark.{SparkConf, SparkContext, SparkException}
  * @todo Provide links to above descriptions
  *
  */
-class SnappyContext protected[spark](snappySession: SnappySession)
+class SnappyContext protected[spark](val snappySession: SnappySession)
     extends SQLContext(snappySession)
     with Serializable with Logging {
 
   self =>
 
   protected[spark] def this(sc: SparkContext) {
-    this(sc, SnappyContext.sqlListener(sc), true)
-  }
-
-  protected[sql] override lazy val conf: SQLConf = new SQLConf {
-    override def caseSensitiveAnalysis: Boolean =
-      getConf(SQLConf.CASE_SENSITIVE, false)
+    this(new SnappySession(sc, None))
   }
 
   override def newSession(): SnappyContext = snappySession.newSession().snappyContext
@@ -723,31 +720,7 @@ class SnappyContext protected[spark](snappySession: SnappySession)
     snappySession.queryApproxTSTopK(topK, startTime, endTime, k)
 }
 
-/**
- * @todo document me
- */
-object GlobalSnappyInit {
 
-  private val aqpContextFunctionImplClass =
-    "org.apache.spark.sql.execution.SnappyContextAQPFunctions"
-
-
-  private[spark] def getSnappyContextFunctionsImpl: SnappyContextFunctions = {
-    Try {
-      val mirror = u.runtimeMirror(getClass.getClassLoader)
-      val cls = mirror.classSymbol(org.apache.spark.util.Utils.
-          classForName(aqpContextFunctionImplClass))
-      val clsType = cls.toType
-      val classMirror = mirror.reflectClass(clsType.typeSymbol.asClass)
-      val defaultCtor = clsType.member(u.nme.CONSTRUCTOR)
-      val runtimeCtr = classMirror.reflectConstructor(defaultCtor.asMethod)
-      runtimeCtr().asInstanceOf[SnappyContextFunctions]
-    } match {
-      case Success(v) => v
-      case Failure(_) => SnappyContextDefaultFunctions
-    }
-  }
-}
 
 object SnappyContext extends Logging {
 
@@ -791,20 +764,6 @@ object SnappyContext extends Logging {
     SparkContext.getOrCreate(INVALID_CONF)
   } catch {
     case _: IllegalStateException => null
-  }
-
-
-  @volatile private[this] var _sqlListener: SQLListener = _
-
-  def sqlListener(sc: SparkContext): SQLListener = {
-    if (_sqlListener == null) {
-      synchronized {
-        if (_sqlListener == null) {
-          _sqlListener = SQLContext.createListenerAndUI(sc)
-        }
-      }
-    }
-    _sqlListener
   }
 
   private def newSnappyContext(sc: SparkContext) = {
@@ -980,7 +939,6 @@ object SnappyContext extends Logging {
     }
     _clusterMode = null
     _anySNContext = null
-    _sqlListener = null
     _globalSNContextInitialized = false
 
   }
@@ -1032,7 +990,7 @@ private[sql] object PreInsertCheckCastAndRename extends Rule[LogicalPlan] {
     // subqueries have already been eliminated by special check in
     // ResolveRelations, no such special rule has been added for PUT
     case p@PutIntoTable(table, query) =>
-      EliminateSubQueries(table) match {
+      EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(_: RowInsertableRelation, _) =>
           // First, make sure the data to be inserted have the same number of
           // fields with the schema of the relation.

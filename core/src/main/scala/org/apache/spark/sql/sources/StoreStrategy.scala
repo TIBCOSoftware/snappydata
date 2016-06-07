@@ -54,7 +54,7 @@ object StoreStrategy extends Strategy {
     case DMLExternalTable(name, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _), query) =>
+    case PutIntoTable(l@LogicalRelation(t: RowPutRelation, _, _), query) =>
       ExecutedCommandExec(PutIntoDataSource(l, t, query)) :: Nil
 
     case _ => Nil
