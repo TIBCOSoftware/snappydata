@@ -73,7 +73,7 @@ abstract class StreamBaseRelation(options: Map[String, String])
       val stream = createRowStream()
       // search for existing dependents in the catalog (these may still not
       //   have been initialized e.g. after recovery, so add explicitly)
-      val catalog = context.snappyContext.catalog
+      val catalog = context.snappySession.sessionState.catalog
       val initDependents = catalog.getDataSourceTables(Seq.empty,
         Some(tableName)).map(_.toString())
       (stream, initDependents)

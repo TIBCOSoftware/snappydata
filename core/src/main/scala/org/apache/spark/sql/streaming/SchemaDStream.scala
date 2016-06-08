@@ -48,7 +48,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   @transient private val catalog = snappySession.sessionState.catalog
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
-    this(ssc, snappySession.sessionState.executePlan(logicalPlan))
+    this(ssc, ssc.snappySession.sessionState.executePlan(logicalPlan))
 
   /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so

@@ -27,12 +27,12 @@ import scala.util.Random
 import scala.util.control.NonFatal
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.serializer.SerializerInstance
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.{ConnectionPool, SparkSqlSerializer}
+import org.apache.spark.sql.execution.{ConnectionPool, UnsafeRowSerializer}
 import org.apache.spark.sql.sources.ConnectionProperties
-import org.apache.spark.{Logging}
-import org.apache.spark.{Partition, SparkContext, TaskContext}
+import org.apache.spark.{Logging, Partition, SparkContext, TaskContext}
 
 /*
 Generic class to query column table from Snappy.
@@ -45,6 +45,8 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
 
   lazy val connectionType = ExternalStoreUtils.getConnectionType(
     connProperties.dialect)
+
+  private val unsafeSerializer: SerializerInstance =   new UnsafeRowSerializer(1).newInstance
 
   def getCachedBatchRDD(tableName: String,
       requiredColumns: Array[String],
@@ -73,7 +75,7 @@ class JDBCSourceAsStore(override val connProperties: ConnectionProperties,
         stmt.setString(1, uuid.getUUID.toString)
         stmt.setInt(2, uuid.getBucketId)
         stmt.setInt(3, batch.numRows)
-        stmt.setBytes(4, SparkSqlSerializer.serialize(batch.stats))
+        stmt.setBytes(4, unsafeSerializer.serialize(batch.stats).array())
         var columnIndex = 5
         batch.buffers.foreach(buffer => {
           stmt.setBytes(columnIndex, buffer)
@@ -191,6 +193,7 @@ final class CachedBatchIteratorOnRS(conn: Connection,
 
   private val numCols = requiredColumns.length
   private val colBuffers = new Array[Array[Byte]](numCols)
+  private val unsafeSerializer: SerializerInstance =   new UnsafeRowSerializer(1).newInstance
 
   protected override def getNextValue(rs: ResultSet): CachedBatch = {
     var i = 0
@@ -198,7 +201,8 @@ final class CachedBatchIteratorOnRS(conn: Connection,
       colBuffers(i) = rs.getBytes(i + 1)
       i += 1
     }
-    val stats = SparkSqlSerializer.deserialize[InternalRow](rs.getBytes("stats"))
+    val stats = unsafeSerializer.deserialize[InternalRow](java.nio.ByteBuffer.wrap(rs.getBytes
+    ("stats")))
     CachedBatch(rs.getInt("numRows"), colBuffers, stats)
   }
 }

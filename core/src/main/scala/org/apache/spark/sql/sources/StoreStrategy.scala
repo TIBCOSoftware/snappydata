@@ -31,13 +31,13 @@ object StoreStrategy extends Strategy {
   def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-    false, opts, allowExisting, _) =>
+    false, opts, partitionColumns, bucketSpec, allowExisting, _) =>
       ExecutedCommandExec(CreateMetastoreTableUsing(tableIdent,
         userSpecifiedSchema, None, provider, allowExisting, opts,
         onlyExternal = true)) :: Nil
 
     case CreateTableUsingAsSelect(tableIdent, provider, false,
-    partitionCols, mode, opts, query) =>
+    partitionCols, bucketSpec, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
       ExecutedCommandExec(CreateMetastoreTableUsingSelect(

@@ -313,8 +313,7 @@ final class InternalRowIteratorOnRS(conn: Connection,
         case s: StructType =>
           val bytes = rs.getBytes(pos)
           val row = new UnsafeRow
-          row.pointTo(bytes, Platform.BYTE_ARRAY_OFFSET,
-            s.fields.length, bytes.length)
+          row.pointTo(bytes, bytes.length)
           mutableRow.update(i, row)
         case _ => throw new IllegalArgumentException(
           s"Unsupported field ${schema.fields(i)}")
