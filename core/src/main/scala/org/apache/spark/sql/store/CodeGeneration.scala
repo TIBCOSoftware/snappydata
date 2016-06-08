@@ -28,7 +28,7 @@ import org.codehaus.janino.CompilerFactory
 import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.codegen.{BufferHolder, CodeGenContext, GenerateUnsafeProjection}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, BufferHolder, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{MutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.{ArrayData, DateTimeUtils, MapData}
 import org.apache.spark.sql.collection.{Utils, WrappedRow}
@@ -101,7 +101,7 @@ object CodeGeneration extends Logging {
     method.invoke(GenerateUnsafeProjection, typeArgs: _*).asInstanceOf[String]
 
   private[this] def getColumnSetterFragment(col: Int, dataType: DataType,
-      dialect: JdbcDialect, ctx: CodeGenContext,
+      dialect: JdbcDialect, ctx: CodegenContext,
       buffHolderVar: String): (String, String) = {
     val nonNullCode: String = dataType match {
       case IntegerType =>
@@ -173,7 +173,7 @@ object CodeGeneration extends Logging {
 
   private[this] def compilePreparedUpdate(table: String,
       schema: Array[StructField], dialect: JdbcDialect): GeneratedStatement = {
-    val ctx = new CodeGenContext
+    val ctx = new CodegenContext
     val bufferHolderVar = ctx.freshName("bufferHolder")
     val bufferHolderClass = classOf[BufferHolder].getName
     ctx.addMutableState(bufferHolderClass, bufferHolderVar,
@@ -244,7 +244,7 @@ object CodeGeneration extends Logging {
 
   private[this] def compileComplexType(
       dataType: DataType): SerializeComplexType = {
-    val ctx = new CodeGenContext
+    val ctx = new CodegenContext
     val inputVar = "value"
     val bufferHolderVar = "bufferHolder"
     val typeConversion = dataType match {

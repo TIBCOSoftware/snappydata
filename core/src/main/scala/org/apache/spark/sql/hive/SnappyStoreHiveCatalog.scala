@@ -328,7 +328,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
           case None =>
             // add allowExisting in properties used by some implementations
             DataSource(snappySession, provider, userSpecifiedSchema = userSpecifiedSchema,
-              partitionColumns = partitionColumns.toArray, options = options +
+              partitionColumns = partitionColumns , options = options +
                   (JdbcExtendedUtils.ALLOW_EXISTING_PROPERTY -> "true")).resolveRelation()
         }
 

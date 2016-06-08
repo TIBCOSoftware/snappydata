@@ -24,7 +24,7 @@ import scala.util.control.NonFatal
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.{DataSource, CaseInsensitiveMap, ResolvedDataSource}
+import org.apache.spark.sql.execution.datasources.{DataSource, CaseInsensitiveMap}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._

@@ -45,7 +45,7 @@ private[sql] trait SnappyStrategies {
     def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
       case LogicalDStreamPlan(output, rowStream) =>
         PhysicalDStreamPlan(output, rowStream) :: Nil
-      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _)) =>
+      case WindowLogicalPlan(d, s, l@LogicalRelation(t: StreamPlan, _, _)) =>
         val child = PhysicalDStreamPlan(l.output, t.rowStream)
         WindowPhysicalPlan(d, s, child) :: Nil
       case WindowLogicalPlan(d, s, child) =>
@@ -83,7 +83,7 @@ private[sql] trait SnappyStrategies {
     object CanLocalJoin {
       def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
         case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
+        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
           if (t.numPartitions == 1) Some(plan) else None
         case _ => None
       }

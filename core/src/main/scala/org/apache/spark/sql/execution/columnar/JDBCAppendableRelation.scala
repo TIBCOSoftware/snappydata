@@ -29,7 +29,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{UUIDRegionKey, Utils}
-import org.apache.spark.sql.execution.datasources.ResolvedDataSource
+import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
 import org.apache.spark.sql.jdbc.JdbcDialects
@@ -383,8 +383,10 @@ class ColumnarRelationProvider
     val url = options.getOrElse("url",
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val clazz = JdbcDialects.get(url) match {
-      case d: GemFireXDBaseDialect => ResolvedDataSource.
-          lookupDataSource(classOf[impl.DefaultSource].getCanonicalName)
+      case d: GemFireXDBaseDialect =>
+        DataSource(sqlContext.sparkSession,classOf[impl.DefaultSource]
+            .getCanonicalName).providingClass
+
       case _ => classOf[org.apache.spark.sql.execution.columnar.DefaultSource]
     }
     clazz.newInstance().asInstanceOf[ColumnarRelationProvider]

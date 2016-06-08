@@ -36,7 +36,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,
-        l@LogicalRelation(t: PartitionedDataSourceScan, _)) =>
+        l@LogicalRelation(t: PartitionedDataSourceScan, _, _)) =>
       pruneFilterProject(
         l,
         projects,

@@ -38,7 +38,7 @@ import org.apache.spark.sql.row.GemFireXDDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SQLContext, SaveMode, SnappyContext}
+import org.apache.spark.sql.{SnappySession, DataFrame, Row, SQLContext, SaveMode, SnappyContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition}
 
@@ -442,10 +442,10 @@ class ColumnFormatRelation(
   override def dropIndex(indexIdent: QualifiedTableName,
       tableIdent: QualifiedTableName,
       ifExists: Boolean): Unit = {
-    val snc = _context.asInstanceOf[SnappyContext]
-    snc.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    snappySession.sessionState.catalog.alterTableToRemoveIndexProp(tableIdent, indexIdent)
     // Remove the actual index
-    snc.dropTable(indexIdent, ifExists)
+    snappySession.dropTable(indexIdent, ifExists)
   }
 
   override def getDependents(
@@ -462,9 +462,10 @@ class ColumnFormatRelation(
     }
 
     indexes.foreach(index => {
-      val sncCatalog = sqlContext.asInstanceOf[SnappyContext].catalog
+      val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+      val sncCatalog =snappySession.sessionState.catalog
       val dr = sncCatalog.lookupRelation(sncCatalog.newQualifiedTableName(index)) match {
-        case LogicalRelation(r: DependentRelation, _) => r
+        case LogicalRelation(r: DependentRelation, _, _) => r
       }
       addDependent(dr, sncCatalog)
     })
@@ -484,8 +485,8 @@ class ColumnFormatRelation(
 
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val snc = _context.asInstanceOf[SnappyContext]
-    val indexTblName = snc.getIndexTable(indexIdent).toString()
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val indexTblName = snappySession.getIndexTable(indexIdent).toString()
     val caseInsensitiveMap = new CaseInsensitiveMutableHashMap(tableRelation.origOptions)
     val tempOptions = caseInsensitiveMap.filterNot(pair => {
       pair._1.equals(Utils.toLowerCase(StoreUtils.PARTITION_BY)) ||
@@ -500,7 +501,7 @@ class ColumnFormatRelation(
       case Some(value) => tempOptions + (StoreUtils.COLOCATE_WITH -> value)
       case _ => tempOptions
     }
-    snc.createTable(
+    snappySession.createTable(
       indexTblName,
       "column",
       tableRelation.schema,
@@ -512,7 +513,7 @@ class ColumnFormatRelation(
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
 
-    val snc = sqlContext.asInstanceOf[SnappyContext]
+    val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
     createIndexTable(indexIdent, tableIdent, this, indexColumns, options)
     // Main table is updated to store the index information in it. We could have instead used
     // createIndex method of HiveClient to do this. But, there were two main issues:
@@ -523,11 +524,11 @@ class ColumnFormatRelation(
     // index. Also, there are multiple things (like implementing HiveIndexHandler)
     // that are hive specific and can create issues for us from maintenance perspective
     try {
-      snc.catalog.alterTableToAddIndexProp(
-        tableIdent, snc.getIndexTable(indexIdent))
+      snappySession.sessionState.catalog.alterTableToAddIndexProp(
+        tableIdent, snappySession.getIndexTable(indexIdent))
     } catch {
       case e: Throwable =>
-        snc.dropTable(indexIdent, ifExists = false)
+        snappySession.dropTable(indexIdent, ifExists = false)
         throw e
     }
   }
