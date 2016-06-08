@@ -88,16 +88,14 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
   public boolean isColumnTable(String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    SnappyTable table=StoreUtils.lookupTable(tableName);
-    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, table.tableName(), table.schema(), skipLocks);
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName ,  ServiceUtils.getDefaultDatabaseSchema(), skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
 
   public boolean isRowTable(String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    SnappyTable table=StoreUtils.lookupTable(tableName);
-    q.resetValues(HMSQuery.ISROWTABLE_QUERY, table.tableName(), table.schema(), skipLocks);
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName,  ServiceUtils.getDefaultDatabaseSchema(), skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
@@ -105,8 +103,7 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   public String getColumnTableSchemaAsJson(String tableName,
       boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    SnappyTable table=StoreUtils.lookupTable(tableName);
-    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA,table.tableName(),table.schema(), skipLocks);
+    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA,tableName, ServiceUtils.getDefaultDatabaseSchema(), skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (String)handleFutureResult(f);
   }
@@ -159,9 +156,17 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
     public void resetValues(int queryType, String tableName,
         String dbName, boolean skipLocks) {
+      int indexOfDot = (tableName != null)?tableName.indexOf("."):0;
       this.qType = queryType;
-      this.tableName = tableName;
-      this.dbName = dbName;
+      // fully qualified name is used.
+      if (indexOfDot > 0 ) {
+        this.tableName = tableName.substring(indexOfDot + 1);
+        this.dbName = tableName.substring(0, indexOfDot);
+      }
+      else {
+        this.tableName = tableName;
+        this.dbName = dbName;
+      }
       this.skipLock = skipLocks;
     }
 

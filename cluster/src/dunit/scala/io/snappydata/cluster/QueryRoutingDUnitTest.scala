@@ -24,7 +24,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.Constant._
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import org.junit.Assert
-import io.snappydata.Constant
+
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 /**
@@ -72,7 +72,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
         md.getColumnName(1) + " col table name = " + md.getTableName(1))
     assert(md.getColumnCount == 1)
     assert(md.getColumnName(1).equals("COL1"))
-    assert (md.getSchemaName(1).equals("TEST"))
     assert(md.getTableName(1).equals("COLUMNTABLEQR"))
 
     // 2nd query which compiles in gemxd too but needs to be routed
@@ -90,9 +89,6 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     assert(md.getColumnName(1).equals("COL1"))
     assert(md.getColumnName(2).equals("COL2"))
     assert(md.getColumnName(3).equals("COL3"))
-    assert(md.getSchemaName(1).equals("TEST"))
-    assert(md.getSchemaName(2).equals("TEST"))
-    assert(md.getSchemaName(3).equals("TEST"))
     assert(md.getTableName(1).equals("COLUMNTABLEQR"))
     assert(md.getTableName(2).equals("COLUMNTABLEQR"))
     assert(md.getTableName(3).equals("COLUMNTABLEQR"))
