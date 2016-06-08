@@ -4,6 +4,7 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
+import com.pivotal.gemfirexd.internal.client.am.Decimal;
 import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
@@ -16,6 +17,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.io.*;
 import java.io.BufferedReader;
@@ -43,7 +45,7 @@ import static java.lang.Thread.sleep;
 public class SnappyTest implements Serializable {
 
     private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
-        .globalSparkContext());
+            .globalSparkContext());
     protected static SnappyTest snappyTest;
     private static HostDescription hd = TestConfig.getInstance().getMasterDescription()
             .getVmDescription().getHostDescription();
@@ -91,7 +93,7 @@ public class SnappyTest implements Serializable {
 
     public static void HydraTask_stopSnappy() {
         SparkContext sc = SnappyContext.globalSparkContext();
-        if(sc != null) sc.stop();
+        if (sc != null) sc.stop();
         Log.getLogWriter().info("SnappyContext stopped successfully");
     }
 
@@ -740,11 +742,11 @@ public class SnappyTest implements Serializable {
         snappyTest.writeUpdatedCountQueryResultsToBB();
     }
 
-    public static void HydraTask_verifyUpdateQueryOnSnappyCluster() {
+    public static void HydraTask_verifyUpdateOpOnSnappyCluster() {
         snappyTest.updateQuery();
     }
 
-    public static void HydraTask_verifyDeleteQueryOnSnappyCluster() {
+    public static void HydraTask_verifyDeleteOpOnSnappyCluster() {
         snappyTest.deleteQuery();
     }
 
@@ -754,7 +756,7 @@ public class SnappyTest implements Serializable {
             Connection conn = getLocatorConnection();
             String query1 = "select count(*) from trade.txhistory";
             long rowCountBeforeDelete = runSelectQuery(conn, query1);
-            Log.getLogWriter().info("SS - rowCountBeforeDelete:" + rowCountBeforeDelete);
+            Log.getLogWriter().info("RowCountBeforeDelete: " + rowCountBeforeDelete);
             String query2 = "delete from trade.txhistory where type = 'buy'";
             int rowCount = conn.createStatement().executeUpdate(query2);
             commit(conn);
@@ -763,17 +765,17 @@ public class SnappyTest implements Serializable {
             String query4 = "select count(*) from trade.txhistory where type = 'buy'";
             long rowCountAfterDelete = 0, rowCountForquery4;
             rowCountAfterDelete = runSelectQuery(conn, query3);
-            Log.getLogWriter().info("SS - rowCountAfterDelete:" + rowCountAfterDelete);
+            Log.getLogWriter().info("RowCountAfterDelete: " + rowCountAfterDelete);
             long expectedRowCountAfterDelete = rowCountBeforeDelete - rowCount;
-            Log.getLogWriter().info("SS - expectedRowCountAfterDelete:" + expectedRowCountAfterDelete);
+            Log.getLogWriter().info("ExpectedRowCountAfterDelete: " + expectedRowCountAfterDelete);
             if (!(rowCountAfterDelete == expectedRowCountAfterDelete)) {
-                String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing delete ops should be : " + expectedRowCountAfterDelete + ", but it is : " + rowCountAfterDelete;
+                String misMatch = "Test Validation failed due to mismatch in countQuery results for table trade.txhistory. countQueryResults after performing delete ops should be : " + expectedRowCountAfterDelete + ", but it is : " + rowCountAfterDelete;
                 throw new TestException(misMatch);
             }
             rowCountForquery4 = runSelectQuery(conn, query4);
-            Log.getLogWriter().info("SS - rowCountForquery4:" + rowCountForquery4);
+            Log.getLogWriter().info("Row count for query: select count(*) from trade.txhistory where type = 'buy' is: " + rowCountForquery4);
             if (!(rowCountForquery4 == 0)) {
-                String misMatch = "Test Validation failed due to wrong row count value. Expected row count value is : 0, but found : " + rowCountForquery4;
+                String misMatch = "Test Validation failed due to wrong row count value for table trade.txhistory. Expected row count value is : 0, but found : " + rowCountForquery4;
                 throw new TestException(misMatch);
             }
             closeConnection(conn);
@@ -786,35 +788,34 @@ public class SnappyTest implements Serializable {
         runGemXDQuery = true;
         try {
             Connection conn = getLocatorConnection();
-//            String query1 = "insert into trade.customers (cid, cust_name, since, addr, tid) values (5555,supriya,2004-04-02,address is wanwarie,96)";
             String query1 = "select count(*) from trade.customers";
             long rowCountBeforeUpdate = runSelectQuery(conn, query1);
-            Log.getLogWriter().info("SS - rowCountBeforeDelete:" + rowCountBeforeUpdate);
-            String query2 = "update trade.customers set addr = 'Pune' where tid = 30";
+            Log.getLogWriter().info("RowCountBeforeUpdate:" + rowCountBeforeUpdate);
+            String query2 = "update trade.customers set addr = 'Pune'";
+            Log.getLogWriter().info("update query is: " + query2);
             int rowCount = conn.createStatement().executeUpdate(query2);
             commit(conn);
             Log.getLogWriter().info("Updated " + rowCount + " rows in trade.customers table in snappy.");
-//            String query3 = "select addr from trade.customers where tid = 30";
             String query4 = "select count(*) from trade.customers";
-            String query5 = "select count(*) from trade.customers where addr != 'Pune' and tid = 30 ";
-            String query6 = "select count(*) from trade.customers where addr = 'Pune' and tid = 30 ";
+            String query5 = "select count(*) from trade.customers where addr != 'Pune'";
+            String query6 = "select count(*) from trade.customers where addr = 'Pune'";
             long rowCountAfterUpdate = 0, rowCountForquery5 = 0, rowCountForquery6 = 0;
             rowCountAfterUpdate = runSelectQuery(conn, query4);
-            Log.getLogWriter().info("SS - rowCountAfterUpdate:" + rowCountAfterUpdate);
+            Log.getLogWriter().info("RowCountAfterUpdate:" + rowCountAfterUpdate);
             if (!(rowCountBeforeUpdate == rowCountAfterUpdate)) {
-                String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing update ops should be : " + rowCountBeforeUpdate + " , but it is : " + rowCountAfterUpdate;
+                String misMatch = "Test Validation failed due to mismatch in countQuery results for table trade.customers. countQueryResults after performing update ops should be : " + rowCountBeforeUpdate + " , but it is : " + rowCountAfterUpdate;
                 throw new TestException(misMatch);
             }
             rowCountForquery6 = runSelectQuery(conn, query6);
-            Log.getLogWriter().info("SS - rowCountAfterUpdate:" + rowCountAfterUpdate);
+            Log.getLogWriter().info("RowCountAfterUpdate:" + rowCountAfterUpdate);
             if (!(rowCountForquery6 == rowCount)) {
-                String misMatch = "Test Validation failed due to mismatch in row count value. Row count after performing update ops should be : " + rowCount + " , but it is : " + rowCountForquery6;
+                String misMatch = "Test Validation failed due to mismatch in row count value for table trade.customers. Row count after performing update ops should be : " + rowCount + " , but it is : " + rowCountForquery6;
                 throw new TestException(misMatch);
             }
             rowCountForquery5 = runSelectQuery(conn, query5);
-            Log.getLogWriter().info("SS - rowCountForquery5:" + rowCountForquery5);
+            Log.getLogWriter().info("Row count for query: select count(*) from trade.customers where addr != 'Pune' is: " + rowCountForquery5);
             if (!(rowCountForquery5 == 0)) {
-                String misMatch = "Test Validation failed due to wrong row count value. Expected row count value is : 0, but found : " + rowCountForquery5;
+                String misMatch = "Test Validation failed due to wrong row count value for table trade.customers. Expected row count value is : 0, but found : " + rowCountForquery5;
                 throw new TestException(misMatch);
             }
             closeConnection(conn);
@@ -899,35 +900,15 @@ public class SnappyTest implements Serializable {
         }
     }
 
-/*
-    public static void HydraTask_verifyInsertQueryOnSnappyCluster() {
-        int numInserts = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.insertCounter);
-        Log.getLogWriter().info("numInserts performed : " + numInserts);
-        ArrayList<String[]> tables = (ArrayList<String[]>) SQLBB.getBB().getSharedMap().get("tableNames");
-        long aggregatedCountQueryResultsAfterOps = 0, aggregatedCountQueryResultsBeforeOps = 0, countQueryResultsAfterAddingOps = 0;
-        for (String[] table1 : tables) {
-            String schemaTableName = table1[0] + "." + table1[1];
-            String tableName = schemaTableName;
-            Long countQueryResultBeforeOps = (Long) SnappyBB.getBB().getSharedMap().get(tableName);
-            aggregatedCountQueryResultsBeforeOps += countQueryResultBeforeOps.longValue();
-            Log.getLogWriter().info("countQueryResultBeforeOps for table " + tableName + " " + countQueryResultBeforeOps);
-            Long countQueryResultAfterOps = (Long) SnappyBB.getBB().getSharedMap().get(tableName + "AfterOps");
-            aggregatedCountQueryResultsAfterOps += countQueryResultAfterOps.longValue();
-            Log.getLogWriter().info("countQueryResultAfterOps for table " + tableName + " " + countQueryResultAfterOps);
-        }
-        Log.getLogWriter().info("aggregatedCountQueryResultsBeforeOps: " + aggregatedCountQueryResultsBeforeOps);
-        Log.getLogWriter().info("aggregatedCountQueryResultsAfterOps: " + aggregatedCountQueryResultsAfterOps);
-        countQueryResultsAfterAddingOps = aggregatedCountQueryResultsBeforeOps + numInserts;
-        Log.getLogWriter().info("aggregatedCountQueryResultsAfterOps: " + aggregatedCountQueryResultsAfterOps);
-        if (!(countQueryResultsAfterAddingOps == aggregatedCountQueryResultsAfterOps)) {
-            String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing insert ops should be : " + countQueryResultsAfterAddingOps + " , but it is : " + aggregatedCountQueryResultsAfterOps;
-            throw new TestException(misMatch);
-        }
-    }
-*/
-
-    public static void HydraTask_verifyInsertQueryOnSnappyCluster() {
+    public static void HydraTask_verifyInsertOpOnSnappyCluster() {
         snappyTest.insertQuery();
+    }
+
+    public static String getCurrentTimeStamp() {
+        SimpleDateFormat sdfDate = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+        Date now = new Date();
+        String strDate = sdfDate.format(now);
+        return strDate;
     }
 
     protected void insertQuery() {
@@ -935,27 +916,30 @@ public class SnappyTest implements Serializable {
         try {
             Connection conn = getLocatorConnection();
             String query1 = "select count(*) from trade.txhistory";
-            long rowCountBeforeDelete = runSelectQuery(conn, query1);
-            Log.getLogWriter().info("SS - rowCountBeforeDelete:" + rowCountBeforeDelete);
-            String query2 = "insert into trade.securities (sec_id, symbol, price, exchange, tid )values (234, 'sxjq32', 27.45, 'fse', 32)";
-            int rowCount = conn.createStatement().executeUpdate(query2);
-            commit(conn);
-            Log.getLogWriter().info("Deleted " + rowCount + " rows in trade.txhistory table in snappy.");
-            String query3 = "select count(*) from trade.txhistory";
-            String query4 = "select count(*) from trade.txhistory where type = 'buy'";
-            long rowCountAfterDelete = 0, rowCountForquery4;
-            rowCountAfterDelete = runSelectQuery(conn, query3);
-            Log.getLogWriter().info("SS - rowCountAfterDelete:" + rowCountAfterDelete);
-            long expectedRowCountAfterDelete = rowCountBeforeDelete - rowCount;
-            Log.getLogWriter().info("SS - expectedRowCountAfterDelete:" + expectedRowCountAfterDelete);
-            if (!(rowCountAfterDelete == expectedRowCountAfterDelete)) {
-                String misMatch = "Test Validation failed due to mismatch in countQuery results. countQueryResults after performing delete ops should be : " + expectedRowCountAfterDelete + ", but it is : " + rowCountAfterDelete;
-                throw new TestException(misMatch);
+            long rowCountBeforeInsert = runSelectQuery(conn, query1);
+            Log.getLogWriter().info("RowCountBeforeInsert: " + rowCountBeforeInsert);
+            for (int i = 0; i < 100; i++) {
+                int cid = random.nextInt(20000);
+                int tid = random.nextInt(40);
+                int oid = random.nextInt(20000);
+                int sid = random.nextInt(20000);
+                int qty = random.nextInt(20000);
+                int price = random.nextInt(Integer.MAX_VALUE) * 0;
+                String ordertime = getCurrentTimeStamp();
+                String type = "buy";
+                String query2 = "insert into trade.txhistory (cid, oid, sid, qty, price, ordertime, type, tid )values (" + cid + ", " + oid + ", " + sid + ", " + qty + ", " + price + ", '" + ordertime + "', '" + type + "', " + tid + ")";
+                int rowCount = conn.createStatement().executeUpdate(query2);
+                commit(conn);
+                Log.getLogWriter().info("Inserted " + rowCount + " rows into trade.txhistory table in snappy with values : " + "(" + cid + ", " + oid + ", " + sid + ", " + qty + ", " + price + ", '" + ordertime + "', '" + type + "', " + tid + ")");
             }
-            rowCountForquery4 = runSelectQuery(conn, query4);
-            Log.getLogWriter().info("SS - rowCountForquery4:" + rowCountForquery4);
-            if (!(rowCountForquery4 == 0)) {
-                String misMatch = "Test Validation failed due to wrong row count value. Expected row count value is : 0, but found : " + rowCountForquery4;
+            String query3 = "select count(*) from trade.txhistory";
+            long rowCountAfterInsert = 0;
+            rowCountAfterInsert = runSelectQuery(conn, query3);
+            Log.getLogWriter().info("RowCountAfterInsert: " + rowCountAfterInsert);
+            long expectedRowCountAfterInsert = rowCountBeforeInsert + 100;
+            Log.getLogWriter().info("ExpectedRowCountAfterInsert: " + expectedRowCountAfterInsert);
+            if (!(rowCountAfterInsert == expectedRowCountAfterInsert)) {
+                String misMatch = "Test Validation failed due to mismatch in countQuery results for table trade.txhistory. countQueryResults after performing insert ops should be : " + expectedRowCountAfterInsert + ", but it is : " + rowCountAfterInsert;
                 throw new TestException(misMatch);
             }
             closeConnection(conn);
@@ -963,8 +947,6 @@ public class SnappyTest implements Serializable {
             throw new TestException("Not able to get connection " + TestHelper.getStackTrace(e));
         }
     }
-
-
 
     protected void writeToFile(String logDir, File file) {
         try {
