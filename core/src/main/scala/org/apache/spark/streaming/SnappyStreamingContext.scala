@@ -27,7 +27,7 @@ import org.apache.spark.annotation.Experimental
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.streaming.{SchemaDStream, StreamSqlHelper}
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
+import org.apache.spark.sql.{SnappySession, DataFrame, Row}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -54,7 +54,7 @@ class SnappyStreamingContext protected[spark](
         "both SparkContext and checkpoint as null")
   }
 
-  val snappyContext = SnappyContext(sc_)
+  val snappySession = new SnappySession(sc_, None)
 
   SnappyStreamingContext.setInstanceContext(self)
 
@@ -114,7 +114,7 @@ class SnappyStreamingContext protected[spark](
   override def start(): Unit = synchronized {
     if (getState() == StreamingContextState.INITIALIZED) {
       // register population of AQP tables from stream tables
-      snappyContext.snappyContextFunctions.aqpTablePopulator(snappyContext)
+      snappySession.snappyContextFunctions.aqpTablePopulator(snappySession)
     }
     super.start()
     SnappyStreamingContext.setActiveContext(self)
@@ -127,8 +127,8 @@ class SnappyStreamingContext protected[spark](
       SnappyStreamingContext.setActiveContext(null)
       SnappyStreamingContext.setInstanceContext(null)
     } finally {
-      snappyContext.clearCache()
-      snappyContext.clear()
+      //snappySession.clearCache()
+      snappySession.clear()
       StreamSqlHelper.registerRelationDestroy() //Not sure why we need this @TODO
       StreamSqlHelper.clearStreams()
 
@@ -136,7 +136,7 @@ class SnappyStreamingContext protected[spark](
   }
 
   def sql(sqlText: String): DataFrame = {
-    snappyContext.sql(sqlText)
+    snappySession.sql(sqlText)
   }
 
   /**

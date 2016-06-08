@@ -33,7 +33,7 @@ import org.apache.spark.streaming.{Checkpoint, CheckpointReader, Duration, Snapp
 class JavaSnappyStreamingContext(val snsc: SnappyStreamingContext)
     extends JavaStreamingContext(snsc) {
 
-  def snappyContext = snsc.snappyContext
+  def snappyContext = snsc.snappySession
 
   /**
    * Create a JavaSnappyStreamingContext using an existing SparkContext.

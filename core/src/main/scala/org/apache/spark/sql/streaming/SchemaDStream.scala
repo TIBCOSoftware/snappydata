@@ -43,12 +43,12 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     @transient val queryExecution: QueryExecution)
     extends DStream[Row](snsc) {
 
-  @transient private val snappyContext: SnappyContext = snsc.snappyContext
+  @transient private val snappySession: SnappySession = snsc.snappySession
 
-  @transient private val catalog = snsc.snappyContext.catalog
+  @transient private val catalog = snappySession.sessionState.catalog
 
   def this(ssc: SnappyStreamingContext, logicalPlan: LogicalPlan) =
-    this(ssc, ssc.snappyContext.executePlan(logicalPlan))
+    this(ssc, snappySession.sessionState.executePlan(logicalPlan))
 
   /**
     * Apply a function to each DataFrame in this SchemaDStream. This is an output operator, so
@@ -64,7 +64,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     */
   def foreachDataFrame(foreachFunc: DataFrame => Unit, needsConversion: Boolean): Unit = {
     val func = (rdd: RDD[Row]) => {
-      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion))
+      foreachFunc(snappySession.createDataFrame(rdd, this.schema, needsConversion))
     }
     this.foreachRDD(func)
   }
@@ -75,7 +75,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
    */
   def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame]): Unit = {
     val func = (rdd: RDD[Row]) => {
-      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true))
+      foreachFunc.call(snappySession.createDataFrame(rdd, this.schema, needsConversion = true))
     }
     this.foreachRDD(func)
   }
@@ -86,7 +86,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
    */
   def foreachDataFrame(foreachFunc: JVoidFunction[DataFrame], needsConversion: Boolean): Unit = {
     val func = (rdd: RDD[Row]) => {
-      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion))
+      foreachFunc.call(snappySession.createDataFrame(rdd, this.schema, needsConversion))
     }
     this.foreachRDD(func)
   }
@@ -97,7 +97,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
    */
   def foreachDataFrame(foreachFunc: JVoidFunction2[DataFrame, Time]): Unit = {
     val func = (rdd: RDD[Row], time: Time) => {
-      foreachFunc.call(snappyContext.createDataFrame(rdd, this.schema, needsConversion = true),
+      foreachFunc.call(snappySession.createDataFrame(rdd, this.schema, needsConversion = true),
         time)
     }
     this.foreachRDD(func)
@@ -118,7 +118,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
     */
   def foreachDataFrame(foreachFunc: (DataFrame, Time) => Unit, needsConversion : Boolean): Unit = {
     val func = (rdd: RDD[Row], time: Time) => {
-      foreachFunc(snappyContext.createDataFrame(rdd, this.schema, needsConversion), time)
+      foreachFunc(snappySession.createDataFrame(rdd, this.schema, needsConversion), time)
     }
     this.foreachRDD(func)
   }
