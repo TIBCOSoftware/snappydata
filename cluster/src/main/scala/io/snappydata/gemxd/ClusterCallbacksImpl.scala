@@ -30,7 +30,7 @@ import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.storage.BlockManagerId
 
 /**
@@ -93,7 +93,11 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def updateBlockMap(dm: DistributedMember, blockId: Externalizable): Unit = {
-    StoreUtils.storeToBlockMap(dm.asInstanceOf[InternalDistributedMember]) =
-        blockId.asInstanceOf[BlockManagerId]
+    if (blockId != null) {
+      SnappyContext.storeToBlockMap(dm.asInstanceOf[InternalDistributedMember]) =
+          blockId.asInstanceOf[BlockManagerId]
+    } else {
+      SnappyContext.storeToBlockMap -= dm.asInstanceOf[InternalDistributedMember]
+    }
   }
 }

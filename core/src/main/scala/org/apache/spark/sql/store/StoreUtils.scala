@@ -31,9 +31,9 @@ import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext}
+import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
-import org.apache.spark.{SparkEnv, Logging, Partition, SparkContext}
+import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
 
@@ -80,9 +80,6 @@ object StoreUtils extends Logging {
   val SHADOW_COLUMN_NAME = "rowid"
 
   val SHADOW_COLUMN = s"$SHADOW_COLUMN_NAME bigint generated always as identity"
-
-  val storeToBlockMap: TrieMap[InternalDistributedMember, BlockManagerId] =
-    TrieMap.empty[InternalDistributedMember, BlockManagerId]
 
   def lookupName(tableName: String, schema: String): String = {
     val lookupName = {
@@ -142,11 +139,7 @@ object StoreUtils extends Logging {
     val blockMap = new StoreInitRDD(sqlContext, table,
       schema, partitions, connProperties).collect()
 
-    // TODO ashetkar Place below if block somewhere else where it gets invoked just once.
-    if (Utils.isLoner(sqlContext.sparkContext)) {
-      storeToBlockMap(Misc.getGemFireCache.getMyId) = SparkEnv.get.blockManager.blockManagerId
-    }
-    storeToBlockMap.toMap
+    SnappyContext.storeToBlockMap.toMap
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,

@@ -19,12 +19,15 @@ package org.apache.spark.sql
 import java.sql.SQLException
 
 import scala.collection.JavaConverters._
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
+import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
 
@@ -51,10 +54,10 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.storage.StorageLevel
+import org.apache.spark.storage.{BlockManagerId, StorageLevel}
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+import org.apache.spark.{SparkEnv, Logging, SparkConf, SparkContext, SparkException}
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -1196,6 +1199,9 @@ object SnappyContext extends Logging {
   }
 
 
+  val storeToBlockMap: TrieMap[InternalDistributedMember, BlockManagerId] =
+    TrieMap.empty[InternalDistributedMember, BlockManagerId]
+
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
     SparkContext.getOrCreate(INVALID_CONF)
@@ -1223,7 +1229,15 @@ object SnappyContext extends Logging {
     if (_anySNContext == null) {
       _anySNContext = snc
     }
+    initMemberBlockMap(sc)
     snc
+  }
+
+  private def initMemberBlockMap(sc: SparkContext): Unit = {
+    val cache = Misc.getGemFireCacheNoThrow
+    if (cache != null && Utils.isLoner(sc)) {
+      storeToBlockMap(cache.getMyId) = SparkEnv.get.blockManager.blockManagerId
+    }
   }
 
   /**

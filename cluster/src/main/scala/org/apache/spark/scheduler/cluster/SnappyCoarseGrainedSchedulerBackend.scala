@@ -18,13 +18,14 @@ package org.apache.spark.scheduler.cluster
 
 import java.util
 
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
 import org.apache.spark.scheduler.TaskSchedulerImpl
-import org.apache.spark.sql.store.StoreUtils
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkEnv}
 
 class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override val rpcEnv: RpcEnv)
@@ -42,7 +43,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
         whoSuspected: InternalDistributedMember): Unit = {}
 
     override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      StoreUtils.storeToBlockMap -= id
+      SnappyContext.storeToBlockMap -= id
     }
   }
 
@@ -71,8 +72,12 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
     super.stop()
     _driverUrl = ""
     SnappyClusterManager.cm.map(_.stopLead()).isDefined
-    GemFireXDUtils.getGfxdAdvisor.getDistributionManager
-        .removeMembershipListener(membershipListener)
+    try {
+      GemFireXDUtils.getGfxdAdvisor.getDistributionManager
+          .removeMembershipListener(membershipListener)
+    } catch {
+      case cce: CacheClosedException =>
+    }
     logInfo(s"stopped successfully")
   }
 

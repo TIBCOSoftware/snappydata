@@ -204,7 +204,7 @@ object ExecutorInitiator extends Logging {
 
                     rpcenv.setupEndpoint("Executor", executor)
 
-                    updateBlockId()
+                    addBlockId()
                   }
                 case None =>
                 // If driver url is none, already running executor is stopped.
@@ -240,7 +240,7 @@ object ExecutorInitiator extends Logging {
     }
   }
 
-  def updateBlockId(): Unit = {
+  def addBlockId(): Unit = {
     // This wait is needed because the executor is created in another thread
     // and we cannot send this message before we have the block manager id
     if (!waitUntilBlockManagerIdInitialized()) {
@@ -248,32 +248,45 @@ object ExecutorInitiator extends Logging {
       return
     }
 
-    val msg: SnappyExecutorMessage = new SnappyExecutorMessage(SparkEnv.get.blockManager.blockManagerId)
+    updateBlockId(new SnappyExecutorMessage(SparkEnv.get.blockManager.blockManagerId),
+      "add")
+  }
+
+  def updateBlockId(msg: SnappyExecutorMessage, action: String): Unit = {
     var msgNotSent = true
-    var count = 0
+    var retryCount = 0
     while (msgNotSent) {
       try {
         msg.executeFunction(false, false, null, false)
         msgNotSent = false
-        if (count > 0) {
-          logInfo(s"Successfully sent the block manager id to the driver.")
-        }
+        logInfo(s"Successfully sent the SnappyExecutorMessage to the driver, " +
+            s"to $action my BlockManagerId.")
       }
       catch {
         case e: Exception => {
-          logWarning(s"Failed to send the block manager id to the driver: ${e.getMessage}")
-          if (e.getMessage.contains("GemFireXD system shutdown.")) {
-            return
+          try {
+            // Check if ds/cache is closing below.
+            Misc.checkIfCacheClosing(e)
+          } catch {
+            case e: Throwable => return
           }
-          count += 1
-          if (count >= 5) {
+          retryCount += 1
+          if (retryCount > 2) { // retry three times
             // Do not fail the executor initiation
             msgNotSent = false
-            logError(s"Failed to send the block manager id to the driver: ", e)
+            logError(s"Failed to send the SnappyExecutorMessage to the driver, " +
+                s"to $action my BlockManagerId, with ", e)
+          } else {
+            logWarning(s"Failed to send the SnappyExecutorMessage to the driver, " +
+                s"to $action my BlockManagerId, with ${e.getMessage}")
           }
         }
       }
     }
+  }
+
+  def removeBlockId(): Unit = {
+    updateBlockId(new SnappyExecutorMessage(null), "remove")
   }
 
   def waitUntilBlockManagerIdInitialized(): Boolean = {
@@ -300,6 +313,7 @@ object ExecutorInitiator extends Logging {
       executorRunnable.stopTask = true
     }
     executorRunnable.setDriverDetails(None, null)
+    removeBlockId()
   }
 
   def restartExecutor(): Unit = {
