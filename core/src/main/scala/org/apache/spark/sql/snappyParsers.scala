@@ -485,17 +485,27 @@ class SnappyParser(session: SnappySession)
         ((exp: Expression, t: DataType) => Cast(exp, t))
   }
 
-  protected final def whenThenElse: Rule1[Seq[Expression]] = rule {
+  protected final def keyWhenThenElse: Rule1[Seq[Expression]] = rule {
     (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
         t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
         ((altPart: Seq[(Expression, Expression)], elsePart: Option[Expression]) =>
           altPart.flatMap(e => Seq(e._1, e._2)) ++ elsePart)
   }
+  protected final def whenThenElse: Rule1[(Seq[(Expression, Expression)], Option[Expression])] = rule {
+    (WHEN ~ expression ~ THEN ~ expression ~> ((w: Expression,
+        t: Expression) => (w, t))).+ ~ (ELSE ~ expression).? ~ END ~>
+        ((altPart: Seq[(Expression, Expression)], elsePart: Option[Expression]) =>
+          (altPart, elsePart))
+  }
+
+
 
   protected def specialFunction: Rule1[Expression] = rule {
     CASE ~ (
-        whenThenElse ~> CaseWhen |
-        expression ~ whenThenElse ~> CaseKeyWhen
+        whenThenElse ~> ((s: (Seq[(Expression, Expression)], Option[Expression])) =>
+          CaseWhen(s._1, s._2)) |
+        expression ~ keyWhenThenElse ~> ((expr: Expression, s: (Seq[(Expression)])) =>
+          CaseKeyWhen (expr, s))
     ) |
     APPROXIMATE ~ ('(' ~ ws ~ unsignedFloat ~ ')' ~ ws).? ~
         identifier ~ '(' ~ ws ~ DISTINCT ~ expression ~ ')' ~ ws ~>
