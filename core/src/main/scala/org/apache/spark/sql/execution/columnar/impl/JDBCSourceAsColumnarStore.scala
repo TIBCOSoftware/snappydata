@@ -103,7 +103,7 @@ final class JDBCSourceAsColumnarStore(_connProperties: ConnectionProperties,
 class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     tableName: String,
     requiredColumns: Array[String], store: JDBCSourceAsColumnarStore)
-    extends RDD[CachedBatch](_sc, Nil) with Logging {
+    extends RDD[CachedBatch](_sc, Nil) {
 
   override def compute(split: Partition,
       context: TaskContext): Iterator[CachedBatch] = {

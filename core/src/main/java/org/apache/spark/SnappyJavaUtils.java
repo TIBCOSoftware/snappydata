@@ -17,18 +17,19 @@
 package org.apache.spark;
 
 import org.apache.spark.api.java.JavaRDD;
-import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.DataFrameJavaFunctions;
 import org.apache.spark.sql.DataFrameWriter;
 import org.apache.spark.sql.DataFrameWriterJavaFunctions;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 
 public class SnappyJavaUtils {
 
   /**
    * A static factory method to create a {@link DataFrameJavaFunctions} based
-   * on an existing {@link DataFrame} instance.
+   * on an existing {@link Dataset} instance.
    */
-  public static DataFrameJavaFunctions snappyJavaUtil(DataFrame dataFrame) {
+  public static DataFrameJavaFunctions snappyJavaUtil(Dataset<Row> dataFrame) {
     return new DataFrameJavaFunctions(dataFrame);
   }
 

@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.datasources
 
-import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, AttributeSet, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.planning.PhysicalOperation
@@ -32,7 +31,7 @@ import org.apache.spark.sql.{AnalysisException, Row, Strategy, execution}
  * Mostly this is a copy of DataSourceStrategy of Spark. But it takes care of the underlying
  * partitions of the datasource.
  */
-private[sql] object StoreDataSourceStrategy extends Strategy with Logging {
+private[sql] object StoreDataSourceStrategy extends Strategy{
 
   def apply(plan: LogicalPlan): Seq[execution.SparkPlan] = plan match {
     case PhysicalOperation(projects, filters,

@@ -51,7 +51,7 @@ class SnappySessionState(snappySession: SnappySession)
   override lazy val sqlParser: ParserInterface =
     new SnappySqlParser(this.snappySession, getSQLDialect(snappySession))
 
-  protected[sql] override lazy val conf: SQLConf = new SQLConf {
+  override lazy val conf: SQLConf = new SQLConf {
     override def caseSensitiveAnalysis: Boolean =
       getConf(SQLConf.CASE_SENSITIVE, false)
   }
@@ -76,9 +76,9 @@ class SnappySessionState(snappySession: SnappySession)
     new sparkexecution.QueryExecution(snappySession, plan)
 
   @transient
-  override protected[sql] lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
     override val extendedResolutionRules =
-      ExtractPythonUDFs ::
+      //ExtractPythonUDFs ::
           PreInsertCheckCastAndRename ::
           new ResolveDataSource(catalog.snappySession) :: Nil
 

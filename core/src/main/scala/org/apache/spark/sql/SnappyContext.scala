@@ -17,10 +17,8 @@
 package org.apache.spark.sql
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.reflect.runtime.{universe => u}
-import scala.util.{Failure, Success, Try}
 
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
@@ -30,20 +28,12 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases
-import org.apache.spark.sql.catalyst.expressions.{Alias, Cast, SortDirection}
-import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
-import org.apache.spark.sql.catalyst.rules.Rule
+import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation, PreInsertCastAndRename}
-import org.apache.spark.sql.execution.ui.{SQLListener, SnappyStatsTab}
+import org.apache.spark.sql.execution.ui.SnappyStatsTab
 import org.apache.spark.sql.hive.{QualifiedTableName, SnappyStoreHiveCatalog}
-import org.apache.spark.sql.internal.SQLConf
-import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.StructType

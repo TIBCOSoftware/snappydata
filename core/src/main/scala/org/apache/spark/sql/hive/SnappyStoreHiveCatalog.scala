@@ -40,7 +40,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry
-import org.apache.spark.sql.catalyst.catalog.{ExternalCatalog, CatalogTableType, CatalogStorageFormat, CatalogDatabase, CatalogTable, FunctionResourceLoader, SessionCatalog}
+import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.{SubqueryAlias, LogicalPlan}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
@@ -75,13 +75,15 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   private val sessionState = snappySession.sessionState.asInstanceOf[HiveSessionState]
 
-  private def getCurrentDatabase: String = sessionState.catalog.getCurrentDatabase
+  override def getCurrentDatabase: String = sessionState.catalog.getCurrentDatabase
 
   //Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
   // catalog will hit our catalog rather than the SessionCatalog. Some of the methods might look
   // not needed . @TODO will clean up once we have our own seggregation for SessionCatalog and
   // ExternalCatalog
-  override val tempTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
+  //override val tempTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
+
+  private val sessionTables = new ConcurrentHashMap[QualifiedTableName, LogicalPlan]().asScala
 
   override def setCurrentDatabase(db: String): Unit = {
     super.setCurrentDatabase(db)
@@ -435,7 +437,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   }
 
   def unregisterAllTables(): Unit = {
-    tempTables.clear()
+    sessionTables.clear()
   }
 
   def unregisterTable(tableIdentifier: TableIdentifier): Unit = {
@@ -443,14 +445,14 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   }
 
   def unregisterTable(tableIdent: QualifiedTableName): Unit = {
-    if (tempTables.contains(tableIdent)) {
+    if (sessionTables.contains(tableIdent)) {
       snappySession.truncateTable(tableIdent, ignoreIfUnsupported = true)
-      tempTables -= tableIdent
+      sessionTables -= tableIdent
     }
   }
 
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {
-    tempTables.getOrElse(tableIdent,
+    sessionTables.getOrElse(tableIdent,
       tableIdent.getTableOption(client) match {
         case Some(table) =>
           if (table.properties.contains(HIVE_PROVIDER)) {
@@ -487,17 +489,17 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   }
 
   def tableExists(tableName: QualifiedTableName): Boolean = {
-    tempTables.contains(tableName) ||
+    sessionTables.contains(tableName) ||
         tableName.getTableOption(client).isDefined
   }
 
   def registerTable(tableIdentifier: TableIdentifier,
       plan: LogicalPlan): Unit = {
-    tempTables += (newQualifiedTableName(tableIdentifier) -> plan)
+    sessionTables += (newQualifiedTableName(tableIdentifier) -> plan)
   }
 
   def registerTable(tableName: QualifiedTableName, plan: LogicalPlan): Unit = {
-    tempTables += (tableName -> plan)
+    sessionTables += (tableName -> plan)
   }
 
   private def clientDropTable(dbName: String, tableName: String): Unit =
@@ -595,7 +597,8 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
     val hiveTable = CatalogTable(
       identifier = tableIdent,
-      tableType = tableType,
+      tableType = CatalogTableType.EXTERNAL,// Can not inherit from this class. Ideally we should
+      // be extending from this case class
       schema = Nil,
       storage = CatalogStorageFormat(
         locationUri = None,
@@ -688,7 +691,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     val client = this.client
     val dbName = db.map(processTableIdentifier)
         .getOrElse(getCurrentDatabase)
-    tempTables.collect {
+    sessionTables.collect {
       case (tableIdent, _) if db.isEmpty || tableIdent.getDatabase(
         client) == dbName => (tableIdent.table, true)
     }.toSeq ++
@@ -701,7 +704,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
         }
   }
 
-  def getDataSourceTables(tableTypes: Seq[CatalogTableType],
+  def getDataSourceTables(tableTypes: Seq[ExternalTableType],
       baseTable: Option[String] = None): Seq[QualifiedTableName] = {
     val client = this.client
     val tables = new ArrayBuffer[QualifiedTableName](4)
@@ -741,13 +744,13 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     allTables
   }
 
-  def getDataSourceRelations[T](tableTypes: Seq[CatalogTableType],
+  def getDataSourceRelations[T](tableTypes: Seq[ExternalTableType],
       baseTable: Option[String] = None): Seq[T] = {
     getDataSourceTables(tableTypes, baseTable).map(
       getCachedHiveTable(_).relation.asInstanceOf[T])
   }
 
-  def getTableType(relation: BaseRelation): CatalogTableType = {
+  def getTableType(relation: BaseRelation): ExternalTableType = {
     relation match {
       case x: JDBCMutableRelation => ExternalTableType.Row
       case x: IndexColumnFormatRelation => ExternalTableType.Index
@@ -850,11 +853,12 @@ final class QualifiedTableName(_database: Option[String], _tableIdent: String)
   }
 }
 
+case class ExternalTableType(val name : String)
 object ExternalTableType {
-  val Row = CatalogTableType("ROW")
-  val Column = CatalogTableType("COLUMN")
-  val Index = CatalogTableType("INDEX")
-  val Stream = CatalogTableType("STREAM")
-  val Sample = CatalogTableType("SAMPLE")
-  val TopK = CatalogTableType("TOPK")
+  val Row = ExternalTableType("ROW")
+  val Column = ExternalTableType("COLUMN")
+  val Index = ExternalTableType("INDEX")
+  val Stream = ExternalTableType("STREAM")
+  val Sample = ExternalTableType("SAMPLE")
+  val TopK = ExternalTableType("TOPK")
 }

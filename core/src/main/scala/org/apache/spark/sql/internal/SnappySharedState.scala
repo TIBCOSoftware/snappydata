@@ -18,6 +18,7 @@ package org.apache.spark.sql.internal
 
 import org.apache.spark.SparkContext
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.catalyst.catalog.InMemoryCatalog
 
 /**
  * Right now we are not overriding anything from Spark's built in SharedState. We need to
@@ -27,6 +28,6 @@ import org.apache.spark.internal.Logging
 private[sql] class SnappySharedState(override val sparkContext: SparkContext)
       extends SharedState(sparkContext) with Logging {
 
-   override private[sql] lazy val externalCatalog = super.externalCatalog
+   override lazy val externalCatalog = new InMemoryCatalog(sparkContext.hadoopConfiguration)
 
 }

@@ -48,7 +48,7 @@ final class RabbitMQStringDecoder extends RabbitMQDecoder[String] {
 final class RabbitMQInputDStream[T: ClassTag, D: ClassTag](
     @transient snsc: SnappyStreamingContext,
     options: Map[String, String]
-) extends ReceiverInputDStream[T](snsc) with Logging {
+) extends ReceiverInputDStream[T](snsc){
 
   override def getReceiver(): Receiver[T] = {
     new RabbitMQReceiver[T, D](options)
