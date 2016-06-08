@@ -90,20 +90,6 @@ object StoreUtils extends Logging {
     lookupName
   }
 
-  def lookupTable(tableName: String): SnappyTable = {
-    val indexOfDot = tableName.indexOf(".")
-    val defaultSchema = ServiceUtils.getDefaultDatabaseSchema()
-    if (tableName.indexOf('.') <= 0) {
-      SnappyTable(defaultSchema, tableName, lookupName(tableName, defaultSchema))
-    } else {
-      val schema = tableName.substring(0, indexOfDot)
-      val table = tableName.substring(indexOfDot + 1)
-      SnappyTable(schema, table, lookupName(table, schema))
-    }
-  }
-
-
-
   def getPartitionsPartitionedTable(sc: SparkContext,
       tableName: String, schema: String,
       blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
@@ -332,5 +318,3 @@ object StoreUtils extends Logging {
     })
   }
 }
-
-case class SnappyTable(schema: String, tableName: String, fullyQualifiedName: String)
