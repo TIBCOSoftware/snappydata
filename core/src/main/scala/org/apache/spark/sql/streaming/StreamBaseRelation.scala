@@ -20,9 +20,8 @@ import scala.collection.mutable
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.{EmptyRDD, RDD}
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{DDLException, Row}
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
