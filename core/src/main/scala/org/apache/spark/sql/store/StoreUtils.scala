@@ -25,12 +25,11 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
-import org.apache.spark.sql.execution.datasources.DDLException
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, SQLContext}
+import org.apache.spark.sql.{DDLException, AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
@@ -168,7 +167,7 @@ object StoreUtils extends Logging {
         v match {
           case PRIMARY_KEY => ""
           case _ =>
-            val normalizedSchema = context.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+            val normalizedSchema = context.sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
                 .normalizeSchema(schema)
             val schemaFields = Utils.schemaFields(normalizedSchema)
             val cols = v.split(",") map (_.trim)
