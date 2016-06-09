@@ -205,12 +205,11 @@ public class SnappyTest implements Serializable {
                     throw new TestException(s);
                 }
                 SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
-                String portString = port + "";
                 SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
-                SnappyBB.getBB().getSharedMap().put("locatorPort", portString);
+                SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
                 Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
-            } else if (dirPath.contains("Store") || dirPath.contains("server") || dirPath.contains("store") || dirPath.contains("accessor")) {
+            } else if (dirPath.toLowerCase().contains("store") || dirPath.contains("server") || dirPath.contains("accessor")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
                 if (serverLogDir == null) {
@@ -250,9 +249,8 @@ public class SnappyTest implements Serializable {
             throw new TestException(s);
         }
         SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
-        String portString = port + "";
         SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
-        SnappyBB.getBB().getSharedMap().put("locatorPort", portString);
+        SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
         Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
         SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
         logDirExists = true;
@@ -375,62 +373,34 @@ public class SnappyTest implements Serializable {
      * Write the configuration data required to start the snappy locator in locators file under conf directory at snappy build location.
      */
     public static void HydraTask_writeLocatorConfigData() {
-        snappyTest.writeLocatorConfigData();
+        snappyTest.writeConfigData("locators", "locatorLogDir");
     }
 
     /**
      * Write the configuration data required to start the snappy server in servers file under conf directory at snappy build location.
      */
     public static void HydraTask_writeServerConfigData() {
-        snappyTest.writeServerConfigData();
+        snappyTest.writeConfigData("servers", "serverLogDir");
     }
 
     /**
      * Write the configuration data required to start the snappy lead in leads file under conf directory at snappy build location.
      */
     public static void HydraTask_writeLeadConfigData() {
-        snappyTest.writeLeadConfigData();
+        snappyTest.writeConfigData("leads", "leadLogDir");
     }
 
-    protected void writeLocatorConfigData() {
-        locatorsFilePath = productConfDirPath + "locators";
-        File locatorsFile = new File(locatorsFilePath);
-        Set<String> locatorsFileContent = new LinkedHashSet<String>();
-        locatorsFileContent = snappyTest.getFileContents("locatorLogDir", locatorsFileContent);
-        if (locatorsFileContent.size() == 0) {
-            String s = "No data found for writing to locators file under conf directory";
+    protected void writeConfigData(String fileName, String logDir) {
+        String filePath = productConfDirPath + fileName;
+        File file = new File(filePath);
+        Set<String> fileContent = new LinkedHashSet<String>();
+        fileContent = snappyTest.getFileContents(logDir, fileContent);
+        if (fileContent.size() == 0) {
+            String s = "No data found for writing to " + fileName + " file under conf directory";
             throw new TestException(s);
         }
-        for (String s : locatorsFileContent) {
-            snappyTest.writeToFile(s, locatorsFile);
-        }
-    }
-
-    protected void writeServerConfigData() {
-        serversFilePath = productConfDirPath + "servers";
-        File serversFile = new File(serversFilePath);
-        Set<String> serversFileContent = new LinkedHashSet<String>();
-        serversFileContent = snappyTest.getFileContents("serverLogDir", serversFileContent);
-        if (serversFileContent.size() == 0) {
-            String s = "No data found for writing to servers file under conf directory";
-            throw new TestException(s);
-        }
-        for (String s : serversFileContent) {
-            snappyTest.writeToFile(s, serversFile);
-        }
-    }
-
-    protected void writeLeadConfigData() {
-        leadsFilePath = productConfDirPath + "leads";
-        File leadsFile = new File(leadsFilePath);
-        Set<String> leadsFileContent = new LinkedHashSet<String>();
-        leadsFileContent = snappyTest.getFileContents("leadLogDir", leadsFileContent);
-        if (leadsFileContent.size() == 0) {
-            String s = "No data found for writing to leads file under conf directory";
-            throw new TestException(s);
-        }
-        for (String s : leadsFileContent) {
-            snappyTest.writeToFile(s, leadsFile);
+        for (String s : fileContent) {
+            snappyTest.writeToFile(s, file);
         }
     }
 
