@@ -35,6 +35,7 @@ import io.snappydata.util.StringUtils
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
@@ -69,7 +70,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
 
   // check for query hint to serialize complex types as CLOBs
-  private[this] val complexTypeAsClob = snc.getPreviousQueryHints.get(
+  private[this] val complexTypeAsClob = snc.snappySession.getPreviousQueryHints.get(
     QueryHint.ComplexTypeAsClob.toString) match {
     case Some(v) => Misc.parseBoolean(v)
     case None => false
@@ -452,7 +453,7 @@ class ExecutionHandler(sql: String, schema: StructType, rddId: Int,
     }
     val dos = new GfxdHeapDataOutputStream(
       Misc.getMemStore.thresholdListener(), sql, true, null)
-    val bufferHolder = if (serializeComplexType) new BufferHolder() else null
+    val bufferHolder = if (serializeComplexType) new BufferHolder(new UnsafeRow()) else null
     itr.foreach { row =>
       if (numCols == -1) {
         evalNumColumnGroups(row)

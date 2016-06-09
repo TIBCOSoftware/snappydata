@@ -30,7 +30,6 @@ import org.apache.spark.SparkContext
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.expressions.{GenericRow, SortDirection, Descending, Ascending}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Union}
 import org.apache.spark.sql.collection.Utils
@@ -82,12 +81,22 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @transient
   private[spark] lazy override val sessionState: SnappySessionState = {
-    new SnappySessionState(this)
+
+    try {
+      val clazz = org.apache.spark.util.Utils.classForName(
+        "org.apache.spark.sql.internal.SnappyAQPSessionState")
+      clazz.getConstructor(classOf[SnappySession]).
+        newInstance(self).asInstanceOf[SnappySessionState]
+    } catch {
+      case NonFatal(e) =>
+        new SnappySessionState(this)
+    }
+
   }
 
   lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
-  private[spark] val snappyContextFunctions = sessionState.asInstanceOf[SnappyContextFunctions]
+  private[spark] val snappyContextFunctions = sessionState.contextFunctions
 
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
@@ -172,7 +181,7 @@ class SnappySession(@transient private val sc: SparkContext,
    */
   @DeveloperApi
   def appendToTempTableCache(df: DataFrame, table: String,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = {
     val tableIdent = sessionCatalog.newQualifiedTableName(table)
     val plan = sessionCatalog.lookupRelation(tableIdent, None)
     // cache the new DataFrame
@@ -206,8 +215,9 @@ class SnappySession(@transient private val sc: SparkContext,
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ => if (!ignoreIfUnsupported)
+      case _ => if (!ignoreIfUnsupported) {
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
+      }
     }
   }
 
@@ -713,7 +723,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
 
 
-    val relation =  DataSource(
+    val relation = DataSource(
       self,
       partitionColumns = partitionColumns,
       className = source,
@@ -1069,7 +1079,7 @@ class SnappySession(@transient private val sc: SparkContext,
   @DeveloperApi
   def delete(tableName: String, filterExpr: String): Int = {
     sessionCatalog.lookupRelation(sessionCatalog.newQualifiedTableName(tableName)) match {
-      case LogicalRelation(d: DeletableRelation, _ ,_) => d.delete(filterExpr)
+      case LogicalRelation(d: DeletableRelation, _ , _) => d.delete(filterExpr)
       case _ => throw new AnalysisException(
         s"$tableName is not a deletable table")
     }

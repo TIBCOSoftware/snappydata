@@ -19,10 +19,7 @@ package org.apache.spark.sql
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.catalyst.ParserDialect
-import org.apache.spark.sql.catalyst.analysis.{Exists, InSubquery}
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.hive.QualifiedTableName
 
 /**
