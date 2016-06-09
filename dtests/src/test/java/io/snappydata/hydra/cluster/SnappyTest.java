@@ -264,7 +264,6 @@ public class SnappyTest implements Serializable {
         String nodeLogDir = null;
         switch (snappyNode) {
             case LOCATOR:
-                Log.getLogWriter().info("Entered into LOCATOR CASE...");
                 nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port;
                 SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
                 SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
@@ -272,7 +271,6 @@ public class SnappyTest implements Serializable {
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
             case SERVER:
-                Log.getLogWriter().info("Entered into SERVER CASE...");
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 if (tableDefaultPartitioned)
                     nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Dgemfirexd.table-default-partitioned=true";
@@ -423,7 +421,6 @@ public class SnappyTest implements Serializable {
             }
             String endpoint = endpoints.get(0);
             String port = endpoint.substring(endpoint.indexOf(":") + 1);
-            Log.getLogWriter().info("port string is:" + port);
             int clientPort = Integer.parseInt(port);
             Log.getLogWriter().info("Client Port is :" + clientPort);
             return clientPort;
@@ -440,11 +437,9 @@ public class SnappyTest implements Serializable {
     private static synchronized List<String> getEndpoints(String type) {
         List<String> endpoints = new ArrayList();
         Set<String> keys = SnappyNetworkServerBB.getBB().getSharedMap().getMap().keySet();
-        Log.getLogWriter().info("Complete endpoint list contains: " + keys);
         for (String key : keys) {
             if (key.startsWith(type.toString())) {
                 String endpoint = (String) SnappyNetworkServerBB.getBB().getSharedMap().getMap().get(key);
-                Log.getLogWriter().info("endpoint Found...." + endpoint);
                 endpoints.add(endpoint);
             }
         }
@@ -479,16 +474,13 @@ public class SnappyTest implements Serializable {
             String dirName = snappyTest.generateLogDirName();
             File destDir = new File(dirName);
             String diskDirName = dirName.substring(0, dirName.lastIndexOf("_")) + "_disk";
-            Log.getLogWriter().info("diskDirName::" + diskDirName);
             File dir = new File(diskDirName);
             for (File srcFile : dir.listFiles()) {
                 try {
                     if (srcFile.isDirectory()) {
-                        Log.getLogWriter().info("diskDirFile is a directory ::" + srcFile);
                         FileUtils.copyDirectoryToDirectory(srcFile, destDir);
                         Log.getLogWriter().info("Done copying diskDirFile directory from ::" + srcFile + "to " + destDir);
                     } else {
-                        Log.getLogWriter().info("diskDirFile is::" + srcFile);
                         FileUtils.copyFileToDirectory(srcFile, destDir);
                         Log.getLogWriter().info("Done copying diskDirFile from ::" + srcFile + "to " + destDir);
                     }
@@ -508,7 +500,6 @@ public class SnappyTest implements Serializable {
             File destDir = new File(dirName);
             String[] splitedName = RemoteTestModule.getMyClientName().split("snappy");
             String newName = splitedName[1];
-            Log.getLogWriter().info("newName is ::" + newName);
             File currentDir = new File(".");
             for (File srcFile1 : currentDir.listFiles()) {
                 if (!doneCopying) {
@@ -705,7 +696,6 @@ public class SnappyTest implements Serializable {
             Connection conn = getLocatorConnection();
             String query1 = "select count(*) from trade.txhistory";
             long rowCountBeforeDelete = runSelectQuery(conn, query1);
-            Log.getLogWriter().info("RowCountBeforeDelete: " + rowCountBeforeDelete);
             String query2 = "delete from trade.txhistory where type = 'buy'";
             int rowCount = conn.createStatement().executeUpdate(query2);
             commit(conn);
@@ -714,6 +704,7 @@ public class SnappyTest implements Serializable {
             String query4 = "select count(*) from trade.txhistory where type = 'buy'";
             long rowCountAfterDelete = 0, rowCountForquery4;
             rowCountAfterDelete = runSelectQuery(conn, query3);
+            Log.getLogWriter().info("RowCountBeforeDelete: " + rowCountBeforeDelete);
             Log.getLogWriter().info("RowCountAfterDelete: " + rowCountAfterDelete);
             long expectedRowCountAfterDelete = rowCountBeforeDelete - rowCount;
             Log.getLogWriter().info("ExpectedRowCountAfterDelete: " + expectedRowCountAfterDelete);
@@ -739,7 +730,6 @@ public class SnappyTest implements Serializable {
             Connection conn = getLocatorConnection();
             String query1 = "select count(*) from trade.customers";
             long rowCountBeforeUpdate = runSelectQuery(conn, query1);
-            Log.getLogWriter().info("RowCountBeforeUpdate:" + rowCountBeforeUpdate);
             String query2 = "update trade.customers set addr = 'Pune'";
             Log.getLogWriter().info("update query is: " + query2);
             int rowCount = conn.createStatement().executeUpdate(query2);
@@ -750,12 +740,12 @@ public class SnappyTest implements Serializable {
             String query6 = "select count(*) from trade.customers where addr = 'Pune'";
             long rowCountAfterUpdate = 0, rowCountForquery5 = 0, rowCountForquery6 = 0;
             rowCountAfterUpdate = runSelectQuery(conn, query4);
-            Log.getLogWriter().info("RowCountAfterUpdate:" + rowCountAfterUpdate);
             if (!(rowCountBeforeUpdate == rowCountAfterUpdate)) {
                 String misMatch = "Test Validation failed due to mismatch in countQuery results for table trade.customers. countQueryResults after performing update ops should be : " + rowCountBeforeUpdate + " , but it is : " + rowCountAfterUpdate;
                 throw new TestException(misMatch);
             }
             rowCountForquery6 = runSelectQuery(conn, query6);
+            Log.getLogWriter().info("RowCountBeforeUpdate:" + rowCountBeforeUpdate);
             Log.getLogWriter().info("RowCountAfterUpdate:" + rowCountAfterUpdate);
             if (!(rowCountForquery6 == rowCount)) {
                 String misMatch = "Test Validation failed due to mismatch in row count value for table trade.customers. Row count after performing update ops should be : " + rowCount + " , but it is : " + rowCountForquery6;
@@ -866,7 +856,6 @@ public class SnappyTest implements Serializable {
             Connection conn = getLocatorConnection();
             String query1 = "select count(*) from trade.txhistory";
             long rowCountBeforeInsert = runSelectQuery(conn, query1);
-            Log.getLogWriter().info("RowCountBeforeInsert: " + rowCountBeforeInsert);
             for (int i = 0; i < 100; i++) {
                 int cid = random.nextInt(20000);
                 int tid = random.nextInt(40);
@@ -884,6 +873,7 @@ public class SnappyTest implements Serializable {
             String query3 = "select count(*) from trade.txhistory";
             long rowCountAfterInsert = 0;
             rowCountAfterInsert = runSelectQuery(conn, query3);
+            Log.getLogWriter().info("RowCountBeforeInsert: " + rowCountBeforeInsert);
             Log.getLogWriter().info("RowCountAfterInsert: " + rowCountAfterInsert);
             long expectedRowCountAfterInsert = rowCountBeforeInsert + 100;
             Log.getLogWriter().info("ExpectedRowCountAfterInsert: " + expectedRowCountAfterInsert);
