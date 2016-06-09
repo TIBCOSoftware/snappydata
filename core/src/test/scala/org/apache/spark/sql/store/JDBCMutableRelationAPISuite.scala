@@ -90,7 +90,7 @@ class JDBCMutableRelationAPISuite
     val dataDF = snc.createDataFrame(rdd)
     val schemaDDL = "(OrderId INT NOT NULL PRIMARY KEY,ItemId INT, ITEMREF INT)"
     snc.createTable("TEST_JDBC_TABLE_2", "jdbc", schemaDDL, props,allowExisting = false)
-    dataDF.write.format("jdbc").mode(SaveMode.Append).saveAsTable("TEST_JDBC_TABLE_2")
+    dataDF.write.insertInto("TEST_JDBC_TABLE_2")
     val tableDF = snc.sql("select * from TEST_JDBC_TABLE_2")
     val count = tableDF.count()
     assert(count === data.length)

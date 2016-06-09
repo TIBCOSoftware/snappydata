@@ -656,7 +656,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
     val relation = schemaDDL match {
       case Some(cols) => JdbcExtendedUtils.externalResolvedDataSource(self,
-        cols, source, mode, params).resolveRelation(true)
+        cols, source, mode, params)
 
       case None =>
         // add allowExisting in properties used by some implementations

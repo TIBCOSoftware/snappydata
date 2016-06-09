@@ -87,17 +87,14 @@ abstract class MutableRelationProvider
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(schema, dialect)
 
-    val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    val mode = SaveMode.Ignore
     createRelation(sqlContext, mode, options, schemaString)
   }
 
   override def createRelation(sqlContext: SQLContext,
       options: Map[String, String]) = {
-    val allowExisting = options.get(JdbcExtendedUtils
-        .ALLOW_EXISTING_PROPERTY).exists(_.toBoolean)
-    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+
+    val mode = SaveMode.Ignore
     // will work only if table is already existing
     createRelation(sqlContext, mode, options, "")
   }
@@ -108,8 +105,8 @@ abstract class MutableRelationProvider
       ExternalStoreUtils.defaultStoreURL(sqlContext.sparkContext))
     val dialect = JdbcDialects.get(url)
     val schemaString = JdbcExtendedUtils.schemaString(data.schema, dialect)
-
-    val relation = createRelation(sqlContext, mode, options, schemaString)
+    val saveMode = SaveMode.Ignore
+    val relation = createRelation(sqlContext, saveMode, options, schemaString)
     var success = false
     try {
       relation.insert(data)

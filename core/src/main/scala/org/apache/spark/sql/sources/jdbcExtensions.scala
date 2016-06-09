@@ -218,7 +218,7 @@ object JdbcExtendedUtils extends Logging {
       schemaString: String,
       provider: String,
       mode: SaveMode,
-      options: Map[String, String]): DataSource = {
+      options: Map[String, String]): BaseRelation = {
     val dataSource = DataSource(snappySession, className = provider)
     val clazz: Class[_] = dataSource.providingClass
     val relation = clazz.newInstance() match {
@@ -231,7 +231,7 @@ object JdbcExtendedUtils extends Logging {
       case _ => throw new AnalysisException(
         s"${clazz.getCanonicalName} is not an ExternalSchemaRelationProvider.")
     }
-    dataSource
+    relation
   }
 
   /**

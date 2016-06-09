@@ -89,7 +89,7 @@ allprojects {
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
-    jettyVersion = '8.1.14.v20131031'
+    jettyVersion = '9.2.16.v20160414'
     gemfireXDVersion = '1.5.0-SNAPSHOT'
     pulseVersion     = '1.5.0'
     buildFlags = ''

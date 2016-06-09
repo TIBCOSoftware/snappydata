@@ -6,7 +6,8 @@ import java.util.Map;
 
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
-import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.sql.types.StructField;
@@ -42,7 +43,7 @@ public class JavaAirlineDataJob {
 
     Map<String, String> options = new HashMap<>();
     options.put("path", airlinefilePath);
-    DataFrame airlineDF = snc.createExternalTable(stagingAirline, "parquet", options);
+    Dataset<Row> airlineDF = snc.createExternalTable(stagingAirline, "parquet", options);
 
     StructType updatedSchema = replaceReservedWords(airlineDF.schema());
 
@@ -56,7 +57,7 @@ public class JavaAirlineDataJob {
     System.out.println("Created and imported data in $colTable table.");
 
     // Create a DF from the airline ref data file
-    DataFrame airlinerefDF = snc.read().load(airlinereftablefilePath);
+    Dataset<Row> airlinerefDF = snc.read().load(airlinereftablefilePath);
 
     // Create a table in snappy store
     snc.createTable(rowTable, "row",
