@@ -25,9 +25,8 @@ import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
 import org.apache.spark.sql.catalyst.rules.{Rule}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.datasources.{HadoopFsRelation, LogicalRelation,
-PreInsertCastAndRename, ResolveDataSource, StoreDataSourceStrategy}
-import org.apache.spark.sql.execution.{QueryExecution, SparkPlan, SparkPlanner}
+import org.apache.spark.sql.execution.datasources._
+import org.apache.spark.sql.execution.{datasources, QueryExecution, SparkPlan, SparkPlanner}
 import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog}
 import org.apache.spark.sql.sources.{BaseRelation, InsertableRelation,
 PutIntoTable, RowInsertableRelation, RowPutRelation, SchemaInsertableRelation, StoreStrategy}
@@ -51,15 +50,16 @@ class SnappySessionState(snappySession: SnappySession)
       getConf(SQLConf.CASE_SENSITIVE, false)
   }
 
-  @transient
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
-    override val extendedResolutionRules =
-    //ExtractPythonUDFs ::
-      PreInsertCheckCastAndRename ::
-        new ResolveDataSource(catalog.snappySession) :: Nil
+  override lazy val analyzer: Analyzer = {
+    new Analyzer(catalog, conf) {
+      override val extendedResolutionRules =
+        PreInsertCheckCastAndRename ::
+          new FindDataSourceTable(snappySession) ::
+          DataSourceAnalysis ::
+          (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
-    override val extendedCheckRules = Seq(
-      sparkexecution.datasources.PreWriteCheck(conf, catalog), PrePutCheck)
+      override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog))
+    }
   }
 
 
