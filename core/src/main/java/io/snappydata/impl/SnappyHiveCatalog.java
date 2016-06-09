@@ -42,7 +42,6 @@ import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.hive.ExternalTableType;
 import org.apache.spark.sql.hive.QualifiedTableName;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
-import org.apache.spark.sql.store.SnappyTable;
 import org.apache.spark.sql.store.StoreUtils;
 import org.apache.spark.sql.types.StructType;
 import org.apache.thrift.TException;
