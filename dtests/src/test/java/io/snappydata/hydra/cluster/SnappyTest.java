@@ -88,6 +88,19 @@ public class SnappyTest implements Serializable {
     public static final Random random = new Random(SQLPrms.getRandSeed());
     protected static DMLStmtsFactory dmlFactory = new DMLStmtsFactory();
 
+    public enum SnappyNode {
+        LOCATOR, SERVER, LEAD
+    }
+
+    SnappyNode snappyNode;
+
+    public SnappyTest() {
+    }
+
+    public SnappyTest(SnappyNode snappyNode) {
+        this.snappyNode = snappyNode;
+    }
+
     public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
     }
@@ -171,21 +184,24 @@ public class SnappyTest implements Serializable {
      * Generates the configuration data required to start the snappy locator.
      */
     public static synchronized void HydraTask_generateSnappyLocatorConfig() {
-        snappyTest.generateSnappyLocatorConfig();
+        SnappyTest locator = new SnappyTest(SnappyNode.LOCATOR);
+        locator.generateNodeConfig("locatorLogDir");
     }
 
     /**
      * Generates the configuration data required to start the snappy Server.
      */
     public static synchronized void HydraTask_generateSnappyServerConfig() {
-        snappyTest.generateSnappyServerConfig();
+        SnappyTest server = new SnappyTest(SnappyNode.SERVER);
+        server.generateNodeConfig("serverLogDir");
     }
 
     /**
      * Generates the configuration data required to start the snappy Server.
      */
     public static synchronized void HydraTask_generateSnappyLeadConfig() {
-        snappyTest.generateSnappyLeadConfig();
+        SnappyTest lead = new SnappyTest(SnappyNode.LEAD);
+        lead.generateNodeConfig("leadLogDir");
     }
 
     protected void generateSnappyConfig() {
@@ -236,27 +252,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void generateSnappyLocatorConfig() {
-        if (logDirExists) return;
-        String addr = HostHelper.getHostAddress();
-        int port = PortHelper.getRandomPort();
-        String endpoint = addr + ":" + port;
-        String clientPort = " -client-port=";
-        String dirPath = snappyTest.getLogDir();
-        String locatorLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port;
-        if (locatorLogDir == null) {
-            String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the locators file under conf directory";
-            throw new TestException(s);
-        }
-        SnappyBB.getBB().getSharedMap().put("locatorLogDir" + "_" + snappyTest.getMyTid(), locatorLogDir);
-        SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
-        SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
-        Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
-        SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
-        logDirExists = true;
-    }
-
-    protected void generateSnappyServerConfig() {
+    protected void generateNodeConfig(String logDir) {
         if (logDirExists) return;
         String addr = HostHelper.getHostAddress();
         int port = PortHelper.getRandomPort();
@@ -265,42 +261,36 @@ public class SnappyTest implements Serializable {
         String locators = "-locators=";
         String locatorHost = null;
         String dirPath = snappyTest.getLogDir();
-        String serverLogDir = null;
-        locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-        if (tableDefaultPartitioned)
-            serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Dgemfirexd.table-default-partitioned=true";
-        else
-            serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
-        if (serverLogDir == null) {
-            String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the servers file under conf directory";
-            throw new TestException(s);
+        String nodeLogDir = null;
+        switch (snappyNode) {
+            case LOCATOR:
+                Log.getLogWriter().info("Entered into LOCATOR CASE...");
+                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port;
+                SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
+                SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
+                Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
+                SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
+                break;
+            case SERVER:
+                Log.getLogWriter().info("Entered into SERVER CASE...");
+                locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+                if (tableDefaultPartitioned)
+                    nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Dgemfirexd.table-default-partitioned=true";
+                else
+                    nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
+                SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
+                break;
+            case LEAD:
+                locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+                nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
+                if (leadHost == null) {
+                    leadHost = HostHelper.getLocalHost();
+                }
+                Log.getLogWriter().info("Lead host is: " + leadHost);
+                break;
         }
-        SnappyBB.getBB().getSharedMap().put("serverLogDir" + "_" + snappyTest.getMyTid(), serverLogDir);
-        Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
-        SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
-        logDirExists = true;
-    }
-
-    protected void generateSnappyLeadConfig() {
-        if (logDirExists) return;
-        String addr = HostHelper.getHostAddress();
-        int port = PortHelper.getRandomPort();
-        String endpoint = addr + ":" + port;
-        String clientPort = " -client-port=";
-        String locators = "-locators=";
-        String locatorHost = null;
-        String dirPath = snappyTest.getLogDir();
-        locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-        String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
-        if (leadLogDir == null) {
-            String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the leads file under conf directory";
-            throw new TestException(s);
-        }
-        SnappyBB.getBB().getSharedMap().put("leadLogDir" + "_" + snappyTest.getMyTid(), leadLogDir);
-        if (leadHost == null) {
-            leadHost = HostHelper.getLocalHost();
-        }
-        Log.getLogWriter().info("Lead host is: " + leadHost);
+        SnappyBB.getBB().getSharedMap().put(logDir + "_" + snappyTest.getMyTid(), nodeLogDir);
         logDirExists = true;
     }
 
