@@ -26,12 +26,13 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
 import com.pivotal.gemfirexd.internal.impl.sql.compile.ParserImpl
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData, TestData2}
+import org.apache.calcite.sql.parser.SqlParser
 import org.apache.hadoop.hive.ql.parse.ParseDriver
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.SqlParser
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.SparkSqlParser
 import org.apache.spark.sql.{AnalysisException, SaveMode}
 
 /**
@@ -581,15 +582,15 @@ class ColumnTableTest
       var elapsed: Double = 0.0
       val warmupRuns = 2000
       val timedRuns = 5000
-
+      val parser = new SparkSqlParser(snc.conf)
       println(s"Warmup runs for SparkSQL parser ...")
       for (i <- 0 until 20) {
-        plan1 = SqlParser.parse(sqlText)
+        plan1 = parser.parsePlan(sqlText)
       }
       println(s"Done with warmup runs")
       start = System.nanoTime()
       for (i <- 0 until 30) {
-        plan1 = SqlParser.parse(sqlText)
+        plan1 = parser.parsePlan(sqlText)
       }
       end = System.nanoTime()
       elapsed = (end - start) / 1000000.0

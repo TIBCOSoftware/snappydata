@@ -58,7 +58,7 @@ class SnappySession(@transient private val sc: SparkContext,
 
   GemFireXDDialect.init()
   SnappyContext.initGlobalSnappyContext(sparkContext)
-  snappyContextFunctions.registerAQPErrorFunctions(this)
+
 
   /* ----------------------- *
    |  Session-related state  |
@@ -85,9 +85,11 @@ class SnappySession(@transient private val sc: SparkContext,
     new SnappySessionState(this)
   }
 
-  private[spark] lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
+  lazy val sessionCatalog = sessionState.catalog.asInstanceOf[SnappyStoreHiveCatalog]
 
   private[spark] val snappyContextFunctions = sessionState.asInstanceOf[SnappyContextFunctions]
+
+  snappyContextFunctions.registerAQPErrorFunctions(this)
 
   /**
    * A wrapped version of this session in the form of a [[SQLContext]], for backward compatibility.

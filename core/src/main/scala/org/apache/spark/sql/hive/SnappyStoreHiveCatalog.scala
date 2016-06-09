@@ -48,7 +48,7 @@ import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, JDBCAppendab
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog._
 import org.apache.spark.sql.hive.client._
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.internal.{SnappySessionState, SQLConf}
 import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
@@ -73,9 +73,9 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   val sparkConf = snappySession.sparkContext.getConf
 
-  private val sessionState = snappySession.sessionState.asInstanceOf[HiveSessionState]
+  private val sessionState = snappySession.sessionState.asInstanceOf[SnappySessionState]
 
-  override def getCurrentDatabase: String = sessionState.catalog.getCurrentDatabase
+  //override def getCurrentDatabase: String = sessionState.catalog.getCurrentDatabase
 
   //Overriding SessionCatalog values and methods, this will ensure any catalyst layer access to
   // catalog will hit our catalog rather than the SessionCatalog. Some of the methods might look

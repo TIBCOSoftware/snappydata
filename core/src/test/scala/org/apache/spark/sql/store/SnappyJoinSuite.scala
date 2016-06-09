@@ -22,8 +22,9 @@ import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.joins.LocalJoin
-import org.apache.spark.sql.execution.{Exchange, PartitionedPhysicalRDD, PhysicalRDD, QueryExecution}
+import org.apache.spark.sql.execution.{RowDataSourceScanExec, PartitionedPhysicalRDD, QueryExecution}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
@@ -74,7 +75,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
     val countDf = snc.sql("select * from PR_TABLE P JOIN RR_TABLE R " +
         "ON P.ORDERREF = R.ORDERREF")
 
-    val qe = new QueryExecution(snc, countDf.logicalPlan)
+    val qe = new QueryExecution(snc.snappySession, countDf.logicalPlan)
     val plan = qe.executedPlan
     val lj = plan collectFirst {
       case lc: LocalJoin => lc
@@ -119,7 +120,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
     val countDf = snc.sql(
       "select * from RR_TABLE1 P JOIN RR_TABLE2 R ON P.ORDERREF = R.ORDERREF")
-    val qe = new QueryExecution(snc, countDf.logicalPlan)
+    val qe = new QueryExecution(snc.snappySession, countDf.logicalPlan)
 
     val lj = qe.executedPlan collectFirst {
       case lc: LocalJoin => lc
@@ -148,7 +149,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
   private def checkForShuffle(plan: LogicalPlan, snc: SnappyContext,
       shuffleExpected: Boolean): Unit = {
 
-    val qe = new QueryExecution(snc, plan)
+    val qe = new QueryExecution(snc.snappySession, plan)
     //println(qe.executedPlan)
     val lj = qe.executedPlan collect {
       case ex: Exchange => ex
@@ -160,8 +161,8 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
         // this means no Exhange should have child as PartitionedPhysicalRDD
         case p: PartitionedPhysicalRDD => sys.error(
           s"Did not expect exchange with partitioned scan with same partitions")
-        case p: PhysicalRDD => sys.error(
-          s"Did not expect PhyscialRDD with PartitionedDataSourceScan")
+        case p: RowDataSourceScanExec => sys.error(
+          s"Did not expect RowDataSourceScanExec with PartitionedDataSourceScan")
         case _ => // do nothing, may be some other Exchange and not with scan
       })
     }

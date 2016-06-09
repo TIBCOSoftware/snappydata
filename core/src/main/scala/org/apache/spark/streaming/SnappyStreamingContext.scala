@@ -56,6 +56,8 @@ class SnappyStreamingContext protected[spark](
 
   val snappySession = new SnappySession(sc_, None)
 
+  val snappyContext = snappySession.snappyContext
+
   SnappyStreamingContext.setInstanceContext(self)
 
   /**

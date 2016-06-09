@@ -80,6 +80,14 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   override def newSession(): SnappyContext = snappySession.newSession().snappyContext
 
+  //Backward compatibility with tests. We should remove it
+  val catalog = snappySession.sessionCatalog
+
+  //Backward compatibility with tests. We should remove it
+  def getSQLDialect(): ParserDialect = {
+    snappySession.sessionState.getSQLDialect(snappySession)
+  }
+
   def clear(): Unit = {
     snappySession.clear()
   }
