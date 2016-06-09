@@ -85,7 +85,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   //Backward compatibility with tests. We should remove it
   def getSQLDialect(): ParserDialect = {
-    snappySession.sessionState.getSQLDialect(snappySession)
+    snappySession.snappyContextFunctions.getSQLDialect(snappySession)
   }
 
   def clear(): Unit = {
