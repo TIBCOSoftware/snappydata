@@ -48,7 +48,6 @@ class RowTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    snc.sql("Create Table my_schema.MY_TABLE (a INT, b INT, c INT)")
 
 
     dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")

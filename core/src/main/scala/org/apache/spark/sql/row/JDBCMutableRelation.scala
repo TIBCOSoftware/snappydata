@@ -91,12 +91,23 @@ class JDBCMutableRelation(
         return tableSchema
       }
 
-      if (mode == SaveMode.ErrorIfExists && tableExists) {
+       // We should not throw table already exists from here. This is expected as new relation
+      // objects are created on each invocation of DDL. We should silently ignore it. Or else we
+      // have to take care of all SaveMode in top level APIs, which will be cumbersome as we take
+      // actions based on dialects e.g. for SaveMode.Overwrite we truncate rather than dropping
+      // the table. ErrorIfExist should be checked from top level APIs like session.createTable,
+      // which we already do.
+
+
+       /*if (mode == SaveMode.ErrorIfExists && tableExists) {
         sys.error(s"Table $table already exists.")
-      }
+      }*/
+
+
 
       if (mode == SaveMode.Overwrite && tableExists) {
         // truncate the table if possible
+        println("inside check")
         val truncate = dialect match {
           case d: JdbcExtendedDialect => d.truncateTable(table)
           case _ => s"TRUNCATE TABLE $table"

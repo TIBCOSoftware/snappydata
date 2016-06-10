@@ -159,13 +159,18 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
 
   override def setCurrentDatabase(db: String): Unit = {
-    val dbName = formatDatabaseName(db)
+    val dbName = processTableIdentifier(db)
     requireDbExists(dbName)
     synchronized {
       currentSchema = dbName
       client.setCurrentDatabase(db)
     }
 
+  }
+
+  override def databaseExists(db: String): Boolean = {
+    val dbName = processTableIdentifier(db)
+    client.getDatabaseOption(dbName).isDefined
   }
 
 
