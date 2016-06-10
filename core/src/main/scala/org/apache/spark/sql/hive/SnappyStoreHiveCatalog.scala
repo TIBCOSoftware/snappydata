@@ -29,8 +29,6 @@ import scala.util.control.NonFatal
 
 import com.google.common.cache.{CacheBuilder, CacheLoader, LoadingCache}
 import com.google.common.util.concurrent.UncheckedExecutionException
-import io.snappydata.Constant.DEFAULT_SCHEMA
-import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.api.Table
@@ -134,7 +132,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   private def newClient(): ClientInterface = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
-
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
     val metadataConf = new HiveConf()
@@ -372,7 +369,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   def newQualifiedTableName(tableIdent: TableIdentifier): QualifiedTableName = {
     new QualifiedTableName(
       Some(processTableIdentifier(tableIdent.database.
-          getOrElse(ServiceUtils.getDefaultDatabaseSchema())))
+          getOrElse(currentSchema)))
       , processTableIdentifier(tableIdent.table))
   }
 
@@ -383,7 +380,7 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       new QualifiedTableName(Some(tableName.substring(0, dotIndex)),
         tableName.substring(dotIndex + 1))
     } else {
-      new QualifiedTableName(Some(ServiceUtils.getDefaultDatabaseSchema()), tableName)
+      new QualifiedTableName(Some(currentSchema), tableName)
     }
   }
 
@@ -412,6 +409,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       context.truncateTable(tableIdent, ignoreIfUnsupported = true)
       tempTables -= tableIdent
     }
+  }
+
+  private var currentSchema = Constant.DEFAULT_SCHEMA
+
+  final def setSchema (schema :String ):Unit = {
+    this.currentSchema = schema
   }
 
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {

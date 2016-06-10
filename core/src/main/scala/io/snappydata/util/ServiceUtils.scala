@@ -105,8 +105,4 @@ object ServiceUtils {
     StoreCallbacksImpl.stores.clear()
   }
 
-  // Later this method can be replaced to return the default  database schema from connection
-  def getDefaultDatabaseSchema(): String = {
-    Constant.DEFAULT_SCHEMA
-  }
 }

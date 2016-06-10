@@ -85,24 +85,24 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
-  public boolean isColumnTable(String tableName, boolean skipLocks) {
+  public boolean isColumnTable(String schema , String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName ,  ServiceUtils.getDefaultDatabaseSchema(), skipLocks);
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName ,  schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
 
-  public boolean isRowTable(String tableName, boolean skipLocks) {
+  public boolean isRowTable(String schema , String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName,  ServiceUtils.getDefaultDatabaseSchema(), skipLocks);
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName,  schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
 
-  public String getColumnTableSchemaAsJson(String tableName,
+  public String getColumnTableSchemaAsJson(String schema, String tableName,
       boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA,tableName, ServiceUtils.getDefaultDatabaseSchema(), skipLocks);
+    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA, tableName, schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (String)handleFutureResult(f);
   }

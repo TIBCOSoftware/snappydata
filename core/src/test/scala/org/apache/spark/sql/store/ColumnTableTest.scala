@@ -117,6 +117,11 @@ class ColumnTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
+
+    // check that table is created with default schema APP
+    val result2 = snc.sql("SELECT * FROM " + s"APP.$tableName")
+    assert (result2.collect().length == 5)
+
     println("Successful")
   }
 
@@ -203,6 +208,11 @@ class ColumnTableTest
     val result = snc.sql("SELECT * FROM " + tableName)
     val r = result.collect
     assert(r.length == 5)
+
+    // check that default schema is added to the table
+    val result2 = snc.sql(s"SELECT * FROM APP.$tableName")
+    assert(result2.collect().length == 5)
+
     println("Successful")
   }
 
@@ -265,7 +275,9 @@ class ColumnTableTest
     assert(r.length == 0)
 
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
-    snc.sql("TRUNCATE TABLE " + tableName)
+
+    // truncating the table with default schema
+    snc.sql("TRUNCATE TABLE " + s"APP.$tableName")
 
     result = snc.sql("SELECT * FROM " + tableName)
     r = result.collect
@@ -281,7 +293,7 @@ class ColumnTableTest
     snc.createTable(tableName, "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
 
-    snc.dropTable(tableName, true)
+    snc.dropTable(s"APP.$tableName", true)
 
     intercept[AnalysisException] {
       snc.dropTable(tableName, false)

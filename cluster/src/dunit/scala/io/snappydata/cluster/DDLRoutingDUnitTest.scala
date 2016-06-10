@@ -40,7 +40,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " column ")
 
     createTableXD(conn, tableName, " column ")
-    tableMetadataAssertColumnTable(tableName)
+    tableMetadataAssertColumnTable("TEST" , "ColumnTableQR")
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " column ")
 
@@ -72,7 +72,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " row ")
 
     createTableXD(conn, tableName, " row ")
-    tableMetadataAssertRowTable(tableName)
+    tableMetadataAssertRowTable("APP" , tableName)
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " row ")
 
@@ -101,7 +101,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val conn = getANetConnection(netPort1)
 
     createTableByDefaultXD(conn, tableName)
-    tableMetadataAssertRowTable(tableName)
+    tableMetadataAssertRowTable("TEST" , "DefaultRowTableQR")
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)
@@ -153,9 +153,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
   }
 
-  def failCreateTableXD(conn : Connection, tableName : String, doFail : Boolean, usingStr : String): Unit = {
-    try
-    {
+  def failCreateTableXD(conn: Connection, tableName: String, doFail: Boolean, usingStr: String): Unit = {
+    try {
       val s = conn.createStatement()
       val options = ""
       s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + (if (doFail) "fail" orElse "") + " USING " + usingStr
@@ -164,26 +163,26 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     catch {
       case e: Exception => println("create: Caught exception " + e.getMessage +
-        " for ColumnTable = " + tableName)
+          " for ColumnTable = " + tableName)
       //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
     }
     //println("Created ColumnTable = " + tableName)
   }
 
-  def tableMetadataAssertColumnTable(tableName: String): Unit = {
+  def tableMetadataAssertColumnTable(schemaName: String, tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable(tableName, false))
+        assert(catalog.isColumnTable(schemaName, tableName, false))
       }
     })
   }
 
-  def tableMetadataAssertRowTable(tableName: String): Unit = {
+  def tableMetadataAssertRowTable(schemaName: String, tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(!catalog.isColumnTable(tableName, false))
+        assert(!catalog.isColumnTable(schemaName, tableName, false))
       }
     })
   }

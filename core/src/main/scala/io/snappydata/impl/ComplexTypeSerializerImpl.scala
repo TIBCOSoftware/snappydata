@@ -41,12 +41,23 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
     connection: Connection) extends ComplexTypeSerializer {
 
   private[this] val schema = {
-    val stmt = connection.prepareCall("CALL SYS.GET_COLUMN_TABLE_SCHEMA(?, ?)")
+    val stmt = connection.prepareCall("CALL SYS.GET_COLUMN_TABLE_SCHEMA(?, ?, ?)")
     try {
-      stmt.setString(1, table)
-      stmt.registerOutParameter(2, Types.CLOB)
+      val (schemaName, tableName) = {
+        if (table.contains(".")) {
+          val indexOfDot = table.indexOf(".")
+          (table.substring(0, indexOfDot), table.substring(indexOfDot + 1))
+        } else {
+          (connection.getSchema, table)
+        }
+      }
+      println (" Namrata - setting table name to " + tableName + ":"  + schemaName)
+
+      stmt.setString (1,schemaName)
+      stmt.setString(2, tableName)
+      stmt.registerOutParameter(3, Types.CLOB)
       stmt.execute()
-      DataType.fromJson(stmt.getString(2)).asInstanceOf[StructType]
+      DataType.fromJson(stmt.getString(3)).asInstanceOf[StructType]
     } finally {
       stmt.close()
     }

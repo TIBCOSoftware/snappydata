@@ -96,7 +96,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable("TEST.ColumnTableQR", false))
+        assert(catalog.isColumnTable("TEST" , "ColumnTableQR", false))
       }
     })
 
@@ -164,6 +164,100 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     setDMLMaxChunkSize(default_chunk_size)
 
     conn.close()
+  }
+
+  def testQueryRoutingWithSchema(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    val conn1 = getANetConnection(netPort1)
+    val conn2 = getANetConnection(netPort1)
+    val conn3 = getANetConnection(netPort1)
+    val columnTable = "columnTable"
+    val rowTable = "rowTable"
+    conn1.createStatement().executeUpdate("create schema test1")
+    conn1.createStatement().executeUpdate("set schema test1")
+
+    conn2.createStatement().executeUpdate("create schema test2")
+    conn2.createStatement().executeUpdate("set schema test2")
+
+    // tables are created under schema test1
+    conn1.createStatement().executeUpdate(s"create table $columnTable ( x int) using column")
+    conn1.createStatement().executeUpdate(s"create table $rowTable ( x int) using row")
+
+    // tables are created under schema test2
+    conn2.createStatement().executeUpdate(s"create table $columnTable ( x int) using column")
+    conn2.createStatement().executeUpdate(s"create table $rowTable ( x int) using row")
+
+    // tables are created under schema APP
+    conn3.createStatement().executeUpdate(s"create table $columnTable ( x int) using column")
+    conn3.createStatement().executeUpdate(s"create table $rowTable ( x int) using row")
+
+    // insert data under schema test1
+    conn1.createStatement().executeUpdate(s" insert into $columnTable values (1)")
+    conn1.createStatement().executeUpdate(s" insert into $rowTable values (2)")
+
+    // insert data under schema test2
+    conn2.createStatement().executeUpdate(s" insert into $columnTable values (1)")
+    conn2.createStatement().executeUpdate(s" insert into $rowTable values (2)")
+
+    // insert data under schema APP
+    conn3.createStatement().executeUpdate(s" insert into $columnTable values (1)")
+    conn3.createStatement().executeUpdate(s" insert into $rowTable values (2)")
+
+    // verify data under each column table
+    var rs = conn1.createStatement().executeQuery(s"select count(*) from APP.$columnTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 1)
+    rs = conn1.createStatement().executeQuery(s"select count(*) from TEST1.$columnTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 1)
+    rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$columnTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 1)
+
+    // verify data under each row table
+    rs = conn1.createStatement().executeQuery(s"select count(*) from APP.$rowTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 1)
+    rs = conn1.createStatement().executeQuery(s"select count(*) from TEST1.$rowTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 1)
+    rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 1)
+
+    //truncate tables
+    conn1.createStatement().executeUpdate(s" truncate table $columnTable")
+    conn1.createStatement().executeUpdate(s" truncate table $rowTable")
+
+    conn2.createStatement().executeUpdate(s" truncate table $columnTable")
+    conn2.createStatement().executeUpdate(s" truncate table $rowTable")
+
+    conn3.createStatement().executeUpdate(s" truncate table $columnTable")
+    conn3.createStatement().executeUpdate(s" truncate table $rowTable")
+
+    //verify that all tables are empty
+    rs = conn1.createStatement().executeQuery(s"select count(*) from APP.$rowTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 0)
+    rs = conn1.createStatement().executeQuery(s"select count(*) from TEST1.$rowTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 0)
+    rs = conn1.createStatement().executeQuery(s"select count(*) from TEST2.$rowTable")
+    assert (rs.next())
+    assert (rs.getInt(1) == 0)
+
+
+    //drop all tables
+    conn1.createStatement().executeUpdate(s" drop table $columnTable")
+    conn1.createStatement().executeUpdate(s" drop table $rowTable")
+
+    conn2.createStatement().executeUpdate(s" drop table $columnTable")
+    conn2.createStatement().executeUpdate(s" drop table $rowTable")
+
+    conn3.createStatement().executeUpdate(s" drop table $columnTable")
+    conn3.createStatement().executeUpdate(s" drop table $rowTable")
   }
 
   def testSNAP193_607_8_9(): Unit = {
