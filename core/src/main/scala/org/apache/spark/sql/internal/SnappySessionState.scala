@@ -19,7 +19,7 @@ package org.apache.spark.sql.internal
 
 
 import org.apache.spark.sql.aqp.SnappyContextFunctions
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases}
+import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedRelation, Analyzer, EliminateSubqueryAliases}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Cast}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project}
@@ -55,12 +55,32 @@ class SnappySessionState(snappySession: SnappySession)
       override val extendedResolutionRules =
         PreInsertCheckCastAndRename ::
           new FindDataSourceTable(snappySession) ::
-          DataSourceAnalysis ::
+          DataSourceAnalysis :: ResolveRelationsExtended ::
           (if (conf.runSQLonFile) new ResolveDataSource(snappySession) :: Nil else Nil)
 
-      override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog))
+      override val extendedCheckRules = Seq(datasources.PreWriteCheck(conf, catalog), PrePutCheck)
     }
   }
+
+  /**
+   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
+   */
+  object ResolveRelationsExtended extends Rule[LogicalPlan] {
+    def getTable(u: UnresolvedRelation): LogicalPlan = {
+      try {
+        catalog.lookupRelation(u.tableIdentifier, u.alias)
+      } catch {
+        case _: NoSuchTableException =>
+          u.failAnalysis(s"Table not found: ${u.tableName}")
+      }
+    }
+
+    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+      case i @ PutIntoTable(u: UnresolvedRelation, _) =>
+        i.copy(table = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
+
 
 
   /**
@@ -214,3 +234,4 @@ private[sql] case object PrePutCheck extends (LogicalPlan => Unit) {
     }
   }
 }
+

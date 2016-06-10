@@ -18,10 +18,11 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{UnsafeProjection, Attribute, Expression}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, SinglePartition}
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.sources.{BaseRelation, PrunedFilteredScan}
+import org.apache.spark.sql.types.StructType
 
 /** Physical plan node for scanning data from an DataSource scan RDD.
   * If user knows that the data is partitioned or replicated across
@@ -35,7 +36,14 @@ private[sql] case class PartitionedPhysicalRDD(
     partitionColumns: Seq[Expression],
     extraInformation: String) extends LeafExecNode {
 
-  protected override def doExecute(): RDD[InternalRow] = rdd
+  override lazy val schema: StructType = StructType.fromAttributes(output)
+
+  protected override def doExecute(): RDD[InternalRow] = {
+    rdd.mapPartitionsInternal { iter =>
+      val proj = UnsafeProjection.create(schema)
+      iter.map(proj)
+    }
+  }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {

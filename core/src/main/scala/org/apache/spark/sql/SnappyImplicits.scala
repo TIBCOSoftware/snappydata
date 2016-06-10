@@ -126,8 +126,10 @@ object snappy extends Serializable {
   private[this] val dfField = classOf[DataFrameWriter].getDeclaredFields.find {
     f => f.getName == "df" || f.getName.endsWith("$df")
   }.getOrElse(sys.error("Failed to obtain DataFrame from DataFrameWriter"))
-  private[this] val parColsMethod = classOf[DataFrameWriter].getDeclaredMethod(
-    "normalizedParCols")
+
+  private[this] val parColsMethod = classOf[DataFrameWriter].getDeclaredMethods().find {f => f
+      .getName.contains("$normalizedParCols")}.getOrElse(sys.error("Failed to obtain method  " +
+      "normalizedParCols from DataFrameWriter"))
 
   dfField.setAccessible(true)
   parColsMethod.setAccessible(true)

@@ -178,7 +178,7 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
   private val sessionState = snappySession.sessionState.asInstanceOf[SnappySessionState]
 
   override def getCurrentDatabase: String = synchronized {
-    currentSchema
+    processTableIdentifier(currentSchema)
   }
 
   // As long as threads using same IsolatedClientLoader, they should

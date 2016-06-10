@@ -230,7 +230,7 @@ final class DefaultSource extends MutableRelationProvider {
       blockMap,
       sqlContext)
     try {
-      relation.tableSchema = relation.createTable(mode)
+      relation.tableSchema = relation.createTable(SaveMode.Ignore)
       success = true
       relation
     } finally {

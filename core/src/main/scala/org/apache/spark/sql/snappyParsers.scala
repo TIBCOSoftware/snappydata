@@ -38,7 +38,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, CreateTableUsing, CreateTableUsingAsSelect}
-import org.apache.spark.sql.hive.QualifiedTableName
+import org.apache.spark.sql.hive.{SnappyStoreHiveCatalog, QualifiedTableName}
 import org.apache.spark.sql.sources.{JdbcExtendedUtils, ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
@@ -801,8 +801,16 @@ private[sql] class SnappyDDLParser(session: SnappySession,
   // This is the same as tableIdentifier in SnappyParser.
   protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
     (ident <~ ".").? ~ ident ^^ {
-      case maybeSchemaName ~ tableName =>
-        new QualifiedTableName(maybeSchemaName, tableName)
+      case maybeSchemaName ~ tableName => {
+        val schemaName = maybeSchemaName match {
+          case Some(schema) => schema
+          case _ => session.sessionCatalog.getCurrentDatabase
+        }
+        new QualifiedTableName(Some(SnappyStoreHiveCatalog.processTableIdentifier(schemaName,
+          session.sessionState.conf)),
+          tableName)
+      }
+
     }
 
   protected override lazy val primitiveType: Parser[DataType] =
