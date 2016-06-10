@@ -71,6 +71,11 @@ public class SnappyPrms extends BasePrms {
     public static Long useRowStore;
 
     /**
+     * (boolean) - whether split mode cluster needs to be started.
+     */
+    public static Long useSplitMode;
+
+    /**
      * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets the gemfirexd.table-default-partitioned to false.
      */
     public static Long tableDefaultPartitioned;
