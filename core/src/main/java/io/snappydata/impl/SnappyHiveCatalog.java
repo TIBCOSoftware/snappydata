@@ -85,16 +85,16 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
-  public boolean isColumnTable(String schema , String tableName, boolean skipLocks) {
+  public boolean isColumnTable(String schema, String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName ,  schema, skipLocks);
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
 
-  public boolean isRowTable(String schema , String tableName, boolean skipLocks) {
+  public boolean isRowTable(String schema, String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName,  schema, skipLocks);
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName, schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
@@ -155,17 +155,9 @@ public class SnappyHiveCatalog implements ExternalCatalog {
 
     public void resetValues(int queryType, String tableName,
         String dbName, boolean skipLocks) {
-      int indexOfDot = (tableName != null)?tableName.indexOf("."):0;
       this.qType = queryType;
-      // fully qualified name is used.
-      if (indexOfDot > 0 ) {
-        this.tableName = tableName.substring(indexOfDot + 1);
-        this.dbName = tableName.substring(0, indexOfDot);
-      }
-      else {
-        this.tableName = tableName;
-        this.dbName = dbName;
-      }
+      this.tableName = tableName;
+      this.dbName = dbName;
       this.skipLock = skipLocks;
     }
 

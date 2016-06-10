@@ -48,7 +48,7 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv}
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
 class SparkSQLExecuteImpl(val sql: String,
-    val schema:String ,
+    val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
 
@@ -57,7 +57,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
-  
+
   snc.setSchema(schema)
 
   private[this] val df: DataFrame = snc.sql(sql)

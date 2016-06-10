@@ -40,7 +40,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " column ")
 
     createTableXD(conn, tableName, " column ")
-    tableMetadataAssertColumnTable("TEST" , "ColumnTableQR")
+    tableMetadataAssertColumnTable("TEST", "ColumnTableQR")
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " column ")
 
@@ -72,7 +72,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " row ")
 
     createTableXD(conn, tableName, " row ")
-    tableMetadataAssertRowTable("APP" , tableName)
+    tableMetadataAssertRowTable("APP", tableName)
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " row ")
 
@@ -101,7 +101,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     val conn = getANetConnection(netPort1)
 
     createTableByDefaultXD(conn, tableName)
-    tableMetadataAssertRowTable("TEST" , "DefaultRowTableQR")
+    tableMetadataAssertRowTable("TEST", "DefaultRowTableQR")
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)

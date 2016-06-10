@@ -96,7 +96,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     vm1.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable("TEST" , "ColumnTableQR", false))
+        assert(catalog.isColumnTable("TEST", "ColumnTableQR", false))
       }
     })
 

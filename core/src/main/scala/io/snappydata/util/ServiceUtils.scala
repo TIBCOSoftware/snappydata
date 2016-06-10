@@ -104,5 +104,4 @@ object ServiceUtils {
   def clearStaticArtifacts(): Unit = {
     StoreCallbacksImpl.stores.clear()
   }
-
 }

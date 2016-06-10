@@ -51,9 +51,7 @@ final class ComplexTypeSerializerImpl(table: String, column: String,
           (connection.getSchema, table)
         }
       }
-      println (" Namrata - setting table name to " + tableName + ":"  + schemaName)
-
-      stmt.setString (1,schemaName)
+      stmt.setString(1, schemaName)
       stmt.setString(2, tableName)
       stmt.registerOutParameter(3, Types.CLOB)
       stmt.execute()
