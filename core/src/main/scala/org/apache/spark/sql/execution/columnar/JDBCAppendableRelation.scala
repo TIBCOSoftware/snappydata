@@ -203,9 +203,9 @@ case class JDBCAppendableRelation(
         return
       }
 
-      if (mode == SaveMode.ErrorIfExists && tableExists) {
+/*      if (mode == SaveMode.ErrorIfExists && tableExists) {
         sys.error(s"Table $table already exists.")
-      }
+      }*/
     } finally {
       conn.close()
     }

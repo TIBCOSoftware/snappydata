@@ -91,7 +91,7 @@ class JDBCMutableRelation(
         return tableSchema
       }
 
-       // We should not throw table already exists from here. This is expected as new relation
+      // We should not throw table already exists from here. This is expected as new relation
       // objects are created on each invocation of DDL. We should silently ignore it. Or else we
       // have to take care of all SaveMode in top level APIs, which will be cumbersome as we take
       // actions based on dialects e.g. for SaveMode.Overwrite we truncate rather than dropping

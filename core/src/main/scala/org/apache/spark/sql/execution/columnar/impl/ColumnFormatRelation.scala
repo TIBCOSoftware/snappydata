@@ -306,7 +306,8 @@ class BaseColumnFormatRelation(
       }
 
       if (mode == SaveMode.ErrorIfExists && tableExists) {
-        sys.error(s"Table $table already exists.")
+        //sys.error(s"Table $table already exists.")
+        return
       }
     } finally {
       conn.close()
