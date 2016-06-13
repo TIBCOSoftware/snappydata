@@ -76,7 +76,7 @@ class ColumnTableTest
     snc.sql("Create Table MY_TABLE (a INT, b INT, c INT) using column options()")
 
 
-    dataDF.write.format("column").mode(SaveMode.Append).saveAsTable("MY_TABLE")
+    dataDF.write.insertInto("MY_TABLE")
     var result = snc.sql("SELECT * FROM MY_TABLE" )
     var r = result.collect
     println(r.length)
@@ -467,7 +467,7 @@ class ColumnTableTest
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMN_TEST_TABLE9")
+    dataDF.write.insertInto("COLUMN_TEST_TABLE9")
     val count = snc.sql("select * from COLUMN_TEST_TABLE9").count()
     assert(count === 1000)
   }
