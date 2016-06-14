@@ -4,12 +4,12 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
-import com.pivotal.gemfirexd.internal.client.am.Decimal;
 import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
@@ -301,10 +301,18 @@ public class SnappyTest implements Serializable {
                 Log.getLogWriter().info("Lead host is: " + leadHost);
                 break;
             case WORKER:
-                Log.getLogWriter().info("Entered into WORKER case....");
                 nodeLogDir = HostHelper.getLocalHost();
-                Log.getLogWriter().info("WorkerLogDir is : " + nodeLogDir);
                 String sparkLogDir = "SPARK_LOG_DIR=" + hd.getUserDir();
+                if (SnappyBB.getBB().getSharedMap().get("masterHost") == null) {
+                    try {
+                        String masterHost = HostHelper.getIPAddress().getLocalHost().getHostName();
+                        SnappyBB.getBB().getSharedMap().put("masterHost", masterHost);
+                        Log.getLogWriter().info("Master host is: " + SnappyBB.getBB().getSharedMap().get("masterHost"));
+                    } catch (UnknownHostException e) {
+                        String s = "Spark Master host not found";
+                        throw new HydraRuntimeException(s, e);
+                    }
+                }
                 SnappyBB.getBB().getSharedMap().put("sparkLogDir" + "_" + snappyTest.getMyTid(), sparkLogDir);
                 break;
         }
@@ -1139,7 +1147,7 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Executes snappy Jobs in Task.
+     * Executes Snappy Jobs in Task.
      */
     public static void HydraTask_executeSnappyJobInTask() {
         int currentThread = snappyTest.getMyTid();
@@ -1151,6 +1159,16 @@ public class SnappyTest implements Serializable {
         } catch (InterruptedException e) {
             throw new TestException("Exception occurred while waiting for the snappy job process execution." + "\nError Message:" + e.getMessage());
         }
+    }
+
+    /**
+     * Executes Spark Jobs in Task.
+     */
+    public static void HydraTask_executeSparkJobInTask() {
+        int currentThread = snappyTest.getMyTid();
+        String logFile = "sparkJobTaskResult_thread_" + currentThread + ".log";
+//        SnappyBB.getBB().getSharedMap().put("sparkJoblogFilesForTask" + currentThread, logFile);
+        snappyTest.executeSparkJob(SnappyPrms.getSparkJobClassNamesForTask(), logFile);
     }
 
     /**
@@ -1249,6 +1267,29 @@ public class SnappyTest implements Serializable {
             }
 //            sleep(waitTimeBeforeJobStatus);
             snappyTest.getSnappyJobsStatus(snappyJobScript, logFile);
+        } catch (IOException e) {
+            throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
+        }
+    }
+
+    protected void executeSparkJob(Vector jobClassNames, String logFileName) {
+        String snappyJobScript = getScriptLocation("spark-submit");
+        ProcessBuilder pb = null;
+        File log = null, logFile = null;
+        userAppJar = TestConfig.tab().stringAt(SnappyPrms.userAppJar);
+        snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
+        try {
+            for (int i = 0; i < jobClassNames.size(); i++) {
+                String userJob = (String) jobClassNames.elementAt(i);
+                String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
+                String locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":7077 " + "--conf snappydata.store.locators=" + locatorHost + ":" + 10334 + " " + snappyTest.getUserAppJarLocation(userAppJar);
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + logFileName;
+                logFile = new File(dest);
+                pb = new ProcessBuilder("/bin/bash", "-c", command);
+                snappyTest.executeProcess(pb, logFile);
+            }
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }

@@ -11,13 +11,13 @@ import hydra.BasePrms;
 public class SnappyPrms extends BasePrms {
     /**
      * Parameter used to get the user specified script names for INITTASK.
-     * (VectosetValuesr of Strings) A list of values for script Names to execute.
+     * (VectosetValues of Strings) A list of values for script Names to execute.
      */
     public static Long sqlScriptNamesForInitTask;
 
     /**
      * Parameter used to get the user specified param List for INITTASK.
-     * (VectosetValuesr of Strings) A list of values for parameters to be replaced in the sql scripts.
+     * (VectosetValues of Strings) A list of values for parameters to be replaced in the sql scripts.
      */
     public static Long sqlScriptParamsForInitTask;
 
@@ -29,19 +29,25 @@ public class SnappyPrms extends BasePrms {
 
     /**
      * Parameter used to get the user specified snappy job class names for CLOSETASK.
-     * (VectosetValuesr of Strings) A list of values for snappy-job Names to execute.
+     * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
     public static Long jobClassNamesForCloseTask;
 
     /**
      * Parameter used to get the user specified snappy job class names for TASK.
-     * (VectosetValuesr of Strings) A list of values for snappy-job Names to execute.
+     * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
     public static Long jobClassNamesForTask;
 
     /**
+     * Parameter used to get the user specified spark job class names for TASK.
+     * (VectosetValues of Strings) A list of values for spark-job Names to execute.
+     */
+    public static Long sparkJobClassNamesForTask;
+
+    /**
      * Parameter used to get the user specified snappy streaming job class names for TASK.
-     * (VectosetValuesr of Strings) A list of values for snappy-job Names to execute.
+     * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
     public static Long streamingJobClassNamesForTask;
 
@@ -105,7 +111,6 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long waitTimeBeforeNextCycleVM;
 
-
     public static Vector getSQLScriptNamesForInitTask() {
         Long key = sqlScriptNamesForInitTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -123,6 +128,11 @@ public class SnappyPrms extends BasePrms {
 
     public static Vector getSnappyJobClassNamesForTask() {
         Long key = jobClassNamesForTask;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    }
+
+    public static Vector getSparkJobClassNamesForTask() {
+        Long key = sparkJobClassNamesForTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
