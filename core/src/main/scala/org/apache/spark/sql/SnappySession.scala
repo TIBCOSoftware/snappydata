@@ -1154,7 +1154,7 @@ object SnappySession {
     override def getOrCreate(): SnappySession = synchronized {
       // TODO: hemant - Is this needed for Snappy. Snappy should always use newSession.
       // Get the session from current thread's active session.
-      var session = SparkSession.getActiveSession.get
+      var session = SparkSession.getActiveSession.getOrElse(null)
       if ((session ne null) && !session.sparkContext.isStopped) {
         options.foreach { case (k, v) => session.conf.set(k, v) }
         if (options.nonEmpty) {
@@ -1166,7 +1166,7 @@ object SnappySession {
       // Global synchronization so we will only set the default session once.
       SparkSession.synchronized {
         // If the current thread does not have an active session, get it from the global session.
-        session = SparkSession.getDefaultSession.get
+        session = SparkSession.getDefaultSession.getOrElse(null)
         if ((session ne null) && !session.sparkContext.isStopped) {
           options.foreach { case (k, v) => session.conf.set(k, v) }
           if (options.nonEmpty) {
