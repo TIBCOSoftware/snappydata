@@ -18,6 +18,8 @@ package org.apache.spark.sql
 
 import java.sql.SQLException
 
+import org.apache.spark.scheduler.{SparkListenerApplicationEnd, SparkListener}
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
@@ -26,7 +28,7 @@ import scala.reflect.runtime.{universe => u}
 
 import io.snappydata.Constant
 
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.annotation.{Experimental, DeveloperApi}
 import org.apache.spark.internal.Logging
 import org.apache.spark.rdd.RDD
@@ -49,7 +51,7 @@ import org.apache.spark.streaming.dstream.DStream
 
 class SnappySession(@transient private val sc: SparkContext,
     @transient private val existingSharedState: Option[SnappySharedState])
-    extends SparkSession(sc) with Logging {
+    extends SparkSession(sc, existingSharedState) with Logging {
   self =>
 
 
@@ -122,13 +124,9 @@ class SnappySession(@transient private val sc: SparkContext,
     new SnappySession(sparkContext, Some(sharedState))
   }
 
-
-
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
-
-
 
   def clear(): Unit = {
     snappyContextFunctions.clear()
@@ -1129,4 +1127,87 @@ class SnappySession(@transient private val sc: SparkContext,
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 
 
+}
+
+object SnappySession {
+  // TODO: hemant : Its clumsy design to use where SnappySession.Builder
+  // is using the SparkSession object's functions. This needs to be revisited
+  // once we decide on how our Builder API should be. We have made few variables
+  // in SparkSession as protected from private. We should revert them if they are
+  // not needed with the final API.
+  class Builder extends SparkSession.Builder {
+    /**
+      * Gets an existing [[SparkSession]] or, if there is no existing one, creates a new
+      * one based on the options set in this builder.
+      *
+      * This method first checks whether there is a valid thread-local SparkSession,
+      * and if yes, return that one. It then checks whether there is a valid global
+      * default SparkSession, and if yes, return that one. If no valid global default
+      * SparkSession exists, the method creates a new SparkSession and assigns the
+      * newly created SparkSession as the global default.
+      *
+      * In case an existing SparkSession is returned, the config options specified in
+      * this builder will be applied to the existing SparkSession.
+      *
+      * @since 2.0.0
+      */
+    override def getOrCreate(): SnappySession = synchronized {
+      // TODO: hemant - Is this needed for Snappy. Snappy should always use newSession.
+      // Get the session from current thread's active session.
+      var session = SparkSession.getActiveSession.get
+      if ((session ne null) && !session.sparkContext.isStopped) {
+        options.foreach { case (k, v) => session.conf.set(k, v) }
+        if (options.nonEmpty) {
+          logWarning("Use an existing SparkSession, some configuration may not take effect.")
+        }
+        return session.asInstanceOf[SnappySession]
+      }
+
+      // Global synchronization so we will only set the default session once.
+      SparkSession.synchronized {
+        // If the current thread does not have an active session, get it from the global session.
+        session = SparkSession.getDefaultSession.get
+        if ((session ne null) && !session.sparkContext.isStopped) {
+          options.foreach { case (k, v) => session.conf.set(k, v) }
+          if (options.nonEmpty) {
+            logWarning("Use an existing SparkSession, some configuration may not take effect.")
+          }
+          return session.asInstanceOf[SnappySession]
+        }
+
+        // No active nor global default session. Create a new one.
+        val sparkContext = userSuppliedContext.getOrElse {
+          // set app name if not given
+          if (!options.contains("spark.app.name")) {
+            options += "spark.app.name" -> java.util.UUID.randomUUID().toString
+          }
+
+          val sparkConf = new SparkConf()
+          options.foreach { case (k, v) => sparkConf.set(k, v) }
+          val sc = SparkContext.getOrCreate(sparkConf)
+          // maybe this is an existing SparkContext, update its SparkConf which maybe used
+          // by SparkSession
+          options.foreach { case (k, v) => sc.conf.set(k, v) }
+          sc
+        }
+        session = new SnappySession(sparkContext, None)
+        options.foreach { case (k, v) => session.conf.set(k, v) }
+        SparkSession.setDefaultSession(session)
+
+        // Register a successfully instantiated context to the singleton. This should be at the
+        // end of the class definition so that the singleton is updated only if there is no
+        // exception in the construction of the instance.
+        sparkContext.addSparkListener(new SparkListener {
+          override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
+            SparkSession.setDefaultSession(null)
+            SparkSession.sqlListener.set(null)
+          }
+        })
+      }
+
+      return session.asInstanceOf[SnappySession]
+    }
+  }
+
+  def builder(): Builder = new SnappySession.Builder
 }
