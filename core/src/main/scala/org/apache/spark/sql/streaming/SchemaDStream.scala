@@ -160,7 +160,7 @@ final class SchemaDStream(@transient val snsc: SnappyStreamingContext,
   /** Registers this SchemaDStream as a table in the catalog. */
   def registerAsTable(tableName: String): Unit = {
     catalog.registerTable(
-      catalog.newQualifiedTableName(tableName),
+      catalog.newQualifiedTempTableName(tableName),
       logicalPlan)
   }
 

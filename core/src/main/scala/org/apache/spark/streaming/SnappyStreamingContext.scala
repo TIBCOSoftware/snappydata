@@ -54,7 +54,7 @@ class SnappyStreamingContext protected[spark](
         "both SparkContext and checkpoint as null")
   }
 
-  val snappySession = new SnappySession(sc_, None)
+  val snappySession = new SnappySession(sc, None)
 
   val snappyContext = snappySession.snappyContext
 

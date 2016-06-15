@@ -22,9 +22,10 @@ import twitter4j.conf.{Configuration, ConfigurationBuilder}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow}
 import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.streaming.twitter.TwitterUtils
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.streaming.dstream.DStream
-import org.apache.spark.streaming.twitter.TwitterUtils
+
 
 final class TwitterStreamSource extends StreamPlanProvider {
 

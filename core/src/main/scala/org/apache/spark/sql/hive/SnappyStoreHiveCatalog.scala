@@ -39,7 +39,7 @@ import org.apache.hadoop.util.VersionInfo
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, FunctionRegistry}
+import org.apache.spark.sql.catalyst.analysis.{TempTableAlreadyExistsException, NoSuchDatabaseException, FunctionRegistry}
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.collection.Utils
@@ -460,6 +460,16 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
     }
   }
 
+  def newQualifiedTempTableName(tableIdent: String): QualifiedTableName = {
+    val tableName = processTableIdentifier(tableIdent)
+    val dotIndex = tableName.indexOf('.')
+    if (dotIndex > 0) {
+      throw new AnalysisException(" temp table name can not have db prefix")
+    } else {
+      new QualifiedTableName(None, tableName)
+    }
+  }
+
   override def refreshTable(tableIdent: TableIdentifier): Unit = {
     // refreshTable does not eagerly reload the cache. It just invalidates
     // the cache. it is better at here to invalidate the cache to avoid
@@ -537,6 +547,20 @@ class SnappyStoreHiveCatalog(externalCatalog: ExternalCatalog,
 
   def registerTable(tableName: QualifiedTableName, plan: LogicalPlan): Unit = {
     sessionTables += (tableName -> plan)
+  }
+
+  /**
+   * Create a temporary table.
+   */
+  override def createTempView(
+      name: String,
+      tableDefinition: LogicalPlan,
+      overrideIfExists: Boolean): Unit = synchronized {
+    val table = newQualifiedTempTableName(name)
+    if (sessionTables.contains(table) && !overrideIfExists) {
+      throw new TempTableAlreadyExistsException(name)
+    }
+    sessionTables += (table -> tableDefinition)
   }
 
   private def clientDropTable(dbName: String, tableName: String): Unit =

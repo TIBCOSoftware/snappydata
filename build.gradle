@@ -43,6 +43,7 @@ allprojects {
     maven { url "https://repo.spring.io/libs-release" }
     maven { url "http://maven.twttr.com" }
     maven { url "http://repository.apache.org/snapshots" }
+    maven {url  "https://dl.bintray.com/spark-packages/maven"}
   }
 
   apply plugin: 'java'

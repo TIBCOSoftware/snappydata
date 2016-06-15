@@ -32,8 +32,6 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming-twitter_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
     compile group: 'org.twitter4j', name: 'twitter4j-stream', version:'4.0.4'
-    provided("org.apache.spark:spark-streaming-twitter_${scalaBinaryVersion}:${sparkVersion}")//A
-    // hack. It should be proper spar-project library see https://github.com/spark-packages/dstream-twitter
     provided "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   }else {
     provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
