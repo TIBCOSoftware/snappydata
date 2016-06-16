@@ -614,6 +614,11 @@ task product {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
         into "${snappyProductDir}/lib"
       }
+      copy {
+        from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
+        into "${snappyProductDir}/quickstart/store"
+        exclude '.git*'
+      }
     }
     // copy AQP jar
     if (new File(rootDir, 'aqp/build.gradle').exists()) {

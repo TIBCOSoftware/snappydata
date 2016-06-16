@@ -4,12 +4,12 @@ package io.snappydata.hydra.cluster;
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 
-import com.pivotal.gemfirexd.internal.client.am.Decimal;
 import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
@@ -76,6 +76,7 @@ public class SnappyTest implements Serializable {
     private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtestsResourceLocation);
     public static boolean tableDefaultPartitioned = TestConfig.tab().booleanAt(SnappyPrms.tableDefaultPartitioned, false);  //default to false
     public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
+    public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
     private static String leadHost = null;
     public static Long waitTimeBeforeJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 6000);
@@ -89,7 +90,7 @@ public class SnappyTest implements Serializable {
     protected static DMLStmtsFactory dmlFactory = new DMLStmtsFactory();
 
     public enum SnappyNode {
-        LOCATOR, SERVER, LEAD
+        LOCATOR, SERVER, LEAD, WORKER
     }
 
     SnappyNode snappyNode;
@@ -118,6 +119,10 @@ public class SnappyTest implements Serializable {
             snappyTest.generateConfig("locators");
             snappyTest.generateConfig("servers");
             snappyTest.generateConfig("leads");
+            if (useSplitMode) {
+                snappyTest.generateConfig("slaves");
+                snappyTest.generateConfig("spark-env.sh");
+            }
         }
     }
 
@@ -204,6 +209,14 @@ public class SnappyTest implements Serializable {
         lead.generateNodeConfig("leadLogDir");
     }
 
+    /**
+     * Generates the configuration data required to start the snappy Server.
+     */
+    public static synchronized void HydraTask_generateSparkWorkerConfig() {
+        SnappyTest worker = new SnappyTest(SnappyNode.WORKER);
+        worker.generateNodeConfig("workerLogDir");
+    }
+
     protected void generateSnappyConfig() {
         if (logDirExists) return;
         else {
@@ -287,8 +300,23 @@ public class SnappyTest implements Serializable {
                 }
                 Log.getLogWriter().info("Lead host is: " + leadHost);
                 break;
+            case WORKER:
+                nodeLogDir = HostHelper.getLocalHost();
+                String sparkLogDir = "SPARK_LOG_DIR=" + hd.getUserDir();
+                if (SnappyBB.getBB().getSharedMap().get("masterHost") == null) {
+                    try {
+                        String masterHost = HostHelper.getIPAddress().getLocalHost().getHostName();
+                        SnappyBB.getBB().getSharedMap().put("masterHost", masterHost);
+                        Log.getLogWriter().info("Master host is: " + SnappyBB.getBB().getSharedMap().get("masterHost"));
+                    } catch (UnknownHostException e) {
+                        String s = "Spark Master host not found";
+                        throw new HydraRuntimeException(s, e);
+                    }
+                }
+                SnappyBB.getBB().getSharedMap().put("sparkLogDir" + "_" + snappyTest.getMyTid(), sparkLogDir);
+                break;
         }
-        SnappyBB.getBB().getSharedMap().put(logDir + "_" + snappyTest.getMyTid(), nodeLogDir);
+        SnappyBB.getBB().getSharedMap().put(logDir + "_" + RemoteTestModule.getMyVmid() + "_" + snappyTest.getMyTid(), nodeLogDir);
         logDirExists = true;
     }
 
@@ -301,6 +329,19 @@ public class SnappyTest implements Serializable {
                 fileContents.add(value);
             }
         }
+        return fileContents;
+    }
+
+    protected static ArrayList<String> getWorkerFileContents(String userKey, ArrayList<String> fileContents) {
+        Set<String> keys = SnappyBB.getBB().getSharedMap().getMap().keySet();
+        for (String key : keys) {
+            if (key.startsWith(userKey)) {
+                Log.getLogWriter().info("Key Found..." + key);
+                String value = (String) SnappyBB.getBB().getSharedMap().get(key);
+                fileContents.add(value);
+            }
+        }
+        Log.getLogWriter().info("ArrayList contains : " + fileContents.toString());
         return fileContents;
     }
 
@@ -358,31 +399,54 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Write the configuration data required to start the snappy locator in locators file under conf directory at snappy build location.
+     * Write the configuration data required to start the snappy locator/s in locators file under conf directory at snappy build location.
      */
     public static void HydraTask_writeLocatorConfigData() {
         snappyTest.writeConfigData("locators", "locatorLogDir");
     }
 
     /**
-     * Write the configuration data required to start the snappy server in servers file under conf directory at snappy build location.
+     * Write the configuration data required to start the snappy server/s in servers file under conf directory at snappy build location.
      */
     public static void HydraTask_writeServerConfigData() {
         snappyTest.writeConfigData("servers", "serverLogDir");
     }
 
     /**
-     * Write the configuration data required to start the snappy lead in leads file under conf directory at snappy build location.
+     * Write the configuration data required to start the snappy lead/s in leads file under conf directory at snappy build location.
      */
     public static void HydraTask_writeLeadConfigData() {
         snappyTest.writeConfigData("leads", "leadLogDir");
     }
 
+    /**
+     * Write the configuration data required to start the spark worker/s in slaves file and the log directory locations in spark-env.sh file under conf directory at snappy build location.
+     */
+    public static void HydraTask_writeWorkerConfigData() {
+        snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
+        snappyTest.writeConfigData("spark-env.sh", "sparkLogDir");
+    }
+
     protected void writeConfigData(String fileName, String logDir) {
         String filePath = productConfDirPath + fileName;
         File file = new File(filePath);
+        if (fileName.equalsIgnoreCase("spark-env.sh")) file.setExecutable(true);
         Set<String> fileContent = new LinkedHashSet<String>();
         fileContent = snappyTest.getFileContents(logDir, fileContent);
+        if (fileContent.size() == 0) {
+            String s = "No data found for writing to " + fileName + " file under conf directory";
+            throw new TestException(s);
+        }
+        for (String s : fileContent) {
+            snappyTest.writeToFile(s, file);
+        }
+    }
+
+    protected void writeWorkerConfigData(String fileName, String logDir) {
+        String filePath = productConfDirPath + fileName;
+        File file = new File(filePath);
+        ArrayList<String> fileContent = new ArrayList<>();
+        fileContent = snappyTest.getWorkerFileContents(logDir, fileContent);
         if (fileContent.size() == 0) {
             String s = "No data found for writing to " + fileName + " file under conf directory";
             throw new TestException(s);
@@ -1083,7 +1147,7 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Executes snappy Jobs in Task.
+     * Executes Snappy Jobs in Task.
      */
     public static void HydraTask_executeSnappyJobInTask() {
         int currentThread = snappyTest.getMyTid();
@@ -1095,6 +1159,16 @@ public class SnappyTest implements Serializable {
         } catch (InterruptedException e) {
             throw new TestException("Exception occurred while waiting for the snappy job process execution." + "\nError Message:" + e.getMessage());
         }
+    }
+
+    /**
+     * Executes Spark Jobs in Task.
+     */
+    public static void HydraTask_executeSparkJobInTask() {
+        int currentThread = snappyTest.getMyTid();
+        String logFile = "sparkJobTaskResult_thread_" + currentThread + ".log";
+//        SnappyBB.getBB().getSharedMap().put("sparkJoblogFilesForTask" + currentThread, logFile);
+        snappyTest.executeSparkJob(SnappyPrms.getSparkJobClassNamesForTask(), logFile);
     }
 
     /**
@@ -1193,6 +1267,29 @@ public class SnappyTest implements Serializable {
             }
 //            sleep(waitTimeBeforeJobStatus);
             snappyTest.getSnappyJobsStatus(snappyJobScript, logFile);
+        } catch (IOException e) {
+            throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
+        }
+    }
+
+    protected void executeSparkJob(Vector jobClassNames, String logFileName) {
+        String snappyJobScript = getScriptLocation("spark-submit");
+        ProcessBuilder pb = null;
+        File log = null, logFile = null;
+        userAppJar = TestConfig.tab().stringAt(SnappyPrms.userAppJar);
+        snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
+        try {
+            for (int i = 0; i < jobClassNames.size(); i++) {
+                String userJob = (String) jobClassNames.elementAt(i);
+                String masterHost = (String) SnappyBB.getBB().getSharedMap().get("masterHost");
+                String locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
+                String command = snappyJobScript + " --class " + userJob + " --master spark://" + masterHost + ":7077 " + "--conf snappydata.store.locators=" + locatorHost + ":" + 10334 + " " + snappyTest.getUserAppJarLocation(userAppJar);
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + logFileName;
+                logFile = new File(dest);
+                pb = new ProcessBuilder("/bin/bash", "-c", command);
+                snappyTest.executeProcess(pb, logFile);
+            }
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
         }
@@ -1383,6 +1480,14 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("Servers file deleted");
         Files.delete(Paths.get(leadConf));
         Log.getLogWriter().info("leads file deleted");
+        if (useSplitMode) {
+            String slaveConf = productConfDirPath + sep + "slaves";
+            String sparkEnvConf = productConfDirPath + sep + "spark-env.sh";
+            Files.delete(Paths.get(slaveConf));
+            Log.getLogWriter().info("slaves file deleted");
+            Files.delete(Paths.get(sparkEnvConf));
+            Log.getLogWriter().info("spark-env.sh file deleted");
+        }
     }
 
     protected int getMyTid() {
@@ -1461,6 +1566,45 @@ public class SnappyTest implements Serializable {
             }
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
+            throw new TestException(s, e);
+        }
+    }
+
+    /**
+     * Starts Spark Cluster with the specified number of workers.
+     */
+    public static synchronized void HydraTask_startSparkCluster() {
+        File log = null;
+        try {
+            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.sparkClusterStarted);
+            if (num == 1) {
+                ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"));
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
+                File logFile = new File(dest);
+                snappyTest.executeProcess(pb, logFile);
+                snappyTest.recordSnappyProcessIDinNukeRun("Worker");
+                snappyTest.recordSnappyProcessIDinNukeRun("Master");
+            }
+        } catch (IOException e) {
+            String s = "problem occurred while retriving destination logFile path " + log;
+            throw new TestException(s, e);
+        }
+    }
+
+    /**
+     * Stops Spark Cluster.
+     */
+    public static synchronized void HydraTask_stopSparkCluster() {
+        File log = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("stop-all.sh"));
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
+        } catch (IOException e) {
+            String s = "problem occurred while retriving destination logFile path " + log;
             throw new TestException(s, e);
         }
     }
