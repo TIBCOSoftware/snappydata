@@ -244,7 +244,6 @@ public class SnappyTest implements Serializable {
             } else if (dirPath.toLowerCase().contains("store") || dirPath.contains("server") || dirPath.contains("accessor")) {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String serverLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets();
-                Log.getLogWriter().info("SS - serverLogDir is : " + serverLogDir);
                 if (serverLogDir == null) {
                     String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the servers file under conf directory";
                     throw new TestException(s);
@@ -256,7 +255,6 @@ public class SnappyTest implements Serializable {
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 String leadLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
                         + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets();
-                Log.getLogWriter().info("SS - leadLogDir is : " + leadLogDir);
                 if (leadLogDir == null) {
                     String s = "Unable to find " + RemoteTestModule.getMyClientName() + " log directory path for writing to the leads file under conf directory";
                     throw new TestException(s);
@@ -291,21 +289,14 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                /*if (tableDefaultPartitioned)
-                    nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Dgemfirexd.table-default-partitioned=true";
-                else
-                    nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;*/
                 nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy();
-                Log.getLogWriter().info("SS - nodeLogDir in case of server is : " + nodeLogDir);
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
             case LEAD:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-//                nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port;
                 nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
                         + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets();
-                Log.getLogWriter().info("SS - nodeLogDir in case of lead is : " + nodeLogDir);
                 if (leadHost == null) {
                     leadHost = HostHelper.getLocalHost();
                 }
@@ -1275,9 +1266,7 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-//                String APP_PROPS = "\"dataDirName=" + simulateStreamScriptDestinationFolder + "\"";
                 String APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
-                Log.getLogWriter().info("SS - APP_PROPS string is : " + APP_PROPS);
                 String contextName = "snappyStreamingContext" + System.currentTimeMillis();
                 String contextFactory = "org.apache.spark.sql.streaming.SnappyStreamingContextFactory";
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
@@ -1345,11 +1334,9 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String APP_PROPS = SnappyPrms.getCommaSepAPPProps() + "\"logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions() + "\"";
+                String APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
-                Log.getLogWriter().info("curlCommand1 is : " + curlCommand1);
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
-                Log.getLogWriter().info("curlCommand2 is : " + curlCommand2);
                 pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
@@ -1587,14 +1574,16 @@ public class SnappyTest implements Serializable {
         // Removing twitter data directories if exists.
         String twitterdata = dtests + sep + "twitterdata";
         String copiedtwitterdata = dtests + sep + "copiedtwitterdata";
-//        if (Files.deleteIfExists(Paths.get(twitterdata))) {
-        Files.deleteIfExists(Paths.get(twitterdata));
-        Log.getLogWriter().info("Done removing twitter data directory.");
-//        }
-//        if (Files.exists(Paths.get(copiedtwitterdata))) {
-        Files.deleteIfExists(Paths.get(copiedtwitterdata));
-        Log.getLogWriter().info("Done removing copiedtwitterdata data directory.");
-//        }
+        File file = new File(twitterdata);
+        if (file.exists()) {
+            file.delete();
+            Log.getLogWriter().info("Done removing twitter data directory.");
+        }
+        file = new File(copiedtwitterdata);
+        if (file.exists()) {
+            file.delete();
+            Log.getLogWriter().info("Done removing copiedtwitterdata data directory.");
+        }
     }
 
     protected int getMyTid() {
