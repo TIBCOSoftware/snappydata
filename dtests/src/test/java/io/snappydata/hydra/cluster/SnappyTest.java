@@ -1124,7 +1124,6 @@ public class SnappyTest implements Serializable {
             }
             bw.close();
             fw.close();
-            Log.getLogWriter().info("Done writing to snappyNukeRun file... ");
             logFile.setExecutable(true);
             pb = new ProcessBuilder(nukerun);
             pb.redirectErrorStream(true);
@@ -1572,8 +1571,8 @@ public class SnappyTest implements Serializable {
             Log.getLogWriter().info("spark-env.sh file deleted");
         }
         // Removing twitter data directories if exists.
-        String twitterdata = dtests + sep + "twitterdata";
-        String copiedtwitterdata = dtests + sep + "copiedtwitterdata";
+        String twitterdata = dtests + "twitterdata";
+        String copiedtwitterdata = dtests + "copiedtwitterdata";
         File file = new File(twitterdata);
         if (file.exists()) {
             file.delete();
