@@ -281,7 +281,7 @@ public class SnappyTest implements Serializable {
         String nodeLogDir = null;
         switch (snappyNode) {
             case LOCATOR:
-                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port;
+                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=snappylocator.gfs";
                 SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
                 SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
                 Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
