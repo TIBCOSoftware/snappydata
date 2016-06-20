@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import com.gemstone.gemfire.internal.shared.NativeCalls;
-import com.pivotal.gemfirexd.thrift.*;
+import io.snappydata.thrift.*;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.transport.TSocket;
@@ -51,7 +51,7 @@ public class TestThrift {
     int pid = NativeCalls.getInstance().getProcessId();
 
     // search only for servers using TCompactProtocol without SSL
-    Set<ServerType> serverType = Collections.singleton(ServerType.THRIFT_GFXD_CP);
+    Set<ServerType> serverType = Collections.singleton(ServerType.THRIFT_SNAPPY_CP);
     TSocket socket = new TSocket(locatorHost, locatorPort);
     TCompactProtocol inProtocol = new TCompactProtocol(socket);
     TCompactProtocol outProtocol = new TCompactProtocol(socket);
@@ -91,7 +91,7 @@ public class TestThrift {
       params.setInt(0, w_id);
       params.setInt(1, w_id);
       params.setInt(2, id);
-      params.setObject(3, name, GFXDType.VARCHAR);
+      params.setObject(3, name, SnappyType.VARCHAR);
 
       count = conn.executePreparedUpdate(pstmt.statementId,
           params, token).updateCount;
@@ -160,7 +160,7 @@ public class TestThrift {
     socket.close();
   }
 
-  static class ClientConnection extends GFXDService.Client {
+  static class ClientConnection extends SnappyDataService.Client {
 
     ConnectionProperties connProperties;
 
