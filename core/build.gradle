@@ -13,6 +13,8 @@ sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
 sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = [ ]
 
+def osName = org.gradle.internal.os.OperatingSystem.current()
+
 dependencies {
   provided 'org.scala-lang:scala-library:' + scalaVersion
   provided 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -110,9 +112,18 @@ task getApacheSparkDist {
   outputs.files "${sparkProductDir}.tgz", "${sparkProductDir}/README.md"
 
   doLast {
-    copy {
-      from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
-      into "${sparkDistDir}"
+    if (osName.isWindows()) {
+      copy {
+        from tarTree(resources.gzip("${sparkDistDir}/${sparkDistName}.tgz"))
+        into sparkDistDir
+      }
+    } else {
+      // gradle tarTree does not preserve symlinks (GRADLE-2844)
+      exec {
+        executable 'tar'
+        args 'xfz', "${sparkDistDir}/${sparkDistName}.tgz"
+        workingDir = sparkDistDir
+      }
     }
   }
 }
