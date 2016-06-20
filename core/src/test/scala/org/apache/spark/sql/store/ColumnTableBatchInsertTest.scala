@@ -54,7 +54,7 @@ with BeforeAndAfter {
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 5)
     println("Successful")
@@ -79,7 +79,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 1000)
     println("Successful")
@@ -104,7 +104,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")
@@ -129,7 +129,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
 
     val r2 = result.collect
     assert(r2.length == 19999)
@@ -154,7 +154,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")
@@ -178,7 +178,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")
@@ -203,7 +203,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    dataDF.write.insertInto(tableName)
     val r2 = result.collect
     assert(r2.length == 19999)
     println("Successful")

@@ -118,7 +118,7 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMNTABLE7")
+    dataDF.write.insertInto("COLUMNTABLE7")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(1,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(2,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(3,11)")
@@ -162,7 +162,6 @@ with BeforeAndAfter {
 
     val dataDF = snc.createDataFrame(rdd)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("COLUMNTABLE7")
-
     //      snc.sql("insert into COLUMNTABLE3 VALUES(1,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(2,11)")
     //      snc.sql("insert into COLUMNTABLE3 VALUES(3,11)")
