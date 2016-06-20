@@ -289,14 +289,14 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy();
+                nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=snappyserver.gfs";
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
             case LEAD:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
-                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets();
+                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=snappyleader.gfs";
                 if (leadHost == null) {
                     leadHost = HostHelper.getLocalHost();
                 }
@@ -1265,7 +1265,12 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                String APP_PROPS = null;
+                if (SnappyPrms.getCommaSepAPPProps() == null) {
+                    APP_PROPS = "shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                } else {
+                    APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                }
                 String contextName = "snappyStreamingContext" + System.currentTimeMillis();
                 String contextFactory = "org.apache.spark.sql.streaming.SnappyStreamingContextFactory";
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
@@ -1300,7 +1305,11 @@ public class SnappyTest implements Serializable {
                 String userJob = (String) jobClassNames.elementAt(i);
                 pb = new ProcessBuilder(snappyJobScript, "submit", "--lead", leadHost + ":8090", "--app-name", "myapp", "--class", userJob, "--app-jar", snappyTest.getUserAppJarLocation(userAppJar), "--stream");
                 java.util.Map<String, String> env = pb.environment();
-                env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
+                if (SnappyPrms.getCommaSepAPPProps() == null) {
+                    env.put("APP_PROPS", "shufflePartitions=" + SnappyPrms.getShufflePartitions());
+                } else {
+                    env.put("APP_PROPS", SnappyPrms.getCommaSepAPPProps() + ",shufflePartitions=" + SnappyPrms.getShufflePartitions());
+                }
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
@@ -1333,7 +1342,12 @@ public class SnappyTest implements Serializable {
         try {
             for (int i = 0; i < jobClassNames.size(); i++) {
                 String userJob = (String) jobClassNames.elementAt(i);
-                String APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                String APP_PROPS = null;
+                if (SnappyPrms.getCommaSepAPPProps() == null) {
+                    APP_PROPS = "logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                } else {
+                    APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                }
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
                 pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
