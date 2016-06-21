@@ -1,0 +1,25 @@
+####################################################################################################
+# PLEASE KEEP THE WIDTH OF THE LINES BELOW WITHIN 100 CHARACTERS.                                  #
+# MOST RECENT CHANGE AT THE TOP.                                                                   #
+# KEEP THE DESCRIPTION OF EACH OF YOUR CHANGES THAT NEEDS TO BE PUT INTO THE RELEASE NOTES TO ONE  #
+# TO THREE LINES.                                                                                  #
+# KEEP A LINE BLANK BETWEEN TWO NOTES.                                                             #
+# ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
+####################################################################################################
+
+Release 0.5-preview
+
+[SNAP-817][TESTS] Added support in tests for starting of jobs by allowing passing of properties
+using APP_PROPS. Added support for deleting streaming data generated during test run.
+    
+[QUICKSTART] Packaged rowstore quickstart in snappydata distributions.
+
+[SNAP-570][TESTS] Added support for starting split cluster mode and submitting the spark jobs in
+hydra tests.
+
+[SNAP-833][TESTS] Added tests to verify upgrading gemfirexd cluster to snappydata-store works as
+expected.
+
+[SNAP-858][DOCS] Added documentation for Python APIs.
+
+[SNAP-852] Added new fields on the Snappy Store tab in Spark UI.
