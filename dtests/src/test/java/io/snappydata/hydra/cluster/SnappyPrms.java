@@ -87,6 +87,12 @@ public class SnappyPrms extends BasePrms {
     public static Long tableDefaultPartitioned;
 
     /**
+     * (boolean) - whether to enable time statistics. snappy hydra already sets the enable-time-statistics to true.
+     */
+    public static Long enableTimeStatistics;
+
+
+    /**
      * (String) userAppJar containing the user snappy job class
      */
     public static Long userAppJar;
@@ -225,6 +231,11 @@ public class SnappyPrms extends BasePrms {
     public static boolean getTableDefaultDataPolicy() {
         Long key = tableDefaultPartitioned;
         return tasktab().booleanAt(key, tab().booleanAt(key, false));
+    }
+
+    public static boolean getTimeStatistics() {
+        Long key = enableTimeStatistics;
+        return tasktab().booleanAt(key, tab().booleanAt(key, true));
     }
 
     public static Vector getSQLScriptNamesForInitTask() {
