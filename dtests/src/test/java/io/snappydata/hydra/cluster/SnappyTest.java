@@ -279,9 +279,10 @@ public class SnappyTest implements Serializable {
         String locatorHost = null;
         String dirPath = snappyTest.getLogDir();
         String nodeLogDir = null;
+        String timeStatistics = " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=";
         switch (snappyNode) {
             case LOCATOR:
-                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=snappylocator.gfs";
+                nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port + timeStatistics + "snappylocator.gfs";
                 SnappyBB.getBB().getSharedMap().put("locatorHost", HostHelper.getLocalHost());
                 SnappyBB.getBB().getSharedMap().put("locatorPort", Integer.toString(port));
                 Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
@@ -289,14 +290,14 @@ public class SnappyTest implements Serializable {
                 break;
             case SERVER:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
-                nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=snappyserver.gfs";
+                nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getServerMemory() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -J-Dgemfirexd.table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + timeStatistics + "snappyserver.gfs";
                 Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("server" + "_" + RemoteTestModule.getMyVmid(), endpoint);
                 break;
             case LEAD:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
-                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -enable-time-statistics=" + SnappyPrms.getTimeStatistics() + " -statistic-archive-file=snappyleader.gfs";
+                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + timeStatistics + "snappyleader.gfs";
                 if (leadHost == null) {
                     leadHost = HostHelper.getLocalHost();
                 }
