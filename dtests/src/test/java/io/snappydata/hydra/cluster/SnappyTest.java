@@ -164,6 +164,7 @@ public class SnappyTest implements Serializable {
 
     protected String getScriptLocation(String scriptName) {
         String scriptPath = null;
+        if (new File(scriptName).exists()) return scriptName;
         scriptPath = productSbinDir + scriptName;
         if (!new File(scriptPath).exists()) {
             scriptPath = productBinDir + scriptName;
