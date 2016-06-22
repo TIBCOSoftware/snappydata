@@ -15,6 +15,9 @@ dependencies {
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
+  compile files('/home/sachin/Desktop/depen1/zeppelin-interpreter-0.6.0-SNAPSHOT.jar')
+  compile files('/home/sachin/Desktop/depen1/zeppelin-spark-0.6.0-SNAPSHOT.jar')
+  compile files('/home/sachin/Desktop/depen1/zeppelin-jdbc-0.6.0-SNAPSHOT.jar')
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
@@ -175,3 +178,48 @@ shadowJar {
     )
   }
 }
+
+
+task generateSnappydataZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {
+
+  from sourceSets.main.output.classesDir
+  //from sourceSets.main.output.resourcesDir
+  //from sourceSets.main.resources.srcDirs
+  from 'src/main/resources/snappydata'
+  jar.includeEmptyDirs = false
+  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
+ // include 'resources/snappydata/interpreter-setting.json'
+  exclude 'org/apache/zeppelin/interpreter/SnappydataSqlZeppelinInterpreter**'
+}
+
+task generateSnappydataSqlZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {
+  zip64 = true
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from sourceSets.main.output.classesDir
+  jar.includeEmptyDirs = false
+  //from('src/main/resources/snappydatasql')
+  from {
+    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  }
+
+  include 'org/apache/zeppelin/jdbc/**'
+  include 'org/apache/zeppelin/scheduler/**'
+  include 'org/apache/zeppelin/interpreter/**'
+  include 'com/google/**'
+  include 'org/slf4j/**'
+  include 'jline/console/**'
+  include 'jline/internal/**'
+  include 'jline/**'
+  include 'org/apache/commons/lang/**'
+  from('src/main/resources/snappydatasql'){
+    include 'ansi.sql.keywords'
+    include 'interpreter-setting.json'
+  }
+  // include 'src/main/resources/snappydatasql/interpreter-setting.json'
+  //exclude 'interpreter-setting.json'
+  exclude 'org/apache/zeppelin/interpreter/SnappydataZeppelinInterpreter**'
+  //append('resources/snappydatasql/interpreter-setting.json')
+  archiveName 'snappydatasql-zeppelin-interpreter-' + version + '.jar'
+
+}
+

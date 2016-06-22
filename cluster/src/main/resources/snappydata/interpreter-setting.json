@@ -1,0 +1,33 @@
+[
+  {
+    "group": "snappydata",
+    "name": "snappydata",
+    "className": "org.apache.zeppelin.interpreter.SnappydataZeppelinInterpreter",
+    "properties": {
+      "zeppelin.spark.printREPLOutput": {
+        "envName": null,
+        "propertyName": null,
+        "defaultValue": "true",
+        "description": "Print REPL output"
+      },
+      "zeppelin.spark.maxResult": {
+        "envName": "ZEPPELIN_SPARK_MAXRESULT",
+        "propertyName": "zeppelin.spark.maxResult",
+        "defaultValue": "1000",
+        "description": "Max number of SparkSQL result to display."
+      },
+      "master": {
+        "envName": "MASTER",
+        "propertyName": "spark.master",
+        "defaultValue": "local[*]",
+        "description": "Snappydata master uri. ex) snappydata://locatorHost:10334"
+      },
+      "spark.app.name": {
+        "envName": "SPARK_APP_NAME",
+        "propertyName": "spark.app.name",
+        "defaultValue": "Zeppelin",
+        "description": "The name of spark application."
+      }
+    }
+  }
+]
