@@ -105,6 +105,8 @@ From the product install directory run this script:
 ````shell
 ./sbin/snappy-start-all.sh
 ````
+> NOTE there is a "start-all.sh" script in /sbin/ as well that starts up just Spark. Make sure you use snappy-start-all.sh
+
 This may take 30 seconds or more to bootstrap the entire cluster on your local machine (logs are in the 'work' sub-directory). 
 The output should look something like this …
 ````
