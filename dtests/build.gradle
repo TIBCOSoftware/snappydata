@@ -86,7 +86,7 @@ if (rootProject.hasProperty('enablePublish')) {
     }
 }
 
-archivesBaseName = 'gemfirexd-scala-tests'
+archivesBaseName = 'snappydata-store-scala-tests'
 
 testClasses.doLast {
   copyTestsCommonResources(buildDir)
