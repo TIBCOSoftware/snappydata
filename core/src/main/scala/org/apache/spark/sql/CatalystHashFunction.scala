@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
  */
 class CatalystHashFunction {
 
-  def computeHash(key: Any): Int = {
+  def computeHash(key: Any, numPartitions : Int): Int = {
     val update: Int =
       if (key == null) {
         0
@@ -45,8 +45,8 @@ class CatalystHashFunction {
             (b ^ (b >>> 32)).toInt
           case a: Array[Byte] => java.util.Arrays.hashCode(a)
           case str: java.lang.String => computeHashCode(str)
-          case timeStamp : java.sql.Timestamp => computeHashCode(timeStamp)
-          case date : java.util.Date => computeHashCode(date)
+          case timeStamp : java.sql.Timestamp => computeHashCode(timeStamp, numPartitions)
+          case date : java.util.Date => computeHashCode(date, numPartitions)
           case other => other.hashCode()
         }
       }
@@ -54,13 +54,13 @@ class CatalystHashFunction {
   }
 
 
-  def computeHashCode(sd: java.util.Date): Int = {
-    computeHash(DateTimeUtils.millisToDays(sd.getTime))
+  def computeHashCode(sd: java.util.Date, numPartitions : Int): Int = {
+    computeHash(DateTimeUtils.millisToDays(sd.getTime), numPartitions)
   }
 
-  def computeHashCode(time: java.sql.Timestamp): Int = {
+  def computeHashCode(time: java.sql.Timestamp, numPartitions : Int): Int = {
     val ht = DateTimeUtils.fromJavaTimestamp(time)
-    computeHash(ht)
+    computeHash(ht, numPartitions)
   }
 
 
@@ -112,22 +112,23 @@ class CatalystHashFunction {
   /**
    * This hashcode implementation matches that of Spark's hashcode implementation for rows.
    */
-  def hashValue(key: Any): Int = {
-    var result: Int = 37
-    val update = computeHash(key)
-    result = 37 * result + update
-    result
+  def hashValue(key: Any, numPartitions: Int): Int = {
+    //var result: Int = 37
+    //val update = computeHash(key, numPartitions)
+    //result = 37 * result + update
+    //result
+    computeHash(key, numPartitions)
   }
 
   /**
    * This hashcode implementation matches that of Spark's hashcode implementation for rows.
    */
-  def hashValue(objs: scala.Array[Object]): Int = {
+  def hashValue(objs: scala.Array[Object], numPartitions: Int): Int = {
     var result: Int = 37
     var i = 0
     val len = objs.length
     while (i < len) {
-      val update = computeHash(objs(i))
+      val update = computeHash(objs(i), numPartitions)
       result = 37 * result + update
       i += 1
     }

@@ -146,7 +146,7 @@ class SnappyJoinSuite extends SnappyFunSuite with BeforeAndAfterAll {
    * This method is very specific to  PartitionedDataSourceScan and
    * snappy join improvements
    */
-  private def checkForShuffle(plan: LogicalPlan, snc: SnappyContext,
+  def checkForShuffle(plan: LogicalPlan, snc: SnappyContext,
       shuffleExpected: Boolean): Unit = {
 
     val qe = new QueryExecution(snc.snappySession, plan)

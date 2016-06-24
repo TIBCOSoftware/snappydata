@@ -15,8 +15,14 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 import org.apache.spark.Logging
 import org.apache.spark.sql.ColumnName
 import org.apache.spark.sql.catalyst.CatalystTypeConverters
-import org.apache.spark.sql.catalyst.expressions.GenericInternalRow
+import org.apache.spark.sql.catalyst.expressions.{Expression, Pmod, Murmur3Hash, Literal, AttributeReference, GenericInternalRow}
+import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.types.DataType
+import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.UTF8String
+import org.apache.spark.sql.catalyst.dsl.expressions._
+import org.apache.spark.sql.catalyst.plans.physical._
+
 
 /**
  * This test checks the validity of various functionality when we use Spark's partitioner logic for underlying
@@ -32,6 +38,7 @@ with BeforeAndAfterAll {
     snc.dropTable(RowTableName1, ifExists = true)
     snc.dropTable(ColumnTableName2, ifExists = true)
     snc.dropTable(ColumnTableName1, ifExists = true)
+    snc.dropTable("ColumnTable1Temp", ifExists = true)
 
 
   }
@@ -48,6 +55,13 @@ with BeforeAndAfterAll {
 
   val optionsWithURL = "OPTIONS (PARTITION_BY 'Col1', URL 'jdbc:snappydata:;')"
 
+  val joinSuite = new SnappyJoinSuite
+
+  private def pmod(a: Int, n: Int): Int = { //We should push this logic to store layer
+  val r = a % n
+    if (r < 0) r + n else a
+  }
+
 
   test(" Test hash codes for all Sql types ") {
     snc.sql(s"CREATE TABLE $ColumnTableName1(OrderId INT ,ItemId INT, ItemRef INT) " +
@@ -62,81 +76,83 @@ with BeforeAndAfterAll {
     val pr: PartitionResolver[_, _] = rattr.getPartitionAttributes.getPartitionResolver
     val rpr: GfxdPartitionByExpressionResolver = pr.asInstanceOf[GfxdPartitionByExpressionResolver]
     assert(rpr != null)
+    val seed = 42
 
-    def createRow(values: Any*): GenericInternalRow = {
-      val newVals = values map { v => CatalystTypeConverters.convertToCatalyst(v)}
-/*      println(" new val = "+ newVals)
-      println("hashcode " + newVals.seq(0).getClass)*/
-      new GenericInternalRow(newVals.toArray)
+    val numPartitions = 11
+
+
+
+    def createRow(value: Any, dt : DataType ): Expression = {
+      new Murmur3Hash(Seq(Literal.create(value, dt)))
     }
 
     // Check All Datatypes
-    var row = createRow(200)
+    var row = createRow(200, IntegerType)
     var dvd: DataValueDescriptor = new SQLInteger(200)
 
 
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
-    row = createRow(new BigInteger("200000"))
+    row = createRow(200000, IntegerType)
     dvd = new SQLInteger(200000)
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
-    row = createRow(true)
+    row = createRow(true, BooleanType)
     dvd = new SQLBoolean(true)
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
-    row = createRow(new java.sql.Date(1, 1, 2011))
+    row = createRow(new java.sql.Date(1, 1, 2011), DateType)
     dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
 
-    val ipaddr: Array[Byte] = Array(192.toByte, 168.toByte, 1.toByte, 9.toByte)
-    row = createRow(ipaddr)
+    /*val ipaddr: Array[Byte] = Array(192.toByte, 168.toByte, 1.toByte, 9.toByte)
+    row = createRow(ipaddr, ArrayType(ByteType))
     dvd = new SQLBit(ipaddr)
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    assert(rpr.getRoutingKeyForColumn(dvd) == row.eval())*/
 
     dvd = new SQLReal(10.5F)
-    row = createRow(10.5F)
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    row = createRow(10.5F , FloatType)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
     dvd = new SQLLongint(479L)
-    row = createRow(479L)
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    row = createRow(479L, LongType)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
     dvd = new SQLVarchar("xxxx");
-    row = createRow(UTF8String.fromString("xxxx")) // As
+    row = createRow(UTF8String.fromString("xxxx"), StringType) // As
     // catalyst converts String to UtfString
-    assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
+    assert(rpr.getRoutingKeyForColumn(dvd) == pmod(row.eval().asInstanceOf[Int], numPartitions))
 
     dvd = new SQLClob("xxxxx")
-    row = createRow(UTF8String.fromString("xxxxx")) // As
+    row = createRow(UTF8String.fromString("xxxxx"), StringType) // As
     // catalyst converts String to UtfString
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLSmallint(5)
-    row = createRow(5)
+    row = createRow(5, IntegerType)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
     dvd = new SQLTinyint(2)
-    row = createRow(2)
+    row = createRow(2, IntegerType)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
     dvd = new SQLDecimal(new BigDecimal(32000.05f))
-    row = createRow(new BigDecimal(32000.05f))
+    row = createRow(new BigDecimal(32000.05f), DecimalType.SYSTEM_DEFAULT)
     val hash = row.hashCode
     assert(rpr.getRoutingKeyForColumn(dvd) == hash )
 
     val r1 = new java.sql.Timestamp(System.currentTimeMillis())
     dvd = new SQLTimestamp(r1)
-    row = createRow(r1)
+    row = createRow(r1, TimestampType)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
     //Test supplementary unicode chars
     val txt = "功能 絶\uD84C\uDFB4顯示廣告"
     dvd = new SQLVarchar(txt);
-    row = createRow(UTF8String.fromString(txt))
+    row = createRow(UTF8String.fromString(txt), StringType)
     assert(rpr.getRoutingKeyForColumn(dvd) == row.hashCode)
 
 
@@ -146,29 +162,31 @@ with BeforeAndAfterAll {
 
     val func = new StoreHashFunction
 
-    dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
-    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.util.Date(1, 1, 2011)))
+    
 
     dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
-    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.sql.Date(1, 1, 2011)))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.util.Date(1, 1, 2011), numPartitions))
+
+    dvd = new SQLDate(new java.sql.Date(1, 1, 2011))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new java.sql.Date(1, 1, 2011), numPartitions))
 
     dvd = new SQLClob("xxxxx")
-    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxxx"))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxxx", numPartitions))
 
     dvd = new SQLBoolean(true)
-    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(true))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(true, numPartitions))
 
     dvd = new SQLVarchar("xxxx");
-    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxx"))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue("xxxx", numPartitions))
 
     val timeStamp = new java.sql.Timestamp(System.currentTimeMillis())
 
     dvd = new SQLTimestamp(timeStamp)
     assert(rpr.getRoutingKeyForColumn(dvd) ==
-        func.hashValue(timeStamp))
+        func.hashValue(timeStamp, numPartitions))
 
     dvd = new SQLInteger(200000)
-    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new BigInteger("200000")))
+    assert(rpr.getRoutingKeyForColumn(dvd) == func.hashValue(new BigInteger("200000"), numPartitions))
 
 
   }
@@ -178,12 +196,13 @@ with BeforeAndAfterAll {
         "USING column " +
         "options " +
         "(" +
+        "BUCKETS '11',"+
         "PARTITION_BY 'OrderId'," +
         "PERSISTENT 'ASYNCHRONOUS')")
 
     val rdd = sc.parallelize(
       (1 to 5).map(i => TestData2(i, i.toString, i)))
-    val dataDF = snc.createDataFrame(rdd)
+    val dataDF = snc.createDataFrame(rdd);
 
     val rep = dataDF.repartition(11, new ColumnName("key1"))
 
@@ -192,6 +211,7 @@ with BeforeAndAfterAll {
     dataDF.write.insertInto(ColumnTableName1)
 
     val count = snc.sql(s"select * from $ColumnTableName1 P JOIN ColumnTable1Temp R ON P.OrderId=R.key1")
+    joinSuite.checkForShuffle(count.logicalPlan, snc, shuffleExpected = false)
     assert(count.count() === 5)
   }
 
