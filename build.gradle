@@ -52,7 +52,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.4.1-SNAPSHOT'
+  version = '0.4.0-PREVIEW'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -426,10 +426,10 @@ subprojects {
           beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
           repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
-            authentication(userName: propOrDefault('ossrhUsername'), password: propOrDefault('ossrhPassword'))
+            authentication(userName: ossrhUsername, password: ossrhPassword)
           }
           snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
-            authentication(userName: propOrDefault('ossrhUsername'), password: propOrDefault('ossrhPassword'))
+            authentication(userName: ossrhUsername, password: ossrhPassword)
           }
 
           pom.project {
@@ -613,6 +613,11 @@ task product {
       copy {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
         into "${snappyProductDir}/lib"
+      }
+      copy {
+        from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
+        into "${snappyProductDir}/quickstart/store"
+        exclude '.git*'
       }
     }
     // copy AQP jar

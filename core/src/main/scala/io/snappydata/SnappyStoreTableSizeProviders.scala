@@ -40,11 +40,11 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.{Logging, SparkContext}
 import java.util.HashMap
 import org.apache.spark.sql.collection.Utils
+
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
   private var timer: SystemTimer = null
-
 
   def start(sc: SparkContext): Unit = {
     val delay =
@@ -73,18 +73,17 @@ object StoreTableValueSizeProviderService extends Logging {
       }
 
       override def getLoggerI18n: LogWriterI18n = {
-        return Misc.getGemFireCache.getLoggerI18n
+        Misc.getGemFireCache.getLoggerI18n
       }
     }
   }
 
-  def getTableSize(tableName: String, isColumnTable: Boolean = false):
-  Option[Long] = {
+  def getTableSize(tableName: String,
+      isColumnTable: Boolean = false): Option[Long] = {
     val currentTableSizeInfo = tableSizeInfo
-    if (currentTableSizeInfo == null || !currentTableSizeInfo.contains(tableName)) {
+    if (currentTableSizeInfo == null) {
       None
-    }
-    else currentTableSizeInfo.get(tableName) match {
+    } else currentTableSizeInfo.get(tableName) match {
       case v if isColumnTable =>
         val size: Long = v.getOrElse(0)
         currentTableSizeInfo.get(ColumnFormatRelation.cachedBatchTableName(tableName)).
@@ -96,33 +95,38 @@ object StoreTableValueSizeProviderService extends Logging {
 
 object StoreTableSizeProvider {
 
+  private val memoryAnalyticsDefault = MemoryAnalytics(0, 0)
+
   def getTableSizes: Seq[UIAnalytics] = {
     val currentTableStats = tryExecute(conn => getMemoryAnalyticsDetails(conn))
     if (currentTableStats == null) {
       return Seq.empty
     }
     currentTableStats.filter(entry => !isColumnTable(entry._1)).map(details => {
+      val maForRowBuffer = details._2
       val columnTableName = ColumnFormatRelation.cachedBatchTableName(details._1)
-      val columnTableSize: Long = currentTableStats.getOrElse(columnTableName, 0)
+      val maForColumn = currentTableStats.
+          getOrElse(columnTableName, memoryAnalyticsDefault)
       val isColumnTable = currentTableStats.contains(columnTableName)
-      new UIAnalytics(details._1, details._2, columnTableSize, isColumnTable)
+      new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
+        maForColumn.totalSize, maForColumn.totalRows, isColumnTable)
     }).toSeq
-
   }
 
-
-
-  private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String, Long] = {
-    val currentTableStats = mutable.Map[String, Long]()
+  private def getMemoryAnalyticsDetails(
+      conn: Connection): mutable.Map[String, MemoryAnalytics] = {
+    val currentTableStats = mutable.Map[String, MemoryAnalytics]()
     val stmt = "select TABLE_NAME," +
-        "SUM(TOTAL_SIZE)" +
-        "from SYS.MEMORYANALYTICS " +
+        " SUM(TOTAL_SIZE) ," +
+        " SUM(NUM_ROWS) " +
+        " from SYS.MEMORYANALYTICS " +
         "WHERE table_name not like 'HIVE_METASTORE%'  group by TABLE_NAME"
     val rs = conn.prepareStatement(stmt).executeQuery()
     while (rs.next()) {
       val name = rs.getString(1)
       val totalSize = convertToBytes(rs.getString(2))
-      currentTableStats.put(name, totalSize)
+      val totalRows = rs.getString(3).toLong
+      currentTableStats.put(name, MemoryAnalytics(totalSize , totalRows))
     }
     currentTableStats
   }
@@ -167,8 +171,8 @@ object StoreTableSizeProvider {
       }
     }
   }
-
 }
 
-case class UIAnalytics(tableName: String, rowBufferSize: Long,
-    columnBufferSize: Long, isColumnTable: Boolean)
+case class MemoryAnalytics(totalSize: Long, totalRows: Long)
+case class UIAnalytics(tableName: String, rowBufferSize: Long, rowBufferCount: Long,
+    columnBufferSize: Long, columnBufferCount: Long , isColumnTable: Boolean)

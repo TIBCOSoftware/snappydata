@@ -23,14 +23,14 @@
 sbin="`dirname "$0"`"
 sbin="`cd "$sbin"; pwd`"
 
-MEMBERS_FILE=members.txt
-
-rm -rf $MEMBERS_FILE 2> /dev/null
-touch $MEMBERS_FILE
-
 # Load the Spark configuration
 . "$sbin/spark-config.sh"
 . "$sbin/snappy-config.sh"
+
+MEMBERS_FILE="$SPARK_HOME/work/members.txt"
+if [ -f "${MEMBERS_FILE}" ]; then
+  rm $MEMBERS_FILE
+fi
 
 # Start Locators
 "$sbin"/snappy-locators.sh start "$@"

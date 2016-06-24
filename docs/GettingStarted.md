@@ -33,7 +33,8 @@
     * [Top-K Elements in a Stream](#top-k-elements-in-a-stream-explanation-1)
     * [Step 5 - Create and Query Stream Table and Top-K](#step-5---create-and-query-stream-table-and-top-k)
     * [Working with Spark shell and spark-submit](#working-with-spark-shell-and-spark-submit)
-    * [Step 6 - Submit a Spark App that interacts with SnappyData](#step-6---submit-a-spark-app-that-interacts-with-snappydata)
+    * [Step 6 - Submit a Scala or Java Spark App that interacts with SnappyData](#step-6---submit-a-scala-java-spark-app-that-interacts-with-snappydata)
+    * [Step 7 - Submit a Python Spark App that interacts with SnappyData](#step-7---submit-a-python-spark-app-that-interacts-with-snappydata)
   * [Final Step - Stop the SnappyData Cluster](#final-step---stop-the-snappydata-cluster)
 
 ## Introduction
@@ -452,6 +453,9 @@ snappy> run './quickstart/scripts/twitter_streaming_query.sql';
 --- Stop the streaming 
 snappy> STREAMING STOP;
 ```
+
+We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
+
 ### Getting Started with Spark API 
 
 [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) and it integrates the SQLContext functionality with the SnappyData store. Similarly, [SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's [Streaming Context](http://spark.apache.org/docs/1.6.0/api/scala/index.html#org.apache.spark.streaming.StreamingContext). 
@@ -697,7 +701,7 @@ scala> val airlineDF = sqlContext.table("airline").show
 
 # you can now work with the dataframes to fetch the data.
 ```
-#### Step 6 - Submit a Spark App that interacts with SnappyData 
+#### Step 6 - Submit a Scala or Java Spark App that interacts with SnappyData 
 
 ```bash
 # Start the Spark standalone cluster.
@@ -706,6 +710,16 @@ $ sbin/start-all.sh
 $ bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/lib/quickstart-0.4.0-PREVIEW.jar
 
 # The results can be seen on the command line. 
+```
+
+#### Step 7 - Submit a Python Spark App that interacts with SnappyData 
+
+```bash
+# Start the Spark standalone cluster.
+$ sbin/start-all.sh 
+# Submit AirlineDataPythonApp to Spark Cluster with snappydata's locator host port.
+$ bin/spark-submit --master spark://masterhost:7077 --conf snappydata.store.locators=localhost:10334 --conf spark.ui.port=4041 $SNAPPY_HOME/python/examples/AirlineDataPythonApp.py
+
 ```
 
 #### Final Step - Stop the SnappyData Cluster
@@ -717,6 +731,9 @@ localhost: The SnappyData Server has stopped.
 localhost: The SnappyData Locator has stopped.
 ```
 
+We also have an [Ad Analytics code example](https://github.com/SnappyDataInc/snappy-poc) and associated [screencast](https://www.youtube.com/watch?v=bXofwFtmHjE) that showcases many useful features of SnappyData.
+
 -----
+
 
 
