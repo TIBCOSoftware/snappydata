@@ -90,7 +90,7 @@ allprojects {
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
-    gemfireXDVersion = '1.5.0-SNAPSHOT'
+    snappyStoreVersion = '1.5.0-SNAPSHOT'
     pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
@@ -609,8 +609,8 @@ task product {
         }
       }
     }
-    // copy GemFireXD shared libraries for optimized JNI calls
     if (new File(rootDir, 'store/build.gradle').exists()) {
+      // copy snappy-store shared libraries for optimized JNI calls
       copy {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
         into "${snappyProductDir}/lib"
@@ -619,6 +619,13 @@ task product {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
+      }
+      // also copy the JDBC client jar separately
+      def clientProject = project(':snappy-store:gemfirexd-client')
+      copy {
+        from clientProject.jar.destinationDir
+        into "${snappyProductDir}/lib"
+        include clientProject.jar.archiveName
       }
     }
     // copy AQP jar
