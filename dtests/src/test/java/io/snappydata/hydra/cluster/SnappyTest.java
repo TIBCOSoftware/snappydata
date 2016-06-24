@@ -146,6 +146,7 @@ public class SnappyTest implements Serializable {
     }
 
     protected String getDataLocation(String paramName) {
+        if (paramName.equals(" ")) return paramName;
         String scriptPath = null;
         if (new File(paramName).exists()) {
             return paramName;
@@ -163,6 +164,7 @@ public class SnappyTest implements Serializable {
 
     protected String getScriptLocation(String scriptName) {
         String scriptPath = null;
+        if (new File(scriptName).exists()) return scriptName;
         scriptPath = productSbinDir + scriptName;
         if (!new File(scriptPath).exists()) {
             scriptPath = productBinDir + scriptName;
@@ -1014,6 +1016,11 @@ public class SnappyTest implements Serializable {
         if (paramList == null) {
             String s = "Required Parameter(sqlScriptParamsForInitTask) not found for executing scripts in INITTASK.";
             throw new TestException(s);
+        }
+        if (paramList.size() != scriptNames.size()) {
+            Log.getLogWriter().info("Adding \" \" parameter in the paramList for the scripts for which no parameter is specified.");
+            while (paramList.size() != scriptNames.size())
+                paramList.add(" ");
         }
         try {
             for (int i = 0; i < scriptNames.size(); i++) {

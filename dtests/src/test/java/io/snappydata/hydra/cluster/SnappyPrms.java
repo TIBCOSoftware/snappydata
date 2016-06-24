@@ -18,6 +18,9 @@ public class SnappyPrms extends BasePrms {
     /**
      * Parameter used to get the user specified param List for INITTASK.
      * (VectosetValues of Strings) A list of values for parameters to be replaced in the sql scripts.
+     * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNamesForInitTask parameter.
+     * Framework will treat its corresponding parameter as " " string in this case.
      */
     public static Long sqlScriptParamsForInitTask;
 
