@@ -90,7 +90,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
     throw new UnsupportedOperationException("missing aqp jar")
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-      confidence: Double): DataFrame =
+      confidence: Double, behavior: String): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
   def getPlanner(context: SnappyContext): SparkPlanner =
