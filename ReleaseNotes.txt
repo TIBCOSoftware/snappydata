@@ -11,7 +11,11 @@ Release 0.5-preview
 
   Rowstore quickstarts are now packaged into the SnappyData distribution.
 
-  [SPARK] Optimizations in Bootstrap.
+  [AQP] Optimizations of bootstrap for sort based aggregate.
+
+  [AQP] Minimize the query plan size for bootstrap.
+
+  [AQP] Optimized the Declarative aggregate function.
 
   [SNAP-858] Added documentation for Python APIs.
 
