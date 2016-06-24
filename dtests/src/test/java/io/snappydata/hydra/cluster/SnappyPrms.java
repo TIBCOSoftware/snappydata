@@ -120,6 +120,10 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long waitTimeBeforeNextCycleVM;
 
+    /** (int) The number of VMs to stop (then restart) at a time.
+     */
+    public static Long numVMsToStop;
+
     /**
      * Parameter used to get the user APP_PROPS for snappy job.
      * (VectosetValues of Strings) A list of values for snappy-job.

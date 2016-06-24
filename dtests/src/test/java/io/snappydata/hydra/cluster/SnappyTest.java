@@ -3,12 +3,24 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
-
 import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
+import scala.Predef;
+import scala.Tuple2;
+import scala.collection.JavaConverters;
+import scala.collection.immutable.Map;
+import sql.SQLBB;
+import sql.SQLHelper;
+import sql.SQLPrms;
+import sql.dmlStatements.DMLStmtIF;
+import sql.sqlutil.DMLStmtsFactory;
+import util.PRObserver;
+import util.TestException;
+import util.TestHelper;
 
+import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -19,26 +31,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.io.*;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import scala.Predef;
-import scala.Tuple2;
-import scala.collection.JavaConverters;
-import scala.collection.immutable.Map;
-
-import sql.SQLBB;
-import sql.SQLHelper;
-import sql.SQLPrms;
-import sql.dmlStatements.DMLStmtIF;
-import sql.sqlutil.DMLStmtsFactory;
-import util.TestException;
-import util.TestHelper;
 
 import static java.lang.Thread.sleep;
 
@@ -88,6 +83,14 @@ public class SnappyTest implements Serializable {
     protected static int[] dmlTables = SQLPrms.getTables();
     public static final Random random = new Random(SQLPrms.getRandSeed());
     protected static DMLStmtsFactory dmlFactory = new DMLStmtsFactory();
+
+    protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, true);
+    public static final String LASTCYCLEDTIME = "lastCycledTime"; //used in SnappyBB
+    public static long lastCycledTime = 0;
+    public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
+    public static final int THOUSAND = 1000;
+    public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
+    private static Set active;
 
     private Connection connection = null;
     private static HydraThreadLocal localconnection = new HydraThreadLocal();
@@ -322,6 +325,7 @@ public class SnappyTest implements Serializable {
                 break;
         }
         SnappyBB.getBB().getSharedMap().put(logDir + "_" + RemoteTestModule.getMyVmid() + "_" + snappyTest.getMyTid(), nodeLogDir);
+        SnappyBB.getBB().getSharedMap().put("logDir_" + RemoteTestModule.getMyVmid(), dirPath);
         logDirExists = true;
     }
 
@@ -445,6 +449,14 @@ public class SnappyTest implements Serializable {
         for (String s : fileContent) {
             snappyTest.writeToFile(s, file);
         }
+    }
+
+    protected void writeServerConfigData(String fileName, String nodeLogDir) {
+        String filePath = productConfDirPath + fileName;
+        File file = new File(filePath);
+        Set<String> fileContent = new LinkedHashSet<String>();
+        snappyTest.writeToFile(nodeLogDir, file);
+
     }
 
     protected void writeWorkerConfigData(String fileName, String logDir) {
@@ -1082,7 +1094,7 @@ public class SnappyTest implements Serializable {
                     } else {
                         pids.add(pid);
                         RemoteTestModule.Master.recordPID(hd, pid);
-                        SnappyBB.getBB().getSharedMap().put("pid" + "_" + str, str);
+                        SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
                     }
                 } catch (RemoteException e) {
                     String s = "Unable to access master to record PID: " + pid;
@@ -1613,7 +1625,7 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Create and start snappy locator.
+     * Create and start snappy locator using snappy-locators.sh script.
      */
     public static synchronized void HydraTask_createAndStartSnappyLocator() {
         File log = null;
@@ -1639,32 +1651,18 @@ public class SnappyTest implements Serializable {
         }
     }
 
+
+
     /**
      * Create and start snappy server.
      */
     public static synchronized void HydraTask_createAndStartSnappyServers() {
-        File log = null;
-        ProcessBuilder pb = null;
-        try {
-            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
-            if (num == 1) {
-                if (useRowStore) {
-                    Log.getLogWriter().info("Starting server/s using rowstore option...");
-                    pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
-                } else {
-                    pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
-                }
-                log = new File(".");
-                String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
-                File logFile = new File(dest);
-                snappyTest.executeProcess(pb, logFile);
-                snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
-            }
-        } catch (IOException e) {
-            String s = "problem occurred while retriving logFile path " + log;
-            throw new TestException(s, e);
+        int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.serversStarted);
+        if (num == 1) {
+            snappyTest.startSnappyServer();
         }
     }
+
 
     /**
      * Creates and start snappy lead.
@@ -1787,6 +1785,195 @@ public class SnappyTest implements Serializable {
             snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
             String s = "problem occurred while retriving destination logFile path " + log;
+            throw new TestException(s, e);
+        }
+    }
+
+    /**
+     * Concurrently stops a List of VMs, then restarts them.  Waits for the
+     * restart to complete before returning.
+     */
+    public static void HydraTask_cycleStoreVms() {
+        if (cycleVms) snappyTest.cycleStoreVms();
+    }
+
+    protected void cycleStoreVms() {
+        if (!cycleVms) {
+            Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
+            return;
+        }
+
+        int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
+        List<ClientVmInfo> vms = null;
+        if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms) == 1) {
+            Object vmCycled = SnappyBB.getBB().getSharedMap().get("vmCycled");
+            if (vmCycled == null) {
+
+                while (true) {
+                    try {
+                        vms = stopStartVMs(numToKill);
+                        break;
+                    } catch (TestException te) {
+                    }
+                }
+
+            } //first time
+            else {
+                //relaxing a little for HA tests
+                //using the BB to track when to kill the next set of vms
+
+                Long lastCycledTimeFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
+                if (lastCycledTimeFromBB == null) {
+                    int sleepMS = 20000;
+                    Log.getLogWriter().info("allow  " + sleepMS / 1000 + " seconds before killing others");
+                    MasterController.sleepForMs(sleepMS); //no vms has been cycled before
+                } else if (lastCycledTimeFromBB > lastCycledTime) {
+                    lastCycledTime = lastCycledTimeFromBB;
+                    log().info("update last cycled vms is set to " + lastCycledTime);
+                }
+
+                if (lastCycledTime != 0) {
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastCycledTime < waitTimeBeforeNextCycleVM * THOUSAND) {
+                        SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                        return;
+                    } else {
+                        log().info("cycle vms starts at: " + currentTime);
+                    }
+                }
+
+                vms = stopStartVMs(numToKill);
+            }
+            if (vms == null || vms.size() == 0) {
+                Log.getLogWriter().info("no vm being chosen to be stopped");
+                SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                return;
+            }
+
+//            Log.getLogWriter().info("Total number of PR is " + numOfPRs);
+//            if (numOfPRs > 0)
+//                PRObserver.waitForRebalRecov(vms, 1, numOfPRs, null, null, false);
+            long currentTime = System.currentTimeMillis();
+            log().info("cycle vms finishes at: " + currentTime);
+            SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIME, currentTime);
+            SnappyBB.getBB().getSharedMap().put("vmCycled", "true");
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+        }
+    }
+
+    protected List<ClientVmInfo> stopStartVMs(int numToKill) {
+        return stopStartVMs(numToKill, cycleVMTarget);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target) {
+        Object[] tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
+        // get the VMs to stop; vmList and stopModeList are parallel lists
+
+        Object vm1 = SnappyBB.getBB().getSharedMap().get("storeVMTarget1");
+        Object vm2 = SnappyBB.getBB().getSharedMap().get("storeVMTarget2");
+        List<ClientVmInfo> vmList;
+        List<String> stopModeList;
+
+        if (vm1 == null && vm2 == null) {
+            vmList = (List<ClientVmInfo>) (tmpArr[0]);
+            stopModeList = (List<String>) (tmpArr[1]);
+            for (ClientVmInfo client : vmList) {
+                PRObserver.initialize(client.getVmid());
+            } //clear bb info for the vms to be stopped/started
+        } else {
+            vmList = (List<ClientVmInfo>) (tmpArr[0]);
+            stopModeList = (List<String>) (tmpArr[1]);
+            for (int i = 0; i < vmList.size(); i++) {
+                if (vmList.get(i).getVmid().intValue() == ((ClientVmInfo) vm1).getVmid().intValue()
+                        || vmList.get(i).getVmid().intValue() == ((ClientVmInfo) vm2).getVmid().intValue()) {
+                    Log.getLogWriter().info("remove the vm " + vmList.get(i).getVmid() + " from the stop list");
+                    vmList.remove(i);
+                } else PRObserver.initialize(vmList.get(i).getVmid());
+            }//clear bb info for the vms to be stopped/started
+        }
+        if (vmList.size() != 0) snappyTest.stopStartVMs(vmList, stopModeList);
+        return vmList;
+    }
+
+    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList) {
+        Set<String> myDirList = new LinkedHashSet<String>();
+        myDirList = getFileContents("logDir_", myDirList);
+        Log.getLogWriter().info("SS - myDirList is : " + myDirList);
+        if (vmList.size() != stopModeList.size()) {
+            throw new TestException("Expected targetVmList " + vmList + " and stopModeList " +
+                    stopModeList + " to be parallel lists of the same size, but they have different sizes");
+        }
+        Log.getLogWriter().info("In stopStartVMs, vms to stop: " + vmList +
+                ", corresponding stop modes: " + stopModeList);
+        for (int i = 0; i < vmList.size(); i++) {
+            ClientVmInfo targetVm = (ClientVmInfo) (vmList.get(i));
+            String stopMode = stopModeList.get(i);
+            String clientName = targetVm.getClientName();
+            Log.getLogWriter().info("SS - clientName is: " + clientName);
+            for (String vmDir : myDirList) {
+                if (vmDir.contains(clientName)) {
+                    recycleVM(vmDir, stopMode);
+                }
+            }
+        }
+
+    }
+
+    protected void recycleVM(String vmDir, String stopMode) {
+        Log.getLogWriter().info("SS - stopMode is : " + stopMode);
+        if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL"))
+            killVM(vmDir);
+        startServerVM(vmDir);
+    }
+
+    protected void killVM(String vmDir) {
+        File log = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop", "-dir=" + vmDir);
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
+        } catch (IOException e) {
+            String s = "problem occurred while retriving logFile path " + log;
+            throw new TestException(s, e);
+        }
+        Log.getLogWriter().info("SS - SnappyStore stopped successfully...");
+    }
+
+    protected void startServerVM(String vmDir) {
+        generateConfig("servers");
+        Set<String> fileContent = new LinkedHashSet<String>();
+        fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
+        for (String nodeConfig : fileContent) {
+            if (nodeConfig.contains(vmDir)) {
+                Log.getLogWriter().info("SS - vmDir is : " + vmDir);
+                Log.getLogWriter().info("SS - nodeConfig is : " + nodeConfig);
+                writeServerConfigData("servers", nodeConfig);
+            }
+        }
+        startSnappyServer();
+        Log.getLogWriter().info("SS - SnappyStore restarted successfully...");
+    }
+
+    protected void startSnappyServer() {
+        File log = null;
+        ProcessBuilder pb = null;
+        try {
+            if (useRowStore) {
+                Log.getLogWriter().info("Starting server/s using rowstore option...");
+                pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
+            } else {
+                pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
+            }
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
+            snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+        } catch (IOException e) {
+            String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
     }
