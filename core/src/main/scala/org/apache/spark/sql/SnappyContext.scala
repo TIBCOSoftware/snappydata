@@ -1097,7 +1097,8 @@ class SnappyContext protected[spark](
   @transient
   override protected[sql] val planner = this.snappyContextFunctions.getPlanner(this)
 
-  override def sql(sqlText: String): DataFrame = this.snappyContextFunctions.sql(super.sql)(sqlText)
+  override def sql(sqlText: String): DataFrame =
+    this.snappyContextFunctions.sql(() => super.sql(sqlText))(this, () => parseSql(sqlText))
 
   /**
     * Fetch the topK entries in the Approx TopK synopsis for the specified

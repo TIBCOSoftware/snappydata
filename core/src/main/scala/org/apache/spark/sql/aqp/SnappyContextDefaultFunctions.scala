@@ -135,7 +135,8 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
         sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
     }
 
-  def sql(defaultCall: String => DataFrame)(sqlText: String): DataFrame = defaultCall(sqlText)
+  def sql(defaultCall: => () => DataFrame)(context: SnappyContext,
+      parse: => () => LogicalPlan): DataFrame = defaultCall()
 }
 
 class DefaultPlanner(snappyContext: SnappyContext)

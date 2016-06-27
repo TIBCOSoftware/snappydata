@@ -87,5 +87,6 @@ trait SnappyContextFunctions {
 
   def createAnalyzer(context: SnappyContext): Analyzer
 
-  def sql(defaultCall: String => DataFrame)(sqlText: String): DataFrame
+  def sql(defaultCall: => () => DataFrame)(context: SnappyContext,
+      parse: => () => LogicalPlan): DataFrame
 }
