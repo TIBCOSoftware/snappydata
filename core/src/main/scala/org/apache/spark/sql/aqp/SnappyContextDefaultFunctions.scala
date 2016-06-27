@@ -34,7 +34,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
 
 
   def clear(): Unit = {}
-  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit ={}
+  def postRelationCreation(relation: BaseRelation, snc: SnappyContext): Unit = {}
   def getAQPRuleExecutor(sqlContext: SQLContext): RuleExecutor[SparkPlan] =
     new RuleExecutor[SparkPlan] {
       val batches = Seq(
@@ -150,9 +150,9 @@ class DefaultPlanner(snappyContext: SnappyContext)
   val storeOptimization = snappyContext.sparkContext.getConf.get(
     "snappy.store.optimization", "true").toBoolean
 
-  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization)
+  val storeOptimizedRules: Seq[Strategy] = if (storeOptimization) {
     Seq(StoreDataSourceStrategy, LocalJoinStrategies)
-  else Nil
+  } else Nil
 
   override def strategies: Seq[Strategy] =
     Seq(SnappyStrategies,
