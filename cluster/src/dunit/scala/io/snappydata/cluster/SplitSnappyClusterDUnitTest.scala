@@ -257,7 +257,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
-
+    conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 
