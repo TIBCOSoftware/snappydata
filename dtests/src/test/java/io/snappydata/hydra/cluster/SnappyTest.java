@@ -78,6 +78,7 @@ public class SnappyTest implements Serializable {
     public static Long waitTimeBeforeJobStatusInCloseTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForCloseTask, 6000);
     private static Boolean logDirExists = false;
     private static Boolean doneCopying = false;
+    private static Boolean doneRestore = false;
     private static Boolean diskDirExists = false;
     private static Boolean runGemXDQuery = false;
     protected static int[] dmlTables = SQLPrms.getTables();
@@ -456,7 +457,6 @@ public class SnappyTest implements Serializable {
         File file = new File(filePath);
         Set<String> fileContent = new LinkedHashSet<String>();
         snappyTest.writeToFile(nodeLogDir, file);
-
     }
 
     protected void writeWorkerConfigData(String fileName, String logDir) {
@@ -582,6 +582,65 @@ public class SnappyTest implements Serializable {
         getLocatorConnection();
     }
 
+    /**
+     * Mandatory to use this method in case of HA test.
+     * As per current implementation, for starting the server snappy-servers.sh script is used, which starts
+     * the servers based on the data in servers conf file.
+     * In HA test, the framework deletes the old servers file and creates the new one with the config data specific
+     * to server which is getting recycled.
+     * So, we need to backup the original conf file which will be required at the end of the test for stopping all servers
+     * which have been started in the test.
+     **/
+    public static synchronized void backUpServerConfigData() {
+        snappyTest.copyConfigData("servers");
+    }
+
+    /**
+     * Mandatory to use this method in case of HA test.
+     * As per current implementation, for starting the server snappy-servers.sh script is used, which starts
+     * the servers based on the data in servers conf file.
+     * In HA test, the framework deletes the old servers file and creates the new one with the config data specific
+     * to server which is getting recycled.
+     * So, we need to restore the original conf file which will be required at the end of the test for stopping all servers
+     * which have been started in the test.
+     **/
+    public static synchronized void restoreServerConfigData() {
+        snappyTest.restoreConfigData("servers");
+    }
+
+    protected void copyConfigData(String fileName) {
+        if (doneCopying) return;
+        String filePath = productConfDirPath + fileName;
+        File srcFile = new File(filePath);
+        try {
+            File destDir = new File(".");
+            FileUtils.copyFileToDirectory(srcFile, destDir);
+            Log.getLogWriter().info("Done copying " + fileName + " file from " + srcFile + " to " + destDir.getAbsolutePath());
+        } catch (IOException e) {
+            throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
+        }
+        doneCopying = true;
+    }
+
+    protected void restoreConfigData(String fileName) {
+        if (doneRestore) return;
+        String filePath = productConfDirPath + fileName;
+        File srcDir = new File(".");
+        File srcFile = null, destDir = null;
+        try {
+            String srcFilePath = srcDir.getCanonicalPath() + File.separator + fileName;
+            srcFile = new File(srcFilePath);
+            destDir = new File(filePath);
+            if (destDir.exists()) destDir.delete();
+            destDir = new File(productConfDirPath);
+            FileUtils.copyFileToDirectory(srcFile, destDir);
+            Log.getLogWriter().info("Done restoring " + fileName + " file from " + srcFile.getAbsolutePath() + " to " + destDir);
+        } catch (IOException e) {
+            throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
+        }
+        doneRestore = true;
+    }
+
     public static synchronized void HydraTask_copyDiskFiles() {
         if (diskDirExists) return;
         else {
@@ -593,10 +652,10 @@ public class SnappyTest implements Serializable {
                 try {
                     if (srcFile.isDirectory()) {
                         FileUtils.copyDirectoryToDirectory(srcFile, destDir);
-                        Log.getLogWriter().info("Done copying diskDirFile directory from ::" + srcFile + "to " + destDir);
+                        Log.getLogWriter().info("Done copying diskDirFile directory from: " + srcFile + " to " + destDir);
                     } else {
                         FileUtils.copyFileToDirectory(srcFile, destDir);
-                        Log.getLogWriter().info("Done copying diskDirFile from ::" + srcFile + "to " + destDir);
+                        Log.getLogWriter().info("Done copying diskDirFile from: " + srcFile + " to " + destDir);
                     }
                 } catch (IOException e) {
                     throw new TestException("Error occurred while copying data from file: " + srcFile + "\n " + e.getMessage());
@@ -1652,7 +1711,6 @@ public class SnappyTest implements Serializable {
     }
 
 
-
     /**
      * Create and start snappy server.
      */
@@ -1802,7 +1860,6 @@ public class SnappyTest implements Serializable {
             Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
             return;
         }
-
         int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
         List<ClientVmInfo> vms = null;
         if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms) == 1) {
@@ -1849,7 +1906,6 @@ public class SnappyTest implements Serializable {
                 SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
                 return;
             }
-
 //            Log.getLogWriter().info("Total number of PR is " + numOfPRs);
 //            if (numOfPRs > 0)
 //                PRObserver.waitForRebalRecov(vms, 1, numOfPRs, null, null, false);
@@ -1892,14 +1948,13 @@ public class SnappyTest implements Serializable {
                 } else PRObserver.initialize(vmList.get(i).getVmid());
             }//clear bb info for the vms to be stopped/started
         }
-        if (vmList.size() != 0) snappyTest.stopStartVMs(vmList, stopModeList);
+        if (vmList.size() != 0) stopStartVMs(vmList, stopModeList);
         return vmList;
     }
 
     protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList) {
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
-        Log.getLogWriter().info("SS - myDirList is : " + myDirList);
         if (vmList.size() != stopModeList.size()) {
             throw new TestException("Expected targetVmList " + vmList + " and stopModeList " +
                     stopModeList + " to be parallel lists of the same size, but they have different sizes");
@@ -1910,24 +1965,21 @@ public class SnappyTest implements Serializable {
             ClientVmInfo targetVm = (ClientVmInfo) (vmList.get(i));
             String stopMode = stopModeList.get(i);
             String clientName = targetVm.getClientName();
-            Log.getLogWriter().info("SS - clientName is: " + clientName);
             for (String vmDir : myDirList) {
                 if (vmDir.contains(clientName)) {
-                    recycleVM(vmDir, stopMode);
+                    recycleVM(vmDir, stopMode, clientName);
                 }
             }
         }
-
     }
 
-    protected void recycleVM(String vmDir, String stopMode) {
-        Log.getLogWriter().info("SS - stopMode is : " + stopMode);
+    protected void recycleVM(String vmDir, String stopMode, String clientName) {
         if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL"))
-            killVM(vmDir);
-        startServerVM(vmDir);
+            killServerVM(vmDir, clientName);
+        startServerVM(vmDir, clientName);
     }
 
-    protected void killVM(String vmDir) {
+    protected void killServerVM(String vmDir, String clientName) {
         File log = null;
         try {
             ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop", "-dir=" + vmDir);
@@ -1939,22 +1991,20 @@ public class SnappyTest implements Serializable {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
-        Log.getLogWriter().info("SS - SnappyStore stopped successfully...");
+        Log.getLogWriter().info(clientName + " stopped successfully...");
     }
 
-    protected void startServerVM(String vmDir) {
+    protected void startServerVM(String vmDir, String clientName) {
         generateConfig("servers");
         Set<String> fileContent = new LinkedHashSet<String>();
         fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
         for (String nodeConfig : fileContent) {
             if (nodeConfig.contains(vmDir)) {
-                Log.getLogWriter().info("SS - vmDir is : " + vmDir);
-                Log.getLogWriter().info("SS - nodeConfig is : " + nodeConfig);
                 writeServerConfigData("servers", nodeConfig);
             }
         }
         startSnappyServer();
-        Log.getLogWriter().info("SS - SnappyStore restarted successfully...");
+        Log.getLogWriter().info(clientName + " restarted successfully...");
     }
 
     protected void startSnappyServer() {
