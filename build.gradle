@@ -90,7 +90,7 @@ allprojects {
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
-    gemfireXDVersion = '1.5.0-SNAPSHOT'
+    snappyStoreVersion = '1.5.0-SNAPSHOT'
     pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
@@ -492,6 +492,7 @@ task product {
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:shadowJar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
+
   if (new File(rootDir, 'aqp/build.gradle').exists()) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:jar"
   }
@@ -566,7 +567,7 @@ task product {
         into "${snappyProductDir}/python"
       }
       copy {
-        from "${rootDir}/python" 
+        from "${rootDir}/python"
         into "${snappyProductDir}/python"
       }
       copy {
@@ -608,8 +609,8 @@ task product {
         }
       }
     }
-    // copy GemFireXD shared libraries for optimized JNI calls
     if (new File(rootDir, 'store/build.gradle').exists()) {
+      // copy snappy-store shared libraries for optimized JNI calls
       copy {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/lib"
         into "${snappyProductDir}/lib"
@@ -618,6 +619,13 @@ task product {
         from "${project(':snappy-store:gemfirexd-core').projectDir}/../quickstart"
         into "${snappyProductDir}/quickstart/store"
         exclude '.git*'
+      }
+      // also copy the JDBC client jar separately
+      def clientProject = project(':snappy-store:gemfirexd-client')
+      copy {
+        from clientProject.jar.destinationDir
+        into "${snappyProductDir}/lib"
+        include clientProject.jar.archiveName
       }
     }
     // copy AQP jar
@@ -685,11 +693,20 @@ distributions {
 }
 distTar {
   dependsOn product
+  // also package pulse and VSD
+  dependsOn ':packagePulse', ':packageVSD'
   classifier 'bin'
 }
 distZip {
   dependsOn product
+  // also package pulse and VSD
+  dependsOn ':packagePulse', ':packageVSD'
   classifier 'bin'
+}
+
+// use the task below to prepare final release bits
+task distProduct {
+  dependsOn product, distTar, distZip
 }
 
 def copyTestsCommonResources(def bdir) {
@@ -792,7 +809,7 @@ task runQuickstart {
       runSQLScript("create_and_load_column_table.sql", workingDir)
 
       runSQLScript("create_and_load_row_table.sql", workingDir)
-      
+
       runSQLScript("create_and_load_sample_table.sql", workingDir)
 
       runSQLScript("status_queries.sql", workingDir)
@@ -802,7 +819,7 @@ task runQuickstart {
       runSQLScript("oltp_queries.sql", workingDir)
 
       runSQLScript("olap_queries.sql", workingDir)
-      
+
       runSQLScript("olap_approx_queries.sql", workingDir)
 
       runSubmitQuery("io.snappydata.examples.CreateAndLoadAirlineDataJob",
@@ -889,35 +906,67 @@ gradle.taskGraph.whenReady({ graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
 })
 
-task packagePulse {
-  def pulseWarName = "pulse-${pulseVersion}.war"
-  def pulseDir = System.env.PULSEDIR
+task packagePulse << {
+  String pulseWarName = "pulse-${pulseVersion}.war"
+  String pulseDir = System.env.PULSEDIR
 
   if (pulseDir == null || pulseDir.length() == 0) {
     pulseDir = "${projectDir}/../pulse"
   }
 
-  doFirst {
-    if (!file(pulseDir).canWrite()){
-      throw  new Exception(" Pulse directroy can not be empty while building product")
+  String pulseDistDir = "${pulseDir}/build-artifacts/linux/dist"
+  if (file(pulseDistDir).canWrite()) {
+    exec {
+      executable "${pulseDir}/build.sh"
+      workingDir = pulseDir
+      args 'clean', 'build-all'
     }
-    println "Using Pulse location ${pulseDir}"
-
-    runScript("${pulseDir}/build.sh", pulseDir, ["clean", "build-all"])
-
     delete "${snappyProductDir}/lib/pulse.war"
-  }
-
-  doLast {
+    println ''
+    println "Copying Pulse war from ${pulseDistDir} to ${snappyProductDir}/lib"
+    println ''
     copy {
-      from "${pulseDir}/build-artifacts/linux/dist/${pulseWarName}"
-      into "${snappyProductDir}/lib/"
+      from "${pulseDir}/build-artifacts/linux/dist"
+      into "${snappyProductDir}/lib"
       include "${pulseWarName}"
       rename { filename -> "pulse.war" }
     }
+  } else {
+    println "Skipping Pulse due to unwritable ${pulseDistDir}"
   }
 }
 
+task packageVSD << {
+  String thirdparty = System.env.THIRDPARTYDIR
+  String vsdDir = ""
+
+  if (thirdparty == null || thirdparty.length() == 0) {
+    vsdDir = "${projectDir}/../thirdparty/vsd"
+  } else {
+    vsdDir = "${thirdparty}/vsd"
+  }
+
+  String vsdDistDir = "${vsdDir}/70/vsd"
+  if (file(vsdDistDir).canWrite()) {
+    println ''
+    println "Copying VSD from ${vsdDistDir} to ${snappyProductDir}/vsd"
+    println ''
+    delete "${snappyProductDir}/vsd"
+    copy {
+      from vsdDistDir
+      into "${snappyProductDir}/vsd"
+    }
+  } else {
+    println "Skipping VSD due to unwritable ${vsdDistDir}"
+  }
+}
+
+packagePulse.mustRunAfter product
+packageVSD.mustRunAfter product
+
+distTar.mustRunAfter clean, cleanAll
+distZip.mustRunAfter clean, cleanAll
+distProduct.mustRunAfter clean, cleanAll
 
 task precheckin {
   dependsOn cleanAll, buildAll, checkAll, allReports, runQuickstart
