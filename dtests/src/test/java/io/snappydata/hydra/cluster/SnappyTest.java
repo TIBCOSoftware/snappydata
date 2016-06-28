@@ -72,6 +72,7 @@ public class SnappyTest implements Serializable {
     public static boolean tableDefaultPartitioned = TestConfig.tab().booleanAt(SnappyPrms.tableDefaultPartitioned, false);  //default to false
     public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
     public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
+    public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
     private static String leadHost = null;
     public static Long waitTimeBeforeJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.jobExecutionTimeInMillisForTask, 6000);
     public static Long waitTimeBeforeStreamingJobStatusInTask = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillisForTask, 6000);
@@ -588,7 +589,7 @@ public class SnappyTest implements Serializable {
      * the servers based on the data in servers conf file.
      * In HA test, the framework deletes the old servers file and creates the new one with the config data specific
      * to server which is getting recycled.
-     * So, we need to backup the original conf file which will be required at the end of the test for stopping all servers
+     * So, we need to backup the original servers conf file. This will be required at the end of the test for stopping all servers
      * which have been started in the test.
      **/
     public static synchronized void backUpServerConfigData() {
@@ -601,7 +602,7 @@ public class SnappyTest implements Serializable {
      * the servers based on the data in servers conf file.
      * In HA test, the framework deletes the old servers file and creates the new one with the config data specific
      * to server which is getting recycled.
-     * So, we need to restore the original conf file which will be required at the end of the test for stopping all servers
+     * So, we need to restore the original servers conf file. This will be required at the end of the test for stopping all servers
      * which have been started in the test.
      **/
     public static synchronized void restoreServerConfigData() {
@@ -1121,6 +1122,11 @@ public class SnappyTest implements Serializable {
             assert pb.redirectOutput().file() == logFile;
             assert p.getInputStream().read() == -1;
             int rc = p.waitFor();
+            if (rc == 0) {
+                Log.getLogWriter().info("Executed successfully");
+            } else {
+                Log.getLogWriter().info("Failed with exit code: " + rc);
+            }
         } catch (IOException e) {
             throw new TestException("Exception occurred while starting the process:" + pb + "\nError Message:" + e.getMessage());
         } catch (InterruptedException e) {
@@ -1633,6 +1639,7 @@ public class SnappyTest implements Serializable {
             if (!file.exists()) {
                 file.createNewFile();
             } else if (file.exists()) {
+                if (isStopMode) return;
                 file.delete();
                 file.createNewFile();
             }
@@ -1652,7 +1659,7 @@ public class SnappyTest implements Serializable {
         Files.delete(Paths.get(locatorConf));
         Log.getLogWriter().info("locators file deleted");
         Files.delete(Paths.get(serverConf));
-        Log.getLogWriter().info("Servers file deleted");
+        Log.getLogWriter().info("servers file deleted");
         Files.delete(Paths.get(leadConf));
         Log.getLogWriter().info("leads file deleted");
         if (useSplitMode) {
@@ -1702,7 +1709,9 @@ public class SnappyTest implements Serializable {
                 String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
                 File logFile = new File(dest);
                 snappyTest.executeProcess(pb, logFile);
-                snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
+                if (useRowStore)
+                    snappyTest.recordSnappyProcessIDinNukeRun("GfxdDistributionLocator");
+                else snappyTest.recordSnappyProcessIDinNukeRun("LocatorLauncher");
             }
         } catch (IOException e) {
             String s = "problem occurred while retriving destination logFile path " + log;
@@ -1796,6 +1805,9 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
+        } catch (Exception e) {
+            String s = "problem occurred while retriving logFile path " + log;
+            throw new TestException(s, e);
         }
     }
 
@@ -1813,6 +1825,9 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
+        } catch (Exception e) {
+            String s = "problem occurred while retriving logFile path " + log;
+            throw new TestException(s, e);
         }
     }
 
@@ -1828,7 +1843,10 @@ public class SnappyTest implements Serializable {
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
-            String s = "problem occurred while retriving destination logFile path " + log;
+            String s = "problem occurred while retriving logFile path " + log;
+            throw new TestException(s, e);
+        } catch (Exception e) {
+            String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
     }
@@ -2021,7 +2039,9 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
-            snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+            if (useRowStore)
+                snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
+            else snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);

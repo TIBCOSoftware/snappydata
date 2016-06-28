@@ -1,8 +1,8 @@
 package io.snappydata.hydra.cluster;
 
-import java.util.Vector;
-
 import hydra.BasePrms;
+
+import java.util.Vector;
 
 
 /**
@@ -83,6 +83,13 @@ public class SnappyPrms extends BasePrms {
      * (boolean) - whether split mode cluster needs to be started.
      */
     public static Long useSplitMode;
+
+    /**
+     * (boolean) - whether stop mode needs to be checked before deleting the config data if already exists.
+     * This is required in case user wants to start the cluster and then stop the same later on using different script.
+     * In this case, test should not delete the existing configuration data created by previous test.
+     */
+    public static Long isStopMode;
 
     /**
      * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets the gemfirexd.table-default-partitioned to false.
