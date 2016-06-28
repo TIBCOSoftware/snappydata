@@ -38,10 +38,10 @@ dependencies {
     compile project(':snappy-store:gemfirexd-tools')
     testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
   } else {
-    compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
-    compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
-    compile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
-    testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
+    compile group: 'io.snappydata', name: 'gemfirexd-client', version: snappyStoreVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-core', version: snappyStoreVersion
+    compile group: 'io.snappydata', name: 'gemfirexd-tools', version: snappyStoreVersion
+    testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: snappyStoreVersion, classifier: 'tests'
   }
 
   compile("org.parboiled:parboiled_${scalaBinaryVersion}:2.1.2") {
