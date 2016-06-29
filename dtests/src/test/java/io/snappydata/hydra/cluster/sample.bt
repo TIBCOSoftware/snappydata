@@ -4,7 +4,13 @@ io/snappydata/hydra/cluster/sample.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   redundantCopies=1
 
-io/snappydata/hydra/cluster/sampleHA.conf
+io/snappydata/hydra/cluster/sampleSnappyStoreHA.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1
+
+io/snappydata/hydra/cluster/sampleLeadHA.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1

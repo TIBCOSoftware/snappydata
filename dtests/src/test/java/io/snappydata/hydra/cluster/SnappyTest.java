@@ -88,10 +88,13 @@ public class SnappyTest implements Serializable {
 
     protected static boolean cycleVms = TestConfig.tab().booleanAt(SnappyPrms.cycleVms, true);
     public static final String LASTCYCLEDTIME = "lastCycledTime"; //used in SnappyBB
+    public static final String LASTCYCLEDTIMEFORLEAD = "lastCycledTimeForLead"; //used in SnappyBB
     public static long lastCycledTime = 0;
+    public static long lastCycledTimeForLead = 0;
     public static int waitTimeBeforeNextCycleVM = TestConfig.tab().intAt(SnappyPrms.waitTimeBeforeNextCycleVM, 20); //secs
     public static final int THOUSAND = 1000;
     public static String cycleVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "snappyStore");
+    public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
     private static Set active;
 
     private Connection connection = null;
@@ -453,7 +456,7 @@ public class SnappyTest implements Serializable {
         }
     }
 
-    protected void writeServerConfigData(String fileName, String nodeLogDir) {
+    protected void writeNodeConfigData(String fileName, String nodeLogDir) {
         String filePath = productConfDirPath + fileName;
         File file = new File(filePath);
         Set<String> fileContent = new LinkedHashSet<String>();
@@ -607,6 +610,32 @@ public class SnappyTest implements Serializable {
      **/
     public static synchronized void restoreServerConfigData() {
         snappyTest.restoreConfigData("servers");
+    }
+
+    /**
+     * Mandatory to use this method in case of HA test.
+     * As per current implementation, for starting the lead members, snappy-leads.sh script is used, which starts
+     * the lead members based on the data in leads conf file.
+     * In HA test, the framework deletes the old leads file and creates the new one with the config data specific
+     * to lead member which is getting recycled.
+     * So, we need to restore the original leads conf file. This will be required at the end of the test for stopping all leads
+     * which have been started in the test.
+     **/
+    public static synchronized void restoreLeadConfigData() {
+        snappyTest.restoreConfigData("leads");
+    }
+
+    /**
+     * Mandatory to use this method in case of HA test.
+     * As per current implementation, for starting the lead members, snappy-leads.sh script is used, which starts
+     * the lead members based on the data in leads conf file.
+     * In HA test, the framework deletes the old leads file and creates the new one with the config data specific
+     * to lead member which is getting recycled.
+     * So, we need to backup the original leads conf file. This will be required at the end of the test for stopping all leads
+     * which have been started in the test.
+     **/
+    public static synchronized void backUpLeadConfigData() {
+        snappyTest.copyConfigData("leads");
     }
 
     protected void copyConfigData(String fileName) {
@@ -1734,7 +1763,7 @@ public class SnappyTest implements Serializable {
     /**
      * Creates and start snappy lead.
      */
-    public static synchronized void HydraTask_createAndStartSnappyLeader() {
+/*    public static synchronized void HydraTask_createAndStartSnappyLeader() {
         File log = null;
         try {
             int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
@@ -1750,7 +1779,12 @@ public class SnappyTest implements Serializable {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
         }
+    }*/
+    public static synchronized void HydraTask_createAndStartSnappyLeader() {
+        int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
+        if (num == 1) snappyTest.startSnappyLead();
     }
+
 
     /**
      * Starts Spark Cluster with the specified number of workers.
@@ -1866,11 +1900,19 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Concurrently stops a List of VMs, then restarts them.  Waits for the
+     * Concurrently stops a List of snappy store VMs, then restarts them.  Waits for the
      * restart to complete before returning.
      */
     public static void HydraTask_cycleStoreVms() {
         if (cycleVms) snappyTest.cycleStoreVms();
+    }
+
+    /**
+     * Stops snappy primary lead member, then restarts it.  Waits for the
+     * restart to complete before returning.
+     */
+    public static synchronized void HydraTask_cycleLeadVM() {
+        if (cycleVms) snappyTest.cycleLeadVM();
     }
 
     protected void cycleStoreVms() {
@@ -1883,7 +1925,6 @@ public class SnappyTest implements Serializable {
         if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms) == 1) {
             Object vmCycled = SnappyBB.getBB().getSharedMap().get("vmCycled");
             if (vmCycled == null) {
-
                 while (true) {
                     try {
                         vms = stopStartVMs(numToKill);
@@ -1891,7 +1932,6 @@ public class SnappyTest implements Serializable {
                     } catch (TestException te) {
                     }
                 }
-
             } //first time
             else {
                 //relaxing a little for HA tests
@@ -1920,7 +1960,7 @@ public class SnappyTest implements Serializable {
                 vms = stopStartVMs(numToKill);
             }
             if (vms == null || vms.size() == 0) {
-                Log.getLogWriter().info("no vm being chosen to be stopped");
+                Log.getLogWriter().info("no snappy store vm being chosen to be stopped");
                 SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
                 return;
             }
@@ -1935,8 +1975,71 @@ public class SnappyTest implements Serializable {
         }
     }
 
+    protected void cycleLeadVM() {
+        if (!cycleVms) {
+            Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
+            return;
+        }
+        int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
+        List<ClientVmInfo> vms = null;
+        if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms) == 1) {
+            Object vmCycled = SnappyBB.getBB().getSharedMap().get("leadVmCycled");
+            if (vmCycled == null) {
+                while (true) {
+                    try {
+                        vms = stopStartLeadVM(numToKill);
+                        break;
+                    } catch (TestException te) {
+                    }
+                }
+            } //first time
+            else {
+                //relaxing a little for HA tests
+                //using the BB to track when to kill the next set of vms
+                Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
+                if (lastCycledTimeForLeadFromBB == null) {
+                    int sleepMS = 20000;
+                    Log.getLogWriter().info("allow  " + sleepMS / 1000 + " seconds before killing others");
+                    MasterController.sleepForMs(sleepMS); //no vms has been cycled before
+                } else if (lastCycledTimeForLeadFromBB > lastCycledTimeForLead) {
+                    lastCycledTimeForLead = lastCycledTimeForLeadFromBB;
+                    log().info("update last cycled lead vm is set to " + lastCycledTimeForLead);
+                }
+
+                if (lastCycledTimeForLead != 0) {
+                    long currentTime = System.currentTimeMillis();
+                    if (currentTime - lastCycledTimeForLead < waitTimeBeforeNextCycleVM * THOUSAND) {
+                        SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+                        return;
+                    } else {
+                        log().info("cycle lead vm starts at: " + currentTime);
+                    }
+                }
+
+                vms = stopStartLeadVM(numToKill);
+            }
+            if (vms == null || vms.size() == 0) {
+                Log.getLogWriter().info("no lead vm being chosen to be stopped");
+                SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+                return;
+            }
+//            Log.getLogWriter().info("Total number of PR is " + numOfPRs);
+//            if (numOfPRs > 0)
+//                PRObserver.waitForRebalRecov(vms, 1, numOfPRs, null, null, false);
+            long currentTime = System.currentTimeMillis();
+            log().info("cycle lead vm finishes at: " + currentTime);
+            SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIMEFORLEAD, currentTime);
+            SnappyBB.getBB().getSharedMap().put("leadVmCycled", "true");
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+        }
+    }
+
     protected List<ClientVmInfo> stopStartVMs(int numToKill) {
         return stopStartVMs(numToKill, cycleVMTarget);
+    }
+
+    protected List<ClientVmInfo> stopStartLeadVM(int numToKill) {
+        return stopStartVMs(numToKill, cycleLeadVMTarget);
     }
 
     @SuppressWarnings("unchecked")
@@ -1993,17 +2096,25 @@ public class SnappyTest implements Serializable {
 
     protected void recycleVM(String vmDir, String stopMode, String clientName) {
         if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL"))
-            killServerVM(vmDir, clientName);
-        startServerVM(vmDir, clientName);
+            killVM(vmDir, clientName); //killServerVM(vmDir, clientName);
+        startVM(vmDir, clientName);//startServerVM(vmDir, clientName);
     }
 
-    protected void killServerVM(String vmDir, String clientName) {
-        File log = null;
+    protected void killVM(String vmDir, String clientName) {
+        File log = null, logFile = null;
+        ProcessBuilder pb = null;
         try {
-            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop", "-dir=" + vmDir);
-            log = new File(".");
-            String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
-            File logFile = new File(dest);
+            if (clientName.contains("lead")) {
+                pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "stop", "-dir=" + vmDir);
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
+                logFile = new File(dest);
+            } else {
+                pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-server.sh"), "stop", "-dir=" + vmDir);
+                log = new File(".");
+                String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
+                logFile = new File(dest);
+            }
             snappyTest.executeProcess(pb, logFile);
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
@@ -2012,17 +2123,60 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info(clientName + " stopped successfully...");
     }
 
-    protected void startServerVM(String vmDir, String clientName) {
-        generateConfig("servers");
+    protected void startVM(String vmDir, String clientName) {
+        if (clientName.contains("lead")) {
+            regenerateConfigData(vmDir, "leads", clientName);
+            startSnappyLead();
+        } else {
+            regenerateConfigData(vmDir, "servers", clientName);
+            startSnappyServer();
+        }
+        Log.getLogWriter().info(clientName + " restarted successfully...");
+    }
+
+    protected void regenerateConfigData(String vmDir, String confFileName, String clientName) {
+        generateConfig(confFileName);
         Set<String> fileContent = new LinkedHashSet<String>();
-        fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
+        if (clientName.contains("lead")) {
+            fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
+        } else {
+            fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
+        }
         for (String nodeConfig : fileContent) {
             if (nodeConfig.contains(vmDir)) {
-                writeServerConfigData("servers", nodeConfig);
+                if (clientName.contains("lead")) {
+                    //check for active lead member dir
+                    String searchString = "Primary lead lock acquired";
+                    File dirFile = new File(vmDir);
+                    for (File srcFile : dirFile.listFiles()) {
+                        if (!doneCopying) {
+                            if (srcFile.getAbsolutePath().contains("snappyleader.log")) {
+                                try {
+                                    FileInputStream fis = new FileInputStream(srcFile);
+                                    BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+                                    String str = null;
+                                    boolean found = false;
+                                    while ((str = br.readLine()) != null && !found) {
+                                        if (str.contains(searchString)) {
+                                            writeNodeConfigData(confFileName, nodeConfig);
+                                            found = true;
+                                        }
+                                    }
+                                    br.close();
+                                } catch (FileNotFoundException e) {
+                                    String s = "Unable to find file: " + srcFile.getAbsolutePath();
+                                    throw new TestException(s);
+                                } catch (IOException e) {
+                                    String s = "Problem while reading the file : " + srcFile.getAbsolutePath();
+                                    throw new TestException(s, e);
+                                }
+                            }
+                        }
+                    }
+
+                } else writeNodeConfigData(confFileName, nodeConfig);
             }
         }
-        startSnappyServer();
-        Log.getLogWriter().info(clientName + " restarted successfully...");
     }
 
     protected void startSnappyServer() {
@@ -2042,6 +2196,21 @@ public class SnappyTest implements Serializable {
             if (useRowStore)
                 snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
             else snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
+        } catch (IOException e) {
+            String s = "problem occurred while retriving logFile path " + log;
+            throw new TestException(s, e);
+        }
+    }
+
+    protected void startSnappyLead() {
+        File log = null;
+        try {
+            ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"), "start");
+            log = new File(".");
+            String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
+            File logFile = new File(dest);
+            snappyTest.executeProcess(pb, logFile);
+            snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);

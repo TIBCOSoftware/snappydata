@@ -131,6 +131,10 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long numVMsToStop;
 
+    /** (int) The number of lead VMs to stop (then restart).
+     */
+    public static Long numLeadsToStop;
+
     /**
      * Parameter used to get the user APP_PROPS for snappy job.
      * (VectosetValues of Strings) A list of values for snappy-job.
