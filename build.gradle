@@ -52,7 +52,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.4.0-PREVIEW'
+  version = '0.5.0-PREVIEW'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -90,7 +90,7 @@ allprojects {
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
-    snappyStoreVersion = '1.5.0-SNAPSHOT'
+    snappyStoreVersion = '1.5.0'
     pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
