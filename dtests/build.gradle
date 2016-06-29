@@ -54,13 +54,13 @@ dependencies {
         testCompile project(':snappy-store:gemfire-core')
         testCompile project(path: ':snappy-store:gemfirexd-tools', configuration: 'testOutput')
     } else {
-        testCompile group: 'io.snappydata', name: 'gemfirexd-client', version: snappyStoreVersion
-        testCompile group: 'io.snappydata', name: 'gemfirexd-core', version: snappyStoreVersion
-        testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: snappyStoreVersion
-        testCompile group: 'io.snappydata', name: 'gemfirexd-hydra-tests', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion
+        testCompile group: 'io.snappydata', name: 'snappydata-store-hydra-tests', version: snappyStoreVersion
         testCompile group: 'io.snappydata', name: 'gemfire-hydra-tests', version: snappyStoreVersion
         testCompile group: 'io.snappydata', name: 'gemfire-core', version: snappyStoreVersion
-        testCompile group: 'io.snappydata', name: 'gemfirexd-tools', version: snappyStoreVersion, classifier: 'tests'
+        testCompile group: 'io.snappydata', name: 'snappydata-store-tools', version: snappyStoreVersion, classifier: 'tests'
     }
     testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
     testCompile project(':snappy-cluster_' + scalaBinaryVersion)
