@@ -168,6 +168,7 @@ public class ProcessManager {
       "-Xrunjdwp:transport=dt_socket,server=y,suspend=n",
       "-XX:+HeapDumpOnOutOfMemoryError",
       "-Xmx512m",
+      // "-Xmx2g",
       "-Xms512m",
       "-XX:MaxPermSize=256m",
       "-XX:+UseParNewGC",
