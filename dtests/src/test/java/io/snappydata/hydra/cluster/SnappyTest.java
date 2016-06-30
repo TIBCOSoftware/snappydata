@@ -17,6 +17,7 @@ import sql.SQLPrms;
 import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
 import util.PRObserver;
+import util.StopStartPrms;
 import util.TestException;
 import util.TestHelper;
 
@@ -2015,7 +2016,6 @@ public class SnappyTest implements Serializable {
                         log().info("cycle lead vm starts at: " + currentTime);
                     }
                 }
-
                 vms = stopStartLeadVM(numToKill);
             }
             if (vms == null || vms.size() == 0) {
@@ -2035,16 +2035,20 @@ public class SnappyTest implements Serializable {
     }
 
     protected List<ClientVmInfo> stopStartVMs(int numToKill) {
-        return stopStartVMs(numToKill, cycleVMTarget);
+        log().info("cycle store vm starts at: " + System.currentTimeMillis());
+        return stopStartVMs(numToKill, cycleVMTarget, false);
     }
 
     protected List<ClientVmInfo> stopStartLeadVM(int numToKill) {
-        return stopStartVMs(numToKill, cycleLeadVMTarget);
+        log().info("cycle lead vm starts at: " + System.currentTimeMillis());
+        return stopStartVMs(numToKill, cycleLeadVMTarget, true);
     }
 
     @SuppressWarnings("unchecked")
-    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target) {
-        Object[] tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, String target, boolean isLead) {
+        Object[] tmpArr = null;
+        if (isLead) tmpArr = snappyTest.getPrimaryLeadVM(target);
+        else tmpArr = StopStartVMs.getOtherVMs(numToKill, target);
         // get the VMs to stop; vmList and stopModeList are parallel lists
 
         Object vm1 = SnappyBB.getBB().getSharedMap().get("storeVMTarget1");
@@ -2069,11 +2073,14 @@ public class SnappyTest implements Serializable {
                 } else PRObserver.initialize(vmList.get(i).getVmid());
             }//clear bb info for the vms to be stopped/started
         }
-        if (vmList.size() != 0) stopStartVMs(vmList, stopModeList);
+        if (vmList.size() != 0) {
+            if (isLead) stopStartVMs(vmList, stopModeList, true);
+            else stopStartVMs(vmList, stopModeList, false);
+        }
         return vmList;
     }
 
-    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList) {
+    protected void stopStartVMs(List<ClientVmInfo> vmList, List<String> stopModeList, boolean isLead) {
         Set<String> myDirList = new LinkedHashSet<String>();
         myDirList = getFileContents("logDir_", myDirList);
         if (vmList.size() != stopModeList.size()) {
@@ -2088,23 +2095,27 @@ public class SnappyTest implements Serializable {
             String clientName = targetVm.getClientName();
             for (String vmDir : myDirList) {
                 if (vmDir.contains(clientName)) {
-                    recycleVM(vmDir, stopMode, clientName);
+                    if (isLead) recycleVM(vmDir, stopMode, clientName, true);
+                    else recycleVM(vmDir, stopMode, clientName, false);
                 }
             }
         }
     }
 
-    protected void recycleVM(String vmDir, String stopMode, String clientName) {
-        if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL"))
-            killVM(vmDir, clientName); //killServerVM(vmDir, clientName);
-        startVM(vmDir, clientName);//startServerVM(vmDir, clientName);
+    protected void recycleVM(String vmDir, String stopMode, String clientName, boolean isLead) {
+        if (stopMode.equalsIgnoreCase("NiceKill") || stopMode.equalsIgnoreCase("NICE_KILL")) {
+            if (isLead) killVM(vmDir, clientName, true);
+            else killVM(vmDir, clientName, false);
+        }
+        if (isLead) startVM(vmDir, clientName, true);
+        else startVM(vmDir, clientName, false);
     }
 
-    protected void killVM(String vmDir, String clientName) {
+    protected void killVM(String vmDir, String clientName, boolean isLead) {
         File log = null, logFile = null;
         ProcessBuilder pb = null;
         try {
-            if (clientName.contains("lead")) {
+            if (isLead) {
                 pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-lead.sh"), "stop", "-dir=" + vmDir);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
@@ -2123,42 +2134,81 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info(clientName + " stopped successfully...");
     }
 
-    protected void startVM(String vmDir, String clientName) {
-        if (clientName.contains("lead")) {
-            regenerateConfigData(vmDir, "leads", clientName);
+    protected void startVM(String vmDir, String clientName, boolean isLead) {
+        if (isLead) {
+            regenerateConfigData(vmDir, "leads", clientName, true);
             startSnappyLead();
         } else {
-            regenerateConfigData(vmDir, "servers", clientName);
+            regenerateConfigData(vmDir, "servers", clientName, false);
             startSnappyServer();
         }
         Log.getLogWriter().info(clientName + " restarted successfully...");
     }
 
-    protected void regenerateConfigData(String vmDir, String confFileName, String clientName) {
+    protected void regenerateConfigData(String vmDir, String confFileName, String clientName, boolean isLead) {
         generateConfig(confFileName);
         Set<String> fileContent = new LinkedHashSet<String>();
-        if (clientName.contains("lead")) {
+        if (isLead) {
             fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
         } else {
             fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
         }
         for (String nodeConfig : fileContent) {
             if (nodeConfig.contains(vmDir)) {
-                if (clientName.contains("lead")) {
-                    //check for active lead member dir
-                    String searchString = "Primary lead lock acquired";
-                    File dirFile = new File(vmDir);
-                    for (File srcFile : dirFile.listFiles()) {
-                        if (!doneCopying) {
+                writeNodeConfigData(confFileName, nodeConfig);
+            }
+        }
+    }
+
+    public static Object[] getPrimaryLeadVM(String clientMatchStr) {
+        ArrayList vmList = new ArrayList();
+        ArrayList stopModeList = new ArrayList();
+        int myVmID = RemoteTestModule.getMyVmid();
+
+        // get VMs that contain the clientMatchStr
+        List vmInfoList = StopStartVMs.getAllVMs();
+        vmInfoList = StopStartVMs.getMatchVMs(vmInfoList, clientMatchStr);
+        Log.getLogWriter().info("SS - vmInfoList is: " + vmInfoList.toString());
+        // now all vms in vmInfoList match the clientMatchStr
+        do {
+            if (vmInfoList.size() == 0) {
+                throw new TestException("Unable to find lead node " +
+                        " vms to stop with client match string " + clientMatchStr +
+                        "; either a test problem or add StopStartVMs.StopStart_initTask to the test");
+            }
+            // add a VmId to the list of vms to stop
+            int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
+            ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
+            if (info.getVmid().intValue() != myVmID) { // info is not the current VM
+                //todo to find the primary lead member
+                Set<String> myDirList = new LinkedHashSet<String>();
+                myDirList = getFileContents("logDir_", myDirList);
+                String vmDir = null;
+                String clientName = info.getClientName();
+                for (String dir : myDirList) {
+                    if (dir.contains(clientName)) {
+                        vmDir = dir;
+                        break;
+                    }
+                }
+                Log.getLogWriter().info("SS - vmDir is : " + vmDir);
+                Set<String> fileContent = new LinkedHashSet<String>();
+                fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
+                boolean found = false;
+                for (String nodeConfig : fileContent) {
+                    if (nodeConfig.contains(vmDir)) {
+                        //check for active lead member dir
+                        String searchString = "Primary lead lock acquired";
+                        File dirFile = new File(vmDir);
+                        for (File srcFile : dirFile.listFiles()) {
                             if (srcFile.getAbsolutePath().contains("snappyleader.log")) {
                                 try {
                                     FileInputStream fis = new FileInputStream(srcFile);
                                     BufferedReader br = new BufferedReader(new InputStreamReader(fis));
                                     String str = null;
-                                    boolean found = false;
                                     while ((str = br.readLine()) != null && !found) {
                                         if (str.contains(searchString)) {
-                                            writeNodeConfigData(confFileName, nodeConfig);
+                                            Log.getLogWriter().info("SS - str is: " + str);
                                             found = true;
                                         }
                                     }
@@ -2173,11 +2223,18 @@ public class SnappyTest implements Serializable {
                             }
                         }
                     }
-
-                } else writeNodeConfigData(confFileName, nodeConfig);
+                }
+                if (found) vmList.add(info);
+                Log.getLogWriter().info("SS - vmList is: " + vmList.toString());
+                // choose a stopMode
+                String choice = TestConfig.tab().stringAt(StopStartPrms.stopModes);
+                stopModeList.add(choice);
             }
-        }
+            vmInfoList.remove(randInt);
+        } while (vmList.size() < vmInfoList.size());
+        return new Object[]{vmList, stopModeList, vmInfoList};
     }
+
 
     protected void startSnappyServer() {
         File log = null;
