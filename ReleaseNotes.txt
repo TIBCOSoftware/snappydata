@@ -1,0 +1,22 @@
+####################################################################################################
+# PLEASE KEEP THE WIDTH OF THE LINES BELOW WITHIN 100 CHARACTERS.                                  #
+# MOST RECENT CHANGE AT THE TOP.                                                                   #
+# KEEP THE DESCRIPTION OF EACH OF YOUR CHANGES THAT NEEDS TO BE PUT INTO THE RELEASE NOTES TO ONE  #
+# TO THREE LINES.                                                                                  #
+# KEEP A LINE BLANK BETWEEN TWO NOTES.                                                             #
+# ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
+####################################################################################################
+
+Release 0.5-preview
+
+  Rowstore quickstarts are now packaged into the SnappyData distribution.
+
+  [AQP] Optimizations of bootstrap for sort based aggregate.
+
+  [AQP] Minimize the query plan size for bootstrap.
+
+  [AQP] Optimized the Declarative aggregate function.
+
+  [SNAP-858] Added documentation for Python APIs.
+
+  [SNAP-852] Added new fields on the Snappy Store tab in Spark UI.

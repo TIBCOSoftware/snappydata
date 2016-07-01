@@ -19,7 +19,7 @@ SnappyData is a **distributed in-memory data store for real-time operational ana
 ## Download binary distribution
 You can download the latest version of SnappyData here:
 
-* SnappyData Preview 0.4.0 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.4-preview/snappydata-0.4.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.4-preview/snappydata-0.4.0-PREVIEW-bin.zip)
+* SnappyData Preview 0.5.0 download link [(tar.gz)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5-preview/snappydata-0.5.0-PREVIEW-bin.tar.gz) [(zip)](https://github.com/SnappyDataInc/snappydata/releases/download/v0.5-preview/snappydata-0.5.0-PREVIEW-bin.zip)
 
 SnappyData has been tested on Linux and Mac OSX. If not already installed, you will need to download [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). 
 
@@ -34,20 +34,20 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 ```
 groupId: io.snappydata
 artifactId: snappy-core_2.10
-version: 0.4.0-PREVIEW
+version: 0.5.0-PREVIEW
 
 groupId: io.snappydata
 artifactId: snappy-cluster_2.10
-version: 0.4.0-PREVIEW
+version: 0.5.0-PREVIEW
 ```
 
 If you are using sbt, add this line to your build.sbt for core snappy artifacts:
 
-`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.4.0-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-core_2.10" % "0.5.0-PREVIEW"`
 
 For additions related to SnappyData cluster, use:
 
-`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.4.0-PREVIEW"`
+`libraryDependencies += "io.snappydata" % "snappy-cluster_2.10" % "0.5.0-PREVIEW"`
 
 Check out more specific SnappyData artifacts here: http://mvnrepository.com/artifact/io.snappydata
 
@@ -105,6 +105,8 @@ From the product install directory run this script:
 ````shell
 ./sbin/snappy-start-all.sh
 ````
+> NOTE there is a "start-all.sh" script in /sbin/ as well that starts up just Spark. Make sure you use snappy-start-all.sh
+
 This may take 30 seconds or more to bootstrap the entire cluster on your local machine (logs are in the 'work' sub-directory). 
 The output should look something like this …
 ````
