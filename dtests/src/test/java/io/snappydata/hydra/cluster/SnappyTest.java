@@ -713,7 +713,7 @@ public class SnappyTest implements Serializable {
                         } else {
                             SnappyBB.getBB().getSharedMap().put("dirName_" + RemoteTestModule.getMyPid() + "_" + snappyTest.getMyTid(), srcFile1);
                             File dir = new File(srcFile1.getAbsolutePath());
-                            Log.getLogWriter().info("Match found for File Path: " + srcFile1.getAbsolutePath());
+                            Log.getLogWriter().info("Match found for file: " + srcFile1.getAbsolutePath());
                             for (File srcFile : dir.listFiles()) {
                                 try {
                                     if (srcFile.isDirectory()) {
@@ -1764,23 +1764,6 @@ public class SnappyTest implements Serializable {
     /**
      * Creates and start snappy lead.
      */
-/*    public static synchronized void HydraTask_createAndStartSnappyLeader() {
-        File log = null;
-        try {
-            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
-            if (num == 1) {
-                ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"), "start");
-                log = new File(".");
-                String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
-                File logFile = new File(dest);
-                snappyTest.executeProcess(pb, logFile);
-                snappyTest.recordSnappyProcessIDinNukeRun("LeaderLauncher");
-            }
-        } catch (IOException e) {
-            String s = "problem occurred while retriving logFile path " + log;
-            throw new TestException(s, e);
-        }
-    }*/
     public static synchronized void HydraTask_createAndStartSnappyLeader() {
         int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.leadsStarted);
         if (num == 1) snappyTest.startSnappyLead();
@@ -1905,7 +1888,13 @@ public class SnappyTest implements Serializable {
      * restart to complete before returning.
      */
     public static void HydraTask_cycleStoreVms() {
-        if (cycleVms) snappyTest.cycleStoreVms();
+
+        if (cycleVms) {
+            int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
+            int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms);
+            Long lastCycledTimeForStoreFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
+            snappyTest.cycleVM(numToKill, stopStartVms, "storeVmCycled", lastCycledTimeForStoreFromBB, lastCycledTime, false);
+        }
     }
 
     /**
@@ -1913,22 +1902,27 @@ public class SnappyTest implements Serializable {
      * restart to complete before returning.
      */
     public static synchronized void HydraTask_cycleLeadVM() {
-        if (cycleVms) snappyTest.cycleLeadVM();
+        if (cycleVms) {
+            int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
+            int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
+            Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
+            snappyTest.cycleVM(numToKill, stopStartVms, "leadVmCycled", lastCycledTimeForLeadFromBB, lastCycledTimeForLead, true);
+        }
     }
 
-    protected void cycleStoreVms() {
+    protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long lastCycledTime, boolean isLead) {
         if (!cycleVms) {
             Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
             return;
         }
-        int numToKill = TestConfig.tab().intAt(SnappyPrms.numVMsToStop, 1);
         List<ClientVmInfo> vms = null;
-        if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartVms) == 1) {
-            Object vmCycled = SnappyBB.getBB().getSharedMap().get("vmCycled");
+        if (stopStartVMs == 1) {
+            Object vmCycled = SnappyBB.getBB().getSharedMap().get(cycledVM);
             if (vmCycled == null) {
                 while (true) {
                     try {
-                        vms = stopStartVMs(numToKill);
+                        if (isLead) vms = stopStartVMs(numToKill, true);
+                        else vms = stopStartVMs(numToKill, false);
                         break;
                     } catch (TestException te) {
                     }
@@ -1937,106 +1931,64 @@ public class SnappyTest implements Serializable {
             else {
                 //relaxing a little for HA tests
                 //using the BB to track when to kill the next set of vms
-
-                Long lastCycledTimeFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIME);
                 if (lastCycledTimeFromBB == null) {
                     int sleepMS = 20000;
                     Log.getLogWriter().info("allow  " + sleepMS / 1000 + " seconds before killing others");
                     MasterController.sleepForMs(sleepMS); //no vms has been cycled before
                 } else if (lastCycledTimeFromBB > lastCycledTime) {
                     lastCycledTime = lastCycledTimeFromBB;
-                    log().info("update last cycled vms is set to " + lastCycledTime);
+                    log().info("update last cycled lead vm is set to " + lastCycledTime);
                 }
 
                 if (lastCycledTime != 0) {
                     long currentTime = System.currentTimeMillis();
                     if (currentTime - lastCycledTime < waitTimeBeforeNextCycleVM * THOUSAND) {
-                        SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                        if (isLead) SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+                        else SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
                         return;
                     } else {
-                        log().info("cycle vms starts at: " + currentTime);
+                        if (isLead) log().info("cycle lead vm starts at: " + currentTime);
+                        else log().info("cycle store vm starts at: " + currentTime);
                     }
                 }
-
-                vms = stopStartVMs(numToKill);
+                if (isLead) vms = stopStartVMs(numToKill, true);
+                else vms = stopStartVMs(numToKill, false);
             }
             if (vms == null || vms.size() == 0) {
-                Log.getLogWriter().info("no snappy store vm being chosen to be stopped");
-                SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                if (isLead) {
+                    Log.getLogWriter().info("No lead vm being chosen to be stopped");
+                    SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+                } else {
+                    Log.getLogWriter().info("No store vm being chosen to be stopped");
+                    SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
+                }
                 return;
             }
 //            Log.getLogWriter().info("Total number of PR is " + numOfPRs);
 //            if (numOfPRs > 0)
 //                PRObserver.waitForRebalRecov(vms, 1, numOfPRs, null, null, false);
             long currentTime = System.currentTimeMillis();
-            log().info("cycle vms finishes at: " + currentTime);
-            SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIME, currentTime);
-            SnappyBB.getBB().getSharedMap().put("vmCycled", "true");
-            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
-        }
-    }
-
-    protected void cycleLeadVM() {
-        if (!cycleVms) {
-            Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
-            return;
-        }
-        int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
-        List<ClientVmInfo> vms = null;
-        if (SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms) == 1) {
-            Object vmCycled = SnappyBB.getBB().getSharedMap().get("leadVmCycled");
-            if (vmCycled == null) {
-                while (true) {
-                    try {
-                        vms = stopStartLeadVM(numToKill);
-                        break;
-                    } catch (TestException te) {
-                    }
-                }
-            } //first time
-            else {
-                //relaxing a little for HA tests
-                //using the BB to track when to kill the next set of vms
-                Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
-                if (lastCycledTimeForLeadFromBB == null) {
-                    int sleepMS = 20000;
-                    Log.getLogWriter().info("allow  " + sleepMS / 1000 + " seconds before killing others");
-                    MasterController.sleepForMs(sleepMS); //no vms has been cycled before
-                } else if (lastCycledTimeForLeadFromBB > lastCycledTimeForLead) {
-                    lastCycledTimeForLead = lastCycledTimeForLeadFromBB;
-                    log().info("update last cycled lead vm is set to " + lastCycledTimeForLead);
-                }
-
-                if (lastCycledTimeForLead != 0) {
-                    long currentTime = System.currentTimeMillis();
-                    if (currentTime - lastCycledTimeForLead < waitTimeBeforeNextCycleVM * THOUSAND) {
-                        SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
-                        return;
-                    } else {
-                        log().info("cycle lead vm starts at: " + currentTime);
-                    }
-                }
-                vms = stopStartLeadVM(numToKill);
-            }
-            if (vms == null || vms.size() == 0) {
-                Log.getLogWriter().info("no lead vm being chosen to be stopped");
+            if (isLead) {
+                log().info("cycle lead vm finishes at: " + currentTime);
+                SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIMEFORLEAD, currentTime);
                 SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
-                return;
+            } else {
+                log().info("cycle store vm finishes at: " + currentTime);
+                SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIME, currentTime);
+                SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartVms);
             }
-//            Log.getLogWriter().info("Total number of PR is " + numOfPRs);
-//            if (numOfPRs > 0)
-//                PRObserver.waitForRebalRecov(vms, 1, numOfPRs, null, null, false);
-            long currentTime = System.currentTimeMillis();
-            log().info("cycle lead vm finishes at: " + currentTime);
-            SnappyBB.getBB().getSharedMap().put(LASTCYCLEDTIMEFORLEAD, currentTime);
-            SnappyBB.getBB().getSharedMap().put("leadVmCycled", "true");
-            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.stopStartLeadVms);
+            SnappyBB.getBB().getSharedMap().put(cycledVM, "true");
         }
     }
 
-    protected List<ClientVmInfo> stopStartVMs(int numToKill) {
-        log().info("cycle store vm starts at: " + System.currentTimeMillis());
-        return stopStartVMs(numToKill, cycleVMTarget, false);
+    protected List<ClientVmInfo> stopStartVMs(int numToKill, boolean isLead) {
+        if (isLead) {
+            log().info("cycle lead vm starts at: " + System.currentTimeMillis());
+            return stopStartVMs(numToKill, cycleLeadVMTarget, true);
+        } else {
+            log().info("cycle store vm starts at: " + System.currentTimeMillis());
+            return stopStartVMs(numToKill, cycleVMTarget, false);
+        }
     }
 
     protected List<ClientVmInfo> stopStartLeadVM(int numToKill) {
@@ -2168,7 +2120,7 @@ public class SnappyTest implements Serializable {
         // get VMs that contain the clientMatchStr
         List vmInfoList = StopStartVMs.getAllVMs();
         vmInfoList = StopStartVMs.getMatchVMs(vmInfoList, clientMatchStr);
-        Log.getLogWriter().info("SS - vmInfoList is: " + vmInfoList.toString());
+
         // now all vms in vmInfoList match the clientMatchStr
         do {
             if (vmInfoList.size() == 0) {
@@ -2180,7 +2132,6 @@ public class SnappyTest implements Serializable {
             int randInt = TestConfig.tab().getRandGen().nextInt(0, vmInfoList.size() - 1);
             ClientVmInfo info = (ClientVmInfo) (vmInfoList.get(randInt));
             if (info.getVmid().intValue() != myVmID) { // info is not the current VM
-                //todo to find the primary lead member
                 Set<String> myDirList = new LinkedHashSet<String>();
                 myDirList = getFileContents("logDir_", myDirList);
                 String vmDir = null;
@@ -2191,14 +2142,14 @@ public class SnappyTest implements Serializable {
                         break;
                     }
                 }
-                Log.getLogWriter().info("SS - vmDir is : " + vmDir);
                 Set<String> fileContent = new LinkedHashSet<String>();
                 fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
                 boolean found = false;
                 for (String nodeConfig : fileContent) {
                     if (nodeConfig.contains(vmDir)) {
                         //check for active lead member dir
-                        String searchString = "Primary lead lock acquired";
+                        String searchString1 = "Primary lead lock acquired";
+                        String searchString2 = "Resuming startup sequence from STANDBY";
                         File dirFile = new File(vmDir);
                         for (File srcFile : dirFile.listFiles()) {
                             if (srcFile.getAbsolutePath().contains("snappyleader.log")) {
@@ -2207,8 +2158,7 @@ public class SnappyTest implements Serializable {
                                     BufferedReader br = new BufferedReader(new InputStreamReader(fis));
                                     String str = null;
                                     while ((str = br.readLine()) != null && !found) {
-                                        if (str.contains(searchString)) {
-                                            Log.getLogWriter().info("SS - str is: " + str);
+                                        if (str.toLowerCase().contains(searchString1.toLowerCase()) || str.toLowerCase().contains(searchString2.toLowerCase())) {
                                             found = true;
                                         }
                                     }
@@ -2224,11 +2174,12 @@ public class SnappyTest implements Serializable {
                         }
                     }
                 }
-                if (found) vmList.add(info);
-                Log.getLogWriter().info("SS - vmList is: " + vmList.toString());
-                // choose a stopMode
-                String choice = TestConfig.tab().stringAt(StopStartPrms.stopModes);
-                stopModeList.add(choice);
+                if (found) {
+                    vmList.add(info);
+                    // choose a stopMode
+                    String choice = TestConfig.tab().stringAt(StopStartPrms.stopModes);
+                    stopModeList.add(choice);
+                }
             }
             vmInfoList.remove(randInt);
         } while (vmList.size() < vmInfoList.size());
@@ -2251,8 +2202,8 @@ public class SnappyTest implements Serializable {
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
             if (useRowStore)
-                snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
-            else snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
+                snappyTest.recordSnappyProcessIDinNukeRun("GfxdServerLauncher");
+            else snappyTest.recordSnappyProcessIDinNukeRun("ServerLauncher");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
