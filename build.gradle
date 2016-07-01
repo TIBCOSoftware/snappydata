@@ -52,7 +52,7 @@ allprojects {
   apply plugin: 'eclipse'
 
   group = 'io.snappydata'
-  version = '0.4.0-PREVIEW'
+  version = '0.5.0-PREVIEW'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -84,13 +84,14 @@ allprojects {
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.6.1'
+    snappySparkVersion = '1.6.2-4'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.4"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.12'
     junitVersion = '4.11'
     hadoopVersion = '2.4.1'
     jettyVersion = '8.1.14.v20131031'
-    snappyStoreVersion = '1.5.0-SNAPSHOT'
+    snappyStoreVersion = '1.5.0'
     pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
@@ -594,7 +595,7 @@ task product {
         into "${snappyProductDir}/lib"
       }
       def snappySparkJar = examplesProject.configurations.testRuntime.findResult {
-        it.getName().startsWith("snappy-spark-${sparkVersion}") ? it.getPath() : null
+        it.getName().startsWith("snappy-spark-${snappySparkVersion}") ? it.getPath() : null
       }
       if (snappySparkJar != null) {
         copy {
