@@ -81,6 +81,7 @@ allprojects {
   })
 
   ext {
+    productName = 'SnappyData'
     scalaBinaryVersion = '2.10'
     scalaVersion = scalaBinaryVersion + '.6'
     sparkVersion = '1.6.1'
@@ -95,6 +96,17 @@ allprojects {
     pulseVersion     = '1.5.0'
     buildFlags = ''
     createdBy = System.getProperty("user.name")
+    osArch = System.getProperty('os.arch')
+    osName = org.gradle.internal.os.OperatingSystem.current()
+    osVersion = System.getProperty('os.version')
+    buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
+    buildNumber = new Date().format('MMddyy')
+    jdkVersion = System.getProperty('java.version')
+
+    gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
+    gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
+    commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
+    sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
   }
 
   if (!buildRoot.isEmpty()) {
@@ -906,6 +918,19 @@ task allReports(type: TestReport) {
 gradle.taskGraph.whenReady({ graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
 })
+
+def writeProperties(def parent, def name, def comment, def propsMap) {
+  parent.exists() || parent.mkdirs()
+  def writer = new File(parent, name).newWriter()
+  def props = new Properties()
+  propsMap.each { k, v -> props.setProperty(k, v.toString()) }
+  try {
+    props.store(writer, comment.toString())
+    writer.flush()
+  } finally {
+    writer.close()
+  }
+}
 
 task packagePulse << {
   String pulseWarName = "pulse-${pulseVersion}.war"
