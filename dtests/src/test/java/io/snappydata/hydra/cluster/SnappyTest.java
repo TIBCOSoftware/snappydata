@@ -460,7 +460,6 @@ public class SnappyTest implements Serializable {
     protected void writeNodeConfigData(String fileName, String nodeLogDir) {
         String filePath = productConfDirPath + fileName;
         File file = new File(filePath);
-        Set<String> fileContent = new LinkedHashSet<String>();
         snappyTest.writeToFile(nodeLogDir, file);
     }
 
