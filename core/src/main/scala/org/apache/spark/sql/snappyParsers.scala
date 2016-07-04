@@ -601,13 +601,13 @@ class SnappyParser(context: SnappyContext)
 
   protected def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~> (() => true)) | (INTO ~> (() => false))) ~
-    TABLE ~ relation ~ select ~> ((o: Boolean, r: LogicalPlan,
+    TABLE.? ~ relation ~ select ~> ((o: Boolean, r: LogicalPlan,
         s: LogicalPlan) => InsertIntoTable(r, Map.empty[String, Option[String]],
         s, o, ifNotExists = false))
   }
 
   protected def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE ~ relation ~ select ~> ((r: LogicalPlan,
+    PUT ~ INTO ~ TABLE.? ~ relation ~ select ~> ((r: LogicalPlan,
         s: LogicalPlan) => PutIntoTable(r, s))
   }
 
