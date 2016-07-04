@@ -69,6 +69,34 @@ dependencies {
   testRuntime 'org.pegdown:pegdown:1.1.0'
 }
 
+// Creates the version properties file and writes it to the resources dir
+task createVersionPropertiesFile(dependsOn: 'processResources') {
+  def propertiesDir = file("${buildDir}/resources/main/io/snappydata")
+  outputs.file "${propertiesDir}/SnappyDataVersion.properties"
+  inputs.dir compileJava.destinationDir
+
+  doLast {
+
+    def props = [
+      "Product-Name"      : productName,
+      "Product-Version"   : version,
+      "Build-Id"          : System.env.USER + ' ' + buildNumber,
+      "Build-Date"        : buildDate,
+      "Build-Platform"    : osName.getName() + osVersion + osArch,
+      "Build-Java-Version": jdkVersion,
+      "Source-Date"       : sourceDate,
+      "Source-Revision"   : commitId,
+      "Source-Repository" : gitBranch,
+    ]
+
+   writeProperties(propertiesDir, 'SnappyDataVersion.properties',
+        "Properties that control what version ${productName} will think it is. Changing these values may cause ${productName} to no longer function.", props)
+  }
+}
+
+compileJava.dependsOn createVersionPropertiesFile
+
+
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
   from scaladoc
