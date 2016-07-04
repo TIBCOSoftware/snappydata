@@ -16,10 +16,7 @@ import sql.SQLHelper;
 import sql.SQLPrms;
 import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
-import util.PRObserver;
-import util.StopStartPrms;
-import util.TestException;
-import util.TestHelper;
+import util.*;
 
 import java.io.*;
 import java.net.UnknownHostException;
