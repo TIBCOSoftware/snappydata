@@ -1,0 +1,5 @@
+io/snappydata/hydra/cluster/startRowStoreCluster.conf
+  A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
+  B=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1
+
