@@ -135,7 +135,6 @@ public class SnappyTest implements Serializable {
                     snappyTest.generateConfig("spark-env.sh");
                 }
                 if (isLongRunningTest) {
-                    Log.getLogWriter().info("SS - generated locatorConnInfo file to store host:port information of locator...");
                     snappyTest.generateConfig("locatorConnInfo");
                     snappyTest.generateConfig("leadHost");
                 }
@@ -814,7 +813,6 @@ public class SnappyTest implements Serializable {
      */
     protected static void writeLocatorConnectionInfo() {
         List<String> endpoints = validateLocatorEndpointData();
-        Log.getLogWriter().info("SS - longRunning Test... Writing the host:port information to the locatorConnInfo file under conf directory....");
         snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0));
     }
 
@@ -822,7 +820,6 @@ public class SnappyTest implements Serializable {
      * Writes the lead host information to the leadHost file under conf directory.
      */
     protected static void writeLeadHostInfo() {
-        Log.getLogWriter().info("SS - longRunning Test... Writing the lead host  information to the leadHost file under conf directory....");
         snappyTest.writeNodeConfigData("leadHost", leadHost);
     }
 
@@ -832,7 +829,6 @@ public class SnappyTest implements Serializable {
             BufferedReader br = readDataFromFile(logFile);
             String str = null;
             while ((str = br.readLine()) != null) {
-                Log.getLogWriter().info("SS - str is: " + str);
                 leadHost = str;
             }
             br.close();
@@ -840,14 +836,13 @@ public class SnappyTest implements Serializable {
             String s = "Problem while reading the file : " + logFile.getAbsolutePath();
             throw new TestException(s, e);
         }
-        Log.getLogWriter().info("SS - leadHost is: " + leadHost);
         return leadHost;
     }
 
     protected static BufferedReader readDataFromFile(File filename) {
         BufferedReader br = null;
         try {
-            FileInputStream fis = new FileInputStream(logFile);
+            FileInputStream fis = new FileInputStream(filename);
             br = new BufferedReader(new InputStreamReader(fis));
         } catch (FileNotFoundException e) {
             String s = "Unable to find file: " + filename.getAbsolutePath();
@@ -858,7 +853,6 @@ public class SnappyTest implements Serializable {
 
     protected static File getLogFile(String filename) {
         String dest = productConfDirPath + filename;
-        Log.getLogWriter().info("SS - file path  is: " + dest);
         File logFile = new File(dest);
         return logFile;
     }
@@ -870,7 +864,6 @@ public class SnappyTest implements Serializable {
             BufferedReader br = readDataFromFile(logFile);
             String str = null;
             while ((str = br.readLine()) != null) {
-                Log.getLogWriter().info("SS - str is: " + str);
                 endpoints.add(str);
             }
             br.close();
@@ -878,7 +871,6 @@ public class SnappyTest implements Serializable {
             String s = "Problem while reading the file : " + logFile.getAbsolutePath();
             throw new TestException(s, e);
         }
-        Log.getLogWriter().info("SS - endpoints is: " + endpoints.toString());
         return endpoints;
     }
 
@@ -1560,7 +1552,6 @@ public class SnappyTest implements Serializable {
                 }
                 if (isLongRunningTest) {
                     leadHost = getLeadHostFromFile();
-                    Log.getLogWriter().info("SS - leadHost is: " + leadHost);
                 }
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
