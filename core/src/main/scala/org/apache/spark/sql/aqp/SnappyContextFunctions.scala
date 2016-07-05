@@ -64,7 +64,7 @@ trait SnappyContextFunctions {
       aqpTables: Seq[String], time: Long): Unit
 
   def withErrorDataFrame(df: DataFrame, error: Double,
-      confidence: Double): DataFrame
+      confidence: Double, behavior: String): DataFrame
 
   def createSampleDataFrameContract(context: SnappyContext,
       df: DataFrame, logicalPlan: LogicalPlan): SampleDataFrameContract

@@ -1,8 +1,3 @@
-hydra.Prms-testDescription = "
-This test starts the snappy cluster, initializes snappyContext.
-Creates Row,Column Table using SQL way, loads the parquet data into tables.
-And then in TASK, creates twitter file streaming job which keeps writing data to file for specified time and then calculates the total data size. In CLOSETASK, it executes the OLAP + OLTP concurrently and evaluates the total time taken by each query execution";
-
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
 INCLUDE $JTESTS/hydraconfig/topology_3.inc;
 
@@ -10,6 +5,7 @@ hydra.gemfirexd.GfxdHelperPrms-persistDD = true;
 hydra.gemfirexd.GfxdHelperPrms-createDiskStore = true;
 hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
+hydra.GemFirePrms-distributedSystem = ds;
 
 THREADGROUP snappyStoreThreads
             totalThreads = fcn "(${${A}Hosts} * ${${A}VMsPerHost} *  ${${A}ThreadsPerVM}) " ncf
@@ -75,49 +71,41 @@ INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = 
   runMode = always
   threadGroups = leadThreads;
 
+INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_getClientConnection
+  threadGroups = snappyThreads;
+
 INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScriptsInInitTask
   threadGroups = snappyThreads;
 
-TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyStreamingJob
+
+INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = runQuery
+  threadGroups = snappyThreads;
+
+TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScriptsInTask
   threadGroups = snappyThreads
-  maxTimesToRun = 1
   ;
 
-CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJobInCloseTask
-  threadGroups = leadThreads;
-
-//CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_getSnappyJobOutputCollectively
-//  threadGroups = leadThreads;
+TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJobInTask
+  threadGroups = leadThreads
+  maxTimesToRun = 3;
 
 CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappy
   threadGroups = snappyThreads;
 
-CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyLeader
-  threadGroups = snappyThreads;
-
-CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyServers
-  threadGroups = snappyThreads;
-
-CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_stopSnappyLocator
-  threadGroups = snappyThreads;
-
-CLOSETASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_deleteSnappyConfig
-threadGroups = snappyThreads;
-
 ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cleanUpSnappyProcessesOnFailure
 clientNames = locator1;
 
-/* end task must stop snappy members because they are not stopped by Hydra */
-hydra.Prms-alwaysDoEndTasks = true;
+hydra.Prms-totalTaskTimeSec           = 900;
+hydra.Prms-maxResultWaitSec           = 900;
 
-hydra.Prms-totalTaskTimeSec           = 1800;
-hydra.Prms-maxResultWaitSec           = 1800;
-
-hydra.Prms-maxCloseTaskResultWaitSec  = 1800;
+hydra.Prms-maxCloseTaskResultWaitSec  = 900;
 hydra.Prms-serialExecution            = false;
 
 hydra.CachePrms-names = defaultCache;
 sql.SQLPrms-useGfxdConfig = true;
+
+/* end task must stop snappy members because they are not stopped by Hydra */
+hydra.Prms-alwaysDoEndTasks = true;
 
 hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
                                   (\"-Xms512m -Xmx1g \", ${${A}Hosts}, true)"
@@ -128,20 +116,11 @@ hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
                              ncf;
 hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
 
-io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNamesForInitTask = create_and_load_column_table.sql create_and_load_row_table.sql;
-io.snappydata.hydra.cluster.SnappyPrms-sqlScriptParamsForInitTask = airlineParquetData airportcodeParquetData;
-//io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNamesForTask = olap_queries.sql oltp_queries.sql;
+io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNamesForInitTask = create_and_load_column_table.sql create_and_load_sample_table.sql create_and_load_row_table.sql olap_queries.sql;
+io.snappydata.hydra.cluster.SnappyPrms-sqlScriptParamsForInitTask = airlineParquetData " " airportcodeParquetData;
 
-io.snappydata.hydra.cluster.SnappyPrms-streamingJobClassNamesForTask = io.snappydata.hydra.FileStreamingJob;
-io.snappydata.hydra.cluster.SnappyPrms-jobClassNamesForCloseTask = io.snappydata.hydra.AirlineDataQueriesJob;
-
-io.snappydata.hydra.cluster.SnappyPrms-simulateStreamScriptName = simulateFileStream;
-//io.snappydata.hydra.cluster.SnappyPrms-simulateStreamScriptDestinationFolder = /home/swati;
-
-io.snappydata.hydra.cluster.SnappyPrms-jobExecutionTimeInMillisForCloseTask = 900000;
-io.snappydata.hydra.cluster.SnappyPrms-jobExecutionTimeInMillisForTask = 700000;
-io.snappydata.hydra.cluster.SnappyPrms-streamingJobExecutionTimeInMillisForTask = 700000;
+io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNamesForTask = olap_queries.sql oltp_queries.sql;
+io.snappydata.hydra.cluster.SnappyPrms-jobClassNamesForTask = io.snappydata.hydra.AirlineDataQueriesJob;
+io.snappydata.hydra.cluster.SnappyPrms-jobExecutionTimeInMillisForTask = 720000;
 
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar;
-
-io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "dataDirName=$GEMFIRE/../../../dtests/";
