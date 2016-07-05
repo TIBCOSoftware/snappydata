@@ -721,7 +721,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
-      s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)
+      s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)|\\s${AS.str}", Pattern.CASE_INSENSITIVE)
 
   protected override lazy val createTable: Parser[LogicalPlan] =
     (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
