@@ -59,7 +59,7 @@ case class AQPDataFrame(@transient override val sqlContext: SnappyContext,
 
   def withError(error: Double,
       confidence: Double = Constant.DEFAULT_CONFIDENCE,
-      behavior: String = "DO_NOTHING"): DataFrame =
+      behavior: String = Constant.DEFAULT_BEHAVIOR): DataFrame =
     sqlContext.snappyContextFunctions.withErrorDataFrame(this, error,
       confidence, behavior)
 }
