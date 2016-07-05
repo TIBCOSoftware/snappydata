@@ -114,7 +114,7 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
         val ps1 = conn.prepareStatement(
           "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
         ps1.setString(1, resolvedName)
-        ps1.setInt(2, par)
+        ps1.setString(2, "" + par)
         ps1.execute()
 
         val ps = conn.prepareStatement("select " + requiredColumns.mkString(
@@ -189,7 +189,7 @@ class SparkShellRowRDD[T: ClassTag](@transient sc: SparkContext,
     val ps = conn.prepareStatement(
       "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
     ps.setString(1, resolvedName)
-    ps.setInt(2, thePart.index)
+    ps.setString(2, "" + thePart.index)
     ps.executeUpdate()
     ps.close()
 

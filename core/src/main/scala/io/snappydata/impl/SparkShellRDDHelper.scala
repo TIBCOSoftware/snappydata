@@ -55,7 +55,7 @@ final class SparkShellRDDHelper {
       split: Partition, query: String): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-    val par = split.index
+    val par = ""+split.index
     val statement = conn.createStatement()
 
     if (!useLocatorURL)

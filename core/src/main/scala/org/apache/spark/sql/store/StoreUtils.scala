@@ -95,10 +95,10 @@ object StoreUtils extends Logging {
 
     val resolvedName = lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-    val numPartitions = region.getTotalNumberOfBuckets
-    val partitions = new Array[Partition](numPartitions)
+    val numBuckets = region.getTotalNumberOfBuckets
+    val partitions = new Array[Partition](numBuckets)
 
-    for (p <- 0 until numPartitions) {
+    for (p <- 0 until numBuckets) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
         m => blockMap.get(m)
