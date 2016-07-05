@@ -17,10 +17,8 @@
 package org.apache.spark.sql.store
 
 import scala.collection.JavaConverters._
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
-import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -32,7 +30,6 @@ import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources.ConnectionProperties
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyContext, AnalysisException, SQLContext}
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 object StoreUtils extends Logging {
@@ -91,8 +88,7 @@ object StoreUtils extends Logging {
   }
 
   def getPartitionsPartitionedTable(sc: SparkContext,
-      tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      tableName: String, schema: String): Array[Partition] = {
 
     val resolvedName = lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
@@ -102,7 +98,7 @@ object StoreUtils extends Logging {
     for (p <- 0 until numPartitions) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
-        m => blockMap.get(m)
+        m => SnappyContext.storeToBlockMap.get(m.toString)
       )
       val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
@@ -111,8 +107,7 @@ object StoreUtils extends Logging {
   }
 
   def getPartitionsReplicatedTable(sc: SparkContext,
-      tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+      tableName: String, schema: String): Array[Partition] = {
 
     val resolvedName = lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[DistributedRegion]
@@ -124,7 +119,7 @@ object StoreUtils extends Logging {
     } else {
       region.getDistributionAdvisor.adviseInitializedReplicates().asScala
     }
-    val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
+    val prefNodes = regionMembers.map(v => SnappyContext.storeToBlockMap(v.toString)).toSeq
     partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
     partitions
   }
@@ -133,13 +128,10 @@ object StoreUtils extends Logging {
       table: String,
       schema: Option[StructType],
       partitions: Int,
-      connProperties: ConnectionProperties): Map[InternalDistributedMember,
-      BlockManagerId] = {
+      connProperties: ConnectionProperties): Unit = {
     // TODO for SnappyCluster manager optimize this . Rather than calling this
-    val blockMap = new StoreInitRDD(sqlContext, table,
-      schema, partitions, connProperties).collect()
-
-    SnappyContext.storeToBlockMap.toMap
+    new StoreInitRDD(sqlContext, table, schema, partitions, connProperties)
+        .collect()
   }
 
   def removeCachedObjects(sqlContext: SQLContext, table: String,

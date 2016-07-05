@@ -24,7 +24,7 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.rpc.{RpcAddress, RpcEnv}
-import org.apache.spark.scheduler.TaskSchedulerImpl
+import org.apache.spark.scheduler.{SparkListenerBlockManagerRemoved, SparkListener, SparkListenerBlockManagerAdded, TaskSchedulerImpl}
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkEnv}
 
@@ -43,7 +43,7 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
         whoSuspected: InternalDistributedMember): Unit = {}
 
     override def memberDeparted(id: InternalDistributedMember, crashed: Boolean): Unit = {
-      SnappyContext.storeToBlockMap -= id
+      SnappyContext.storeToBlockMap -= id.toString
     }
   }
 
@@ -90,3 +90,15 @@ class SnappyCoarseGrainedSchedulerBackend(scheduler: TaskSchedulerImpl, override
   }
 }
 
+class BlockManagerIdListener extends SparkListener with Logging {
+
+  override def onBlockManagerAdded(blockManagerAdded: SparkListenerBlockManagerAdded): Unit = {
+    SnappyContext.storeToBlockMap(blockManagerAdded.blockManagerId.executorId) =
+        blockManagerAdded.blockManagerId
+  }
+
+  override def onBlockManagerRemoved(blockManagerRemoved: SparkListenerBlockManagerRemoved): Unit = {
+    SnappyContext.storeToBlockMap -= blockManagerRemoved.blockManagerId.executorId
+  }
+
+}

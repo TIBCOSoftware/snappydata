@@ -37,7 +37,7 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
 
     val wc: WaitCriterion = new WaitCriterion {
       override def done(): Boolean = {
-        SnappyContext.storeToBlockMap.size == 3
+        SnappyContext.storeToBlockMap.size == 4 // 3 servers + 1 lead/driver
       }
       override def description(): String = {
         s"Received executor message only from" +
@@ -45,7 +45,7 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
       }
     }
     DistributedTestBase.waitForCriterion(wc, 10000, 500, true)
-    assert(SnappyContext.storeToBlockMap.size == 3)
+    assert(SnappyContext.storeToBlockMap.size == 4) // 3 servers + 1 lead/driver
     for ((dm, blockId) <- SnappyContext.storeToBlockMap) {
       assert(blockId != null)
     }
@@ -53,19 +53,19 @@ class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with
 
   def verifyMap(m: String): Unit = {
     vm0.invoke(getClass, m)
-    assert(SnappyContext.storeToBlockMap.size == 2)
+    assert(SnappyContext.storeToBlockMap.size == 3)
     for ((dm, blockId) <- SnappyContext.storeToBlockMap) {
       assert(blockId != null)
     }
 
     vm1.invoke(getClass, m)
-    assert(SnappyContext.storeToBlockMap.size == 1)
+    assert(SnappyContext.storeToBlockMap.size == 2)
     for ((dm, blockId) <- SnappyContext.storeToBlockMap) {
       assert(blockId != null)
     }
 
     vm2.invoke(getClass, m)
-    assert(SnappyContext.storeToBlockMap.size == 0)
+    assert(SnappyContext.storeToBlockMap.size == 1)
   }
 
   def stopRest(): Unit = {
@@ -79,7 +79,7 @@ object ExecutorMessageDUnitTest {
 
   def stopExecutor(): Unit = {
     ExecutorInitiator.stop()
-    // Thread.sleep(2000)
+    Thread.sleep(1000)
   }
 
   def restartExecutors(locatorPort: Int, props: Properties): Unit = {

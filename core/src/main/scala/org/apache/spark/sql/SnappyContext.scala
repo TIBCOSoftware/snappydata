@@ -1199,8 +1199,8 @@ object SnappyContext extends Logging {
   }
 
 
-  val storeToBlockMap: TrieMap[InternalDistributedMember, BlockManagerId] =
-    TrieMap.empty[InternalDistributedMember, BlockManagerId]
+  val storeToBlockMap: TrieMap[String, BlockManagerId] =
+    TrieMap.empty[String, BlockManagerId]
 
   /** Returns the current SparkContext or null */
   def globalSparkContext: SparkContext = try {
@@ -1236,7 +1236,7 @@ object SnappyContext extends Logging {
   private def initMemberBlockMap(sc: SparkContext): Unit = {
     val cache = Misc.getGemFireCacheNoThrow
     if (cache != null && Utils.isLoner(sc)) {
-      storeToBlockMap(cache.getMyId) = SparkEnv.get.blockManager.blockManagerId
+      storeToBlockMap(cache.getMyId.toString) = SparkEnv.get.blockManager.blockManagerId
     }
   }
 

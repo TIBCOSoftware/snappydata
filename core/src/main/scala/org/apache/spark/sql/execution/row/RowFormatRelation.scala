@@ -44,12 +44,11 @@ class RowFormatRelation(
     _connProperties: ConnectionProperties,
     _table: String,
     _provider: String,
-    preservepartitions: Boolean,
+    preservePartitions: Boolean,
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
     _origOptions: Map[String, String],
-    blockMap: Map[InternalDistributedMember, BlockManagerId],
     _context: SQLContext)
     extends JDBCMutableRelation(_connProperties,
       _table,
@@ -80,8 +79,7 @@ class RowFormatRelation(
           requiredColumns,
           connProperties,
           filters,
-          parts,
-          blockMap
+          parts
         ).asInstanceOf[RDD[Row]]
 
       case _ =>
@@ -211,12 +209,11 @@ final class DefaultSource extends MutableRelationProvider {
 
     StoreUtils.validateConnProps(parameters)
 
-    val blockMap =
-      connProperties.dialect match {
-        case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
-          None, partitions, connProperties)
-        case _ => Map.empty[InternalDistributedMember, BlockManagerId]
-      }
+    connProperties.dialect match {
+      case GemFireXDDialect => StoreUtils.initStore(sqlContext, table,
+        None, partitions, connProperties)
+      case _ =>
+    }
 
     var success = false
     val relation = new RowFormatRelation(connProperties,
@@ -227,7 +224,6 @@ final class DefaultSource extends MutableRelationProvider {
       schemaExtension,
       Array[Partition](JDBCPartition(null, 0)),
       options,
-      blockMap,
       sqlContext)
     try {
       relation.tableSchema = relation.createTable(mode)
