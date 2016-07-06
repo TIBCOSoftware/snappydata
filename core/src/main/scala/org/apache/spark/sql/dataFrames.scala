@@ -58,7 +58,8 @@ case class AQPDataFrame(@transient override val sqlContext: SnappyContext,
     @transient qe: QueryExecution) extends DataFrame(sqlContext, qe) {
 
   def withError(error: Double,
-      confidence: Double = Constant.DEFAULT_CONFIDENCE): DataFrame =
+      confidence: Double = Constant.DEFAULT_CONFIDENCE,
+      behavior: String = Constant.DEFAULT_BEHAVIOR): DataFrame =
     sqlContext.snappyContextFunctions.withErrorDataFrame(this, error,
-      confidence)
+      confidence, behavior)
 }

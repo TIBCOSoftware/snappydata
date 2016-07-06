@@ -40,6 +40,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.{Logging, SparkContext}
 import java.util.HashMap
 import org.apache.spark.sql.collection.Utils
+
 object StoreTableValueSizeProviderService extends Logging {
   @volatile
   private var tableSizeInfo = Map[String, Long]()
@@ -72,18 +73,17 @@ object StoreTableValueSizeProviderService extends Logging {
       }
 
       override def getLoggerI18n: LogWriterI18n = {
-        return Misc.getGemFireCache.getLoggerI18n
+        Misc.getGemFireCache.getLoggerI18n
       }
     }
   }
 
-  def getTableSize(tableName: String, isColumnTable: Boolean = false):
-  Option[Long] = {
+  def getTableSize(tableName: String,
+      isColumnTable: Boolean = false): Option[Long] = {
     val currentTableSizeInfo = tableSizeInfo
-    if (currentTableSizeInfo == null || !currentTableSizeInfo.contains(tableName)) {
+    if (currentTableSizeInfo == null) {
       None
-    }
-    else currentTableSizeInfo.get(tableName) match {
+    } else currentTableSizeInfo.get(tableName) match {
       case v if isColumnTable =>
         val size: Long = v.getOrElse(0)
         currentTableSizeInfo.get(ColumnFormatRelation.cachedBatchTableName(tableName)).
@@ -111,12 +111,10 @@ object StoreTableSizeProvider {
       new UIAnalytics(details._1, maForRowBuffer.totalSize, maForRowBuffer.totalRows,
         maForColumn.totalSize, maForColumn.totalRows, isColumnTable)
     }).toSeq
-
   }
 
-
-
-  private def getMemoryAnalyticsDetails(conn: Connection): mutable.Map[String, MemoryAnalytics] = {
+  private def getMemoryAnalyticsDetails(
+      conn: Connection): mutable.Map[String, MemoryAnalytics] = {
     val currentTableStats = mutable.Map[String, MemoryAnalytics]()
     val stmt = "select TABLE_NAME," +
         " SUM(TOTAL_SIZE) ," +
@@ -173,7 +171,6 @@ object StoreTableSizeProvider {
       }
     }
   }
-
 }
 
 case class MemoryAnalytics(totalSize: Long, totalRows: Long)

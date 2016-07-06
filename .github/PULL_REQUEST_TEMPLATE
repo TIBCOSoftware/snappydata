@@ -4,8 +4,12 @@
 
 ## Patch testing
 
-(Fill in the details that how was this patch tested)
+(Fill in the details about how this patch was tested)
+
+## ReleaseNotes.txt changes
+
+(Does this change require an entry in ReleaseNotes.txt? If yes, has it been added to it?)
 
 ## Other PRs 
 
-(Does this change required changes in other projects- store, spark, spark-jobserver, aqp? Add the links of PR of the other subprojects that are related to this change)
+(Does this change require changes in other projects- store, spark, spark-jobserver, aqp? Add the links of PR of the other subprojects that are related to this change)

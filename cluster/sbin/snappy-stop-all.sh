@@ -31,10 +31,7 @@ sbin="`cd "$sbin"; pwd`"
 
 # Stop Leads
 leadStatus=`"$sbin"/snappy-leads.sh status`
-if echo $leadStatus | grep -qw "status: stopped"; then
-  #in rowstore mode, no lead node runs
-  echo "Info: Skipping lead node stop as no lead node is running"
-else
+if ! echo $leadStatus | grep -qw "status: stopped"; then
   "$sbin"/snappy-leads.sh stop
 fi
 

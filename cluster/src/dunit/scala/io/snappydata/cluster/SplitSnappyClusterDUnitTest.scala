@@ -257,6 +257,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
         .set("spark.testing.reservedMemory", "0")
         .set("spark.sql.autoBroadcastJoinThreshold" , "-1")
 
+
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 
