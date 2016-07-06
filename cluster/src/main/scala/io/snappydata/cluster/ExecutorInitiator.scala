@@ -21,6 +21,9 @@ import java.net.URL
 import java.util
 import java.util.concurrent.locks.ReentrantLock
 
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.gemxd.ClusterCallbacksImpl
+
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
@@ -29,8 +32,6 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
@@ -201,7 +202,6 @@ object ExecutorInitiator extends Logging {
                       cores, userClassPath, env)
 
                     rpcenv.setupEndpoint("Executor", executor)
-
                   }
                 case None =>
                 // If driver url is none, already running executor is stopped.
