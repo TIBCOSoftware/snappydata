@@ -99,7 +99,7 @@ object StoreUtils extends Logging {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
         m => SnappyContext.storeToBlockMap.get(m.toString)
-      )
+      ).filter(m => m != None)
       val prefNodeSeq = prefNodes.map(_.get).toSeq
       partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
     }
