@@ -2,9 +2,9 @@
 
 Building SnappyData requires JDK 7+ installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)). Quickstart to build all components of snappydata:
 
-Preview branch
+Latest release branch
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.x-preview --recursive
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.5 --recursive
 > cd snappydata
 > ./gradlew product
 ```
@@ -20,9 +20,9 @@ The product will be in _build-artifacts/scala-2.10/snappy_
 
 If you want to build only the top-level snappydata project but pull in jars for other projects (_spark_, _store_, _spark-jobserver_):
 
-Preview branch
+Latest release branch
 ```sh
-> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.x-preview
+> git clone https://github.com/SnappyDataInc/snappydata.git -b branch-0.5
 > cd snappydata
 > ./gradlew product
 ```
