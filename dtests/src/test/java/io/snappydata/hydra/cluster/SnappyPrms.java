@@ -113,6 +113,11 @@ public class SnappyPrms extends BasePrms {
     public static Long tableDefaultPartitioned;
 
     /**
+     * (boolean) - whether test is long running.
+     */
+    public static Long isLongRunningTest;
+
+    /**
      * (boolean) - whether to enable time statistics. snappy hydra already sets the enable-time-statistics to true.
      */
     public static Long enableTimeStatistics;

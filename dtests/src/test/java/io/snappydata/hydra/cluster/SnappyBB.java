@@ -55,6 +55,7 @@ public class SnappyBB extends Blackboard {
     }
 
     public static int serversStarted;
+    public static int configGenerated;
     public static int locatorsStarted;
     public static int leadsStarted;
     public static int sparkClusterStarted;
