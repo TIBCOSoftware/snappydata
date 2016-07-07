@@ -128,7 +128,7 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       /**
        * If kryoserializer is being used then register snappyclasses for kryoserializer.
        * The snappyclasses will not get registered if user is creating its own spark context.
-       * In that case user has to specify the snappy kryo registrator registrator externally
+       * In that case user has to specify the snappy kryo registrator externally
        */
       if (conf.contains("spark.serializer") && conf.get("spark.serializer").equals("org.apache.spark.serializer.KryoSerializer")) {
         conf.set("spark.kryo.registrator", getSnappyKryoRegistrarClass())
