@@ -141,8 +141,8 @@ public class SnappyTest implements Serializable {
         if (snappyTest == null) {
             snappyTest = new SnappyTest();
             snappyTest.getClientHostDescription();
-            int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.configGenerated);
-            if (num == 1) {
+            int tid = RemoteTestModule.getCurrentThread().getThreadId();
+            if (tid == 0 ) {
                 snappyTest.generateConfig("locators");
                 snappyTest.generateConfig("servers");
                 snappyTest.generateConfig("leads");
