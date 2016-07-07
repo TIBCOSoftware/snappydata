@@ -357,9 +357,9 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   def getSnappyKryoRegistrarClass(): String = {
 
     Try {
-      val miror = Class.forName("org.apache.spark.sql.execution.serializer.SnappyKryoAQPRegistrator")
+      val miror = Class.forName("org.apache.spark.sql.execution.serializer.SnappyAQPKryoRegistrator")
     } match {
-      case Success(v) => "org.apache.spark.sql.execution.serializer.SnappyKryoAQPRegistrator"
+      case Success(v) => "org.apache.spark.sql.execution.serializer.SnappyAQPKryoRegistrator"
       case Failure(_) => "io.snappydata.serializer.SnappyKryoRegistrator"
     }
   }
