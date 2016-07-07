@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.cluster
 
 import java.sql.{Connection, DriverManager}
@@ -15,8 +31,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testColumnTableRouting(): Unit = {
-    val tableName: String = "ColumnTableQR"
-
+    val tableName: String = "TEST.ColumnTableQR"
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
@@ -25,7 +40,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " column ")
 
     createTableXD(conn, tableName, " column ")
-    tableMetadataAssertColumnTable(tableName)
+    tableMetadataAssertColumnTable("TEST", "ColumnTableQR")
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " column ")
 
@@ -57,7 +72,7 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     failCreateTableXD(conn, tableName, true, " row ")
 
     createTableXD(conn, tableName, " row ")
-    tableMetadataAssertRowTable(tableName)
+    tableMetadataAssertRowTable("APP", tableName)
     // Test create table - error for recreate
     failCreateTableXD(conn, tableName, false, " row ")
 
@@ -79,14 +94,14 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
   }
 
   def testRowTableByDefaultRouting(): Unit = {
-    val tableName: String = "DefaultRowTableQR"
+    val tableName: String = "TEST.DefaultRowTableQR"
 
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
 
     createTableByDefaultXD(conn, tableName)
-    tableMetadataAssertRowTable(tableName)
+    tableMetadataAssertRowTable("TEST", "DefaultRowTableQR")
 
     // Drop Table and Recreate
     dropTableXD(conn, tableName)
@@ -138,9 +153,8 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
   }
 
-  def failCreateTableXD(conn : Connection, tableName : String, doFail : Boolean, usingStr : String): Unit = {
-    try
-    {
+  def failCreateTableXD(conn: Connection, tableName: String, doFail: Boolean, usingStr: String): Unit = {
+    try {
       val s = conn.createStatement()
       val options = ""
       s.execute("CREATE TABLE " + tableName + " (Col1 INT, Col2 INT, Col3 INT) " + (if (doFail) "fail" orElse "") + " USING " + usingStr
@@ -149,26 +163,26 @@ class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
     }
     catch {
       case e: Exception => println("create: Caught exception " + e.getMessage +
-        " for ColumnTable = " + tableName)
+          " for ColumnTable = " + tableName)
       //println("Exception stack. create. ex=" + e.getMessage + " ,stack=" + ExceptionUtils.getFullStackTrace(e))
     }
     //println("Created ColumnTable = " + tableName)
   }
 
-  def tableMetadataAssertColumnTable(tableName: String): Unit = {
+  def tableMetadataAssertColumnTable(schemaName: String, tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(catalog.isColumnTable(tableName, false))
+        assert(catalog.isColumnTable(schemaName, tableName, false))
       }
     })
   }
 
-  def tableMetadataAssertRowTable(tableName: String): Unit = {
+  def tableMetadataAssertRowTable(schemaName: String, tableName: String): Unit = {
     vm0.invoke(new SerializableRunnable() {
       override def run(): Unit = {
         val catalog = Misc.getMemStore.getExternalCatalog
-        assert(!catalog.isColumnTable(tableName, false))
+        assert(!catalog.isColumnTable(schemaName, tableName, false))
       }
     })
   }

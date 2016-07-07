@@ -165,7 +165,7 @@ class SnappyContext protected[spark](
     val transform = transformer match {
       case Some(x) => x
       case None => if (!(v.tpe =:= u.typeOf[Row])) {
-        //check if the stream type is already a Row
+        // check if the stream type is already a Row
         throw new IllegalStateException(" Transformation to Row type needs to be supplied")
       } else {
         null
@@ -173,7 +173,7 @@ class SnappyContext protected[spark](
     }
     stream.foreachRDD((rdd: RDD[T], time: Time) => {
 
-      val rddRows = if( transform != null) {
+      val rddRows = if ( transform != null) {
         transform(rdd)
       }else {
         rdd.asInstanceOf[RDD[Row]]
@@ -226,8 +226,9 @@ class SnappyContext protected[spark](
         br match {
           case d: DestroyRelation => d.truncate()
         }
-      case _ => if (!ignoreIfUnsupported)
+      case _ => if (!ignoreIfUnsupported) {
         throw new AnalysisException(s"Table $tableIdent cannot be truncated")
+      }
     }
   }
 
@@ -246,7 +247,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
@@ -283,7 +284,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, Some(schema), schemaDDL = None,
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, samplingOptions,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
   }
@@ -322,7 +323,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, Some(inputDataSchema), schemaDDL = None,
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       topkOptions + ("key" -> keyColumnName),
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
@@ -361,7 +362,7 @@ class SnappyContext protected[spark](
       topkOptions: Map[String, String], allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(topKName),
       SnappyContext.TOPK_SOURCE, None, schemaDDL = None,
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       topkOptions + ("key" -> keyColumnName),
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
@@ -390,7 +391,8 @@ class SnappyContext protected[spark](
    *
    * {{{
    *
-   * val airlineDF = snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
+   * val airlineDF =
+    * snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
    *
    * }}}
    * @param tableName Name of the table
@@ -407,7 +409,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, schemaDDL = None,
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
@@ -420,7 +422,8 @@ class SnappyContext protected[spark](
     *
     * {{{
     *
-    * val airlineDF = snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
+    * val airlineDF =
+    * snappyContext.createTable(stagingAirline, "parquet", Map("path" -> airlinefilePath))
     *
     * }}}
     *
@@ -457,7 +460,7 @@ class SnappyContext protected[spark](
    * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
    * @param schema   Table schema
    * @param options  Properties for table creation. See options list for different tables.
-   *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+   *              https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
    * @param allowExisting When set to true it will ignore if a table with the same name is
    *                      present , else it will throw table exist exception
    * @return DataFrame for the table
@@ -470,7 +473,7 @@ class SnappyContext protected[spark](
       allowExisting: Boolean = false): DataFrame = {
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       Some(schema), schemaDDL = None,
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
@@ -496,7 +499,7 @@ class SnappyContext protected[spark](
     * @param provider Provider name such as 'COLUMN', 'ROW', 'JDBC', 'PARQUET' etc.
     * @param schema   Table schema
     * @param options  Properties for table creation. See options list for different tables.
-    *                 https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
+    *           https://github.com/SnappyDataInc/snappydata/blob/master/docs/rowAndColumnTables.md
     * @param allowExisting When set to true it will ignore if a table with the same name is
     *                      present , else it will throw table exist exception
     * @return DataFrame for the table
@@ -565,7 +568,7 @@ class SnappyContext protected[spark](
     }
     val plan = createTable(catalog.newQualifiedTableName(tableName), provider,
       userSpecifiedSchema = None, Some(schemaStr),
-      if(allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       options,
       onlyBuiltIn = true, onlyExternal = false)
     DataFrame(self, plan)
@@ -827,6 +830,15 @@ class SnappyContext protected[spark](
 
     createIndex(indexName, baseTable, indexCol.toMap, options.asScala.toMap)
   }
+
+  /**
+   * Set current database/schema .
+   * @param schemaName  schema name which goes in the catalog
+   */
+  def setSchema(schemaName :String) : Unit = {
+    catalog.setSchema(schemaName)
+  }
+
 
   /**
     * Create an index on a table.
@@ -1097,6 +1109,8 @@ class SnappyContext protected[spark](
   @transient
   override protected[sql] val planner = this.snappyContextFunctions.getPlanner(this)
 
+  override def sql(sqlText: String): DataFrame =
+    this.snappyContextFunctions.sql(() => super.sql(sqlText))(this, () => parseSql(sqlText))
 
   /**
     * Fetch the topK entries in the Approx TopK synopsis for the specified
@@ -1213,9 +1227,9 @@ object SnappyContext extends Logging {
   @volatile private[this] var _sqlListener : SQLListener = _
 
   def sqlListener(sc : SparkContext) : SQLListener = {
-    if(_sqlListener == null){
+    if (_sqlListener == null){
       synchronized {
-        if(_sqlListener == null) {
+        if (_sqlListener == null) {
           _sqlListener = SQLContext.createListenerAndUI(sc)
         }
       }
@@ -1403,7 +1417,7 @@ object SnappyContext extends Logging {
     }
     _clusterMode = null
     _anySNContext = null
-    _sqlListener  = null
+    _sqlListener = null
     _globalSNContextInitialized = false
 
   }

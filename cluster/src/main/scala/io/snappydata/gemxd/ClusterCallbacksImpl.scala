@@ -73,8 +73,8 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     ExecutorInitiator.stop()
   }
 
-  override def getSQLExecute(sql: String, ctx: LeadNodeExecutionContext,
-      v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, ctx, v)
+  override def getSQLExecute(sql: String, schema: String, ctx: LeadNodeExecutionContext,
+      v: Version): SparkSQLExecute = new SparkSQLExecuteImpl(sql, schema, ctx, v)
 
   override def readDVDArray(dvds: Array[DataValueDescriptor],
       types: Array[Int], in: ByteArrayDataInput, numEightColGroups: Int,
