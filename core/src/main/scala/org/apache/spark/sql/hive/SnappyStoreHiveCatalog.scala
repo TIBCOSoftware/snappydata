@@ -18,8 +18,8 @@ package org.apache.spark.sql.hive
 
 import java.io.File
 import java.net.{URL, URLClassLoader}
-import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 import java.util.concurrent.locks.ReentrantReadWriteLock
+import java.util.concurrent.{ConcurrentHashMap, ExecutionException}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -33,7 +33,6 @@ import io.snappydata.{Constant, Property}
 import org.apache.hadoop.hive.conf.HiveConf
 import org.apache.hadoop.hive.metastore.api.Table
 import org.apache.hadoop.hive.ql.metadata.{Hive, HiveException}
-import org.apache.hadoop.hive.ql.session.SessionState
 import org.apache.hadoop.util.VersionInfo
 
 import org.apache.spark.Logging
@@ -51,7 +50,6 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.{BaseRelation, DependentRelation, JdbcExtendedUtils, ParentRelation}
 import org.apache.spark.sql.streaming.StreamPlan
 import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructType}
-
 /**
  * Catalog using Hive for persistence and adding Snappy extensions like
  * stream/topK tables and returning LogicalPlan to materialize these entities.
@@ -134,7 +132,6 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
   private def newClient(): ClientInterface = synchronized {
 
     val metaVersion = IsolatedClientLoader.hiveVersion(hiveMetastoreVersion)
-
     // We instantiate a HiveConf here to read in the hive-site.xml file and
     // then pass the options into the isolated client loader
     val metadataConf = new HiveConf()
@@ -411,6 +408,12 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       context.truncateTable(tableIdent, ignoreIfUnsupported = true)
       tempTables -= tableIdent
     }
+  }
+
+  private var currentSchema = Constant.DEFAULT_SCHEMA
+
+  final def setSchema (schema :String ):Unit = {
+    this.currentSchema = schema
   }
 
   final def lookupRelation(tableIdent: QualifiedTableName): LogicalPlan = {

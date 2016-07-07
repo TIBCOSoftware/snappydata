@@ -826,6 +826,15 @@ class SnappyContext protected[spark](
   }
 
   /**
+   * Set current database/schema .
+   * @param schemaName  schema name which goes in the catalog
+   */
+  def setSchema(schemaName :String) : Unit = {
+    catalog.setSchema(schemaName)
+  }
+
+
+  /**
     * Create an index on a table.
     * @param indexName Index name which goes in the catalog
     * @param baseTable Fully qualified name of table on which the index is created.

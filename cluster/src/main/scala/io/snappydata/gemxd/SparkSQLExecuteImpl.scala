@@ -48,6 +48,7 @@ import org.apache.spark.{Logging, SparkContext, SparkEnv}
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
 class SparkSQLExecuteImpl(val sql: String,
+    val schema: String,
     val ctx: LeadNodeExecutionContext,
     senderVersion: Version) extends SparkSQLExecute with Logging {
 
@@ -57,12 +58,14 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
 
+  snc.setSchema(schema)
+
   private[this] val df: DataFrame = snc.sql(sql)
 
   private[this] val hdos = new GfxdHeapDataOutputStream(
     Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
-  private[this] val schema = df.schema
+  private[this] val tableSchema = df.schema
 
   private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
 
@@ -80,12 +83,12 @@ class SparkSQLExecuteImpl(val sql: String,
     val isLocalExecution = msg.isLocallyExecuted
     val bm = SparkEnv.get.blockManager
     val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
-    val serializeComplexType = !complexTypeAsClob && schema.exists(
+    val serializeComplexType = !complexTypeAsClob && tableSchema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
       })
-    val handler = new ExecutionHandler(sql, schema, resultsRdd.id,
+    val handler = new ExecutionHandler(sql, tableSchema, resultsRdd.id,
       partitionBlockIds, serializeComplexType)
     var blockReadSuccess = false
     try {
@@ -201,11 +204,11 @@ class SparkSQLExecuteImpl(val sql: String,
   }
 
   def getColumnNames: Array[String] = {
-    schema.fieldNames
+    tableSchema.fieldNames
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    schema.map(f => getSQLType(f.dataType)).toArray
+    tableSchema.map(f => getSQLType(f.dataType)).toArray
 
   private def getSQLType(dataType: DataType): (Int, Int, Int) = {
     dataType match {
