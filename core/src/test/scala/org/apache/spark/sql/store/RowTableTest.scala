@@ -583,4 +583,28 @@ class RowTableTest
 
   }
 
+
+  test("Test the creation of table using CREATE TABLE AS STATEMENT without specifying USING..OPTIONS") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+
+    val tableName2 = "RowTable2"
+    snc.sql("DROP TABLE IF EXISTS RowTable2")
+    snc.sql("CREATE TABLE " + tableName2 + " AS (SELECT * FROM " + tableName + ")"
+    )
+    var result = snc.sql("SELECT * FROM " + tableName2)
+    var r = result.collect
+    assert(r.length == 5)
+
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName2)
+    result = snc.sql("SELECT * FROM " + tableName2)
+    r = result.collect
+    assert(r.length == 10)
+
+    snc.dropTable(tableName2)
+    println("Successful")
+  }
 }

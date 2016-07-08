@@ -7,7 +7,7 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
-Release 0.5-preview
+Release 0.5
 
   Rowstore quickstarts are now packaged into the SnappyData distribution.
 
