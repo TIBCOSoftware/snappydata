@@ -24,6 +24,7 @@ import scala.language.postfixOps
 import io.snappydata.core.TestData2
 import io.snappydata.store.ClusterSnappyJoinSuite
 import io.snappydata.test.dunit.AvailablePortHelper
+import org.apache.calcite.DataContext.Variable
 
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.sql.{SaveMode, SnappyContext}
@@ -104,7 +105,6 @@ class SplitSnappyClusterDUnitTest(s: String)
 }
 
 object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
-
   def sc = ClusterManagerTestBase.sc
 
   override def createTablesAndInsertData(tableType: String): Unit = {
@@ -140,7 +140,7 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     val snc = SnappyContext(sc)
     // remove below once SNAP-653 is fixed
     val numPartitions = props.getOrElse("buckets", "113").toInt
-    StoreUtils.removeCachedObjects(snc, "EMBEDDEDMODETABLE1", numPartitions,
+    StoreUtils.removeCachedObjects(snc, "APP.EMBEDDEDMODETABLE1", numPartitions,
       registerDestroy = true)
     if (isComplex) {
       createComplexTableUsingDataSourceAPI(snc, "embeddedModeTable1",
@@ -240,13 +240,11 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
     dimensionDf.write.insertInto("PR_TABLE4")
     val countdf1 = snc.sql("select * from PR_TABLE4")
     assert(countdf1.count() == 1000)
-
-
   }
 
 
-  def checkCollocatedJoins(locatorPort: Int, prop: Properties, locatorProp: String, table1 :
-  String, table2 : String): Unit ={
+  def checkCollocatedJoins(locatorPort: Int, prop: Properties, locatorProp: String, table1:
+  String, table2: String): Unit = {
     // Test setting locators property via environment variable.
     // Also enables checking for "spark." or "snappydata." prefix in key.
     System.setProperty(locatorProp, s"localhost:$locatorPort")
@@ -257,6 +255,8 @@ object SplitSnappyClusterDUnitTest extends SplitClusterDUnitTestObject {
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
+        .set("spark.sql.autoBroadcastJoinThreshold" , "-1")
+
 
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)

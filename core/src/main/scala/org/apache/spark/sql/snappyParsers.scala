@@ -682,6 +682,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   }
 
   override def parse(input: String, exceptionOnError: Boolean): LogicalPlan = {
+
     try {
       parse(input)
     } catch {
@@ -721,7 +722,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
-      s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)
+      s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)|\\s${AS.str}", Pattern.CASE_INSENSITIVE)
 
   protected override lazy val createTable: Parser[LogicalPlan] =
     (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
@@ -957,10 +958,9 @@ private[sql] case class DropTable(
     tableIdent: QualifiedTableName,
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
-
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropTable(tableIdent, ifExists)
+    snc.dropTable(snc.catalog.newQualifiedTableName(tableIdent), ifExists)
     Seq.empty
   }
 }
@@ -971,7 +971,7 @@ private[sql] case class TruncateTable(
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.truncateTable(tableIdent)
+    snc.truncateTable(snc.catalog.newQualifiedTableName(tableIdent))
     Seq.empty
   }
 }
