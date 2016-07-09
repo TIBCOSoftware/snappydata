@@ -86,7 +86,4 @@ trait SnappyContextFunctions {
       planGenerator: String => LogicalPlan): DDLParser
 
   def createAnalyzer(context: SnappyContext): Analyzer
-
-  def sql(defaultCall: => () => DataFrame)(context: SnappyContext,
-      parse: => () => LogicalPlan): DataFrame
 }
