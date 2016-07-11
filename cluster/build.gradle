@@ -15,9 +15,9 @@ dependencies {
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
   compile 'org.scala-lang:scala-compiler:' + scalaVersion
   compile project(':snappy-core_' + scalaBinaryVersion)
-  compile files('/home/sachin/Desktop/depen1/zeppelin-interpreter-0.6.0-SNAPSHOT.jar')
-  compile files('/home/sachin/Desktop/depen1/zeppelin-spark-0.6.0-SNAPSHOT.jar')
-  compile files('/home/sachin/Desktop/depen1/zeppelin-jdbc-0.6.0-SNAPSHOT.jar')
+  compile group: 'org.apache.zeppelin', name: 'zeppelin-interpreter', version: '0.6.0'
+  compile group: 'org.apache.zeppelin', name: 'zeppelin-spark', version: '0.6.0'
+  compile group: 'org.apache.zeppelin', name: 'zeppelin-jdbc', version: '0.6.0'
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
@@ -210,14 +210,28 @@ shadowJar {
 
 task generateSnappydataZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {
 
-  from sourceSets.main.output.classesDir
+  //from sourceSets.main.output.classesDir
   //from sourceSets.main.output.resourcesDir
   //from sourceSets.main.resources.srcDirs
-  from 'src/main/resources/snappydata'
+ // from 'src/main/resources/snappydata'
+  zip64 = true
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+  from sourceSets.main.output.classesDir
   jar.includeEmptyDirs = false
-  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
- // include 'resources/snappydata/interpreter-setting.json'
+
+  from {
+    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  }
+  from('src/main/resources/snappydata'){
+    include 'interpreter-setting.json'
+  }
+  jar.includeEmptyDirs = false
+
+  include 'org/apache/zeppelin/spark/**'
+
+  include 'org/apache/zeppelin/interpreter/**'
   exclude 'org/apache/zeppelin/interpreter/SnappydataSqlZeppelinInterpreter**'
+  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
 }
 
 task generateSnappydataSqlZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {

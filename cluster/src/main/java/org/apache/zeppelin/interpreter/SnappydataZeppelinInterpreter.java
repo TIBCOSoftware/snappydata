@@ -31,7 +31,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import scala.collection.convert.WrapAsJava;
+import scala.collection.Seq;
+import scala.collection.convert.WrapAsJava$;
 import org.apache.spark.SparkConf;
 import org.apache.spark.SparkContext;
 import org.apache.spark.SparkEnv;
@@ -46,6 +48,7 @@ import org.apache.spark.sql.SQLContext;
 import org.apache.spark.sql.SnappyContext;
 import org.apache.spark.ui.jobs.JobProgressListener;
 import org.apache.zeppelin.interpreter.InterpreterResult.Code;
+import org.apache.zeppelin.interpreter.thrift.InterpreterCompletion;
 import org.apache.zeppelin.scheduler.Scheduler;
 import org.apache.zeppelin.scheduler.SchedulerFactory;
 import org.apache.zeppelin.spark.SparkOutputStream;
@@ -326,8 +329,9 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
     return paths;
   }
 
+
   @Override
-  public List<String> completion(String buf, int cursor) {
+  public List<InterpreterCompletion> completion(String buf, int cursor) {
     if (buf.length() < cursor) {
       cursor = buf.length();
     }
@@ -338,8 +342,17 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
     }
     ScalaCompleter c = completor.completer();
     Candidates ret = c.complete(completionText, cursor);
-    return JavaConversions.seqAsJavaList(ret.candidates());
+
+    List<String> candidates = WrapAsJava$.MODULE$.seqAsJavaList(ret.candidates());
+    List<InterpreterCompletion> completions = new LinkedList<InterpreterCompletion>();
+
+    for (String candidate : candidates) {
+      completions.add(new InterpreterCompletion(candidate, candidate));
+    }
+
+    return completions;
   }
+
 
   private String getCompletionTargetString(String text, int cursor) {
     String[] completionSeqCharaters = {" ", "\n", "\t"};
@@ -421,6 +434,8 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
     }
   }
 
+
+  //This method has snappydata related changes
   public InterpreterResult interpretInput(String[] lines, InterpreterContext context) {
     SparkEnv.set(env);
 
@@ -664,6 +679,7 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
     return sparkVersion;
   }
 
+  //This method has snappydata related changes
   private void initializeReplInterpreter() {
     out = new SparkOutputStream();
     URL[] urls = getClassloaderUrls();
@@ -770,6 +786,7 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
     }
   }
 
+  //This method is introduced for snappydata
   public SparkILoop getReplInterpreter() {
     if (interpreter != null) {
       return interpreter;
