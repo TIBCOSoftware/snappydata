@@ -23,10 +23,6 @@ import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
-import scala.Predef;
-import scala.Tuple2;
-import scala.collection.JavaConverters;
-import scala.collection.immutable.Map;
 import sql.SQLBB;
 import sql.SQLHelper;
 import sql.SQLPrms;
@@ -127,9 +123,9 @@ public class SnappyTest implements Serializable {
         this.snappyNode = snappyNode;
     }
 
-    public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
+    /*public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
-    }
+    }*/
 
     public static void HydraTask_stopSnappy() {
         SparkContext sc = SnappyContext.globalSparkContext();
@@ -142,7 +138,7 @@ public class SnappyTest implements Serializable {
             snappyTest = new SnappyTest();
             snappyTest.getClientHostDescription();
             int tid = RemoteTestModule.getCurrentThread().getThreadId();
-            if (tid == 0 ) {
+            if (tid == 0) {
                 snappyTest.generateConfig("locators");
                 snappyTest.generateConfig("servers");
                 snappyTest.generateConfig("leads");
@@ -520,29 +516,24 @@ public class SnappyTest implements Serializable {
         return getEndpoints("server");
     }
 
-    protected int getClientPort() {
-        try {
-            List<String> endpoints = getNetworkLocatorEndpoints();
-            if (endpoints.size() == 0) {
-                if (isLongRunningTest) {
-                    endpoints = getLocatorEndpointFromFile();
-                }
+    protected HashMap getclientHostPort() {
+        HashMap<String, Integer> hostPort = new HashMap<String, Integer>();
+        String endpoint = null;
+        List<String> endpoints = getNetworkLocatorEndpoints();
+        if (endpoints.size() == 0) {
+            if (isLongRunningTest) {
+                endpoints = getLocatorEndpointFromFile();
             }
-            if (endpoints.size() == 0) {
-                String s = "No network server endpoints found";
-                throw new TestException(s);
-            }
-            String endpoint = endpoints.get(0);
-            String port = endpoint.substring(endpoint.indexOf(":") + 1);
-            int clientPort = Integer.parseInt(port);
-            Log.getLogWriter().info("Client Port is :" + clientPort);
-            return clientPort;
-        } catch (Exception e) {
-            String s = "No client port found";
-            throw new TestException(s);
         }
+        endpoint = endpoints.get(0);
+        String host = endpoint.substring(0, endpoint.indexOf(":"));
+        Log.getLogWriter().info("Client Host is:" + host);
+        String port = endpoint.substring(endpoint.indexOf(":") + 1);
+        int clientPort = Integer.parseInt(port);
+        Log.getLogWriter().info("Client Port is :" + clientPort);
+        hostPort.put(host, clientPort);
+        return hostPort;
     }
-
 
     /**
      * Returns all endpoints of the given type.
@@ -1236,8 +1227,11 @@ public class SnappyTest implements Serializable {
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsInitTaskResult.log";
                 logFile = new File(dest);
-                int clientPort = snappyTest.getClientPort();
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort);
+                HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
+                Map.Entry<String, Integer> entry = hostPortMap.entrySet().iterator().next();
+                String clientHost = entry.getKey();
+                int clientPort = entry.getValue();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -1374,8 +1368,11 @@ public class SnappyTest implements Serializable {
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsTaskResult.log";
                 File logFile = new File(dest);
-                int clientPort = snappyTest.getClientPort();
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-client-port=" + clientPort);
+                HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
+                Map.Entry<String, Integer> entry = hostPortMap.entrySet().iterator().next();
+                String clientHost = entry.getKey();
+                int clientPort = entry.getValue();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
