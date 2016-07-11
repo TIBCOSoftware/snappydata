@@ -16,14 +16,11 @@
  */
 package org.apache.spark.sql.store
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-
-import org.apache.spark.sql.collection.{MultiExecutorLocalPartition, Utils}
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, MultiExecutorLocalPartition, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.DDLException
@@ -33,6 +30,9 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, SQLContext}
 import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.{Logging, Partition, SparkContext}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 object StoreUtils extends Logging {
 
@@ -89,15 +89,75 @@ object StoreUtils extends Logging {
     lookupName
   }
 
-  def getPartitionsPartitionedTable(sc: SparkContext,
-      tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+  def getPartitions(sc: SparkContext, tableName: String, schema: String,
+                                    blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
 
     val resolvedName = lookupName(tableName, schema)
     val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
     val numBuckets = region.getTotalNumberOfBuckets
-    val partitions = new Array[Partition](numBuckets)
+    val serverToBuckets = new mutable.HashMap[InternalDistributedMember, mutable.HashSet[Int]]()
+    var totalBuckets = new mutable.HashSet[Int]()
+    for (p <- 0 until numBuckets) {
+      val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
+      distMembers foreach (m => {
+        var bucketSet = new mutable.HashSet[Int]()
+        if (serverToBuckets contains m) {
+          bucketSet = serverToBuckets.get(m).get
+        }
+        bucketSet += p
+        totalBuckets += p
+        serverToBuckets put(m, bucketSet)
+      })
+    }
+    val numCores = Runtime.getRuntime.availableProcessors()
+    val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
+    val numPartitions = numServers * numCores
+    val partitions = {
+      if (numBuckets < numPartitions) {
+        new Array[Partition](numBuckets)
+      } else {
+        new Array[Partition](numPartitions)
+      }
+    }
+    var partCnt = 0;
+    serverToBuckets foreach (e => {
+      var numCoresPending = numCores
+      var localBuckets = e._2
+      assert(!localBuckets.isEmpty)
+      var maxBucketsPerPart = Math.ceil(e._2.size.toFloat / numCores)
+      assert(maxBucketsPerPart >= 1)
+      while(partCnt <= numPartitions && !localBuckets.isEmpty) {
+        var cntr = 0;
+        val bucketsPerPart = new mutable.HashSet[Int]()
+        maxBucketsPerPart = Math.ceil(localBuckets.size.toFloat / numCoresPending)
+        assert(maxBucketsPerPart >= 1)
+        while (cntr < maxBucketsPerPart && !localBuckets.isEmpty) {
+          val buck = localBuckets.head
+          bucketsPerPart += buck
+          localBuckets = localBuckets - buck
+          totalBuckets = totalBuckets - buck
+          cntr += 1
+        }
+        val perfNodes = new mutable.HashSet[BlockManagerId]()
+        perfNodes += blockMap.get(e._1).get
+        val prefNodeSeq = perfNodes.toSeq
+        partitions(partCnt) = new MultiBucketExecutorPartition(
+          partCnt, bucketsPerPart, prefNodeSeq)
+        partCnt += 1
+        numCoresPending -= 1
+      }
+    })
+    assert(totalBuckets.isEmpty)
+    partitions
+  }
 
+  def getPartitionsPartitionedTable(sc: SparkContext,
+      tableName: String, schema: String,
+      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
+    val resolvedName = lookupName(tableName, schema)
+    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
+    val numBuckets = region.getTotalNumberOfBuckets
+    val partitions = new Array[Partition](numBuckets)
     for (p <- 0 until numBuckets) {
       val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
       val prefNodes = distMembers.map(
