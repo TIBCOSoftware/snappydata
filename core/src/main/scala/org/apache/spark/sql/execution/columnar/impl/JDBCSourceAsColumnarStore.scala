@@ -110,11 +110,15 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
     store.tryExecute(tableName,
       conn => {
         val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-        val par = split.index
         val ps1 = conn.prepareStatement(
           "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
         ps1.setString(1, resolvedName)
-        ps1.setString(2, "" + par)
+        val partition = split.asInstanceOf[MultiBucketExecutorPartition]
+        var bucketString = ""
+        partition.buckets.foreach( bucket => {
+          bucketString = bucketString + bucket + ","
+        })
+        ps1.setString(2, bucketString.substring(0, bucketString.length-1))
         ps1.execute()
 
         val ps = conn.prepareStatement("select " + requiredColumns.mkString(
@@ -127,13 +131,15 @@ class ColumnarStorePartitionedRDD[T: ClassTag](@transient _sc: SparkContext,
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[MultiExecutorLocalPartition].hostExecutorIds
+    split.asInstanceOf[MultiBucketExecutorPartition].hostExecutorIds
   }
 
   override protected def getPartitions: Array[Partition] = {
     store.tryExecute(tableName, conn => {
-      StoreUtils.getPartitionsPartitionedTable(_sc, tableName,
+      StoreUtils.getPartitions(_sc, tableName,
         conn.getSchema, store.blockMap)
+//      StoreUtils.getPartitionsPartitionedTable(_sc, tableName,
+//        conn.getSchema, store.blockMap)
     })
   }
 }

@@ -18,16 +18,13 @@ package org.apache.spark.sql.execution.row
 
 import java.sql.{Connection, ResultSet, Statement}
 
-import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
-import org.apache.spark.sql.collection.MultiExecutorLocalPartition
+import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCRDD
@@ -38,6 +35,8 @@ import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkContext, TaskContext}
+
+import scala.collection.mutable.ArrayBuffer
 
 /**
  * A scanner RDD which is very specific to Snappy store row tables.
@@ -141,7 +140,12 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       val ps = conn.prepareStatement(
         "call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION(?, ?)")
       ps.setString(1, resolvedName)
-      ps.setInt(2, thePart.index)
+      val partition = thePart.asInstanceOf[MultiBucketExecutorPartition]
+      var bucketString = ""
+      partition.buckets.foreach( bucket => {
+        bucketString = bucketString + bucket + ","
+      })
+      ps.setString(2, bucketString.substring(0, bucketString.length-1))
       ps.executeUpdate()
       ps.close()
     }
@@ -179,7 +183,7 @@ class RowFormatScanRDD(@transient sc: SparkContext,
   }
 
   override def getPreferredLocations(split: Partition): Seq[String] = {
-    split.asInstanceOf[MultiExecutorLocalPartition].hostExecutorIds
+    split.asInstanceOf[MultiBucketExecutorPartition].hostExecutorIds
   }
 
   override def getPartitions: Array[Partition] = {
@@ -191,7 +195,8 @@ class RowFormatScanRDD(@transient sc: SparkContext,
       val resolvedName = StoreUtils.lookupName(tableName, tableSchema)
       val region = Misc.getRegionForTable(resolvedName, true)
       if (region.isInstanceOf[PartitionedRegion]) {
-        StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
+        // StoreUtils.getPartitionsPartitionedTable(sc, tableName, tableSchema, blockMap)
+        StoreUtils.getPartitions(sc, tableName, tableSchema, blockMap)
       } else {
         StoreUtils.getPartitionsReplicatedTable(sc, resolvedName, tableSchema, blockMap)
       }

@@ -694,6 +694,19 @@ class MultiExecutorLocalPartition(override val index: Int,
 }
 
 
+class MultiBucketExecutorPartition(override val index: Int,
+                                   val buckets: mutable.HashSet[Int],
+                                   val blockIds: Seq[BlockManagerId]) extends Partition {
+
+  def hostExecutorIds : Seq[String] = {
+    val execs = blockIds.map(blockId => Utils.getHostExecutorId(blockId))
+    execs
+  }
+
+  override def toString = s"MultiBucketExecutorPartition($index, $buckets, $blockIds)"
+}
+
+
 private[spark] case class NarrowExecutorLocalSplitDep(
     @transient rdd: RDD[_],
     @transient splitIndex: Int,
@@ -732,6 +745,11 @@ private[spark] class CoGroupExecutorLocalPartition(
 class ExecutorLocalShellPartition(override val index: Int,
     val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
   override def toString = s"ExecutorLocalShellPartition($index, $hostList"
+}
+
+class ExecutorMultiBucketLocalShellPartition(override val index: Int,
+                                  val hostList: mutable.ArrayBuffer[(String, String)]) extends Partition {
+  override def toString = s"ExecutorMultiBucketLocalShellPartition($index, $hostList"
 }
 
 object ToolsCallbackInit extends Logging {
