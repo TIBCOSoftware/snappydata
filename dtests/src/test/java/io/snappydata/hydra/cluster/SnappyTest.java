@@ -1591,11 +1591,14 @@ public class SnappyTest implements Serializable {
             }
             inputFile.close();
             for (String str : jobIds) {
-                ProcessBuilder pb = new ProcessBuilder(snappyJobScript, "status", "--lead", leadHost + ":" + LEAD_PORT, "--job-id", str);
+                String command = "while [ \"$(" + snappyJobScript + " status --lead " + leadHost + ":" + LEAD_PORT + " --job-id " + str + " | grep FINISHED | wc -l)\" !=  \"1\" ] ; do sleep 10  ; done";
+                ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "jobStatus_" + RemoteTestModule.getCurrentThread().getThreadId() + ".log";
                 statusLogFile = new File(dest);
-                executeJobStatus(pb, statusLogFile);
+                Log.getLogWriter().info("job " + str + " starts at: " + System.currentTimeMillis());
+                executeProcess(pb, statusLogFile);
+                Log.getLogWriter().info("job " + str + " finishes at:  " + System.currentTimeMillis());
             }
         } catch (FileNotFoundException e) {
             String s = "Unable to find file: " + logFile;
@@ -1605,50 +1608,6 @@ public class SnappyTest implements Serializable {
             throw new TestException(s, e);
         }
     }
-
-    protected void executeJobStatus(ProcessBuilder pb, File logFile) {
-        try {
-            snappyTest.executeProcess(pb, logFile);
-            executeJobStatusUntilDone(logFile);
-            while (!jobDone) {
-                logFile.delete();
-                logFile.createNewFile();
-                snappyTest.executeProcess(pb, logFile);
-                executeJobStatusUntilDone(logFile);
-            }
-        } catch (IOException e) {
-            String s = "Problem while reading the file : " + logFile;
-            throw new TestException(s, e);
-        }
-    }
-
-    protected void executeJobStatusUntilDone(File logFile) {
-        try {
-            FileReader freader = new FileReader(logFile);
-            BufferedReader inputFile = new BufferedReader(freader);
-            String line = null;
-            while ((line = inputFile.readLine()) != null) {
-                if (line.contains("status")) {
-                    String status = line.split(":")[1].trim();
-                    status = status.substring(1, status.length() - 2);
-                    if (status.equalsIgnoreCase("RUNNING")) {
-                        break;
-                    } else if (status.equalsIgnoreCase("FINISHED")) {
-                        jobDone = true;
-                        break;
-                    }
-                }
-            }
-            inputFile.close();
-        } catch (FileNotFoundException e) {
-            String s = "Unable to find file: " + logFile;
-            throw new TestException(s);
-        } catch (IOException e) {
-            String s = "Problem while reading the file : " + logFile;
-            throw new TestException(s, e);
-        }
-    }
-
 
     /*
     * Returns the log file name.  Autogenerates the directory name at runtime
