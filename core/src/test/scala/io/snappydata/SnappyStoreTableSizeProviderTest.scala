@@ -114,9 +114,9 @@ class SnappyStoreTableSizeProviderTest
     val analytics = queryMemoryAnalytics(fullTableName)
 
     def check(expectedTotalSize: Long): Boolean = {
-      val row = StoreTableSizeProvider.getTableSizes.
+      val row = StoreTableSizeProvider.getTableSizes._1.
           filter(uiAnalytics => uiAnalytics.tableName == fullTableName).head
-      expectedTotalSize == row.rowBufferSize
+      expectedTotalSize == row.rowBufferSize && 5 == analytics._3
     }
 
     waitForCriterion(check(analytics._2),
@@ -129,7 +129,7 @@ class SnappyStoreTableSizeProviderTest
 
   test("Test exact column table size") {
     val dataDF = getDF
-    snc.createTable(columnTableName, "column", dataDF.schema, Map.empty[String, String])
+    snc.createTable(columnTableName, "column", dataDF.schema, Map("BUCKETS" -> "1"))
     dataDF.write.insertInto(s"$columnTableName")
 
     val result = snc.sql("SELECT * FROM " + columnTableName)
@@ -143,12 +143,13 @@ class SnappyStoreTableSizeProviderTest
 
     def check(expectedRowSize: Long,
         expectedColumnSize: Long): Boolean = {
-      val sizeList = StoreTableSizeProvider.getTableSizes
+      val sizeList = StoreTableSizeProvider.getTableSizes._2
       val currentTable = sizeList.filter(uiDetails => uiDetails.tableName == fullTableName)
-
       !currentTable.isEmpty &&
           currentTable.head.rowBufferSize == expectedRowSize &&
           currentTable.head.columnBufferSize == expectedColumnSize
+          analyticsColumnBuffer._3 >= 3
+          analyticsColumnBuffer._3 + analyticsRowBuffer._3 == 5
     }
 
     waitForCriterion(check(analyticsRowBuffer._2, analyticsColumnBuffer._2),
@@ -165,18 +166,20 @@ class SnappyStoreTableSizeProviderTest
   }
 
 
-  private def queryMemoryAnalytics(tableName: String): (String, Long) = {
-    val query = "SELECT  SUM(TOTAL_SIZE) FROM SYS.MEMORYANALYTICS" +
+  private def queryMemoryAnalytics(tableName: String): (String, Long, Int) = {
+    val query = "SELECT  SUM(TOTAL_SIZE) ,  SUM(NUM_ROWS)  FROM SYS.MEMORYANALYTICS" +
         s" WHERE TABLE_NAME = '$tableName'"
     var valueSize: Long = 0
     var totalSize: Long = 0
+    var totalRows: Int = 0
     val conn = DriverManager.getConnection(Constant.DEFAULT_EMBEDDED_URL)
     val rs = conn.createStatement().executeQuery(query)
     if (rs.next()) {
       totalSize = (rs.getString(1).toDouble * 1024).toLong
+      totalRows = rs.getString(2).toInt
     }
 
-    (tableName, totalSize)
+    (tableName, totalSize, totalRows)
   }
 
 
