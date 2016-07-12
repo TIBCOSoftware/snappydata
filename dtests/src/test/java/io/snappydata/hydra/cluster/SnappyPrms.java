@@ -122,6 +122,10 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long enableTimeStatistics;
 
+    /**
+     * (String) log level to be applied while generating logs for snappy members. Defaults to config if not provided.
+     */
+    public static Long logLevel;
 
     /**
      * (String) userAppJar containing the user snappy job class
@@ -148,11 +152,13 @@ public class SnappyPrms extends BasePrms {
      */
     public static Long waitTimeBeforeNextCycleVM;
 
-    /** (int) The number of VMs to stop (then restart) at a time.
+    /**
+     * (int) The number of VMs to stop (then restart) at a time.
      */
     public static Long numVMsToStop;
 
-    /** (int) The number of lead VMs to stop (then restart).
+    /**
+     * (int) The number of lead VMs to stop (then restart).
      */
     public static Long numLeadsToStop;
 
@@ -275,6 +281,11 @@ public class SnappyPrms extends BasePrms {
     public static boolean getTimeStatistics() {
         Long key = enableTimeStatistics;
         return tasktab().booleanAt(key, tab().booleanAt(key, true));
+    }
+
+    public static String getLogLevel() {
+        Long key = logLevel;
+        return tab().stringAt(key, "config");
     }
 
     public static Vector getSQLScriptNamesForInitTask() {
