@@ -35,7 +35,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.RunnableCommand
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.datasources.{CreateTableUsing, CreateTableUsingAsSelect, DDLException, DDLParser, ResolvedDataSource}
-import org.apache.spark.sql.hive.QualifiedTableName
 import org.apache.spark.sql.sources.{ExternalSchemaRelationProvider, PutIntoTable}
 import org.apache.spark.sql.streaming.{StreamPlanProvider, WindowLogicalPlan}
 import org.apache.spark.sql.types._
@@ -410,7 +409,7 @@ class SnappyParser(context: SnappyContext)
 
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ windowOptions.? ~ (AS.? ~ identifier).? ~>
-        ((tableIdent: QualifiedTableName,
+        ((tableIdent: TableIdentifier,
             window: Option[(Duration, Option[Duration])],
             alias: Option[String]) => window match {
           case None => UnresolvedRelation(tableIdent, alias)
@@ -620,7 +619,7 @@ class SnappyParser(context: SnappyContext)
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     (INSERT ~ INTO | PUT ~ INTO | DELETE ~ FROM | UPDATE) ~ tableIdentifier ~
-        ANY.* ~> ((r: QualifiedTableName) => DMLExternalTable(r,
+        ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
         UnresolvedRelation(r), input.sliceString(0, input.length)))
   }
 
@@ -720,8 +719,8 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
       else s.map(Utils.toLowerCase).mkString(".")
     }
 
-  private val DDLEnd = Pattern.compile(USING.str + "\\s+[a-zA-Z_0-9\\.]+\\s*" +
-      s"(\\s${OPTIONS.str}|\\s${AS.str}|$$)", Pattern.CASE_INSENSITIVE)
+  private val DDLEnd = Pattern.compile(s"(${USING.str}\\s+[a-zA-Z_0-9\\.]+\\s*)?" +
+      s"(\\s${OPTIONS.str}\\s|\\s${AS.str}\\s|$$)", Pattern.CASE_INSENSITIVE)
 
   protected override lazy val createTable: Parser[LogicalPlan] =
     (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
@@ -786,10 +785,10 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     }
 
   // This is the same as tableIdentifier in SnappyParser.
-  protected override lazy val tableIdentifier: Parser[QualifiedTableName] =
+  protected override lazy val tableIdentifier: Parser[TableIdentifier] =
     (ident <~ ".").? ~ ident ^^ {
       case maybeSchemaName ~ tableName =>
-        new QualifiedTableName(maybeSchemaName, tableName)
+        TableIdentifier(tableName, maybeSchemaName)
     }
 
   protected override lazy val primitiveType: Parser[DataType] =
@@ -806,7 +805,8 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     "(?i)(?:smallint|short)".r ^^^ ShortType |
     "(?i)(?:tinyint|byte)".r ^^^ ByteType |
     "(?i)boolean".r ^^^ BooleanType |
-    varchar
+    varchar |
+    char
 
   protected override lazy val fixedDecimalType: Parser[DataType] =
     ("(?i)(?:decimal|numeric)".r ~> "(" ~> numericLit) ~ ("," ~> numericLit <~ ")") ^^ {
@@ -814,9 +814,12 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
         DecimalType(precision.toInt, scale.toInt)
     }
 
+  protected override lazy val char: Parser[DataType] =
+    "(?i)(?:character|char)".r ~> "(" ~> (numericLit <~ ")") ^^^ StringType
+
   protected lazy val createIndex: Parser[LogicalPlan] =
     (CREATE ~> (GLOBAL ~ HASH | UNIQUE).? <~ INDEX) ~
-      (tableIdentifier) ~ (ON ~> tableIdentifier) ~
+      tableIdentifier ~ (ON ~> tableIdentifier) ~
       colWithDirection ~ (OPTIONS ~> options).? ^^ {
       case indexType ~ indexName ~ tableName ~ cols ~ opts =>
         val parameters = opts.getOrElse(Map.empty[String, String])
@@ -827,10 +830,10 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
             case Some(x) if x.toString.equals("(global~hash)") =>
               "global hash"
           }
-          CreateIndex(indexName.toString, tableName,
+          CreateIndex(indexName.toString(), tableName,
             cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
         } else {
-          CreateIndex(indexName.toString, tableName, cols, parameters)
+          CreateIndex(indexName.toString(), tableName, cols, parameters)
         }
 
     }
@@ -843,7 +846,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected lazy val dropIndex: Parser[LogicalPlan] =
     DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
       case ifExists ~ indexName =>
-        DropIndex(indexName.toString, ifExists.isDefined)
+        DropIndex(indexName.toString(), ifExists.isDefined)
     }
 
   protected lazy val direction: Parser[SortDirection] =
@@ -954,7 +957,7 @@ private[sql] case class CreateMetastoreTableUsingSelect(
 }
 
 private[sql] case class DropTable(
-    tableIdent: QualifiedTableName,
+    tableIdent: TableIdentifier,
     temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
 
@@ -966,7 +969,7 @@ private[sql] case class DropTable(
 }
 
 private[sql] case class TruncateTable(
-    tableIdent: QualifiedTableName,
+    tableIdent: TableIdentifier,
     temporary: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
@@ -977,13 +980,13 @@ private[sql] case class TruncateTable(
 }
 
 private[sql] case class CreateIndex(indexName: String,
-    baseTable: QualifiedTableName,
+    baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndex(indexName, baseTable.toString,
+    snc.createIndex(indexName, baseTable.toString(),
       indexColumns, options)
     Seq.empty
   }
@@ -1001,7 +1004,7 @@ private[sql] case class DropIndex(
 }
 
 case class DMLExternalTable(
-    tableName: QualifiedTableName,
+    tableName: TableIdentifier,
     child: LogicalPlan,
     command: String)
     extends LogicalPlan with Command {
