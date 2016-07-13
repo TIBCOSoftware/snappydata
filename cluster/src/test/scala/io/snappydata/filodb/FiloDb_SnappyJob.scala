@@ -1,18 +1,31 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.filodb
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.util.Random
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import com.typesafe.config.Config
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.{DataFrame, SaveMode, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{DataFrame, SaveMode, SnappyContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob}
 
-/**
- * Created by kishor on 30/3/16.
- */
 object FiloDb_SnappyJob extends SnappySQLJob {
 
   var nycTaxiDataPath: String = _
@@ -20,7 +33,7 @@ object FiloDb_SnappyJob extends SnappySQLJob {
 
   val cachedDF = new collection.mutable.HashMap[String, DataFrame]
 
-  override def runJob(sc: SnappyContext, jobConfig: Config): Any = {
+  override def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any = {
     val taxiCsvFile: String = nycTaxiDataPath
     val numRuns = 50 // Make this higher when doing performance profiling
 
@@ -101,21 +114,21 @@ object FiloDb_SnappyJob extends SnappySQLJob {
   }
 
 
-  override def validate(sc: SnappyContext, config: Config): SparkJobValidation = {
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
     nycTaxiDataPath = if (config.hasPath("dataLocation")) {
       config.getString("dataLocation")
     } else {
       "/QASNAPPY/TPCH/DATA/1"
     }
 
-    var sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
+    val sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
       config.getString("sparkSqlProps")
     }
     else " "
 
     sqlSparkProperties = sqlSparkProps.split(" ")
 
-    SparkJobValid
+    SnappyJobValid()
   }
 
   def puts(s: String): Unit = {

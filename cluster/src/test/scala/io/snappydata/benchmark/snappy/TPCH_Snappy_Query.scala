@@ -1,123 +1,141 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
 package io.snappydata.benchmark.snappy
 
 import com.typesafe.config.Config
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.SnappySQLJob
+import org.apache.spark.sql.{SnappyJobInvalid, SnappyJobValid, SnappyJobValidation, SnappyContext, SnappySQLJob}
 
 /**
-  * Created by kishor on 28/1/16.
-  */
-object TPCH_Snappy_Query extends SnappySQLJob{
+ * Created by kishor on 28/1/16.
+ */
+object TPCH_Snappy_Query extends SnappySQLJob {
 
-   var sqlSparkProperties: Array[String] = _
-   var queryPlan : Boolean = false
-   var queries:Array[String] = _
+  var sqlSparkProperties: Array[String] = _
+  var queryPlan: Boolean = false
+  var queries: Array[String] = _
 
-//  var avgFileStream: FileOutputStream = _
-//  var avgPrintStream:PrintStream = _
+  //  var avgFileStream: FileOutputStream = _
+  //  var avgPrintStream:PrintStream = _
 
-   override def runJob(snc: C, jobConfig: Config): Any = {
-     val isResultCollection = false
-     val isSnappy = true
+  override def runSnappyJob(snc: C, jobConfig: Config): Any = {
+    val isResultCollection = false
+    val isSnappy = true
 
-//     avgFileStream = new FileOutputStream(new File(s"Average.out"))
-//     avgPrintStream = new PrintStream(avgFileStream)
+    //     avgFileStream = new FileOutputStream(new File(s"Average.out"))
+    //     avgPrintStream = new PrintStream(avgFileStream)
 
-     val usingOptionString = s"""
+    val usingOptionString =
+      s"""
            USING row
            OPTIONS ()"""
 
 
-     for(prop <- sqlSparkProperties) {
-       snc.sql(s"set $prop")
-     }
+    for (prop <- sqlSparkProperties) {
+      snc.sql(s"set $prop")
+    }
 
-     if (queryPlan) {
-       TPCH_Snappy.queryPlan(snc, isSnappy)
-     }
+    if (queryPlan) {
+      TPCH_Snappy.queryPlan(snc, isSnappy)
+    }
 
-     println(s"****************queries : $queries")
+    println(s"****************queries : $queries")
 
-     for(i <- 1 to 1) {
-       for(query <- queries)
-         query match {
-           case "1" =>   TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i)
-           case "2" =>   TPCH_Snappy.execute("q2", snc,isResultCollection, isSnappy, i)//taking hours to execute in Snappy
-           case "3"=>   TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i)
-           case "4" =>   TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i)
-           case "5" =>   TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i)
-           case "6" =>   TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i)
-           case "7" =>   TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i)
-           case "8" =>   TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i)
-           case "9" =>   TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i) //taking hours to execute in Snappy
-           case "10" =>   TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i)
-           case "11" =>   TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i)
-           case "12" =>   TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i)
-           case "13" =>   TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i)
-           case "14" =>   TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i)
-           case "15" =>   TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i)
-           case "16" =>   TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i)
-           case "17" =>   TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i)
-           case "18" =>   TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i)
-           case "19" =>   TPCH_Snappy.execute("q19", snc,isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
-           case "20" =>   TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i)
-           case "21" =>   TPCH_Snappy.execute("q21", snc,isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
-           case "22" =>   TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i)
-             println("---------------------------------------------------------------------------------")
-         }
+    for (i <- 1 to 1) {
+      for (query <- queries)
+        query match {
+          case "1" => TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i)
+          case "2" => TPCH_Snappy.execute("q2", snc, isResultCollection, isSnappy, i) //taking hours to execute in Snappy
+          case "3" => TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i)
+          case "4" => TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i)
+          case "5" => TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i)
+          case "6" => TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i)
+          case "7" => TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i)
+          case "8" => TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i)
+          case "9" => TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i) //taking hours to execute in Snappy
+          case "10" => TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i)
+          case "11" => TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i)
+          case "12" => TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i)
+          case "13" => TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i)
+          case "14" => TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i)
+          case "15" => TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i)
+          case "16" => TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i)
+          case "17" => TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i)
+          case "18" => TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i)
+          case "19" => TPCH_Snappy.execute("q19", snc, isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
+          case "20" => TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i)
+          case "21" => TPCH_Snappy.execute("q21", snc, isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
+          case "22" => TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i)
+            println("---------------------------------------------------------------------------------")
+        }
 
- //      TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q2", snc,isResultCollection, isSnappy, i)//taking hours to execute in Snappy
- //      TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i) //taking hours to execute in Snappy
- //      TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q19", snc,isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
- //      TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i)
- //      TPCH_Snappy.execute("q21", snc,isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
- //      TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i)
- //      println("---------------------------------------------------------------------------------")
-     }
+      //      TPCH_Snappy.execute("q1", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q2", snc,isResultCollection, isSnappy, i)//taking hours to execute in Snappy
+      //      TPCH_Snappy.execute("q3", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q4", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q5", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q6", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q7", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q8", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q9", snc, isResultCollection, isSnappy, i) //taking hours to execute in Snappy
+      //      TPCH_Snappy.execute("q10", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q11", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q12", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q13", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q14", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q15", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q16", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q17", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q18", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q19", snc,isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
+      //      TPCH_Snappy.execute("q20", snc, isResultCollection, isSnappy, i)
+      //      TPCH_Snappy.execute("q21", snc,isResultCollection, isSnappy, i) //not working in local mode hence not executing it for cluster mode too
+      //      TPCH_Snappy.execute("q22", snc, isResultCollection, isSnappy, i)
+      //      println("---------------------------------------------------------------------------------")
+    }
 
-     TPCH_Snappy.close()
-   }
+    TPCH_Snappy.close()
+  }
 
-   override def validate(sc: C, config: Config): SparkJobValidation = {
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
-     var sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
-       config.getString("sparkSqlProps")
-     }
-     else " "
+    val sqlSparkProps = if (config.hasPath("sparkSqlProps")) {
+      config.getString("sparkSqlProps")
+    }
+    else " "
 
-     sqlSparkProperties = sqlSparkProps.split(" ")
+    sqlSparkProperties = sqlSparkProps.split(" ")
 
-     queryPlan = if (config.hasPath("queryPlan")) {
-       config.getBoolean("queryPlan")
-     }else false
+    queryPlan = if (config.hasPath("queryPlan")) {
+      config.getBoolean("queryPlan")
+    } else falseAirlineDataSparkApp.scala
 
-     var tempqueries = if (config.hasPath("queries")) {
-       config.getString("queries")
-     } else {
-       return new SparkJobInvalid("Specify Query number to be executed")
-     }
+    val tempqueries = if (config.hasPath("queries")) {
+      config.getString("queries")
+    } else {
+      return new SnappyJobInvalid("Specify Query number to be executed")
+    }
 
-     println(s"tempqueries : $tempqueries")
+    println(s"tempqueries : $tempqueries")
 
-     queries = tempqueries.split(",")
+    queries = tempqueries.split(",")
 
-     SparkJobValid
-   }
- }
+    SnappyJobValid
+  }
+}

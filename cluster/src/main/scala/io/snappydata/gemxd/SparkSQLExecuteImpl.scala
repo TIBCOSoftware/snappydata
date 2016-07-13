@@ -42,8 +42,8 @@ import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{DataFrame, SnappyContext}
 import org.apache.spark.storage.{RDDBlockId, StorageLevel}
+import org.apache.spark.util.{Utils => SparkUtils, SnappyUtils}
 import org.apache.spark.{Logging, SparkContext, SparkEnv}
-
 /**
  * Encapsulates a Spark execution for use in query routing from JDBC.
  */
@@ -57,6 +57,11 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private[this] val snc = SnappyContextPerConnection
       .getSnappyContextForConnection(ctx.getConnId)
+
+  if (Thread.currentThread().getContextClassLoader != null ) {
+    val loader = SnappyUtils.getSnappyStoreContextLoader(getContextOrCurrentClassLoader)
+    Thread.currentThread().setContextClassLoader(loader)
+  }
 
   snc.setSchema(schema)
 
@@ -237,6 +242,11 @@ class SparkSQLExecuteImpl(val sql: String,
       case _ => (StoredFormatIds.SQL_VARCHAR_ID, -1, -1)
     }
   }
+
+
+  def getContextOrCurrentClassLoader: ClassLoader =
+    Option(Thread.currentThread().getContextClassLoader).getOrElse(getClass.getClassLoader)
+
 }
 
 object SparkSQLExecuteImpl {

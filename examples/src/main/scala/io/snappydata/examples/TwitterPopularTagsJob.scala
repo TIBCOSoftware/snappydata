@@ -1,13 +1,29 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.examples
 
 import java.io.PrintWriter
 
 import com.typesafe.config.Config
-import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.SaveMode
 import org.apache.spark.sql.streaming.{SchemaDStream, SnappyStreamingJob}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{SaveMode, SnappyJobValid, SnappyJobValidation}
+import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
 /**
@@ -29,7 +45,7 @@ import org.apache.spark.streaming.dstream.DStream
 
 object TwitterPopularTagsJob extends SnappyStreamingJob {
 
-  override def runJob(snsc: C, jobConfig: Config): Any = {
+  override def runSnappyJob(snsc: SnappyStreamingContext, jobConfig: Config): Any = {
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
@@ -39,59 +55,59 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     val pw = new PrintWriter(outFileName)
 
     val schema = StructType(List(StructField("hashtag", StringType)))
-    
+
     snsc.snappyContext.sql("DROP TABLE IF EXISTS topktable")
     snsc.snappyContext.sql("DROP TABLE IF EXISTS hashtagtable")
     snsc.snappyContext.sql("DROP TABLE IF EXISTS retweettable")
 
     if (jobConfig.hasPath("consumerKey") && jobConfig.hasPath("consumerKey")
-      && jobConfig.hasPath("accessToken")  && jobConfig.hasPath("accessTokenSecret") ) {
+        && jobConfig.hasPath("accessToken") && jobConfig.hasPath("accessTokenSecret")) {
       pw.println("##### Running example with live twitter stream #####")
 
       // Create twitter stream table
       snsc.sql("CREATE STREAM TABLE hashtagtable (hashtag STRING) USING " +
-        "twitter_stream OPTIONS (" +
-        s"consumerKey '${jobConfig.getString("consumerKey")}', " +
-        s"consumerSecret '${jobConfig.getString("consumerSecret")}', " +
-        s"accessToken '${jobConfig.getString("accessToken")}', " +
-        s"accessTokenSecret '${jobConfig.getString("accessTokenSecret")}', " +
-        "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow')")
+          "twitter_stream OPTIONS (" +
+          s"consumerKey '${jobConfig.getString("consumerKey")}', " +
+          s"consumerSecret '${jobConfig.getString("consumerSecret")}', " +
+          s"accessToken '${jobConfig.getString("accessToken")}', " +
+          s"accessTokenSecret '${jobConfig.getString("accessTokenSecret")}', " +
+          "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow')")
 
       snsc.sql("CREATE STREAM TABLE retweettable (retweetId LONG, retweetCnt INT, " +
-        "retweetTxt STRING) USING twitter_stream OPTIONS (" +
-        s"consumerKey '${jobConfig.getString("consumerKey")}', " +
-        s"consumerSecret '${jobConfig.getString("consumerSecret")}', " +
-        s"accessToken '${jobConfig.getString("accessToken")}', " +
-        s"accessTokenSecret '${jobConfig.getString("accessTokenSecret")}', " +
-        "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow')")
+          "retweetTxt STRING) USING twitter_stream OPTIONS (" +
+          s"consumerKey '${jobConfig.getString("consumerKey")}', " +
+          s"consumerSecret '${jobConfig.getString("consumerSecret")}', " +
+          s"accessToken '${jobConfig.getString("accessToken")}', " +
+          s"accessTokenSecret '${jobConfig.getString("accessTokenSecret")}', " +
+          "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow')")
 
 
     } else {
       // Create file stream table
       pw.println("##### Running example with stored tweet data #####")
       snsc.sql("CREATE STREAM TABLE hashtagtable (hashtag STRING) USING file_stream " +
-        "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
-        "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow'," +
-        "directory '/tmp/copiedtwitterdata')")
+          "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
+          "rowConverter 'org.apache.spark.sql.streaming.TweetToHashtagRow'," +
+          "directory '/tmp/copiedtwitterdata')")
 
       snsc.sql("CREATE STREAM TABLE retweettable (retweetId LONG, retweetCnt INT, " +
-        "retweetTxt STRING) USING file_stream " +
-        "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
-        "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
-        "directory '/tmp/copiedtwitterdata')")
+          "retweetTxt STRING) USING file_stream " +
+          "OPTIONS (storagelevel 'MEMORY_AND_DISK_SER_2', " +
+          "rowConverter 'org.apache.spark.sql.streaming.TweetToRetweetRow'," +
+          "directory '/tmp/copiedtwitterdata')")
 
     }
 
     // Register continuous queries on the tables and specify window clauses
     val retweetStream: SchemaDStream = snsc.registerCQ("SELECT * FROM retweettable " +
-      "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
+        "WINDOW (DURATION 2 SECONDS, SLIDE 2 SECONDS)")
 
     val topKOption = Map(
-        "epoch" -> System.currentTimeMillis().toString,
-        "timeInterval" -> "2000ms",
-        "size" -> "10",
-        "basetable" -> "hashtagtable"
-      )
+      "epoch" -> System.currentTimeMillis().toString,
+      "timeInterval" -> "2000ms",
+      "size" -> "10",
+      "basetable" -> "hashtagtable"
+    )
 
     // Create TopK table on the base stream table which is hashtagtable
     // TopK object is automatically populated from the stream table
@@ -100,13 +116,13 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
 
     val tableName = "retweetStore"
 
-    snsc.snappyContext.dropTable(tableName, true )
+    snsc.snappyContext.dropTable(tableName, true)
 
     // Create row table to insert retweets based on retweetId as Primary key
     // When a tweet is retweeted multiple times, the previous entry of the tweet
     // is over written by the new retweet count.
     snsc.snappyContext.sql(s"CREATE TABLE $tableName (retweetId BIGINT PRIMARY KEY, " +
-      s"retweetCnt INT, retweetTxt STRING) USING row OPTIONS ()")
+        s"retweetCnt INT, retweetTxt STRING) USING row OPTIONS ()")
 
     // Save data in snappy store
     retweetStream.foreachDataFrame(df => {
@@ -118,11 +134,10 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     // Iterate over the streaming data for twitter data and publish the results to a file.
     try {
 
-      val runTime = if(jobConfig.hasPath("streamRunTime"))
-      {
+      val runTime = if (jobConfig.hasPath("streamRunTime")) {
         jobConfig.getString("streamRunTime").toInt * 1000
       } else {
-        120*1000
+        120 * 1000
       }
 
       val end = System.currentTimeMillis + runTime
@@ -148,9 +163,9 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
       // Query the snappystore Row table to find out the top retweets
       pw.println("\n####### Top 10 popular tweets - Query Row table #######\n")
       snsc.snappyContext.sql(s"SELECT retweetId AS RetweetId, " +
-        s"retweetCnt AS RetweetsCount, retweetTxt AS Text FROM ${tableName}" +
-        s" ORDER BY RetweetsCount DESC LIMIT 10")
-        .collect.foreach(row => {
+          s"retweetCnt AS RetweetsCount, retweetTxt AS Text FROM ${tableName}" +
+          s" ORDER BY RetweetsCount DESC LIMIT 10")
+          .collect.foreach(row => {
         pw.println(row.toString())
       })
 
@@ -167,8 +182,8 @@ object TwitterPopularTagsJob extends SnappyStreamingJob {
     // scalastyle:on println
   }
 
-  override def validate(snsc: C, config: Config): SparkJobValidation = {
-    SparkJobValid
+  override def isValidJob(snsc: SnappyStreamingContext, config: Config): SnappyJobValidation = {
+    SnappyJobValid()
   }
 
 

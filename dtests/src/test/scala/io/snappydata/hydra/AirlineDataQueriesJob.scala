@@ -19,7 +19,7 @@ package io.snappydata.hydra
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import org.apache.spark.sql.{DataFrame, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobValidation, SnappyJobValid, SnappyContext, DataFrame, SnappySQLJob}
 import spark.jobserver.{SparkJobValid, SparkJobValidation}
 
 import scala.util.{Failure, Success, Try}
@@ -32,11 +32,8 @@ import scala.util.{Failure, Success, Try}
  * This Map will be sent over REST.
  */
 
-/**
- * Created by swati on 6/4/16.
- */
 object AirlineDataQueriesJob extends SnappySQLJob {
-  override def runJob(snc: C, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val colTable = "AIRLINE"
     val parquetTable = "STAGING_AIRLINE"
     val rowTable = "AIRLINEREF"
@@ -69,9 +66,9 @@ object AirlineDataQueriesJob extends SnappySQLJob {
 
   }
 
-  //Method for running all olap and oltp queries and calculating total elapsed time for each query collectively at the end along with the number of times query Executed.
+  // Method for running all olap and oltp queries and calculating total elapsed time for each query collectively at the end along with the number of times query Executed.
 
-  def runQueries(pw: PrintWriter, snc: C): Unit = {
+  def runQueries(pw: PrintWriter, snc: SnappyContext): Unit = {
     var query1ExecutionCount, query2ExecutionCount, query3ExecutionCount, query4ExecutionCount, query5ExecutionCount = 0
     var totalTimeQuery1, totalTimeQuery2, totalTimeQuery3, totalTimeQuery4, totalTimeQuery5: Long = 0
     val startTime = System.currentTimeMillis
@@ -79,32 +76,46 @@ object AirlineDataQueriesJob extends SnappySQLJob {
 
     while (EndTime > System.currentTimeMillis()) {
       //    while (startTime < EndTime) {
-      //This Query retrives which airline had the most flights each year.
-      val query1: String = "select  count(*) flightRecCount, description AirlineName, UniqueCarrier carrierCode ,Year_ \n   from airline , airlineref\n   where airline.UniqueCarrier = airlineref.code\n   group by UniqueCarrier,description, Year_ \n   order by flightRecCount desc limit 10 "
+      // This Query retrives which airline had the most flights each year.
+      val query1: String = "select  count(*) flightRecCount, description AirlineName, UniqueCarrier carrierCode ,Year_ \n  " +
+          " from airline , airlineref\n   " +
+          "where airline.UniqueCarrier = airlineref.code\n   " +
+          "group by UniqueCarrier,description, Year_ \n   " +
+          "order by flightRecCount desc limit 10 "
       val query1Result = snc.sql(query1)
       val startTimeQuery1 = System.currentTimeMillis
       val result1 = query1Result.collect()
       totalTimeQuery1 += (System.currentTimeMillis - startTimeQuery1)
       query1ExecutionCount += 1
 
-      //This query retrives which Airlines Arrive On Schedule
-      val query2: String = "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier from airline   \n" + "   group by UniqueCarrier\n" + "   order by arrivalDelay "
+      // This query retrives which Airlines Arrive On Schedule
+      val query2: String = "select AVG(ArrDelay) arrivalDelay, UniqueCarrier carrier " +
+          "from airline   \n" + "   " +
+          "group by UniqueCarrier\n" + "   " +
+          "order by arrivalDelay "
       val query2Result = snc.sql(query2)
       val startTimeQuery2 = System.currentTimeMillis
       val result2 = query2Result.collect()
       totalTimeQuery2 += (System.currentTimeMillis - startTimeQuery2)
       query2ExecutionCount += 1
 
-      //This method retrives which Airlines Arrive On Schedule. JOIN with reference table.
-      val query3: String = "select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier \n  from airline, airlineref\n  where airline.UniqueCarrier = airlineref.Code \n  group by UniqueCarrier, description \n  order by arrivalDelay "
+      // This method retrives which Airlines Arrive On Schedule. JOIN with reference table.
+      val query3: String = "select AVG(ArrDelay) arrivalDelay, description AirlineName, UniqueCarrier carrier \n  " +
+          "from airline, airlineref\n  " +
+          "where airline.UniqueCarrier = airlineref.Code \n  " +
+          "group by UniqueCarrier, description \n " +
+          " order by arrivalDelay "
       val Query3Result = snc.sql(query3)
       val startTimeQuery3 = System.currentTimeMillis
       val result3 = Query3Result.collect()
       totalTimeQuery3 += (System.currentTimeMillis - startTimeQuery3)
       query3ExecutionCount += 1
 
-      //This query retrives the trend in arrival delays across all airlines in the US
-      val query4: String = "select AVG(ArrDelay) ArrivalDelay, Year_\n  from airline \n  group by Year_ \n  order by Year_ "
+      // This query retrives the trend in arrival delays across all airlines in the US
+      val query4: String = "select AVG(ArrDelay) ArrivalDelay, Year_\n " +
+          " from airline \n  " +
+          "group by Year_ \n  " +
+          "order by Year_ "
       val Query4Result = snc.sql(query4)
       val startTimeQuery4 = System.currentTimeMillis
       val result4 = Query4Result.collect()
@@ -112,42 +123,43 @@ object AirlineDataQueriesJob extends SnappySQLJob {
       query4ExecutionCount += 1
 
 
-      //This query retrives Which airline out of SanFrancisco had most delays due to weather
-      val query5: String = "SELECT sum(WeatherDelay) totalWeatherDelay, airlineref.DESCRIPTION \n  FROM airline, airlineref \n  WHERE airline.UniqueCarrier = airlineref.CODE AND  Origin like '%SFO%' AND WeatherDelay > 0 \n  GROUP BY DESCRIPTION \n  limit 20"
+      // This query retrives Which airline out of SanFrancisco had most delays due to weather
+      val query5: String = "SELECT sum(WeatherDelay) totalWeatherDelay, airlineref.DESCRIPTION \n  " +
+          "FROM airline, airlineref \n  " +
+          "WHERE airline.UniqueCarrier = airlineref.CODE " +
+          "AND Origin like '%SFO%' AND WeatherDelay > 0 " +
+          "GROUP BY DESCRIPTION \n  limit 20"
       val Query5Result = snc.sql(query5)
 
       val startTimeQuery5 = System.currentTimeMillis
       val result5 = Query4Result.collect()
       totalTimeQuery5 += (System.currentTimeMillis - startTimeQuery5)
       query5ExecutionCount += 1
-      //      startTime = System.currentTimeMillis
-//      pw.println(s"\n****** startTime is " + startTime + " ms And endTime is " + EndTime + " ms****")
-//      pw.flush()
     }
     pw.println(s"\n****** countQueryWithGroupByOrderBy Execution " +
-      s"took ${totalTimeQuery1} ms******")
+        s"took ${totalTimeQuery1} ms******")
     pw.println(s"\n****** countQueryWithGroupByOrderBy Execution " +
-      s"count is :: ${query1ExecutionCount} ******")
+        s"count is :: ${query1ExecutionCount} ******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForScheduleQuery Execution " +
-      s"took ${totalTimeQuery2} ms******")
+        s"took ${totalTimeQuery2} ms******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForScheduleQuery Execution " +
-      s"count is :: ${query2ExecutionCount} ******")
+        s"count is :: ${query2ExecutionCount} ******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByWithJoinForScheduleQuery Execution " +
-      s"took ${totalTimeQuery3} ms******")
+        s"took ${totalTimeQuery3} ms******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByWithJoinForScheduleQuery Execution " +
-      s"count is :: ${query3ExecutionCount} ******")
+        s"count is :: ${query3ExecutionCount} ******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForTrendAnalysisQuery Execution " +
-      s"took ${totalTimeQuery4} ms******")
+        s"took ${totalTimeQuery4} ms******")
     pw.println(s"\n****** avgArrDelayWithGroupByOrderByForTrendAnalysisQuery Execution " +
-      s"count is :: ${query4ExecutionCount} ******")
+        s"count is :: ${query4ExecutionCount} ******")
     pw.println(s"\n****** sumWeatherDelayWithGroupByWithLimitQuery Execution " +
-      s"took ${totalTimeQuery5} ms******")
+        s"took ${totalTimeQuery5} ms******")
     pw.println(s"\n****** sumWeatherDelayWithGroupByWithLimitQuery Execution " +
-      s"count is :: ${query5ExecutionCount} ******")
+        s"count is :: ${query5ExecutionCount} ******")
   }
 
-  override def validate(sc: C, config: Config): SparkJobValidation = {
-    SparkJobValid
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
+    SnappyJobValid()
   }
 
 }

@@ -16,17 +16,36 @@
  */
 package org.apache.spark.sql.streaming
 
-import com.typesafe.config.{ConfigException, Config}
+import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
-import spark.jobserver.{ContextLike, SparkJobBase}
+import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation}
 import org.apache.spark.streaming.{Milliseconds, SnappyStreamingContext}
+import org.apache.spark.util.{SnappyUtils, Utils}
 
-trait SnappyStreamingJob extends SparkJobBase {
-  type C = SnappyStreamingContext
+abstract class SnappyStreamingJob extends SparkJobBase {
+ final type C = Any
+
+  final override def validate(sc: C, config: Config): SparkJobValidation = {
+    val parentLoader = Utils.getContextOrSparkClassLoader
+    val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
+    Thread.currentThread().setContextClassLoader(currentLoader)
+    SnappyJobValidate.validate(isValidJob(sc.asInstanceOf[SnappyStreamingContext], config))
+  }
+
+  final override def runJob(sc: C, jobConfig: Config): Any = {
+    runSnappyJob(sc.asInstanceOf[SnappyStreamingContext], jobConfig)
+  }
+
+  def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation
+
+  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any;
+
 }
+
 
 class SnappyStreamingContextFactory extends SparkContextFactory {
 

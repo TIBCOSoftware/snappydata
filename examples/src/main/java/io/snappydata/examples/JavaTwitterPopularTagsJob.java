@@ -8,14 +8,16 @@ import java.util.Map;
 import com.typesafe.config.Config;
 import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.JSparkJobValid;
-import org.apache.spark.sql.JSparkJobValidation;
+import org.apache.spark.sql.SnappyJobValid;
+import org.apache.spark.sql.SnappyJobValidation;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.streaming.SchemaDStream;
+import org.apache.spark.sql.streaming.SnappyStreamingJob;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.JavaSnappyStreamingJob;
+import org.apache.spark.streaming.SnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 
@@ -42,7 +44,7 @@ import static org.apache.spark.sql.types.DataTypes.createStructField;
 
 public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
   @Override
-  public Object runJavaJob(JavaSnappyStreamingContext snsc, Config jobConfig) {
+  public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {
 
     JavaDStream stream = null;
     PrintWriter pw = null;
@@ -203,7 +205,7 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
   }
 
   @Override
-  public JSparkJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig) {
-    return new JSparkJobValid();
+  public SnappyJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig) {
+    return new SnappyJobValid();
   }
 }
