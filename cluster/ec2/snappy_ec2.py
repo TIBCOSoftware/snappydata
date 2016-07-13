@@ -207,7 +207,7 @@ def parse_args():
         help="If you have multiple profiles (AWS or boto config), you can configure " +
              "additional, named profiles by using this option (default: %default)")
     parser.add_option(
-        "-t", "--instance-type", default="m1.large",
+        "-t", "--instance-type", default="m3.large",
         help="Type of instance to launch (default: %default). " +
              "WARNING: must be 64-bit; small instances won't work")
     parser.add_option(
@@ -289,13 +289,6 @@ def parse_args():
         help="If specified, launch stores as spot instances with the given " +
              "maximum price (in dollars)")
     parser.add_option(
-        "--ganglia", action="store_true", default=True,
-        help="Setup Ganglia monitoring on cluster (default: %default). NOTE: " +
-             "the Ganglia page will be publicly accessible")
-    parser.add_option(
-        "--no-ganglia", action="store_false", dest="ganglia",
-        help="Disable Ganglia monitoring for the cluster")
-    parser.add_option(
         "-u", "--user", default="root",
         help="The SSH user you want to connect as (default: %default)")
     parser.add_option(
@@ -347,6 +340,7 @@ def parse_args():
         help="IAM profile name to launch instances under")
 
     (opts, args) = parser.parse_args()
+    # TODO Remove the restriction on number of locators to be one.
     opts.locators = 1
     if len(args) != 2:
         parser.print_help()
@@ -409,11 +403,11 @@ def get_validate_spark_version(version, repo):
 EC2_INSTANCE_TYPES = {
     "c1.medium":   "pvm",
     "c1.xlarge":   "pvm",
-    "c3.large":    "pvm",
-    "c3.xlarge":   "pvm",
-    "c3.2xlarge":  "pvm",
-    "c3.4xlarge":  "pvm",
-    "c3.8xlarge":  "pvm",
+    "c3.large":    "hvm",
+    "c3.xlarge":   "hvm",
+    "c3.2xlarge":  "hvm",
+    "c3.4xlarge":  "hvm",
+    "c3.8xlarge":  "hvm",
     "c4.large":    "hvm",
     "c4.xlarge":   "hvm",
     "c4.2xlarge":  "hvm",
@@ -559,8 +553,6 @@ def launch_cluster(conn, opts, cluster_name):
         locator_group.authorize('udp', 4242, 4242, authorized_address)
         # RM in YARN mode uses 8088
         locator_group.authorize('tcp', 8088, 8088, authorized_address)
-        if opts.ganglia:
-            locator_group.authorize('tcp', 5080, 5080, authorized_address)
     if lead_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             lead_group.authorize(src_group=lead_group)
@@ -604,8 +596,6 @@ def launch_cluster(conn, opts, cluster_name):
         lead_group.authorize('udp', 4242, 4242, authorized_address)
         # RM in YARN mode uses 8088
         lead_group.authorize('tcp', 8088, 8088, authorized_address)
-        if opts.ganglia:
-            lead_group.authorize('tcp', 5080, 5080, authorized_address)
     if store_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             store_group.authorize(src_group=locator_group)
@@ -915,96 +905,61 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
 # Deploy configuration files and run setup scripts on a newly launched
 # or started EC2 cluster.
 def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, deploy_ssh_key):
-    lead = get_dns_name(lead_nodes[0], opts.private_ips)
+    locator = get_dns_name(locator_nodes[0], opts.private_ips)
     if deploy_ssh_key:
-        print("Generating cluster's SSH key on lead...")
+        print("Generating cluster's SSH key on locator...")
         key_setup = """
           [ -f ~/.ssh/id_rsa ] ||
             (ssh-keygen -q -t rsa -N '' -f ~/.ssh/id_rsa &&
              cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys)
         """
-        ssh(lead, opts, key_setup)
-        dot_ssh_tar = ssh_read(lead, opts, ['tar', 'c', '.ssh'])
-        print("Transferring cluster's SSH key to other leads...")
-        for index in range(len(lead_nodes)):
+        ssh(locator, opts, key_setup)
+        dot_ssh_tar = ssh_read(locator, opts, ['tar', 'c', '.ssh'])
+        print("Transferring cluster's SSH key to other locators...")
+        for index in range(len(locator_nodes)):
             if index > 0:
-                lead_address = get_dns_name(lead_nodes[index], opts.private_ips)
-                print(lead_address)
-                ssh_write(lead_address, opts, ['tar', 'x'], dot_ssh_tar)
-        print("Transferring cluster's SSH key to locators...")
-        for locator in locator_nodes:
-            locator_address = get_dns_name(locator, opts.private_ips)
-            print(locator_address)
-            ssh_write(locator_address, opts, ['tar', 'x'], dot_ssh_tar)
+                locator_address = get_dns_name(locator_nodes[index], opts.private_ips)
+                print(locator_address)
+                ssh_write(locator_address, opts, ['tar', 'x'], dot_ssh_tar)
+        print("Transferring cluster's SSH key to leads...")
+        for lead in lead_nodes:
+            lead_address = get_dns_name(lead, opts.private_ips)
+            print(lead_address)
+            ssh_write(lead_address, opts, ['tar', 'x'], dot_ssh_tar)
         print("Transferring cluster's SSH key to stores...")
         for store in server_nodes:
             store_address = get_dns_name(store, opts.private_ips)
             print(store_address)
             ssh_write(store_address, opts, ['tar', 'x'], dot_ssh_tar)
 
-    modules = ['spark', 'ephemeral-hdfs', 'persistent-hdfs',
-               'mapreduce', 'spark-standalone', 'tachyon', 'rstudio']
+    # TODO Download aws-setup.sh, etc from public repo instead of pushing them from this machine.
 
-    if opts.hadoop_major_version == "1":
-        modules = list(filter(lambda x: x != "mapreduce", modules))
-
-    if opts.ganglia:
-        modules.append('ganglia')
-
-    # Clear SPARK_WORKER_INSTANCES if running on YARN
-    if opts.hadoop_major_version == "yarn":
-        opts.worker_instances = ""
-
-    # NOTE: We should clone the repository before running deploy_files to
-    # prevent ec2-variables.sh from being overwritten
-#    print("Cloning spark-ec2 scripts from {r}/tree/{b} on master...".format(
-#        r=opts.spark_ec2_git_repo, b=opts.spark_ec2_git_branch))
-#    ssh(
-#        host=master,
-#        opts=opts,
-#        command="rm -rf spark-ec2"
-#        + " && "
-#        + "git clone {r} -b {b} spark-ec2".format(r=opts.spark_ec2_git_repo,
-#                                                  b=opts.spark_ec2_git_branch)
-#    )
-
-    print("Deploying files to lead...")
+    print("Deploying files to locator...")
     deploy_files(
         conn=conn,
         root_dir=SNAPPY_EC2_DIR + "/" + "deploy",
         opts=opts,
         locator_nodes=locator_nodes,
         lead_nodes=lead_nodes,
-        server_nodes=server_nodes,
-        modules=modules
+        server_nodes=server_nodes
     )
 
     if opts.deploy_root_dir is not None:
-        print("Deploying {s} to lead...".format(s=opts.deploy_root_dir))
+        print("Deploying {s} to locator...".format(s=opts.deploy_root_dir))
         deploy_user_files(
             root_dir=opts.deploy_root_dir,
             opts=opts,
-            lead_nodes=lead_nodes
+            locator_nodes=locator_nodes
         )
 
-    print("Running aws-setup on lead...")
-    setup_snappy_cluster(lead, opts)
+    print("Running aws-setup on locator...")
+    setup_snappy_cluster(locator, opts)
     print("Done!")
 
 
 def setup_snappy_cluster(master, opts):
     ssh(master, opts, "chmod u+x snappydata/aws-setup.sh")
     ssh(master, opts, "snappydata/aws-setup.sh")
-    print("SnappyData Unified cluster started at http://%s:4040" % master)
-
-
-def setup_spark_cluster(master, opts):
-    ssh(master, opts, "chmod u+x spark-ec2/setup.sh")
-    ssh(master, opts, "spark-ec2/setup.sh")
-    print("Spark standalone cluster started at http://%s:8080" % master)
-
-    if opts.ganglia:
-        print("Ganglia started at http://%s:5080/ganglia" % master)
 
 
 def is_ssh_available(host, opts, print_ssh_output=True):
@@ -1177,8 +1132,8 @@ def get_num_disks(instance_type):
 # script to be run on that instance to copy them to other nodes.
 #
 # root_dir should be an absolute path to the directory with the files we want to deploy.
-def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, modules):
-    active_lead = get_dns_name(lead_nodes[0], opts.private_ips)
+def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes):
+    active_locator = get_dns_name(locator_nodes[0], opts.private_ips)
 
     num_disks = get_num_disks(opts.instance_type)
     hdfs_data_dirs = "/mnt/ephemeral-hdfs/data"
@@ -1190,7 +1145,7 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
             mapred_local_dirs += ",/mnt%d/hadoop/mrlocal" % i
             spark_local_dirs += ",/mnt%d/spark" % i
 
-    cluster_url = "%s:7077" % active_lead
+    cluster_url = "%s:7077" % active_locator
 
     if "." in opts.spark_version:
         # Pre-built Spark deploy
@@ -1201,7 +1156,6 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
         spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
         tachyon_v = ""
         print("Deploying Spark via git hash; Tachyon won't be set up")
-        modules = filter(lambda x: x != "tachyon", modules)
 
     locator_addresses = [get_dns_name(i, opts.private_ips) for i in locator_nodes]
     lead_addresses = [get_dns_name(i, opts.private_ips) for i in lead_nodes]
@@ -1238,6 +1192,12 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
                             text = src.read()
                             for key in template_vars:
                                 text = text.replace("{{" + key + "}}", template_vars[key])
+                            for idx in range(len(locator_nodes)):
+                                text = text.replace("{{LOCATOR_" + str(idx) + "}}", locator_addresses[idx])
+                            for idx in range(len(lead_nodes)):
+                                text = text.replace("{{LEAD_" + str(idx) + "}}", lead_addresses[idx])
+                            for idx in range(len(server_nodes)):
+                                text = text.replace("{{SERVER_" + str(idx) + "}}", server_addresses[idx])
                             dest.write(text)
                             dest.close()
     # rsync the whole directory over to the master machine
@@ -1245,7 +1205,7 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes, 
         'rsync', '-rv',
         '-e', stringify_command(ssh_command(opts)),
         "%s/" % tmp_dir,
-        "%s@%s:/" % (opts.user, active_lead)
+        "%s@%s:/" % (opts.user, active_locator)
     ]
     subprocess.check_call(command)
     # Remove the temp directory we created above
@@ -1427,9 +1387,9 @@ def real_main():
            opts.locator_instance_type in EC2_INSTANCE_TYPES:
             if EC2_INSTANCE_TYPES[opts.instance_type] != \
                EC2_INSTANCE_TYPES[opts.locator_instance_type]:
-                print("Error: spark-ec2 currently does not support having a master and stores "
+                print("Error: spark-ec2 currently does not support having locators and stores "
                       "with different AMI virtualization types.", file=stderr)
-                print("master instance virtualization type: {t}".format(
+                print("locator instance virtualization type: {t}".format(
                       t=EC2_INSTANCE_TYPES[opts.locator_instance_type]), file=stderr)
                 print("store instance virtualization type: {t}".format(
                       t=EC2_INSTANCE_TYPES[opts.instance_type]), file=stderr)
@@ -1439,16 +1399,6 @@ def real_main():
     if opts.ebs_vol_num > 8:
         print("ebs-vol-num cannot be greater than 8", file=stderr)
         sys.exit(1)
-
-    # Prevent breaking ami_prefix (/, .git and startswith checks)
-    # Prevent forks with non spark-ec2 names for now.
-#    if opts.spark_ec2_git_repo.endswith("/") or \
-#        opts.spark_ec2_git_repo.endswith(".git") or \
-#            not opts.spark_ec2_git_repo.startswith("https://github.com") or \
-#            not opts.spark_ec2_git_repo.endswith("spark-ec2"):
-#        print("spark-ec2-git-repo must be a github repo and it must not have a trailing / or .git. "
-#              "Furthermore, we currently only support forks named spark-ec2.", file=stderr)
-#        sys.exit(1)
 
     if not (opts.deploy_root_dir is None or
             (os.path.isabs(opts.deploy_root_dir) and
@@ -1472,8 +1422,8 @@ def real_main():
         opts.zone = random.choice(conn.get_all_zones()).name
 
     if action == "launch":
-        if opts.stores <= 0:
-            print("ERROR: You have to start at least 1 store", file=sys.stderr)
+        if opts.locators <= 0 or opts.stores <= 0 or opts.leads <= 0:
+            print("ERROR: You have to start at least one instance of locator, lead and store each.", file=sys.stderr)
             sys.exit(1)
         if opts.resume:
             (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
@@ -1486,6 +1436,9 @@ def real_main():
             cluster_state='ssh-ready'
         )
         setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, True)
+        lead = get_dns_name(lead_nodes[0], opts.private_ips)
+        # TODO print the correct port, read from conf/leads or snappy-env.sh
+        print("SnappyData Unified cluster started at http://%s:port, replace 'port' with UI port specified in conf files or 4040 which is the default." % lead)
 
     elif action == "destroy":
         (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
