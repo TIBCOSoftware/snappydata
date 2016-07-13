@@ -55,11 +55,11 @@ final class SparkShellRDDHelper {
       split: Partition, query: String): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
     val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-    val par = ""+split.index
+    val par = "" + split.index
     val statement = conn.createStatement()
 
     if (!useLocatorURL)
-      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', $par)")
+      statement.execute(s"call sys.SET_BUCKETS_FOR_LOCAL_EXECUTION('$resolvedName', '$par')")
 
     val rs = statement.executeQuery(query)
     (statement, rs)
@@ -112,6 +112,18 @@ object SparkShellRDDHelper {
         val bucketToServerList = getBucketToServerMapping(resolvedName)
         val numPartitions = bucketToServerList.length
         val partitions = new Array[Partition](numPartitions)
+      /*        val numCores = Runtime.getRuntime.availableProcessors()
+              val numServers = GemFireXDUtils.getGfxdAdvisor.adviseDataStores(null).size()
+              val numPartitions = numServers * numCores
+              val numBuckets = bucketToServerList.length
+              val partitions = {
+                if (numBuckets < numPartitions) {
+                  new Array[Partition](numBuckets)
+                } else {
+                  new Array[Partition](numPartitions)
+                }
+              }
+       */
         for (p <- 0 until numPartitions) {
           partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
         }
