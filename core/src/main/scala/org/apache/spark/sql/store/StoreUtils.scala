@@ -20,7 +20,8 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.{DistributedRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, MultiExecutorLocalPartition, Utils}
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.datasources.DDLException
@@ -151,24 +152,6 @@ object StoreUtils extends Logging {
     partitions
   }
 
-  def getPartitionsPartitionedTable(sc: SparkContext,
-      tableName: String, schema: String,
-      blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
-    val resolvedName = lookupName(tableName, schema)
-    val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[PartitionedRegion]
-    val numBuckets = region.getTotalNumberOfBuckets
-    val partitions = new Array[Partition](numBuckets)
-    for (p <- 0 until numBuckets) {
-      val distMembers = region.getRegionAdvisor.getBucketOwners(p).asScala
-      val prefNodes = distMembers.map(
-        m => blockMap.get(m)
-      )
-      val prefNodeSeq = prefNodes.map(_.get).toSeq
-      partitions(p) = new MultiExecutorLocalPartition(p, prefNodeSeq)
-    }
-    partitions
-  }
-
   def getPartitionsReplicatedTable(sc: SparkContext,
       tableName: String, schema: String,
       blockMap: Map[InternalDistributedMember, BlockManagerId]): Array[Partition] = {
@@ -184,7 +167,7 @@ object StoreUtils extends Logging {
       region.getDistributionAdvisor.adviseInitializedReplicates().asScala
     }
     val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
-    partitions(0) = new MultiExecutorLocalPartition(0, prefNodes)
+    partitions(0) = new MultiBucketExecutorPartition((0, mutable.HashSet.empty, prefNodes)
     partitions
   }
 
