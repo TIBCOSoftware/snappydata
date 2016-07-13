@@ -59,17 +59,17 @@ object SnappyDataVersion {
     val pw: PrintWriter = new PrintWriter(ps)
 
     // platform version
-    pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion)
+    pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
     // rowstore version
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
     pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
-        GemFireVersion.getProductVersion)
+        GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
     // column store version
     GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
     pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " Column Store " +
-        GemFireVersion.getProductVersion)
+        GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
     // AQP version if available
     val is: InputStream = ClassPathLoader.getLatest.getResourceAsStream(
@@ -77,7 +77,7 @@ object SnappyDataVersion {
     if (Option(is) != None) {
       GemFireVersion.getInstance(classOf[SnappyDataVersion], AQP_VERSION_PROPERTIES)
       pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
-          GemFireVersion.getProductVersion)
+          GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
     }
     pw.flush
   }

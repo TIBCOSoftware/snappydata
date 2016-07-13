@@ -30,14 +30,19 @@ import com.pivotal.gemfirexd.internal.engine.Misc;
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util;
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary;
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState;
+import io.snappydata.Constant;
+import io.snappydata.util.ServiceUtils;
 import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.metastore.HiveMetaStoreClient;
 import org.apache.hadoop.hive.metastore.api.MetaException;
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException;
 import org.apache.hadoop.hive.metastore.api.Table;
+import org.apache.spark.sql.catalyst.TableIdentifier;
 import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.hive.ExternalTableType;
+import org.apache.spark.sql.hive.QualifiedTableName;
 import org.apache.spark.sql.hive.SnappyStoreHiveCatalog;
+import org.apache.spark.sql.store.StoreUtils;
 import org.apache.spark.sql.types.StructType;
 import org.apache.thrift.TException;
 
@@ -50,8 +55,6 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   private final ThreadLocal<HMSQuery> queries = new ThreadLocal<>();
 
   private final ExecutorService hmsQueriesExecutorService;
-
-  private final static String DEFAULT_DB_NAME = "default";
 
   private final ArrayList<HiveMetaStoreClient> allHMclients = new ArrayList<>();
 
@@ -82,30 +85,28 @@ public class SnappyHiveCatalog implements ExternalCatalog {
     }
   }
 
-  public boolean isColumnTable(String tableName, boolean skipLocks) {
+  public boolean isColumnTable(String schema, String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName,
-        DEFAULT_DB_NAME, skipLocks);
+    q.resetValues(HMSQuery.ISCOLUMNTABLE_QUERY, tableName, schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
 
-  public boolean isRowTable(String tableName, boolean skipLocks) {
+  public boolean isRowTable(String schema, String tableName, boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName,
-        DEFAULT_DB_NAME, skipLocks);
+    q.resetValues(HMSQuery.ISROWTABLE_QUERY, tableName, schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (Boolean)handleFutureResult(f);
   }
 
-  public String getColumnTableSchemaAsJson(String tableName,
+  public String getColumnTableSchemaAsJson(String schema, String tableName,
       boolean skipLocks) {
     HMSQuery q = getHMSQuery();
-    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA, tableName,
-        DEFAULT_DB_NAME, skipLocks);
+    q.resetValues(HMSQuery.COLUMNTABLE_SCHEMA, tableName, schema, skipLocks);
     Future<Object> f = this.hmsQueriesExecutorService.submit(q);
     return (String)handleFutureResult(f);
   }
+
 
   @Override
   public void stop() {

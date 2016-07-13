@@ -70,7 +70,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       bucketID: Int): java.util.Set[Any] = {
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
-    val store = stores.get(container.getTableName)
+    val store = stores.get(container.getQualifiedTableName)
+
     if (store.isDefined) {
       val (schema, externalStore) = store.get
       // LCC should be available assuming insert is already being done
@@ -100,8 +101,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
             null, null, 0, null, null, 0, null)
 
           val batchCreator = new CachedBatchCreator(
-            ColumnFormatRelation.cachedBatchTableName(container.getTableName),
-            container.getTableName, schema,
+            ColumnFormatRelation.cachedBatchTableName(container.getQualifiedTableName),
+            container.getQualifiedTableName, schema,
             externalStore, cachedBatchSize, useCompression)
           val keys = batchCreator.createAndStoreBatch(sc, row,
             batchID, bucketID)
@@ -140,11 +141,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
 
   override def haveRegisteredExternalStore(tableName: String): Boolean = {
     // TODO -  remove below that deals with default schema and all
-    // entries in store should come with fully qualified tableName
-    val table = if (tableName.startsWith(Constant.DEFAULT_SCHEMA + ".")) {
-      tableName.substring(Constant.DEFAULT_SCHEMA.length + 1)
-    } else tableName
-    stores.contains(table)
+    stores.contains(tableName)
   }
 
 }

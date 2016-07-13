@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
 package io.snappydata.hydra.cluster;
 
 
@@ -7,10 +23,6 @@ import hydra.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
-import scala.Predef;
-import scala.Tuple2;
-import scala.collection.JavaConverters;
-import scala.collection.immutable.Map;
 import sql.SQLBB;
 import sql.SQLHelper;
 import sql.SQLPrms;
@@ -67,7 +79,7 @@ public class SnappyTest implements Serializable {
     private static String userAppJar = null;
     private static String simulateStreamScriptName = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptName, "simulateFileStream");
     private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtests);
-    public static boolean tableDefaultPartitioned = TestConfig.tab().booleanAt(SnappyPrms.tableDefaultPartitioned, false);  //default to false
+    public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
     public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
     public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
     public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
@@ -111,9 +123,9 @@ public class SnappyTest implements Serializable {
         this.snappyNode = snappyNode;
     }
 
-    public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
+    /*public static <A, B> Map<A, B> toScalaMap(HashMap<A, B> m) {
         return JavaConverters.mapAsScalaMapConverter(m).asScala().toMap(Predef.<Tuple2<A, B>>conforms());
-    }
+    }*/
 
     public static void HydraTask_stopSnappy() {
         SparkContext sc = SnappyContext.globalSparkContext();
@@ -125,12 +137,19 @@ public class SnappyTest implements Serializable {
         if (snappyTest == null) {
             snappyTest = new SnappyTest();
             snappyTest.getClientHostDescription();
-            snappyTest.generateConfig("locators");
-            snappyTest.generateConfig("servers");
-            snappyTest.generateConfig("leads");
-            if (useSplitMode) {
-                snappyTest.generateConfig("slaves");
-                snappyTest.generateConfig("spark-env.sh");
+            int tid = RemoteTestModule.getCurrentThread().getThreadId();
+            if (tid == 0) {
+                snappyTest.generateConfig("locators");
+                snappyTest.generateConfig("servers");
+                snappyTest.generateConfig("leads");
+                if (useSplitMode) {
+                    snappyTest.generateConfig("slaves");
+                    snappyTest.generateConfig("spark-env.sh");
+                }
+                if (isLongRunningTest) {
+                    snappyTest.generateConfig("locatorConnInfo");
+                    snappyTest.generateConfig("leadHost");
+                }
             }
         }
     }
@@ -310,6 +329,7 @@ public class SnappyTest implements Serializable {
                     leadHost = HostHelper.getLocalHost();
                 }
                 Log.getLogWriter().info("Lead host is: " + leadHost);
+
                 break;
             case WORKER:
                 nodeLogDir = HostHelper.getLocalHost();
@@ -415,6 +435,7 @@ public class SnappyTest implements Serializable {
      */
     public static void HydraTask_writeLocatorConfigData() {
         snappyTest.writeConfigData("locators", "locatorLogDir");
+        if (isLongRunningTest) writeLocatorConnectionInfo();
     }
 
     /**
@@ -429,6 +450,7 @@ public class SnappyTest implements Serializable {
      */
     public static void HydraTask_writeLeadConfigData() {
         snappyTest.writeConfigData("leads", "leadLogDir");
+        if (isLongRunningTest) writeLeadHostInfo();
     }
 
     /**
@@ -494,24 +516,24 @@ public class SnappyTest implements Serializable {
         return getEndpoints("server");
     }
 
-    protected int getClientPort() {
-        try {
-            List<String> endpoints = getNetworkLocatorEndpoints();
-            if (endpoints.size() == 0) {
-                String s = "No network server endpoints found";
-                throw new TestException(s);
+    protected HashMap getclientHostPort() {
+        HashMap<String, Integer> hostPort = new HashMap<String, Integer>();
+        String endpoint = null;
+        List<String> endpoints = getNetworkLocatorEndpoints();
+        if (endpoints.size() == 0) {
+            if (isLongRunningTest) {
+                endpoints = getLocatorEndpointFromFile();
             }
-            String endpoint = endpoints.get(0);
-            String port = endpoint.substring(endpoint.indexOf(":") + 1);
-            int clientPort = Integer.parseInt(port);
-            Log.getLogWriter().info("Client Port is :" + clientPort);
-            return clientPort;
-        } catch (Exception e) {
-            String s = "No client port found";
-            throw new TestException(s);
         }
+        endpoint = endpoints.get(0);
+        String host = endpoint.substring(0, endpoint.indexOf(":"));
+        Log.getLogWriter().info("Client Host is:" + host);
+        String port = endpoint.substring(endpoint.indexOf(":") + 1);
+        int clientPort = Integer.parseInt(port);
+        Log.getLogWriter().info("Client Port is :" + clientPort);
+        hostPort.put(host, clientPort);
+        return hostPort;
     }
-
 
     /**
      * Returns all endpoints of the given type.
@@ -794,15 +816,91 @@ public class SnappyTest implements Serializable {
     }
 
     /**
-     * Gets Client connection.
+     * Writes the locator host:port information to the locatorConnInfo file under conf directory.
      */
-    public static Connection getLocatorConnection() throws SQLException {
+    protected static void writeLocatorConnectionInfo() {
+        List<String> endpoints = validateLocatorEndpointData();
+        snappyTest.writeNodeConfigData("locatorConnInfo", endpoints.get(0));
+    }
+
+    /**
+     * Writes the lead host information to the leadHost file under conf directory.
+     */
+    protected static void writeLeadHostInfo() {
+        snappyTest.writeNodeConfigData("leadHost", leadHost);
+    }
+
+    protected static String getLeadHostFromFile() {
+        File logFile = getLogFile("leadHost");
+        try {
+            BufferedReader br = readDataFromFile(logFile);
+            String str = null;
+            while ((str = br.readLine()) != null) {
+                leadHost = str;
+            }
+            br.close();
+        } catch (IOException e) {
+            String s = "Problem while reading the file : " + logFile.getAbsolutePath();
+            throw new TestException(s, e);
+        }
+        return leadHost;
+    }
+
+    protected static BufferedReader readDataFromFile(File filename) {
+        BufferedReader br = null;
+        try {
+            FileInputStream fis = new FileInputStream(filename);
+            br = new BufferedReader(new InputStreamReader(fis));
+        } catch (FileNotFoundException e) {
+            String s = "Unable to find file: " + filename.getAbsolutePath();
+            throw new TestException(s);
+        }
+        return br;
+    }
+
+    protected static File getLogFile(String filename) {
+        String dest = productConfDirPath + filename;
+        File logFile = new File(dest);
+        return logFile;
+    }
+
+    protected static List<String> getLocatorEndpointFromFile() {
+        List<String> endpoints = new ArrayList<String>();
+        File logFile = getLogFile("locatorConnInfo");
+        try {
+            BufferedReader br = readDataFromFile(logFile);
+            String str = null;
+            while ((str = br.readLine()) != null) {
+                endpoints.add(str);
+            }
+            br.close();
+        } catch (IOException e) {
+            String s = "Problem while reading the file : " + logFile.getAbsolutePath();
+            throw new TestException(s, e);
+        }
+        return endpoints;
+    }
+
+    protected static List<String> validateLocatorEndpointData() {
         List<String> endpoints = getNetworkLocatorEndpoints();
-        Connection conn = null;
+        if (endpoints.size() == 0) {
+            if (isLongRunningTest) {
+                endpoints = getLocatorEndpointFromFile();
+            }
+        }
         if (endpoints.size() == 0) {
             String s = "No network locator endpoints found";
             throw new TestException(s);
         }
+        return endpoints;
+    }
+
+    /**
+     * Gets Client connection.
+     */
+    public static Connection getLocatorConnection() throws SQLException {
+        List<String> endpoints = validateLocatorEndpointData();
+        Connection conn = null;
         if (!runGemXDQuery) {
             String url = "jdbc:snappydata://" + endpoints.get(0);
             Log.getLogWriter().info("url is " + url);
@@ -1129,8 +1227,11 @@ public class SnappyTest implements Serializable {
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsInitTaskResult.log";
                 logFile = new File(dest);
-                int clientPort = snappyTest.getClientPort();
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort);
+                HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
+                Map.Entry<String, Integer> entry = hostPortMap.entrySet().iterator().next();
+                String clientHost = entry.getKey();
+                int clientPort = entry.getValue();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -1267,8 +1368,11 @@ public class SnappyTest implements Serializable {
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "sqlScriptsTaskResult.log";
                 File logFile = new File(dest);
-                int clientPort = snappyTest.getClientPort();
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-client-port=" + clientPort);
+                HashMap<String, Integer> hostPortMap = snappyTest.getclientHostPort();
+                Map.Entry<String, Integer> entry = hostPortMap.entrySet().iterator().next();
+                String clientHost = entry.getKey();
+                int clientPort = entry.getValue();
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -1458,6 +1562,9 @@ public class SnappyTest implements Serializable {
                     APP_PROPS = "logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
                 } else {
                     APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+                }
+                if (isLongRunningTest) {
+                    leadHost = getLeadHostFromFile();
                 }
                 String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":8090/jars/myapp";
                 String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":8090/jobs?appName=myapp&classPath=" + userJob + "'";
@@ -2097,6 +2204,7 @@ public class SnappyTest implements Serializable {
         generateConfig(confFileName);
         Set<String> fileContent = new LinkedHashSet<String>();
         if (isLead) {
+            if (isLongRunningTest) writeLeadHostInfo();
             fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
         } else {
             fileContent = snappyTest.getFileContents("serverLogDir", fileContent);
