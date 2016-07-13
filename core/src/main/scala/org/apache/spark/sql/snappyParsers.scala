@@ -184,7 +184,7 @@ class SnappyParser(context: SnappyContext)
   }
 
   protected final def numericLiteral: Rule1[Literal] = rule {
-    capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ ws ~>
+    capture(plusOrMinus.? ~ SnappyParserConsts.numeric.+) ~ delimiter ~>
         ((s: String) => toNumericLiteral(s))
   }
 
