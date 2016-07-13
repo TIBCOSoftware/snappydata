@@ -31,7 +31,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{SpecificMutableRow, UnsafeArrayData, UnsafeMapData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.UUIDRegionKey
-import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -71,6 +70,10 @@ class CachedBatchCreator(
           } else {
             mutableRow.setLong(i, execRow.getColumn(pos).getLong)
           }
+        case ShortType =>
+          mutableRow.setShort(i, execRow.getColumn(pos).getShort)
+        case ByteType =>
+          mutableRow.setByte(i, execRow.getColumn(pos).getByte)
         case BooleanType =>
           mutableRow.setBoolean(i, execRow.getColumn(pos).getBoolean)
         case DateType =>

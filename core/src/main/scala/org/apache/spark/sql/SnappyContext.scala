@@ -768,7 +768,7 @@ class SnappyContext protected[spark](
           case NonFatal(e) =>
             if (ifExists) return
             else throw new TableNotFoundException(
-              s"Table Not Found: $tableIdent", e)
+              s"Table '$tableIdent' not found", e)
         }
     }
     // additional cleanup for external tables, if required
@@ -865,8 +865,7 @@ class SnappyContext protected[spark](
   }
 
   private[sql] def getIndexTable(indexIdent: QualifiedTableName): QualifiedTableName = {
-    new QualifiedTableName(Some(Constant.INTERNAL_SCHEMA_NAME),
-      indexIdent.table)
+    new QualifiedTableName(Constant.INTERNAL_SCHEMA_NAME, indexIdent.table)
   }
 
   private def constructDropSQL(indexName: String,

@@ -19,11 +19,10 @@ package org.apache.spark.sql
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.sql.catalyst.ParserDialect
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{Exists, InSubquery}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.hive.QualifiedTableName
 
 /**
  * SnappyData extensions to SQL grammar. Currently subquery in WHERE support.
@@ -54,7 +53,7 @@ class SnappyExtendedParser(context: SnappyContext)
     ws ~ projection ~ EOI
   }
 
-  def tableIdent: Rule1[QualifiedTableName] = rule {
+  def tableIdent: Rule1[TableIdentifier] = rule {
     ws ~ tableIdentifier ~ EOI
   }
 }

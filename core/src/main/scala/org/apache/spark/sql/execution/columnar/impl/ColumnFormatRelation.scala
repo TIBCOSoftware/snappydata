@@ -116,6 +116,7 @@ class BaseColumnFormatRelation(
   // will see that later.
   override def buildScan(requiredColumns: Array[String],
       filters: Array[Filter]): RDD[Row] = {
+    logInfo(s"SW: scan with projection = ${requiredColumns.toSeq} on $table filters = ${filters.toSeq}")
     val colRdd = scanTable(table, requiredColumns, filters)
     // TODO: Suranjan scanning over column rdd before row will make sure
     // that we don't have duplicates; we may miss some results though
