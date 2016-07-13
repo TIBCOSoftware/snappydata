@@ -166,7 +166,7 @@ object StoreUtils extends Logging {
       region.getDistributionAdvisor.adviseInitializedReplicates().asScala
     }
     val prefNodes = regionMembers.map(v => blockMap(v)).toSeq
-    partitions(0) = new MultiBucketExecutorPartition((0, mutable.HashSet.empty, prefNodes)
+    partitions(0) = new MultiBucketExecutorPartition(0, mutable.HashSet.empty, prefNodes)
     partitions
   }
 
