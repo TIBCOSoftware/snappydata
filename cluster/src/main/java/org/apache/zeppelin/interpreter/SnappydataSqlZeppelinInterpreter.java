@@ -65,8 +65,8 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
     logger.info(id + " FirstTime = " + firstTime + " this " + this.hashCode() + " scheduler "
         + getScheduler(), new Exception("SJ:"));
 
-    if (cmd.trim().startsWith("approx")) {
-      cmd = cmd.replaceFirst("approx", "");
+    if (cmd.trim().startsWith("approxResultFirst=true")) {
+      cmd = cmd.replaceFirst("approxResultFirst=true", "");
       if (firstTime) {
         firstTime = false;
 
@@ -80,13 +80,7 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
 
             queue.add(r);
 
-            /*
-             * Thread t = new Thread(r); t.start(); // r.run();
-             */
             logger.info("Some delay before returning orig query result");
-            /*
-             * try { Thread.sleep(2000); } catch (InterruptedException e) { e.printStackTrace(); }
-             */
 
             return res;
           }
