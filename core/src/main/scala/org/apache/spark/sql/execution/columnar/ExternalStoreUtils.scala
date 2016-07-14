@@ -132,7 +132,7 @@ object ExternalStoreUtils {
   def removeSamplingOptions(parameters: mutable.Map[String, String]): Map[String, String] = {
 
     val optSequence = Seq("qcs", "fraction", "strataReservoirSize",
-      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", "timeInterval")
+      "errorLimitColumn", "errorLimitPercent", "timeSeriesColumn", "timeInterval", "aqp.debug.byPassSampleOperator")
 
     val optMap = new mutable.HashMap[String, String]
 
