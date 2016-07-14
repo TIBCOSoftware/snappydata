@@ -1540,7 +1540,7 @@ public class SnappyTest implements Serializable {
                 String dest = log.getCanonicalPath() + File.separator + "jobStatus_" + RemoteTestModule.getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
                 File commandOutput = new File(dest);
                 String expression = snappyJobScript + " status --lead " + leadHost + ":" + LEAD_PORT + " --job-id " + str + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": \"FINISHED\"' -e 'curl:' " + commandOutput + " | wc -l)\"";
-                String command = "while [ \"$(" + expression + " -lt  1 ] || [ \"$(" + expression + " !=  1 ] ; do rm " + commandOutput + " ;  touch " + commandOutput + "   ; done";
+                String command = "while [ \"$(" + expression + " -le  0 ] ; do rm " + commandOutput + " ;  touch " + commandOutput + "  ; done";
                 ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
                 Log.getLogWriter().info("job " + str + " starts at: " + System.currentTimeMillis());
                 executeProcess(pb, commandOutput);
