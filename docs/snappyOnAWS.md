@@ -32,8 +32,13 @@ Below command will start a snappydata cluster named 'snappydata-cluster' with 4 
 
 **Specifying properties**
 
-If you want to configure each of the locator, lead or servers with specific properties, you can do so by specifying them in files named locators, leads or servers, respectively and placing these under product_dir/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](http://snappydatainc.github.io/snappydata/configuration/#configuration-files) for example on how to write these conf files. 
+If you want to configure each of the locator, lead or servers with specific properties, you can do so by specifying them in files named locators, leads or servers, respectively and placing these under product_dir/ec2/deploy/home/ec2-user/snappydata/. Refer to [this SnappyData documentation page](http://snappydatainc.github.io/snappydata/configuration/#configuration-files) for example on how to write these conf files.
 
+The only and important difference here is that, instead of the hostname of the locator, lead or store, you will have to write {{LOCATOR_N}}, {{LEAD_N}} or {{SERVER_N}} in these files, respectively. N stands for Nth locator, lead or server. The script will replace these with the actual hostname of the members when they are launched. A typical conf/servers for a cluster with 2 servers would look something like
+````
+{{SERVER_0}} -heap-size=4096m -locators={{LOCATOR_0}}:9999
+{{SERVER_1}} -heap-size=4096m -locators={{LOCATOR_0}}:9999
+````
 So when you run snappy-ec2 next time, it'll read these conf files while launching the cluster on Amazon EC2. The script will also read snappy-env.sh, if present in this location.
 
 This is similar to how one would provide properties to snappydata cluster nodes while launching it via `sbin/snappy-start-all.sh` script.

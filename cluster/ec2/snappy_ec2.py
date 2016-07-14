@@ -545,8 +545,6 @@ def launch_cluster(conn, opts, cluster_name):
         locator_group.authorize('tcp', 50070, 50070, authorized_address)
         locator_group.authorize('tcp', 60070, 60070, authorized_address)
         locator_group.authorize('tcp', 4040, 4045, authorized_address)
-        # Rstudio (GUI for R) needs port 8787 for web access
-        locator_group.authorize('tcp', 8787, 8787, authorized_address)
         # HDFS NFS gateway requires 111,2049,4242 for tcp & udp
         locator_group.authorize('tcp', 111, 111, authorized_address)
         locator_group.authorize('udp', 111, 111, authorized_address)
@@ -556,6 +554,10 @@ def launch_cluster(conn, opts, cluster_name):
         locator_group.authorize('udp', 4242, 4242, authorized_address)
         # RM in YARN mode uses 8088
         locator_group.authorize('tcp', 8088, 8088, authorized_address)
+        # SnappyData netserver uses this port to listen to clients by default
+        locator_group.authorize('tcp', 1527, 1527, authorized_address)
+        # Default locator port for peer discovery
+        locator_group.authorize('tcp', 10334, 10334, authorized_address)
     if lead_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             lead_group.authorize(src_group=lead_group)
@@ -588,8 +590,6 @@ def launch_cluster(conn, opts, cluster_name):
         lead_group.authorize('tcp', 50070, 50070, authorized_address)
         lead_group.authorize('tcp', 60070, 60070, authorized_address)
         lead_group.authorize('tcp', 4040, 4045, authorized_address)
-        # Rstudio (GUI for R) needs port 8787 for web access
-        lead_group.authorize('tcp', 8787, 8787, authorized_address)
         # HDFS NFS gateway requires 111,2049,4242 for tcp & udp
         lead_group.authorize('tcp', 111, 111, authorized_address)
         lead_group.authorize('udp', 111, 111, authorized_address)
@@ -599,6 +599,10 @@ def launch_cluster(conn, opts, cluster_name):
         lead_group.authorize('udp', 4242, 4242, authorized_address)
         # RM in YARN mode uses 8088
         lead_group.authorize('tcp', 8088, 8088, authorized_address)
+        # SnappyData netserver uses this port to listen to clients by default
+        lead_group.authorize('tcp', 1527, 1527, authorized_address)
+        # Default port of Spark JobServer
+        lead_group.authorize('tcp', 8090, 8090, authorized_address)
     if store_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             store_group.authorize(src_group=locator_group)
@@ -629,6 +633,8 @@ def launch_cluster(conn, opts, cluster_name):
         store_group.authorize('tcp', 50075, 50075, authorized_address)
         store_group.authorize('tcp', 60060, 60060, authorized_address)
         store_group.authorize('tcp', 60075, 60075, authorized_address)
+        # SnappyData netserver uses this port to listen to clients by default
+        store_group.authorize('tcp', 1527, 1527, authorized_address)
 
     # Check if instances are already running in our groups
     existing_locators, existing_leads, existing_stores = get_existing_cluster(conn,
