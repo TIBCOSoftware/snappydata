@@ -27,31 +27,19 @@ import java.util.Vector;
  */
 public class SnappyPrms extends BasePrms {
     /**
-     * Parameter used to get the user specified script names for INITTASK.
+     * Parameter used to get the user specified script names.
      * (VectosetValues of Strings) A list of values for script Names to execute.
      */
     public static Long sqlScriptNames;
 
     /**
-     * Parameter used to get the user specified param List for INITTASK.
+     * Parameter used to get the user specified param List.
      * (VectosetValues of Strings) A list of values for parameters to be replaced in the sql scripts.
      * If no parameter is required for sql script then expected value to be provided for param is : Empty String : " " in case if user don't want to maintain the sequence.
-     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNamesForInitTask parameter.
+     * Or else provide the script that does not require any parameter at the end in list of sqlScriptNames parameter.
      * Framework will treat its corresponding parameter as " " string in this case.
      */
     public static Long sqlScriptParams;
-
-    /**
-     * Parameter used to get the user specified script names for TASK.
-     * (VectosetValuesr of Strings) A list of values for script Names to execute.
-     */
-    public static Long sqlScriptNamesForTask;
-
-    /**
-     * Parameter used to get the user specified snappy job class names for CLOSETASK.
-     * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
-     */
-//    public static Long jobClassNamesForCloseTask;
 
     /**
      * Parameter used to get the user specified snappy job class names.
@@ -134,19 +122,9 @@ public class SnappyPrms extends BasePrms {
     public static Long userAppJar;
 
     /**
-     * (int) how long (milliseconds) it should wait for getting the job status in Task
-     */
-//    public static Long jobExecutionTimeInMillisForTask;
-
-    /**
      * (int) how long (milliseconds) it should wait for getting the job status
      */
     public static Long streamingJobExecutionTimeInMillis;
-
-    /**
-     * (int) how long (milliseconds) it should wait for getting the job status in Close Task
-     */
-//    public static Long jobExecutionTimeInMillisForCloseTask;
 
     /**
      * (int) how long (milliseconds) it should wait before Cycle VMs again
@@ -304,11 +282,6 @@ public class SnappyPrms extends BasePrms {
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
     }
 
-    /*public static Vector getSQLScriptNamesForTask() {
-        Long key = sqlScriptNamesForTask;
-        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-    }*/
-
     public static Vector getSnappyJobClassNames() {
         Long key = jobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -323,11 +296,6 @@ public class SnappyPrms extends BasePrms {
         Long key = streamingJobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
-
-    /*public static Vector getSnappyJobClassNamesForCloseTask() {
-        Long key = jobClassNamesForCloseTask;
-        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-    }*/
 
     static {
         BasePrms.setValues(SnappyPrms.class);
