@@ -175,6 +175,8 @@ If you're interested in the Scala/Spark side of things, go through the [programm
 
 If you are interested in contributing please visit the [contributor page](http://www.snappydata.io/community/contributors) for ways in which you can help.
 
+If you want to quickly setup a cluster on Amazon Cloud, use our [ec2 script](docs/snappyOnAWS.md).
+
 ## Quick start with Scala/Spark/Snappy Programming
 
 Click the screenshot below to watch the screencast that goes along with this section:
