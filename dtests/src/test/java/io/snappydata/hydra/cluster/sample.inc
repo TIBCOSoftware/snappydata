@@ -74,18 +74,23 @@ INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = 
 INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_getClientConnection
   threadGroups = snappyThreads;
 
-INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScriptsInInitTask
-  threadGroups = snappyThreads;
-
+INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScripts
+  io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = create_and_load_column_table.sql create_and_load_sample_table.sql create_and_load_row_table.sql olap_queries.sql
+  io.snappydata.hydra.cluster.SnappyPrms-sqlScriptParams = airlineParquetData " " airportcodeParquetData
+  threadGroups = snappyThreads
+  ;
 
 INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = runQuery
   threadGroups = snappyThreads;
 
-TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScriptsInTask
+TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScripts
+  io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = olap_queries.sql oltp_queries.sql
   threadGroups = snappyThreads
   ;
 
-TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJobInTask
+TASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
+  io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.AirlineDataQueriesJob
+  io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar
   threadGroups = leadThreads
   maxTimesToRun = 3;
 
@@ -96,9 +101,9 @@ ENDTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 clientNames = locator1;
 
 hydra.Prms-totalTaskTimeSec           = 900;
-hydra.Prms-maxResultWaitSec           = 900;
+hydra.Prms-maxResultWaitSec           = 1800;
 
-hydra.Prms-maxCloseTaskResultWaitSec  = 900;
+hydra.Prms-maxCloseTaskResultWaitSec  = 1800;
 hydra.Prms-serialExecution            = false;
 
 hydra.CachePrms-names = defaultCache;
@@ -115,12 +120,3 @@ hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
                                   (\"-Xms512m -Xmx1g \", ${${B}Hosts}, true)"
                              ncf;
 hydra.VmPrms-extraVMArgsSUN += "-XX:PermSize=64M -XX:MaxPermSize=256m";
-
-io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNamesForInitTask = create_and_load_column_table.sql create_and_load_sample_table.sql create_and_load_row_table.sql olap_queries.sql;
-io.snappydata.hydra.cluster.SnappyPrms-sqlScriptParamsForInitTask = airlineParquetData " " airportcodeParquetData;
-
-io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNamesForTask = olap_queries.sql oltp_queries.sql;
-io.snappydata.hydra.cluster.SnappyPrms-jobClassNamesForTask = io.snappydata.hydra.AirlineDataQueriesJob;
-io.snappydata.hydra.cluster.SnappyPrms-jobExecutionTimeInMillisForTask = 720000;
-
-io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar;
