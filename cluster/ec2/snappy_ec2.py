@@ -112,6 +112,21 @@ DEFAULT_SNAPPY_VERSION = SNAPPY_EC2_VERSION
 DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/amplab/spark-ec2"
 DEFAULT_SPARK_EC2_BRANCH = "branch-1.5"
 
+# Amazon Linux AMIs 2016.03 for EBS-backed HVM
+HVM_AMI_MAP = {
+    "ap-northeast-1": "ami-374db956",
+    "ap-northeast-2": "ami-2b408b45",
+    "ap-south-1": "ami-ffbdd790",
+    "ap-southeast-1": "ami-a59b49c6",
+    "ap-southeast-2": "ami-dc361ebf",
+    "eu-central-1": "ami-ea26ce85",
+    "eu-west-1": "ami-f9dd458a",
+    "sa-east-1": "ami-6dd04501",
+    "us-east-1": "ami-6869aa05",
+    "us-west-1": "ami-31490d51",
+    "us-west-2": "ami-7172b611"
+}
+
 
 def setup_external_libs(libs):
     """
@@ -289,7 +304,7 @@ def parse_args():
         help="If specified, launch stores as spot instances with the given " +
              "maximum price (in dollars)")
     parser.add_option(
-        "-u", "--user", default="root",
+        "-u", "--user", default="ec2-user",
         help="The SSH user you want to connect as (default: %default)")
     parser.add_option(
         "--delete-groups", action="store_true", default=False,
@@ -463,27 +478,15 @@ def get_tachyon_version(spark_version):
 
 
 # Attempt to resolve an appropriate AMI given the architecture and region of the request.
-def get_spark_ami(opts):
+def get_ami(opts):
     if opts.instance_type in EC2_INSTANCE_TYPES:
         instance_type = EC2_INSTANCE_TYPES[opts.instance_type]
     else:
-        instance_type = "pvm"
-        print("Don't recognize %s, assuming type is pvm" % opts.instance_type, file=stderr)
+        instance_type = "hvm"
+        print("Don't recognize %s, assuming virtualization type is hvm" % opts.instance_type, file=stderr)
 
-    # URL prefix from which to fetch AMI information
-    ami_prefix = "{r}/{b}/ami-list".format(
-        r=opts.spark_ec2_git_repo.replace("https://github.com", "https://raw.github.com", 1),
-        b=opts.spark_ec2_git_branch)
-
-    ami_path = "%s/%s/%s" % (ami_prefix, opts.region, instance_type)
-    reader = codecs.getreader("ascii")
-    try:
-        ami = reader(urlopen(ami_path)).read().strip()
-    except:
-        print("Could not resolve AMI at: " + ami_path, file=stderr)
-        sys.exit(1)
-
-    print("Spark AMI: " + ami)
+    ami = HVM_AMI_MAP[opts.region]
+    print("Found AMI: " + ami)
     return ami
 
 
@@ -636,9 +639,9 @@ def launch_cluster(conn, opts, cluster_name):
               (locator_group.name, lead_group.name, store_group.name), file=stderr)
         sys.exit(1)
 
-    # Figure out Spark AMI
+    # Figure out the AMI
     if opts.ami is None:
-        opts.ami = get_spark_ami(opts)
+        opts.ami = get_ami(opts)
 
     # we use group ids to work around https://github.com/boto/boto/issues/350
     additional_group_ids = []
@@ -674,6 +677,7 @@ def launch_cluster(conn, opts, cluster_name):
             name = '/dev/sd' + string.ascii_letters[i + 1]
             block_map[name] = dev
 
+    server_nodes = []
     # Launch servers
     if opts.spot_price is not None:
         # Launch spot instances with the requested price
@@ -717,7 +721,6 @@ def launch_cluster(conn, opts, cluster_name):
                 if len(active_instance_ids) == opts.stores:
                     print("All %d stores granted" % opts.stores)
                     reservations = conn.get_all_reservations(active_instance_ids)
-                    server_nodes = []
                     for r in reservations:
                         server_nodes += r.instances
                     break
@@ -739,7 +742,6 @@ def launch_cluster(conn, opts, cluster_name):
         zones = get_zones(conn, opts)
         num_zones = len(zones)
         i = 0
-        server_nodes = []
         for zone in zones:
             num_stores_this_zone = get_partition(opts.stores, num_zones, i)
             if num_stores_this_zone > 0:
@@ -1387,7 +1389,7 @@ def real_main():
            opts.locator_instance_type in EC2_INSTANCE_TYPES:
             if EC2_INSTANCE_TYPES[opts.instance_type] != \
                EC2_INSTANCE_TYPES[opts.locator_instance_type]:
-                print("Error: spark-ec2 currently does not support having locators and stores "
+                print("Error: snappy-ec2 currently does not support having locators and stores "
                       "with different AMI virtualization types.", file=stderr)
                 print("locator instance virtualization type: {t}".format(
                       t=EC2_INSTANCE_TYPES[opts.locator_instance_type]), file=stderr)
@@ -1438,7 +1440,8 @@ def real_main():
         setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, True)
         lead = get_dns_name(lead_nodes[0], opts.private_ips)
         # TODO print the correct port, read from conf/leads or snappy-env.sh
-        print("SnappyData Unified cluster started at http://%s:port, replace 'port' with UI port specified in conf files or 4040 which is the default." % lead)
+        print("SnappyData Unified cluster started at http://%s:port, replace "
+              "'port' with UI port specified in conf files or the default 4040." % lead)
 
     elif action == "destroy":
         (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
@@ -1526,6 +1529,7 @@ def real_main():
                 ssh_command(opts) + proxy_opt + ['-t', '-t', "%s@%s" % (opts.user, lead)])
 
     elif action == "reboot-stores":
+        # TODO launch snappydata server processes also.
         response = raw_input(
             "Are you sure you want to reboot the cluster " +
             cluster_name + " stores?\n" +
@@ -1547,7 +1551,7 @@ def real_main():
         else:
             print(get_dns_name(locator_nodes[0], opts.private_ips))
 
-    # TODO
+    # TODO Get the active lead
     elif action == "get-lead":
         (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
         if not lead_nodes[0].public_dns_name and not opts.private_ips:
@@ -1608,7 +1612,7 @@ def real_main():
         existing_lead_type = lead_nodes[0].instance_type
         existing_store_type = server_nodes[0].instance_type
         # Setting opts.locator_instance_type to the empty string indicates we
-        # have the same instance type for the master and the stores
+        # have the same instance type for the locator and the stores
         if existing_locator_type == existing_store_type:
             existing_locator_type = ""
         opts.locator_instance_type = existing_locator_type

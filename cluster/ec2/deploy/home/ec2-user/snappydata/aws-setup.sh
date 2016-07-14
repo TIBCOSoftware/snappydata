@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-pushd /root/snappydata > /dev/null
+pushd /home/ec2-user/snappydata > /dev/null
 
 # Extract the url from the README.md to download the latest distribution tar from.
 wget -q https://github.com/SnappyDataInc/snappydata/blob/master/README.md
