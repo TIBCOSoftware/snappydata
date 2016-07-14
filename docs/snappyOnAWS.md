@@ -10,11 +10,10 @@ The `snappy-ec2` script has largely been derived from the `spark-ec2` script ava
 **Prerequisites**
 
 You need to have an account with [Amazon Web Service (AWS)](http://aws.amazon.com/) with adequate credentials to launch EC2 resources.
-You also need to set two environment variables viz. AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID with your AWS secrete access key and id. You can do this by executing below commands with your values.
+You also need to set two environment variables viz. AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID with your AWS secrete access key and ID. These can be obtained from the [AWS homepage](http://aws.amazon.com/) by clicking Account > Security Credentials > Access Credentials.
 ````
 export AWS_SECRET_ACCESS_KEY=abcD12efGH34ijkL56mnoP78qrsT910uvwXYZ1112
 export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
-
 ````
 
 Alternatively, if you have already setup AWS Command Line Interface on your local machine, these credentials should be picked up from the aws config file by the script.
