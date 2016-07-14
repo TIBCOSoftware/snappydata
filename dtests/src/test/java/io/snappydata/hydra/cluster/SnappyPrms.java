@@ -17,6 +17,7 @@
 package io.snappydata.hydra.cluster;
 
 import hydra.BasePrms;
+import hydra.HydraVector;
 
 import java.util.Vector;
 
@@ -29,7 +30,7 @@ public class SnappyPrms extends BasePrms {
      * Parameter used to get the user specified script names for INITTASK.
      * (VectosetValues of Strings) A list of values for script Names to execute.
      */
-    public static Long sqlScriptNamesForInitTask;
+    public static Long sqlScriptNames;
 
     /**
      * Parameter used to get the user specified param List for INITTASK.
@@ -38,7 +39,7 @@ public class SnappyPrms extends BasePrms {
      * Or else provide the script that does not require any parameter at the end in list of sqlScriptNamesForInitTask parameter.
      * Framework will treat its corresponding parameter as " " string in this case.
      */
-    public static Long sqlScriptParamsForInitTask;
+    public static Long sqlScriptParams;
 
     /**
      * Parameter used to get the user specified script names for TASK.
@@ -50,25 +51,25 @@ public class SnappyPrms extends BasePrms {
      * Parameter used to get the user specified snappy job class names for CLOSETASK.
      * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
-    public static Long jobClassNamesForCloseTask;
+//    public static Long jobClassNamesForCloseTask;
 
     /**
-     * Parameter used to get the user specified snappy job class names for TASK.
+     * Parameter used to get the user specified snappy job class names.
      * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
-    public static Long jobClassNamesForTask;
+    public static Long jobClassNames;
 
     /**
-     * Parameter used to get the user specified spark job class names for TASK.
+     * Parameter used to get the user specified spark job class names.
      * (VectosetValues of Strings) A list of values for spark-job Names to execute.
      */
-    public static Long sparkJobClassNamesForTask;
+    public static Long sparkJobClassNames;
 
     /**
-     * Parameter used to get the user specified snappy streaming job class names for TASK.
+     * Parameter used to get the user specified snappy streaming job class names.
      * (VectosetValues of Strings) A list of values for snappy-job Names to execute.
      */
-    public static Long streamingJobClassNamesForTask;
+    public static Long streamingJobClassNames;
 
     /**
      * (boolean) for testing HA
@@ -135,17 +136,17 @@ public class SnappyPrms extends BasePrms {
     /**
      * (int) how long (milliseconds) it should wait for getting the job status in Task
      */
-    public static Long jobExecutionTimeInMillisForTask;
+//    public static Long jobExecutionTimeInMillisForTask;
 
     /**
-     * (int) how long (milliseconds) it should wait for getting the job status in Task
+     * (int) how long (milliseconds) it should wait for getting the job status
      */
-    public static Long streamingJobExecutionTimeInMillisForTask;
+    public static Long streamingJobExecutionTimeInMillis;
 
     /**
      * (int) how long (milliseconds) it should wait for getting the job status in Close Task
      */
-    public static Long jobExecutionTimeInMillisForCloseTask;
+//    public static Long jobExecutionTimeInMillisForCloseTask;
 
     /**
      * (int) how long (milliseconds) it should wait before Cycle VMs again
@@ -288,40 +289,45 @@ public class SnappyPrms extends BasePrms {
         return tab().stringAt(key, "config");
     }
 
-    public static Vector getSQLScriptNamesForInitTask() {
-        Long key = sqlScriptNamesForInitTask;
+    public static Vector getSQLScriptNames() {
+        Long key = sqlScriptNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
-    public static Vector getSQLScriptParamsForInitTask() {
-        Long key = sqlScriptParamsForInitTask;
-        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    public static String getUserAppJar() {
+        Long key = userAppJar;
+        return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
     }
 
-    public static Vector getSQLScriptNamesForTask() {
+    public static Vector getSQLScriptParams() {
+        Long key = sqlScriptParams;
+        return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+    }
+
+    /*public static Vector getSQLScriptNamesForTask() {
         Long key = sqlScriptNamesForTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-    }
+    }*/
 
-    public static Vector getSnappyJobClassNamesForTask() {
-        Long key = jobClassNamesForTask;
+    public static Vector getSnappyJobClassNames() {
+        Long key = jobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
-    public static Vector getSparkJobClassNamesForTask() {
-        Long key = sparkJobClassNamesForTask;
+    public static Vector getSparkJobClassNames() {
+        Long key = sparkJobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
-    public static Vector getSnappyStreamingJobClassNamesForTask() {
-        Long key = streamingJobClassNamesForTask;
+    public static Vector getSnappyStreamingJobClassNames() {
+        Long key = streamingJobClassNames;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     }
 
-    public static Vector getSnappyJobClassNamesForCloseTask() {
+    /*public static Vector getSnappyJobClassNamesForCloseTask() {
         Long key = jobClassNamesForCloseTask;
         return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-    }
+    }*/
 
     static {
         BasePrms.setValues(SnappyPrms.class);
