@@ -104,7 +104,7 @@ class SnappyContext protected[spark](
   SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
-  override val prepareForExecution: RuleExecutor[SparkPlan] =
+  @transient override val prepareForExecution: RuleExecutor[SparkPlan] =
     snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
