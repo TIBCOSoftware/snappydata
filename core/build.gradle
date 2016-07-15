@@ -53,7 +53,7 @@ dependencies {
   compile 'com.zaxxer:HikariCP:2.4.4'
   provided 'com.rabbitmq:amqp-client:3.5.7'
 
-  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.2.0') {
+  compile(group: 'com.databricks', name: 'spark-csv_2.10', version: '1.4.0') {
     exclude(group: 'org.scala-lang', module: 'scala-library')
     exclude(group: 'org.scala-lang', module: 'scala-reflect')
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
