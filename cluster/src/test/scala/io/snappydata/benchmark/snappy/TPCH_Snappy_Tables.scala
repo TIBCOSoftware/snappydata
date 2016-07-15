@@ -22,7 +22,7 @@ import com.typesafe.config.Config
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable}
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.{SnappyJobValidation, SnappyJobValid, SnappyContext, SnappySQLJob}
+import org.apache.spark.sql.{SnappyJobInvalid, SnappyJobValidation, SnappyJobValid, SnappyContext, SnappySQLJob}
 
 object TPCH_Snappy_Tables extends SnappySQLJob {
 
@@ -55,7 +55,7 @@ object TPCH_Snappy_Tables extends SnappySQLJob {
 
   }
 
-  override def isValidJob(sc: C, config: Config): SnappyJobValidation = {
+  override def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation = {
 
     tpchDataPath = if (config.hasPath("dataLocation")) {
       config.getString("dataLocation")
@@ -76,7 +76,7 @@ object TPCH_Snappy_Tables extends SnappySQLJob {
     }
 
     if (!(new File(tpchDataPath)).exists()) {
-      return new SparkJobInvalid("Incorrect tpch data path. " +
+      return new SnappyJobInvalid("Incorrect tpch data path. " +
           "Specify correct location")
     }
 

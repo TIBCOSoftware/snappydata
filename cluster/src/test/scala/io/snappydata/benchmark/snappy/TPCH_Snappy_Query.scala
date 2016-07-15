@@ -34,7 +34,7 @@ object TPCH_Snappy_Query extends SnappySQLJob {
   //  var avgFileStream: FileOutputStream = _
   //  var avgPrintStream:PrintStream = _
 
-  override def runSnappyJob(snc: C, jobConfig: Config): Any = {
+  override def runSnappyJob(snc: SnappyContext, jobConfig: Config): Any = {
     val isResultCollection = false
     val isSnappy = true
 
@@ -124,7 +124,7 @@ object TPCH_Snappy_Query extends SnappySQLJob {
 
     queryPlan = if (config.hasPath("queryPlan")) {
       config.getBoolean("queryPlan")
-    } else falseAirlineDataSparkApp.scala
+    } else false
 
     val tempqueries = if (config.hasPath("queries")) {
       config.getString("queries")
@@ -136,6 +136,6 @@ object TPCH_Snappy_Query extends SnappySQLJob {
 
     queries = tempqueries.split(",")
 
-    SnappyJobValid
+    SnappyJobValid()
   }
 }
