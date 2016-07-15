@@ -20,22 +20,27 @@
 #set -vx 
 
 usage(){
-  echo "Usage: longRunning.sh <snappydata-base-directory-path> " 1>&2
+  echo "Usage: longRunning.sh <snappydata-base-directory-path>  <result-directory-path>" 1>&2
+  echo " result-directory-path         Location to put the test results " 1>&2
   echo " snappydata-base-directory-path    checkout path of snappy-data " 1>&2
-  echo " (e.g. sh longRunning.sh /home/swati/snappy-commons" 1>&2
+  echo " (e.g. sh longRunning.sh /home/swati/snappy-commons /home/swati/snappyHydraLogs)" 1>&2
   exit 1
 }
 
-if [ $# -ne 1 ]; then
+if [ $# -ne 2 ]; then
   usage
+else
+  SNAPPYDATA_SOURCE_DIR=$1
+  shift
 fi
+resultDir=$1
+mkdir -p $resultDir
+shift
 
-SNAPPYDATA_SOURCE_DIR=$1
-
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh /home/swati/snappyHydraLogs $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/startSnappyCluster.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/startSnappyCluster.bt
 sleep 30;
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh /home/swati/snappyHydraLogs $SNAPPYDATA_SOURCE_DIR  -r 30  -d false io/snappydata/hydra/cluster/longRunningTest.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 30  -d false io/snappydata/hydra/cluster/longRunningTest.bt
 sleep 30;
 
-$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh /home/swati/snappyHydraLogs $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/stopSnappyCluster.bt
+$SNAPPYDATA_SOURCE_DIR/store/tests/core/src/main/java/bin/sample-runbt.sh $resultDir $SNAPPYDATA_SOURCE_DIR  -r 1  -d false io/snappydata/hydra/cluster/stopSnappyCluster.bt
