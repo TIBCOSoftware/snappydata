@@ -134,9 +134,6 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
       override val extendedCheckRules = Seq(
         sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
     }
-
-  def sql(defaultCall: => () => DataFrame)(context: SnappyContext,
-      parse: => () => LogicalPlan): DataFrame = defaultCall()
 }
 
 class DefaultPlanner(snappyContext: SnappyContext)
