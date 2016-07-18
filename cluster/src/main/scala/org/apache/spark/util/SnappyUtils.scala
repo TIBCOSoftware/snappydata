@@ -14,22 +14,32 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.executor
 
-import java.net.{URL}
-import org.apache.spark.SparkEnv
-import org.apache.spark.util.MutableURLClassLoader
-import org.apache.spark.util.classloader.DynamicURLClassLoader
+// scalastyle:off println
 
-class SnappyExecutor(
-    executorId: String,
-    executorHostname: String,
-    env: SparkEnv,
-    userClassPath: Seq[URL] = Nil,
-    isLocal: Boolean = false) extends Executor(executorId, executorHostname, env, userClassPath) {
+package org.apache.spark.util
 
-  override def createClassLoader(urls: Array[URL],
-      parentLoader: ClassLoader, userClassPathFirst: Boolean): MutableURLClassLoader = {
-    new DynamicURLClassLoader(urls, parentLoader, parentFirst = !userClassPathFirst)
+import java.security.SecureClassLoader
+
+import com.pivotal.gemfirexd.internal.engine.Misc
+
+object SnappyUtils {
+
+  def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader =
+    new SecureClassLoader(parent) {
+    override def loadClass(name: String): Class[_] = {
+      try {
+        //try to load from parent
+        super.loadClass(name)
+      } catch {
+        case cnfe: ClassNotFoundException =>
+          Misc.getMemStore.getDatabase.getClassFactory.loadApplicationClass(name)
+      }
+    }
   }
 }
+
+
+
+
+
