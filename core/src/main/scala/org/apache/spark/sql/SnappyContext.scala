@@ -104,7 +104,7 @@ class SnappyContext protected[spark](
   SnappyContext.initGlobalSnappyContext(sparkContext)
   snappyContextFunctions.registerAQPErrorFunctions(this)
 
-  override val prepareForExecution: RuleExecutor[SparkPlan] =
+  @transient override val prepareForExecution: RuleExecutor[SparkPlan] =
     snappyContextFunctions.getAQPRuleExecutor(this)
 
   protected[sql] override lazy val conf: SQLConf = new SQLConf {
@@ -1105,9 +1105,6 @@ class SnappyContext protected[spark](
 
   @transient
   override protected[sql] val planner = this.snappyContextFunctions.getPlanner(this)
-
-  override def sql(sqlText: String): DataFrame =
-    this.snappyContextFunctions.sql(() => super.sql(sqlText))(this, () => parseSql(sqlText))
 
   /**
     * Fetch the topK entries in the Approx TopK synopsis for the specified
