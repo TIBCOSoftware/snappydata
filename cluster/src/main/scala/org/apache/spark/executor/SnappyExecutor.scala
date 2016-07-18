@@ -18,8 +18,7 @@ package org.apache.spark.executor
 
 import java.net.{URL}
 import org.apache.spark.SparkEnv
-import org.apache.spark.util.MutableURLClassLoader
-import org.apache.spark.util.classloader.DynamicURLClassLoader
+import org.apache.spark.util.{DynamicURLClassLoader, MutableURLClassLoader}
 
 class SnappyExecutor(
     executorId: String,

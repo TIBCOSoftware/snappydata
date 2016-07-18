@@ -24,8 +24,7 @@ import scala.collection.JavaConverters._
 import com.gemstone.gemfire.cache.CacheClosedException
 import org.scalatest.Matchers
 
-import org.apache.spark.util.Utils
-import org.apache.spark.util.classloader.DynamicURLClassLoader
+import org.apache.spark.util.{DynamicURLClassLoader, Utils}
 
 
 class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
@@ -39,12 +38,42 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     toStringValue = "1",
     classpathUrls = urls2)).toArray
 
+  val childUrls = List(TestUtils.createJarWithClasses(
+    classNames = Seq("FakeClass1"),
+    classNamesWithBase = Seq(("FakeClass2", "FakeClass3")), // FakeClass3 is in parent
+    toStringValue = "1",
+    classpathUrls = urls2)).toArray
+
   val fileUrlsChild = List(TestUtils.createJarWithFiles(Map(
     "resource1" -> "resource1Contents-child",
     "resource2" -> "resource2Contents"))).toArray
   val fileUrlsParent = List(TestUtils.createJarWithFiles(Map(
     "resource1" -> "resource1Contents-parent"))).toArray
 
+  test("child first for  individual Jars") {
+    val classLoader = new DynamicURLClassLoader(urls2,
+      Utils.getContextOrSparkClassLoader,
+      parentFirst = false)
+    urls.foreach(classLoader.addURL(_))
+    val fakeClass = classLoader.loadClass("FakeClass2").newInstance()
+    val fakeClassVersion = fakeClass.toString
+    assert(fakeClassVersion === "1")
+    val fakeClass2 = classLoader.loadClass("FakeClass2").newInstance()
+    assert(fakeClass.getClass === fakeClass2.getClass)
+  }
+
+
+  test("parent first for  individual Jars") {
+    val classLoader = new DynamicURLClassLoader(urls2,
+      Utils.getContextOrSparkClassLoader,
+      parentFirst = false)
+    urls.foreach(classLoader.addURL(_))
+    val fakeClass = classLoader.loadClass("FakeClass1").newInstance()
+    val fakeClassVersion = fakeClass.toString
+    assert(fakeClassVersion === "1")
+    val fakeClass2 = classLoader.loadClass("FakeClass1").newInstance()
+    assert(fakeClass.getClass === fakeClass2.getClass)
+  }
 
   test("child first") {
     val parentLoader = new URLClassLoader(urls2, Utils.getContextOrSparkClassLoader)
@@ -55,7 +84,6 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     val fakeClass2 = classLoader.loadClass("FakeClass2").newInstance()
     assert(fakeClass.getClass === fakeClass2.getClass)
   }
-
 
   test("parent first") {
     val parentLoader = new URLClassLoader(urls2, Utils.getContextOrSparkClassLoader)
@@ -85,24 +113,43 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
   }
 
   test("default JDK classloader get resources") {
-    val parentLoader = new URLClassLoader(fileUrlsParent, null)
-    val classLoader = new DynamicURLClassLoader(fileUrlsChild, parentLoader, false)
+    val classLoader = new DynamicURLClassLoader(fileUrlsParent,
+      Utils.getContextOrSparkClassLoader, false)
+    assert(classLoader.getResources("resource1").asScala.size === 1)
+    assert(classLoader.getResources("resource2").asScala.size === 0)
+
+    fileUrlsChild.foreach(classLoader.addURL)
+
     assert(classLoader.getResources("resource1").asScala.size === 2)
     assert(classLoader.getResources("resource2").asScala.size === 1)
   }
 
   test("parent first get resources") {
     val parentLoader = new URLClassLoader(fileUrlsParent, null)
-    val classLoader = new DynamicURLClassLoader(fileUrlsChild, parentLoader, parentFirst = true)
+    val classLoader = new DynamicURLClassLoader(fileUrlsParent,
+      Utils.getContextOrSparkClassLoader, parentFirst = true)
+
+    assert(classLoader.getResources("resource1").asScala.size === 1)
+    assert(classLoader.getResources("resource2").asScala.size === 0)
+
+    fileUrlsChild.foreach(classLoader.addURL)
+
     assert(classLoader.getResources("resource1").asScala.size === 2)
     assert(classLoader.getResources("resource2").asScala.size === 1)
+
   }
 
   test("child first get resources") {
-    val parentLoader = new URLClassLoader(fileUrlsParent, null)
-    val classLoader = new DynamicURLClassLoader(fileUrlsChild, parentLoader, parentFirst = false)
+    val classLoader = new DynamicURLClassLoader(fileUrlsParent,
+      Utils.getContextOrSparkClassLoader, parentFirst = false)
 
-    val res1 = classLoader.getResources("resource1").asScala.toList
+    var res1 = classLoader.getResources("resource1").asScala.toList
+    assert(res1.size === 1)
+    assert(classLoader.getResources("resource2").asScala.size === 0)
+
+    fileUrlsChild.foreach(classLoader.addURL)
+
+    res1 = classLoader.getResources("resource1").asScala.toList
     assert(res1.size === 2)
     assert(classLoader.getResources("resource2").asScala.size === 1)
 
