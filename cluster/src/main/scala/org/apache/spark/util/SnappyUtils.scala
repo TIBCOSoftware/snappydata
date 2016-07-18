@@ -29,8 +29,7 @@ object SnappyUtils {
     new SecureClassLoader(parent) {
     override def loadClass(name: String): Class[_] = {
       try {
-        //try to load from parent
-        super.loadClass(name)
+          parent.loadClass(name)
       } catch {
         case cnfe: ClassNotFoundException =>
           Misc.getMemStore.getDatabase.getClassFactory.loadApplicationClass(name)
