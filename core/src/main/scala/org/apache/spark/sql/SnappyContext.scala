@@ -33,7 +33,7 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
 import org.apache.spark.sql.aqp.{SnappyContextDefaultFunctions, SnappyContextFunctions}
-import org.apache.spark.sql.catalyst.ParserDialect
+import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Cast, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
@@ -1106,9 +1106,6 @@ class SnappyContext protected[spark](
   @transient
   override protected[sql] val planner = this.snappyContextFunctions.getPlanner(this)
 
-  override def sql(sqlText: String): DataFrame =
-    this.snappyContextFunctions.sql(() => super.sql(sqlText))(this, () => parseSql(sqlText))
-
   /**
     * Fetch the topK entries in the Approx TopK synopsis for the specified
    * time interval. See _createTopK_ for how to create this data structure
@@ -1145,6 +1142,10 @@ class SnappyContext protected[spark](
   def queryApproxTSTopK(topK: String,
       startTime: Long, endTime: Long, k: Int): DataFrame =
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
+
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T =
+    snappyContextFunctions.handleErrorLimitExceeded[T](fn, rowRDD, df, lp)
 }
 
 /**
