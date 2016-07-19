@@ -100,6 +100,7 @@ public class SnappyTest implements Serializable {
     public static String cycleLeadVMTarget = TestConfig.tab().stringAt(SnappyPrms.cycleVMTarget, "lead");
     public static final String LEAD_PORT = "8090";
     public static final String MASTER_PORT = "7077";
+    private static int jobSubmissionCount = 0;
 
     private Connection connection = null;
     private static HydraThreadLocal localconnection = new HydraThreadLocal();
@@ -1424,7 +1425,8 @@ public class SnappyTest implements Serializable {
                 snappyTest.executeProcess(pb, logFile);
             }
             boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile);
-            if (retry) {
+            if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
+                jobSubmissionCount++;
                 Thread.sleep(6000);
                 Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting the job to new primary lead node.....");
                 retrievePrimaryLeadHost();
