@@ -146,6 +146,9 @@ object TPCHColumnPartitionedTable  {
       //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("customer", ifExists = true)
+      snappyContext.dropTable("part", ifExists = true)
+      snappyContext.dropTable("LINEITEM", ifExists = true)
       snappyContext.dropTable("ORDERS", ifExists = true)
       //snappyContext.dropExternalTable("ORDERS", ifExists = true)
       //snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
@@ -161,6 +164,30 @@ object TPCHColumnPartitionedTable  {
         var output = s.toString()
         println(output)
       }
+    }
+  }
+
+  def createAndPopulateOrder_CustTable(props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val orderData = sc.textFile(s"$path/orders.tbl")
+    val orderReadings = orderData.map(s => s.split('|')).map(s => parseOrderRow(s))
+    val orderDF = sqlContext.createDataFrame(orderReadings)
+    println("KBKBKBKB: Buckets : " + buckets)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "o_custkey"),("BUCKETS"-> buckets), ("COLOCATE_WITH"->"CUSTOMER"))
+      //val p1 = Map(("PARTITION_BY"-> "o_orderkey"))
+
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("ORDERS_CUST", ifExists = true)
+      //snappyContext.dropExternalTable("ORDERS", ifExists = true)
+      //snappyContext.createExternalTable("ORDERS", "column", orderDF.schema, p1)
+      snappyContext.createTable("ORDERS_CUST", "column", orderDF.schema, p1)
+      orderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("ORDERS_CUST")
+      //orderDF.registerAndInsertIntoExternalStore("ORDERS", props)
+      println("Created Table ORDERS_CUST")
+    } else {
+
     }
   }
 
@@ -251,8 +278,7 @@ object TPCHColumnPartitionedTable  {
       snappyContext.dropTable("LINEITEM", ifExists = true)
       //snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
       snappyContext.createTable("LINEITEM", "column", lineOrderDF.schema, p1)
-      lineOrderDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("LINEITEM")
-      //    lineOrderDF.registerAndInsertIntoExternalStore("LINEITEM", props)
+      lineOrderDF.write.insertInto("LINEITEM")
       println("Created Table LINEITEM")
     } else {
       lineOrderDF.registerTempTable("LINEITEM")
@@ -264,7 +290,26 @@ object TPCHColumnPartitionedTable  {
       }
     }
   }
+  def createAndPopulateLineItem_partTable(props: Map[String, String], sqlContext: SQLContext, path:String, isSnappy:Boolean, buckets: String): Unit = {
+    //val snappyContext = SnappyContext.getOrCreate(sc)
+    val sc = sqlContext.sparkContext
+    val lineItemData = sc.textFile(s"$path/lineitem.tbl")
+    val lineItemReadings = lineItemData.map(s => s.split('|')).map(s => parseLineItemRow(s))
+    val lineOrderDF = sqlContext.createDataFrame(lineItemReadings)
+    if (isSnappy) {
+      val p1 = Map(("PARTITION_BY"-> "l_partkey"),("COLOCATE_WITH"->"PART"),("BUCKETS"->buckets))
 
+      val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      //snappyContext.dropExternalTable("LINEITEM", ifExists = true)
+      snappyContext.dropTable("LINEITEM_PART", ifExists = true)
+      //snappyContext.createExternalTable("LINEITEM", "column", lineOrderDF.schema, p1)
+      snappyContext.createTable("LINEITEM_PART", "column", lineOrderDF.schema, p1)
+      lineOrderDF.write.insertInto("LINEITEM_PART")
+      println("Created Table LINEITEM_PART")
+    } else {
+
+    }
+  }
   def createPopulateCustomerTable(usingOptionString: String, props: Map[String, String], sqlContext: SQLContext, path: String, isSnappy: Boolean, buckets:String): Unit = {
     //val snappyContext = snappyContext.getOrCreate(sc)
     val sc = sqlContext.sparkContext
@@ -276,6 +321,7 @@ object TPCHColumnPartitionedTable  {
       val p1 = Map(("PARTITION_BY"-> "c_custkey"),("BUCKETS"->buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("ORDERS_CUST", ifExists = true)
       snappyContext.dropTable("CUSTOMER", ifExists = true)
       snappyContext.createTable("CUSTOMER", "column", customerDF.schema, p1)
       customerDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("CUSTOMER")
@@ -303,6 +349,7 @@ object TPCHColumnPartitionedTable  {
       val p1 = Map(("PARTITION_BY"-> "p_partkey"),("BUCKETS"->buckets))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("LINEITEM_PART", ifExists = true)
       snappyContext.dropTable("PART", ifExists = true)
       snappyContext.createTable("PART", "column", partDF.schema, p1)
       partDF.write.format("column").mode(SaveMode.Append).options(p1).saveAsTable("PART")
@@ -326,7 +373,7 @@ object TPCHColumnPartitionedTable  {
     val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
 
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets),("COLOCATE_WITH"->"PART"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("PARTSUPP", ifExists = true)

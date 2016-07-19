@@ -86,4 +86,7 @@ trait SnappyContextFunctions {
       planGenerator: String => LogicalPlan): DDLParser
 
   def createAnalyzer(context: SnappyContext): Analyzer
+
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T
 }

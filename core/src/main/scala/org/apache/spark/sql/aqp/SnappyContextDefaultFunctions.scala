@@ -134,6 +134,9 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
       override val extendedCheckRules = Seq(
         sparkexecution.datasources.PreWriteCheck(context.catalog), PrePutCheck)
     }
+
+  def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T = fn(rowRDD, df)
 }
 
 class DefaultPlanner(snappyContext: SnappyContext)
