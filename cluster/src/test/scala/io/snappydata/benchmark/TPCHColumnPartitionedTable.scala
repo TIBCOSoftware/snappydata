@@ -373,7 +373,7 @@ object TPCHColumnPartitionedTable  {
     val partSuppDF = sqlContext.createDataFrame(partSuppReadings)
 
     if (isSnappy) {
-      val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets))
+      val p1 = Map(("PARTITION_BY"-> "ps_partkey"),("BUCKETS"->buckets),("COLOCATE_WITH"->"PART"))
 
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
       snappyContext.dropTable("PARTSUPP", ifExists = true)

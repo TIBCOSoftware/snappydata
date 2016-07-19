@@ -1148,8 +1148,8 @@ object TPCH_Snappy {
            "         from" +
            "                 PART," +
            "                 LINEITEM_PART," +
-           "                 SUPPLIER," +
            "                 PARTSUPP," +
+           "                 SUPPLIER," +
            "                 ORDERS," +
            "                 NATION" +
            "         where" +
