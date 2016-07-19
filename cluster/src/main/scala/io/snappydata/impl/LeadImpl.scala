@@ -129,8 +129,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
       if (bootProperties.getProperty(Constant.ENABLE_ZEPPELIN_INTERPRETER, "true").equals("true")) {
         /**
          * This will initialize the zeppelin repl interpreter.
-         * This should be done before spark context as zeppelin interpreter will set some properties for classloader for repl
-         * which needs to be specified while creating sparkcontext in lead
+         * This should be done before spark context is created as zeppelin interpreter will set some properties for
+         * classloader for repl which needs to be specified while creating sparkcontext in lead
          */
         val props: Properties = ZeppelinIntpUtil.initializeZeppelinReplAndGetConfig()
         props.asScala.foreach(kv => conf.set(kv._1, kv._2))
@@ -358,7 +358,8 @@ class LeadImpl extends ServerImpl with Lead with Logging {
   /**
    * This method is used to start the zeppelin interpreter thread.
    * As discussed by default zeppelin interpreter will be enabled.User can disable it by
-   * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also spe
+   * setting "zeppelin.interpreter.enable" to false in leads conf file.User can also specify
+   * the port on which intrepreter should listen using  property zeppelin.interpreter.port
    * @param bootProperties
    */
   private def checkAndStartZeppelinInterpreter(bootProperties: Properties): Unit = {

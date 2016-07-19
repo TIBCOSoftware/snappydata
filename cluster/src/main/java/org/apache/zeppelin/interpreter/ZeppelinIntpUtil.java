@@ -9,9 +9,15 @@ import org.apache.spark.repl.SparkILoop;
 
 /**
  * Created by sachin on 18/6/16.
+ *
  */
 public class ZeppelinIntpUtil {
-
+  /**
+   * This method should be called before spark context is created as zeppelin interpreter will set some properties
+   * related to classloader for repl which needs to be specified while creating sparkcontext in lead
+   *
+   * @return
+   */
   public static Properties initializeZeppelinReplAndGetConfig() {
     Properties props=new Properties();
 

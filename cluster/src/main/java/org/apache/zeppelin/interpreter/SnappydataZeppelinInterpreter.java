@@ -786,7 +786,9 @@ public class SnappydataZeppelinInterpreter extends Interpreter {
     }
   }
 
-  //This method is introduced for snappydata
+  /**
+   * This method is introduced for snappydata
+   */
   public SparkILoop getReplInterpreter() {
     if (interpreter != null) {
       return interpreter;
