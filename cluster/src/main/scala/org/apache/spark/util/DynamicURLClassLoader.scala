@@ -19,7 +19,7 @@ package org.apache.spark.util
 
 import java.net.{URL, URLClassLoader}
 import java.util
-
+import scala.language.existentials
 import scala.collection.JavaConverters._
 
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -28,6 +28,7 @@ import sun.misc.CompoundEnumeration
 private[spark] class DynamicURLClassLoader(urls: Array[URL],
     parentClassLoader: ClassLoader, parentFirst: Boolean)
     extends MutableURLClassLoader(Array[URL](), parentClassLoader) {
+  final private val JOB_SERVER_TEXT = "-SNAPPY-JOB-SERVER-JAR-"
 
   private val urlList = new util.TreeMap[String, URLClassLoader]()
 
@@ -38,7 +39,12 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
   }
 
   override def addURL(url: URL): Unit = {
-    val key = url.getPath
+    // workaround to identify the files loaded by the job server as
+    // it always creates a new file with timestamp.
+    val key = if (url.getFile.contains("-SNAPPY-JOB-SERVER-JAR-")) {
+      url.getFile.substring(0, url.getFile.indexOf(JOB_SERVER_TEXT))
+    } else url.getFile
+
     val loader = if (parentFirst) new MutableURLClassLoader(Array(url), parent)
     else new ChildFirstURLClassLoader(Array(url), parent)
     urlList.put(url.getPath, loader)
@@ -124,7 +130,7 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
   @throws[ClassNotFoundException]
   private def loadFromStore(className: String, throwException: Boolean): Option[Class[_]] =
     loadClassFunction(() =>
-      Some(Misc.getMemStore.getDatabase.getClassFactory.loadApplicationClass(className)),
+      Some(Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(className)),
       throwException)
 }
 

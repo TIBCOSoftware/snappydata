@@ -15,8 +15,6 @@
  * LICENSE file.
  */
 
-// scalastyle:off println
-
 package org.apache.spark.util
 
 import java.security.SecureClassLoader
@@ -32,7 +30,7 @@ object SnappyUtils {
           parent.loadClass(name)
       } catch {
         case cnfe: ClassNotFoundException =>
-          Misc.getMemStore.getDatabase.getClassFactory.loadApplicationClass(name)
+          Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
       }
     }
   }
