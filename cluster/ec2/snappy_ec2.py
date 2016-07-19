@@ -57,7 +57,7 @@ else:
 
 SPARK_EC2_VERSION = "1.6.1"
 
-SNAPPY_EC2_VERSION = "1.0"
+SNAPPY_EC2_VERSION = "0.1"
 SNAPPY_EC2_DIR = os.path.dirname(os.path.realpath(__file__))
 
 VALID_SPARK_VERSIONS = set([
@@ -107,7 +107,7 @@ SPARK_TACHYON_MAP = {
 DEFAULT_SPARK_VERSION = SPARK_EC2_VERSION
 DEFAULT_SPARK_GITHUB_REPO = "https://github.com/apache/spark"
 
-DEFAULT_SNAPPY_VERSION = SNAPPY_EC2_VERSION
+DEFAULT_SNAPPY_VERSION = "LATEST"
 # Default location to get the spark-ec2 scripts (and ami-list) from
 DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/amplab/spark-ec2"
 DEFAULT_SPARK_EC2_BRANCH = "branch-1.5"
@@ -243,8 +243,8 @@ def parse_args():
         "--spark-version", default=DEFAULT_SPARK_VERSION,
         help="Version of Spark to use: 'X.Y.Z' or a specific git hash (default: %default)")
     parser.add_option(
-        "-v", "--snappy-version", default=DEFAULT_SNAPPY_VERSION,
-        help="Version of Snappy to use: 'X.Y.Z' or a specific git hash (default: %default)")
+        "-v", "--snappydata-version", default=DEFAULT_SNAPPY_VERSION,
+        help="Version of SnappyData to use: 'X.Y.Z' (default: %default)")
     parser.add_option(
         "--spark-git-repo",
         default=DEFAULT_SPARK_GITHUB_REPO,
@@ -970,6 +970,11 @@ def setup_snappy_cluster(master, opts):
     ssh(master, opts, "snappydata/aws-setup.sh")
 
 
+def shutdown_snappy_cluster(master, opts):
+    ssh(master, opts, "chmod u+x snappydata/aws-shutdown.sh")
+    ssh(master, opts, "snappydata/aws-shutdown.sh")
+
+
 def is_ssh_available(host, opts, print_ssh_output=True):
     """
     Check if SSH is available on a host.
@@ -1206,6 +1211,7 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes):
                                 text = text.replace("{{LEAD_" + str(idx) + "}}", lead_addresses[idx])
                             for idx in range(len(server_nodes)):
                                 text = text.replace("{{SERVER_" + str(idx) + "}}", server_addresses[idx])
+                            text = text.replace("{{snappydata_version}}", opts.snappydata_version)
                             dest.write(text)
                             dest.close()
     # rsync the whole directory over to the master machine
@@ -1535,7 +1541,6 @@ def real_main():
                 ssh_command(opts) + proxy_opt + ['-t', '-t', "%s@%s" % (opts.user, lead)])
 
     elif action == "reboot-stores":
-        # TODO launch snappydata server processes also.
         response = raw_input(
             "Are you sure you want to reboot the cluster " +
             cluster_name + " stores?\n" +
@@ -1548,6 +1553,9 @@ def real_main():
                 if inst.state not in ["shutting-down", "terminated"]:
                     print("Rebooting " + inst.id)
                     inst.reboot()
+            # TODO launch snappydata server processes also.
+            # Wait for ssh-ready
+            # execute snappy-server start
 
     # TODO
     elif action == "get-locator":
@@ -1576,33 +1584,36 @@ def real_main():
         if response == "y":
             (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(
                 conn, opts, cluster_name, die_on_error=False)
-            print("Stopping stores...")
+            print("Stopping the snappydata processes...")
+            shutdown_snappy_cluster(get_dns_name(locator_nodes[0], opts.private_ips), opts)
+
+            print("Stopping store instance(s)...")
             for inst in server_nodes:
                 if inst.state not in ["shutting-down", "terminated"]:
                     if inst.spot_instance_request_id:
                         inst.terminate()
                     else:
                         inst.stop()
-            print("Stopping leads...")
+            print("Stopping lead instance(s)...")
             for inst in lead_nodes:
                 if inst.state not in ["shutting-down", "terminated"]:
                     inst.stop()
-            print("Stopping locators...")
+            print("Stopping locator instance...")
             for inst in locator_nodes:
                 if inst.state not in ["shutting-down", "terminated"]:
                     inst.stop()
 
     elif action == "start":
         (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(conn, opts, cluster_name)
-        print("Starting locator...")
+        print("Starting locator instance...")
         for inst in locator_nodes:
             if inst.state not in ["shutting-down", "terminated"]:
                 inst.start()
-        print("Starting lead...")
+        print("Starting lead instance(s)...")
         for inst in lead_nodes:
             if inst.state not in ["shutting-down", "terminated"]:
                 inst.start()
-        print("Starting stores...")
+        print("Starting store instance(s)...")
         for inst in server_nodes:
             if inst.state not in ["shutting-down", "terminated"]:
                 inst.start()

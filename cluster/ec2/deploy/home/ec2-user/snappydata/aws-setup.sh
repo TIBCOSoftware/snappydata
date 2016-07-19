@@ -19,20 +19,14 @@
 
 pushd /home/ec2-user/snappydata > /dev/null
 
-# Extract the url from the README.md to download the latest distribution tar from.
-wget -q https://github.com/SnappyDataInc/snappydata/blob/master/README.md
+source ec2-variables.sh
 
-URL=`grep -o "https://github.com/SnappyDataInc/snappydata/releases/download[a-zA-Z0-9.\/\-]**tar.gz" README.md`
-TAR_NAME=`echo ${URL} | cut -d'/' -f 9`
-SNAPPY_HOME_DIR=`echo ${TAR_NAME%.tar.gz}`
+sh resolve-hostname.sh
 
-# Download and extract the distribution tar
-echo "Downloading ${URL}..."
-wget "${URL}"
-tar -xf "${TAR_NAME}"
+# Download and extract the appropriate distribution.
+sh fetch-distribution.sh
 
-rm README.md "${TAR_NAME}"
-
+# Do it again to read new variables.
 source ec2-variables.sh
 
 echo "$LOCATORS" > locator_list
@@ -67,8 +61,27 @@ echo "$OTHER_LOCATORS" > other-locators
 
 # Copy this extracted directory to all the other instances
 sh copy-dir.sh "${SNAPPY_HOME_DIR}"  other-locators
+sh copy-dir.sh resolve-hostname.sh  other-locators
+
 sh copy-dir.sh "${SNAPPY_HOME_DIR}"  lead_list
+sh copy-dir.sh resolve-hostname.sh  lead_list
+
 sh copy-dir.sh "${SNAPPY_HOME_DIR}"  server_list
+sh copy-dir.sh resolve-hostname.sh  server_list
+
+DIR=`readlink -f resolve-hostname.sh`
+DIR=`echo "$DIR"|sed 's@/$@@'`
+DIR=`dirname "$DIR"`
+
+for node in ${OTHER_LOCATORS}; do
+    ssh "$node" "sh ${DIR}/resolve-hostname.sh"
+done
+for node in ${LEADS}; do
+    ssh "$node" "sh ${DIR}/resolve-hostname.sh"
+done
+for node in ${SERVERS}; do
+    ssh "$node" "sh ${DIR}/resolve-hostname.sh"
+done
 
 # Launch the SnappyData cluster
 sh "${SNAPPY_HOME_DIR}/sbin/snappy-start-all.sh"
