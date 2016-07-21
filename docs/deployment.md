@@ -35,7 +35,7 @@ Programs can connect to the lead node and submit Jobs. The Driver is managed by 
 
 
 ### Application managed Spark driver and context
-While Snappy recommends the use of these above mentioned scala traits to implement your application, you could also run your native Spark program on the unified cluster with a slight change to the cluster URL. 
+While Snappy recommends the use of scala traits mentioned above to implement your application, you could also run your native Spark program on the unified cluster with a slight change to the cluster URL. 
 
 ```scala
 val conf = new SparkConf().
@@ -46,7 +46,7 @@ val sc = new SparkContext(conf)
 ```
 > ### Note
 > We currently don't support external cluster managers like YARN when operating in this mode. While, it is easy to expand and redistribute the data by starting new data servers dynamically we expect such dynamic resource allocations to be a planned and seldom exercised option. Re-distributing large quantities of data can be very expensive and can slow down running applications. 
->For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode(describe next). 
+>For computational intensive workloads or batch processing workloads where extensive data shuffling is involved consider using the Split cluster mode described next. 
 
 ## Split cluster mode
 In this mode, Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). Apache Spark runs in this mode. 

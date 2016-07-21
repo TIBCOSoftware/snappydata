@@ -33,6 +33,7 @@ import os
 import os.path
 import pipes
 import random
+import re
 import shutil
 import string
 from stat import S_IRUSR
@@ -55,62 +56,13 @@ else:
     raw_input = input
     xrange = range
 
-SPARK_EC2_VERSION = "1.6.1"
 
 SNAPPY_EC2_VERSION = "0.1"
 SNAPPY_EC2_DIR = os.path.dirname(os.path.realpath(__file__))
-
-VALID_SPARK_VERSIONS = set([
-    "0.7.3",
-    "0.8.0",
-    "0.8.1",
-    "0.9.0",
-    "0.9.1",
-    "0.9.2",
-    "1.0.0",
-    "1.0.1",
-    "1.0.2",
-    "1.1.0",
-    "1.1.1",
-    "1.2.0",
-    "1.2.1",
-    "1.3.0",
-    "1.3.1",
-    "1.4.0",
-    "1.4.1",
-    "1.5.0",
-    "1.5.1",
-    "1.5.2",
-    "1.6.0",
-    "1.6.1",
-])
-
-SPARK_TACHYON_MAP = {
-    "1.0.0": "0.4.1",
-    "1.0.1": "0.4.1",
-    "1.0.2": "0.4.1",
-    "1.1.0": "0.5.0",
-    "1.1.1": "0.5.0",
-    "1.2.0": "0.5.0",
-    "1.2.1": "0.5.0",
-    "1.3.0": "0.5.0",
-    "1.3.1": "0.5.0",
-    "1.4.0": "0.6.4",
-    "1.4.1": "0.6.4",
-    "1.5.0": "0.7.1",
-    "1.5.1": "0.7.1",
-    "1.5.2": "0.7.1",
-    "1.6.0": "0.8.2",
-    "1.6.1": "0.8.2",
-}
-
-DEFAULT_SPARK_VERSION = SPARK_EC2_VERSION
-DEFAULT_SPARK_GITHUB_REPO = "https://github.com/apache/spark"
+SNAPPY_AWS_CONF_DIR = SNAPPY_EC2_DIR + "/deploy/home/ec2-user/snappydata"
+SNAPPYDATA_UI_PORT = ""
 
 DEFAULT_SNAPPY_VERSION = "LATEST"
-# Default location to get the spark-ec2 scripts (and ami-list) from
-DEFAULT_SPARK_EC2_GITHUB_REPO = "https://github.com/amplab/spark-ec2"
-DEFAULT_SPARK_EC2_BRANCH = "branch-1.5"
 
 # Amazon Linux AMIs 2016.03 for EBS-backed HVM
 HVM_AMI_MAP = {
@@ -240,23 +192,8 @@ def parse_args():
         "-a", "--ami",
         help="Amazon Machine Image ID to use")
     parser.add_option(
-        "--spark-version", default=DEFAULT_SPARK_VERSION,
-        help="Version of Spark to use: 'X.Y.Z' or a specific git hash (default: %default)")
-    parser.add_option(
         "-v", "--snappydata-version", default=DEFAULT_SNAPPY_VERSION,
         help="Version of SnappyData to use: 'X.Y.Z' (default: %default)")
-    parser.add_option(
-        "--spark-git-repo",
-        default=DEFAULT_SPARK_GITHUB_REPO,
-        help="Github repo from which to checkout supplied commit hash (default: %default)")
-    parser.add_option(
-        "--spark-ec2-git-repo",
-        default=DEFAULT_SPARK_EC2_GITHUB_REPO,
-        help="Github repo from which to checkout spark-ec2 (default: %default)")
-    parser.add_option(
-        "--spark-ec2-git-branch",
-        default=DEFAULT_SPARK_EC2_BRANCH,
-        help="Github repo branch of spark-ec2 to use (default: %default)")
     parser.add_option(
         "--deploy-root-dir",
         default=None,
@@ -266,10 +203,6 @@ def parse_args():
              "in / before copying its contents. If you append the trailing slash, " +
              "the directory is not created and its contents are copied directly into /. " +
              "(default: %default).")
-    parser.add_option(
-        "--hadoop-major-version", default="1",
-        help="Major version of Hadoop. Valid options are 1 (Hadoop 1.0.4), 2 (CDH 4.2.0), yarn " +
-             "(Hadoop 2.4.0) (default: %default)")
     parser.add_option(
         "-D", metavar="[ADDRESS:]PORT", dest="proxy_port",
         help="Use SSH dynamic port forwarding to create a SOCKS proxy at " +
@@ -297,9 +230,6 @@ def parse_args():
              "instances into. Assumes placement group is already " +
              "created.")
     parser.add_option(
-        "--swap", metavar="SWAP", type="int", default=1024,
-        help="Swap space to set up per node, in MB (default: %default)")
-    parser.add_option(
         "--spot-price", metavar="PRICE", type="float",
         help="If specified, launch stores as spot instances with the given " +
              "maximum price (in dollars)")
@@ -313,14 +243,6 @@ def parse_args():
         "--use-existing-locator", action="store_true", default=False,
         help="Launch fresh stores, but use an existing stopped locator if possible")
     parser.add_option(
-        "--worker-instances", type="int", default=1,
-        help="Number of instances per worker: variable SPARK_WORKER_INSTANCES. Not used if YARN " +
-             "is used as Hadoop major version (default: %default)")
-    parser.add_option(
-        "--master-opts", type="string", default="",
-        help="Extra options to give to master through SPARK_MASTER_OPTS variable " +
-             "(e.g -Dspark.worker.timeout=180)")
-    parser.add_option(
         "--user-data", type="string", default="",
         help="Path to a user-data file (most AMIs interpret this as an initialization script)")
     parser.add_option(
@@ -332,10 +254,10 @@ def parse_args():
     parser.add_option(
         "--additional-tags", type="string", default="",
         help="Additional tags to set on the machines; tags are comma-separated, while name and " +
-             "value are colon separated; ex: \"Task:MySparkProject,Env:production\"")
-    parser.add_option(
-        "--copy-aws-credentials", action="store_true", default=False,
-        help="Add AWS credentials to hadoop configuration to allow Spark to access S3")
+             "value are colon separated; ex: \"Task:MySnappyProject,Env:production\"")
+    # parser.add_option(
+    #     "--copy-aws-credentials", action="store_true", default=False,
+    #     help="Add AWS credentials to hadoop configuration to allow Snappy to access S3")
     parser.add_option(
         "--subnet-id", default=None,
         help="VPC subnet to launch instances in")
@@ -389,27 +311,6 @@ def get_or_make_group(conn, name, vpc_id):
     else:
         print("Creating security group " + name)
         return conn.create_security_group(name, "Snappy EC2 group", vpc_id)
-
-
-def get_validate_spark_version(version, repo):
-    if "." in version:
-        version = version.replace("v", "")
-        if version not in VALID_SPARK_VERSIONS:
-            print("Don't know about Spark version: {v}".format(v=version), file=stderr)
-            sys.exit(1)
-        return version
-    else:
-        github_commit_url = "{repo}/commit/{commit_hash}".format(repo=repo, commit_hash=version)
-        request = Request(github_commit_url)
-        request.get_method = lambda: 'HEAD'
-        try:
-            response = urlopen(request)
-        except HTTPError as e:
-            print("Couldn't validate Spark commit: {url}".format(url=github_commit_url),
-                  file=stderr)
-            print("Received HTTP response code of {code}.".format(code=e.code), file=stderr)
-            sys.exit(1)
-        return version
 
 
 # Source: http://aws.amazon.com/amazon-linux-ami/instance-type-matrix/
@@ -473,10 +374,6 @@ EC2_INSTANCE_TYPES = {
 }
 
 
-def get_tachyon_version(spark_version):
-    return SPARK_TACHYON_MAP.get(spark_version, "")
-
-
 # Attempt to resolve an appropriate AMI given the architecture and region of the request.
 def get_ami(opts):
     if opts.instance_type in EC2_INSTANCE_TYPES:
@@ -488,6 +385,32 @@ def get_ami(opts):
     ami = HVM_AMI_MAP[opts.region]
     print("Found AMI: " + ami)
     return ami
+
+
+def read_ports_from_conf(fname, patterns):
+    global SNAPPYDATA_UI_PORT
+    ports = []
+
+    if os.path.exists(fname):
+        with open(fname) as conffile:
+            filedata = conffile.read()
+            for pattern in patterns:
+                m = re.search('(?<=%s)\w+' % pattern, filedata)
+                if m is not None:
+                    ports.append(m.group(0))
+                    if pattern == "-spark.ui.port=":
+                        SNAPPYDATA_UI_PORT = m.group(0)
+            conffile.close()
+    return ports
+
+def retrieve_ports():
+    # files = ['servers', 'locators', 'leads'] include snappy-env.sh too?
+    # patterns = ['-client-port=', '-peer-discovery-port=', '-thrift-server-port=', '-spark.shuffle.service.port=', '-spark.ui.port=']
+
+    locator_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/locators', ['-client-port=', '-thrift-server-port=', '-peer-discovery-port='])
+    server_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/servers', ['-client-port=', '-thrift-server-port='])
+    lead_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/leads', ['-peer-discovery-port=', '-spark.shuffle.service.port=', '-spark.ui.port='])
+    return (locator_ports, server_ports, lead_ports)
 
 
 # Launch a cluster of the given name, by setting up its security groups,
@@ -507,6 +430,8 @@ def launch_cluster(conn, opts, cluster_name):
     if opts.user_data:
         with open(opts.user_data) as user_data_file:
             user_data_content = user_data_file.read()
+
+    (locator_ports, server_ports, lead_ports) = retrieve_ports()
 
     print("Setting up security groups...")
     locator_group = get_or_make_group(conn, cluster_name + "-locator", opts.vpc_id)
@@ -558,6 +483,9 @@ def launch_cluster(conn, opts, cluster_name):
         locator_group.authorize('tcp', 1527, 1527, authorized_address)
         # Default locator port for peer discovery
         locator_group.authorize('tcp', 10334, 10334, authorized_address)
+        for port in locator_ports:
+            locator_group.authorize('tcp', int(port), int(port), authorized_address)
+    # TODO Existing groups are not changed. Document it.
     if lead_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             lead_group.authorize(src_group=lead_group)
@@ -603,6 +531,8 @@ def launch_cluster(conn, opts, cluster_name):
         lead_group.authorize('tcp', 1527, 1527, authorized_address)
         # Default port of Spark JobServer
         lead_group.authorize('tcp', 8090, 8090, authorized_address)
+        for port in lead_ports:
+            lead_group.authorize('tcp', int(port), int(port), authorized_address)
     if store_group.rules == []:  # Group was just now created
         if opts.vpc_id is None:
             store_group.authorize(src_group=locator_group)
@@ -635,6 +565,8 @@ def launch_cluster(conn, opts, cluster_name):
         store_group.authorize('tcp', 60075, 60075, authorized_address)
         # SnappyData netserver uses this port to listen to clients by default
         store_group.authorize('tcp', 1527, 1527, authorized_address)
+        for port in server_ports:
+            store_group.authorize('tcp', int(port), int(port), authorized_address)
 
     # Check if instances are already running in our groups
     existing_locators, existing_leads, existing_stores = get_existing_cluster(conn,
@@ -646,6 +578,7 @@ def launch_cluster(conn, opts, cluster_name):
         sys.exit(1)
 
     # Figure out the AMI
+    # TODO User provided AMI may not work.
     if opts.ami is None:
         opts.ami = get_ami(opts)
 
@@ -914,6 +847,9 @@ def get_existing_cluster(conn, opts, cluster_name, die_on_error=True):
 # or started EC2 cluster.
 def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, deploy_ssh_key):
     locator = get_dns_name(locator_nodes[0], opts.private_ips)
+    # Read the UI port from conf/leads, if available.
+    read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/leads', ['-spark.ui.port='])
+
     if deploy_ssh_key:
         print("Generating cluster's SSH key on locator...")
         key_setup = """
@@ -962,6 +898,7 @@ def setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, deploy_ss
 
     print("Running aws-setup on locator...")
     setup_snappy_cluster(locator, opts)
+    # TODO If the cluster does not start fully, print so.
     print("Done!")
 
 
@@ -1160,32 +1097,21 @@ def deploy_files(conn, root_dir, opts, locator_nodes, lead_nodes, server_nodes):
 
     cluster_url = "%s:7077" % active_locator
 
-    if "." in opts.spark_version:
-        # Pre-built Spark deploy
-        spark_v = get_validate_spark_version(opts.spark_version, opts.spark_git_repo)
-        tachyon_v = get_tachyon_version(spark_v)
-    else:
-        # Spark-only custom deploy
-        spark_v = "%s|%s" % (opts.spark_git_repo, opts.spark_version)
-        tachyon_v = ""
-        print("Deploying Spark via git hash; Tachyon won't be set up")
-
     locator_addresses = [get_dns_name(i, opts.private_ips) for i in locator_nodes]
     lead_addresses = [get_dns_name(i, opts.private_ips) for i in lead_nodes]
     server_addresses = [get_dns_name(i, opts.private_ips) for i in server_nodes]
-    worker_instances_str = "%d" % opts.worker_instances if opts.worker_instances else ""
     template_vars = {
         "locator_list": '\n'.join(locator_addresses),
         "lead_list": '\n'.join(lead_addresses),
         "server_list": '\n'.join(server_addresses)
     }
 
-    if opts.copy_aws_credentials:
-        template_vars["aws_access_key_id"] = conn.aws_access_key_id
-        template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
-    else:
-        template_vars["aws_access_key_id"] = ""
-        template_vars["aws_secret_access_key"] = ""
+    # if opts.copy_aws_credentials:
+    #     template_vars["aws_access_key_id"] = conn.aws_access_key_id
+    #     template_vars["aws_secret_access_key"] = conn.aws_secret_access_key
+    # else:
+    #     template_vars["aws_access_key_id"] = ""
+    #     template_vars["aws_secret_access_key"] = ""
 
     # Create a temp directory in which we will place all the files to be
     # deployed after we substitue template parameters in them
@@ -1359,10 +1285,10 @@ def get_dns_name(instance, private_ips=False):
 
 
 def real_main():
+    global SNAPPYDATA_UI_PORT
     (opts, action, cluster_name) = parse_args()
 
     # Input parameter validation
-    get_validate_spark_version(opts.spark_version, opts.spark_git_repo)
 
     if opts.wait is not None:
         # NOTE: DeprecationWarnings are silent in 2.7+ by default.
@@ -1451,9 +1377,9 @@ def real_main():
         )
         setup_cluster(conn, locator_nodes, lead_nodes, server_nodes, opts, True)
         lead = get_dns_name(lead_nodes[0], opts.private_ips)
-        # TODO print the correct port, read from conf/leads or snappy-env.sh
-        print("SnappyData Unified cluster started at http://%s:port, replace "
-              "'port' with UI port specified in conf files or the default 4040." % lead)
+        if SNAPPYDATA_UI_PORT == "":
+            SNAPPYDATA_UI_PORT = '4040'
+        print("SnappyData Unified cluster started at http://%s:%s" % (lead, SNAPPYDATA_UI_PORT))
 
     elif action == "destroy":
         (locator_nodes, lead_nodes, server_nodes) = get_existing_cluster(

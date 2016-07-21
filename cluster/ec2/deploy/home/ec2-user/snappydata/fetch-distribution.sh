@@ -19,27 +19,54 @@
 extract() {
   TAR_NAME=`echo ${URL} | cut -d'/' -f 9`
   SNAPPY_HOME_DIR=`echo ${TAR_NAME%.tar.gz}`
+  SNAPPY_HOME_DIR_NO_BIN=`echo ${SNAPPY_HOME_DIR%-bin}`
 
-  if [[ ! -d ${SNAPPY_HOME_DIR} ]]; then
+  if [[ ! -d ${SNAPPY_HOME_DIR} ]] && [[ ! -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
     # Download and extract the distribution tar
     echo "Downloading ${URL}..."
     wget "${URL}"
     tar -xf "${TAR_NAME}"
 
-    rm README.md "${TAR_NAME}"
+    rm -f README.md "${TAR_NAME}" releases
+  fi
+  if [[ -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
+    SNAPPY_HOME_DIR=${SNAPPY_HOME_DIR_NO_BIN}
   fi
 }
 
-if [[ "${SNAPPYDATA_VERSION}" = "LATEST" ]]; then
+getLatestUrl() {
   rm -f README.md
   # Extract the url from the README.md to download the latest distribution tar from.
   wget -q https://github.com/SnappyDataInc/snappydata/blob/master/README.md
   URL=`grep -o "https://github.com/SnappyDataInc/snappydata/releases/download[a-zA-Z0-9.\/\-]**tar.gz" README.md`
-else
-  # TODO If tag name is case sensitive, this may result into incorrect url.
-  URL="https://github.com/SnappyDataInc/snappydata/releases/download/v${SNAPPYDATA_VERSION}/snappydata-${SNAPPYDATA_VERSION}-bin.tar.gz"
-fi
+}
 
-extract
+SNAPPY_HOME_DIR="snappydata-${SNAPPYDATA_VERSION}-bin"
+SNAPPY_HOME_DIR_NO_BIN="snappydata-${SNAPPYDATA_VERSION}"
+
+if [[ "${SNAPPYDATA_VERSION}" = "LATEST" ]]; then
+  getLatestUrl
+  extract
+elif [[ ! -d ${SNAPPY_HOME_DIR} ]] && [[ ! -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
+  wget -q https://github.com/SnappyDataInc/snappydata/releases
+  URL_PART=`grep -o "/SnappyDataInc/snappydata/releases/download/[a-zA-Z0-9.\/\-]**${SNAPPYDATA_VERSION}-bin.tar.gz" releases`
+  GREP_RESULT=`echo $?`
+  if [[ ${GREP_RESULT} != 0 ]]; then
+    # Try without '-bin'
+    URL_PART=`grep -o "/SnappyDataInc/snappydata/releases/download/[a-zA-Z0-9.\/\-]**${SNAPPYDATA_VERSION}.tar.gz" releases`
+    GREP_RESULT=`echo $?`
+  fi
+  if [[ ${GREP_RESULT} != 0 ]]; then
+    echo "Did not find binaries for ${SNAPPYDATA_VERSION}, instead will use the latest version."
+    getLatestUrl
+  else
+    URL="https://github.com${URL_PART}"
+  fi
+  extract
+else
+  if [[ -d ${SNAPPY_HOME_DIR_NO_BIN} ]]; then
+    SNAPPY_HOME_DIR=${SNAPPY_HOME_DIR_NO_BIN}
+  fi
+fi
 
 echo -e "export SNAPPY_HOME_DIR=${SNAPPY_HOME_DIR}" >> ec2-variables.sh
