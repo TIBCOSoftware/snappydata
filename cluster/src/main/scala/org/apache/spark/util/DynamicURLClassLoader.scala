@@ -28,7 +28,7 @@ import sun.misc.CompoundEnumeration
 private[spark] class DynamicURLClassLoader(urls: Array[URL],
     parentClassLoader: ClassLoader, parentFirst: Boolean)
     extends MutableURLClassLoader(Array[URL](), parentClassLoader) {
-  final private val JOB_SERVER_TEXT = "-SNAPPY-JOB-SERVER-JAR-"
+  final private val JOB_SERVER_TEXT = "_SNAPPY_JOB_SERVER_JAR_"
 
   private val urlList = new util.TreeMap[String, URLClassLoader]()
 
@@ -41,8 +41,8 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
   override def addURL(url: URL): Unit = {
     // workaround to identify the files loaded by the job server as
     // it always creates a new file with timestamp.
-    val key = if (url.getFile.contains("-SNAPPY-JOB-SERVER-JAR-")) {
-      url.getFile.substring(0, url.getFile.indexOf(JOB_SERVER_TEXT))
+    val key = if (url.getFile.lastIndexOf(JOB_SERVER_TEXT) > 0 ) {
+      url.getFile.substring(0, url.getFile.lastIndexOf(JOB_SERVER_TEXT))
     } else url.getFile
 
     val loader = if (parentFirst) new MutableURLClassLoader(Array(url), parent)
@@ -68,27 +68,25 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
 
   @throws[ClassNotFoundException]
   override protected def loadClass(className: String, resolve: Boolean): Class[_] = {
-
     var c: Class[_] = findLoadedClass(className)
 
     if (c != null) {
       if (resolve) resolveClass(c)
       return c
     }
-    getClassLoadingLock(className).synchronized {
-      if (parentFirst) {
-        c = loadFromParent(parent, className, false)
-            .getOrElse(loadFromStore(className, false)
-                .getOrElse(loadFromJars(className, true).get))
-      } else {
-        c = loadFromJars(className, false)
-            .getOrElse(loadFromParent(parent, className, false)
-                .getOrElse(loadFromStore(className, true).get))
-      }
 
-      if (resolve) {
-        resolveClass(c)
-      }
+    if (parentFirst) {
+      c = loadFromParent(parent, className, false)
+          .getOrElse(loadFromJars(className, false)
+              .getOrElse(loadFromStore(className, true).get))
+    } else {
+      c = loadFromJars(className, false)
+          .getOrElse(loadFromStore(className, false)
+              .getOrElse(loadFromParent(parent, className, true).get))
+    }
+
+    if (resolve) {
+      resolveClass(c)
     }
 
     c
@@ -129,8 +127,8 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
 
   @throws[ClassNotFoundException]
   private def loadFromStore(className: String, throwException: Boolean): Option[Class[_]] =
-    loadClassFunction(() =>
-      Some(Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(className)),
+    loadClassFunction(() => {
+      Some(Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(className)) },
       throwException)
 }
 

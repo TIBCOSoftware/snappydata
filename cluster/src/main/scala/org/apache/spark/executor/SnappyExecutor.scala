@@ -19,17 +19,21 @@ package org.apache.spark.executor
 import java.net.URL
 
 import org.apache.spark.SparkEnv
+import org.apache.spark.util.{DynamicURLClassLoader, MutableURLClassLoader}
 
 class SnappyExecutor(
     executorId: String,
     executorHostname: String,
     env: SparkEnv,
     userClassPath: Seq[URL] = Nil,
-    isLocal: Boolean = false) extends Executor(executorId, executorHostname, env, userClassPath) {
-  println ("executor created")
-/*
+    isLocal: Boolean = false)
+    extends Executor(executorId, executorHostname, env, userClassPath , isLocal) {
+
   override def createClassLoader(urls: Array[URL],
       parentLoader: ClassLoader, userClassPathFirst: Boolean): MutableURLClassLoader = {
     new DynamicURLClassLoader(urls, parentLoader, parentFirst = !userClassPathFirst)
-  }*/
+  }
+
 }
+
+

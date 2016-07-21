@@ -21,13 +21,12 @@ import java.net.URLClassLoader
 
 import scala.collection.JavaConverters._
 
-import com.gemstone.gemfire.cache.CacheClosedException
-import org.scalatest.Matchers
+import _root_.io.snappydata.SnappyFunSuite
 
 import org.apache.spark.util.{DynamicURLClassLoader, Utils}
 
 
-class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
+class DynamicURLClassLoaderSuite extends SnappyFunSuite {
 
   val urls2 = List(TestUtils.createJarWithClasses(
     classNames = Seq("FakeClass1", "FakeClass2", "FakeClass3"),
@@ -49,6 +48,16 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     "resource2" -> "resource2Contents"))).toArray
   val fileUrlsParent = List(TestUtils.createJarWithFiles(Map(
     "resource1" -> "resource1Contents-parent"))).toArray
+
+
+  override def beforeAll(): Unit = {
+   super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+   super.afterAll()
+
+  }
 
   test("child first for  individual Jars") {
     val classLoader = new DynamicURLClassLoader(urls2,
@@ -75,7 +84,8 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     assert(fakeClass.getClass === fakeClass2.getClass)
   }
 
-  test("child first") {
+  test("child first from the classpath url") {
+    snc.sql(" create table classpath_test ( x int)")
     val parentLoader = new URLClassLoader(urls2, Utils.getContextOrSparkClassLoader)
     val classLoader = new DynamicURLClassLoader(urls, parentLoader, parentFirst = false)
     val fakeClass = classLoader.loadClass("FakeClass2").newInstance()
@@ -83,6 +93,7 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     assert(fakeClassVersion === "1")
     val fakeClass2 = classLoader.loadClass("FakeClass2").newInstance()
     assert(fakeClass.getClass === fakeClass2.getClass)
+    snc.sql(" drop table classpath_test ")
   }
 
   test("parent first") {
@@ -107,7 +118,7 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     val parentLoader = new URLClassLoader(urls2, null)
     val classLoader =
       new DynamicURLClassLoader(urls, parentLoader, parentFirst = true)
-    intercept[CacheClosedException] {
+    intercept[ClassNotFoundException] {
       classLoader.loadClass("FakeClassDoesNotExist").newInstance()
     }
   }
@@ -153,7 +164,7 @@ class DynamicURLClassLoaderSuite extends SparkFunSuite with Matchers {
     assert(res1.size === 2)
     assert(classLoader.getResources("resource2").asScala.size === 1)
 
-    res1.map(scala.io.Source.fromURL(_).mkString) should contain inOrderOnly
-        ("resource1Contents-child", "resource1Contents-parent")
+    res1.map(scala.io.Source.fromURL(_).mkString).toSeq.equals(
+        Seq("resource1Contents-child", "resource1Contents-parent"))
   }
 }

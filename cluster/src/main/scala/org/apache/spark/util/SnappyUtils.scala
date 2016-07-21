@@ -17,23 +17,35 @@
 
 package org.apache.spark.util
 
+import java.net.URL
 import java.security.SecureClassLoader
-
 import com.pivotal.gemfirexd.internal.engine.Misc
+import org.apache.spark.TestUtils
 
 object SnappyUtils {
 
   def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader =
     new SecureClassLoader(parent) {
-    override def loadClass(name: String): Class[_] = {
-      try {
+      override def loadClass(name: String): Class[_] = {
+        try {
           parent.loadClass(name)
-      } catch {
-        case cnfe: ClassNotFoundException =>
-          Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+        } catch {
+          case cnfe: ClassNotFoundException =>
+            Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(name)
+        }
       }
     }
+
+
+  def createJarWithClasses(
+      classNames: Seq[String],
+      toStringValue: String = "",
+      classNamesWithBase: Seq[(String, String)] = Seq(),
+      classpathUrls: Seq[URL] = Seq()): URL = {
+
+    TestUtils.createJarWithClasses(classNames, toStringValue, classNamesWithBase, classpathUrls)
   }
+
 }
 
 

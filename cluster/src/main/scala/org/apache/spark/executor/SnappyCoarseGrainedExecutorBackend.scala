@@ -23,7 +23,6 @@ import io.snappydata.cluster.ExecutorInitiator
 import org.apache.spark.SparkEnv
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.rpc.RpcEnv
-import org.apache.spark.scheduler.cluster.CoarseGrainedClusterMessages.RegisteredExecutor
 import org.apache.spark.sql.SnappyContext
 
 class SnappyCoarseGrainedExecutorBackend(
@@ -40,15 +39,6 @@ class SnappyCoarseGrainedExecutorBackend(
   override def onStop() {
     SnappyContext.clearStaticArtifacts()
     exitWithoutRestart()
-  }
-
-  override def receive: PartialFunction[Any, Unit] = {
-    case RegisteredExecutor(hostname) =>
-      logInfo("Successfully registered with driver")
-      executor = new SnappyExecutor(executorId, hostname, env, userClassPath, isLocal = false)
-
-    case _ =>
-      super.receive
   }
 
   override def onStart(): Unit = {
@@ -86,4 +76,7 @@ class SnappyCoarseGrainedExecutorBackend(
 
     SparkHadoopUtil.get.stopExecutorDelegationTokenRenewer()
   }
+
+  override def registerExecutor(hostname: String): Executor =
+    new SnappyExecutor(executorId, hostname, env, userClassPath, isLocal = false)
 }
