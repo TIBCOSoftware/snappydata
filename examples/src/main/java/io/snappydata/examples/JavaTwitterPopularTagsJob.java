@@ -7,17 +7,15 @@ import java.util.Map;
 
 import com.typesafe.config.Config;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.DataFrame;
-import org.apache.spark.sql.SnappyJobValid;
-import org.apache.spark.sql.SnappyJobValidation;
+import org.apache.spark.sql.DataFrame;it 
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
+import org.apache.spark.sql.SnappyJobValid;
+import org.apache.spark.sql.SnappyJobValidation;
 import org.apache.spark.sql.streaming.SchemaDStream;
-import org.apache.spark.sql.streaming.SnappyStreamingJob;
 import org.apache.spark.sql.types.StructField;
 import org.apache.spark.sql.types.StructType;
 import org.apache.spark.streaming.JavaSnappyStreamingJob;
-import org.apache.spark.streaming.SnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaSnappyStreamingContext;
 import org.apache.spark.streaming.api.java.JavaDStream;
 

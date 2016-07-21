@@ -16,19 +16,18 @@
  */
 package org.apache.spark.sql.streaming
 
-import com.typesafe.config.{Config, ConfigException}
+import com.typesafe.config.{ConfigException, Config}
 import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
-import spark.jobserver.{ContextLike, SparkJobBase, SparkJobValidation}
+import spark.jobserver.{SparkJobValidation, ContextLike, SparkJobBase}
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{SnappyJobValidate, SnappyJobValidation}
-import org.apache.spark.streaming.{Milliseconds, SnappyStreamingContext}
+import org.apache.spark.sql.{SnappyJobValidation, SnappyJobValidate}
+import org.apache.spark.streaming.{JavaSnappyStreamingJob, Milliseconds, SnappyStreamingContext}
 import org.apache.spark.util.{SnappyUtils, Utils}
 
 abstract class SnappyStreamingJob extends SparkJobBase {
- final type C = Any
-
+  override type C = SnappyStreamingContext
   final override def validate(sc: C, config: Config): SparkJobValidation = {
     val parentLoader = Utils.getContextOrSparkClassLoader
     val currentLoader = SnappyUtils.getSnappyStoreContextLoader(parentLoader)
@@ -46,7 +45,6 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
 }
 
-
 class SnappyStreamingContextFactory extends SparkContextFactory {
 
   override type C = SnappyStreamingContext with ContextLike
@@ -57,7 +55,8 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
     new SnappyStreamingContext(LeadImpl.getInitializingSparkContext,
       Milliseconds(interval)) with ContextLike {
 
-      override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappyStreamingJob]
+      override def isValidJob(job: SparkJobBase): Boolean =
+        job.isInstanceOf[SnappyStreamingJob] || job.isInstanceOf[JavaSnappyStreamingJob]
 
       override def stop(): Unit = {
         try {

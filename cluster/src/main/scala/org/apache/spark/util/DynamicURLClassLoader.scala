@@ -17,6 +17,7 @@
 
 package org.apache.spark.util
 
+import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util
 import scala.language.existentials
@@ -41,13 +42,37 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
   override def addURL(url: URL): Unit = {
     // workaround to identify the files loaded by the job server as
     // it always creates a new file with timestamp.
-    val key = if (url.getFile.lastIndexOf(JOB_SERVER_TEXT) > 0 ) {
+    val key = if (url.getFile.lastIndexOf(JOB_SERVER_TEXT) > 0) {
       url.getFile.substring(0, url.getFile.lastIndexOf(JOB_SERVER_TEXT))
     } else url.getFile
 
-    val loader = if (parentFirst) new MutableURLClassLoader(Array(url), parent)
-    else new ChildFirstURLClassLoader(Array(url), parent)
+    val loader = getClassLoader(url)
     urlList.put(url.getPath, loader)
+  }
+
+  private def getClassLoader(url: URL): MutableURLClassLoader = {
+    if (parentFirst) new MutableURLClassLoader(Array(url), parent) {
+      override def finalize(): Unit = {
+        // attempt to delete the file from the file system as it is not needed now.
+        // it is okay still if it can not delete the file
+        super.finalize()
+        try {
+          new File(url.getPath).delete()
+        } catch {
+          case _: Throwable => {}
+        }
+
+      }
+    }
+    else new ChildFirstURLClassLoader(Array(url), parent) {
+      super.finalize()
+      try {
+        new File(url.getPath).delete()
+      } catch {
+        case _: Throwable => {}
+      }
+
+    }
   }
 
   override def getURLs(): Array[URL] = {
@@ -128,7 +153,8 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
   @throws[ClassNotFoundException]
   private def loadFromStore(className: String, throwException: Boolean): Option[Class[_]] =
     loadClassFunction(() => {
-      Some(Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(className)) },
+      Some(Misc.getMemStore.getDatabase.getClassFactory.loadClassFromDB(className))
+    },
       throwException)
 }
 
