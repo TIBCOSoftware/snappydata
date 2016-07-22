@@ -29,9 +29,11 @@ class SnappyExecutor(
     isLocal: Boolean = false)
     extends Executor(executorId, executorHostname, env, userClassPath , isLocal) {
 
+  private val overwriteFiles = env.conf.getBoolean("spark.files.overwrite", false)
+
   override def createClassLoader(urls: Array[URL],
       parentLoader: ClassLoader, userClassPathFirst: Boolean): MutableURLClassLoader = {
-    new DynamicURLClassLoader(urls, parentLoader, parentFirst = !userClassPathFirst)
+    new DynamicURLClassLoader(urls, parentLoader, parentFirst = !userClassPathFirst , overwriteFiles)
   }
 
 }

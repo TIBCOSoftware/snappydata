@@ -7,7 +7,7 @@ import java.util.Map;
 
 import com.typesafe.config.Config;
 import org.apache.spark.api.java.function.VoidFunction;
-import org.apache.spark.sql.DataFrame;it 
+import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SaveMode;
 import org.apache.spark.sql.SnappyJobValid;

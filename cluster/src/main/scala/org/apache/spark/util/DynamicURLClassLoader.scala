@@ -27,7 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import sun.misc.CompoundEnumeration
 
 private[spark] class DynamicURLClassLoader(urls: Array[URL],
-    parentClassLoader: ClassLoader, parentFirst: Boolean)
+    parentClassLoader: ClassLoader, parentFirst: Boolean, overwriteFiles: Boolean = false)
     extends MutableURLClassLoader(Array[URL](), parentClassLoader) {
   final private val JOB_SERVER_TEXT = "_SNAPPY_JOB_SERVER_JAR_"
 
@@ -47,32 +47,42 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
     } else url.getFile
 
     val loader = getClassLoader(url)
+    // close the old loader
+    if (urlList.containsKey(key)) { urlList.get(key).close() }
     urlList.put(url.getPath, loader)
   }
 
   private def getClassLoader(url: URL): MutableURLClassLoader = {
     if (parentFirst) new MutableURLClassLoader(Array(url), parent) {
-      override def finalize(): Unit = {
+
+      override def close(): Unit = {
+        super.close()
         // attempt to delete the file from the file system as it is not needed now.
         // it is okay still if it can not delete the file
-        super.finalize()
         try {
-          new File(url.getPath).delete()
+          if (!overwriteFiles) new File(url.getPath).delete()
         } catch {
-          case _: Throwable => {}
+          case _: Throwable => {
+            // do nothing.
+          }
         }
-
       }
     }
+
     else new ChildFirstURLClassLoader(Array(url), parent) {
-      super.finalize()
-      try {
-        new File(url.getPath).delete()
-      } catch {
-        case _: Throwable => {}
-      }
+      override def close(): Unit = {
+        super.close()
+        try {
+          if (!overwriteFiles) new File(url.getPath).delete()
+        } catch {
+          case _: Throwable => {
+            // do nothing.
+          }
 
+        }
+      }
     }
+
   }
 
   override def getURLs(): Array[URL] = {
