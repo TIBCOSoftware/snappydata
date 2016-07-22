@@ -277,8 +277,6 @@ def parse_args():
         help="IAM profile name to launch instances under")
 
     (opts, args) = parser.parse_args()
-    # TODO Remove the restriction on number of locators to be one.
-    opts.locators = 1
     if len(args) != 2:
         parser.print_help()
         sys.exit(1)
@@ -407,7 +405,7 @@ def retrieve_ports():
     # files = ['servers', 'locators', 'leads'] include snappy-env.sh too?
     # patterns = ['-client-port=', '-peer-discovery-port=', '-thrift-server-port=', '-spark.shuffle.service.port=', '-spark.ui.port=']
 
-    locator_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/locators', ['-client-port=', '-thrift-server-port=', '-peer-discovery-port='])
+    locator_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/locators', ['-client-port=', '-thrift-server-port=', '-peer-discovery-port=', '-jmx-manager-http-port='])
     server_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/servers', ['-client-port=', '-thrift-server-port='])
     lead_ports = read_ports_from_conf(SNAPPY_AWS_CONF_DIR + '/leads', ['-peer-discovery-port=', '-spark.shuffle.service.port=', '-spark.ui.port='])
     return (locator_ports, server_ports, lead_ports)
