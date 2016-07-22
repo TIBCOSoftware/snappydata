@@ -62,6 +62,13 @@ public class SnappyTest implements Serializable {
     private static String SnappyShellPath = productBinDir + "snappy-shell";
     private static String dtests = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "dtests" + sep;
     private static String dtestsLibsDir = dtests + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String clusterLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "cluster" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String storeTestsSqlLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "store" + sep + "tests" + sep + "sql" + sep + "build-artifacts" + sep + "linux" + sep + "libs" + sep;
+    private static String storeTestsCoreLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "store" + sep + "tests" + sep + "core" + sep + "build-artifacts" + sep + "linux" + sep + "libs" + sep;
+    private static String sparkStreamingLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "spark" + sep + "streaming" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String sparkExamplesLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "spark" + sep + "examples" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String snappyExamplesLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "examples" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
+    private static String aqpLibsDir = gemfireHome + ".." + sep + ".." + sep + ".." + sep + "aqp" + sep + "build-artifacts" + sep + "scala-2.10" + sep + "libs" + sep;
     private static String dtestsResourceLocation = dtests + "src" + sep + "resources" + sep;
     private static String dtestsScriptLocation = dtestsResourceLocation + "scripts" + sep;
     private static String dtestsDataLocation = dtestsResourceLocation + "data" + sep;
@@ -158,9 +165,33 @@ public class SnappyTest implements Serializable {
     protected String getUserAppJarLocation(String userAppJar) {
         String jarPath = null;
         jarPath = dtestsLibsDir + userAppJar;
+        if (new File(jarPath).exists()) return jarPath;
+        jarPath = productLibsDir + userAppJar;
         if (!new File(jarPath).exists()) {
-            String s = "User App jar doesn't exists at expected location: " + dtestsLibsDir;
-            throw new TestException(s);
+            jarPath = clusterLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else
+                jarPath = storeTestsSqlLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else
+                jarPath = storeTestsCoreLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else
+                jarPath = sparkStreamingLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else
+                jarPath = sparkExamplesLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else
+                jarPath = snappyExamplesLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else
+                jarPath = aqpLibsDir + userAppJar;
+            if (new File(jarPath).exists()) return jarPath;
+            else {
+                String s = "User App jar doesn't exists at any expected location.";
+                throw new TestException(s);
+            }
         }
         return jarPath;
     }
@@ -1559,7 +1590,7 @@ public class SnappyTest implements Serializable {
                 File log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + "jobStatus_" + RemoteTestModule.getCurrentThread().getThreadId() + "_" + System.currentTimeMillis() + ".log";
                 File commandOutput = new File(dest);
-                String expression = snappyJobScript + " status --lead " + leadHost + ":" + LEAD_PORT + " --job-id " + str + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": \"FINISHED\"' -e 'curl:' " + commandOutput + " | wc -l)\"";
+                String expression = snappyJobScript + " status --lead " + leadHost + ":" + LEAD_PORT + " --job-id " + str + " > " + commandOutput + " 2>&1 ; grep -e '\"status\": \"FINISHED\"' -e 'curl:' -e '\"status\": \"ERROR\"' " + commandOutput + " | wc -l)\"";
                 String command = "while [ \"$(" + expression + " -le  0 ] ; do rm " + commandOutput + " ;  touch " + commandOutput + "  ; done";
                 ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
                 Log.getLogWriter().info("job " + str + " starts at: " + System.currentTimeMillis());
