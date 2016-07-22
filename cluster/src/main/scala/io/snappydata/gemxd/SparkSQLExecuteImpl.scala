@@ -93,7 +93,7 @@ class SparkSQLExecuteImpl(val sql: String,
     var blockReadSuccess = false
     try {
       // get the results and put those in block manager to avoid going OOM
-      handler(resultsRdd, df)
+      snc.handleErrorLimitExceeded[Unit](handler.apply, resultsRdd, df, df.queryExecution.logical)
 
       hdos.clearForReuse()
       var metaDataSent = false
