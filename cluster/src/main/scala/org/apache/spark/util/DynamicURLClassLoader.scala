@@ -20,15 +20,16 @@ package org.apache.spark.util
 import java.io.File
 import java.net.{URL, URLClassLoader}
 import java.util
-import scala.language.existentials
+
 import scala.collection.JavaConverters._
+import scala.language.existentials
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import sun.misc.CompoundEnumeration
-
+import org.apache.spark.Logging
 private[spark] class DynamicURLClassLoader(urls: Array[URL],
     parentClassLoader: ClassLoader, parentFirst: Boolean, overwriteFiles: Boolean = false)
-    extends MutableURLClassLoader(Array[URL](), parentClassLoader) {
+    extends MutableURLClassLoader(Array[URL](), parentClassLoader) with  Logging {
   final private val JOB_SERVER_TEXT = "_SNAPPY_JOB_SERVER_JAR_"
 
   private val urlList = new util.TreeMap[String, URLClassLoader]()
@@ -47,42 +48,27 @@ private[spark] class DynamicURLClassLoader(urls: Array[URL],
     } else url.getFile
 
     val loader = getClassLoader(url)
-    // close the old loader
-    if (urlList.containsKey(key)) { urlList.get(key).close() }
-    urlList.put(url.getPath, loader)
+    def oldURL = if (urlList.containsKey(key)) urlList.get(key).getURLs.head.getPath else ""
+
+    if (!oldURL.isEmpty && !oldURL.equals(url.getPath)) {
+      // try to remove the old file. it is  okay if not successful
+      try {
+        logInfo(" Deleting the Loader with key:" + key + " with File: " + oldURL )
+        new File(oldURL).delete()
+      } catch {
+        case _: Throwable => {
+          // do nothing.
+        }
+      }
+    }
+
+    logInfo(" Adding new Loader with key:" + key + " with File: " + url.getPath )
+    urlList.put(key, loader)
   }
 
   private def getClassLoader(url: URL): MutableURLClassLoader = {
-    if (parentFirst) new MutableURLClassLoader(Array(url), parent) {
-
-      override def close(): Unit = {
-        super.close()
-        // attempt to delete the file from the file system as it is not needed now.
-        // it is okay still if it can not delete the file
-        try {
-          if (!overwriteFiles) new File(url.getPath).delete()
-        } catch {
-          case _: Throwable => {
-            // do nothing.
-          }
-        }
-      }
-    }
-
-    else new ChildFirstURLClassLoader(Array(url), parent) {
-      override def close(): Unit = {
-        super.close()
-        try {
-          if (!overwriteFiles) new File(url.getPath).delete()
-        } catch {
-          case _: Throwable => {
-            // do nothing.
-          }
-
-        }
-      }
-    }
-
+    if (parentFirst) new MutableURLClassLoader(Array(url), parent)
+    else new ChildFirstURLClassLoader(Array(url), parent)
   }
 
   override def getURLs(): Array[URL] = {

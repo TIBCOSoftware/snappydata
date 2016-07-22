@@ -17,6 +17,7 @@
 
 package org.apache.spark.util
 
+import java.io.File
 import java.net.URL
 import java.security.SecureClassLoader
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -41,9 +42,21 @@ object SnappyUtils {
       classNames: Seq[String],
       toStringValue: String = "",
       classNamesWithBase: Seq[(String, String)] = Seq(),
-      classpathUrls: Seq[URL] = Seq()): URL = {
-
-    TestUtils.createJarWithClasses(classNames, toStringValue, classNamesWithBase, classpathUrls)
+      classpathUrls: Seq[URL] = Seq(),
+      jarName: String = ""
+      ): URL = {
+    val tempDir = Utils.createTempDir()
+    val files1 = for (name <- classNames) yield {
+      TestUtils.createCompiledClass(name, tempDir, toStringValue, classpathUrls = classpathUrls)
+    }
+    val files2 = for ((childName, baseName) <- classNamesWithBase) yield {
+      TestUtils.createCompiledClass(childName, tempDir, toStringValue, baseName, classpathUrls)
+    }
+    val jarFile = if (jarName.isEmpty) {
+      new File(tempDir, "testJar-%s.jar".format(System.currentTimeMillis()))
+    }
+    else new File(tempDir, jarName.format(System.currentTimeMillis()))
+    TestUtils.createJar(files1 ++ files2, jarFile)
   }
 
 }

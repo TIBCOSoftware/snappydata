@@ -60,8 +60,10 @@ class DynamicJarInstallationDUnitTest(val s: String)
 
     // replace the jar file and load again
 
-    val modifiedJarPath = DynamicJarInstallationDUnitTest.getModifiedJar
-    sc.addJar(modifiedJarPath)
+    val modifiedJarPath = DynamicJarInstallationDUnitTest.modified
+
+    sc.addJar(modifiedJarPath.getPath)
+
 
     // loading Jar class after installing the  jar
     countInstances = Utility.mapExecutors(snc,
@@ -82,14 +84,15 @@ class DynamicJarInstallationDUnitTest(val s: String)
       }).count
 
     assert(countInstances == 3)
-
   }
 
   def testJarDeployementwithSnappyshell(): Unit = {
     val snc = SnappyContext(sc)
     val sqlJars = SnappyUtils.createJarWithClasses(
       classNames = Seq("FakeClass4", "FakeClass5", "FakeClass6"),
-      toStringValue = "3")
+      toStringValue = "3" ,
+      Seq.empty, Seq.empty ,
+      "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
     // test basic operations on snappyContext
     snc.sql("create table test (x int) using column")
@@ -125,7 +128,6 @@ class DynamicJarInstallationDUnitTest(val s: String)
       }).count
 
     assert(countInstances == 0)
-    
   }
 }
 
@@ -134,10 +136,15 @@ object DynamicJarInstallationDUnitTest {
 
   val original = SnappyUtils.createJarWithClasses(
     classNames = Seq("FakeClass1", "FakeClass2", "FakeClass3"),
-    toStringValue = "1")
+    toStringValue = "1",
+    Seq.empty, Seq.empty ,
+    "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
+
   val modified = SnappyUtils.createJarWithClasses(
     classNames = Seq("FakeClass2", "FakeClass3", "FakeClass4"),
-    toStringValue = "2")
+    toStringValue = "2",
+    Seq.empty, Seq.empty ,
+    "testJar_SNAPPY_JOB_SERVER_JAR_%s.jar".format(System.currentTimeMillis()))
 
   @throws[ClassNotFoundException]
   def loadClass(className: String,
@@ -161,9 +168,9 @@ object DynamicJarInstallationDUnitTest {
     val oldFile = new File(original.getPath)
     val newFile = new File(modified.getPath)
     if (oldFile.exists()) {
-      oldFile.delete()
+     assert( oldFile.delete() == true)
     }
-    newFile.renameTo(oldFile)
+    assert (newFile.renameTo(oldFile) == true)
     oldFile.getAbsolutePath
   }
 }
