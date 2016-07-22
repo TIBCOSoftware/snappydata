@@ -37,14 +37,14 @@ import org.apache.spark.{Logging, Partition}
  * A LogicalPlan implementation for an external row table whose contents
  * are retrieved using a JDBC URL or DataSource.
  */
-class JDBCMutableRelation(
-    val connProperties: ConnectionProperties,
-    val table: String,
-    val provider: String,
+case class JDBCMutableRelation(
+    connProperties: ConnectionProperties,
+    table: String,
+    provider: String,
     mode: SaveMode,
     userSpecifiedString: String,
-    val parts: Array[Partition],
-    val origOptions: Map[String, String],
+    parts: Array[Partition],
+    origOptions: Map[String, String],
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedFilteredScan
