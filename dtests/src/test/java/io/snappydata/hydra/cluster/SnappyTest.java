@@ -162,38 +162,22 @@ public class SnappyTest implements Serializable {
                 .getVmDescription().getHostDescription();
     }
 
-    protected String getUserAppJarLocation(String userAppJar) {
-        String jarPath = null;
-        jarPath = dtestsLibsDir + userAppJar;
-        if (new File(jarPath).exists()) return jarPath;
-        jarPath = productLibsDir + userAppJar;
-        if (!new File(jarPath).exists()) {
-            jarPath = clusterLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else
-                jarPath = storeTestsSqlLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else
-                jarPath = storeTestsCoreLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else
-                jarPath = sparkStreamingLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else
-                jarPath = sparkExamplesLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else
-                jarPath = snappyExamplesLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else
-                jarPath = aqpLibsDir + userAppJar;
-            if (new File(jarPath).exists()) return jarPath;
-            else {
-                String s = "User App jar doesn't exists at any expected location.";
-                throw new TestException(s);
+    protected static String getUserAppJarLocation(final String jarName) {
+        String userAppJarPath = null;
+        String jarPath = dtests + ".." + sep;
+        File baseDir = new File(jarPath);
+        try {
+            String[] extensions = new String[]{"jar"};
+            List<File> files = (List<File>) FileUtils.listFiles(baseDir, extensions, true);
+            for (File file : files) {
+                if (file.getName().startsWith(jarName)) {
+                    userAppJarPath = file.getAbsolutePath();
+                }
             }
+        } catch (Exception e) {
+            Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
         }
-        return jarPath;
+        return userAppJarPath;
     }
 
     protected String getDataLocation(String paramName) {
@@ -1430,8 +1414,6 @@ public class SnappyTest implements Serializable {
 
     protected void executeSnappyJob(Vector jobClassNames, String logFileName) {
         String snappyJobScript = getScriptLocation("snappy-job.sh");
-        String curlCommand1 = null, curlCommand2 = null;
-        ProcessBuilder pb = null;
         File log = null, logFile = null;
         userAppJar = SnappyPrms.getUserAppJar();
         snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
@@ -1445,9 +1427,9 @@ public class SnappyTest implements Serializable {
                 } else {
                     APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
                 }
-                curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
-                curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + LEAD_PORT + "/jobs?appName=myapp&classPath=" + userJob + "'";
-                pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
+                String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar) + " " + leadHost + ":" + LEAD_PORT + "/jars/myapp";
+                String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + LEAD_PORT + "/jobs?appName=myapp&classPath=" + userJob + "'";
+                ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", curlCommand1);
                 log = new File(".");
                 String dest = log.getCanonicalPath() + File.separator + logFileName;
                 logFile = new File(dest);
@@ -2015,10 +1997,10 @@ public class SnappyTest implements Serializable {
 
     protected List<ClientVmInfo> stopStartVMs(int numToKill, boolean isLead) {
         if (isLead) {
-            log().info("cycle lead vm starts at: " + System.currentTimeMillis());
+            log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
             return stopStartVMs(numToKill, cycleLeadVMTarget, true);
         } else {
-            log().info("cycle store vm starts at: " + System.currentTimeMillis());
+            log().info("stopStartVMs : cycle store vm starts at: " + System.currentTimeMillis());
             return stopStartVMs(numToKill, cycleVMTarget, false);
         }
     }
