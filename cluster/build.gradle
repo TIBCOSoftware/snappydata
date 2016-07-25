@@ -218,32 +218,17 @@ task generateSnappydataZeppelinInterpreterJar(type: Jar, dependsOn: compileScala
   duplicatesStrategy = DuplicatesStrategy.EXCLUDE
   from sourceSets.main.output.classesDir
   jar.includeEmptyDirs = false
-
+  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
   from {
     configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
   }
   from('src/main/resources/snappydata'){
     include 'interpreter-setting.json'
+    include 'ansi.sql.keywords'
   }
   jar.includeEmptyDirs = false
 
   include 'org/apache/zeppelin/spark/**'
-
-  include 'org/apache/zeppelin/interpreter/**'
-  exclude 'org/apache/zeppelin/interpreter/SnappydataSqlZeppelinInterpreter**'
-  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
-}
-
-task generateSnappydataSqlZeppelinInterpreterJar(type: Jar, dependsOn: compileScala) {
-  zip64 = true
-  duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-  from sourceSets.main.output.classesDir
-  jar.includeEmptyDirs = false
-  //from('src/main/resources/snappydatasql')
-  from {
-    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
-  }
-
   include 'org/apache/zeppelin/jdbc/**'
   include 'org/apache/zeppelin/scheduler/**'
   include 'org/apache/zeppelin/interpreter/**'
@@ -253,15 +238,9 @@ task generateSnappydataSqlZeppelinInterpreterJar(type: Jar, dependsOn: compileSc
   include 'jline/internal/**'
   include 'jline/**'
   include 'org/apache/commons/lang/**'
-  from('src/main/resources/snappydatasql'){
-    include 'ansi.sql.keywords'
-    include 'interpreter-setting.json'
-  }
-  // include 'src/main/resources/snappydatasql/interpreter-setting.json'
-  //exclude 'interpreter-setting.json'
-  exclude 'org/apache/zeppelin/interpreter/SnappydataZeppelinInterpreter**'
-  //append('resources/snappydatasql/interpreter-setting.json')
-  archiveName 'snappydatasql-zeppelin-interpreter-' + version + '.jar'
 
+  include 'org/apache/zeppelin/interpreter/**'
+ // exclude 'org/apache/zeppelin/interpreter/SnappydataSqlZeppelinInterpreter**'
+  archiveName 'snappydata-zeppelin-interpreter-'+version+'.jar'
 }
 

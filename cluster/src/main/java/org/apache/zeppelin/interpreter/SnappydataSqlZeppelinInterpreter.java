@@ -62,8 +62,6 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
   @Override
   public InterpreterResult interpret(String cmd, InterpreterContext contextInterpreter) {
     String id = contextInterpreter.getParagraphId();
-    logger.info(id + " FirstTime = " + firstTime + " this " + this.hashCode() + " scheduler "
-        + getScheduler(), new Exception("SJ:"));
 
     if (cmd.trim().startsWith("approxResultFirst=true")) {
       cmd = cmd.replaceFirst("approxResultFirst=true", "");
@@ -74,13 +72,9 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
           if (id.equals(r.getParagraphId())) {
 
 
-            logger.info("Executing cmd before " + cmd);
-            final InterpreterResult res = super.interpret(cmd, contextInterpreter);
-            logger.info("Executing cmd after  schedule ");
+            final InterpreterResult res = super.interpret(cmd, contextInterpreter);;
 
             queue.add(r);
-
-            logger.info("Some delay before returning orig query result");
 
             return res;
           }
@@ -88,7 +82,6 @@ public class SnappydataSqlZeppelinInterpreter extends JDBCInterpreter {
 
       } else {
         firstTime = true;
-        logger.info("Before delay ");
         /*
          * try { Thread.sleep(10000); } catch (InterruptedException e) { e.printStackTrace(); }
          */
