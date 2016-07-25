@@ -161,7 +161,7 @@ task sparkPackagePom(dependsOn: shadowJar) << {
   file("${rootProject.buildDir}/distributions").mkdirs()
   pom {
     project {
-      groupId 'snappydatainc'
+      groupId 'SnappyDataInc'
       artifactId 'snappydata'
       version "${version}-s_${scalaBinaryVersion}"
       licenses {
