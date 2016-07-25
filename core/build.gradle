@@ -155,7 +155,7 @@ shadowJar {
 }
 
 // write the POM for spark-package
-String sparkPackageName = "snappydata-${version}"
+String sparkPackageName = "snappydata-${version}-s_${scalaBinaryVersion}"
 
 task sparkPackagePom(dependsOn: shadowJar) << {
   file("${rootProject.buildDir}/distributions").mkdirs()
