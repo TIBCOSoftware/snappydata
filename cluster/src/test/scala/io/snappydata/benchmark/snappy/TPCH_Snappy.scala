@@ -2,7 +2,7 @@ package io.snappydata.benchmark.snappy
 
 import java.io.{File, FileOutputStream, PrintStream}
 
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{Row, DataFrame, SQLContext}
 
 /**
   * Created by kishor on 27/10/15.
@@ -14,11 +14,18 @@ object TPCH_Snappy {
 
   var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
   var avgPrintStream:PrintStream = new PrintStream(avgFileStream)
+  var planFileStream: FileOutputStream = null
+  var planprintStream:PrintStream = null
 
-   def close(): Unit ={
-     avgPrintStream.close()
-     avgFileStream.close()
-   }
+
+  def close(): Unit = {
+    avgPrintStream.close()
+    avgFileStream.close()
+    if (planFileStream != null) {
+      planprintStream.close
+      planFileStream.close()
+    }
+  }
 
    def execute(queryNumber: String, sqlContext: SQLContext, isResultCollection: Boolean,
                isSnappy:Boolean, itr : Int, useIndex: Boolean): Unit = {
@@ -61,7 +68,7 @@ object TPCH_Snappy {
      try {
        println(s"Started executing $queryNumber")
        if (isResultCollection) {
-         val cnts = queryExecution(queryNumber, sqlContext, isSnappy, useIndex)
+         val cnts = queryExecution(queryNumber, sqlContext, isSnappy, useIndex, true)
          //val cnts = snappyContext.sql(query).collect()
          println(s"$queryNumber : ${cnts.length}")
 
@@ -110,133 +117,217 @@ object TPCH_Snappy {
      }
    }
 
-   def queryExecution(queryNumber:String, sqlContext: SQLContext, isSnappy:Boolean, useIndex: Boolean) :
-      scala.Array[org.apache.spark.sql.Row]  = {
-     //val snappyContext  = SnappyContext.getOrCreate(sc)
+  def printPlan(genPlan : Boolean, df: DataFrame, query: String): Unit = {
+    if (genPlan) {
+      planprintStream.println(query)
+      planprintStream.println(df.queryExecution.executedPlan)
+    }
+  }
+  def queryExecution(queryNumber:String, sqlContext: SQLContext, isSnappy:Boolean, useIndex: Boolean, genPlan: Boolean = false) :
+  scala.Array[org.apache.spark.sql.Row]  = {
+    //val snappyContext  = SnappyContext.getOrCreate(sc)
+    if (planFileStream == null && genPlan) {
+      planFileStream = new FileOutputStream(new File(s"Plan.out"))
+      planprintStream = new PrintStream(planFileStream)
+    }
 
-     val cnts : scala.Array[org.apache.spark.sql.Row] = queryNumber match {
-       case "q1s" => {
-         val df = sqlContext.sql(getSampledQuery1())
-         df.collect()
-       }
+    val cnts : scala.Array[org.apache.spark.sql.Row] = queryNumber match {
+      case "q1s" => {
+        val df = sqlContext.sql(getSampledQuery1())
+        df.collect()
+      }
 
-       case "q3s" => {
-         val df = sqlContext.sql(getSampledQuery3())
-         val cnt = df.collect()
-         cnt
-       }
+      case "q3s" => {
+        val df = sqlContext.sql(getSampledQuery3())
+        val cnt = df.collect()
+        cnt
+      }
 
-       case "q5s" => {
-         sqlContext.sql(getSampledQuery5()).collect()
-       }
+      case "q5s" => {
+        sqlContext.sql(getSampledQuery5()).collect()
+      }
 
-       case "q6s" => {
-         sqlContext.sql(getSampledQuery6()).collect()
-       }
+      case "q6s" => {
+        sqlContext.sql(getSampledQuery6()).collect()
+      }
 
-       case "q10s" => {
-         sqlContext.sql(getSampledQuery10()).collect()
-       }
-       case "q1" => {
-         sqlContext.sql(getQuery1()).collect()
-       }
-       case "q2" => {
-         val result = sqlContext.sql(getTempQuery2(isSnappy))
-         result.registerTempTable("ViewQ2")
-         sqlContext.sql(getQuery2(isSnappy)).collect()
-       }
-       case "q3" => {
-         sqlContext.sql(getQuery3()).collect()
-       }
-       case "q4" => {
-         sqlContext.sql(getQuery4()).collect()
-       }
-       case "q5" => {
-         sqlContext.sql(getQuery5(isSnappy)).collect()
-       }
-       case "q6" => {
-         sqlContext.sql(getQuery6()).collect()
-       }
-       case "q7" => {
-         sqlContext.sql(getQuery7(isSnappy)).collect()
-       }
-       case "q8" => {
-         sqlContext.sql(getQuery8(isSnappy, useIndex)).collect()
-       }
-       case "q9" => {
-         sqlContext.sql(getQuery9(isSnappy, useIndex)).collect()
-       }
-       case "q10" => {
-         sqlContext.sql(getQuery10(isSnappy)).collect()
-       }
-       case "q11" => {
-         val result = sqlContext.sql(getTempQuery11(isSnappy))
-         val res = result.collect()
-         assert(res.length == 1)
-         if(isSnappy) {
-           //sqlContext.sql(getQuery11(res(0).getDecimal(0), isSnappy)).collect()
-           sqlContext.sql(getQuery11(res(0).getDouble(0), isSnappy)).collect()
-         }else{
-           sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0)), isSnappy)).collect()
-         }
-       }
-       case "q12" => {
-         sqlContext.sql(getQuery12()).collect()
-       }
-       case "q13" => {
-         val result = sqlContext.sql(getTempQuery13(useIndex))
-         result.registerTempTable("ViewQ13")
-         sqlContext.sql(getQuery13()).collect()
-       }
-       case "q14" => {
-         sqlContext.sql(getQuery14(isSnappy, useIndex)).collect()
-       }
-       case "q15" => {
-         var result = sqlContext.sql(getTempQuery15_1())
-         result.registerTempTable("revenue")
+      case "q10s" => {
+        sqlContext.sql(getSampledQuery10()).collect()
+      }
+      case "q1" => {
+        val df = sqlContext.sql(getQuery1())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q1")
+        res
+      }
+      case "q2" => {
+        val result = sqlContext.sql(getTempQuery2(isSnappy))
+        result.registerTempTable("ViewQ2")
+        val df = sqlContext.sql(getQuery2(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q2")
+        res
+      }
+      case "q3" => {
+        val df = sqlContext.sql(getQuery3())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q3")
+        res
+      }
+      case "q4" => {
+        val df = sqlContext.sql(getQuery4())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q4")
+        res
+      }
+      case "q5" => {
+        val df = sqlContext.sql(getQuery5(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q5")
+        res
+      }
+      case "q6" => {
+        val df = sqlContext.sql(getQuery6())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q6")
+        res
+      }
+      case "q7" => {
+        val df = sqlContext.sql(getQuery7(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q7")
+        res
+      }
+      case "q8" => {
+        val df = sqlContext.sql(getQuery8(isSnappy, useIndex))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q8")
+        res
+      }
+      case "q9" => {
+        val df = sqlContext.sql(getQuery9(isSnappy, useIndex))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q9")
+        res
+      }
+      case "q10" => {
 
-         result = sqlContext.sql(getTempQuery15_2())
-         result.registerTempTable("ViewQ15")
+        val df = sqlContext.sql(getQuery10(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q10")
+        res
+      }
+      case "q11" => {
+        val result = sqlContext.sql(getTempQuery11(isSnappy))
+        val res: Array[Row] = null
+        result.registerTempTable("ViewQ11")
+        // assert(res.length == 1)
+        var df : DataFrame = null
+        var res1 = res
+        if(isSnappy) {
+          //sqlContext.sql(getQuery11(res(0).getDecimal(0), isSnappy)).collect()
+          df = sqlContext.sql(getQuery11(null, isSnappy))
+          res1 = df.collect()
+        }else{
+          df = sqlContext.sql(getQuery11(BigDecimal.apply(res(0).getDouble(0)), isSnappy))
+          res1 = df.collect()
+        }
+        printPlan(genPlan, df, "Q11")
+        res1
+      }
+      case "q12" => {
+        val df = sqlContext.sql(getQuery12())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q12")
+        res
+      }
+      case "q13" => {
+        val result = sqlContext.sql(getTempQuery13(useIndex))
+        result.registerTempTable("ViewQ13")
+        val df = sqlContext.sql(getQuery13())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q13")
+        res
+      }
+      case "q14" => {
+        val df = sqlContext.sql(getQuery14(isSnappy, useIndex))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q14")
+        res
+      }
+      case "q15" => {
+        var result = sqlContext.sql(getTempQuery15_1())
+        result.registerTempTable("revenue")
 
-         sqlContext.sql(getQuery15(isSnappy)).collect()
-       }
-       case "q16" => {
-         sqlContext.sql(getQuery16(isSnappy)).collect()
-       }
-       case "q17" => {
-         val result = sqlContext.sql(getTempQuery17(useIndex))
-         result.registerTempTable("ViewQ17")
+        result = sqlContext.sql(getTempQuery15_2())
+        result.registerTempTable("ViewQ15")
 
-         sqlContext.sql(getQuery17(isSnappy, useIndex)).collect()
-       }
-       case "q18" => {
-         sqlContext.sql(getQuery18()).collect()
-       }
-       case "q19" => {
-         sqlContext.sql(getQuery19(isSnappy, useIndex)).collect()
-       }
-       case "q20" => {
-         val result = sqlContext.sql(getTempQuery20(useIndex))
-         result.registerTempTable("ViewQ20")
-         sqlContext.sql(getQuery20(isSnappy)).collect()
-       }
-       case "q21" => {
-         sqlContext.sql(getQuery21(isSnappy)).collect()
-       }
-       case "q22" => {
-         val result = sqlContext.sql(getTempQuery22(useIndex))
-         val res = result.collect()
-         assert(res.length == 1)
-         if(isSnappy) {
-           //sqlContext.sql(getQuery22(res(0).getDecimal(0).toString)).collect()
-           sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex)).collect()
-         }else{
-           sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex)).collect()
-         }
-       }
-     }
-     cnts
-   }
+        val df = sqlContext.sql(getQuery15(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q15")
+        res
+      }
+      case "q16" => {
+        val df = sqlContext.sql(getQuery16(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q16")
+        res
+      }
+      case "q17" => {
+        val result = sqlContext.sql(getTempQuery17(useIndex))
+        result.registerTempTable("ViewQ17")
+
+        val df = sqlContext.sql(getQuery17(isSnappy, useIndex))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q17")
+        res
+      }
+      case "q18" => {
+        val df = sqlContext.sql(getQuery18())
+        val res = df.collect()
+        printPlan(genPlan, df, "Q18")
+        res
+      }
+      case "q19" => {
+        val df = sqlContext.sql(getQuery19(isSnappy, useIndex))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q19")
+        res
+      }
+      case "q20" => {
+        val result = sqlContext.sql(getTempQuery20(useIndex))
+        result.registerTempTable("ViewQ20")
+        val df = sqlContext.sql(getQuery20(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q20")
+        res
+      }
+      case "q21" => {
+        val df = sqlContext.sql(getQuery21(isSnappy))
+        val res = df.collect()
+        printPlan(genPlan, df, "Q21")
+        res
+      }
+      case "q22" => {
+        val result = sqlContext.sql(getTempQuery22(useIndex))
+        val res = result.collect()
+        assert(res.length == 1)
+        var df : DataFrame = null
+        var res1 = res
+        if(isSnappy) {
+          //sqlContext.sql(getQuery22(res(0).getDecimal(0).toString)).collect()
+          df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
+          res1 = df.collect()
+        }else{
+          df = sqlContext.sql(getQuery22(res(0).getDouble(0).toString, useIndex))
+          res1 = df.collect()
+        }
+        printPlan(genPlan, df, "Q22")
+        res1
+      }
+    }
+    cnts
+  }
 
 
    def queryPlan(sqlContext: SQLContext, isSnappy: Boolean, useIndex: Boolean): Unit = {

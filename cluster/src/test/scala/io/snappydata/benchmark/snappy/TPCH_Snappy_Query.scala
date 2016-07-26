@@ -1,9 +1,10 @@
 package io.snappydata.benchmark.snappy
 
 import com.typesafe.config.Config
+import org.apache.spark.{SparkContext, SparkConf}
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
 
-import org.apache.spark.sql.SnappySQLJob
+import org.apache.spark.sql.{SQLContext, SnappyContext, SnappySQLJob}
 
 /**
   * Created by kishor on 28/1/16.
@@ -94,6 +95,25 @@ object TPCH_Snappy_Query extends SnappySQLJob{
 
      TPCH_Snappy.close()
    }
+
+  def main (args: Array[String]): Unit = {
+    val isResultCollection = false
+    val isSnappy = true
+
+    val conf = new SparkConf()
+      .setAppName("TPCH")
+      //.setMaster("local[6]")
+      .setMaster("snappydata://localhost:10334")
+      .set("jobserver.enabled", "false")
+    val sc = new SparkContext(conf)
+    val snc =
+      SnappyContext(sc)
+
+
+    snc.sql("set spark.sql.shuffle.partitions=6")
+    queries = Array("16" )
+    runJob(snc, null)
+  }
 
    override def validate(sc: C, config: Config): SparkJobValidation = {
 
