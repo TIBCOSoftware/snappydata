@@ -21,6 +21,9 @@ import com.gemstone.gemfire.LogWriter;
 import com.gemstone.gemfire.SystemFailure;
 import hydra.*;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.IOFileFilter;
+import org.apache.commons.io.filefilter.TrueFileFilter;
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.SnappyContext;
 import sql.SQLBB;
@@ -167,13 +170,14 @@ public class SnappyTest implements Serializable {
         String jarPath = dtests + ".." + sep;
         File baseDir = new File(jarPath);
         try {
-            String[] extensions = new String[]{"jar"};
-            List<File> files = (List<File>) FileUtils.listFiles(baseDir, extensions, true);
-            for (File file : files) {
-                if (file.getName().startsWith(jarName)) {
-                    userAppJarPath = file.getAbsolutePath();
-                }
+            IOFileFilter filter = new WildcardFileFilter(jarName);
+            List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
+            Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
+            if (files.size() != 1) {
+                throw new IllegalStateException(String.format("Searching for a file '%s' did not result in the correct number of files! Found %d, expected %d", jarName, files.size(), 1));
             }
+            File file = files.get(0);
+            userAppJarPath = file.getAbsolutePath();
         } catch (Exception e) {
             Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
         }

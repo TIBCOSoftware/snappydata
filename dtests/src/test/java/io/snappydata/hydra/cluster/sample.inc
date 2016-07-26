@@ -90,7 +90,7 @@ TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = Hy
 
 TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
            io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.AirlineDataQueriesJob
-           io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar
+           io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
            io.snappydata.hydra.cluster.SnappyPrms-numTimesToRetry = 10
            threadGroups = leadThreads
            maxTimesToRun = 3;
