@@ -9,7 +9,7 @@ object TPCH_Memsql_Tables {
    def main(args: Array[String]) {
 
      val host = args(0)
-     val port = 3306
+     val port = 3307
      val dbName = "TPCH"
      val user = "root"
      val password = ""
@@ -29,17 +29,17 @@ object TPCH_Memsql_Tables {
 
      TPCHReplicatedTable.createSupplierTable_Memsql(stmt)
 
-     TPCHRowPartitionedTable.createPartTable_Memsql(stmt)
-
-     TPCHRowPartitionedTable.createPartSuppTable_Memsql(stmt)
-
-     TPCHRowPartitionedTable.createCustomerTable_Memsql(stmt)
-
-//     TPCHColumnPartitionedTable.createPartTable_Memsql(stmt)
+//     TPCHRowPartitionedTable.createPartTable_Memsql(stmt)
 //
-//     TPCHColumnPartitionedTable.createPartSuppTable_Memsql(stmt)
+//    TPCHRowPartitionedTable.createPartSuppTable_Memsql(stmt)
 //
-//     TPCHColumnPartitionedTable.createCustomerTable_Memsql(stmt)
+//     TPCHRowPartitionedTable.createCustomerTable_Memsql(stmt)
+//
+     TPCHColumnPartitionedTable.createPartTable_Memsql(stmt)
+
+     TPCHColumnPartitionedTable.createPartSuppTable_Memsql(stmt)
+
+     TPCHColumnPartitionedTable.createCustomerTable_Memsql(stmt)
 
      TPCHColumnPartitionedTable.createOrderTable_Memsql(stmt)
 

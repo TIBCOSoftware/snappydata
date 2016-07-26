@@ -11,7 +11,7 @@ object TPCH_Memsql_Query {
 
      val host = args(0)
      val queries:Array[String] = args(1).split(",")
-     val port = 3306
+     val port = 3307
      val dbName = "TPCH"
      val user = "root"
      val password = ""
@@ -21,7 +21,7 @@ object TPCH_Memsql_Query {
      val conn = DriverManager.getConnection(dbAddress, user, password)
      val stmt = conn.createStatement
 
-     val isResultCollection = false
+     val isResultCollection =false
 
      stmt.execute("USE " + dbName)
 
