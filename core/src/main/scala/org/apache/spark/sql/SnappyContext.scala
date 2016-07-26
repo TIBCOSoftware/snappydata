@@ -131,6 +131,8 @@ class SnappyContext protected[spark](
   override protected[sql] def executePlan(plan: LogicalPlan) =
     snappyContextFunctions.executePlan(this, plan)
 
+  override def sql(sqlText: String): DataFrame = snappyContextFunctions.sql(super.sql(sqlText))
+
   private[sql] val queryHints: mutable.Map[String, String] = mutable.Map.empty
 
   def getPreviousQueryHints: Map[String, String] = Utils.immutableMap(queryHints)
