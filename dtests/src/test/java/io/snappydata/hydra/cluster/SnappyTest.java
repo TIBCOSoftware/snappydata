@@ -1821,6 +1821,7 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.sparkClusterStarted);
         } catch (IOException e) {
             String s = "problem occurred while retriving destination logFile path " + log;
             throw new TestException(s, e);
@@ -1839,7 +1840,6 @@ public class SnappyTest implements Serializable {
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
             SnappyBB.getBB().getSharedCounters().zero(SnappyBB.leadsStarted);
-            Log.getLogWriter().info("SS - reset the counter for lead started...");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
@@ -1861,7 +1861,6 @@ public class SnappyTest implements Serializable {
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
             SnappyBB.getBB().getSharedCounters().zero(SnappyBB.serversStarted);
-            Log.getLogWriter().info("SS - reset the counter for servers started...");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
@@ -1883,7 +1882,6 @@ public class SnappyTest implements Serializable {
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
             SnappyBB.getBB().getSharedCounters().zero(SnappyBB.locatorsStarted);
-            Log.getLogWriter().info("SS - reset the counter for locators started...");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);

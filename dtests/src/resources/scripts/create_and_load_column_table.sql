@@ -10,7 +10,7 @@ CREATE EXTERNAL TABLE STAGING_AIRLINE
 
 ----- CREATE COLUMN TABLE -----  
 ----- Airline row count is small so we use 11 buckets (i.e. 11 partitions) -----
-CREATE TABLE AIRLINE USING column OPTIONS(buckets '11') AS (
+CREATE TABLE AIRLINE USING column OPTIONS(buckets '11', PERSISTENT "")  AS (
   SELECT Year AS Year_, Month AS Month_ , DayOfMonth,
     DayOfWeek, DepTime, CRSDepTime, ArrTime, CRSArrTime,
     UniqueCarrier, FlightNum, TailNum, ActualElapsedTime,
