@@ -148,6 +148,10 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     ColumnFormatRelation.cachedBatchTableName(table)
   }
 
+  override def snappyInternalSchemaName(): String = {
+    io.snappydata.Constant.INTERNAL_SCHEMA_NAME
+  }
+
 }
 
 trait StoreCallback extends Serializable {

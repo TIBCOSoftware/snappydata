@@ -101,7 +101,7 @@ class CatalogConsistencyTest
 
     // repair the catalog
     val connection = getConnection()
-    getConnection().createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false))
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
@@ -115,7 +115,7 @@ class CatalogConsistencyTest
     snc.catalog.unregisterDataSourceTable(snc.catalog.newQualifiedTableName("column_table1"), None)
 
     // repair the catalog
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     intercept[TableNotFoundException] {
@@ -163,7 +163,7 @@ class CatalogConsistencyTest
 
     // repair the catalog
     val connection = getConnection()
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", isColumnTable = true)
@@ -196,7 +196,7 @@ class CatalogConsistencyTest
         != None)
 
     val connection = getConnection()
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
     //FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     assertTableDoesNotExist(routeQueryDisabledConn, "column_table1", true)
@@ -231,7 +231,7 @@ class CatalogConsistencyTest
         != None)
 
     val connection = getConnection()
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     intercept[TableNotFoundException] {
@@ -261,7 +261,7 @@ class CatalogConsistencyTest
     }
 
     val connection = getConnection()
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     intercept[TableNotFoundException] {
@@ -278,7 +278,7 @@ class CatalogConsistencyTest
     snc.catalog.unregisterDataSourceTable(snc.catalog.newQualifiedTableName("row_table1"), None)
 
     // repair the catalog
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     // make sure that the table does not exist
@@ -312,7 +312,7 @@ class CatalogConsistencyTest
         != None)
 
     val connection = getConnection()
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     intercept[TableNotFoundException] {

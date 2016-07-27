@@ -130,6 +130,11 @@ public class SnappyHiveCatalog implements ExternalCatalog {
   }
 
   @Override
+  public String catalogSchemaName() {
+    return SnappyStoreHiveCatalog.HIVE_METASTORE();
+  }
+
+  @Override
   public void stop() {
     for (HiveMetaStoreClient cl : this.allHMclients) {
       cl.close();

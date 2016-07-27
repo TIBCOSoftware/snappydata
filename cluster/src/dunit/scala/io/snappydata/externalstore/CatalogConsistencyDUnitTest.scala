@@ -98,7 +98,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
     //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
 
     assertTableDoesNotExist(netPort1, snc)
@@ -127,7 +127,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
-    connection.createStatement().executeQuery("VALUES SYS.CHECK_CATALOG(1)").next()
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
 
     assertTableDoesNotExist(netPort1, snc)
 
