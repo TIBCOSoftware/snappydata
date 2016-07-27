@@ -132,6 +132,11 @@ public class SnappyPrms extends BasePrms {
     public static Long waitTimeBeforeNextCycleVM;
 
     /**
+     * (int) Number of times the test should retry submitting failed job in case of lead node failover.
+     */
+    public static Long numTimesToRetry;
+
+    /**
      * (int) The number of VMs to stop (then restart) at a time.
      */
     public static Long numVMsToStop;
@@ -196,6 +201,11 @@ public class SnappyPrms extends BasePrms {
      * (int) number of shuffle partitions to be used in test
      */
     public static Long shufflePartitions;
+
+    public static int getRetryCountForJob() {
+        Long key = numTimesToRetry;
+        return tasktab().intAt(key, tab().intAt(key, 5));
+    }
 
     public static int getExecutorCores() {
         Long key = executorCores;
