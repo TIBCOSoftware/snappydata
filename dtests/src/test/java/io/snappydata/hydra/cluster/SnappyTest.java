@@ -283,7 +283,7 @@ public class SnappyTest implements Serializable {
             case LEAD:
                 locatorHost = (String) SnappyBB.getBB().getSharedMap().get("locatorHost");
                 nodeLogDir = HostHelper.getLocalHost() + " " + locators + locatorHost + ":" + 10334 + " -spark.executor.cores=" + SnappyPrms.getExecutorCores() + " -spark.driver.maxResultSize=" + SnappyPrms.getDriverMaxResultSize() + " -dir=" + dirPath + clientPort + port + " -J-Xmx" + SnappyPrms.getLeadMemory()
-                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + timeStatistics + "snappyleader.gfs" + logLevel;
+                        + " -spark.sql.autoBroadcastJoinThreshold=" + SnappyPrms.getSparkSqlBroadcastJoinThreshold() + " -spark.scheduler.mode=" + SnappyPrms.getSparkSchedulerMode() + " -spark.sql.inMemoryColumnarStorage.compressed=" + SnappyPrms.getCompressedInMemoryColumnarStorage() + " -conserve-sockets=" + SnappyPrms.getConserveSockets() + " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() + timeStatistics + "snappyleader.gfs" + logLevel;
                 if (leadHost == null) {
                     leadHost = HostHelper.getLocalHost();
                     SnappyBB.getBB().getSharedMap().put("leadHost", leadHost);
@@ -1838,6 +1838,8 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.leadsStarted);
+            Log.getLogWriter().info("SS - reset the counter for lead started...");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
@@ -1858,6 +1860,8 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.serversStarted);
+            Log.getLogWriter().info("SS - reset the counter for servers started...");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
@@ -1878,6 +1882,8 @@ public class SnappyTest implements Serializable {
             String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
             File logFile = new File(dest);
             snappyTest.executeProcess(pb, logFile);
+            SnappyBB.getBB().getSharedCounters().zero(SnappyBB.locatorsStarted);
+            Log.getLogWriter().info("SS - reset the counter for locators started...");
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
@@ -2241,6 +2247,13 @@ public class SnappyTest implements Serializable {
         } catch (IOException e) {
             String s = "problem occurred while retriving logFile path " + log;
             throw new TestException(s, e);
+        }
+    }
+
+    private void dumpHeap() {
+        int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.heapDumpExecuted);
+        if (num == 1) {
+            log().severe(ProcessMgr.fgexec("sh snappyeapdumprun.sh", 600));
         }
     }
 
