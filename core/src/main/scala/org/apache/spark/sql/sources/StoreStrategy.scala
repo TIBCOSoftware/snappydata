@@ -33,7 +33,7 @@ object StoreStrategy extends Strategy {
 
     case CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
     false, opts, allowExisting, _) =>
-      ExecutedCommand(CreateMetastoreTableUsing(tableIdent,
+      ExecutedCommand(CreateMetastoreTableUsing(tableIdent, None,
         userSpecifiedSchema, None, SnappyContext.getProvider(provider,
           onlyBuiltIn = false), allowExisting, opts, isBuiltIn = false)) :: Nil
 
@@ -41,8 +41,8 @@ object StoreStrategy extends Strategy {
     partitionCols, mode, opts, query) =>
       // CreateTableUsingSelect is only invoked by DataFrameWriter etc
       // so that should support both builtin and external tables
-      ExecutedCommand(CreateMetastoreTableUsingSelect(
-        tableIdent, SnappyContext.getProvider(provider, onlyBuiltIn = false),
+      ExecutedCommand(CreateMetastoreTableUsingSelect(tableIdent, None,
+        SnappyContext.getProvider(provider, onlyBuiltIn = false),
         partitionCols, mode, opts, query, isBuiltIn = false)) :: Nil
 
     case create: CreateMetastoreTableUsing =>
