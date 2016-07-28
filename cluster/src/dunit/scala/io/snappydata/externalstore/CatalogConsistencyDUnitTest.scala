@@ -54,9 +54,17 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table1")
     snc.createTable("column_table2", "column", dataDF.schema, props)
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
+
+    snc.sql("create stream table tweetsTable (id long, text string, fullName string, " +
+        "country string, retweets int, hashtag string) using twitter_stream options (" +
+        "consumerKey '0Xo8rg3W0SOiqu14HZYeyFPZi', " +
+        "consumerSecret 'gieTDrdzFS4b1g9mcvyyyadOkKoHqbVQALoxfZ19eHJzV9CpLR', " +
+        "accessToken '43324358-0KiFugPFlZNfYfib5b6Ah7c2NdHs1524v7LM2qaUq', " +
+        "accessTokenSecret 'aB1AXHaRiE3g2d7tLgyASdgIg9J7CzbPKBkNfvK8Y88bu', " +
+        "rowConverter 'io.snappydata.streaming.TweetToRowsConverter')")
   }
 
-  // assert that, table is not in Hive catalog and store DD
+  // assert that table is not in Hive catalog and store DD
   private def assertTableDoesNotExist(netPort1: Int, snc: SnappyContext): Any = {
     try {
       // table should not exist in the Hive catalog
@@ -76,6 +84,22 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
       case se: SQLException if (se.getSQLState.equals("42X05")) =>
       case unknown: Throwable => throw unknown
     }
+
+    try {
+      // make sure that the column buffer does not exist
+      routeQueryDisabledConn.createStatement().executeQuery(
+        "select * from " + ColumnFormatRelation.cachedBatchTableName("column_table1"))
+    } catch {
+      case se: SQLException if (se.getSQLState.equals("42X05")) =>
+      case unknown: Throwable => throw unknown
+    }
+  }
+
+  def verifyTables(snc: SnappyContext): Unit = {
+    val result = snc.sql("SELECT * FROM column_table2")
+    assert(result.collect.length == 5)
+    assert(snc.catalog.lookupRelation(snc.catalog.newQualifiedTableName("tweetsTable"))
+        != None)
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
@@ -86,7 +110,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     createTables(snc)
 
-    // remove the table entry from Hive store but not from store DD
+    // remove column_table1 entry from Hive store but not from store DD
     snc.catalog.unregisterDataSourceTable(snc.catalog.newQualifiedTableName("column_table1"), None)
 
     try {
@@ -99,12 +123,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val connection = getClientConnection(netPort1)
     // repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
-    //    FabricDatabase.checkSnappyCatalogConsistency(GemFireXDUtils.createNewInternalConnection(false));
-
+    // column_table1 should not be found in either catalog after repair
     assertTableDoesNotExist(netPort1, snc)
-
-    val result = snc.sql("SELECT * FROM column_table2")
-    assert(result.collect.length == 5)
+    // other tables should exist
+    verifyTables(snc)
 
   }
 
@@ -115,7 +137,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val snc = SnappyContext(sc)
 
     createTables(snc)
-    // drop table from store DD
+
+    // drop column_table1 from store DD
     val routeQueryDisabledConn = getClientConnection(netPort1, false)
     routeQueryDisabledConn.createStatement().execute("drop table " +
         ColumnFormatRelation.cachedBatchTableName("column_table1"))
@@ -128,11 +151,10 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     val connection = getClientConnection(netPort1)
     // repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
-
+    // column_table1 should not be found in either catalog after repair
     assertTableDoesNotExist(netPort1, snc)
-
-    val result = snc.sql("SELECT * FROM column_table2")
-    assert(result.collect.length == 5)
+    // other tables should exist
+    verifyTables(snc)
   }
 
   def testCatalogRepairedWhenLeadRestarted(): Unit = {
@@ -142,24 +164,21 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     var snc = SnappyContext(sc)
 
     createTables(snc)
+    // remove column_table1 entry from Hive store but not from store DD
+    snc.catalog.unregisterDataSourceTable(snc.catalog.newQualifiedTableName("column_table1"), None)
+
     // stop spark
     val sparkContext = SnappyContext.globalSparkContext
     if(sparkContext != null) sparkContext.stop()
     ClusterManagerTestBase.stopAny()
 
-    // drop table from store DD
-    val routeQueryDisabledConn = getClientConnection(netPort1, false)
-    routeQueryDisabledConn.createStatement().execute("drop table " +
-        ColumnFormatRelation.cachedBatchTableName("column_table1"))
-    routeQueryDisabledConn.createStatement().execute("drop table column_table1")
-
     ClusterManagerTestBase.startSnappyLead(locatorPort, bootProps)
     snc = SnappyContext(sc)
-
+    // column_table1 should not be found in either catalog after repair
     assertTableDoesNotExist(netPort1, snc)
 
-    val result = snc.sql("SELECT * FROM column_table2")
-    assert(result.collect.length == 5)
+    // other tables should exist
+    verifyTables(snc)
   }
 
 }
