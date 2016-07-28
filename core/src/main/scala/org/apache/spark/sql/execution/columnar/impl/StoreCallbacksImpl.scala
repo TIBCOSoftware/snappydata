@@ -67,7 +67,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   }
 
   override def createCachedBatch(region: BucketRegion, batchID: UUID,
-      bucketID: Int): java.util.Set[Any] = {
+      bucketID: Int): java.util.Set[AnyRef] = {
     val container: GemFireContainer = region.getPartitionedRegion
         .getUserAttribute.asInstanceOf[GemFireContainer]
     val store = stores.get(container.getQualifiedTableName)
@@ -120,7 +120,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       }
     } else {
-      new java.util.HashSet()
+      java.util.Collections.emptySet[AnyRef]()
     }
   }
 

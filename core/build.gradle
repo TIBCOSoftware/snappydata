@@ -20,6 +20,7 @@ dependencies {
   provided 'org.scala-lang:scala-reflect:' + scalaVersion
   provided 'org.scala-lang:scala-compiler:' + scalaVersion
 
+  compile group: 'com.esotericsoftware.kryo', name: 'kryo', version: '2.24.0'
   // always use stock spark so that snappy extensions don't get accidently
   // included here in snappy-core code.
   provided("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
