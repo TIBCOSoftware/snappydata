@@ -117,7 +117,8 @@ public class SnappyPrms extends BasePrms {
     public static Long logLevel;
 
     /**
-     * (String) userAppJar containing the user snappy job class
+     * (String) userAppJar containing the user snappy job class. The wildcards in jar file name are supported in order to removes the hard coding of jar version.
+     * e.g. user can specify the jar file name as "snappydata-store-scala-tests*tests.jar" instead of full jar name as "snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar".
      */
     public static Long userAppJar;
 
