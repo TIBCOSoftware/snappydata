@@ -76,7 +76,7 @@ object TPCH_Memsql {
          }
        }else{
          var totalTimeForLast5Iterations:Long = 0
-         for (i <- 1 to 3) {
+         for (i <- 1 to 4) {
            val startTime = System.currentTimeMillis()
            rs = queryExecution(queryNumber, stmt)
            //rs = stmt.executeQuery(query)
@@ -86,7 +86,7 @@ object TPCH_Memsql {
            val endTime = System.currentTimeMillis()
            val iterationTime = endTime - startTime
            queryPrintStream.println(s"$iterationTime")
-           if (i > 1) {
+           if (i > 2) {
              totalTimeForLast5Iterations += iterationTime
            }
            if (queryNumber.equals("q13")) {
@@ -97,7 +97,7 @@ object TPCH_Memsql {
            }
          }
          queryPrintStream.println(s"${totalTimeForLast5Iterations / 2}")
-         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations / 2}")
+         avgPrintStream.println(s"$queryNumber,${totalTimeForLast5Iterations /2}")
        }
        println(s"Finished executing $queryNumber")
 
