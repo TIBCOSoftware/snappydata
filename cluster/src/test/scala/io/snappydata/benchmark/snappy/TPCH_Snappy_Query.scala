@@ -20,7 +20,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
 //  var avgPrintStream:PrintStream = _
 
    override def runJob(snc: C, jobConfig: Config): Any = {
-     val isResultCollection = false
+     val isResultCollection = false 
      val isSnappy = true
 
 //     avgFileStream = new FileOutputStream(new File(s"Average.out"))

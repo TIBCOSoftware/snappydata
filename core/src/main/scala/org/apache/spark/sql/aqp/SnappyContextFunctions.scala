@@ -89,4 +89,6 @@ trait SnappyContextFunctions {
 
   def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
       rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T
+
+  def sql[T](fn: => T): T
 }
