@@ -1,10 +1,11 @@
 package io.snappydata.benchmark.snappy
 
 import com.typesafe.config.Config
-import org.apache.spark.{SparkContext, SparkConf}
+import org.apache.spark.sql.{SnappyContext, SnappySQLJob}
+import org.apache.spark.{SparkConf, SparkContext}
 import spark.jobserver.{SparkJobInvalid, SparkJobValid, SparkJobValidation}
-
-import org.apache.spark.sql.{SQLContext, SnappyContext, SnappySQLJob}
+import scala.language.implicitConversions
+import scala.collection.JavaConverters._
 
 /**
   * Created by kishor on 28/1/16.
@@ -29,6 +30,12 @@ object TPCH_Snappy_Query extends SnappySQLJob{
            USING row
            OPTIONS ()"""
 
+
+     jobConfig.entrySet().asScala.foreach(entry => if (entry.getKey.startsWith("spark.sql.")) {
+       val entryString = entry.getKey + "=" + jobConfig.getString(entry.getKey)
+       println("****************SparkSqlProp : " + entryString)
+       snc.sql("set " + entryString)
+     })
 
      for(prop <- sqlSparkProperties) {
        snc.sql(s"set $prop")
@@ -142,7 +149,7 @@ object TPCH_Snappy_Query extends SnappySQLJob{
 
      println(s"tempqueries : $tempqueries")
 
-     queries = tempqueries.split(",")
+     queries = tempqueries.split("-")
 
      SparkJobValid
    }
