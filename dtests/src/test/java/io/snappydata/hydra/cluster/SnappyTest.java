@@ -1210,8 +1210,8 @@ public class SnappyTest implements Serializable {
                 String firstLocatorPort = (String)SnappyBB.getBB().getSharedMap().get("firstLocatorPort");
                 Log.getLogWriter().info("SS - client firstLocatorHost in HydraTask_executeSQLScripts : " + firstLocatorHost);
                 Log.getLogWriter().info("SS - client firstLocatorPort in HydraTask_executeSQLScripts : " + firstLocatorPort);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
-//                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path,  "-locators=" + locatorsList);
+                //ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path,  "-locators=" + locatorsList);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -1544,6 +1544,7 @@ public class SnappyTest implements Serializable {
                 logFile = new File(dest);
                 pb = new ProcessBuilder("/bin/bash", "-c", command);
                 snappyTest.executeProcess(pb, logFile);
+//                getSnappyJobsStatus(userJob, logFile);
             }
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
