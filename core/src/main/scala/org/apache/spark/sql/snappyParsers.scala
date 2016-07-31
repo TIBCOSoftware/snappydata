@@ -695,6 +695,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
     createTable | describeTable | refreshTable | dropTable |
         createStream  | streamContext | truncateTable | createIndex | dropIndex
 
+  protected val EXTERNAL = Keyword("EXTERNAL")
   protected val STREAM = Keyword("STREAM")
   protected val STREAMING = Keyword("STREAMING")
   protected val CONTEXT = Keyword("CONTEXT")
@@ -720,19 +721,18 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
       else s.map(Utils.toLowerCase).mkString(".")
     }
 
-  private val DDLEnd = Pattern.compile(s"(${USING.str}\\s+[a-zA-Z_0-9\\.]+\\s*)?" +
-      s"(\\s${OPTIONS.str}\\s|\\s${AS.str}\\s|$$)", Pattern.CASE_INSENSITIVE)
+  private val DDLEnd = Pattern.compile(s"\\b${USING.str}\\s|" +
+      s"\\b${OPTIONS.str}\\s*\\(|\\b${AS.str}\\s|$$", Pattern.CASE_INSENSITIVE)
 
   protected override lazy val createTable: Parser[LogicalPlan] =
-    (CREATE ~> TEMPORARY.? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
+    (CREATE ~> (TEMPORARY | EXTERNAL).? <~ TABLE) ~ (IF ~> NOT <~ EXISTS).? ~
         tableIdentifier ~ externalTableInput ~ (USING ~> className).? ~
         (OPTIONS ~> options).? ~ (AS ~> restInput).? ^^ {
-      case temporary ~ allowExisting ~ tableIdent ~ schemaString ~
+      case tempOrExternal ~ allowExisting ~ tableIdent ~ schemaString ~
           providerName ~ opts ~ query =>
 
         val options = opts.getOrElse(Map.empty[String, String])
-        val provider = SnappyContext.getProvider(providerName.getOrElse(
-          SnappyContext.DEFAULT_SOURCE), onlyBuiltin = false)
+        val provider = providerName.getOrElse(SnappyContext.DEFAULT_SOURCE)
         if (query.isDefined) {
           if (schemaString.length > 0) {
             throw new DDLException("CREATE TABLE AS SELECT statement " +
@@ -744,22 +744,30 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
           else SaveMode.ErrorIfExists
           val queryPlan = parseQuery(query.get)
 
-          if (temporary.isDefined) {
-            CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
-              Array.empty[String], mode, options, queryPlan)
-          } else {
-            CreateMetastoreTableUsingSelect(tableIdent, provider,
-              Array.empty[String], mode, options, queryPlan)
+          tempOrExternal match {
+            case None =>
+              CreateMetastoreTableUsingSelect(tableIdent, None, provider,
+                Array.empty[String], mode, options, queryPlan,
+                isBuiltIn = true)
+            case Some(e) if e.equalsIgnoreCase(EXTERNAL.str) =>
+              CreateMetastoreTableUsingSelect(tableIdent, None, provider,
+                Array.empty[String], mode, options, queryPlan,
+                isBuiltIn = false)
+            case Some(_) =>
+              CreateTableUsingAsSelect(tableIdent, provider, temporary = true,
+                Array.empty[String], mode, options, queryPlan)
           }
         } else {
-          val hasExternalSchema = if (temporary.isDefined) false
+          val hasExternalSchema = if (tempOrExternal.isDefined) false
           else {
             // check if provider class implements ExternalSchemaRelationProvider
             try {
-              val clazz: Class[_] = ResolvedDataSource.lookupDataSource(provider)
+              val clazz: Class[_] = ResolvedDataSource.lookupDataSource(
+                SnappyContext.getProvider(provider, onlyBuiltIn = false))
               classOf[ExternalSchemaRelationProvider].isAssignableFrom(clazz)
             } catch {
-              case cnfe: ClassNotFoundException => throw new DDLException(cnfe.toString)
+              case ce: ClassNotFoundException =>
+                throw new DDLException(ce.toString)
               case t: Throwable => throw t
             }
           }
@@ -774,13 +782,19 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
           }
           val schemaDDL = if (hasExternalSchema) Some(schemaString) else None
 
-          if (temporary.isDefined) {
-            CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
-              temporary = true, options, allowExisting.isDefined,
-              managedIfNoPath = false)
-          } else {
-            CreateMetastoreTableUsing(tableIdent, userSpecifiedSchema,
-              schemaDDL, provider, allowExisting.isDefined, options)
+          tempOrExternal match {
+            case None =>
+              CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
+                schemaDDL, provider, allowExisting.isDefined, options,
+                isBuiltIn = true)
+            case Some(e) if e.equalsIgnoreCase(EXTERNAL.str) =>
+              CreateMetastoreTableUsing(tableIdent, None, userSpecifiedSchema,
+                schemaDDL, provider, allowExisting.isDefined, options,
+                isBuiltIn = false)
+            case Some(_) =>
+              CreateTableUsing(tableIdent, userSpecifiedSchema, provider,
+                temporary = true, options, allowExisting.isDefined,
+                managedIfNoPath = false)
           }
         }
     }
@@ -831,10 +845,10 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
             case Some(x) if x.toString.equals("(global~hash)") =>
               "global hash"
           }
-          CreateIndex(indexName.toString(), tableName,
+          CreateIndex(indexName, tableName,
             cols, parameters + (ExternalStoreUtils.INDEX_TYPE -> typeString))
         } else {
-          CreateIndex(indexName.toString(), tableName, cols, parameters)
+          CreateIndex(indexName, tableName, cols, parameters)
         }
 
     }
@@ -847,7 +861,7 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
   protected lazy val dropIndex: Parser[LogicalPlan] =
     DROP ~> INDEX ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
       case ifExists ~ indexName =>
-        DropIndex(indexName.toString(), ifExists.isDefined)
+        DropIndex(indexName, ifExists.isDefined)
     }
 
   protected lazy val direction: Parser[SortDirection] =
@@ -857,15 +871,14 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
 
 
   protected lazy val dropTable: Parser[LogicalPlan] =
-    (DROP ~> TEMPORARY.? <~ TABLE) ~ (IF ~> EXISTS).? ~ tableIdentifier ^^ {
-      case temporary ~ allowExisting ~ tableName =>
-        DropTable(tableName, temporary.isDefined, allowExisting.isDefined)
+    DROP ~> TABLE ~> (IF ~> EXISTS).? ~ tableIdentifier ^^ {
+      case allowExisting ~ tableName =>
+        DropTable(tableName, allowExisting.isDefined)
     }
 
   protected lazy val truncateTable: Parser[LogicalPlan] =
-    (TRUNCATE ~> TEMPORARY.? <~ TABLE) ~ tableIdentifier ^^ {
-      case temporary ~ tableName =>
-        TruncateTable(tableName, temporary.isDefined)
+    TRUNCATE ~> TABLE ~> tableIdentifier ^^ {
+      case tableName => TruncateTable(tableName)
     }
 
   protected lazy val createStream: Parser[LogicalPlan] =
@@ -874,15 +887,17 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
       case streamName ~ allowExisting ~ cols ~ providerName ~ opts =>
         val specifiedSchema = cols.flatMap(fields => Some(StructType(fields)))
         val provider = SnappyContext.getProvider(providerName,
-          onlyBuiltin = false)
+          onlyBuiltIn = false)
         // check that the provider is a stream relation
         val clazz = ResolvedDataSource.lookupDataSource(provider)
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw Utils.analysisException(s"CREATE STREAM provider $providerName" +
               " does not implement StreamPlanProvider")
         }
-        CreateMetastoreTableUsing(streamName, specifiedSchema, None,
-          provider, allowExisting.isDefined, opts, onlyExternal = false)
+        // provider has already been resolved, so isBuiltIn==false allows
+        // for both builtin as well as external implementations
+        CreateMetastoreTableUsing(streamName, None, specifiedSchema, None,
+          provider, allowExisting.isDefined, opts, isBuiltIn = false)
     }
 
   protected lazy val streamContext: Parser[LogicalPlan] =
@@ -919,47 +934,45 @@ private[sql] class SnappyDDLParser(caseSensitive: Boolean,
 
 private[sql] case class CreateMetastoreTableUsing(
     tableIdent: TableIdentifier,
+    baseTable: Option[TableIdentifier],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     allowExisting: Boolean,
     options: Map[String, String],
-    onlyExternal: Boolean = false) extends RunnableCommand {
+    isBuiltIn: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
     val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
     snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
-      userSpecifiedSchema, schemaDDL, mode, options,
-      onlyBuiltIn = false, onlyExternal)
+      userSpecifiedSchema, schemaDDL, mode,
+      snc.addBaseTableOption(baseTable, options), isBuiltIn)
     Seq.empty
   }
 }
 
 private[sql] case class CreateMetastoreTableUsingSelect(
     tableIdent: TableIdentifier,
+    baseTable: Option[TableIdentifier],
     provider: String,
     partitionColumns: Array[String],
     mode: SaveMode,
     options: Map[String, String],
     query: LogicalPlan,
-    onlyExternal: Boolean = false) extends RunnableCommand {
+    isBuiltIn: Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    val catalog = snc.catalog
-    val qualifiedName = catalog.newQualifiedTableName(tableIdent)
-    snc.createTable(qualifiedName, provider, partitionColumns, mode,
-      options, query, onlyBuiltIn = false, onlyExternal)
-    // refresh cache of the table in catalog
-    catalog.invalidateTable(qualifiedName)
+    snc.createTable(snc.catalog.newQualifiedTableName(tableIdent), provider,
+      partitionColumns, mode, snc.addBaseTableOption(baseTable, options),
+      query, isBuiltIn)
     Seq.empty
   }
 }
 
 private[sql] case class DropTable(
     tableIdent: TableIdentifier,
-    temporary: Boolean,
     ifExists: Boolean) extends RunnableCommand {
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
@@ -969,8 +982,7 @@ private[sql] case class DropTable(
 }
 
 private[sql] case class TruncateTable(
-    tableIdent: TableIdentifier,
-    temporary: Boolean) extends RunnableCommand {
+    tableIdent: TableIdentifier) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
@@ -979,26 +991,28 @@ private[sql] case class TruncateTable(
   }
 }
 
-private[sql] case class CreateIndex(indexName: String,
+private[sql] case class CreateIndex(indexName: TableIdentifier,
     baseTable: TableIdentifier,
     indexColumns: Map[String, Option[SortDirection]],
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.createIndex(indexName, baseTable.toString(),
-      indexColumns, options)
+    val tableIdent = snc.catalog.newQualifiedTableName(baseTable)
+    val indexIdent = snc.catalog.newQualifiedTableName(indexName)
+    snc.createIndex(indexIdent, tableIdent, indexColumns, options)
     Seq.empty
   }
 }
 
 private[sql] case class DropIndex(
-    indexName: String,
+    indexName: TableIdentifier,
     ifExists : Boolean) extends RunnableCommand {
 
   override def run(sqlContext: SQLContext): Seq[Row] = {
     val snc = sqlContext.asInstanceOf[SnappyContext]
-    snc.dropIndex(indexName, ifExists)
+    val indexIdent = snc.catalog.newQualifiedTableName(indexName)
+    snc.dropIndex(indexIdent, ifExists)
     Seq.empty
   }
 }

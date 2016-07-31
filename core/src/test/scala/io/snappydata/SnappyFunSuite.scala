@@ -35,6 +35,7 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
 abstract class SnappyFunSuite
     extends FunSuite // scalastyle:ignore
     with BeforeAndAfterAll
+    with Serializable
     with Logging {
 
   protected var testName: String = _
@@ -66,7 +67,7 @@ abstract class SnappyFunSuite
     new SparkContext(newSparkConf(addOn))
   }
 
-  private var cachedContext : SnappyContext = null
+  @transient private var cachedContext : SnappyContext = null
 
   def getOrCreate(sc: SparkContext): SnappyContext = {
     val gnc = cachedContext
