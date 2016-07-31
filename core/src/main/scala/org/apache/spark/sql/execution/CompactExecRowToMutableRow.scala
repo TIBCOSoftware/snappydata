@@ -57,9 +57,10 @@ trait CompactExecRowToMutableRow extends ResultWasNull {
       fieldTypes(i) match {
         case StoreUtils.STRING_TYPE =>
           // TODO: SW: change format in SQLChar to be full UTF8
-          val v = execRow.getAsBytes(pos, this)
+          // and then use getAsBytes+UTF8String.fromBytes here
+          val v = execRow.getAsString(pos, this)
           if (v != null) {
-            mutableRow.update(i, UTF8String.fromBytes(v))
+            mutableRow.update(i, UTF8String.fromString(v))
           } else {
             mutableRow.setNullAt(i)
             wasNull = false

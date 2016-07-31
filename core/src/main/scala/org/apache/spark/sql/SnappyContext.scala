@@ -756,10 +756,12 @@ class SnappyContext protected[spark](
 
   private[sql] def addBaseTableOption(baseTable: Option[_],
       options: Map[String, String]): Map[String, String] = baseTable match {
+    // TODO: SW: proper schema handling here and every in our query
+    // processing rules as well as of Catalyst
     case Some(t: TableIdentifier) => options + (JdbcExtendedUtils
-        .BASETABLE_PROPERTY -> catalog.newQualifiedTableName(t).toString())
+        .BASETABLE_PROPERTY -> catalog.processTableIdentifier(t.table))
     case Some(s: String) => options + (JdbcExtendedUtils
-        .BASETABLE_PROPERTY -> catalog.newQualifiedTableName(s).toString())
+        .BASETABLE_PROPERTY -> catalog.processTableIdentifier(s).toString())
     case _ => options
   }
 
