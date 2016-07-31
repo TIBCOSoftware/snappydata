@@ -65,7 +65,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val hdos = new GfxdHeapDataOutputStream(
     Misc.getMemStore.thresholdListener(), sql, true, senderVersion)
 
-  private[this] val tableSchema = df.schema
+  private[this] val querySchema = df.schema
 
   private[this] val resultsRdd = df.queryExecution.executedPlan.execute()
 
@@ -83,12 +83,12 @@ class SparkSQLExecuteImpl(val sql: String,
     val isLocalExecution = msg.isLocallyExecuted
     val bm = SparkEnv.get.blockManager
     val partitionBlockIds = new Array[RDDBlockId](resultsRdd.partitions.length)
-    val serializeComplexType = !complexTypeAsClob && tableSchema.exists(
+    val serializeComplexType = !complexTypeAsClob && querySchema.exists(
       _.dataType match {
         case _: ArrayType | _: MapType | _: StructType => true
         case _ => false
       })
-    val handler = new ExecutionHandler(sql, tableSchema, resultsRdd.id,
+    val handler = new ExecutionHandler(sql, querySchema, resultsRdd.id,
       partitionBlockIds, serializeComplexType)
     var blockReadSuccess = false
     try {
@@ -204,11 +204,11 @@ class SparkSQLExecuteImpl(val sql: String,
   }
 
   def getColumnNames: Array[String] = {
-    tableSchema.fieldNames
+    querySchema.fieldNames
   }
 
   private def getColumnTypes: Array[(Int, Int, Int)] =
-    tableSchema.map(f => getSQLType(f.dataType)).toArray
+    querySchema.map(f => getSQLType(f.dataType)).toArray
 
   private def getSQLType(dataType: DataType): (Int, Int, Int) = {
     dataType match {

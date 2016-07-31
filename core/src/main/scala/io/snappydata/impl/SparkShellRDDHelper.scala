@@ -54,7 +54,7 @@ final class SparkShellRDDHelper {
   def executeQuery(conn: Connection, tableName: String,
       split: Partition, query: String): (Statement, ResultSet) = {
     DriverRegistry.register(Constant.JDBC_CLIENT_DRIVER)
-    val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
+    val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
     val par = split.index
     val statement = conn.createStatement()
 
@@ -105,18 +105,15 @@ final class SparkShellRDDHelper {
 
 object SparkShellRDDHelper {
 
-  def getPartitions(tableName: String, store: ExternalStore): Array[Partition] = {
-    store.tryExecute(tableName, {
-      conn =>
-        val resolvedName = StoreUtils.lookupName(tableName, conn.getSchema)
-        val bucketToServerList = getBucketToServerMapping(resolvedName)
-        val numPartitions = bucketToServerList.length
-        val partitions = new Array[Partition](numPartitions)
-        for (p <- 0 until numPartitions) {
-          partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
-        }
-        partitions
-    })
+  def getPartitions(tableName: String, conn: Connection): Array[Partition] = {
+    val resolvedName = ExternalStoreUtils.lookupName(tableName, conn.getSchema)
+    val bucketToServerList = getBucketToServerMapping(resolvedName)
+    val numPartitions = bucketToServerList.length
+    val partitions = new Array[Partition](numPartitions)
+    for (p <- 0 until numPartitions) {
+      partitions(p) = new ExecutorLocalShellPartition(p, bucketToServerList(p))
+    }
+    partitions
   }
 
   private def useLocatorUrl(hostList: ArrayBuffer[(String, String)]): Boolean =
