@@ -510,6 +510,10 @@ class SnappyStoreHiveCatalog(context: SnappyContext)
       provider: String,
       options: Map[String, String],
       relation: BaseRelation): Unit = {
+
+    // invalidate any cached plan for the table
+    cachedDataSourceTables.invalidate(tableIdent)
+
     val tableProperties = new mutable.HashMap[String, String]
     tableProperties.put(HIVE_PROVIDER, provider)
 

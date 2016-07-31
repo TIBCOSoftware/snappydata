@@ -84,9 +84,8 @@ public class JavaCreateAndLoadAirlineDataJob extends JavaSnappySQLJob {
       sampleTableProps.put("qcs", "UniqueCarrier, Year_, Month_");
       sampleTableProps.put("fraction", "0.03");
       sampleTableProps.put("strataReservoirSize", "50");
-      sampleTableProps.put("basetable", "Airline");
 
-      snc.createSampleTable(sampleTable, sampleTableProps, false);
+      snc.createSampleTable(sampleTable, "Airline", sampleTableProps, false);
 
       // Initiate the sampling from base table to sample table.
       snc.table(colTable).write().mode(SaveMode.Append).saveAsTable(sampleTable);

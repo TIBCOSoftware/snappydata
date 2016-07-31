@@ -117,13 +117,12 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
       topKOption.put("epoch", new Long(System.currentTimeMillis()).toString());
       topKOption.put("timeInterval", "2000ms");
       topKOption.put("size", "10");
-      topKOption.put("basetable", "hashtagtable");
 
 
       // Create TopK table on the base stream table which is hashtagtable
       // TopK object is automatically populated from the stream table
-      snsc.snappyContext().createApproxTSTopK("topktable", "hashtag",
-          schema, topKOption, false);
+      snsc.snappyContext().createApproxTSTopK("topktable", "hashtagtable",
+          "hashtag", schema, topKOption, false);
 
       final String tableName = "retweetStore";
 
@@ -139,7 +138,7 @@ public class JavaTwitterPopularTagsJob extends JavaSnappyStreamingJob {
       retweetStream.foreachDataFrame(new VoidFunction<DataFrame>() {
         @Override
         public void call(DataFrame df) {
-          df.write().mode(SaveMode.Append).saveAsTable(tableName);
+          df.write().insertInto(tableName);
         }
       });
       snsc.start();

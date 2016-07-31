@@ -372,7 +372,7 @@ class QueryRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
       // Ensure parquet table can be dropped (SNAP-215)
       val tableName = "PARQUETTABLE";
-      s.execute(s"CREATE TABLE $tableName " +
+      s.execute(s"CREATE EXTERNAL TABLE $tableName " +
           s"(Col1 INT, Col2 INT, Col3 INT) USING parquet OPTIONS (path '/tmp/parquetdata')")
       s.execute(s"DROP TABLE $tableName")
 
