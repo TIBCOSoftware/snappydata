@@ -65,7 +65,7 @@ dependencies {
     testRuntime project(':snappy-cluster_' + scalaBinaryVersion)
     testCompile project(':snappy-cluster_' + scalaBinaryVersion)
     testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.1'
-    testRuntime 'org.pegdown:pegdown:1.1.0'
+    testRuntime 'org.pegdown:pegdown:1.6.0'
 //    testRuntime group: 'org.datanucleus', name: 'datanucleus-core', version:'3.2.10'
 
 }

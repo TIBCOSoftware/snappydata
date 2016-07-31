@@ -327,13 +327,13 @@ The following DDL creates a sample that is 3% of the full data set and stratifie
 
 ```sql
 CREATE SAMPLE TABLE AIRLINE_SAMPLE
+   ON AIRLINE                             -- The parent base table
    OPTIONS(
     buckets '5',                          -- Number of partitions 
     qcs 'UniqueCarrier, Year_, Month_',   -- QueryColumnSet(qcs): The strata - 3% of each combination of Carrier, 
                                           -- Year and Month are stored as sample
     fraction '0.03',                      -- How big should the sample be
-    strataReservoirSize '50',             -- Reservoir sampling to support streaming inserts
-    basetable 'Airline')                  -- The parent base table
+    strataReservoirSize '50'              -- Reservoir sampling to support streaming inserts
 ```
 You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
 
@@ -577,13 +577,12 @@ Similar to how indexes provide performance benefits in traditional databases, Sn
 The following scala code creates a sample that is 3% of the full data set and stratified on 3 columns. The commonly used dimensions in your _Group by_ and _Where_ clauses make up the _Query Column Set_ (strata columns). Multiple samples can be created and queries executed on the base table are analyzed for appropriate sample selection. 
 
 ```scala
-val sampleDF = snappyContext.createTable(sampleTable, 
+val sampleDF = snappyContext.createTable(sampleTable, Some("Airline"),
         "column_sample", // DataSource provider for sample tables
         updatedSchema, Map("buckets" -> "5",
           "qcs" -> "UniqueCarrier, Year_, Month_",
           "fraction" -> "0.03",
-          "strataReservoirSize" -> "50",
-          "basetable" -> "Airline"
+          "strataReservoirSize" -> "50"
         ))
 ```
 You can run queries directly on the sample table (stored in columnar format) or on the base table. For base table queries you have to specify the _With Error_ constraint indicating to the SnappyData Query processor that a sample can be substituted for the full data set. 
@@ -642,12 +641,11 @@ SnappyData provides an API in the [SnappyContext](http://snappydatainc.github.io
 
 ```scala
 --- Create a topk table from a stream table
-snappyContext.createApproxTSTopK("topktable", "hashtag",
+snappyContext.createApproxTSTopK("topktable", Some("hashtagTable"), "hashtag",
     Some(schema), Map(
       "epoch" -> System.currentTimeMillis().toString,
       "timeInterval" -> "2000ms",
-      "size" -> "10",
-      "basetable" -> "HASHTAGTABLE"
+      "size" -> "10"
     ))
 --- Query a topk table for the last two seconds
 val topKDF = snappyContext.queryApproxTSTopK("topktable",

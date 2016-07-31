@@ -19,12 +19,11 @@ package org.apache.spark.sql.execution.columnar
 import org.apache.spark.sql.catalyst.{InternalRow, expressions}
 import org.apache.spark.sql.types.StructType
 
-private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[ColumnBuilder],
+private[sql] final class CachedBatchHolder(getColumnBuilders: => Array[ColumnBuilder],
     var rowCount: Int, val batchSize: Int, schema: StructType,
-    val init: T, val batchAggregate: (T, CachedBatch) => T) extends Serializable {
+    val batchAggregate: CachedBatch => Unit) extends Serializable {
 
   var columnBuilders = getColumnBuilders
-  var result = init
 
   /**
    * Append a single row to the current CachedBatch (creating a new one
@@ -53,27 +52,23 @@ private[sql] final class CachedBatchHolder[T](getColumnBuilders: => Array[Column
     if (rowCount >= batchSize || flush) {
       // create a new CachedBatch and push into the array of
       // CachedBatches so far in this iteration
-      val stats = InternalRow.fromSeq(columnBuilders.map(
-        _.columnStats.collectedStatistics).flatMap(_.values))
+      //val stats = InternalRow.fromSeq(columnBuilders.map(
+      //  _.columnStats.collectedStatistics).flatMap(_.values))
+      val stats: InternalRow = null
       // TODO: somehow push into global batchStats
-      result = batchAggregate(result,
-        CachedBatch(rowCount, columnBuilders.map(_.build().array()), stats))
-      // batches += CachedBatch(columnBuilders.map(_.build().array()), stats)
+      batchAggregate(CachedBatch(rowCount,
+        columnBuilders.map(_.build().array()), stats))
       if (newBuilders) columnBuilders = getColumnBuilders
       rowCount = 0
     }
   }
 
-  def appendRow(u: Unit, row: InternalRow): Unit =
+  def appendRow(row: InternalRow): Unit =
     appendRow_(newBuilders = true, row, flush = false)
 
-  // empty for now
-  def endRows(u: Unit): Unit = {}
-
-  def forceEndOfBatch(): T = {
+  def forceEndOfBatch(): Unit = {
     if (rowCount > 0) {
       appendRow_(newBuilders = false, expressions.EmptyRow, flush = true)
     }
-    result
   }
 }

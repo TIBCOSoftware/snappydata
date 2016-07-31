@@ -18,7 +18,7 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
-import io.snappydata.{StoreTableValueSizeProviderService}
+import io.snappydata.StoreTableValueSizeProviderService
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -71,6 +71,9 @@ case class JDBCMutableRelation(
     connProperties.url, table, connProperties.connProps)
 
   final lazy val schemaFields = Utils.schemaFields(schema)
+
+  override def unhandledFilters(filters: Array[Filter]): Array[Filter] =
+    filters.filter(ExternalStoreUtils.unhandledFilter)
 
   protected final val connFactory = JdbcUtils.createConnectionFactory(
     connProperties.url, connProperties.connProps)
@@ -144,7 +147,7 @@ case class JDBCMutableRelation(
       ExternalStoreUtils.pruneSchema(schemaFields, requiredColumns),
       table,
       requiredColumns,
-      filters,
+      filters.filterNot(ExternalStoreUtils.unhandledFilter),
       parts,
       connProperties.url,
       connProperties.executorConnProps).asInstanceOf[RDD[Row]]
