@@ -19,10 +19,6 @@ package io.snappydata.cluster
 import java.io.File
 import java.net.URL
 import java.util
-import java.util.concurrent.locks.ReentrantLock
-
-import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
-import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import scala.collection.mutable
 import scala.util.control.NonFatal
@@ -32,6 +28,8 @@ import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedM
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import io.snappydata.gemxd.ClusterCallbacksImpl
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
@@ -56,7 +54,7 @@ object ExecutorInitiator extends Logging {
     private var driverDM: InternalDistributedMember = null
     @volatile var stopTask = false
     private var retryTask: Boolean = false
-    private val lock = new ReentrantLock
+    private val lock = new Object()
 
     val membershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
@@ -112,8 +110,8 @@ object ExecutorInitiator extends Logging {
             Misc.checkIfCacheClosing(null)
             if (prevDriverURL == getDriverURLString && !getRetryFlag) {
               lock.synchronized {
-                if (prevDriverURL == getDriverURLString && !getRetryFlag) {
-                  lock.wait()
+                while (prevDriverURL == getDriverURLString && !getRetryFlag) {
+                  lock.wait(5000)
                 }
               }
             } else {
@@ -125,7 +123,7 @@ object ExecutorInitiator extends Logging {
                 // if it's a retry, wait for sometime before we retry.
                 // This is a measure to ensure that some unforeseen circumstance
                 // does not lead to continous retries and the thread hogs the CPU.
-                numTries = numTries + 1
+                numTries += 1
                 Thread.sleep(3000)
                 setRetryFlag(false)
               }
@@ -203,11 +201,11 @@ object ExecutorInitiator extends Logging {
 
                     rpcenv.setupEndpoint("Executor", executor)
                   }
+                  prevDriverURL = url
                 case None =>
-                // If driver url is none, already running executor is stopped.
+                  // If driver url is none, already running executor is stopped.
+                  prevDriverURL = ""
               }
-              prevDriverURL = getDriverURLString
-
             }
           } catch {
             case e@(NonFatal(_) | _: InterruptedException) =>
