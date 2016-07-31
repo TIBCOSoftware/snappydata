@@ -18,16 +18,8 @@ package org.apache.spark.sql
 
 import java.sql.SQLException
 
-import scala.collection.JavaConverters._
-import scala.collection.mutable
-import scala.language.implicitConversions
-import scala.reflect.runtime.{universe => u}
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success, Try}
-
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, StoreTableValueSizeProviderService}
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.rdd.RDD
@@ -37,7 +29,7 @@ import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubQueries}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Ascending, Cast, Descending, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, Project, Union}
 import org.apache.spark.sql.catalyst.rules.{Rule, RuleExecutor}
-import org.apache.spark.sql.catalyst.{ParserDialect, TableIdentifier}
+import org.apache.spark.sql.catalyst.{InternalRow, ParserDialect, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -55,6 +47,13 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext, SparkException}
+
+import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.language.implicitConversions
+import scala.reflect.runtime.{universe => u}
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success, Try}
 /**
  * Main entry point for SnappyData extensions to Spark. A SnappyContext
  * extends Spark's [[org.apache.spark.sql.SQLContext]] to work with Row and
@@ -177,7 +176,7 @@ class SnappyContext protected[spark](
 
       val rddRows = if ( transform != null) {
         transform(rdd)
-      }else {
+      } else {
         rdd.asInstanceOf[RDD[Row]]
       }
       snappyContextFunctions.collectSamples(this, rddRows, aqpTables, time.milliseconds)
@@ -194,7 +193,7 @@ class SnappyContext protected[spark](
    */
   @DeveloperApi
   def appendToTempTableCache(df: DataFrame, table: String,
-      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK) = {
+      storageLevel: StorageLevel = StorageLevel.MEMORY_AND_DISK): Unit = {
     val tableIdent = catalog.newQualifiedTableName(table)
     val plan = catalog.lookupRelation(tableIdent, None)
     // cache the new DataFrame
@@ -252,7 +251,7 @@ class SnappyContext protected[spark](
     val plan = createTable(catalog.newQualifiedTableName(tableName),
       SnappyContext.SAMPLE_SOURCE, None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable, samplingOptions),  isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
     DataFrame(self, plan)
   }
 
@@ -863,10 +862,10 @@ class SnappyContext protected[spark](
   }
 
   /**
-   * Set current database/schema .
-   * @param schemaName  schema name which goes in the catalog
+   * Set current database/schema.
+   * @param schemaName schema name which goes in the catalog
    */
-  def setSchema(schemaName :String) : Unit = {
+  def setSchema(schemaName :String): Unit = {
     catalog.setSchema(schemaName)
   }
 

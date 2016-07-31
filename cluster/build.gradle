@@ -66,7 +66,7 @@ dependencies {
 */
   testCompile 'org.scalatest:scalatest_' + scalaBinaryVersion + ':2.2.6'
 
-  testRuntime 'org.pegdown:pegdown:1.6.0'
+  testRuntime 'org.pegdown:pegdown:1.1.0'
 }
 
 // Creates the version properties file and writes it to the resources dir
