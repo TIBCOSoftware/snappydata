@@ -18,8 +18,6 @@ package org.apache.spark.sql.execution.columnar
 
 import java.util.UUID
 
-import scala.collection.mutable
-
 import com.pivotal.gemfirexd.internal.engine.access.heap.MemHeapScanController
 import com.pivotal.gemfirexd.internal.engine.store.AbstractCompactExecRow
 import com.pivotal.gemfirexd.internal.iapi.store.access.ScanController
@@ -37,7 +35,7 @@ final class CachedBatchCreator(
     val useCompression: Boolean) extends CompactExecRowToMutableRow {
 
   def createAndStoreBatch(sc: ScanController, row: AbstractCompactExecRow,
-      batchID: UUID, bucketID: Int): mutable.HashSet[AnyRef] = {
+      batchID: UUID, bucketID: Int): java.util.HashSet[AnyRef] = {
 
     def cachedBatchAggregate(batch: CachedBatch): Unit = {
       externalStore.storeCachedBatch(tableName, batch,
@@ -58,7 +56,7 @@ final class CachedBatchCreator(
 
     val memHeapScanController = sc.asInstanceOf[MemHeapScanController]
     memHeapScanController.setAddRegionAndKey()
-    val keySet = new mutable.HashSet[AnyRef]
+    val keySet = new java.util.HashSet[AnyRef]
     val mutableRow = new SpecificMutableRow(dataTypes)
     try {
       while (memHeapScanController.fetchNext(row)) {
