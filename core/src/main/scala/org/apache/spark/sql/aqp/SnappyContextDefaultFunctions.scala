@@ -136,7 +136,7 @@ object SnappyContextDefaultFunctions extends SnappyContextFunctions {
     }
 
   def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T = fn(rowRDD, df)
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T = fn(rowRDD, df)
 
   def sql[T](fn: => T): T = fn
 }

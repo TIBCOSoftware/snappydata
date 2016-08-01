@@ -1191,8 +1191,8 @@ class SnappyContext protected[spark](
     snappyContextFunctions.queryTopK(this, topK, startTime, endTime, k)
 
   def handleErrorLimitExceeded[T](fn: => (RDD[InternalRow], DataFrame) => T,
-      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan): T =
-    snappyContextFunctions.handleErrorLimitExceeded[T](fn, rowRDD, df, lp)
+      rowRDD: RDD[InternalRow], df: DataFrame, lp: LogicalPlan, fn2: => Int): T =
+    snappyContextFunctions.handleErrorLimitExceeded[T](fn, rowRDD, df, lp, fn2)
 }
 
 /**
