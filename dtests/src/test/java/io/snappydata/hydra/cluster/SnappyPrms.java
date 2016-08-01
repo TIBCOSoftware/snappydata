@@ -97,6 +97,11 @@ public class SnappyPrms extends BasePrms {
     public static Long isStopMode;
 
     /**
+     * (boolean) - whether to wait for sparkJobCompletion before stopping the Spark Master in test.
+     */
+    public static Long waitForJobCompletion;
+
+    /**
      * (boolean) - whether created tables to be replicated or partitioned. snappy hydra already sets the gemfirexd.table-default-partitioned to false.
      */
     public static Long tableDefaultPartitioned;

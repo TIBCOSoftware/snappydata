@@ -89,6 +89,7 @@ public class SnappyTest implements Serializable {
     public static boolean isRestarted = false;
     public static boolean useSplitMode = TestConfig.tab().booleanAt(SnappyPrms.useSplitMode, false);  //default to false
     public static boolean isStopMode = TestConfig.tab().booleanAt(SnappyPrms.isStopMode, false);  //default to false
+    public static boolean waitForJobCompletion = TestConfig.tab().booleanAt(SnappyPrms.waitForJobCompletion, false);  //default to false
     public static boolean firstLocatorStarted = false;
     private static String leadHost = null;
     public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
@@ -175,15 +176,20 @@ public class SnappyTest implements Serializable {
         try {
             IOFileFilter filter = new WildcardFileFilter(jarName);
             List<File> files = (List<File>) FileUtils.listFiles(baseDir, filter, TrueFileFilter.INSTANCE);
+            /*IOFileFilter fileFilter1 = FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("work", null));
+            FileFilter fileFilter = FileFilterUtils.and(fileFilter1, filter);
+            List<File> files = (List<File>) FileUtils.listFiles(baseDir, (IOFileFilter) fileFilter, TrueFileFilter.INSTANCE);*/
             Log.getLogWriter().info("Jar file found: " + Arrays.asList(files));
-            if (files.size() != 1) {
+            /*if (files.size() != 1) {
                 throw new IllegalStateException(String.format("Searching for a file '%s' did not result in the correct number of files! Found %d, expected %d", jarName, files.size(), 1));
+            }*/
+            for(File file1 : files) {
+                if(!file1.getAbsolutePath().contains("/work/"))  userAppJarPath = file1.getAbsolutePath();
             }
-            File file = files.get(0);
-            userAppJarPath = file.getAbsolutePath();
         } catch (Exception e) {
             Log.getLogWriter().info("Unable to find " + jarName + " jar at " + jarPath + " location.");
         }
+        Log.getLogWriter().info("swati -userAppJarPath after file filter is : " + userAppJarPath);
         return userAppJarPath;
     }
 
@@ -286,7 +292,7 @@ public class SnappyTest implements Serializable {
                 SnappyBB.getBB().getSharedMap().put("locators" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost() + ":" + Integer.toString(locPort));
                 Log.getLogWriter().info("Generated locator endpoint: " + endpoint);
                 SnappyNetworkServerBB.getBB().getSharedMap().put("locator" + "_" + RemoteTestModule.getMyVmid(), endpoint);
-                if(!firstLocatorStarted){
+                if (!firstLocatorStarted) {
                     SnappyBB.getBB().getSharedMap().put("firstLocatorHost" + "_" + RemoteTestModule.getMyVmid(), HostHelper.getLocalHost());
                     SnappyBB.getBB().getSharedMap().put("firstLocatorPort" + "_" + RemoteTestModule.getMyVmid(), Integer.toString(port));
                 }
@@ -1206,12 +1212,12 @@ public class SnappyTest implements Serializable {
                 Log.getLogWriter().info("SS - client port in HydraTask_executeSQLScripts : " + clientPort);
                 String locatorsList = getLocatorsList("locators");
                 Log.getLogWriter().info("SS - locatorsList in executeSQLScripts : " + locatorsList);
-                String firstLocatorHost = (String)SnappyBB.getBB().getSharedMap().get("firstLocatorHost");
-                String firstLocatorPort = (String)SnappyBB.getBB().getSharedMap().get("firstLocatorPort");
+                String firstLocatorHost = (String) SnappyBB.getBB().getSharedMap().get("firstLocatorHost");
+                String firstLocatorPort = (String) SnappyBB.getBB().getSharedMap().get("firstLocatorPort");
                 Log.getLogWriter().info("SS - client firstLocatorHost in HydraTask_executeSQLScripts : " + firstLocatorHost);
                 Log.getLogWriter().info("SS - client firstLocatorPort in HydraTask_executeSQLScripts : " + firstLocatorPort);
                 //ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-client-port=" + clientPort, "-client-bind-address=" + clientHost);
-                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path,  "-locators=" + locatorsList);
+                ProcessBuilder pb = new ProcessBuilder(SnappyShellPath, "run", "-file=" + filePath, "-param:path=" + path, "-locators=" + locatorsList);
                 snappyTest.executeProcess(pb, logFile);
             }
         } catch (IOException e) {
@@ -1544,7 +1550,23 @@ public class SnappyTest implements Serializable {
                 logFile = new File(dest);
                 pb = new ProcessBuilder("/bin/bash", "-c", command);
                 snappyTest.executeProcess(pb, logFile);
-//                getSnappyJobsStatus(userJob, logFile);
+                if (waitForJobCompletion) {
+                    boolean found = false;
+                    while (!found) {
+                        Log.getLogWriter().info("swati - found " + found);
+                        String searchString = "Done with running queries...";
+                        FileInputStream fis = new FileInputStream(logFile);
+                        BufferedReader br = new BufferedReader(new InputStreamReader(fis));
+                        String line = null;
+                        while ((line = br.readLine()) != null && !found) {
+                            if (line.toLowerCase().contains(searchString.toLowerCase())) {
+                                found = true;
+                                Log.getLogWriter().info("swati - searchString found : " + searchString);
+                            }
+                        }
+                        br.close();
+                    }
+                }
             }
         } catch (IOException e) {
             throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
